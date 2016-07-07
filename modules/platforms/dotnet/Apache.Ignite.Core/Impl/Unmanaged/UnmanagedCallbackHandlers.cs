@@ -101,5 +101,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal void* loggerLog;
         internal void* loggerIsLevelEnabled;
+
+        internal void* affinityFunctionInit;
+        internal void* affinityFunctionPartition;
+        internal void* affinityFunctionAssignPartitions;
+        internal void* affinityFunctionRemoveNode;
+        internal void* affinityFunctionDestroy;
     }
 }

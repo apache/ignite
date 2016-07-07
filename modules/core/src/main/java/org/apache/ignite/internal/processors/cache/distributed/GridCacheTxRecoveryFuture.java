@@ -59,6 +59,9 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     /** Logger. */
     private static IgniteLogger log;
 
+    /** Logger. */
+    private static IgniteLogger msgLog;
+
     /** Trackable flag. */
     private boolean trackable = true;
 
@@ -103,8 +106,10 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
         this.txNodes = txNodes;
         this.failedNodeIds = failedNodeIds;
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txRecoveryMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridCacheTxRecoveryFuture.class);
+        }
 
         nodes = new GridLeanMap<>();
 
@@ -174,11 +179,24 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
 
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Recovery fut, sent request near tx [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + nearNodeId + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException ignore) {
                     fut.onNodeLeft(nearNodeId);
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Recovery fut, failed to send request near tx [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + nearNodeId +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onError(e);
                 }
 
@@ -280,11 +298,24 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
+
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("Recovery fut, sent request to backup [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + id + ']');
+                        }
                     }
                     catch (ClusterTopologyCheckedException ignored) {
                         fut.onNodeLeft(id);
                     }
                     catch (IgniteCheckedException e) {
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("Recovery fut, failed to send request to backup [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + id +
+                                ", err=" + e + ']');
+                        }
+
                         fut.onError(e);
 
                         break;
@@ -306,11 +337,24 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Recovery fut, sent request to primary [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + nodeId + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     fut.onNodeLeft(nodeId);
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Recovery fut, failed to send request to primary [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + nodeId +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onError(e);
 
                     break;
@@ -354,6 +398,22 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
 
                 mini.onResult(res);
             }
+            else {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Tx recovery fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            msgLog.debug("Tx recovery fut, response for finished future [txId=" + tx.nearXidVersion() +
+                ", dhtTxId=" + tx.xidVersion() +
+                ", node=" + nodeId +
+                ", res=" + res +
+                ", fut=" + this + ']');
         }
     }
 
@@ -529,8 +589,12 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
          * @param nodeId Failed node ID.
          */
         private void onNodeLeft(UUID nodeId) {
-            if (log.isDebugEnabled())
-                log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Tx recovery fut, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + nodeId +
+                    ", nearTxCheck=" + nearTxCheck + ']');
+            }
 
             if (nearTxCheck) {
                 if (tx.state() == PREPARED) {

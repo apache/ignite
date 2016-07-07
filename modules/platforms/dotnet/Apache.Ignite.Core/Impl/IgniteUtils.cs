@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -146,8 +147,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create new instance of specified class.
         /// </summary>
         /// <param name="typeName">Class name</param>
+        /// <param name="props">Properties to set.</param>
         /// <returns>New Instance.</returns>
-        public static T CreateInstance<T>(string typeName)
+        public static T CreateInstance<T>(string typeName, IEnumerable<KeyValuePair<string, object>> props = null)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -156,7 +158,12 @@ namespace Apache.Ignite.Core.Impl
             if (type == null)
                 throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return (T) Activator.CreateInstance(type);
+            var res =  (T) Activator.CreateInstance(type);
+
+            if (props != null)
+                SetProperties(res, props);
+
+            return res;
         }
 
         /// <summary>
@@ -164,7 +171,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target object.</param>
         /// <param name="props">Properties.</param>
-        public static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
+        private static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
         {
             if (props == null)
                 return;
@@ -485,6 +492,26 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Writes the node collection to a stream.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="nodes">The nodes.</param>
+        public static void WriteNodes(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
+        {
+            Debug.Assert(writer != null);
+
+            if (nodes != null)
+            {
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                    writer.WriteGuid(node.Id);
+            }
+            else
+                writer.WriteInt(-1);
         }
     }
 }

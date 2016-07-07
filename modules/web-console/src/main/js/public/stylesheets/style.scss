@@ -1036,6 +1036,11 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 }
 
+.panel-details-noborder {
+    margin-top: 5px;
+    padding: 10px 5px;
+}
+
 .group {
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
@@ -1346,6 +1351,7 @@ label.required:after {
     position: fixed;
     z-index: 1050;
     margin: 20px;
+    max-width: 700px;
 
     &.top-right {
         top: 60px;
@@ -2125,4 +2131,26 @@ html,body,.splash-screen {
 
 .nvd3 .nv-axis .nv-axisMaxMin text {
     font-weight: normal; /* Here the text can be modified*/
+}
+
+[ng-hide].ng-hide-add.ng-hide-animate {
+    display: none;
+}
+
+[ng-show].ng-hide-add.ng-hide-animate {
+    display: none;
+}
+
+@media only screen and (max-width: 767px) {
+    .container{
+        padding: 0 $padding-small-horizontal;
+    }
+}
+
+.domains-import-dialog {
+    .modal-body {
+        height: 325px;
+        margin: 0;
+        padding: 0;
+    }
 }

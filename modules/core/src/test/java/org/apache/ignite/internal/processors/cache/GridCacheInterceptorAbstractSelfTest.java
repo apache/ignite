@@ -1444,7 +1444,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = true;
 
         if (storeEnabled())
-            assertEquals("Unexpected store value", expVal, map.get(key));
+            assertEquals("Unexpected store value", expVal, storeStgy.getFromStore(key));
 
         try {
             for (int i = 0; i < gridCount(); i++)

@@ -558,4 +558,12 @@ extern "C" {
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
         return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
     }
+
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::SetConsoleHandler(consoleHandler);
+    }
+
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::RemoveConsoleHandler(consoleHandler);
+    }
 }

@@ -383,7 +383,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_METADATA: {
-                    fut = ctx.task().execute(MetadataTask.class, cacheName);
+                    fut = ctx.task().execute(MetadataTask.class, null);
 
                     break;
                 }
@@ -904,7 +904,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     @GridInternal
-    private static class MetadataTask extends ComputeTaskAdapter<String, GridRestResponse> {
+    private static class MetadataTask extends ComputeTaskAdapter<Void, GridRestResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -912,13 +912,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @IgniteInstanceResource
         private IgniteEx ignite;
 
-        /** */
-        private String cacheName;
-
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String cacheName) throws IgniteException {
-            this.cacheName = cacheName;
+            @Nullable Void arg) throws IgniteException {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
@@ -961,12 +957,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             }
 
             Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
-
-            // Metadata for current cache must be first in list.
-            GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
-
-            if (cacheMeta != null)
-                metas.add(cacheMeta);
 
             metas.addAll(map.values());
 

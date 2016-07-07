@@ -24,12 +24,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Globalization;
     using System.Runtime.InteropServices;
     using System.Threading;
-
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -56,6 +57,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
+        /** Console write delegate. */
+        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
+
+        /** Console write pointer. */
+        private static readonly void* ConsoleWritePtr =
+            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
+
         /** Unmanaged context. */
         private volatile UnmanagedContext _ctx;
 
@@ -173,6 +181,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
         private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
+        private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
+        private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
+
+        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -263,6 +279,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
                 loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled)
+                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+
+                affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
+                affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
+                affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
+                affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
+                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -933,7 +956,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(svcPtr);
+
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return;
 
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -1130,6 +1158,105 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
         }
 
+        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
+        {
+            try
+            {
+                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+
+                var target = isErr ? Console.Error : Console.Out;
+
+                target.Write(str);
+
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
+            }
+        }
+
+        #endregion
+
+        #region AffinityFunction
+
+        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                    var func = reader.ReadObjectEx<IAffinityFunction>();
+
+                    ResourceProcessor.Inject(func, _ignite);
+
+                    var affBase = func as AffinityFunctionBase;
+
+                    if (affBase != null)
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(
+                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
+
+                    return _handleRegistry.Allocate(func);
+                }
+            });
+        }
+
+        private int AffinityFunctionPartition(void* target, long ptr, long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var key = _ignite.Marshaller.Unmarshal<object>(stream);
+
+                    return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
+                }
+            });
+        }
+
+        private void AffinityFunctionAssignPartitions(void* target, long ptr, long inMemPtr, long outMemPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                {
+                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(inStream));
+                    var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                    var parts = func.AssignPartitions(ctx);
+
+                    if (parts == null)
+                        throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
+
+                    using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
+                    {
+                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
+                    }
+                }
+            });
+        }
+
+        private void AffinityFunctionRemoveNode(void* target, long ptr, long memPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+
+                    _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
+                }
+            });
+        }
+
+        private void AffinityFunctionDestroy(void* target, long ptr)
+        {
+            SafeCall(() =>
+            {
+                _handleRegistry.Release(ptr);
+            });
+        }
+
         #endregion
 
         #region HELPERS
@@ -1247,6 +1374,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite = null;
             
             _handleRegistry.Close();
+        }
+
+        /// <summary>
+        /// Gets the console write handler.
+        /// </summary>
+        public static void* ConsoleWriteHandler
+        {
+            get { return ConsoleWritePtr; }
         }
     }
 }
