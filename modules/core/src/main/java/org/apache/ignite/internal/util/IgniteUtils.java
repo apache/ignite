@@ -7462,6 +7462,24 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Try acquires a permit from provided semaphore.
+     *
+     * @param sem Semaphore.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @return {@code True} if acquires a permit, {@code false} another.
+     */
+    public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit) throws IgniteInterruptedCheckedException {
+        try {
+            return sem.tryAcquire(timeout, unit);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
      * Gets cache attributes for the node.
      *
      * @param n Node to get cache attributes for.

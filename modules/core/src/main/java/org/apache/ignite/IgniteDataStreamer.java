@@ -96,6 +96,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 1024;
 
+    /** Default timeout is 10 second. */
+    public static final long DFLT_TIMEOUT = 10_000;
+
     /**
      * Name of cache to stream data to.
      *
@@ -195,6 +198,12 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      */
     public void perNodeParallelOperations(int parallelOps);
+
+    /**
+     * Buffer commit timeout.
+     * @param timeout Timeout.
+     */
+    public void timeout(long timeout);
 
     /**
      * Gets automatic flush frequency. Essentially, this is the time after which the
