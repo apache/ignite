@@ -253,16 +253,53 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
         byte[] valBytes = valueBytes(ctx);
 
-        if (buf.remaining() < valBytes.length + 5)
+        int dataLen = valBytes.length;
+
+        if (buf.remaining() < len)
             return false;
 
-        int len = valBytes.length;
+        final int headSize = 5; // 4 bytes len + 1 byte type
 
-        buf.putInt(len);
-        buf.put(cacheObjectType());
-        buf.put(valBytes);
+        if (off == 0 && len >= headSize) {
+            buf.putInt(dataLen);
+            buf.put(cacheObjectType());
+
+            len -= headSize;
+        }
+        else if (off >= headSize)
+            off -= headSize;
+        else {
+            // Partial header write.
+            final ByteBuffer head = ByteBuffer.allocate(headSize);
+
+            head.order(buf.order());
+
+            head.putInt(dataLen);
+            head.put(cacheObjectType());
+
+            head.position(off);
+
+            if (len < head.capacity())
+                head.limit(head.position() + head.capacity() - len);
+
+            buf.put(head);
+
+            if (head.hasRemaining())
+                return true;
+
+            off -= headSize;
+            len -= head.capacity() - off;
+        }
+
+        buf.put(valBytes, off, len);
 
         return true;
     }

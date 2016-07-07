@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DatabaseConfiguration;
@@ -55,6 +57,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 /**
  *
@@ -105,7 +108,16 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        cfg.setCacheConfiguration(ccfg, ccfg2);
+        CacheConfiguration ccfg3 = new CacheConfiguration("large");
+
+        if (indexingEnabled())
+            ccfg3.setIndexedTypes(Integer.class, LargeDbValue.class);
+
+        ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -295,6 +307,46 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         assertEquals(v0, cache.get(k0));
 
         checkEmpty(internalCache, k0);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetLarge() throws Exception {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, byte[]> cache = ig.cache(null);
+
+        final byte[] val = new byte[2048];
+
+        Arrays.fill(val, (byte) 1);
+
+        cache.put(0, val);
+
+        Assert.assertArrayEquals(val, cache.get(0));
+
+        final IgniteCache<Integer, LargeDbValue> cache1 = ig.cache("large");
+
+        final LargeDbValue large = new LargeDbValue("str1", "str2", new int[1024]);
+
+        Arrays.fill(large.arr, 2);
+
+        cache1.put(1, large);
+
+        assertEquals(large, cache1.get(1));
+
+        if (indexingEnabled()) {
+            final List<Cache.Entry<Integer, LargeDbValue>> all = cache1.query(
+                new SqlQuery<Integer, LargeDbValue>(LargeDbValue.class, "str1='str1'")).getAll();
+
+            assertEquals(1, all.size());
+
+            final Cache.Entry<Integer, LargeDbValue> entry = all.get(0);
+
+            assertEquals(1, entry.getKey().intValue());
+
+            assertEquals(large, entry.getValue());
+        }
     }
 
     /**
@@ -1293,6 +1345,62 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DbValue.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LargeDbValue {
+        /** */
+        @QuerySqlField(index = true)
+        private String str1;
+
+        /** */
+        @QuerySqlField(index = true)
+        private String str2;
+
+        /** */
+        private int[] arr;
+
+        /**
+         * @param str1 String 1.
+         * @param str2 String 2.
+         * @param arr Big array.
+         */
+        public LargeDbValue(final String str1, final String str2, final int[] arr) {
+            this.str1 = str1;
+            this.str2 = str2;
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final LargeDbValue that = (LargeDbValue) o;
+
+            if (str1 != null ? !str1.equals(that.str1) : that.str1 != null) return false;
+            if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;
+
+            return Arrays.equals(arr, that.arr);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = str1 != null ? str1.hashCode() : 0;
+
+            res = 31 * res + (str2 != null ? str2.hashCode() : 0);
+            res = 31 * res + Arrays.hashCode(arr);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(LargeDbValue.class, this);
         }
     }
 }

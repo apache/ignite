@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cacheobject.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -682,6 +683,24 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /**
+         * @param buf Byte buffer.
+         * @param incompleteObj Incomplete object.
+         * @return Incomplete cache object.
+         * @throws IgniteCheckedException
+         */
+        @SuppressWarnings("unchecked")
+        protected IncompleteCacheObject doInitFragmentedData(ByteBuffer buf,
+            @Nullable IncompleteCacheObject incompleteObj)
+            throws IgniteCheckedException {
+            incompleteObj = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
+
+            if (incompleteObj.isReady())
+                key = (KeyCacheObject) incompleteObj.cacheObject();
+
+            return incompleteObj;
+        }
+
+        /**
          * Init data.
          */
         protected final void initData() {
@@ -698,12 +717,51 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                     int dataOff = io.getDataOffset(buf, dwordsOffset(link));
 
-                    buf.position(dataOff);
+                    long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
 
-                    // Skip entry size.
-                    buf.getShort();
+                    if (nextLink == 0) {
+                        buf.position(dataOff);
 
-                    doInitData(buf);
+                        // Skip entry size.
+                        buf.getShort();
+
+                        doInitData(buf);
+                    }
+                    else {
+                        // Init fragmented entry
+                        DataPageIO.setForFragment(buf, dataOff);
+
+                        IncompleteCacheObject incompleteObj = doInitFragmentedData(buf, null);
+
+                        // If we need only key.
+                        if (incompleteObj.isReady())
+                            return;
+
+                        while (nextLink != 0) {
+                            try (final Page p = page(pageId(nextLink))) {
+                                try {
+                                    final ByteBuffer b = p.getForRead();
+
+                                    final DataPageIO pageIo = DataPageIO.VERSIONS.forPage(b);
+
+                                    final int off = pageIo.getDataOffset(b, dwordsOffset(nextLink));
+
+                                    nextLink = DataPageIO.getNextFragmentLink(b, off);
+
+                                    DataPageIO.setForFragment(b, off);
+
+                                    incompleteObj = doInitFragmentedData(b, incompleteObj);
+
+                                    if (incompleteObj.isReady())
+                                        return;
+
+                                    assert !b.hasRemaining() : b.remaining();
+                                } finally {
+                                    p.releaseRead();
+                                }
+                            }
+                        }
+                    }
                 }
                 finally {
                     page.releaseRead();
@@ -742,6 +800,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** */
         private int part = -1;
 
+        /** */
+        private int readStage;
+
         /**
          * @param hash Hash code.
          * @param link Link.
@@ -775,12 +836,78 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
             val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
 
+            ver = readVersion(buf);
+        }
+
+        /**
+         * @param buf Buffer.
+         * @return Grid cache version.
+         */
+        private GridCacheVersion readVersion(final ByteBuffer buf) {
             int topVer = buf.getInt();
             int nodeOrderDrId = buf.getInt();
             long globalTime = buf.getLong();
             long order = buf.getLong();
 
-            ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+            return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+        }
+
+        /**
+         * @param buf Byte buffer.
+         * @param incompleteObj Incomplete object.
+         * @return Incomplete cache object.
+         * @throws IgniteCheckedException If fail.
+         */
+        @SuppressWarnings("unchecked")
+        @Override protected IncompleteCacheObject doInitFragmentedData(final ByteBuffer buf,
+            IncompleteCacheObject incompleteObj) throws IgniteCheckedException {
+            if (readStage == 0) {
+                incompleteObj = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
+
+                if (incompleteObj.isReady()) {
+                    key = (KeyCacheObject) incompleteObj.cacheObject();
+
+                    readStage = 1;
+
+                    incompleteObj = null;
+                }
+                else
+                    return incompleteObj;
+            }
+
+            if (readStage == 1) {
+                incompleteObj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
+
+                if (incompleteObj.isReady()) {
+                    val = incompleteObj.cacheObject();
+
+                    readStage = 2;
+
+                    incompleteObj = null;
+                }
+                else
+                    return incompleteObj;
+            }
+
+            if (readStage == 2) {
+                if (incompleteObj == null)
+                    incompleteObj = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte) 0);
+
+                incompleteObj.readData(buf);
+
+                if (incompleteObj.isReady()) {
+                    final ByteBuffer verBuf = ByteBuffer.wrap(incompleteObj.data());
+
+                    verBuf.order(buf.order());
+
+                    // reset for reuse
+                    readStage = 0;
+
+                    ver = readVersion(verBuf);
+                }
+            }
+
+            return incompleteObj;
         }
 
         /** {@inheritDoc} */

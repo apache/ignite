@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -187,35 +188,94 @@ public class FreeList {
     public void insertRow(CacheDataRow row) throws IgniteCheckedException {
         assert row.link() == 0: row.link();
 
-        int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key(), row.value());
+        final CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
+        int entrySize = DataPageIO.getEntrySize(coctx, row.key(), row.value());
+
+        assert entrySize > 0 : entrySize;
+
+        final int availablePageSize = DataPageIO.getAvailablePageSize(coctx);
 
         FreeTree tree = tree(row.partition());
 
-        // TODO add random pageIndex here for lower contention?
-        FreeItem item = take(tree, new FreeItem(entrySize, 0, cctx.cacheId()));
+        if (availablePageSize < entrySize) {
+            // write fragmented entry
+            final int chunks = DataPageIO.getChunksNum(availablePageSize, entrySize);
 
-        try (Page page = item == null ?
-            allocateDataPage(row.partition()) :
-            pageMem.page(item.cacheId(), item.pageId())
-        ) {
-            if (item == null) {
-                DataPageIO io = DataPageIO.VERSIONS.latest();
+            assert chunks > 1 : chunks;
 
-                ByteBuffer buf = page.getForInitialWrite();
+            final DataPageIO.FragmentCtx fctx =
+                new DataPageIO.FragmentCtx(entrySize, chunks, availablePageSize, row, coctx);
 
-                try {
-                    io.initNewPage(buf, page.id());
+            final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
 
-                    writeRow.run(page.id(), page, buf, row, entrySize);
-                }
-                finally {
-                    page.finishInitialWrite();
+            for (int i = 0; i < chunks; i++) {
+                FreeItem item = take(tree,
+                    new FreeItem(i == 0 ? availablePageSize : freeLast, 0, cctx.cacheId()));
+
+                try (Page page = item == null ?
+                    allocateDataPage(row.partition()) :
+                    pageMem.page(item.cacheId(), item.pageId())
+                ) {
+                    if (item == null) {
+                        DataPageIO io = DataPageIO.VERSIONS.latest();
+
+                        ByteBuffer buf = page.getForInitialWrite();
+
+                        fctx.buf = buf;
+
+                        try {
+                            io.initNewPage(buf, page.id());
+
+                            io.writeRowFragment(fctx);
+                        } finally {
+                            page.finishInitialWrite();
+                        }
+                    }
+                    else {
+                        try {
+                            final ByteBuffer buf = page.getForWrite();
+
+                            fctx.buf = buf;
+
+                            final DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+                            io.writeRowFragment(fctx);
+                        }
+                        finally {
+                            page.releaseWrite(true);
+                        }
+                    }
+
+                    fctx.lastLink = PageIdUtils.linkFromDwordOffset(page.id(), fctx.lastIdx);
                 }
             }
-            else
-                writePage(page.id(), page, writeRow, row, entrySize);
+
+            row.link(fctx.lastLink);
+        }
+        else {
+            // TODO add random pageIndex here for lower contention?
+            FreeItem item = take(tree, new FreeItem(entrySize, 0, cctx.cacheId()));
+
+            try (Page page = item == null ?
+                allocateDataPage(row.partition()) :
+                pageMem.page(item.cacheId(), item.pageId())
+            ) {
+                if (item == null) {
+                    DataPageIO io = DataPageIO.VERSIONS.latest();
+
+                    ByteBuffer buf = page.getForInitialWrite();
+
+                    try {
+                        io.initNewPage(buf, page.id());
+
+                        writeRow.run(page.id(), page, buf, row, entrySize);
+                    } finally {
+                        page.finishInitialWrite();
+                    }
+                } else
+                    writePage(page.id(), page, writeRow, row, entrySize);
+            }
         }
     }
 

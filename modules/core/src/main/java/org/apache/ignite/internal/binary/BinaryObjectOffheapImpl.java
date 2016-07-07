@@ -136,6 +136,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
 

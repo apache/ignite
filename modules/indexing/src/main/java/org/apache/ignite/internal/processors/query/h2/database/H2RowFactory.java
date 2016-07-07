@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cacheobject.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -81,20 +82,59 @@ public class H2RowFactory {
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
 
-                buf.position(dataOff);
+                long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
 
-                // Skip entry size.
-                buf.getShort();
+                KeyCacheObject key;
+                CacheObject val;
+                GridCacheVersion ver;
 
-                KeyCacheObject key = coctx.processor().toKeyCacheObject(coctx, buf);
-                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
+                if (nextLink == 0) {
+                    buf.position(dataOff);
 
-                int topVer = buf.getInt();
-                int nodeOrderDrId = buf.getInt();
-                long globalTime = buf.getLong();
-                long order = buf.getLong();
+                    // Skip entry size.
+                    buf.getShort();
 
-                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+                    key = coctx.processor().toKeyCacheObject(coctx, buf);
+                    val = coctx.processor().toCacheObject(coctx, buf);
+
+                    ver = readVersion(buf);
+                }
+                else {
+                    DataPageIO.setForFragment(buf, dataOff);
+
+                    final IncompleteEntry entry = new IncompleteEntry();
+
+                    entry.read(buf);
+
+                    assert !entry.isReady() : "Entry is corrupted";
+
+                    while (nextLink != 0) {
+                        try (Page p = page(pageId(nextLink))) {
+                            final ByteBuffer b = p.getForRead();
+
+                            try {
+                                io = DataPageIO.VERSIONS.forPage(b);
+
+                                int off = io.getDataOffset(b, dwordsOffset(nextLink));
+
+                                nextLink = DataPageIO.getNextFragmentLink(b, off);
+
+                                DataPageIO.setForFragment(b, off);
+
+                                entry.read(b);
+                            }
+                            finally {
+                                p.releaseRead();
+                            }
+                        }
+                    }
+
+                    assert entry.isReady() : "Entry is corrupted.";
+
+                    key = entry.key;
+                    val = entry.val;
+                    ver = entry.ver;
+                }
 
                 GridH2Row row;
 
@@ -118,11 +158,102 @@ public class H2RowFactory {
     }
 
     /**
+     * @param buf Buffer.
+     * @return Version.
+     */
+    private GridCacheVersion readVersion(final ByteBuffer buf) {
+        int topVer = buf.getInt();
+        int nodeOrderDrId = buf.getInt();
+        long globalTime = buf.getLong();
+        long order = buf.getLong();
+
+        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+    }
+
+    /**
      * @param pageId Page ID.
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
     private Page page(long pageId) throws IgniteCheckedException {
         return pageMem.page(cctx.cacheId(), pageId);
+    }
+
+    /**
+     *
+     */
+    private class IncompleteEntry {
+        /** */
+        private KeyCacheObject key;
+
+        /** */
+        private CacheObject val;
+
+        /** */
+        private GridCacheVersion ver;
+
+        /** */
+        private IncompleteCacheObject<KeyCacheObject> incompleteKey;
+
+        /** */
+        private IncompleteCacheObject<CacheObject> incompleteVal;
+
+        /** */
+        private IncompleteCacheObject incompleteVer =
+            new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte) 0);
+
+        /** */
+        private int readStage;
+
+        /**
+         * Read entry fragment.
+         *
+         * @param buf To read from.
+         * @throws IgniteCheckedException If fail.
+         */
+        private void read(final ByteBuffer buf) throws IgniteCheckedException {
+            if (readStage == 0) {
+                incompleteKey = coctx.processor().toKeyCacheObject(coctx, buf, incompleteKey);
+
+                if (incompleteKey.isReady()) {
+                    key = incompleteKey.cacheObject();
+
+                    readStage = 1;
+                }
+            }
+
+            if (readStage == 1) {
+                incompleteVal = coctx.processor().toCacheObject(coctx, buf, incompleteVal);
+
+                if (incompleteVal.isReady()) {
+                    val = incompleteVal.cacheObject();
+
+                    readStage = 2;
+                }
+            }
+
+            if (readStage == 2) {
+                incompleteVer.readData(buf);
+
+                if (incompleteVer.isReady()) {
+                    final ByteBuffer verBuf = ByteBuffer.wrap(incompleteVer.data());
+
+                    verBuf.order(buf.order());
+
+                    ver = readVersion(verBuf);
+
+                    readStage = 3;
+                }
+            }
+
+            assert !buf.hasRemaining();
+        }
+
+        /**
+         * @return {@code True} if entry fully read.
+         */
+        private boolean isReady() {
+            return readStage == 3;
+        }
     }
 }

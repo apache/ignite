@@ -191,6 +191,62 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public IncompleteCacheObject<CacheObject> toCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject<CacheObject> incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = initIncompleteObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.cacheObject(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject<KeyCacheObject> toKeyCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject<KeyCacheObject> incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = initIncompleteObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.cacheObject(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param <T> Cache object type.
+     * @return Initialized incomplete object.
+     */
+    private <T extends CacheObject> IncompleteCacheObject<T> initIncompleteObject(final ByteBuffer buf) {
+        assert buf.remaining() >= 5; // TODO implement partial init
+
+        final int len = buf.getInt();
+
+        if (len == 0)
+            return new IncompleteCacheObject<>(new byte[0], (byte) 0);
+
+        return new IncompleteCacheObject<>(new byte[len], buf.get());
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx,
         @Nullable Object obj,
         boolean userObj) {

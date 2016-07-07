@@ -68,6 +68,8 @@ public interface CacheObject extends Message {
      */
     public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException;
 
+    public boolean putValue(ByteBuffer buf, int off, int len, CacheObjectContext ctx) throws IgniteCheckedException;
+
     /**
      * @return Object type.
      */
