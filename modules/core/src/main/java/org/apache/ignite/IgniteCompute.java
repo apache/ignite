@@ -122,7 +122,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location).
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -134,7 +135,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location).
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed. The data
+     * of the extra caches' partitions with the same partition number also will not be migrated.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -149,7 +152,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location).
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed. The data
+     * of the extra caches' partitions with the same partition number also will not be migrated.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -165,7 +170,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location).
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
