@@ -75,6 +75,7 @@
         <jackson.version>1.9.13</jackson.version>
         <jackson2.version>2.7.5</jackson2.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
+        <javax.cache.version>1.0.0</javax.cache.version>
         <jetty.version>9.2.11.v20150529</jetty.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.53_1</jsch.bundle.version>

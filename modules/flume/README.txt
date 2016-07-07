@@ -20,7 +20,7 @@ plugins.d/
     |-- lib
     |   `-- ignite-flume-transformer-x.x.x.jar <-- your jar
     `-- libext
-        |-- geronimo-jcache_1.0_spec-1.0-alpha-1.jar
+        |-- cache-api-1.0.0.jar
         |-- ignite-core-x.x.x.jar
         |-- ignite-flume-x.x.x.jar <-- IgniteSink
         |-- ignite-spring-x.x.x.jar
