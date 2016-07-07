@@ -1447,11 +1447,28 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition.
+     * @param peekModes Peek modes.
+     * @return Local cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int localSize(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Local cache size as a long value.
      * @throws IgniteCheckedException If failed.
      */
     public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param partition partition.
+     * @param peekModes Peek modes.
+     * @return Local cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
 
     /**
      * @param peekModes Peek modes.
@@ -1461,11 +1478,27 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int size(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Global cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Global cache size as a long value.
      * @throws IgniteCheckedException If failed.
      */
     public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Global cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long sizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
      * @param peekModes Peek modes.
@@ -1474,10 +1507,24 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
 
     /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Integer> sizeAsync(int partition, CachePeekMode[] peekModes);
+
+    /**
      * @param peekModes Peek modes.
      * @return Future.
      */
     public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes);
+
+    /**
+     * @param partition partiton
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(int partition, CachePeekMode[] peekModes);
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
