@@ -186,6 +186,21 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that invalid spring URL results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidSpringUrl()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = "z:\\invalid.xml"
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         private static void TestPartialUpdateException<TK>(bool async, Func<int, IIgnite, TK> keyFunc)
