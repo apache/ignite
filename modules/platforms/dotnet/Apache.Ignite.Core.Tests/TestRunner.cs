@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Cache.Affinity;
     using Apache.Ignite.Core.Tests.Cache.Query;
+    using Apache.Ignite.Core.Tests.Log;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -48,9 +49,9 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
+            //TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
 
-            //TestAll(typeof (AffinityFunctionTest));
+            TestAll(typeof (CustomLoggerTest));
             //TestAllInAssembly();
         }
 
