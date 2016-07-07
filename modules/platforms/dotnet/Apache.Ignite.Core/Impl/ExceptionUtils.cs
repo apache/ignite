@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl
 
         /** Exception factory delegate. */
         private delegate Exception ExceptionFactoryDelegate(IIgnite ignite, string msg, Exception innerEx);
-        
+
         /** Inner class regex. */
         private static readonly Regex InnerClassRegex = new Regex(@"class ([^\s]+): (.*)", RegexOptions.Compiled);
 
