@@ -300,6 +300,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
 
+    /** */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask longOpDumpTask;
+
     /** Indicate error on grid stop. */
     @GridToStringExclude
     private boolean errOnStop;
@@ -1071,6 +1075,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                 }
             }, metricsLogFreq, metricsLogFreq);
+        }
+
+        final long longOpDumpTimeout =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+
+        if (longOpDumpTimeout > 0) {
+            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
+                @Override public void run() {
+                    GridKernalContext ctx = IgniteKernal.this.ctx;
+
+                    if (ctx != null)
+                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                }
+            }, longOpDumpTimeout, longOpDumpTimeout);
         }
 
         ctx.performance().logSuggestions(log, gridName);
@@ -1882,6 +1900,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (metricsLogTask != null)
                 metricsLogTask.close();
+
+            if (longOpDumpTask != null)
+                longOpDumpTask.close();
 
             boolean interrupted = false;
 

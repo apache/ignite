@@ -117,6 +117,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Logger. */
     private static IgniteLogger log;
 
+    /** Logger. */
+    private static IgniteLogger msgLog;
+
     /** Context. */
     private GridCacheSharedContext<?, ?> cctx;
 
@@ -212,8 +215,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         this.nearMiniId = nearMiniId;
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txPrepareMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
+        }
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -268,7 +273,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /**
      * @return Transaction.
      */
-    GridDhtTxLocalAdapter tx() {
+    public GridDhtTxLocalAdapter tx() {
         return tx;
     }
 
@@ -463,12 +468,35 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
         if (!isDone()) {
+            boolean found = false;
+
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null) {
+                found = true;
+
                 assert mini.node().id().equals(nodeId);
 
                 mini.onResult(res);
+            }
+
+            if (!found) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
             }
         }
     }
@@ -638,7 +666,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                         sendPrepareResponse(res);
                                 }
                                 catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + tx.nearNodeId() +
+                                        ", res=" + res,
+                                        ", tx=" + tx,
+                                        e);
                                 }
                             }
                         };
@@ -676,7 +709,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         sendPrepareResponse(res);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res,
+                        ", tx=" + tx,
+                        e);
                 }
             }
 
@@ -690,7 +728,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     sendPrepareResponse(res);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res,
+                        ", tx=" + tx,
+                        e);
                 }
                 finally {
                     // Will call super.onDone().
@@ -725,10 +768,26 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
             Throwable err = this.err.get();
 
-            if (err != null && err instanceof IgniteFutureCancelledException)
+            if (err != null && err instanceof IgniteFutureCancelledException) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, skip send response [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", err=" + err +
+                        ", res=" + res + ']');
+                }
+
                 return;
+            }
 
             cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + tx.nearNodeId() +
+                    ", res=" + res + ']');
+            }
         }
     }
 
@@ -1178,13 +1237,34 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     try {
                         cctx.io().send(n, req, tx.ioPolicy());
+
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + n.id() + ']');
+                        }
                     }
                     catch (ClusterTopologyCheckedException e) {
                         fut.onNodeLeft(e);
                     }
                     catch (IgniteCheckedException e) {
-                        if (!cctx.kernalContext().isStopping())
+                        if (!cctx.kernalContext().isStopping()) {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + n.id() + ']');
+                            }
+
                             fut.onResult(e);
+                        }
+                        else {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, failed to send request dht, ignore [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + n.id() +
+                                    ", err=" + e + ']');
+                            }
+                        }
                     }
                 }
 
@@ -1236,13 +1316,34 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + nearMapping.node().id() + ']');
+                            }
                         }
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);
                         }
                         catch (IgniteCheckedException e) {
-                            if (!cctx.kernalContext().isStopping())
+                            if (!cctx.kernalContext().isStopping()) {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("DHT prepare fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + nearMapping.node().id() + ']');
+                                }
+
                                 fut.onResult(e);
+                            }
+                            else {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("DHT prepare fut, failed to send request near, ignore [txId=" + tx.nearXidVersion() +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + nearMapping.node().id() +
+                                        ", err=" + e + ']');
+                                }
+                            }
                         }
                     }
                 }
@@ -1458,8 +1559,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
          * @param e Node failure.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + node().id() + ']');
+            }
 
             if (tx != null)
                 tx.removeMapping(nodeId);

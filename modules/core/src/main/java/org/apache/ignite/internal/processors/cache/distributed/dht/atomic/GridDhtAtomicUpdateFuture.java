@@ -63,7 +63,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static IgniteLogger log;
+    private static IgniteLogger log;
+
+    /** Logger. */
+    private static IgniteLogger msgLog;
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -115,8 +118,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      */
     public GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
-        CI2<GridNearAtomicUpdateRequest,
-        GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
@@ -129,8 +131,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         this.completionCb = completionCb;
         this.updateRes = updateRes;
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.shared().atomicMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
+        }
 
         keys = new ArrayList<>(updateReq.keys().size());
         mappings = U.newHashMap(updateReq.keys().size());
@@ -138,6 +142,13 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
         waitForExchange = !topLocked;
+    }
+
+    /**
+     * @return Write version.
+     */
+    GridCacheVersion writeVersion() {
+        return writeVer;
     }
 
     /** {@inheritDoc} */
@@ -152,10 +163,14 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        if (log.isDebugEnabled())
-            log.debug("Processing node leave event [fut=" + this + ", nodeId=" + nodeId + ']');
+        boolean res = registerResponse(nodeId);
 
-        return registerResponse(nodeId);
+        if (res && msgLog.isDebugEnabled()) {
+            msgLog.debug("DTH update fut, node left [futId=" + futVer + ", writeVer=" + writeVer +
+                ", node=" + nodeId + ']');
+        }
+
+        return res;
     }
 
     /**
@@ -388,20 +403,24 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (!mappings.isEmpty()) {
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DTH update fut, sent request [futId=" + futVer +
+                            ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException ignored) {
-                    U.warn(log, "Failed to send update request to backup node because it left grid: " +
-                        req.nodeId());
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DTH update fut, failed to send request, node left [futId=" + futVer +
+                            ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+                    }
 
                     registerResponse(req.nodeId());
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send update request to backup node (did node leave the grid?): "
-                        + req.nodeId(), e);
+                    U.error(msgLog, "Failed to send request [futId=" + futVer +
+                        ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
 
                     registerResponse(req.nodeId());
                 }
