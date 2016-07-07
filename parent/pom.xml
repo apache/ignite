@@ -57,7 +57,7 @@
         <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.8.3</commons.beanutils.version>
         <commons.codec.version>1.6</commons.codec.version>
-        <commons.collections.version>3.2.1</commons.collections.version>
+        <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>2.9.1</curator.version>
@@ -74,8 +74,8 @@
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>
+        <jackson2.version>2.7.5</jackson2.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
-        <javax.cache.version>1.0.0</javax.cache.version>
         <jetty.version>9.2.11.v20150529</jetty.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
@@ -425,6 +425,10 @@
                                 <title>OSGi integration</title>
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
+                            <group>
+                                <title>Flink integration</title>
+                                <packages>org.apache.ignite.sink.flink*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -766,6 +770,7 @@
                                         <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
@@ -791,6 +796,8 @@
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
+                                        <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
+                                        <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
@@ -832,10 +839,13 @@
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
+                                        <exclude>**/Makefile.amrel</exclude>
+                                        <exclude>**/configure.acrel</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.ini</exclude>
                                         <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
@@ -862,6 +872,15 @@
                                         <exclude>**/*.dxg</exclude>
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
+                                        <exclude>**/*.json</exclude>
+                                        <!--web console-->
+                                        <exclude>**/src/main/js/*.babelrc</exclude>
+                                        <exclude>**/src/main/js/*.eslintrc</exclude>
+                                        <exclude>**/src/main/js/*.npmrc</exclude>
+                                        <exclude>**/src/main/js/build/**</exclude>
+                                        <exclude>**/src/main/js/node_modules/**</exclude>
+                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/src/main/js/serve/keys/test.*</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
@@ -957,9 +976,10 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>

@@ -24,7 +24,12 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,12 +41,12 @@ import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.R
 /**
  * Auxiliary class that is responsible for managing file affinity keys allocation by ranges.
  */
-public class IgfsFileMap implements Externalizable {
+public class IgfsFileMap implements Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    @GridToStringInclude
     /** Sorted list of ranges in ascending order. */
+    @GridToStringInclude
     private List<IgfsFileAffinityRange> ranges;
 
     /**
@@ -128,12 +133,11 @@ public class IgfsFileMap implements Externalizable {
      *
      * @param range Range to update status.
      * @param status New range status.
-     * @throws IgniteCheckedException If range was not found.
      */
-    public void updateRangeStatus(IgfsFileAffinityRange range, int status) throws IgniteCheckedException {
+    public void updateRangeStatus(IgfsFileAffinityRange range, int status) {
         if (ranges == null)
             throw new IgfsInvalidRangeException("Failed to update range status (file map is empty) " +
-                "[range=" + range + ", ranges=" + ranges + ']');
+                "[range=" + range + ", ranges=null]");
 
         assert !ranges.isEmpty();
 
@@ -190,10 +194,10 @@ public class IgfsFileMap implements Externalizable {
      *
      * @param range Range to delete.
      */
-    public void deleteRange(IgfsFileAffinityRange range) throws IgniteCheckedException {
+    public void deleteRange(IgfsFileAffinityRange range) {
         if (ranges == null)
             throw new IgfsInvalidRangeException("Failed to remove range (file map is empty) " +
-                "[range=" + range + ", ranges=" + ranges + ']');
+                "[range=" + range + ", ranges=null]");
 
         assert !ranges.isEmpty();
 
@@ -348,6 +352,36 @@ public class IgfsFileMap implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        if (size > 0) {
+            ranges = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                ranges.add((IgfsFileAffinityRange)in.readObject());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        if (ranges == null)
+            out.writeInt(-1);
+        else {
+            assert !ranges.isEmpty();
+
+            out.writeInt(ranges.size());
+
+            for (IgfsFileAffinityRange range : ranges)
+                out.writeObject(range);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
         int size = in.readInt();
 
         if (size > 0) {

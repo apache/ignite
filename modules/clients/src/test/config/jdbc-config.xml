@@ -26,7 +26,8 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="clientMode" value="true"/>
+        <!-- JDBC driver should force true value -->
+        <property name="clientMode" value="false"/>
 
         <property name="localHost" value="127.0.0.1"/>
 

@@ -259,8 +259,7 @@ class VisorCacheCommand {
 
             if (hasArgFlagIn("clear", "swap", "scan", "stop")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"),
-                        aggrData) match {
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"), aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -273,7 +272,7 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (!aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
+                        if (aggrData.nonEmpty && !aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
@@ -722,6 +721,9 @@ object VisorCacheCommand {
             "-clear" -> Seq(
                 "Clears cache."
             ),
+            "-system" -> Seq(
+                "Enable showing of information about system caches."
+            ),
             "-scan" -> Seq(
                 "Prints list of all entries from cache."
             ),
@@ -760,7 +762,9 @@ object VisorCacheCommand {
         ),
         examples = Seq(
             "cache" ->
-                "Prints summary statistics about all caches.",
+                "Prints summary statistics about all non-system caches.",
+            "cache -system" ->
+                "Prints summary statistics about all caches including system cache.",
             "cache -i" ->
                 "Prints cache statistics for interactively selected node.",
             "cache -id8=12345678 -s=hi -r"  -> Seq(

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -29,11 +30,24 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryConfiguration
     {
         /// <summary>
+        /// Default <see cref="CompactFooter"/> setting.
+        /// </summary>
+        public const bool DefaultCompactFooter = true;
+
+        /// <summary>
+        /// Default <see cref="DefaultKeepDeserialized"/> setting.
+        /// </summary>
+        public const bool DefaultDefaultKeepDeserialized = true;
+
+        /** Footer setting. */
+        private bool? _compactFooter;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
         public BinaryConfiguration()
         {
-            DefaultKeepDeserialized = true;
+            DefaultKeepDeserialized = DefaultDefaultKeepDeserialized;
         }
 
         /// <summary>
@@ -54,6 +68,8 @@ namespace Apache.Ignite.Core.Binary
                 : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
 
             Types = cfg.Types == null ? null : cfg.Types.ToList();
+
+            CompactFooter = cfg.CompactFooter;
         }
 
         /// <summary>
@@ -95,6 +111,32 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
+        [DefaultValue(DefaultDefaultKeepDeserialized)]
         public bool DefaultKeepDeserialized { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to write footers in compact form.
+        /// When enabled, Ignite will not write fields metadata when serializing objects, 
+        /// because internally metadata is distributed inside cluster.
+        /// This increases serialization performance.
+        /// <para/>
+        /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
+        /// Otherwise binary objects without any associated metadata could could not be deserialized.
+        /// </summary>
+        [DefaultValue(DefaultCompactFooter)]
+        public bool CompactFooter
+        {
+            get { return _compactFooter ?? DefaultCompactFooter; }
+            set { _compactFooter = value; }
+        }
+
+        /// <summary>
+        /// Gets the compact footer internal nullable value.
+        /// </summary>
+        internal bool? CompactFooterInternal
+        {
+            get { return _compactFooter; }
+        }
     }
 }

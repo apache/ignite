@@ -120,6 +120,11 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -144,6 +149,14 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
                 reader.incrementState();
 
+            case 9:
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtUnlockRequest.class);
@@ -156,6 +169,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 }

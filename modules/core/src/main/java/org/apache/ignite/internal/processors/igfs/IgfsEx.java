@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,18 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * Internal API extension for {@link org.apache.ignite.IgniteFileSystem}.
  */
 public interface IgfsEx extends IgniteFileSystem {
-    /** File property: user name. */
-    public static final String PROP_USER_NAME = "usrName";
-
-    /** File property: group name. */
-    public static final String PROP_GROUP_NAME = "grpName";
-
-    /** File property: permission. */
-    public static final String PROP_PERMISSION = "permission";
-
-    /** File property: prefer writes to local node. */
-    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
-
     /**
      * Stops IGFS cleaning all used resources.
      *
@@ -110,14 +97,6 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return Group block size.
      */
     public long groupBlockSize();
-
-    /**
-     * Asynchronously await for all entries existing in trash to be removed.
-     *
-     * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
 
     /**
      * Gets client file system log directory.

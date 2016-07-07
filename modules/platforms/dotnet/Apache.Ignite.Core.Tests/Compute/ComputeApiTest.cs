@@ -16,10 +16,12 @@
  */
 
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -27,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -37,10 +40,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
-        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
+        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
         public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
@@ -88,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeMap = 11;
 
         /** Echo type: binarizable. */
-        private const int EchoTypeBinarizable = 12;
+        public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
         private const int EchoTypeBinarizableJava = 13;
@@ -108,6 +111,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: enum field. */
         private const int EchoTypeEnumField = 18;
 
+        /** Type: affinity key. */
+        public const int EchoTypeAffinityKey = 19;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -123,13 +129,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            //TestUtils.JVM_DEBUG = true;
             TestUtils.KillProcesses();
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            var configs = GetConfigs();
+
+            _grid1 = Ignition.Start(Configuration(configs.Item1));
+            _grid2 = Ignition.Start(Configuration(configs.Item2));
+            _grid3 = Ignition.Start(Configuration(configs.Item3));
         }
+
+        /// <summary>
+        /// Gets the configs.
+        /// </summary>
+        protected virtual Tuple<string, string, string> GetConfigs()
+        {
+            return Tuple.Create(
+                "config\\compute\\compute-grid1.xml",
+                "config\\compute\\compute-grid2.xml",
+                "config\\compute\\compute-grid3.xml");
+        }
+
+        /// <summary>
+        /// Gets the expected compact footers setting.
+        /// </summary>
+        protected virtual bool CompactFooter
+        {
+            get { return true; }
+        }
+
 
         [TestFixtureTearDown]
         public void StopClient()
@@ -310,7 +337,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(topVer + 1, _grid1.GetCluster().TopologyVersion);
 
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid3 = Ignition.Start(Configuration(GetConfigs().Item3));
 
             Assert.AreEqual(topVer + 2, _grid1.GetCluster().TopologyVersion);
         }
@@ -351,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             finally 
             {
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
             }
         }
 
@@ -383,7 +410,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 2);
 
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
 
             nodes = _grid1.GetCluster().GetNodes();
 
@@ -531,6 +558,26 @@ namespace Apache.Ignite.Core.Tests.Compute
             prj = _grid1.GetCluster().ForRandom();
             Assert.AreEqual(1, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNode()));
+        }
+
+        /// <summary>
+        /// Tests ForServers projection.
+        /// </summary>
+        [Test]
+        public void TestForServers()
+        {
+            var cluster = _grid1.GetCluster();
+
+            var servers = cluster.ForServers().GetNodes();
+            Assert.AreEqual(2, servers.Count);
+            Assert.IsTrue(servers.All(x => !x.IsClient));
+
+            var serverAndClient =
+                cluster.ForNodeIds(new[] { _grid2, _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(1, serverAndClient.ForServers().GetNodes().Count);
+
+            var client = cluster.ForNodeIds(new[] { _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(0, client.ForServers().GetNodes().Count);
         }
 
         /// <summary>
@@ -931,47 +978,25 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test running broadcast task.
         /// </summary>
         [Test]
-        public void TestBroadcastTask()
+        public void TestBroadcastTask([Values(false, true)] bool isAsync)
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
+            var execTask =
+                isAsync
+                    ? (Func<ICompute, List<Guid>>) (
+                        c => c.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList())
+                    : c => c.ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            var res = execTask(_grid1.GetCompute());
+
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
 
             var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            var filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
-
-            Assert.AreEqual(2, filteredRes.Count);
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(1)));
-        }
-
-        /// <summary>
-        /// Test running broadcast task in async mode.
-        /// </summary>
-        [Test]
-        public void TestBroadcastTaskAsync()
-        {
-            var gridCompute = _grid1.GetCompute();
-
-            var res = gridCompute.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList();
-
-            Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
-
-            var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
-
-            Assert.AreEqual(2, prj.GetNodes().Count);
-
-            var compute = prj.GetCompute();
-            var filteredRes = compute.ExecuteJavaTaskAsync<IList>(BroadcastTask, null).Result;
+            var filteredRes = execTask(prj.GetCompute());
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -984,11 +1009,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastAction()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
             
-            _grid1.GetCompute().Broadcast(new ComputeAction());
+            _grid1.GetCompute().Broadcast(new ComputeAction(id));
 
-            Assert.AreEqual(_grid1.GetCluster().GetNodes().Count, ComputeAction.InvokeCount);
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -997,11 +1022,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunAction()
         {
-            ComputeAction.InvokeCount = 0;
-            
-            _grid1.GetCompute().Run(new ComputeAction());
+            var id = Guid.NewGuid();
 
-            Assert.AreEqual(1, ComputeAction.InvokeCount);
+            _grid1.GetCompute().Run(new ComputeAction(id));
+
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1029,13 +1054,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunActions()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
 
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction());
+            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
             
             _grid1.GetCompute().Run(actions);
 
-            Assert.AreEqual(10, ComputeAction.InvokeCount);
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1099,10 +1124,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
                 .OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1114,10 +1138,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
                 .OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1129,9 +1152,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
 
-            Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
+            Assert.AreEqual(2, res);
         }
 
+        /// <summary>
+        /// Tests the exceptions.
+        /// </summary>
         [Test]
         public void TestExceptions()
         {
@@ -1140,6 +1166,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Throws<BinaryObjectException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+        }
+
+        /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+
+            foreach (var g in new[] {_grid1, _grid2, _grid3})
+                Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
         }
 
         /// <summary>
@@ -1287,15 +1325,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         #pragma warning disable 649
         private IIgnite _grid;
 
-        public static int InvokeCount;
+        public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
 
         public static Guid LastNodeId;
+
+        public Guid Id { get; set; }
+
+        public ComputeAction()
+        {
+            // No-op.
+        }
+
+        public ComputeAction(Guid id)
+        {
+            Id = id;
+        }
 
         public void Invoke()
         {
             Thread.Sleep(10);
-            Interlocked.Increment(ref InvokeCount);
+            Invokes.Add(Id);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
+        }
+
+        public static int InvokeCount(Guid id)
+        {
+            return Invokes.Count(x => x == id);
         }
     }
 

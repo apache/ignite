@@ -32,8 +32,6 @@ public class GridCacheReplicatedJobExecutionTest extends GridCacheAbstractJobExe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.REPLICATED);

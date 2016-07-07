@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.TimeUnit;
@@ -65,14 +66,33 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
     /** {@inheritDoc} */
     @NotNull @Override public Lock readLock() {
-        int idx = IDX.get() % locks.length;
+        int idx;
 
-        return locks[idx].readLock();
+        if (Thread.currentThread() instanceof IgniteThread) {
+            idx = ((IgniteThread)Thread.currentThread()).groupIndex();
+
+            if (idx == IgniteThread.GRP_IDX_UNASSIGNED)
+                idx = IDX.get();
+        }
+        else
+            idx = IDX.get();
+
+        return locks[idx % locks.length].readLock();
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Lock writeLock() {
         return writeLock;
+    }
+
+    /**
+     * Queries if the write lock is held by the current thread.
+     *
+     * @return {@code true} if the current thread holds the write lock and
+     *         {@code false} otherwise
+     */
+    public boolean isWriteLockedByCurrentThread() {
+        return locks[locks.length - 1].isWriteLockedByCurrentThread();
     }
 
     /**

@@ -37,6 +37,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -53,7 +54,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final Map<Object, Object> storeMap = new ConcurrentHashMap8<>();
+    public static final Map<Object, Object> storeMap = new ConcurrentHashMap8<>();
 
     /**
      * @return Grids count to start.
@@ -99,6 +100,11 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         if (isDebug())
             disco.setAckTimeout(Integer.MAX_VALUE);
+
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(100);
+
+        cfg.setEventStorageSpi(eventSpi);
 
         cfg.setDiscoverySpi(disco);
 

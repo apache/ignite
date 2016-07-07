@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache[1] = new AttributeQueryPerson("Arnold", 10)
                 {
-                    Address = new AttributeQueryAddress {Country = "USA", Street = "Pine Tree road"}
+                    Address = new AttributeQueryAddress {Country = "USA", Street = "Pine Tree road", Zip = 1}
                 };
 
                 cache[2] = new AttributeQueryPerson("John", 20);
@@ -151,6 +151,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
 
                 using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "Country = ?", "USA")))
+                {
+                    Assert.AreEqual(1, cursor.GetAll().Single().Key);
+                }
+
+                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "Zip = ?", 1)))
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
@@ -224,6 +229,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             /// </value>
             [QuerySqlField]
             public string Country { get; set; }
+
+            /// <summary>
+            /// Gets or sets the zip.
+            /// </summary>
+            /// <value>
+            /// The zip.
+            /// </value>
+            [QuerySqlField(IsIndexed = true)]
+            public int Zip { get; set; }
 
             /// <summary>
             /// Gets or sets the street.

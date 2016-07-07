@@ -50,10 +50,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 105;
-
-    /** */
-    private static final int SERVERS_COUNT = 4;
+    private static final int SRVS = 4;
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -69,20 +66,21 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
-        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
         cfg.setFailoverSpi(failSpi);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        if (gridName.equals(getTestGridName(SERVERS_COUNT))) {
+        // Do not configure cache on client.
+        if (gridName.equals(getTestGridName(SRVS))) {
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);
+        }
+        else {
+            CacheConfiguration ccfg = defaultCacheConfiguration();
+            ccfg.setName(CACHE_NAME);
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setBackups(1);
+
+            cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
@@ -97,16 +95,36 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCallRestartNode() throws Exception {
-        startGridsMultiThreaded(SERVERS_COUNT);
+        startGridsMultiThreaded(SRVS);
 
-        final int ITERS = 5;
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallFromClientRestartNode() throws Exception {
+        startGridsMultiThreaded(SRVS + 1);
+
+        Ignite client = grid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void affinityCallRestartNode() throws Exception {
+        final int ITERS = 10;
 
         for (int i = 0; i < ITERS; i++) {
             log.info("Iteration: " + i);
 
             Integer key = primaryKey(grid(0).cache(CACHE_NAME));
 
-            long topVer = grid(0).cluster().topologyVersion();
+            AffinityTopologyVersion topVer = grid(0).context().discovery().topologyVersionEx();
 
             IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -116,10 +134,10 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
+            }, "stop-thread");
 
             while (!fut.isDone())
-                grid(1).compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, topVer, topVer + 1));
+                grid(1).compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, topVer));
 
             fut.get();
 
@@ -136,17 +154,17 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     public void testAffinityCallNoServerNode() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1741");
 
-        startGridsMultiThreaded(SERVERS_COUNT + 1);
+        startGridsMultiThreaded(SRVS + 1);
 
         final Integer key = 1;
 
-        final Ignite client = grid(SERVERS_COUNT);
+        final Ignite client = grid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < SERVERS_COUNT; ++i)
+                for (int i = 0; i < SRVS; ++i)
                     stopGrid(i, false);
 
                 return null;
@@ -155,7 +173,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
         try {
             while (!fut.isDone())
-                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key));
+                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
         }
         catch (ClusterTopologyException ignore) {
             log.info("Expected error: " + ignore);
@@ -177,36 +195,31 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        private long[] topVers;
+        private AffinityTopologyVersion topVer;
 
         /**
          * @param key Key.
-         * @param topVers Topology versions to check.
+         * @param topVer Topology version.
          */
-        public CheckCallable(Object key, long... topVers) {
+        public CheckCallable(Object key, AffinityTopologyVersion topVer) {
             this.key = key;
-            this.topVers = topVers;
+            this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            if (topVers.length > 0) {
-                boolean pass = false;
-
+            if (topVer != null) {
                 GridCacheAffinityManager aff =
                     ((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().affinity();
 
                 ClusterNode loc = ignite.cluster().localNode();
 
-                for (long topVer : topVers) {
-                    if (loc.equals(aff.primary(key, new AffinityTopologyVersion(topVer, 0)))) {
-                        pass = true;
+                if (loc.equals(aff.primary(key, topVer)))
+                    return true;
 
-                        break;
-                    }
-                }
+                AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
 
-                assertTrue(pass);
+                assertEquals(loc, aff.primary(key, topVer0));
             }
 
             return null;

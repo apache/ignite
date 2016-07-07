@@ -101,7 +101,9 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(NODE_CNT);
+        startGridsMultiThreaded(NODE_CNT - 1);
+
+        startGrid(NODE_CNT - 1); // Start client after servers.
     }
 
     /** {@inheritDoc} */

@@ -484,7 +484,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        // Will clean and re-create marshaller directory from scratch.
+        U.resolveWorkDirectory("marshaller", true);
     }
 
     /**
@@ -774,7 +775,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", marshaller=" + nodeCfg.getMarshaller()
-                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration() + "]");
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 
                 return node;
             }

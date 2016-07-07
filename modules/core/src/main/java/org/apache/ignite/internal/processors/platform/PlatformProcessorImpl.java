@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -74,10 +75,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final Collection<StoreInfo> pendingStores =
         Collections.newSetFromMap(new ConcurrentHashMap<StoreInfo, Boolean>());
 
-    /** Started stores. */
-    private final Collection<PlatformCacheStore> stores =
-        Collections.newSetFromMap(new ConcurrentHashMap<PlatformCacheStore, Boolean>());
-
     /** Lock for store lifecycle operations. */
     private final ReadWriteLock storeLock = new ReentrantReadWriteLock();
 
@@ -94,7 +91,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private boolean started;
 
     /** Whether processor if stopped (or stopping). */
-    private boolean stopped;
+    private volatile boolean stopped;
 
     /**
      * Constructor.
@@ -164,34 +161,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (platformCtx != null) {
-            // Destroy cache stores.
-            storeLock.writeLock().lock();
-
-            try {
-                for (PlatformCacheStore store : stores) {
-                    if (store != null) {
-                        if (store instanceof PlatformDotNetCacheStore) {
-                            PlatformDotNetCacheStore store0 = (PlatformDotNetCacheStore)store;
-
-                            try {
-                                store0.destroy(platformCtx.kernalContext());
-                            }
-                            catch (Exception e) {
-                                U.error(log, "Failed to destroy .Net cache store [store=" + store0 +
-                                    ", err=" + e.getMessage() + ']');
-                            }
-                        }
-                        else
-                            assert false : "Invalid interop cache store type: " + store;
-                    }
-                }
-            }
-            finally {
-                stopped = true;
-
-                storeLock.writeLock().unlock();
-            }
-
+            stopped = true;
             platformCtx.gateway().onStop();
         }
     }
@@ -218,6 +188,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
+        // This method is a single point of entry for all remote closures
+        // CPP platform does not currently support remote code execution
+        // Therefore, all remote execution attempts come from .NET
+        // Throw an error if current platform is not .NET
+        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform())) {
+            throw new IgniteException(".NET platform is not available [nodeId=" + ctx.grid().localNode().id() + "] " +
+                "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes).");
+        }
+
         return platformCtx;
     }
 
@@ -254,7 +233,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
@@ -264,7 +245,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
+                    PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
@@ -303,7 +287,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget compute(PlatformTarget grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        return new PlatformCompute(platformCtx, grp0.projection());
+        return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
     }
 
     /** {@inheritDoc} */
@@ -397,6 +381,52 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
 
         stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
+        BinaryRawWriterEx writer = platformCtx.writer(stream);
+
+        Collection<String> names = ignite().cacheNames();
+
+        writer.writeInt(names.size());
+
+        for (String name : names)
+            writer.writeString(name);
+
+        stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /**
+     * Gets the near cache config.
+     *
+     * @param memPtr Memory pointer.
+     * @return Near config.
+     */
+    private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
+        assert memPtr != 0;
+
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        return PlatformConfigurationUtils.readNearConfiguration(reader);
     }
 
     /**

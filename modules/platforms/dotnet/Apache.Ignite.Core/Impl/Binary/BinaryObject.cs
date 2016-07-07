@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var desc = _marsh.GetDescriptor(true, _header.TypeId);
 
-            InitializeFields();
+            InitializeFields(desc);
 
             int fieldId = BinaryUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
 
@@ -207,16 +207,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Lazy fields initialization routine.
         /// </summary>
-        private void InitializeFields()
+        private void InitializeFields(IBinaryTypeDescriptor desc = null)
         {
             if (_fields != null) 
                 return;
+
+            desc = desc ?? _marsh.GetDescriptor(true, _header.TypeId);
 
             using (var stream = new BinaryHeapStream(_data))
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
+                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema,_marsh)
+                    .ToDictionary() ?? EmptyFields;
             }
         }
 

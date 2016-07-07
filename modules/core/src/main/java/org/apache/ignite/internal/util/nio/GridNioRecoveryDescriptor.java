@@ -44,6 +44,9 @@ public class GridNioRecoveryDescriptor {
     /** Number of received messages. */
     private long rcvCnt;
 
+    /** Number of sent messages. */
+    private long sentCnt;
+
     /** Reserved flag. */
     private boolean reserved;
 
@@ -70,6 +73,9 @@ public class GridNioRecoveryDescriptor {
 
     /** Maximum size of unacknowledged messages queue. */
     private final int queueLimit;
+
+    /** Number of descriptor reservations (for info purposes). */
+    private int reserveCnt;
 
     /**
      * @param queueLimit Maximum size of unacknowledged messages queue.
@@ -120,6 +126,13 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
+     * @return Number of sent messages.
+     */
+    public long sent() {
+        return sentCnt;
+    }
+
+    /**
      * @param lastAck Last acknowledged message.
      */
     public void lastAcknowledged(long lastAck) {
@@ -150,6 +163,8 @@ public class GridNioRecoveryDescriptor {
         if (!fut.skipRecovery()) {
             if (resendCnt == 0) {
                 msgFuts.addLast(fut);
+
+                sentCnt++;
 
                 return msgFuts.size() < queueLimit;
             }
@@ -184,6 +199,13 @@ public class GridNioRecoveryDescriptor {
 
             acked++;
         }
+    }
+
+    /**
+     * @return Last acked message by remote node.
+     */
+    public long acked() {
+        return acked;
     }
 
     /**
@@ -237,8 +259,11 @@ public class GridNioRecoveryDescriptor {
             while (!connected && reserved)
                 wait();
 
-            if (!connected)
+            if (!connected) {
                 reserved = true;
+
+                reserveCnt++;
+            }
 
             return !connected;
         }
@@ -356,8 +381,19 @@ public class GridNioRecoveryDescriptor {
             else {
                 reserved = true;
 
+                reserveCnt++;
+
                 return true;
             }
+        }
+    }
+
+    /**
+     * @return Number of descriptor reservations.
+     */
+    public int reserveCount() {
+        synchronized (this) {
+            return reserveCnt;
         }
     }
 

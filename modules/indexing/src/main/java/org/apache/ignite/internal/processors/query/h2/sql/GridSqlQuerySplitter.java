@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
@@ -159,8 +158,9 @@ public class GridSqlQuerySplitter {
         GridSqlSelect rdcQry = new GridSqlSelect().from(table(0));
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(mapQry.allColumns()),
-            mapQry.columns(false));
+        List<GridSqlElement> mapExps = new ArrayList<>(mapQry.allColumns());
+
+        mapExps.addAll(mapQry.columns(false));
 
         final int visibleCols = mapQry.visibleColumns();
         final int havingCol = mapQry.havingColumn();

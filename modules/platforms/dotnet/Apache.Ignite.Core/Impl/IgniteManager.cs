@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl
                 {
                     if (!_jvmCfg.Equals(jvmCfg))
                     {
-                        Console.WriteLine("Attempting to start Ignite node with different Java " +
+                        Logger.LogWarning("Attempting to start Ignite node with different Java " +
                             "configuration; current Java configuration will be ignored (consider " +
                             "starting node in separate process) [oldConfig=" + _jvmCfg +
                             ", newConfig=" + jvmCfg + ']');
@@ -120,22 +120,15 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>JVM.</returns>
         private static void* CreateJvm(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
-            var ggHome = IgniteHome.Resolve(cfg);
-
-            var cp = Classpath.CreateClasspath(ggHome, cfg, false);
+            var cp = Classpath.CreateClasspath(cfg);
 
             var jvmOpts = GetMergedJvmOptions(cfg);
             
-            var hasGgHome = !string.IsNullOrWhiteSpace(ggHome);
-
-            var opts = new sbyte*[1 + jvmOpts.Count + (hasGgHome ? 1 : 0)];
+            var opts = new sbyte*[1 + jvmOpts.Count];
 
             int idx = 0;
                 
             opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cp);
-
-            if (hasGgHome)
-                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged("-DIGNITE_HOME=" + ggHome);
 
             foreach (string cfgOpt in jvmOpts)
                 opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cfgOpt);
@@ -173,10 +166,12 @@ namespace Apache.Ignite.Core.Impl
             var jvmOpts = cfg.JvmOptions == null ? new List<string>() : cfg.JvmOptions.ToList();
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
-            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)))
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)) &&
+                cfg.JvmInitialMemoryMb != IgniteConfiguration.DefaultJvmInitMem)
                 jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
 
-            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)))
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)) &&
+                cfg.JvmMaxMemoryMb != IgniteConfiguration.DefaultJvmMaxMem)
                 jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
 
             return jvmOpts;

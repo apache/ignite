@@ -239,7 +239,7 @@ public class JdbcStatement implements Statement {
     @Override public boolean getMoreResults() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -320,7 +320,10 @@ public class JdbcStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+        if (curr == KEEP_CURRENT_RESULT || curr == CLOSE_ALL_RESULTS)
+            throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -86,10 +86,6 @@ import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.P
 import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.parameter;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.IGFS_SCHEME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * {@code IGFS} Hadoop 1.x file system driver over file system API. To use
@@ -509,9 +505,12 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 }
 
                 secondaryFs.setOwner(toSecondary(p), username, grpName);
-            } else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, username, PROP_GROUP_NAME, grpName)) == null)
+            }
+            else if (rmtClient.update(convert(p), F.asMap(IgfsUtils.PROP_USER_NAME, username,
+                IgfsUtils.PROP_GROUP_NAME, grpName)) == null) {
                 throw new IOException("Failed to set file permission (file not found?)" +
                     " [path=" + p + ", userName=" + username + ", groupName=" + grpName + ']');
+            }
         }
         finally {
             leaveBusy();
@@ -627,7 +626,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             else {
                 Map<String,String> propMap = permission(perm);
 
-                propMap.put(PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
+                propMap.put(IgfsUtils.PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 HadoopIgfsStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
@@ -1282,8 +1281,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
             file.modificationTime(),
             file.accessTime(),
             permission(file),
-            file.property(PROP_USER_NAME, user),
-            file.property(PROP_GROUP_NAME, "users"),
+            file.property(IgfsUtils.PROP_USER_NAME, user),
+            file.property(IgfsUtils.PROP_GROUP_NAME, "users"),
             convert(file.path())) {
             @Override public String toString() {
                 return "FileStatus [path=" + getPath() + ", isDir=" + isDir() + ", len=" + getLen() +
@@ -1302,7 +1301,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, toString(perm));
+        return F.asMap(IgfsUtils.PROP_PERMISSION, toString(perm));
     }
 
     /**
@@ -1320,7 +1319,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
      * @return Hadoop permission.
      */
     private FsPermission permission(IgfsFile file) {
-        String perm = file.property(PROP_PERMISSION, null);
+        String perm = file.property(IgfsUtils.PROP_PERMISSION, null);
 
         if (perm == null)
             return FsPermission.getDefault();

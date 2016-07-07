@@ -58,6 +58,9 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
+import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -233,6 +236,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
     @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
@@ -390,12 +396,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if any, defined by the {@link EntryProcessor} implementation.  No mappings
      * will be returned for {@link EntryProcessor}s that return a
      * <code>null</code> value for a key.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public V get(K key);
 
@@ -406,19 +420,27 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * because the entry is missing from the cache, the Cache's {@link CacheLoader}
      * is called in an attempt to load the entry.
      *
-     * @param key the key whose associated value is to be returned
-     * @return the element, or null, if it does not exist.
-     * @throws IllegalStateException if the cache is {@link #isClosed()}
-     * @throws NullPointerException  if the key is null
-     * @throws CacheException        if there is a problem fetching the value
-     * @throws ClassCastException    if the implementation is configured to perform
+     * @param key The key whose associated value is to be returned.
+     * @return The element, or null, if it does not exist.
+     * @throws IllegalStateException If the cache is {@link #isClosed()}.
+     * @throws NullPointerException If the key is {@code null}.
+     * @throws CacheException If there is a problem fetching the value.
+     * @throws ClassCastException If the implementation is configured to perform
      * runtime-type-checking, and the key or value types are incompatible with those that have been
-     * configured for the {@link Cache}
+     * configured for the {@link Cache}.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
     @IgniteAsyncSupported
     public CacheEntry<K, V> getEntry(K key);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
 
@@ -434,12 +456,15 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The keys whose associated values are to be returned.
      * @return A collection of entries that were found for the given keys. Entries not found
      *         in the cache are not in the returned collection.
-     * @throws NullPointerException  if keys is null or if keys contains a null
-     * @throws IllegalStateException if the cache is {@link #isClosed()}
-     * @throws CacheException        if there is a problem fetching the values
-     * @throws ClassCastException    if the implementation is configured to perform
+     * @throws NullPointerException If keys is null or if keys contains a {@code null}.
+     * @throws IllegalStateException If the cache is {@link #isClosed()}.
+     * @throws CacheException If there is a problem fetching the values.
+     * @throws ClassCastException If the implementation is configured to perform
      * runtime-type-checking, and the key or value types are incompatible with those that have been
-     * configured for the {@link Cache}
+     * configured for the {@link Cache}.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
     @IgniteAsyncSupported
     public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
@@ -454,7 +479,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     public Map<K, V> getAllOutTx(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
@@ -463,51 +493,109 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param keys Key whose presence in this cache is to be tested.
      * @return {@code True} if this cache contains a mapping for the specified keys.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
     @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public void put(K key, V val);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public V getAndPut(K key, V val);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public void putAll(Map<? extends K, ? extends V> map);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean putIfAbsent(K key, V val);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean remove(K key);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean remove(K key, V oldVal);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public V getAndRemove(K key);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean replace(K key, V oldVal, V newVal);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public boolean replace(K key, V val);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public V getAndReplace(K key, V val);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys);
 
@@ -591,7 +679,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public void localClearAll(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
@@ -605,28 +698,34 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
      *
-     * @param key            the key to the entry
-     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
-     * @param arguments      additional arguments to pass to the
-     *                       {@link CacheEntryProcessor}
-     * @return the result of the processing, if any, defined by the
-     *         {@link CacheEntryProcessor} implementation
-     * @throws NullPointerException    if key or {@link CacheEntryProcessor} is null
-     * @throws IllegalStateException   if the cache is {@link #isClosed()}
-     * @throws ClassCastException    if the implementation is configured to perform
+     * @param key The key to the entry.
+     * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
+     * @param arguments Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @return The result of the processing, if any, defined by the {@link CacheEntryProcessor} implementation.
+     * @throws NullPointerException If key or {@link CacheEntryProcessor} is null
+     * @throws IllegalStateException If the cache is {@link #isClosed()}
+     * @throws ClassCastException If the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
-     *                               configured for the {@link Cache}
-     * @throws EntryProcessorException if an exception is thrown by the {@link
+     *                               configured for the {@link Cache}.
+     * @throws EntryProcessorException If an exception is thrown by the {@link
      *                                 CacheEntryProcessor}, a Caching Implementation
      *                                 must wrap any {@link Exception} thrown
      *                                 wrapped in an {@link EntryProcessorException}.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     */
     @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args);
@@ -655,20 +754,22 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
      *
-     * @param keys           the set of keys for entries to process
-     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
-     * @param args      additional arguments to pass to the
-     *                       {@link CacheEntryProcessor}
-     * @return the map of {@link EntryProcessorResult}s of the processing per key,
+     * @param keys The set of keys for entries to process.
+     * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
+     * @param args Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @return The map of {@link EntryProcessorResult}s of the processing per key,
      * if any, defined by the {@link CacheEntryProcessor} implementation.  No mappings
      * will be returned for {@link CacheEntryProcessor}s that return a
      * <code>null</code> value for a key.
-     * @throws NullPointerException    if keys or {@link CacheEntryProcessor} are null
-     * @throws IllegalStateException   if the cache is {@link #isClosed()}
-     * @throws ClassCastException    if the implementation is configured to perform
+     * @throws NullPointerException If keys or {@link CacheEntryProcessor} are {#code null}.
+     * @throws IllegalStateException If the cache is {@link #isClosed()}.
+     * @throws ClassCastException If the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
-     *                               configured for the {@link Cache}
+     *                               configured for the {@link Cache}.
+     * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
+     * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
+     * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
@@ -715,14 +816,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<?> rebalance();
 
     /**
-     * Gets snapshot metrics (statistics) for this cache.
+     * Gets whole cluster snapshot metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
 
     /**
-     * Gets snapshot metrics for caches in cluster group.
+     * Gets cluster group snapshot metrics for caches in cluster group.
      *
      * @param grp Cluster group.
      * @return Cache metrics.
@@ -730,9 +831,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public CacheMetrics metrics(ClusterGroup grp);
 
     /**
-     * Gets MxBean for this cache.
+     * Gets local snapshot metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics localMetrics();
+
+    /**
+     * Gets whole cluster MxBean for this cache.
      *
      * @return MxBean.
      */
     public CacheMetricsMXBean mxBean();
+
+    /**
+     * Gets local MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public CacheMetricsMXBean localMxBean();
 }

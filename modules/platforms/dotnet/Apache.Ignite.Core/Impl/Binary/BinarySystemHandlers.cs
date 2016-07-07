@@ -26,24 +26,14 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
-    /// <summary>
-    /// Write delegate.
-    /// </summary>
-    /// <param name="writer">Write context.</param>
-    /// <param name="obj">Object to write.</param>
-    internal delegate void BinarySystemWriteDelegate(BinaryWriter writer, object obj);
-
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
     internal static class BinarySystemHandlers
     {
         /** Write handlers. */
-        private static volatile Dictionary<Type, BinarySystemWriteDelegate> _writeHandlers =
-            new Dictionary<Type, BinarySystemWriteDelegate>();
-
-        /** Mutex for write handlers update. */
-        private static readonly object WriteHandlersMux = new object();
+        private static readonly CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler> WriteHandlers =
+            new CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler>();
 
         /** Read handlers. */
         private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
@@ -171,32 +161,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static BinarySystemWriteDelegate GetWriteHandler(Type type)
+        public static BinarySystemWriteHandler GetWriteHandler(Type type)
         {
-            BinarySystemWriteDelegate res;
+            return WriteHandlers.GetOrAdd(type, t =>
+            {
+                bool supportsHandles;
 
-            var writeHandlers0 = _writeHandlers;
+                var handler = FindWriteHandler(t, out supportsHandles);
 
-            // Have we ever met this type?
-            if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
-                return res;
-
-            // Determine write handler for type and add it.
-            res = FindWriteHandler(type);
-
-            if (res != null)
-                AddWriteHandler(type, res);
-
-            return res;
+                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles, 
+                    handler == WriteSerializable);
+            });
         }
 
         /// <summary>
         /// Find write handler for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <returns>Write handler or NULL.</returns>
-        private static BinarySystemWriteDelegate FindWriteHandler(Type type)
+        /// <param name="supportsHandles">Flag indicating whether returned delegate supports handles.</param>
+        /// <returns>
+        /// Write handler or NULL.
+        /// </returns>
+        private static Action<BinaryWriter, object> FindWriteHandler(Type type, out bool supportsHandles)
         {
+            supportsHandles = false;
+
             // 1. Well-known types.
             if (type == typeof(string))
                 return WriteString;
@@ -210,9 +199,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinary;
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
+            if (type.IsEnum)
+                return WriteEnum;
+
+            // All types below can be written as handles.
+            supportsHandles = true;
+
             if (type == typeof (ArrayList))
                 return WriteArrayList;
-            if (type == typeof(Hashtable))
+            if (type == typeof (Hashtable))
                 return WriteHashtable;
 
             if (type.IsArray)
@@ -258,13 +253,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return WriteEnumArray;
                 
                 // Object array.
-                if (elemType == typeof (object) || elemType == typeof(IBinaryObject) || elemType == typeof(BinaryObject))
+                if (elemType == typeof (object) || elemType == typeof (IBinaryObject) ||
+                    elemType == typeof (BinaryObject))
                     return WriteArray;
             }
-
-            if (type.IsEnum)
-                // We know how to write enums.
-                return WriteEnum;
 
             if (type.IsSerializable)
                 return WriteSerializable;
@@ -291,36 +283,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return BinaryUtils.TypeArrayEnum;
 
             return BinaryUtils.TypeObject;
-        }
-
-        /// <summary>
-        /// Add write handler for type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="handler"></param>
-        private static void AddWriteHandler(Type type, BinarySystemWriteDelegate handler)
-        {
-            lock (WriteHandlersMux)
-            {
-                if (_writeHandlers == null)
-                {
-                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 = 
-                        new Dictionary<Type, BinarySystemWriteDelegate>();
-
-                    writeHandlers0[type] = handler;
-
-                    _writeHandlers = writeHandlers0;
-                }
-                else if (!_writeHandlers.ContainsKey(type))
-                {
-                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 =
-                        new Dictionary<Type, BinarySystemWriteDelegate>(_writeHandlers);
-
-                    writeHandlers0[type] = handler;
-
-                    _writeHandlers = writeHandlers0;
-                }
-            }
         }
 
         /// <summary>
@@ -816,6 +778,63 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream));
             }
+        }
+    }
+
+    /// <summary>
+    /// Write delegate + handles flag.
+    /// </summary>
+    internal class BinarySystemWriteHandler
+    {
+        /** */
+        private readonly Action<BinaryWriter, object> _writeAction;
+
+        /** */
+        private readonly bool _supportsHandles;
+
+        /** */
+        private readonly bool _isSerializable;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinarySystemWriteHandler" /> class.
+        /// </summary>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="supportsHandles">Handles flag.</param>
+        /// <param name="isSerializable">Determines whether this handler writes objects as serializable.</param>
+        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles, 
+            bool isSerializable)
+        {
+            Debug.Assert(writeAction != null);
+
+            _writeAction = writeAction;
+            _supportsHandles = supportsHandles;
+            _isSerializable = isSerializable;
+        }
+
+        /// <summary>
+        /// Writes object to a specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="obj">The object.</param>
+        public void Write(BinaryWriter writer, object obj)
+        {
+            _writeAction(writer, obj);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this handler supports handles.
+        /// </summary>
+        public bool SupportsHandles
+        {
+            get { return _supportsHandles; }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this handler writes objects as serializable
+        /// </summary>
+        public bool IsSerializable
+        {
+            get { return _isSerializable; }
         }
     }
 }

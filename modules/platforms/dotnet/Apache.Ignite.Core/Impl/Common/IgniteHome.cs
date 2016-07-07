@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             }
 
-            throw new IgniteException("Failed to resolve Ignite home.");
+            return null;
         }
 
         /// <summary>

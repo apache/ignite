@@ -40,7 +40,7 @@ public class XmlGeneratorTest extends AbstractSchemaImportTest {
 
         String fileName = "ignite-type-metadata.xml";
 
-        XmlGenerator.generate("org.apache.ignite.schema.test.model", all, true, new File(OUT_DIR_PATH, fileName),
+        XmlGenerator.generate("org.apache.ignite.schema.test.model", all, true, true, new File(OUT_DIR_PATH, fileName),
             askOverwrite);
 
         assertTrue("Generated XML file content is differ from expected one",

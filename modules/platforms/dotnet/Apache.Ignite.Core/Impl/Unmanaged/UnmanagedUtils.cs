@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
@@ -37,13 +38,32 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
+            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+
+            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+
+            var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
             var ptr = NativeMethods.LoadLibrary(path);
 
             if (ptr == IntPtr.Zero)
                 throw new IgniteException(string.Format("Failed to load {0}: {1}", 
                     IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
+
+            JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+        }
+
+        /// <summary>
+        /// Handles the DomainUnload event of the current AppDomain.
+        /// </summary>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            // Clean the handler to avoid JVM crash.
+            var removedCnt = JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            Debug.Assert(removedCnt == 1);
         }
 
         /// <summary>
@@ -174,6 +194,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             void* res = JNI.ProcessorGetOrCreateCacheFromConfig(target.Context, target.Target, memPtr);
 
             return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorGetOrCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
         }
 
         internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
@@ -318,6 +370,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
         {
             JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
+        }
+
+        internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
         }
 
         #endregion
@@ -648,6 +705,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static IUnmanagedTarget ProjectionForYoungest(IUnmanagedTarget target)
         {
             void* res = JNI.ProjectionForYoungest(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+        
+        internal static IUnmanagedTarget ProjectionForServers(IUnmanagedTarget target)
+        {
+            void* res = JNI.ProjectionForServers(target.Context, target.Target);
 
             return target.ChangeTarget(res);
         }

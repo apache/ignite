@@ -142,6 +142,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean cacheCli;
 
+    /** Daemon node initialization flag. */
+    @GridToStringExclude
+    private transient volatile boolean daemonInit;
+
+    /** Daemon node flag. */
+    @GridToStringExclude
+    private transient boolean daemon;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -374,7 +382,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+        if (!daemonInit) {
+            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+
+            daemonInit = true;
+        }
+
+        return daemon;
     }
 
     /** {@inheritDoc} */

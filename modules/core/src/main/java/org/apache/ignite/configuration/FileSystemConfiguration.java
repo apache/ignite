@@ -17,14 +17,17 @@
 
 package org.apache.ignite.configuration;
 
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * {@code IGFS} configuration. More than one file system can be configured within grid.
@@ -57,10 +60,10 @@ public class FileSystemConfiguration {
     public static final String DFLT_IGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
-    public static final int DFLT_PER_NODE_BATCH_SIZE = 100;
+    public static final int DFLT_PER_NODE_BATCH_SIZE = 512;
 
     /** Default number of per node parallel operations. */
-    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
+    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 16;
 
     /** Default IGFS mode. */
     public static final IgfsMode DFLT_MODE = IgfsMode.DUAL_ASYNC;
@@ -81,7 +84,16 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
     /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
+    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
+
+    /** Default value of metadata co-location flag. */
+    public static final boolean DFLT_COLOCATE_META = true;
+
+    /** Default value of relaxed consistency flag. */
+    public static final boolean DFLT_RELAXED_CONSISTENCY = true;
+
+    /** Default value of update file length on flush flag. */
+    public static final boolean DFLT_UPDATE_FILE_LEN_ON_FLUSH = false;
 
     /** IGFS instance name. */
     private String name;
@@ -164,6 +176,15 @@ public class FileSystemConfiguration {
     /** Whether to initialize default path modes. */
     private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
 
+    /** Metadata co-location flag. */
+    private boolean colocateMeta = DFLT_COLOCATE_META;
+
+    /** Relaxed consistency flag. */
+    private boolean relaxedConsistency = DFLT_RELAXED_CONSISTENCY;
+
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
+
     /**
      * Constructs default configuration.
      */
@@ -184,6 +205,7 @@ public class FileSystemConfiguration {
          */
         blockSize = cfg.getBlockSize();
         bufSize = cfg.getStreamBufferSize();
+        colocateMeta = cfg.isColocateMetadata();
         dataCacheName = cfg.getDataCacheName();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
@@ -207,8 +229,10 @@ public class FileSystemConfiguration {
         perNodeBatchSize = cfg.getPerNodeBatchSize();
         perNodeParallelBatchCnt = cfg.getPerNodeParallelBatchCount();
         prefetchBlocks = cfg.getPrefetchBlocks();
+        relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
+        updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -680,7 +704,9 @@ public class FileSystemConfiguration {
      * Gets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
      * @return Maximum timeout awaiting for trash purging in case data cache oversize is detected.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getTrashPurgeTimeout() {
         return trashPurgeTimeout;
     }
@@ -689,7 +715,9 @@ public class FileSystemConfiguration {
      * Sets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
      * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setTrashPurgeTimeout(long trashPurgeTimeout) {
         this.trashPurgeTimeout = trashPurgeTimeout;
     }
@@ -700,8 +728,10 @@ public class FileSystemConfiguration {
      * In case no executor service is provided, default one will be created with maximum amount of threads equals
      * to amount of processor cores.
      *
-     * @return Get DUAL mode put operation executor service
+     * @return Get DUAL mode put operation executor service.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     @Nullable public ExecutorService getDualModePutExecutorService() {
         return dualModePutExec;
     }
@@ -710,7 +740,9 @@ public class FileSystemConfiguration {
      * Set DUAL mode put operations executor service.
      *
      * @param dualModePutExec Dual mode put operations executor service.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModePutExecutorService(ExecutorService dualModePutExec) {
         this.dualModePutExec = dualModePutExec;
     }
@@ -719,7 +751,9 @@ public class FileSystemConfiguration {
      * Get DUAL mode put operation executor service shutdown flag.
      *
      * @return DUAL mode put operation executor service shutdown flag.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public boolean getDualModePutExecutorServiceShutdown() {
         return dualModePutExecShutdown;
     }
@@ -728,7 +762,9 @@ public class FileSystemConfiguration {
      * Set DUAL mode put operations executor service shutdown flag.
      *
      * @param dualModePutExecShutdown Dual mode put operations executor service shutdown flag.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
         this.dualModePutExecShutdown = dualModePutExecShutdown;
     }
@@ -742,7 +778,9 @@ public class FileSystemConfiguration {
      * avoid issues with increasing GC pauses or out-of-memory error.
      *
      * @return Maximum amount of pending data read from the secondary file system
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getDualModeMaxPendingPutsSize() {
         return dualModeMaxPendingPutsSize;
     }
@@ -751,7 +789,9 @@ public class FileSystemConfiguration {
      * Set maximum amount of data in pending put operations.
      *
      * @param dualModeMaxPendingPutsSize Maximum amount of data in pending put operations.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
         this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
     }
@@ -828,6 +868,108 @@ public class FileSystemConfiguration {
      */
     public void setInitializeDefaultPathModes(boolean initDfltPathModes) {
         this.initDfltPathModes = initDfltPathModes;
+    }
+
+    /**
+     * Get whether to co-locate metadata on a single node.
+     * <p>
+     * Normally Ignite spread ownership of particular keys among all cache nodes. Transaction with keys owned by
+     * different nodes will produce more network traffic and will require more time to complete comparing to
+     * transaction with keys owned only by a single node.
+     * <p>
+     * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
+     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
+     * intearnal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
+     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
+     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
+     * metadata and hence could improve performance.
+     * <p>
+     * This property should be disabled if you see excessive CPU and network load on a single node, which
+     * degrades performance and cannot be explained by business logic of your application.
+     * <p>
+     * This settings is only used if metadata cache is configured in {@code CacheMode#REPLICATED} mode. Otherwise it
+     * is ignored.
+     * <p>
+     * Defaults to {@link #DFLT_COLOCATE_META}.
+     *
+     * @return {@code True} if metadata co-location is enabled.
+     */
+    public boolean isColocateMetadata() {
+        return colocateMeta;
+    }
+
+    /**
+     * Set metadata co-location flag.
+     * <p>
+     * See {@link #isColocateMetadata()} for more information.
+     *
+     * @param colocateMeta Whether metadata co-location is enabled.
+     */
+    public void setColocateMetadata(boolean colocateMeta) {
+        this.colocateMeta = colocateMeta;
+    }
+
+    /**
+     * Get relaxed consistency flag.
+     * <p>
+     * Concurrent file system operations might conflict with each other. E.g. {@code move("/a1/a2", "/b")} and
+     * {@code move("/b", "/a1")}. Hence, it is necessary to atomically verify that participating paths are still
+     * on their places to keep file system in consistent state in such cases. These checks are expensive in
+     * distributed environment.
+     * <p>
+     * Real applications, e.g. Hadoop jobs, rarely produce conflicting operations. So additional checks could be
+     * skipped in these scenarios without any negative effect on file system integrity. It significantly increases
+     * performance of file system operations.
+     * <p>
+     * If value of this flag is {@code true}, IGFS will skip expensive consistency checks. It is recommended to set
+     * this flag to {@code false} if your application has conflicting operations, or you do not how exactly users will
+     * use your system.
+     * <p>
+     * This property affects only {@link IgfsMode#PRIMARY} paths.
+     * <p>
+     * Defaults to {@link #DFLT_RELAXED_CONSISTENCY}.
+     *
+     * @return {@code True} if relaxed consistency is enabled.
+     */
+    public boolean isRelaxedConsistency() {
+        return relaxedConsistency;
+    }
+
+    /**
+     * Set relaxed consistency flag.
+     * <p>
+     * See {@link #isColocateMetadata()} for more information.
+     *
+     * @param relaxedConsistency Whether to use relaxed consistency optimization.
+     */
+    public void setRelaxedConsistency(boolean relaxedConsistency) {
+        this.relaxedConsistency = relaxedConsistency;
+    }
+
+    /**
+     * Get whether to update file length on flush.
+     * <p>
+     * Controls whether to update file length or not when {@link IgfsOutputStream#flush()} method is invoked. You
+     * may want to set this property to true in case you want to read from a file which is being written at the
+     * same time.
+     * <p>
+     * Defaults to {@link #DFLT_UPDATE_FILE_LEN_ON_FLUSH}.
+     *
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
+    }
+
+    /**
+     * Set whether to update file length on flush.
+     * <p>
+     * Set {@link #isUpdateFileLengthOnFlush()} for more information.
+     *
+     * @param updateFileLenOnFlush Whether to update file length on flush.
+     */
+    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+        this.updateFileLenOnFlush = updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */

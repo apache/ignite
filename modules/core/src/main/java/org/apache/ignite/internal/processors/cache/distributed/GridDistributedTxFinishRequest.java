@@ -20,6 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,9 +55,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     private boolean commit;
 
     /** Sync commit flag. */
+    @Deprecated
     private boolean syncCommit;
 
     /** Sync commit flag. */
+    @Deprecated
     private boolean syncRollback;
 
     /** Min version used as base for completed versions. */
@@ -66,6 +73,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
     /** IO policy. */
     private byte plc;
+
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -217,6 +228,21 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      */
     public boolean replyRequired() {
         return commit ? syncCommit : syncRollback;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txFinishMessageLogger();
     }
 
     /** {@inheritDoc} */

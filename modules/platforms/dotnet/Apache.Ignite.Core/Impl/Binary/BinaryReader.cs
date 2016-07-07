@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
@@ -718,45 +717,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Set new frame.
                     _curHdr = hdr;
                     _curPos = pos;
-                    
-                    _curSchema = desc.Schema.Get(hdr.SchemaId);
-
-                    if (_curSchema == null)
-                    {
-                        _curSchema = ReadSchema();
-
-                        desc.Schema.Add(hdr.SchemaId, _curSchema);
-                    }
-
+                    SetCurSchema(desc);
                     _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
                     Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
 
-                    object obj;
-
-                    var sysSerializer = desc.Serializer as IBinarySystemTypeSerializer;
-
-                    if (sysSerializer != null)
-                        obj = sysSerializer.ReadInstance(this);
-                    else
-                    {
-                        try
-                        {
-                            obj = FormatterServices.GetUninitializedObject(desc.Type);
-
-                            // Save handle.
-                            AddHandle(pos, obj);
-                        }
-                        catch (Exception e)
-                        {
-                            throw new BinaryObjectException("Failed to create type instance: " +
-                                                        desc.Type.AssemblyQualifiedName, e);
-                        }
-
-                        desc.Serializer.ReadBinary(obj, this);
-                    }
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
                     _curStruct.UpdateReaderStructure();
 
@@ -768,18 +736,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curSchema = oldSchema;
                     _curSchemaMap = oldSchemaMap;
 
-                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    if (wrappedSerializable != null) 
-                        return (T) wrappedSerializable.Item;
-
-                    var wrappedDateTime = obj as DateTimeHolder;
-
-                    if (wrappedDateTime != null)
-                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
-                    
-                    return (T) obj;
+                    return obj;
                 }
             }
             finally
@@ -790,10 +747,40 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Sets the current schema.
+        /// </summary>
+        private void SetCurSchema(IBinaryTypeDescriptor desc)
+        {
+            if (_curHdr.HasSchema)
+            {
+                _curSchema = desc.Schema.Get(_curHdr.SchemaId);
+
+                if (_curSchema == null)
+                {
+                    _curSchema = ReadSchema();
+
+                    desc.Schema.Add(_curHdr.SchemaId, _curSchema);
+                }
+            }
+        }
+
+        /// <summary>
         /// Reads the schema.
         /// </summary>
         private int[] ReadSchema()
         {
+            if (_curHdr.IsCompactFooter)
+            {
+                // Get schema from Java
+                var schema = Marshaller.Ignite.ClusterGroup.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
+
+                if (schema == null)
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                        "typeId=" + _curHdr.TypeId + ", schemaId=" + _curHdr.SchemaId + ']');
+
+                return schema;
+            }
+
             Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
 
             var count = _curHdr.SchemaFieldCount;
@@ -853,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="obj">Object.</param>
-        private void AddHandle(int pos, object obj)
+        internal void AddHandle(int pos, object obj)
         {
             if (_hnds == null)
                 _hnds = new BinaryReaderHandleDictionary(pos, obj);
@@ -884,35 +871,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Determines whether header at current position is HDR_NULL.
-        /// </summary>
-        private bool IsNotNullHeader(byte expHdr)
-        {
-            var hdr = ReadByte();
-            
-            if (hdr == BinaryUtils.HdrNull)
-                return false;
-
-            if (expHdr != hdr)
-                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
-                                                          "Expected: {0} but was: {1}", expHdr, hdr));
-
-            return true;
-        }
-
-        /// <summary>
-        /// Seeks the field by name, reads header and returns true if field is present and header is not null.
-        /// </summary>
-        private bool SeekField(string fieldName, byte expHdr)
-        {
-            if (!SeekField(fieldName)) 
-                return false;
-
-            // Expected read order, no need to seek.
-            return IsNotNullHeader(expHdr);
-        }
-
-        /// <summary>
         /// Seeks the field by name.
         /// </summary>
         private bool SeekField(string fieldName)
@@ -929,9 +887,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchema = null; // read order is different, ignore schema for future reads
+                _curSchemaMap = _curSchemaMap ?? BinaryObjectSchemaSerializer.ReadSchema(Stream, _curPos, _curHdr,
+                                    () => _curSchema).ToDictionary();
 
-                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos);
+                _curSchema = null; // read order is different, ignore schema for future reads
 
                 int pos;
 
@@ -949,7 +908,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(Stream) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -957,7 +916,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(this) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -965,7 +924,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc() : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -973,7 +932,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(this) : default(T);
+            return Read(() => readFunc(this), expHdr);
         }
 
         /// <summary>
@@ -981,7 +940,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+            return Read(() => readFunc(Stream), expHdr);
+        }
+
+        /// <summary>
+        /// Reads header and invokes specified func if the header is not null.
+        /// </summary>
+        private T Read<T>(Func<T> readFunc, byte expHdr)
+        {
+            var hdr = ReadByte();
+
+            if (hdr == BinaryUtils.HdrNull)
+                return default(T);
+
+            if (hdr == BinaryUtils.HdrHnd)
+                return ReadHandleObject<T>(Stream.Position - 1);
+
+            if (expHdr != hdr)
+                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
+                                                          "Expected: {0} but was: {1}", expHdr, hdr));
+
+            return readFunc();
         }
 
         /// <summary>

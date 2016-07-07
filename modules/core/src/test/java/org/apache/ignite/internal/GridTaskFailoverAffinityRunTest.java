@@ -116,11 +116,13 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
+        final long stopTime = System.currentTimeMillis() + 60_000;
+
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int grid = gridIdx.getAndIncrement();
 
-                while (!stop.get()) {
+                while (!stop.get() && System.currentTimeMillis() < stopTime) {
                     stopGrid(grid);
 
                     startGrid(grid);
@@ -131,8 +133,6 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
         }, 2, "restart-thread");
 
         try {
-            long stopTime = System.currentTimeMillis() + 60_000;
-
             while (System.currentTimeMillis() < stopTime) {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 

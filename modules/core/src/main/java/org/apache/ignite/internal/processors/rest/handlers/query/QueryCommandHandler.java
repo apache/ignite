@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.handlers.query;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -263,6 +265,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Override public GridRestResponse call() throws Exception {
             final long qryId = qryIdGen.getAndIncrement();
 
@@ -346,7 +349,10 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
             catch (Exception e) {
                 removeQueryCursor(qryId, qryCurs);
 
-                return new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage());
+                SQLException sqlErr = X.cause(e, SQLException.class);
+
+                return new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                    sqlErr != null ? sqlErr.getMessage() : e.getMessage());
             }
         }
 

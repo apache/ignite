@@ -50,22 +50,28 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Third value. */
         private TV _val3;
 
+        /** Comparer. */
+        private readonly IEqualityComparer<TK> _comparer;
+
         /// <summary>
         /// Constructor with initial key-value pair.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
+        /// <param name="comparer">The comparer.</param>
         [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors"),
          SuppressMessage("ReSharper", "DoNotCallOverridableMethodsInConstructor")]
-        public BinaryHandleDictionary(TK key, TV val)
+        public BinaryHandleDictionary(TK key, TV val, IEqualityComparer<TK> comparer)
         {
-            Debug.Assert(!Equals(key, EmptyKey));
-
             _key1 = key;
             _val1 = val;
 
             _key2 = EmptyKey;
             _key3 = EmptyKey;
+
+            _comparer = comparer ?? EqualityComparer<TK>.Default;
+
+            Debug.Assert(!_comparer.Equals(key, EmptyKey));
         }
 
         /// <summary>
@@ -75,9 +81,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Value.</param>
         public void Add(TK key, TV val)
         {
-            Debug.Assert(!Equals(key, EmptyKey));
+            Debug.Assert(!_comparer.Equals(key, EmptyKey));
 
-            if (Equals(_key2, EmptyKey))
+            if (_comparer.Equals(_key2, EmptyKey))
             {
                 _key2 = key;
                 _val2 = val;
@@ -85,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            if (Equals(_key3, EmptyKey))
+            if (_comparer.Equals(_key3, EmptyKey))
             {
                 _key3 = key;
                 _val3 = val;
@@ -94,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (_dict == null)
-                _dict = new Dictionary<TK, TV>(InitialSize);
+                _dict = new Dictionary<TK, TV>(InitialSize, _comparer);
 
             _dict[key] = val;
         }
@@ -107,23 +113,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>True if key was found.</returns>
         public bool TryGetValue(TK key, out TV val)
         {
-            Debug.Assert(!Equals(key, EmptyKey));
+            Debug.Assert(!_comparer.Equals(key, EmptyKey));
 
-            if (Equals(key, _key1))
+            if (_comparer.Equals(key, _key1))
             {
                 val = _val1;
 
                 return true;
             }
 
-            if (Equals(key, _key2))
+            if (_comparer.Equals(key, _key2))
             {
                 val = _val2;
 
                 return true;
             }
 
-            if (Equals(key, _key3))
+            if (_comparer.Equals(key, _key3))
             {
                 val = _val3;
 
@@ -167,10 +173,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Value.</param>
         private void AddIfAbsent(TK key, TV val)
         {
-            if (Equals(key, EmptyKey))
+            if (_comparer.Equals(key, EmptyKey))
                 return;
 
-            if (Equals(key, _key1) || Equals(key, _key2) || Equals(key, _key3))
+            if (_comparer.Equals(key, _key1) || _comparer.Equals(key, _key2) || _comparer.Equals(key, _key3))
                 return;
 
             if (_dict == null || !_dict.ContainsKey(key))

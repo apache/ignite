@@ -213,7 +213,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             CacheMetrics metrics = cache.metrics(grid(i).cluster().forCacheNodes(cache.getName()));
 
             for (int j = 0; j < GRID_CNT; j++)
-                ms[j] = grid(j).cache(cache.getName()).metrics();
+                ms[j] = grid(j).cache(cache.getName()).localMetrics();
 
             // Static metrics
             for (int j = 0; j < GRID_CNT; j++)

@@ -135,6 +135,24 @@ namespace Apache.Ignite.Core.Impl
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
+
+            SetCompactFooter();
+        }
+
+        /// <summary>
+        /// Sets the compact footer setting.
+        /// </summary>
+        private void SetCompactFooter()
+        {
+            if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
+            {
+                // If there is a Spring config, use setting from Spring, 
+                // since we ignore .NET config in legacy mode.
+                var cfg0 = GetConfiguration().BinaryConfiguration;
+
+                if (cfg0 != null)
+                    _marsh.CompactFooter = cfg0.CompactFooter;
+            }
         }
 
         /// <summary>
@@ -183,7 +201,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute GetCompute()
         {
-            return _prj.GetCompute();
+            return _prj.ForServers().GetCompute();
         }
 
         /** <inheritdoc /> */
@@ -287,6 +305,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _prj.ForServers();
+        }
+
+        /** <inheritdoc /> */
         public ICollection<IClusterNode> GetNodes()
         {
             return _prj.GetNodes();
@@ -329,9 +353,29 @@ namespace Apache.Ignite.Core.Impl
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
+        }
 
+        /// <summary>
+        /// Called before node has stopped.
+        /// </summary>
+        internal void BeforeNodeStop()
+        {
+            var handler = Stopping;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Called after node has stopped.
+        /// </summary>
+        internal void AfterNodeStop()
+        {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
+
+            var handler = Stopped;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /** <inheritdoc /> */
@@ -349,6 +393,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return GetOrCreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -356,6 +407,14 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 
@@ -372,6 +431,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return CreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -379,6 +445,14 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 
@@ -482,7 +556,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IServices GetServices()
         {
-            return _prj.GetServices();
+            return _prj.ForServers().GetServices();
         }
 
         /** <inheritdoc /> */
@@ -558,6 +632,68 @@ namespace Apache.Ignite.Core.Impl
                 stream.SynchronizeInput();
 
                 return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+            }
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetCacheNames(_proc, stream.MemoryPointer);
+                stream.SynchronizeInput();
+
+                var reader = _marsh.StartUnmarshal(stream);
+                var res = new string[stream.ReadInt()];
+
+                for (int i = 0; i < res.Length; i++)
+                    res[i] = reader.ReadString();
+
+                return res;
+            }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopping;
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopped;
+
+        /** <inheritdoc /> */
+        public event EventHandler ClientDisconnected;
+
+        /** <inheritdoc /> */
+        public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /// <summary>
+        /// Gets or creates near cache.
+        /// </summary>
+        private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
+            Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(func(_proc, name, stream.MemoryPointer));
             }
         }
 
@@ -647,18 +783,26 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called when local client node has been disconnected from the cluster.
         /// </summary>
-        public void OnClientDisconnected()
+        internal void OnClientDisconnected()
         {
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
+
+            var handler = ClientDisconnected;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
         /// Called when local client node has been reconnected to the cluster.
         /// </summary>
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
-        public void OnClientReconnected(bool clusterRestarted)
+        internal void OnClientReconnected(bool clusterRestarted)
         {
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
+
+            var handler = ClientReconnected;
+            if (handler != null)
+                handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
         }
     }
 }

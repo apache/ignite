@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -29,6 +31,8 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class MixedClusterTest
     {
+        private IIgnite _ignite;
+        private string _javaNodeName;
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
 
@@ -41,39 +45,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** */
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
-        /// <summary>
-        /// Tests the compute.
-        /// </summary>
-        [Test]
-        public void TestCompute()
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                var javaNodeName = StartJavaNode(ignite, SpringConfig2);
+            _ignite = Ignition.Start(cfg);
 
-                try
-                {
-                    Assert.IsTrue(ignite.WaitTopology(2));
+            _javaNodeName = _ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-                    TestDotNetTask(ignite);
-                    TestJavaTask(ignite);
-                }
-                finally
-                {
-                    StopJavaNode(ignite, javaNodeName);
-                }
-            }
+            Assert.IsTrue(_ignite.WaitTopology(2));
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        private static void TestDotNetTask(IIgnite ignite)
+        [Test]
+        public void TestDotNetTask()
         {
-            var results = ignite.GetCompute().Broadcast(new ComputeFunc());
+            var results = _ignite.GetCompute().Broadcast(new ComputeFunc());
 
             // There are two nodes, but only one can execute .NET jobs.
             Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
@@ -82,29 +79,65 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        private static void TestJavaTask(IIgnite ignite)
+        [Test]
+        public void TestJavaTask()
         {
             // Java task can execute on both nodes.
-            var res = ignite.GetCompute().ExecuteJavaTask<ICollection>(ComputeApiTest.BroadcastTask, null);
+            var res = _ignite.GetCompute().ExecuteJavaTask<ICollection>(ComputeApiTest.BroadcastTask, null);
 
             Assert.AreEqual(2, res.Count);
         }
 
         /// <summary>
-        /// Starts the java node.
+        /// Tests the scan query.
         /// </summary>
-        private static string StartJavaNode(IIgnite grid, string config)
+        [Test]
+        public void TestScanQuery()
         {
-            return grid.GetCompute().ExecuteJavaTask<string>(StartTask, config);
+            var cache = GetCache();
+            
+            // Scan query does not work in the mixed cluster.
+            Assert.Throws<IgniteException>(() => cache.Query(new ScanQuery<int, int>(new ScanFilter())).GetAll());
         }
 
         /// <summary>
-        /// Stops the java node.
+        /// Tests the cache invoke.
         /// </summary>
-        private static void StopJavaNode(IIgnite grid, string name)
+        [Test]
+        public void TestCacheInvoke()
         {
-            grid.GetCompute().ExecuteJavaTask<object>(StopTask, name);
+            var cache = GetCache();
+
+            var results = cache.InvokeAll(cache.Select(x => x.Key), new CacheProcessor(), 0);
+
+            foreach (var res in results)
+            {
+                try
+                {
+                    Assert.AreEqual(0, res.Value.Result);
+                }
+                catch (CacheEntryProcessorException ex)
+                {
+                    // At least some results should throw an error
+                    Assert.IsTrue(ex.ToString().Contains("Platforms are not available"), "Unexpected error: " + ex);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("InvokeAll unexpectedly succeeded in mixed-platform cluter.");
+        }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        private ICache<int, int> GetCache()
+        {
+            var cache = _ignite.GetOrCreateCache<int, int>("mixedCache");
+
+            cache.PutAll(Enumerable.Range(1, 1000).ToDictionary(x => x, x => x));
+
+            return cache;
         }
 
         /// <summary>
@@ -117,6 +150,32 @@ namespace Apache.Ignite.Core.Tests.Compute
             public int Invoke()
             {
                 return int.MaxValue;
+            }
+        }
+
+        /// <summary>
+        /// Test filter.
+        /// </summary>
+        [Serializable]
+        private class ScanFilter : ICacheEntryFilter<int, int>
+        {
+            /** <inheritdoc /> */
+            public bool Invoke(ICacheEntry<int, int> entry)
+            {
+                return entry.Key < 100;
+            }
+        }
+
+        /// <summary>
+        /// Test processor.
+        /// </summary>
+        [Serializable]
+        private class CacheProcessor : ICacheEntryProcessor<int, int, int, int>
+        {
+            /** <inheritdoc /> */
+            public int Process(IMutableCacheEntry<int, int> entry, int arg)
+            {
+                return arg;
             }
         }
     }

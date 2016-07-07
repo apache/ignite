@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collections;
-import java.util.Map;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -31,10 +31,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * File or directory information.
  */
-public final class IgfsFileImpl implements IgfsFile, Externalizable {
+public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -97,7 +104,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
      *
      * @param path Path.
      */
-    public IgfsFileImpl(IgfsPath path, IgfsFileInfo info, long globalGrpBlockSize) {
+    public IgfsFileImpl(IgfsPath path, IgfsEntryInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -122,35 +129,6 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
         accessTime = info.accessTime();
         modificationTime = info.modificationTime();
-    }
-
-    /**
-     * Constructs file instance.
-     *
-     * @param path Path.
-     * @param entry Listing entry.
-     */
-    public IgfsFileImpl(IgfsPath path, IgfsListingEntry entry, long globalGrpSize) {
-        A.notNull(path, "path");
-        A.notNull(entry, "entry");
-
-        this.path = path;
-        fileId = entry.fileId();
-
-        blockSize = entry.blockSize();
-
-        // By contract file must have blockSize > 0, while directory's blockSize == 0:
-        assert entry.isFile() == (blockSize > 0);
-        assert entry.isDirectory() == (blockSize == 0);
-
-        grpBlockSize = entry.affinityKey() == null ? globalGrpSize :
-            entry.length() == 0 ? globalGrpSize : entry.length();
-
-        len = entry.length();
-        props = entry.properties();
-
-        accessTime = entry.accessTime();
-        modificationTime = entry.modificationTime();
     }
 
     /** {@inheritDoc} */
@@ -254,6 +232,32 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
         props = U.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        IgfsUtils.writePath(rawWriter, path);
+        rawWriter.writeInt(blockSize);
+        rawWriter.writeLong(grpBlockSize);
+        rawWriter.writeLong(len);
+        IgfsUtils.writeProperties(rawWriter, props);
+        rawWriter.writeLong(accessTime);
+        rawWriter.writeLong(modificationTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        path = IgfsUtils.readPath(rawReader);
+        blockSize = rawReader.readInt();
+        grpBlockSize = rawReader.readLong();
+        len = rawReader.readLong();
+        props = IgfsUtils.readProperties(rawReader);
+        accessTime = rawReader.readLong();
+        modificationTime = rawReader.readLong();
     }
 
     /** {@inheritDoc} */

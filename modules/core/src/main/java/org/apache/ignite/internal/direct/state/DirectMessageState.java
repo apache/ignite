@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.direct.state;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -35,7 +35,6 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     private final IgniteOutClosure<T> factory;
 
     /** Stack array. */
-    @GridToStringInclude
     private T[] stack;
 
     /** Current position. */
@@ -102,7 +101,7 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        return S.toString(DirectMessageState.class, this);
+    @Override public String toString() {
+        return S.toString(DirectMessageState.class, this, "stack", Arrays.toString(stack));
     }
 }

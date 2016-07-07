@@ -21,16 +21,16 @@
 
 Creating NuGet package:
 1) Build Java: mvn clean package -DskipTests -U -Plgpl
-2) Build Apache.Ignite.sln (x64 configuration)
+2) Build Apache.Ignite.sln (AnyCPU configuration)
 3) Create package (use csproj instead of nuspec so that template substitution works): 
-   nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=x64
+   nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
 
 -->
 
 <package >
     <metadata>
-        <id>Apache.Ignite.NET</id>
-        <title>Apache Ignite.NET x64</title>
+        <id>Apache.Ignite</id>
+        <title>Apache Ignite</title>
         <!-- -->
         <version>$version$</version>
         <authors>Apache Ignite</authors>
@@ -40,23 +40,18 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
             
 More info: https://apacheignite-net.readme.io/
-            
-WARNING: this only works with x64 build targets.
         </description>
         <summary>
             High-performance in-memory platform for computing and transacting on large-scale data sets in real-time.
         </summary>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2015</copyright>
+        <copyright>Copyright 2016</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
     </metadata>
     <files>
-        <!-- Dll will be included automatically in the lib folder. -->
-        <!--<file src="bin\x64\Release\*.dll" target="lib\net40" />-->
-        
         <!-- Install script should be in tools -->
         <file src="NuGet\Install.ps1" target="tools" />
         <file src="NuGet\Uninstall.ps1" target="tools" />

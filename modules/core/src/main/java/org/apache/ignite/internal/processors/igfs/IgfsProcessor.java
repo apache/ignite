@@ -17,6 +17,31 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.mapreduce.IgfsJob;
+import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteClosure;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,36 +52,10 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsMode;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.mapreduce.IgfsJob;
-import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
@@ -93,10 +92,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        IgniteConfiguration igniteCfg = ctx.config();
+
+        if (igniteCfg.isDaemon())
             return;
 
-        FileSystemConfiguration[] cfgs = ctx.config().getFileSystemConfiguration();
+        FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
@@ -104,10 +105,29 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         // Start IGFS instances.
         for (FileSystemConfiguration cfg : cfgs) {
+            FileSystemConfiguration cfg0 = new FileSystemConfiguration(cfg);
+
+            boolean metaClient = true;
+
+            CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
+
+            if (cacheCfgs != null) {
+                for (CacheConfiguration cacheCfg : cacheCfgs) {
+                    if (F.eq(cacheCfg.getName(), cfg.getMetaCacheName())) {
+                        metaClient = false;
+
+                        break;
+                    }
+                }
+            }
+
+            if (igniteCfg.isClientMode() != null && igniteCfg.isClientMode())
+                metaClient = true;
+
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
-                new FileSystemConfiguration(cfg),
-                new IgfsMetaManager(),
+                cfg0,
+                new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
                 new IgfsFragmentizerManager());
@@ -116,35 +136,32 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.start(igfsCtx);
 
-            igfsCache.put(maskName(cfg.getName()), igfsCtx);
+            igfsCache.put(maskName(cfg0.getName()), igfsCtx);
         }
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
 
-        IgniteConfiguration gridCfg = ctx.config();
-
         // Node doesn't have IGFS if it:
         // is daemon;
         // doesn't have configured IGFS;
         // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getFileSystemConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
+        if (igniteCfg.isDaemon() || F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
+            F.isEmpty(igniteCfg.getCacheConfiguration()))
             return;
 
         final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
-            @Override public void apply(CacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
+        assert igniteCfg.getCacheConfiguration() != null;
+
+        for (CacheConfiguration ccfg : igniteCfg.getCacheConfiguration())
+            cacheCfgs.put(ccfg.getName(), ccfg);
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
-        assert gridCfg.getFileSystemConfiguration() != null;
+        assert igniteCfg.getFileSystemConfiguration() != null;
 
-        for (FileSystemConfiguration igfsCfg : gridCfg.getFileSystemConfiguration()) {
+        for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
             CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
@@ -160,7 +177,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             attrVals.add(new IgfsAttributes(
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
-                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
                 igfsCfg.getMetaCacheName(),
                 igfsCfg.getDataCacheName(),
                 igfsCfg.getDefaultMode(),
@@ -313,35 +330,19 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
                     IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
-            if (cfg.getIpcEndpointConfiguration() != null) {
-                final int tcpPort = cfg.getIpcEndpointConfiguration().getPort();
+            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
+
+            if (ipcCfg != null) {
+                final int tcpPort = ipcCfg.getPort();
 
                 if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
                     throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
                         ".." + MAX_TCP_PORT + "]: " + tcpPort);
+
+                if (ipcCfg.getThreadCount() <= 0)
+                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
+                        ipcCfg.getThreadCount());
             }
-
-            long maxSpaceSize = cfg.getMaxSpaceSize();
-
-            if (maxSpaceSize > 0) {
-                // Max space validation.
-                long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
-
-                if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
-                    // Offheap is disabled.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-                else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
-                    // Offheap is enabled, but limited.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
-                        "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-            }
-
-            if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
-                U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
-                    "space will be limited to 80% of max JVM heap size): " + cfg.getName());
 
             boolean secondary = cfg.getDefaultMode() == PROXY;
 

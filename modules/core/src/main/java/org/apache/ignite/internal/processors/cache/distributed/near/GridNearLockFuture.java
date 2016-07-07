@@ -68,6 +68,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 
 /**
@@ -118,7 +119,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private final CacheEntryPredicate[] filter;
@@ -180,6 +181,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         super(CU.boolReducer());
 
         assert keys != null;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.keys = keys;
@@ -262,13 +264,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      */
     private boolean isInvalidate() {
         return tx != null && tx.isInvalidate();
-    }
-
-    /**
-     * @return {@code True} if rollback is synchronous.
-     */
-    private boolean syncRollback() {
-        return tx != null && tx.syncRollback();
     }
 
     /**
@@ -1013,7 +1008,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 timeout,
                                                 mappedKeys.size(),
                                                 inTx() ? tx.size() : mappedKeys.size(),
-                                                inTx() && tx.syncCommit(),
+                                                inTx() && tx.syncMode() == FULL_SYNC,
                                                 inTx() ? tx.subjectId() : null,
                                                 inTx() ? tx.taskNameHash() : 0,
                                                 read ? accessTtl : -1L,

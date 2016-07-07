@@ -51,10 +51,39 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>pkg\lib\net40\Apache.Ignite.Core.dll</HintPath>
+      <HintPath>packages\Apache.Ignite.1.6.0\lib\net40\Apache.Ignite.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.Linq.1.6.0\lib\net40\Apache.Ignite.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Apache.Ignite.AspNet">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.AspNet.1.6.0\lib\net40\Apache.Ignite.AspNet.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
@@ -63,11 +92,20 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="Remotion.Linq, Version=2.0.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
+      <HintPath>packages\Remotion.Linq.2.0.1\lib\net40\Remotion.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AspNetTest.cs" />
     <Compile Include="ComputeTest.cs" />
+    <Compile Include="SchemaTest.cs" />
     <Compile Include="StartupTest.cs" />
     <Compile Include="CacheTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -81,17 +119,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
-    <None Include="install-package.cmd" />
+    <Content Include="IgniteConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="install-package.ps1" />
     <None Include="NuGet.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if not exist $(TargetDir)Libs md $(TargetDir)Libs
-xcopy /s /y  $(ProjectDir)pkg\Libs $(TargetDir)Libs</PostBuildEvent>
+    <PostBuildEvent>if not exist "$(TargetDir)Libs" md "$(TargetDir)Libs"
+xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.1.6.0\Libs\*.*" "$(TargetDir)Libs"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>cd $(ProjectDir)
-if not exist pkg install-package.cmd</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

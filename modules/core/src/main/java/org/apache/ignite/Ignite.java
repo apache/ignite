@@ -85,7 +85,7 @@ public interface Ignite extends AutoCloseable {
     public IgniteLogger log();
 
     /**
-     * Gets the configuration of this grid instance.
+     * Gets the configuration of this Ignite instance.
      * <p>
      * <b>NOTE:</b>
      * <br>
@@ -95,7 +95,7 @@ public interface Ignite extends AutoCloseable {
      * via this method to check its configuration properties or call other non-SPI
      * methods.
      *
-     * @return Grid configuration instance.
+     * @return Ignite configuration instance.
      */
     public IgniteConfiguration configuration();
 
@@ -463,6 +463,23 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If semaphore could not be fetched or created.
      */
     public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe, boolean create)
+        throws IgniteException;
+
+    /**
+     * Gets or creates reentrant lock. If reentrant lock is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name.
+     *
+     * @param name Name of the lock.
+     * @param failoverSafe {@code True} to create failover safe lock which means that
+     *      if any node leaves topology, all locks already acquired by that node are silently released
+     *      and become available for other nodes to acquire. If flag is {@code false} then
+     *      all threads on other nodes waiting to acquire lock are interrupted.
+     * @param fair If {@code True}, fair lock will be created.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return ReentrantLock for the given name.
+     * @throws IgniteException If reentrant lock could not be fetched or created.
+     */
+    public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
         throws IgniteException;
 
     /**

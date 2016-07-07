@@ -18,6 +18,8 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -30,6 +32,9 @@ public class IgniteThreadFactory implements ThreadFactory {
 
     /** Thread name. */
     private final String threadName;
+
+    /** Index generator for threads. */
+    private final AtomicInteger idxGen = new AtomicInteger();
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
@@ -55,6 +60,6 @@ public class IgniteThreadFactory implements ThreadFactory {
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new IgniteThread(gridName, threadName, r);
+        return new IgniteThread(gridName, threadName, r, idxGen.incrementAndGet());
     }
 }

@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -51,7 +50,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
+                return new IgniteBiTuple<>();
             }
         };
 

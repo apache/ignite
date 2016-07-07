@@ -61,10 +61,12 @@ import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
@@ -558,7 +561,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (node == null)
                 throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
-            IgniteUuid jobId = IgniteUuid.fromUuid(node.id());
+            IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
 
             GridJobSiblingImpl sib = new GridJobSiblingImpl(ses.getId(), jobId, node.id(), ctx);
 
@@ -594,7 +597,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
                     LT.warn(log, null, "Number of jobs in task is too large for task: " + ses.getTaskName() +
                         ". Consider reducing number of jobs or disabling job result cache with " +
-                        "@GridComputeTaskNoResultCache annotation.");
+                        "@ComputeTaskNoResultCache annotation.");
             }
         }
 
@@ -677,6 +680,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Flag indicating whether occupied flag for
             // job response was changed in this method apply.
             boolean selfOccupied = false;
+
+            IgniteInternalFuture<?> affFut = null;
+
+            boolean waitForAffTop = false;
+
+            final GridJobExecuteResponse failoverRes = res;
 
             try {
                 synchronized (mux) {
@@ -801,7 +810,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 ComputeJobResultPolicy plc = result(jobRes, results);
 
                 if (plc == null) {
-                    String errMsg = "Failed to obtain remote job result policy for result from GridComputeTask.result(..) " +
+                    String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
                         "method that returned null (will fail the whole task): " + jobRes;
 
                     finishTask(null, new IgniteCheckedException(errMsg));
@@ -814,7 +823,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     // then there is no point to proceed.
                     if (state != State.WAITING) {
                         if (log.isDebugEnabled())
-                            log.debug("Ignoring GridComputeTask.result(..) value since task is already reducing or" +
+                            log.debug("Ignoring ComputeTask.result(..) value since task is already reducing or" +
                                 "finishing [res=" + res + ", job=" + ses + ", state=" + state + ']');
 
                         return;
@@ -847,7 +856,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         }
 
                         case FAILOVER: {
-                            if (!failover(res, jobRes, getTaskTopology()))
+                            if (affKey != null) {
+                                AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+                                affFut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
+                            }
+
+                            if (affFut != null && !affFut.isDone()) {
+                                waitForAffTop = true;
+
+                                jobRes.resetResponse();
+                            }
+                            else if (!failover(res, jobRes, getTaskTopology()))
                                 plc = null;
 
                             break;
@@ -856,7 +876,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
 
                 // Outside of synchronization.
-                if (plc != null) {
+                if (plc != null && !waitForAffTop) {
                     // Handle failover.
                     if (plc == FAILOVER)
                         sendFailoverRequest(jobRes);
@@ -872,6 +892,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
                 finishTask(null, e);
+
+                waitForAffTop = false;
             }
             finally {
                 // Open up job for processing responses.
@@ -889,6 +911,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     // Process delayed responses if there are any.
                     res = delayedRess.poll();
                 }
+            }
+
+            if (waitForAffTop && affFut != null) {
+                affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut0) {
+                        ctx.closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                onResponse(failoverRes);
+                            }
+                        }, false);
+                    }
+                });
             }
         }
     }
@@ -941,7 +975,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                             "ComputeJobResultPolicy.FAILOVER was not returned from " +
-                            "ComputeTask.result(...) method for job result with GridComputeJobFailoverException.", e);
+                            "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
 
                         finishTask(null, e0);
 
@@ -957,7 +991,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
                 catch (Throwable e) {
                     String errMsg = "Failed to obtain remote job result policy for result from" +
-                        "GridComputeTask.result(..) method due to undeclared user exception " +
+                        "ComputeTask.result(..) method due to undeclared user exception " +
                         "(will fail the whole task): " + jobRes;
 
                     U.error(log, errMsg, e);
@@ -1039,7 +1073,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param top Topology.
      * @return {@code True} if fail-over SPI returned a new node.
      */
-    private boolean failover(GridJobExecuteResponse res, GridJobResultImpl jobRes, Collection<? extends ClusterNode> top) {
+    private boolean failover(
+        GridJobExecuteResponse res,
+        GridJobResultImpl jobRes,
+        Collection<? extends ClusterNode> top
+    ) {
         assert Thread.holdsLock(mux);
 
         try {

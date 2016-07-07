@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -541,6 +542,12 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe,
         boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLock reentrantLock(String name, boolean failoverSafe,
+        boolean fair, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -232,8 +233,12 @@ namespace Apache.Ignite.Core.Tests
 
                 while (true)
                 {
+                    Thread.Sleep(1000);
+
                     Ignition.Stop("grid_2", true);
                     StartGrid("grid_2");
+
+                    Thread.Sleep(1000);
 
                     if (putTask.Exception != null)
                         throw putTask.Exception;

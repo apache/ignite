@@ -313,18 +313,17 @@ namespace Apache.Ignite.Core.Impl.Services
                 {
                     bool hasVal = r.ReadBool();
 
-                    if (hasVal)
-                    {
-                        var count = r.ReadInt();
+                    if (!hasVal)
+                        return new T[0];
+
+                    var count = r.ReadInt();
                         
-                        var res = new List<T>(count);
+                    var res = new List<T>(count);
 
-                        for (var i = 0; i < count; i++)
-                            res.Add((T)Marshaller.Ignite.HandleRegistry.Get<IService>(r.ReadLong()));
+                    for (var i = 0; i < count; i++)
+                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
 
-                        return res;
-                    }
-                    return null;
+                    return res;
                 });
         }
 
@@ -348,9 +347,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 return locInst;
 
             var javaProxy = UU.ServicesGetServiceProxy(Target, name, sticky);
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
 
-            return new ServiceProxy<T>((method, args) => InvokeProxyMethod(javaProxy, method, args))
-                .GetTransparentProxy();
+            return new ServiceProxy<T>((method, args) =>
+                InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
         }
 
         /// <summary>
@@ -359,13 +359,15 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="proxy">Unmanaged proxy.</param>
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
+        /// <param name="platform">The platform.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args)
+        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args, 
+            Platform platform)
         {
             return DoOutInOp(OpInvokeMethod,
-                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
+                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
                 stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
         }
     }

@@ -27,9 +27,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -134,6 +139,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
+
+        /// <summary> Default value for read-through behavior. </summary>
+        public const bool DefaultReadThrough = false;
+
+        /// <summary> Default value for write-through behavior. </summary>
+        public const bool DefaultWriteThrough = false;
 
         /// <summary>
         /// Gets or sets the cache name.
@@ -255,14 +266,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
+            ReadThrough = reader.ReadBoolean();
+            WriteThrough = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+
+            NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
+
+            EvictionPolicy = EvictionPolicyBase.Read(reader);
+            AffinityFunction = AffinityFunctionSerializer.Read(reader);
         }
 
         /// <summary>
-        /// Writes this instane to the specified writer.
+        /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
@@ -303,6 +321,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
             writer.WriteInt((int) WriteSynchronizationMode);
+            writer.WriteBoolean(ReadThrough);
+            writer.WriteBoolean(WriteThrough);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -319,6 +339,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            if (NearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                NearConfiguration.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            EvictionPolicyBase.Write(writer, EvictionPolicy);
+            AffinityFunctionSerializer.Write(writer, AffinityFunction);
         }
 
         /// <summary>
@@ -561,7 +592,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
-        /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
+        /// Gets or sets flag indicating whether copy of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
         [DefaultValue(DefaultCopyOnRead)]
@@ -589,13 +620,58 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
+        /// <para />
+        /// See <see cref="ReadThrough"/> and <see cref="WriteThrough"/> properties to enable read-through and 
+        /// write-through behavior so that cache store is invoked on get and/or put operations.
+        /// <para />
+        /// If both <see cref="ReadThrough"/> and <see cref="WriteThrough"/> are <code>false</code>, cache store 
+        /// will be invoked only on <see cref="ICache{TK,TV}.LoadCache"/> calls.
         /// </summary>
         public IFactory<ICacheStore> CacheStoreFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether read-through should be enabled for cache operations.
+        /// <para />
+        /// When in read-through mode, cache misses that occur due to cache entries not existing 
+        /// as a result of performing a "get" operations will appropriately cause the 
+        /// configured <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
+        /// </summary>
+        [DefaultValue(DefaultReadThrough)]
+        public bool ReadThrough { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether write-through should be enabled for cache operations.
+        /// <para />
+        /// When in "write-through" mode, cache updates that occur as a result of performing "put" operations
+        /// will appropriately cause the configured 
+        /// <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
+        /// </summary>
+        [DefaultValue(DefaultWriteThrough)]
+        public bool WriteThrough { get; set; }
 
         /// <summary>
         /// Gets or sets the query entity configuration.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryEntity> QueryEntities { get; set; }
+
+        /// <summary>
+        /// Gets or sets the near cache configuration.
+        /// </summary>
+        public NearCacheConfiguration NearConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the eviction policy.
+        /// Null value means disabled evictions.
+        /// </summary>
+        public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// <para />
+        /// Predefined implementations: 
+        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+        /// </summary>
+        public IAffinityFunction AffinityFunction { get; set; }
     }
 }

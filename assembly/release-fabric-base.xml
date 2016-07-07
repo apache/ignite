@@ -35,6 +35,18 @@
             <destName>ignite_x86.sln</destName>
         </file>
 
+        <file>
+            <source>modules/platforms/cpp/configure.acrel</source>
+            <outputDirectory>/platforms/cpp</outputDirectory>
+            <destName>configure.ac</destName>
+        </file>
+
+        <file>
+            <source>modules/platforms/cpp/Makefile.amrel</source>
+            <outputDirectory>/platforms/cpp</outputDirectory>
+            <destName>Makefile.am</destName>
+        </file>
+
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_FABRIC</source>
@@ -114,6 +126,12 @@
             <outputDirectory>/platforms/cpp/common</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP "jni" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/jni</directory>
+            <outputDirectory>/platforms/cpp/jni</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP "core" module. -->
         <fileSet>
             <directory>modules/platforms/cpp/core</directory>
@@ -130,6 +148,18 @@
         <fileSet>
             <directory>modules/platforms/cpp/examples</directory>
             <outputDirectory>/platforms/cpp/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "odbc" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/odbc</directory>
+            <outputDirectory>/platforms/cpp/odbc</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "binary" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/binary</directory>
+            <outputDirectory>/platforms/cpp/binary</outputDirectory>
         </fileSet>
 
         <!-- Move CPP licenses. -->

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,6 +27,10 @@ import org.jetbrains.annotations.Nullable;
 public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    @GridDirectTransient
+    private int part = -1;
 
     /**
      *
@@ -39,10 +44,30 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      * @param valBytes Value bytes.
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes) {
+        this(val, valBytes, -1);
+    }
+
+    /**
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param part Partition.
+     */
+    public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
         assert val != null;
 
         this.val = val;
         this.valBytes = valBytes;
+        this.part = part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void partition(int part) {
+        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -93,6 +118,11 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 90;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
 
 /**
@@ -84,12 +84,12 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
 
         Map<String,String> m = new HashMap<>(3); // max size == 4
 
-        m.put(IgfsEx.PROP_USER_NAME, status.getOwner());
-        m.put(IgfsEx.PROP_GROUP_NAME, status.getGroup());
+        m.put(IgfsUtils.PROP_USER_NAME, status.getOwner());
+        m.put(IgfsUtils.PROP_GROUP_NAME, status.getGroup());
 
         FsPermission perm = status.getPermission();
 
-        m.put(IgfsEx.PROP_PERMISSION, "0" + perm.getUserAction().ordinal() + perm.getGroupAction().ordinal() +
+        m.put(IgfsUtils.PROP_PERMISSION, "0" + perm.getUserAction().ordinal() + perm.getGroupAction().ordinal() +
             perm.getOtherAction().ordinal());
 
         return m;

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
@@ -53,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
         /** Aff key field name. */
         private readonly string _affinityKeyFieldName;
+
+        /** Type descriptor. */
+        private readonly IBinaryTypeDescriptor _descriptor;
 
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
@@ -129,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
             : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
-            // No-op.
+            _descriptor = desc;
         }
 
         /// <summary>
@@ -211,12 +215,34 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         }
 
         /// <summary>
+        /// Gets the descriptor.
+        /// </summary>
+        public IBinaryTypeDescriptor Descriptor
+        {
+            get { return _descriptor; }
+        }
+
+        /// <summary>
         /// Gets fields map.
         /// </summary>
         /// <returns>Fields map.</returns>
         public IDictionary<string, int> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
+        }
+
+        /// <summary>
+        /// Updates the fields.
+        /// </summary>
+        public void UpdateFields(IDictionary<string, int> fields)
+        {
+            if (fields == null || fields.Count == 0)
+                return;
+
+            Debug.Assert(_fields != null);
+
+            foreach (var field in fields)
+                _fields[field.Key] = field.Value;
         }
     }
 }

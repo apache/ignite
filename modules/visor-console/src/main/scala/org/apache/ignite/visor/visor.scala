@@ -244,7 +244,7 @@ object visor extends VisorTag {
      * Get grid node for specified ID.
      *
      * @param nid Node ID.
-     * @return GridNode instance.
+     * @return ClusterNode instance.
      * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
@@ -1101,20 +1101,24 @@ object visor extends VisorTag {
             }
 
         try
-            if (s.startsWith("lte")) // <=
-                Some(_ <= value(s.substring(3)))
-            else if (s.startsWith("lt")) // <
-                Some(_ < value(s.substring(2)))
-            else if (s.startsWith("gte")) // >=
-                Some(_ >= value(s.substring(3)))
-            else if (s.startsWith("gt")) // >
-                Some(_ > value(s.substring(2)))
-            else if (s.startsWith("eq")) // ==
-                Some(_ == value(s.substring(2)))
-            else if (s.startsWith("neq")) // !=
-                Some(_ != value(s.substring(3)))
-            else
-                None
+            Option(
+                if (s == null)
+                    null
+                else if (s.startsWith("lte")) // <=
+                    _ <= value(s.substring(3))
+                else if (s.startsWith("lt"))  // <
+                    _ < value(s.substring(2))
+                else if (s.startsWith("gte")) // >=
+                    _ >= value(s.substring(3))
+                else if (s.startsWith("gt"))  // >
+                    _ > value(s.substring(2))
+                else if (s.startsWith("eq"))  // ==
+                    _ == value(s.substring(2))
+                else if (s.startsWith("neq")) // !=
+                    _ != value(s.substring(3))
+                else
+                    null
+            )
         catch {
             case e: Throwable => None
         }

@@ -486,9 +486,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                 while (!finished.get()) {
                     stopGrid(3);
 
-                    U.sleep(300);
-
                     startGrid(3);
+
+                    awaitPartitionMapExchange();
                 }
 
                 return null;

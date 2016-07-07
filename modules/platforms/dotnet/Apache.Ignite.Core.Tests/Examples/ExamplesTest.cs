@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
@@ -104,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                     var proc = new IgniteProcess(args.ToArray());
 
-                    Assert.IsTrue(ignite.WaitTopology(i + 2, 30000));
+                    Assert.IsTrue(ignite.WaitTopology(i + 2));
                     Assert.IsTrue(proc.Alive);
                 }
 
