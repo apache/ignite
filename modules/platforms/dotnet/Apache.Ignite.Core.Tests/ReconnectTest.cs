@@ -63,8 +63,9 @@ namespace Apache.Ignite.Core.Tests
 
                 var ex = Assert.Throws<CacheException>(() => cache.Get(1));
 
-                Assert.IsTrue(ex.InnerException.Message.StartsWith(
-                        "javax.cache.CacheException: class org.apache.ignite.IgniteClientDisconnectedException"));
+                Assert.IsTrue(ex.ToString().Contains(
+                    "javax.cache.CacheException: class org.apache.ignite.IgniteClientDisconnectedException: " +
+                    "Operation has been cancelled (client node disconnected)"));
 
                 var inner = (ClientDisconnectedException) ex.InnerException;
 
