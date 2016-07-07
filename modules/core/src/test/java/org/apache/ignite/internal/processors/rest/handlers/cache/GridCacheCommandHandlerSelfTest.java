@@ -46,6 +46,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import javax.cache.processor.EntryProcessorException;
+
 /**
  * Tests command handler directly.
  */
@@ -141,17 +143,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(F.asMap("a", "#", "c", "%", "d", "4"), testAppend(curMap, newMap, true));
         assertEquals(F.asMap("a", "1", "b", "2", "c", "3", "d", "4"), testAppend(curMap, newMap, false));
-
-        try {
-            testAppend("as", Arrays.asList("df"), true);
-
-            fail("Expects failed with incompatible types message.");
-        }
-        catch (IgniteCheckedException e) {
-            info("Got expected exception: " + e);
-
-            assertTrue(e.getMessage().startsWith("Incompatible types"));
-        }
     }
 
     /**
@@ -164,7 +155,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @return Resulting value in cache.
      * @throws IgniteCheckedException In case of any grid exception.
      */
-    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
+    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException, EntryProcessorException {
         GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
@@ -176,14 +167,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         req.key(key);
         req.value(newVal);
 
-        try {
-            hnd.handleAsync(req).get().getResponse();
-            fail("Expects failed with Failing append or prepend operation message.");
-        } catch (IgniteCheckedException e){
-            info("Got expected exception: " + e);
-            assertTrue(e.getMessage().startsWith("Failing"));
-        }
-
         T res;
 
         try {
@@ -191,7 +174,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
             jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
-            assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
+
+            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
         }
         finally {
             res = (T)jcache().getAndRemove(key);
