@@ -41,6 +41,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
@@ -316,7 +317,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        final CacheEntryEventFilter filter = getEventFilter();
+        final CacheEntryEventFilter filter;
+        try {
+            filter = getEventFilter();
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
 
         if (filter != null) {
             if (filter instanceof JCacheQueryRemoteFilter) {
@@ -508,8 +515,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @return Cache entry event filter.
+     * @throws IgniteException In case of error, in particular filter instantiation error
      */
-    public CacheEntryEventFilter getEventFilter() {
+    public CacheEntryEventFilter getEventFilter() throws IgniteException {
         return rmtFilter;
     }
 

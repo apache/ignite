@@ -26,6 +26,7 @@ import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
@@ -102,13 +103,18 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter getEventFilter() {
+    @Override public CacheEntryEventFilter getEventFilter() throws IgniteException {
         if (filter == null) {
             assert rmtFilterFactory != null;
 
             Factory<? extends CacheEntryEventFilter> factory = rmtFilterFactory;
 
-            filter = factory.create();
+            try {
+                filter = factory.create();
+            }
+            catch (NoClassDefFoundError e) {
+                throw new IgniteException("Cache entry event filter class not found: " + e.getMessage(), e);
+            }
 
             if (types != 0)
                 filter = new JCacheQueryRemoteFilter(filter, types);
