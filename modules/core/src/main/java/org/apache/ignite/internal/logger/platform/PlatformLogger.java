@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+
 /**
  * Logger that delegates to platform.
  */
@@ -60,6 +62,10 @@ public class PlatformLogger implements IgniteLogger {
 
     /** Info flag. */
     private final boolean infoEnabled;
+
+    /** Quiet flag. */
+    // TODO: Get this from .NET?
+    private static final boolean isQuiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
     /** Context. */
     private volatile PlatformContext ctx;
@@ -152,9 +158,7 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        // Return false so that Java does not write anything to console.
-        // Platform is responsible for console output, we do not want to mix these.
-        return false;
+        return isQuiet;
     }
 
     /** {@inheritDoc} */
