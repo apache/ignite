@@ -48,28 +48,6 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeExecutionRejectedException"/> class.
         /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        public ComputeExecutionRejectedException(string message, Exception cause) : base(message, cause)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComputeExecutionRejectedException"/> class.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public ComputeExecutionRejectedException(string message, Exception cause, string javaStackTrace) 
-            : base(message, cause, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComputeExecutionRejectedException"/> class.
-        /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected ComputeExecutionRejectedException(SerializationInfo info, StreamingContext ctx)
@@ -78,5 +56,14 @@ namespace Apache.Ignite.Core.Compute
             // No-op.
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeExecutionRejectedException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        public ComputeExecutionRejectedException(string message, Exception cause) : base(message, cause)
+        {
+            // No-op.
+        }
     }
 }

@@ -51,32 +51,20 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
         /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        public ComputeJobFailoverException(string message, Exception cause) : base(message, cause)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public ComputeJobFailoverException(string message, Exception cause, string javaStackTrace) 
-            : base(message, cause, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
-        /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected ComputeJobFailoverException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        public ComputeJobFailoverException(string message, Exception cause) : base(message, cause)
         {
             // No-op.
         }

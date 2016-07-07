@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests
 
                 var ex = Assert.Throws<CacheException>(() => cache.Get(1));
 
-                Assert.IsTrue(ex.JavaStackTrace.StartsWith(
+                Assert.IsTrue(ex.InnerException.Message.StartsWith(
                         "javax.cache.CacheException: class org.apache.ignite.IgniteClientDisconnectedException"));
 
                 var inner = (ClientDisconnectedException) ex.InnerException;

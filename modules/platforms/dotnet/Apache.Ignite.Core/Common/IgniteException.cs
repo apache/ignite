@@ -26,12 +26,6 @@ namespace Apache.Ignite.Core.Common
     [Serializable]
     public class IgniteException : Exception
     {
-        /** Java stack trace. */
-        private readonly string _javaStackTrace;
-
-        /** Java stack trace field name. */
-        private const string JavaStackTraceField = "JavaStackTrace";
-
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteException"/> class.
         /// </summary>
@@ -60,56 +54,13 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteException" /> class.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public IgniteException(string message, Exception cause, string javaStackTrace) : base(message, cause)
-        {
-            _javaStackTrace = javaStackTrace;
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteException"/> class.
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected IgniteException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
         {
-            _javaStackTrace = info.GetString(JavaStackTraceField);
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, sets the <see cref="SerializationInfo" /> with information 
-        /// about the exception.
-        /// </summary>
-        /// <param name="info">The <see cref="SerializationInfo" /> that holds the serialized object data about 
-        /// the exception being thrown.</param>
-        /// <param name="context">The <see cref="StreamingContext" /> that contains contextual information about 
-        /// the source or destination.</param>
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-
-            info.AddValue(JavaStackTraceField, _javaStackTrace);
-        }
-
-        /// <summary>
-        /// Gets the Java stack trace, if applicable.
-        /// </summary>
-        /// <value>
-        /// The Java stack trace, or null.
-        /// </value>
-        public string JavaStackTrace
-        {
-            get { return _javaStackTrace; }
-        }
-
-        /** <inheritdoc /> */
-        public override string ToString()
-        {
-            return string.Format("{0}, \nJavaStackTrace: {1}", base.ToString(), JavaStackTrace);
+            // No-op.
         }
     }
 }
