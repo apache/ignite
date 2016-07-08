@@ -79,6 +79,8 @@ public class FreeList {
             throws IgniteCheckedException {
             final CacheDataRow row = fctx.row;
 
+            fctx.buf = buf;
+
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
             io.writeRowFragment(fctx);
@@ -270,18 +272,8 @@ public class FreeList {
                             page.finishInitialWrite();
                         }
                     }
-                    else {
-                        try {
-                            final ByteBuffer buf = page.getForWrite();
-
-                            fctx.buf = buf;
-
-                            writeFragmentRow.run(page.id(), page, buf, fctx, 0);
-                        }
-                        finally {
-                            page.releaseWrite(true);
-                        }
-                    }
+                    else
+                        writePage(page.id(), page, writeFragmentRow, fctx, 0);
 
                     fctx.lastLink = PageIdUtils.linkFromDwordOffset(page.id(), fctx.lastIdx);
                 }
