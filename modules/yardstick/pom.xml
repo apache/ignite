@@ -137,7 +137,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/libs</outputDirectory>
+                            <outputDirectory>${basedir}/target/assembly/libs</outputDirectory>
                             <excludeTypes>pom</excludeTypes>
                         </configuration>
                     </execution>
@@ -155,7 +155,7 @@
                                     <version>${yardstick.version}</version>
                                     <type>zip</type>
                                     <classifier>resources</classifier>
-                                    <outputDirectory>${basedir}</outputDirectory>
+                                    <outputDirectory>${basedir}/target/assembly</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
@@ -168,28 +168,10 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.4</version>
                 <configuration>
-                    <outputDirectory>${basedir}/libs</outputDirectory>
+                    <outputDirectory>${basedir}/target/assembly/libs</outputDirectory>
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <version>2.5</version>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>${basedir}/bin</directory>
-                        </fileset>
-                        <fileset>
-                            <directory>${basedir}/libs</directory>
-                            <includes>
-                                <include>**/*.jar</include>
-                            </includes>
-                        </fileset>
-                    </filesets>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -197,6 +179,28 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>copy-yardstick-cfg-ignite</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <target>
+                                <copy todir="${basedir}/target/assembly/config">
+                                    <fileset dir="${basedir}/config" />
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

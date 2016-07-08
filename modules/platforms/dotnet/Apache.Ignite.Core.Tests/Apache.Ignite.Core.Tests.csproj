@@ -113,6 +113,7 @@
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
+    <Compile Include="ConsoleRedirectTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="Dataload\DataStreamerTestTopologyChange.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />

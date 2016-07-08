@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests
             // Copy jars
             var home = IgniteHome.Resolve(null);
 
-            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\" };
+            var jarNames = new[] {@"\ignite-core-", @"\geronimo-jcache_1.0_spec-1.0-alpha-1.jar", @"\modules\spring\" };
 
             var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
                 .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 VerifyNodeStarted(exePath);
             }
-            finally 
+            finally
             {
                 proc.Kill();
 
