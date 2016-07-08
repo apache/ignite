@@ -288,6 +288,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         rmtNodes.clear();
 
         U.interrupt(msgWorker);
+        sockWriter.stopped = true;
         U.interrupt(sockWriter);
         U.interrupt(sockReader);
 
@@ -967,6 +968,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private TcpDiscoveryAbstractMessage unackedMsg;
 
+        /** Protects from rare interrupted state loss on shutdown */
+        private volatile boolean stopped;
+
         /**
          *
          */
@@ -1032,7 +1036,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             TcpDiscoveryAbstractMessage msg = null;
 
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!stopped && !Thread.currentThread().isInterrupted()) {
                 Socket sock;
 
                 synchronized (mux) {
