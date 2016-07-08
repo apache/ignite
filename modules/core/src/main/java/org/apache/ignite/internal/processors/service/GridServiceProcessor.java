@@ -1315,8 +1315,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     public void onUtilityCacheStarted() {
         synchronized (pendingJobCtxs) {
-            for (ComputeJobContext ctx : pendingJobCtxs)
-                ctx.callcc();
+            if (pendingJobCtxs.size() == 0)
+                return;
+
+            Iterator<ComputeJobContext> iter = pendingJobCtxs.iterator();
+
+            while (iter.hasNext()) {
+                iter.next().callcc();
+                iter.remove();
+            }
         }
     }
 
