@@ -1863,7 +1863,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
             }
 
-            return serviceTopology(ignite.context().cache().utilityCache(), svcName);
+            return serviceTopology(cache, svcName);
         }
     }
 
