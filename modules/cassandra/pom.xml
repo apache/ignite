@@ -237,7 +237,7 @@
                                 org.apache.ignite,org.springframework,org.gridgain
                             </excludeGroupIds>
                             <excludeArtifactIds>
-                                commons-logging,slf4j-api,geronimo-jcache_1.0_spec,slf4j-api,aopalliance
+                                commons-logging,slf4j-api,cache-api,slf4j-api,aopalliance
                             </excludeArtifactIds>
                             <includeScope>runtime</includeScope>
                         </configuration>
