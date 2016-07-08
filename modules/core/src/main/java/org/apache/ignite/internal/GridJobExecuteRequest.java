@@ -138,7 +138,6 @@ public class GridJobExecuteRequest implements Message {
     private Collection<UUID> top;
 
     /** */
-    @GridToStringExclude
     @GridDirectCollection(value = String.class)
     private Collection<String> caches;
 
@@ -181,9 +180,9 @@ public class GridJobExecuteRequest implements Message {
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
      * @param subjId Subject ID.
-     * @param caches caches to lock partition.
-     * @param part partition to lock.
-     * @param topVer request affinity topology version.
+     * @param caches Caches to lock partition.
+     * @param part Partition to lock.
+     * @param topVer Affinity topology version of job mapping.
      */
     public GridJobExecuteRequest(
             IgniteUuid sesId,

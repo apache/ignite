@@ -52,6 +52,7 @@ import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -193,7 +194,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T1(mode, jobs), null, sys, null, -1);
+            return ctx.task().execute(new T1(mode, jobs), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -234,7 +235,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T2(mode, job), null, sys, null, -1);
+            return ctx.task().execute(new T2(mode, job), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -419,7 +420,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -444,6 +445,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @param job Job.
      * @param nodes Grid nodes.
+     * @param extraCaches Extra caches to reserve partition.
      * @return Job future.
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
@@ -457,21 +459,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
+            final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
+            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            Set<String> caches = new HashSet<>();
+            Set<String> caches = U.newHashSet((extraCaches != null) ? extraCaches.size() + 1 : 1);
             caches.add(cacheName);
             if (extraCaches != null)
                 caches.addAll(extraCaches);
 
             int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
 
-            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false, caches, part);
+            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false, caches, part, mapTopVer);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
@@ -486,6 +489,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @param job Job.
      * @param nodes Grid nodes.
+     * @param extraCaches Extra caches to reserve partition.
      * @return Job future.
      */
     public ComputeTaskInternalFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
@@ -499,7 +503,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
+            final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
+            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
@@ -513,7 +518,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
 
-            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false, caches, part);
+            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false, caches, part, mapTopVer);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
@@ -547,7 +552,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -579,7 +584,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -610,7 +615,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -633,7 +638,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8(job, arg), null, false, null, -1);
+            return ctx.task().execute(new T8(job, arg), null, false, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -656,7 +661,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null, -1);
+            return ctx.task().execute(new T11<>(job), arg, false, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -680,7 +685,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null, -1);
+            return ctx.task().execute(new T11<>(job), arg, false, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -705,7 +710,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T9<>(job, args), null, false, null, -1);
+            return ctx.task().execute(new T9<>(job, args), null, false, null, -1, null);
         }
         finally {
             busyLock.readUnlock();
@@ -729,7 +734,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null, -1);
+            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null, -1, null);
         }
         finally {
             busyLock.readUnlock();

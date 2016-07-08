@@ -709,9 +709,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         @Nullable IgniteException ex,
         boolean sndReply)
     {
-        if(reservedParts != null) {
-            for (GridReservable r : reservedParts)
-                r.release();
+        if (reservedParts != null) {
+            for (int i = 0, size = reservedParts.size(); i < size; ++i)
+                reservedParts.get(i).release();
         }
 
         // Avoid finishing a job more than once from different threads.

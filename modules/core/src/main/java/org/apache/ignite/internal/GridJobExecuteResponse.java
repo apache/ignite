@@ -77,7 +77,7 @@ public class GridJobExecuteResponse implements Message {
     private IgniteException fakeEx;
 
     /** */
-    private AffinityTopologyVersion retriedTopVer;
+    private AffinityTopologyVersion retry;
 
     /**
      * No-op constructor to support {@link Externalizable} interface. This
@@ -98,8 +98,7 @@ public class GridJobExecuteResponse implements Message {
      * @param jobAttrsBytes Serialized job attributes.
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
-     * @param retriedTopVer topology version for that {@link GridJobExecuteRequest#partsToLock} haven't been reserved
-     *  on the affinity node
+     * @param retry Topology version for that partitions haven't been reserved on the affinity node
      */
     public GridJobExecuteResponse(UUID nodeId,
         IgniteUuid sesId,
@@ -111,7 +110,7 @@ public class GridJobExecuteResponse implements Message {
         byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs,
         boolean isCancelled,
-        AffinityTopologyVersion retriedTopVer)
+        AffinityTopologyVersion retry)
     {
         assert nodeId != null;
         assert sesId != null;
@@ -127,7 +126,7 @@ public class GridJobExecuteResponse implements Message {
         this.jobAttrsBytes = jobAttrsBytes;
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
-        this.retriedTopVer = retriedTopVer;
+        this.retry = retry;
     }
 
     /**
@@ -218,15 +217,15 @@ public class GridJobExecuteResponse implements Message {
      * @return retried flag
      */
     public boolean isRetried() {
-        return retriedTopVer != null;
+        return retry != null;
     }
 
     /**
      * @return topology version for that specified partitions haven't been reserved
-     *  on the affinity node
+     *          on the affinity node
      */
-    public AffinityTopologyVersion getRetriedTopologyVersion() {
-        return retriedTopVer;
+    public AffinityTopologyVersion getRetryTopologyVersion() {
+        return (retry != null) ? retry : AffinityTopologyVersion.NONE;
     }
 
     /** {@inheritDoc} */
@@ -283,7 +282,7 @@ public class GridJobExecuteResponse implements Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("retriedTopVer", retriedTopVer))
+                if (!writer.writeMessage("retry", retry))
                     return false;
 
                 writer.incrementState();
@@ -356,7 +355,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 6:
-                retriedTopVer = reader.readMessage("retriedTopVer");
+                retry = reader.readMessage("retry");
 
                 if (!reader.isLastRead())
                     return false;

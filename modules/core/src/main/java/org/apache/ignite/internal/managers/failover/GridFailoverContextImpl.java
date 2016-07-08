@@ -23,9 +23,11 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.failover.FailoverContext;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,20 +50,24 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** Affinity cache name for affinityCall. */
     private final String affCacheName;
 
+    /** Affinity topology version. */
+    private final AffinityTopologyVersion topVer;
+
     /**
      * Initializes failover context.
-     *
-     * @param taskSes Grid task session.
+     *  @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
      * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
+     * @param topVer Affinity topology version.
      */
     public GridFailoverContextImpl(GridTaskSessionImpl taskSes,
         ComputeJobResult jobRes,
         GridLoadBalancerManager loadMgr,
         @Nullable Object affKey,
-        @Nullable String affCacheName) {
+        @Nullable String affCacheName,
+        @NotNull AffinityTopologyVersion topVer) {
         assert taskSes != null;
         assert jobRes != null;
         assert loadMgr != null;
@@ -71,6 +77,7 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.loadMgr = loadMgr;
         this.affKey = affKey;
         this.affCacheName = affCacheName;
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -96,6 +103,13 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Nullable @Override public String affinityCacheName() {
         return affCacheName;
+    }
+
+    /**
+     * @return Affinity topology version.
+     */
+    @NotNull public AffinityTopologyVersion affinityTopologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */
