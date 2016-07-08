@@ -94,7 +94,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                 MetadataStorage metaStore = storeMap.get(cacheId);
 
                 if (metaStore == null) {
-                    metaStore = new MetadataStorage(mem, cacheId);
+                    metaStore = new MetadataStorage(mem, null, cacheId);
 
                     storeMap.put(cacheId, metaStore);
                 }

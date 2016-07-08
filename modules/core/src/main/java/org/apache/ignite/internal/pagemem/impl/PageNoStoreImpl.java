@@ -91,16 +91,6 @@ public class PageNoStoreImpl implements Page {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer getForInitialWrite() {
-        return reset(buf);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishInitialWrite() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void releaseWrite(boolean markDirty) {
         pageMem.writeUnlockPage(absPtr);
     }

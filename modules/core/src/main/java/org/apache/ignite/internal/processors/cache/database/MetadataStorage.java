@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -61,20 +62,21 @@ public class MetadataStorage implements MetaStore {
 
     /**
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      */
-    public MetadataStorage(final PageMemory pageMem, final int cacheId) {
+    public MetadataStorage(final PageMemory pageMem, IgniteWriteAheadLogManager wal, final int cacheId) {
         try {
             this.pageMem = pageMem;
             this.cacheId = cacheId;
 
             final RootPage rootPage = metaPageTree();
 
-            metaTree = new MetaTree(cacheId, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
-                IndexLeafIO.VERSIONS, rootPage.isAllocated());
-
             // Reuse logic.
-            reuseList = new ReuseList(cacheId, pageMem,
+            reuseList = new ReuseList(cacheId, pageMem,  wal,
                 Runtime.getRuntime().availableProcessors() * 2, this);
+
+            metaTree = new MetaTree(cacheId, pageMem, wal, rootPage.pageId(), null, MetaStoreInnerIO.VERSIONS,
+                MetaStoreLeafIO.VERSIONS, rootPage.isAllocated());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -158,12 +160,16 @@ public class MetadataStorage implements MetaStore {
          * @param leafIos Leaf IOs.
          * @throws IgniteCheckedException
          */
-        private MetaTree(final int cacheId, final PageMemory pageMem, final FullPageId metaPageId,
+        private MetaTree(
+            final int cacheId,
+            final PageMemory pageMem,
+            final IgniteWriteAheadLogManager wal,
+            final FullPageId metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
             throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();
@@ -343,24 +349,23 @@ public class MetadataStorage implements MetaStore {
     /**
      *
      */
-    private static class IndexInnerIO extends BPlusInnerIO<IndexItem> implements IndexIO {
+    public static final class MetaStoreInnerIO extends BPlusInnerIO<IndexItem> implements IndexIO {
         /** */
-        static final IOVersions<IndexInnerIO> VERSIONS = new IOVersions<>(
-            new IndexInnerIO(1)
+        public static final IOVersions<MetaStoreInnerIO> VERSIONS = new IOVersions<>(
+            new MetaStoreInnerIO(1)
         );
 
         /**
          * @param ver Version.
          */
-        private IndexInnerIO(final int ver) {
+        private MetaStoreInnerIO(final int ver) {
             // name bytes and 1 byte for length, 8 bytes pageId
-            super(T_INDEX_INNER, ver, false, MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_INNER, ver, false, MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer buf, final int idx,
-            final IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
+            storeRow(buf, off, row);
         }
 
         /** {@inheritDoc} */
@@ -385,24 +390,23 @@ public class MetadataStorage implements MetaStore {
     /**
      *
      */
-    private static class IndexLeafIO extends BPlusLeafIO<IndexItem> implements IndexIO {
+    public static final class MetaStoreLeafIO extends BPlusLeafIO<IndexItem> implements IndexIO {
         /** */
-        static final IOVersions<IndexLeafIO> VERSIONS = new IOVersions<>(
-            new IndexLeafIO(1)
+        public static final IOVersions<MetaStoreLeafIO> VERSIONS = new IOVersions<>(
+            new MetaStoreLeafIO(1)
         );
 
         /**
          * @param ver Version.
          */
-        private IndexLeafIO(final int ver) {
-            // UTF-16 symbols and 1 byte for length, 8 bytes pageId
-            super(T_INDEX_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
+        private MetaStoreLeafIO(final int ver) {
+            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
+            super(T_METASTORE_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer buf, final int idx,
-            final IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
+            storeRow(buf, off, row);
         }
 
         /** {@inheritDoc} */

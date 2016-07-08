@@ -44,7 +44,62 @@ public abstract class WALRecord {
         CHECKPOINT_RECORD,
 
         /** */
-        HEADER_RECORD;
+        HEADER_RECORD,
+
+        // Delta records.
+
+        /** */
+        DATA_PAGE_INSERT_RECORD,
+
+        /** */
+        DATA_PAGE_REMOVE_RECORD,
+
+        /** */
+        BTREE_META_PAGE_INIT_NEW,
+
+        /** */
+        BTREE_META_PAGE_ADD_ROOT,
+
+        /** */
+        BTREE_META_PAGE_CUT_ROOT,
+
+        /** */
+        BTREE_INIT_NEW_ROOT,
+
+        /** */
+        BTREE_PAGE_RECYCLE,
+
+        /** */
+        BTREE_PAGE_INSERT,
+
+        /** */
+        BTREE_FIX_LEFTMOST_CHILD,
+
+        /** */
+        BTREE_FIX_COUNT,
+
+        /** */
+        BTREE_PAGE_REPLACE,
+
+        /** */
+        BTREE_PAGE_REMOVE,
+
+        /** */
+        BTREE_PAGE_INNER_REPLACE,
+
+        /** */
+        BTREE_FORWARD_PAGE_SPLIT,
+
+        /** */
+        BTREE_EXISTING_PAGE_SPLIT,
+
+        /** */
+        BTREE_PAGE_MERGE,
+
+        /** */
+        BTREE_PAGE_INIT_LEAF,
+
+        ;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

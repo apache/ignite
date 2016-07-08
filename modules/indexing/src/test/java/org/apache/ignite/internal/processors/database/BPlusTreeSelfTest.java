@@ -581,7 +581,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          */
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
             throws IgniteCheckedException {
-            super("test", cacheId, pageMem, metaPageId, reuseList,
+            super("test", cacheId, pageMem, null, metaPageId, reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             initNew();
@@ -625,12 +625,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx));
+            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx), null);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, Long row) {
-            buf.putLong(offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            buf.putLong(off, row);
         }
 
         /** {@inheritDoc} */
@@ -682,8 +682,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, Long row) {
-            buf.putLong(offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            buf.putLong(off, row);
         }
 
         /** {@inheritDoc} */
