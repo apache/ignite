@@ -90,32 +90,110 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
+        final PageMemory pageMem = cctx.shared().database().pageMemory();
+
         indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
 
-        metaStore = new MetadataStorage(cctx.shared().database().pageMemory(), cctx.shared().wal(), cctx.cacheId());
+        int cacheId = cctx.cacheId();
 
-        if (cctx.affinityNode()) {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+        long[] rootIds = null;
 
-            int cpus = Runtime.getRuntime().availableProcessors();
+        long metastoreRoot = 0;
 
-            cctx.shared().database().checkpointReadLock();
+        boolean initNew = false;
 
-            try {
-                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cctx.shared().wal(), cpus * 2, metaStore);
+        if (!cctx.shared().database().persistenceEnabled()) {
+            try (Page metaPage = pageMem.metaPage(cacheId)) {
+                metastoreRoot = metaPage.id();
 
-                freeList = new FreeList(cctx, reuseList);
+                rootIds = allocateMetas(pageMem, cacheId);
 
-                if (cctx.isLocal()) {
-                    assert cctx.cache() instanceof GridLocalCache : cctx.cache();
-
-                    locCacheDataStore = createCacheDataStore(0, (GridLocalCache)cctx.cache());
-                }
-            }
-            finally {
-                cctx.shared().database().checkpointReadUnlock();
+                initNew = true;
             }
         }
+        else {
+            try (Page meta = pageMem.metaPage(cacheId)) {
+                boolean initialized = false;
+
+                final ByteBuffer buf = meta.getForWrite();
+
+                try {
+                    final int pagesNum = buf.getInt();
+
+                    if (pagesNum > 0) {
+                        initialized = true;
+
+                        assert pagesNum > 2 : "Must be at least 2 pages for reuse list";
+
+                        metastoreRoot = buf.getLong();
+
+                        rootIds = new long[pagesNum - 1];
+
+                        for (int i = 0; i < rootIds.length; i++) {
+                            assert buf.remaining() >= 8 : "Meta page is corrupted";
+
+                            rootIds[i] = buf.getLong();
+                        }
+
+                    }
+
+                    if (!initialized) {
+                        metastoreRoot = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX);
+
+                        rootIds = allocateMetas(pageMem, cacheId);
+
+                        buf.rewind();
+
+                        buf.putInt(rootIds.length + 1);
+                        buf.putLong(metastoreRoot);
+
+                        for (final long rootId : rootIds)
+                            buf.putLong(rootId);
+
+                        initNew = true;
+                    }
+                } finally {
+                    meta.releaseWrite(!initialized);
+                }
+            }
+        }
+
+        // TODO cleanup allocated root pages!
+        cctx.shared().database().checkpointReadLock(); // TODO Whats for?
+
+        try {
+            reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), rootIds, initNew);
+            freeList = new FreeList(cctx, reuseList);
+
+            metaStore = new MetadataStorage(pageMem, cctx.shared().wal(), cacheId, reuseList, metastoreRoot, initNew);
+
+            if (cctx.affinityNode() && cctx.isLocal()) {
+                assert cctx.cache() instanceof GridLocalCache : cctx.cache();
+
+                locCacheDataStore = createCacheDataStore(0, (GridLocalCache) cctx.cache());
+
+            }
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param cacheId Cache ID.
+     * @return Allocated metapages.
+     * @throws IgniteCheckedException
+     */
+    private long[] allocateMetas(final PageMemory pageMem, final int cacheId) throws IgniteCheckedException {
+        final int segments = Runtime.getRuntime().availableProcessors() * 2;
+
+        final long[] rootIds = new long[segments];
+
+        for (int i = 0; i < segments; i++)
+            rootIds[i] = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_META);
+
+        return rootIds;
     }
 
     /**
@@ -553,7 +631,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 rowStore,
                 cctx,
                 dbMgr.pageMemory(),
-                rootPage.pageId(),
+                rootPage.pageId().pageId(),
                 rootPage.isAllocated());
 
         return new CacheDataStoreImpl(rowStore, dataTree, lsnr);
@@ -859,7 +937,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             CacheDataRowStore rowStore,
             GridCacheContext cctx,
             PageMemory pageMem,
-            FullPageId metaPageId,
+            long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
             super(name, cctx.cacheId(), pageMem, cctx.shared().wal(), metaPageId,

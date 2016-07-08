@@ -172,7 +172,7 @@ public class FreeList {
                 final RootPage rootPage = cctx.offheap().meta().getOrAllocateForTree(idxName);
 
                 fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, wal,
-                    rootPage.pageId(), rootPage.isAllocated()));
+                    rootPage.pageId().pageId(), rootPage.isAllocated()));
             }
         }
 

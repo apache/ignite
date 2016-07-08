@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -36,22 +34,19 @@ public final class ReuseList {
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param segments Segments.
-     * @param metaStore Meta store.
+     * @param rooIds Root IDs.
+     * @param initNew Init new flag.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, int segments, MetaStore metaStore)
-        throws IgniteCheckedException {
-        A.ensure(segments > 1, "Segments must be greater than 1.");
+    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long[] rooIds, boolean initNew) throws IgniteCheckedException {
+        A.ensure(rooIds.length > 1, "Segments must be greater than 1.");
 
-        ReuseTree[] trees0 = new ReuseTree[segments];
+        ReuseTree[] trees0 = new ReuseTree[rooIds.length];
 
-        for (int i = 0; i < segments; i++) {
+        for (int i = 0; i < rooIds.length; i++) {
             String idxName = BPlusTree.treeName("s" + i, "Reuse");
 
-            final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
-
-            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rootPage.pageId(), rootPage.isAllocated());
+            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rooIds[i], initNew);
         }
 
         // Later assignment is done intentionally, see null check in method take.

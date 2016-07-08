@@ -585,7 +585,7 @@ public abstract class BPlusTree<L, T extends L> {
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        FullPageId metaPageId,
+        long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
@@ -601,13 +601,12 @@ public abstract class BPlusTree<L, T extends L> {
         assert pageMem != null;
         assert innerIos != null;
         assert leafIos != null;
-        assert PageIdUtils.flag(metaPageId.pageId()) == PageIdAllocator.FLAG_META;
 
         this.innerIos = innerIos;
         this.leafIos = leafIos;
         this.pageMem = pageMem;
         this.cacheId = cacheId;
-        this.metaPageId = metaPageId.pageId();
+        this.metaPageId = metaPageId;
         this.reuseList = reuseList;
         this.wal = wal;
     }

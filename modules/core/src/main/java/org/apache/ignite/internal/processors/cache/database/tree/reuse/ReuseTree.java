@@ -42,15 +42,8 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseTree(
-        String name,
-        ReuseList reuseList,
-        int cacheId,
-        PageMemory pageMem,
-        IgniteWriteAheadLogManager wal,
-        FullPageId metaPageId,
-        boolean initNew
-    ) throws IgniteCheckedException {
+    public ReuseTree(String name, ReuseList reuseList, int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew)
+        throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)

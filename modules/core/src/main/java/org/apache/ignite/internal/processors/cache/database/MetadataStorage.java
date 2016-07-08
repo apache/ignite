@@ -58,25 +58,26 @@ public class MetadataStorage implements MetaStore {
     private final int cacheId;
 
     /** Allocation space. */
-    private static final byte ALLOC_SPACE = PageIdAllocator.FLAG_META;
+    private static final byte ALLOC_SPACE = PageIdAllocator.FLAG_IDX;
 
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      */
-    public MetadataStorage(final PageMemory pageMem, IgniteWriteAheadLogManager wal, final int cacheId) {
+    public MetadataStorage(
+        final PageMemory pageMem,
+        final IgniteWriteAheadLogManager wal,
+        final int cacheId,
+        final ReuseList reuseList,
+        final long rootPageId,
+        final boolean initNew) {
         try {
             this.pageMem = pageMem;
             this.cacheId = cacheId;
+            this.reuseList = reuseList;
 
-            final RootPage rootPage = metaPageTree();
-
-            metaTree = new MetaTree(cacheId, pageMem, wal, rootPage.pageId(), null, MetaStoreInnerIO.VERSIONS,
-                MetaStoreLeafIO.VERSIONS, rootPage.isAllocated());
-
-            // Reuse logic.
-            reuseList = new ReuseList(cacheId, pageMem,  wal,
-                Runtime.getRuntime().availableProcessors() * 2, this);
+            metaTree = new MetaTree(cacheId, pageMem, wal, rootPageId,
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -100,7 +101,7 @@ public class MetadataStorage implements MetaStore {
                 long pageId = 0;
 
                 if (reuseList != null)
-                    pageId = reuseList.take(null, new Bag(0));
+                    pageId = reuseList.take(null, null);
 
                 pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
 
@@ -123,28 +124,42 @@ public class MetadataStorage implements MetaStore {
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
 
-        if (row != null)
-            reuseList.add(new Bag(row.pageId));
+        if (row != null) {
+            if (reuseList == null)
+                pageMem.freePage(cacheId, row.pageId);
+            else
+                reuseList.add(new Bag(row.pageId));
+        }
 
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
     /**
-     * @return Meta page.
+     *
      */
-    private RootPage metaPageTree() throws IgniteCheckedException {
-        final Page meta = pageMem.metaPage(cacheId);
+    private static class Bag implements ReuseBag {
+        /** */
+        private long pageId;
 
-        final ByteBuffer buf = meta.getForRead();
-
-        try {
-            // check that page is just allocated
-            final long l = buf.getLong();
-
-            return new RootPage(meta.fullId(), l == 0);
+        /**
+         * @param pageId Page ID.
+         */
+        public Bag(final long pageId) {
+            this.pageId = pageId;
         }
-        finally {
-            meta.releaseRead();
+
+        /** {@inheritDoc} */
+        @Override public void addFreePage(final long pageId) {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public long pollFreePage() {
+            final long pid = pageId;
+
+            pageId = 0;
+
+            return pid;
         }
     }
 
@@ -164,7 +179,7 @@ public class MetadataStorage implements MetaStore {
             final int cacheId,
             final PageMemory pageMem,
             final IgniteWriteAheadLogManager wal,
-            final FullPageId metaPageId,
+            final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
@@ -425,38 +440,6 @@ public class MetadataStorage implements MetaStore {
         /** {@inheritDoc} */
         @Override public int getOffset(final int idx) {
             return offset(idx);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Bag implements ReuseBag {
-        /** */
-        private long pageId;
-
-        /**
-         * @param pageId Page ID.
-         */
-        private Bag(final long pageId) {
-            this.pageId = pageId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addFreePage(final long pageId) {
-            if (this.pageId != 0)
-                throw new IllegalStateException("Only one page is allowed to be added to this bag.");
-
-            this.pageId = pageId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long pollFreePage() {
-            long pageId = this.pageId;
-
-            this.pageId = 0;
-
-            return pageId;
         }
     }
 }
