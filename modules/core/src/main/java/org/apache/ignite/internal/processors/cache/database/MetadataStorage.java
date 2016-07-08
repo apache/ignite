@@ -71,12 +71,12 @@ public class MetadataStorage implements MetaStore {
 
             final RootPage rootPage = metaPageTree();
 
+            metaTree = new MetaTree(cacheId, pageMem, wal, rootPage.pageId(), null, MetaStoreInnerIO.VERSIONS,
+                MetaStoreLeafIO.VERSIONS, rootPage.isAllocated());
+
             // Reuse logic.
             reuseList = new ReuseList(cacheId, pageMem,  wal,
                 Runtime.getRuntime().availableProcessors() * 2, this);
-
-            metaTree = new MetaTree(cacheId, pageMem, wal, rootPage.pageId(), null, MetaStoreInnerIO.VERSIONS,
-                MetaStoreLeafIO.VERSIONS, rootPage.isAllocated());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -92,7 +92,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
 
-        metaStore = new MetadataStorage(cctx.shared().database().pageMemory(), cctx.cacheId());
+        metaStore = new MetadataStorage(cctx.shared().database().pageMemory(), cctx.shared().wal(), cctx.cacheId());
 
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
