@@ -191,7 +191,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         final long[] rootIds = new long[segments];
 
         for (int i = 0; i < segments; i++)
-            rootIds[i] = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_META);
+            rootIds[i] = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX);
 
         return rootIds;
     }

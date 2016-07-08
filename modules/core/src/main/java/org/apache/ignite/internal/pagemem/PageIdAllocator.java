@@ -24,9 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
  */
 public interface PageIdAllocator {
     /** */
-    public static final byte FLAG_META = 0;
-
-    /** */
     public static final byte FLAG_DATA = 1;
 
     /** */

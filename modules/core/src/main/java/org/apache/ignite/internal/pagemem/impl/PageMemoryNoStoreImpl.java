@@ -274,7 +274,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (pageId == null) {
             pageId = cacheMetaPages.computeIfAbsent(cacheId, new ConcurrentHashMap8.Fun<Integer, Long>() {
                 @Override public Long apply(Integer cacheId) {
-                    return allocatePage(cacheId, 0, FLAG_META);
+                    return allocatePage(cacheId, 0, FLAG_IDX);
                 }
             });
         }
