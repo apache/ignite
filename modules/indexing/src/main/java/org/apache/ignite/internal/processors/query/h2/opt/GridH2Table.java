@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -92,7 +92,7 @@ public class GridH2Table extends TableBase {
     private final boolean snapshotEnabled;
 
     /** */
-    private final H2RowStore rowStore;
+    private final H2RowFactory rowFactory;
 
     /**
      * Creates table.
@@ -111,7 +111,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.spaceName = spaceName;
 
-        rowStore = idxsFactory.createRowStore(this);
+        rowFactory = idxsFactory.createRowFactory(this);
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
@@ -340,11 +340,19 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
+    public boolean update(KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        boolean rmv,
+        long link)
         throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
+
+        row.link = link;
 
         return doUpdate(row, rmv);
     }
@@ -412,13 +420,7 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase pk = pk();
 
             if (!del) {
-                if (rowStore != null) {
-                    assert row.link == 0;
-
-                    rowStore.addRow(row);
-
-                    assert row.link != 0;
-                }
+                assert rowFactory == null || row.link != 0 : row;
 
                 GridH2Row old = pk.put(row); // Put to PK.
 
@@ -470,12 +472,6 @@ public class GridH2Table extends TableBase {
                         Row res = index(i).remove(old);
 
                         assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
-                    }
-
-                    if (rowStore != null) {
-                        assert old.link != 0;
-
-                        rowStore.removeRow(old.link);
                     }
 
                     size.decrement();
@@ -700,8 +696,8 @@ public class GridH2Table extends TableBase {
     /**
      * @return Data store.
      */
-    public H2RowStore rowStore() {
-        return rowStore;
+    public H2RowFactory rowFactory() {
+        return rowFactory;
     }
 
     /**
@@ -780,7 +776,7 @@ public class GridH2Table extends TableBase {
          * @param tbl Table.
          * @return Data store.
          */
-        H2RowStore createRowStore(GridH2Table tbl);
+        H2RowFactory createRowFactory(GridH2Table tbl);
     }
 
     /**

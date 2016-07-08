@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
@@ -41,13 +42,22 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      * @param metaPageId Meta page ID.
-     * @param initNew    Initialize new index.
+     * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeTree(String name, ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
-        throws IgniteCheckedException {
-        super(name, cacheId, pageMem, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
+    public FreeTree(
+        String name,
+        ReuseList reuseList,
+        int cacheId,
+        int partId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        FullPageId metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
+        super(name, cacheId, pageMem, wal, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
 
         this.partId = partId;
 

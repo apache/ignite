@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -85,8 +86,10 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -185,6 +188,13 @@ import static org.h2.result.SortOrder.DESCENDING;
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+    /**
+     * Register IO for indexes.
+     */
+    static {
+        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+    }
+
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;" +
@@ -478,7 +488,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (TableDescriptor tbl : tbls) {
                 if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, partId, null, ver, 0, true)) {
+                    if (tbl.tbl.update(key, partId, null, ver, 0, true, 0)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
 
@@ -530,8 +540,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject k, int partId,
-        CacheObject v, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+    @Override public boolean store(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject k,
+        int partId,
+        CacheObject v,
+        GridCacheVersion ver,
+        long expirationTime,
+        long link) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         removeKey(spaceName, k, partId, ver, tbl);
@@ -542,7 +558,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, partId, v, ver, expirationTime, false);
+        tbl.tbl.update(k, partId, v, ver, expirationTime, false, link);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
@@ -612,7 +628,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
                 foundTbl = true;
 
-                if (tbl.tbl.update(key, partId, val, ver, 0, true)) {
+                if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
@@ -2100,13 +2116,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public H2RowStore createRowStore(GridH2Table tbl) {
+        @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
             int cacheId = CU.cacheId(schema.ccfg.getName());
 
             GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
             if (cctx.affinityNode() && cctx.offheapIndex())
-                return new H2RowStore(tbl.rowDescriptor(), cctx, cctx.offheap().freeList());
+                return new H2RowFactory(tbl.rowDescriptor(), cctx);
 
             return null;
         }

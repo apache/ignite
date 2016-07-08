@@ -44,12 +44,12 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, SearchRow row) {
+    @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
         assert row0.link != 0;
 
-        setLink(buf, idx, row0.link);
+        buf.putLong(off, row0.link);
     }
 
     /** {@inheritDoc} */
@@ -57,25 +57,18 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(buf, idx);
 
-        return ((H2Tree)tree).getRowStore().getRow(link);
+        return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<SearchRow> srcIo, ByteBuffer src, int srcIdx) {
         long link = ((H2RowLinkIO)srcIo).getLink(src, srcIdx);
 
-        setLink(dst, dstIdx, link);
+        dst.putLong(offset(dstIdx), link);
     }
 
     /** {@inheritDoc} */
     @Override public long getLink(ByteBuffer buf, int idx) {
         return buf.getLong(offset(idx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setLink(ByteBuffer buf, int idx, long link) {
-        buf.putLong(offset(idx), link);
-
-        assert getLink(buf, idx) == link;
     }
 }

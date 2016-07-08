@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  *
  */
-public class StorageException extends Exception {
+public class StorageException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

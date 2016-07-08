@@ -209,7 +209,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param key Key.
          * @throws IgniteCheckedException If failed.
          */
-        public void remove(KeyCacheObject key) throws IgniteCheckedException;
+        public void remove(KeyCacheObject key,
+            CacheObject prevVal,
+            GridCacheVersion prevVer,
+            int partId) throws IgniteCheckedException;
 
         /**
          * @param key Key.

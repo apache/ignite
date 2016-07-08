@@ -44,19 +44,19 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, SearchRow row) {
+    @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
         assert row0.link != 0;
 
-        setLink(buf, idx, row0.link);
+        buf.putLong(off, row0.link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<SearchRow> srcIo, ByteBuffer src, int srcIdx) {
         assert srcIo == this;
 
-        setLink(dst, dstIdx, getLink(src, srcIdx));
+        dst.putLong(offset(dstIdx), getLink(src, srcIdx));
     }
 
     /** {@inheritDoc} */
@@ -64,18 +64,11 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(buf, idx);
 
-        return ((H2Tree)tree).getRowStore().getRow(link);
+        return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
     /** {@inheritDoc} */
     @Override public long getLink(ByteBuffer buf, int idx) {
         return buf.getLong(offset(idx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setLink(ByteBuffer buf, int idx, long link) {
-        buf.putLong(offset(idx), link);
-
-        assert getLink(buf, idx) == link;
     }
 }
