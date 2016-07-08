@@ -250,6 +250,14 @@ public class DataPageIO extends PageIO {
 
     /**
      * @param buf Buffer.
+     * @return Number of free entry slots.
+     */
+    public int getFreeItemSlots(ByteBuffer buf) {
+        return 0xFF - getDirectCount(buf);
+    }
+
+    /**
+     * @param buf Buffer.
      * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
      * @param directCnt Direct items count.
      * @param indirectCnt Indirect items count.

@@ -37,6 +37,8 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -82,11 +84,20 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         DatabaseConfiguration dbCfg = new DatabaseConfiguration();
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+        if (isLargePage()) {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(1024);
+            dbCfg.setPageSize(16 * 1024);
 
-        dbCfg.setPageCacheSize(200 * 1024 * 1024);
+            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+        }
+        else {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+            dbCfg.setPageSize(1024);
+
+            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+        }
 
         cfg.setDatabaseConfiguration(dbCfg);
 
@@ -117,7 +128,17 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3);
+        CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
+
+        ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
+
+        ccfg4.setAffinity(aff);
+
+        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -148,6 +169,13 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         stopAllGrids();
     }
+
+    /**
+     * @return {@code True} if use large page.
+     */
+    protected boolean isLargePage() {
+        return false;
+    };
 
     public void testGradualRandomPutAllRemoveAll() {
         IgniteEx ig = grid(0);

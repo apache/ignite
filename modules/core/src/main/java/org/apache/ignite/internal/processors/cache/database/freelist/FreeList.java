@@ -64,7 +64,10 @@ public class FreeList {
 
             row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
 
-            int freeSpace = io.getFreeSpace(buf);
+            final int freeSlots = io.getFreeItemSlots(buf);
+
+            // If no free slots available then assume that page is full
+            int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
 
             // Put our free item.
             tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
@@ -89,7 +92,10 @@ public class FreeList {
 
             fctx.lastLink = PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIdx);
 
-            int freeSpace = io.getFreeSpace(buf);
+            final int freeSlots = io.getFreeItemSlots(buf);
+
+            // If no free slots available then assume that page is full
+            int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
 
             // Put our free item.
             tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
