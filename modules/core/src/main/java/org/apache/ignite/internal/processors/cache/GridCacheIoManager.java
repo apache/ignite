@@ -520,8 +520,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 59: {
-                GridCacheQueryRequest res = (GridCacheQueryRequest)msg;
-                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+                GridCacheQueryResponse res = (GridCacheQueryResponse)msg;
+
+                cctx.io().sendOrderedMessage(
+                    ctx.node(nodeId),
+                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, res.requestId()),
+                    res,
+                    ctx.ioPolicy(),
+                    Long.MAX_VALUE);
             }
 
             break;

@@ -26,19 +26,31 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridStringLogger;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
+    /** */
+    private GridStringLogger stringLogger = new GridStringLogger();
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        cfg.setGridLogger(stringLogger);
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -87,6 +99,9 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
         GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)jcache(0).queryMetrics();
         System.out.println("QueryMetrics: executions=" + metr.executions() + ", fails=" + metr.fails());
         System.out.println("latchAwait=" + latchAwait + ", inhandledExceptionCounter=" + unhandledExceptionCounter);
+
+        String exceptionLog = stringLogger.toString();
+        assertTrue(!exceptionLog.contains("Unsupported direct type [message"));
 
         assert !latchAwait;
         assert unhandledExceptionCounter.intValue() == 1;
