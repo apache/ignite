@@ -7462,9 +7462,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Try acquires a permit from provided semaphore.
+     * Tries to acquire a permit from provided semaphore during {@code timeout}.
      *
      * @param sem Semaphore.
+     * @param timeout The maximum time to wait.
+     * @param unit The unit of the {@code time} argument.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      * @return {@code True} if acquires a permit, {@code false} another.
      */
