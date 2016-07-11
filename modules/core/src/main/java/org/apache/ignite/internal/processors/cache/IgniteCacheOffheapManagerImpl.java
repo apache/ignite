@@ -106,7 +106,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             try (Page metaPage = pageMem.metaPage(cacheId)) {
                 metastoreRoot = metaPage.id();
 
-                rootIds = allocateMetas(pageMem, cacheId);
+                rootIds = allocateMetas(pageMem, cacheId, true);
 
                 initNew = true;
             }
@@ -140,7 +140,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     if (!initialized) {
                         metastoreRoot = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX);
 
-                        rootIds = allocateMetas(pageMem, cacheId);
+                        rootIds = allocateMetas(pageMem, cacheId, true);
 
                         buf.rewind();
 
@@ -158,8 +158,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
         }
 
-        // TODO cleanup allocated root pages!
-        cctx.shared().database().checkpointReadLock(); // TODO Whats for?
+        cctx.shared().database().checkpointReadLock();
 
         try {
             reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), rootIds, initNew);
@@ -180,13 +179,42 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /**
+     * @param pageSize Page size.
+     * @param persistenceEnabled If persistence disabled no need to store ReuseList roots
+     *                           in meta page.
+     * @return Number of segments for ReuseList.
+     */
+    private int segments(final int pageSize, final boolean persistenceEnabled) {
+        final int maxMetas = (pageSize - 4) / 8 - 1; // -1 is meta root page.
+
+        final int segments = Runtime.getRuntime().availableProcessors() * 2;
+
+        if (segments > maxMetas && persistenceEnabled) {
+            log.warning("Cannot allocate all required meta pages that could lead to performance degradation. " +
+                "Try to set a bigger page size. [maxMetas=" + maxMetas +
+                ", segments=" + segments + ", pageSize=" + pageSize + "]");
+
+            assert maxMetas > 1:  "Must be at least 2 pages for reuse list";
+
+            return maxMetas;
+        }
+
+        return segments;
+    }
+
+    /**
      * @param pageMem Page memory.
      * @param cacheId Cache ID.
+     * @param persistenceEnabled If persistence disabled no need to store ReuseList roots
+     *                           in meta page.
      * @return Allocated metapages.
      * @throws IgniteCheckedException
      */
-    private long[] allocateMetas(final PageMemory pageMem, final int cacheId) throws IgniteCheckedException {
-        final int segments = Runtime.getRuntime().availableProcessors() * 2;
+    private long[] allocateMetas(
+        final PageMemory pageMem,
+        final int cacheId,
+        final boolean persistenceEnabled) throws IgniteCheckedException {
+        final int segments = segments(pageMem.pageSize(), persistenceEnabled);
 
         final long[] rootIds = new long[segments];
 
