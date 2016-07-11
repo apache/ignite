@@ -58,6 +58,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public boolean persistenceEnabled() {
+        return false;
+    }
+
+    /**
      * @return Page memory instance.
      */
     public PageMemory pageMemory() {

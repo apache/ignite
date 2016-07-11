@@ -122,11 +122,48 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         return shift + (8 + itemSize) * idx;
     }
 
-    /**
-     * @param idx Index of element.
-     * @return Offset from byte buffer begin in bytes.
-     */
-    protected final int offset(int idx) {
+    /** {@inheritDoc} */
+    @Override protected final int offset(int idx) {
         return offset(idx, SHIFT_LINK);
+    }
+
+    // Methods for B+Tree logic.
+
+    /** {@inheritDoc} */
+    @Override public void insert(
+        ByteBuffer buf,
+        int idx,
+        L row,
+        byte[] rowBytes,
+        long rightId
+    ) throws IgniteCheckedException {
+        super.insert(buf, idx, row, rowBytes, rightId);
+
+        // Setup reference to the right page on split.
+        setRight(buf, idx, rightId);
+    }
+
+    /**
+     * @param newRootBuf New root buffer.
+     * @param newRootId New root ID.
+     * @param leftChildId Left child ID.
+     * @param row Moved up row.
+     * @param rightChildId Right child ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void initNewRoot(
+        ByteBuffer newRootBuf,
+        long newRootId,
+        long leftChildId,
+        L row,
+        byte[] rowBytes,
+        long rightChildId
+    ) throws IgniteCheckedException {
+        initNewPage(newRootBuf, newRootId);
+
+        setCount(newRootBuf, 1);
+        setLeft(newRootBuf, 0, leftChildId);
+        store(newRootBuf, 0, row, rowBytes);
+        setRight(newRootBuf, 0, rightChildId);
     }
 }

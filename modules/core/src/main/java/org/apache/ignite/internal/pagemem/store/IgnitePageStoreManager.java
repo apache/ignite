@@ -98,7 +98,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     /**
      * Allocates a page for the given page space.
      *
-     * @param cacheId Cache ID. Ignored if {@code flags} is equal to {@link PageMemory#FLAG_META}.
+     * @param cacheId Cache ID.
      * @param partId Partition ID. Used only if {@code flags} is equal to {@link PageMemory#FLAG_DATA}.
      * @param flags Page allocation flags.
      * @return Allocated page ID.

@@ -27,8 +27,6 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -94,31 +92,23 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         pageMem = createPageMemory();
 
-        reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public RootPage getOrAllocateForTree(final String idxName)
-                throws IgniteCheckedException {
-                return new RootPage(allocateMetaPage(), true);
-            }
+        final long[] rootIds = new long[2];
 
-            @Override public RootPage dropRootPage(final String idxName) {
-                throw new UnsupportedOperationException();
-            }
+        for (int i = 0; i < rootIds.length; i++)
+            rootIds[i] = allocateMetaPage().pageId();
 
-            @Override public void dropAllRootPages() throws IgniteCheckedException {
-                throw new UnsupportedOperationException();
-            }
-        });
+        reuseList = createReuseList(CACHE_ID, pageMem, rootIds, true);
     }
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param segments Segments.
-     * @param metaStore Store.
+     * @param rootIds Root page IDs.
+     * @param initNew Init new flag.
      * @return Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore)
+    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
         throws IgniteCheckedException {
         return null;
     }
@@ -555,7 +545,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage());
+        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage().pageId());
 
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
@@ -568,7 +558,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private FullPageId allocateMetaPage() throws IgniteCheckedException {
-        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META), CACHE_ID);
+        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_IDX), CACHE_ID);
     }
 
     /**
@@ -583,9 +573,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @param metaPageId Meta page ID.
          * @throws IgniteCheckedException If failed.
          */
-        public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
+        public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
-            super("test", cacheId, pageMem, metaPageId, reuseList,
+            super("test", cacheId, pageMem, null, metaPageId, reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             initNew();
@@ -629,12 +619,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx));
+            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx), null);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, Long row) {
-            buf.putLong(offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            buf.putLong(off, row);
         }
 
         /** {@inheritDoc} */
@@ -686,8 +676,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, Long row) {
-            buf.putLong(offset(idx), row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            buf.putLong(off, row);
         }
 
         /** {@inheritDoc} */

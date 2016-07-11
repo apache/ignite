@@ -211,7 +211,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param expireTime Expire time.
          * @throws IgniteCheckedException If failed.
          */
-        long update(KeyCacheObject key,
+        void update(KeyCacheObject key,
             int part,
             CacheObject val,
             GridCacheVersion ver,
@@ -221,7 +221,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param key Key.
          * @throws IgniteCheckedException If failed.
          */
-        public void remove(KeyCacheObject key) throws IgniteCheckedException;
+        public void remove(KeyCacheObject key,
+            CacheObject prevVal,
+            GridCacheVersion prevVer,
+            int partId) throws IgniteCheckedException;
 
         /**
          * @param key Key.
