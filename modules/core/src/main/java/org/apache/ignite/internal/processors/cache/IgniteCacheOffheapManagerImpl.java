@@ -199,7 +199,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         super.stop0(cancel, destroy);
 
         if (destroy) {
-            try {
+            final PageMemory pageMem = cctx.shared().database().pageMemory();
+
+            try (Page meta = pageMem.metaPage(cctx.cacheId())) {
+                final ByteBuffer buf = meta.getForWrite();
+
+                try {
+                    // Set number of initialized pages to 0.
+                    buf.putInt(0);
+                }
+                finally {
+                    meta.releaseWrite(true);
+                }
+
                 metaStore.dropAllRootPages();
             } catch (IgniteCheckedException e) {
                 throw new IgniteException(e.getMessage(), e);
