@@ -152,7 +152,7 @@ public class MetadataStorage implements MetaStore {
 
         } while (rmv != null);
 
-//        metaTree.init();
+        metaTree.init();
     }
 
     /**
