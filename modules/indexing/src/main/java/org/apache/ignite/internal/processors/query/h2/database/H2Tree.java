@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
@@ -40,6 +41,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      * @param rowStore Row data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
@@ -50,11 +52,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         ReuseList reuseList,
         int cacheId,
         PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
         H2RowFactory rowStore,
         FullPageId metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        super(name, cacheId, pageMem, wal, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
 
         assert rowStore != null;
 

@@ -45,9 +45,7 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, FreeItem row) {
-        int off = offset(idx);
-
+    @Override public void storeByOffset(ByteBuffer buf, int off, FreeItem row) {
         buf.putShort(off, row.freeSpace());
         buf.putInt(off + 2, PageIdUtils.pageIndex(row.pageId()));
     }

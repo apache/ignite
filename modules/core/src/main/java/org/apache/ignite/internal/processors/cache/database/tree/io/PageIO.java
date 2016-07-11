@@ -18,11 +18,24 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
+import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
 
 /**
  * Base format for all the page types.
  */
 public abstract class PageIO {
+    /** */
+    private static IOVersions<? extends BPlusInnerIO<?>> h2InnerIOs;
+
+    /** */
+    private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
+
     /** */
     private static final int TYPE_OFF = 0;
 
@@ -71,13 +84,10 @@ public abstract class PageIO {
     public static final short T_REUSE_INNER = 10;
 
     /** */
-    public static final short T_INDEX_INNER = 11;
+    public static final short T_METASTORE_INNER = 11;
 
     /** */
-    public static final short T_INDEX_LEAF = 12;
-
-    /** */
-    public static final short T_INDEX = 13;
+    public static final short T_METASTORE_LEAF = 12;
 
     /** */
     public static final short T_CHECKPOINT_META = 14;
@@ -170,6 +180,20 @@ public abstract class PageIO {
     }
 
     /**
+     * Registers this B+Tree IO versions.
+     *
+     * @param innerIOs Inner IO versions.
+     * @param leafIOs Leaf IO versions.
+     */
+    public static void registerH2(
+        IOVersions<? extends BPlusInnerIO<?>> innerIOs,
+        IOVersions<? extends BPlusLeafIO<?>> leafIOs
+    ) {
+        h2InnerIOs = innerIOs;
+        h2LeafIOs = leafIOs;
+    }
+
+    /**
      * @return Type.
      */
     public final int getType() {
@@ -196,5 +220,66 @@ public abstract class PageIO {
     /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + "[ver=" + getVersion() + "]";
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return IO for either inner or leaf B+Tree page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <Q extends BPlusIO<?>> Q getBPlusIO(ByteBuffer buf) throws IgniteCheckedException {
+        int type = getType(buf);
+        int ver = getVersion(buf);
+
+        return getBPlusIO(type, ver);
+    }
+
+    /**
+     * @param type IO Type.
+     * @param ver IO Version.
+     * @return IO for either inner or leaf B+Tree page.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
+        switch (type) {
+            case T_H2_REF_INNER:
+                if (h2InnerIOs == null)
+                    break;
+
+                return (Q)h2InnerIOs.forVersion(ver);
+
+            case T_H2_REF_LEAF:
+                if (h2LeafIOs == null)
+                    break;
+
+                return (Q)h2LeafIOs.forVersion(ver);
+
+            case T_DATA_REF_INNER:
+                return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_LEAF:
+                return (Q)IgniteCacheOffheapManagerImpl.DataLeafIO.VERSIONS.forVersion(ver);
+
+            case T_METASTORE_INNER:
+                return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
+
+            case T_METASTORE_LEAF:
+                return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
+
+            case T_FREE_INNER:
+                return (Q)FreeInnerIO.VERSIONS.forVersion(ver);
+
+            case T_FREE_LEAF:
+                return (Q)FreeLeafIO.VERSIONS.forVersion(ver);
+
+            case T_REUSE_INNER:
+                return (Q)ReuseInnerIO.VERSIONS.forVersion(ver);
+
+            case T_REUSE_LEAF:
+                return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
+        }
+
+        throw new IgniteCheckedException("Unknown B+Tree page IO type: " + type);
     }
 }

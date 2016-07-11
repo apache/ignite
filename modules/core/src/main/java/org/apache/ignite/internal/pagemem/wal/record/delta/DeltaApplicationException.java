@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- *
+ * Thrown in case when delta application to the page failed.
  */
-public class StorageException extends IgniteCheckedException {
+public class DeltaApplicationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param e Cause exception.
+     * @param msg Message.
      */
-    public StorageException(Exception e) {
-        super(e);
+    DeltaApplicationException(String msg) {
+        super(msg);
     }
 }

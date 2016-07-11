@@ -23,7 +23,6 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -50,6 +49,9 @@ public class FreeList {
     private final ReuseList reuseList;
 
     /** */
+    private final IgniteWriteAheadLogManager wal;
+
+    /** */
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
@@ -62,6 +64,12 @@ public class FreeList {
 
             assert idx >= 0 : idx;
 
+            FreeTree tree = tree(row.partition());
+
+            if (tree.needWalDeltaRecord(page))
+                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
+                    row.version(), idx, entrySize));
+
             row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
 
             final int freeSlots = io.getFreeItemSlots(buf);
@@ -70,7 +78,7 @@ public class FreeList {
             int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
 
             // Put our free item.
-            tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
+            tree.put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
 
             return null;
         }
@@ -121,6 +129,9 @@ public class FreeList {
 
             io.removeRow(buf, (byte)itemId);
 
+            if (tree.needWalDeltaRecord(page))
+                wal.log(new DataPageRemoveRecord(cctx.cacheId(), page.id(), itemId));
+
             int newFreeSpace = io.getFreeSpace(buf);
 
             // Move page to the new position with respect to the new free space.
@@ -147,6 +158,8 @@ public class FreeList {
         assert cctx != null;
 
         this.cctx = cctx;
+
+        wal = cctx.shared().wal();
 
         pageMem = cctx.shared().database().pageMemory();
 
@@ -191,7 +204,8 @@ public class FreeList {
                 final RootPage rootPage = cctx.shared().database().meta()
                     .getOrAllocateForTree(cctx.cacheId(), idxName);
 
-                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, rootPage.pageId(), rootPage.isAllocated()));
+                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, wal,
+                    rootPage.pageId(), rootPage.isAllocated()));
             }
         }
 
@@ -298,16 +312,21 @@ public class FreeList {
                 if (item == null) {
                     DataPageIO io = DataPageIO.VERSIONS.latest();
 
-                    ByteBuffer buf = page.getForInitialWrite();
+                    ByteBuffer buf = page.getForWrite(); // Initial write.
 
                     try {
                         io.initNewPage(buf, page.id());
 
+                        // It is a newly allocated page and we will not write record to WAL here.
+                        assert !page.isDirty();
+
                         writeRow.run(page.id(), page, buf, row, entrySize);
-                    } finally {
-                        page.finishInitialWrite();
                     }
-                } else
+                    finally {
+                        page.releaseWrite(true);
+                    }
+                }
+                else
                     writePage(page.id(), page, writeRow, row, entrySize);
             }
         }

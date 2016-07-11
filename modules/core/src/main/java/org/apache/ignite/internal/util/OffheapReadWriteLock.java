@@ -63,7 +63,7 @@ public class OffheapReadWriteLock {
      */
     public OffheapReadWriteLock(int concLvl) {
         if ((concLvl & concLvl - 1) != 0)
-            throw new IllegalArgumentException("Concurrency level myst be a power of 2: " + concLvl);
+            throw new IllegalArgumentException("Concurrency level must be a power of 2: " + concLvl);
 
         monitorsMask = concLvl - 1;
 

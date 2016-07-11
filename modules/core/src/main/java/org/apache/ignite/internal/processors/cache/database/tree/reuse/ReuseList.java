@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -34,11 +35,13 @@ public final class ReuseList {
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      * @param segments Segments.
      * @param metaStore Meta store.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore) throws IgniteCheckedException {
+    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, int segments, MetaStore metaStore)
+        throws IgniteCheckedException {
         A.ensure(segments > 1, "Segments must be greater than 1.");
 
         ReuseTree[] trees0 = new ReuseTree[segments];
@@ -48,7 +51,7 @@ public final class ReuseList {
 
             final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
 
-            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, rootPage.pageId(), rootPage.isAllocated());
+            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rootPage.pageId(), rootPage.isAllocated());
         }
 
         // Later assignment is done intentionally, see null check in method take.

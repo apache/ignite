@@ -72,7 +72,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            MetaStore metaStore = new MetadataStorage(mem);
+            MetaStore metaStore = new MetadataStorage(mem, null);
 
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
