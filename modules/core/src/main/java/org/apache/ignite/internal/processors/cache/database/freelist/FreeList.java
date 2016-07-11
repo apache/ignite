@@ -23,6 +23,10 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -280,16 +284,20 @@ public class FreeList {
                     if (item == null) {
                         DataPageIO io = DataPageIO.VERSIONS.latest();
 
-                        ByteBuffer buf = page.getForInitialWrite();
+                        ByteBuffer buf = page.getForWrite();
 
                         fctx.buf = buf;
 
                         try {
                             io.initNewPage(buf, page.id());
 
+                            // It is a newly allocated page and we will not write record to WAL here.
+                            assert !page.isDirty();
+
                             writeFragmentRow.run(page.id(), page, buf, fctx, 0);
-                        } finally {
-                            page.finishInitialWrite();
+                        }
+                        finally {
+                            page.releaseWrite(true);
                         }
                     }
                     else
