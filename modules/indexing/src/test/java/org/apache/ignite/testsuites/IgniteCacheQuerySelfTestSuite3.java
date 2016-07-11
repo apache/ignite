@@ -17,7 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.HashSet;
+import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingContinuousQueryErrorTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchForceServerModeAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
@@ -61,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheC
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTxReconnectTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryImmutableEntryTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 
@@ -121,6 +125,10 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheKeepBinaryIterationSwapEnabledTest.class);
         suite.addTestSuite(CacheKeepBinaryIterationNearEnabledTest.class);
         suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
+
+        suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
+
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class);
 
         return suite;
     }
