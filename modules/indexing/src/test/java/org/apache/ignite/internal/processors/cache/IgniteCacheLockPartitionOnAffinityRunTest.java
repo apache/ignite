@@ -121,7 +121,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     private final AtomicBoolean stop = new AtomicBoolean();
 
     /** Test end time. */
-    private static volatile long endTime;
+    private static long endTime;
 
     /**
      * @param ignite Ignite.
