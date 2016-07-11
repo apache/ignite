@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,6 +35,22 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.LeafPageInitRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitNewRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
@@ -72,10 +89,16 @@ public abstract class BPlusTree<L, T extends L> {
     public static Random rnd;
 
     /** */
+    private final AtomicBoolean destroyed = new AtomicBoolean(false);
+
+    /** */
     private final String name;
 
     /** */
     private final int cacheId;
+
+    /** */
+    private final IgniteWriteAheadLogManager wal;
 
     /** */
     protected final PageMemory pageMem;
@@ -306,7 +329,10 @@ public abstract class BPlusTree<L, T extends L> {
                 // We can't erase data page here because it can be referred from other indexes.
             }
 
-            io.store(buf, idx, newRow);
+            io.store(buf, idx, newRow, null);
+
+            if (needWalDeltaRecord(page))
+                wal.log(new ReplaceRecord<>(cacheId, page.id(), io, newRow, null, idx));
 
             return FOUND;
         }
@@ -330,7 +356,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return RETRY;
 
             // Do insert.
-            L moveUpRow = p.insert(io, buf, idx, lvl);
+            L moveUpRow = p.insert(page, io, buf, idx, lvl);
 
             // Check if split happened.
             if (moveUpRow != null) {
@@ -397,7 +423,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             r.removed = getRow(io, buf, idx);
 
-            r.doRemove(io, buf, cnt, idx);
+            long rmvId = 0;
 
             if (r.needReplaceInner == TRUE) {
                 // We increment remove ID in write lock on leaf page, thus it is guaranteed that
@@ -405,8 +431,10 @@ public abstract class BPlusTree<L, T extends L> {
                 // Thus he is guaranteed to do a retry from root. Since inner replace takes locks on the whole branch
                 // and releases the locks only when the inner key is updated and the successor saw the updated removeId,
                 // then after retry from root, he will see updated inner key.
-                io.setRemoveId(buf, globalRmvId.incrementAndGet());
+                rmvId = globalRmvId.incrementAndGet();
             }
+
+            r.doRemove(leaf, io, buf, cnt, idx, rmvId);
 
             return FOUND;
         }
@@ -511,29 +539,24 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Long, Void> updateFirst = new PageHandler<Long, Void>() {
-        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
+    private final PageHandler<Void, Void> cutRoot = new PageHandler<Void, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Void ignore, int lvl)
             throws IgniteCheckedException {
-            assert pageId != null;
-
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
-            assert io.getLevelsCount(buf) > lvl;
+            assert lvl == io.getRootLevel(buf); // Can drop only root.
 
-            if (pageId == 0) {
-                assert lvl == io.getRootLevel(buf); // Can drop only root.
+            io.cutRoot(buf);
 
-                io.setLevelsCount(buf, lvl); // Decrease tree height.
-            }
-            else
-                io.setFirstPageId(buf, lvl, pageId);
+            if (needWalDeltaRecord(meta))
+                wal.log(new MetaPageCutRootRecord(cacheId, meta.id()));
 
             return null;
         }
     };
 
     /** */
-    private final PageHandler<Long, Void> newRoot = new PageHandler<Long, Void>() {
+    private final PageHandler<Long, Void> addRoot = new PageHandler<Long, Void>() {
         @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
@@ -542,8 +565,10 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert lvl == io.getLevelsCount(buf);
 
-            io.setLevelsCount(buf, lvl + 1);
-            io.setFirstPageId(buf, lvl, rootPageId);
+            io.addRoot(buf, rootPageId);
+
+            if (needWalDeltaRecord(meta))
+                wal.log(new MetaPageAddRootRecord(cacheId, meta.id(), rootPageId));
 
             return null;
         }
@@ -553,14 +578,22 @@ public abstract class BPlusTree<L, T extends L> {
      * @param name Tree name.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
      */
-    public BPlusTree(String name, int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
-        IOVersions<? extends BPlusInnerIO<L>> innerIos, IOVersions<? extends BPlusLeafIO<L>> leafIos)
-        throws IgniteCheckedException {
+    public BPlusTree(
+        String name,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        FullPageId metaPageId,
+        ReuseList reuseList,
+        IOVersions<? extends BPlusInnerIO<L>> innerIos,
+        IOVersions<? extends BPlusLeafIO<L>> leafIos
+    ) throws IgniteCheckedException {
         assert name != null;
 
         this.name = name;
@@ -580,6 +613,7 @@ public abstract class BPlusTree<L, T extends L> {
         this.cacheId = cacheId;
         this.metaPageId = metaPageId.pageId();
         this.reuseList = reuseList;
+        this.wal = wal;
     }
 
     /**
@@ -590,35 +624,61 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @return Tree name.
+     */
+    public final String getName() {
+        return name;
+    }
+
+    /**
+     * @param page Updated page.
+     * @return {@code true} If we need to make a delta WAL record for the change in this page.
+     */
+    public final boolean needWalDeltaRecord(Page page) {
+        // If the page is clean, then it is either newly allocated or just after checkpoint.
+        // In both cases we have to write full page contents to WAL.
+        return wal != null && !wal.isAlwaysWriteFullPages() && page.isDirty();
+    }
+
+    /**
+     * Initialize new index.
+     *
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
+        long rootId = allocatePage(null);
+
+        // Allocate the first leaf page, it will be our root.
+        try (Page root = page(rootId)) {
+            ByteBuffer buf = root.getForWrite(); // Initial write, no check for concurrent modification.
+
+            try {
+                BPlusLeafIO<L> io = latestLeafIO();
+
+                io.initNewPage(buf, rootId);
+
+                if (needWalDeltaRecord(root))
+                    wal.log(new LeafPageInitRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
+            }
+            finally {
+                root.releaseWrite(true);
+            }
+        }
+
+        // Initialize meta page with new root page.
         try (Page meta = page(metaPageId)) {
-            ByteBuffer buf = meta.getForInitialWrite();
+            ByteBuffer buf = meta.getForWrite(); // Initial write, no need to check for concurrent modification.
 
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
-                io.initNewPage(buf, metaPageId);
+                io.initNewPage(buf, metaPageId, rootId);
 
-                long rootId = allocatePage(null);
-
-                try (Page root = page(rootId)) {
-                    ByteBuffer rootBuf = root.getForInitialWrite();
-
-                    try {
-                        latestLeafIO().initNewPage(rootBuf, rootId);
-                    }
-                    finally {
-                        root.finishInitialWrite();
-                    }
-
-                    io.setLevelsCount(buf, 1);
-                    io.setFirstPageId(buf, 0, rootId);
-                }
+                if (needWalDeltaRecord(meta))
+                    wal.log(new MetaPageInitNewRecord(cacheId, meta.id(), metaPageId, rootId, io.getVersion()));
             }
             finally {
-                meta.finishInitialWrite();
+                meta.releaseWrite(true);
             }
         }
     }
@@ -689,12 +749,21 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * Check if the tree is getting destroyed.
+     */
+    private void checkDestroyed() {
+        assert !destroyed.get(): "Tree is being concurrently destroyed: " + name;
+    }
+
+    /**
      * @param lower Lower bound.
      * @param upper Upper bound.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+        checkDestroyed();
+
         try {
             if (lower == null)
                 return findLowerUnbounded(upper);
@@ -722,6 +791,8 @@ public abstract class BPlusTree<L, T extends L> {
      */
     @SuppressWarnings("unchecked")
     public final T findOne(L row) throws IgniteCheckedException {
+        checkDestroyed();
+
         try {
             GetOne g = new GetOne(row);
 
@@ -1102,6 +1173,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     private T doRemove(L row, boolean ceil, ReuseBag bag) throws IgniteCheckedException {
+        checkDestroyed();
+
         Remove r = new Remove(row, ceil, bag);
 
         try {
@@ -1285,6 +1358,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final int rootLevel() throws IgniteCheckedException {
+        checkDestroyed();
+
         try (Page meta = page(metaPageId)) {
             return getRootLevel(meta);
         }
@@ -1297,6 +1372,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final long size() throws IgniteCheckedException {
+        checkDestroyed();
+
         long pageId;
 
         try (Page meta = page(metaPageId)) {
@@ -1348,6 +1425,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final T put(T row, ReuseBag bag) throws IgniteCheckedException {
+        checkDestroyed();
+
         Put p = new Put(row, bag);
 
         try {
@@ -1383,15 +1462,120 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * Destroys tree. This method is allowed to be invoked only when the tree is out of use (no concurrent operations
+     * are trying to read or update the tree after destroy beginning).
+     *
+     * @return Number of pages recycled from this tree. If the tree was destroyed by someone else concurrently
+     *      returns {@code 0}, otherwise it should return at least {@code 2} (for meta page and root page) or {@code -1}
+     *      if we don't have a reuse list and did not do recycling at all.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final long destroy() throws IgniteCheckedException {
+        if (!destroyed.compareAndSet(false, true))
+            return 0;
+
+        if (reuseList == null)
+            return -1;
+
+        DestroyBag bag = new DestroyBag();
+
+        long pagesCnt = 0;
+
+        try (Page meta = page(metaPageId)) {
+            ByteBuffer metaBuf = meta.getForWrite();
+
+            try {
+                BPlusMetaIO mio = BPlusMetaIO.VERSIONS.forPage(metaBuf);
+
+                for (int lvl = mio.getRootLevel(metaBuf); lvl >= 0; lvl--) {
+                    long pageId = mio.getFirstPageId(metaBuf, lvl);
+
+                    assert pageId != 0;
+
+                    do {
+                        try (Page page = page(pageId)) {
+                            ByteBuffer buf = page.getForWrite();
+
+                            try {
+                                BPlusIO<L> io = io(buf);
+
+                                long fwdPageId = io.getForward(buf);
+
+                                bag.addFreePage(recyclePage(pageId, page, buf));
+                                pagesCnt++;
+
+                                pageId = fwdPageId;
+                            }
+                            finally {
+                                page.releaseWrite(true);
+                            }
+                        }
+
+                        if (bag.size() == 128) {
+                            reuseList.add(this, bag);
+
+                            assert bag.size() == 0 : bag.size();
+                        }
+                    }
+                    while (pageId != 0);
+                }
+
+                bag.addFreePage(recyclePage(metaPageId, meta, metaBuf));
+                pagesCnt++;
+            }
+            finally {
+                meta.releaseWrite(true);
+            }
+        }
+
+        reuseList.add(this, bag);
+
+        assert bag.size() == 0 : bag.size();
+        assert pagesCnt >= 2 : pagesCnt;
+
+        return pagesCnt;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Buffer.
+     * @return Recycled page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long recyclePage(long pageId, Page page, ByteBuffer buf) throws IgniteCheckedException {
+        // Rotate page ID to avoid concurrency issues with reused pages.
+        pageId = PageIdUtils.rotatePageId(pageId);
+
+        // Update page ID inside of the buffer, Page.id() will always return the original page ID.
+        PageIO.setPageId(buf, pageId);
+
+        if (needWalDeltaRecord(page))
+            wal.log(new RecycleRecord(cacheId, page.id(), pageId));
+
+        return pageId;
+    }
+
+    /**
      * @param io IO.
+     * @param page Page to split.
      * @param buf Splitting buffer.
+     * @param fwdId Forward page ID.
+     * @param fwd Forward page.
      * @param fwdBuf Forward buffer.
      * @param idx Insertion index.
      * @return {@code true} The middle index was shifted to the right.
      * @throws IgniteCheckedException If failed.
      */
-    private static boolean splitPage(BPlusIO io, ByteBuffer buf, ByteBuffer fwdBuf, int idx)
-        throws IgniteCheckedException {
+    private boolean splitPage(
+        BPlusIO io,
+        Page page,
+        ByteBuffer buf,
+        long fwdId,
+        Page fwd,
+        ByteBuffer fwdBuf,
+        int idx
+    ) throws IgniteCheckedException {
         int cnt = io.getCount(buf);
         int mid = cnt >>> 1;
 
@@ -1403,21 +1587,20 @@ public abstract class BPlusTree<L, T extends L> {
             res = true;
         }
 
-        cnt -= mid;
+        // Update forward page.
+        io.splitForwardPage(buf, fwdId, fwdBuf, mid, cnt);
 
-        io.copyItems(buf, fwdBuf, mid, 0, cnt, true);
+        // Here the order of records for pages is important because forward split requires
+        // that existing page is still in initial state.
+        if (needWalDeltaRecord(fwd))
+            wal.log(new SplitForwardPageRecord(cacheId, fwd.id(), fwdId,
+                io.getType(), io.getVersion(), page.id(), mid, cnt));
 
-        // Setup counts.
-        io.setCount(fwdBuf, cnt);
-        io.setCount(buf, mid);
+        // Update existing page.
+        io.splitExistingPage(buf, mid, fwdId);
 
-        // Setup forward-backward refs.
-        io.setForward(fwdBuf, io.getForward(buf));
-        io.setForward(buf, PageIO.getPageId(fwdBuf));
-
-        // Copy remove ID to make sure that if inner remove touched this page, then retry
-        // will happen even for newly allocated forward page.
-        io.setRemoveId(fwdBuf, io.getRemoveId(buf));
+        if (needWalDeltaRecord(page))
+            wal.log(new SplitExistingPageRecord(cacheId, page.id(), mid, fwdId));
 
         return res;
     }
@@ -1540,7 +1723,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private abstract class Get {
         /** */
-        long rmvId;
+        protected long rmvId;
 
         /** Starting point root level. May be outdated. Must be modified only in {@link Get#init()}. */
         protected int rootLvl;
@@ -1814,6 +1997,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @param page Page.
          * @param io IO.
          * @param buf Buffer.
          * @param idx Index.
@@ -1821,40 +2005,36 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Move up row.
          * @throws IgniteCheckedException If failed.
          */
-        private L insert(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl)
+        private L insert(Page page, BPlusIO<L> io, ByteBuffer buf, int idx, int lvl)
             throws IgniteCheckedException {
             int maxCnt = io.getMaxCount(buf);
             int cnt = io.getCount(buf);
 
             if (cnt == maxCnt) // Need to split page.
-                return insertWithSplit(io, buf, idx, lvl);
+                return insertWithSplit(page, io, buf, idx, lvl);
 
-            insertSimple(io, buf, idx);
+            insertSimple(page, io, buf, idx);
 
             return null;
         }
 
         /**
+         * @param page Page.
          * @param io IO.
          * @param buf Buffer.
          * @param idx Index.
          * @throws IgniteCheckedException If failed.
          */
-        private void insertSimple(BPlusIO<L> io, ByteBuffer buf, int idx)
+        private void insertSimple(Page page, BPlusIO<L> io, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
-            int cnt = io.getCount(buf);
+            io.insert(buf, idx, row, null, rightId);
 
-            // Move right all the greater elements to make a free slot for a new row link.
-            io.copyItems(buf, buf, idx, idx + 1, cnt - idx, false);
-
-            io.setCount(buf, cnt + 1);
-            io.store(buf, idx, row);
-
-            if (!io.isLeaf()) // Setup reference to the right page on split.
-                inner(io).setRight(buf, idx, rightId);
+            if (needWalDeltaRecord(page))
+                wal.log(new InsertRecord<>(cacheId, page.id(), io, idx, row, null, rightId));
         }
 
         /**
+         * @param page Page.
          * @param io IO.
          * @param buf Buffer.
          * @param idx Index.
@@ -1862,7 +2042,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Move up row.
          * @throws IgniteCheckedException If failed.
          */
-        private L insertWithSplit(BPlusIO<L> io, final ByteBuffer buf, int idx, int lvl)
+        private L insertWithSplit(Page page, BPlusIO<L> io, final ByteBuffer buf, int idx, int lvl)
             throws IgniteCheckedException {
             long fwdId = allocatePage(bag);
 
@@ -1870,25 +2050,27 @@ public abstract class BPlusTree<L, T extends L> {
                 // Need to check this before the actual split, because after the split we will have new forward page here.
                 boolean hadFwd = io.getForward(buf) != 0;
 
-                ByteBuffer fwdBuf = fwd.getForInitialWrite();
+                ByteBuffer fwdBuf = fwd.getForWrite(); // Initial write, no need to check for concurrent modification.
 
                 try {
-                    io.initNewPage(fwdBuf, fwdId);
-
-                    boolean midShift = splitPage(io, buf, fwdBuf, idx);
+                    boolean midShift = splitPage(io, page, buf, fwdId, fwd, fwdBuf, idx);
 
                     // Do insert.
                     int cnt = io.getCount(buf);
 
                     if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
-                        insertSimple(io, buf, idx);
+                        insertSimple(page, io, buf, idx);
 
                         // Fix leftmost child of forward page, because newly inserted row will go up.
-                        if (idx == cnt && !io.isLeaf())
+                        if (idx == cnt && !io.isLeaf()) {
                             inner(io).setLeft(fwdBuf, 0, rightId);
+
+                            if (needWalDeltaRecord(fwd)) // Rare case, we can afford separate WAL record to avoid complexity.
+                                wal.log(new FixLeftmostChildRecord(cacheId, fwd.id(), rightId));
+                        }
                     }
                     else // Insert into newly allocated forward page.
-                        insertSimple(io, fwdBuf, idx - cnt);
+                        insertSimple(fwd, io, fwdBuf, idx - cnt);
 
                     // Do move up.
                     cnt = io.getCount(buf);
@@ -1896,8 +2078,12 @@ public abstract class BPlusTree<L, T extends L> {
                     // Last item from backward row goes up.
                     L moveUpRow = io.getLookupRow(BPlusTree.this, buf, cnt - 1);
 
-                    if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
+                    if (!io.isLeaf()) { // Leaf pages must contain all the links, inner pages remove moveUpLink.
                         io.setCount(buf, cnt - 1);
+
+                        if (needWalDeltaRecord(page)) // Rare case, we can afford separate WAL record to avoid complexity.
+                            wal.log(new FixCountRecord(cacheId, page.id(), cnt - 1));
+                    }
 
                     if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
                         long newRootId = allocatePage(bag);
@@ -1906,22 +2092,23 @@ public abstract class BPlusTree<L, T extends L> {
                             if (io.isLeaf())
                                 io = latestInnerIO();
 
-                            ByteBuffer newRootBuf = newRoot.getForInitialWrite();
+                            ByteBuffer newRootBuf = newRoot.getForWrite(); // Initial write, no concurrent modification.
 
                             try {
-                                io.initNewPage(newRootBuf, newRootId);
+                                long pageId = PageIO.getPageId(buf);
 
-                                io.setCount(newRootBuf, 1);
-                                inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
-                                io.store(newRootBuf, 0, moveUpRow);
-                                inner(io).setRight(newRootBuf, 0, fwdId);
+                                inner(io).initNewRoot(newRootBuf, newRootId, pageId, moveUpRow, null, fwdId);
+
+                                if (needWalDeltaRecord(newRoot))
+                                    wal.log(new NewRootInitRecord<>(cacheId, newRoot.id(), newRootId,
+                                        inner(io), pageId, moveUpRow, null, fwdId));
                             }
                             finally {
-                                newRoot.finishInitialWrite();
+                                newRoot.releaseWrite(true);
                             }
                         }
 
-                        writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
+                        writePage(metaPageId, meta, addRoot, newRootId, lvl + 1);
 
                         return null; // We've just moved link up to root, nothing to return here.
                     }
@@ -1930,7 +2117,7 @@ public abstract class BPlusTree<L, T extends L> {
                     return moveUpRow;
                 }
                 finally {
-                    fwd.finishInitialWrite();
+                    fwd.releaseWrite(true);
                 }
             }
         }
@@ -2263,21 +2450,23 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @param page Page.
          * @param io IO.
          * @param buf Buffer.
          * @param cnt Count.
          * @param idx Index to remove.
+         * @param rmvId Remove ID or {@code 0} to ignore.
          * @throws IgniteCheckedException If failed.
          */
-        private void doRemove(BPlusIO io, ByteBuffer buf, int cnt, int idx)
+        private void doRemove(Page page, BPlusIO io, ByteBuffer buf, int cnt, int idx, long rmvId)
             throws IgniteCheckedException {
             assert cnt > 0: cnt;
             assert idx >= 0 && idx < cnt: idx + " " + cnt;
 
-            cnt--;
+            io.remove(buf, idx, cnt, rmvId);
 
-            io.copyItems(buf, buf, idx + 1, idx, cnt - idx, false);
-            io.setCount(buf, cnt);
+            if (needWalDeltaRecord(page))
+                wal.log(new RemoveRecord(cacheId, page.id(), idx, cnt, rmvId));
         }
 
         /**
@@ -2293,56 +2482,24 @@ public abstract class BPlusTree<L, T extends L> {
             assert left.io.getForward(left.buf) == right.pageId;
 
             int prntCnt = prnt.getCount();
-            int leftCnt = left.getCount();
-            int rightCnt = right.getCount();
 
             assert prntCnt > 0 || needMergeEmptyBranch == READY: prntCnt;
 
-            int newCnt = leftCnt + rightCnt;
-
             boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
-
-            // Need to move down split key in inner pages. For empty branch merge parent key will be just dropped.
-            if (left.lvl != 0 && !emptyBranch)
-                newCnt++;
-
-            if (newCnt > left.io.getMaxCount(left.buf)) {
-                assert !emptyBranch;
-
-                return false;
-            }
-
-            left.io.setCount(left.buf, newCnt);
-
-            // Move down split key in inner pages.
-            if (left.lvl != 0 && !emptyBranch) {
-                int prntIdx = prnt.idx;
-
-                if (prntIdx == prntCnt) // It was a right turn.
-                    prntIdx--;
-
-                // We can be sure that we have enough free space to store split key here,
-                // because we've done remove already and did not release child locks.
-                left.io.store(left.buf, leftCnt, prnt.io, prnt.buf, prntIdx);
-
-                leftCnt++;
-            }
-
-            left.io.copyItems(right.buf, left.buf, 0, leftCnt, rightCnt, !emptyBranch);
-            left.io.setForward(left.buf, right.io.getForward(right.buf));
-
-            long rmvId = right.io.getRemoveId(right.buf);
-
-            // Need to have maximum remove ID.
-            if (rmvId > left.io.getRemoveId(left.buf))
-                left.io.setRemoveId(left.buf, rmvId);
 
             // Fix index for the right move: remove last item.
             int prntIdx = prnt.idx == prntCnt ? prntCnt - 1 : prnt.idx;
 
-            // Remove split key from parent. If we ar emerging empty branch then remove only on the top iteration.
+            if (!left.io.merge(prnt.io, prnt.buf, prntIdx, left.buf, right.buf, emptyBranch))
+                return false;
+
+            if (needWalDeltaRecord(left.page))
+                wal.log(new MergeRecord<>(cacheId, left.page.id(), prnt.page.id(), prntIdx,
+                    right.page.id(), emptyBranch));
+
+            // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
-                doRemove(prnt.io, prnt.buf, prntCnt, prntIdx);
+                doRemove(prnt.page, prnt.io, prnt.buf, prntCnt, prntIdx, 0L);
 
             // Forward page is now empty and has no links, can free and release it right away.
             freePage(right.pageId, right.page, right.buf, right.io, right.lvl, true);
@@ -2363,18 +2520,12 @@ public abstract class BPlusTree<L, T extends L> {
         private void freePage(long pageId, Page page, ByteBuffer buf, BPlusIO io, int lvl, boolean release)
             throws IgniteCheckedException {
             if (getFirstPageId(meta, lvl) == pageId) {
-                // This logic will handle root as well.
-                long fwdId = io.getForward(buf);
-
-                writePage(metaPageId, meta, updateFirst, fwdId, lvl);
+                // This can be only root because otherwise we never drop first pages,
+                // we merge forward pages into backward ones.
+                writePage(metaPageId, meta, cutRoot, null, lvl);
             }
 
-            // Mark removed.
-            io.setRemoveId(buf, Long.MAX_VALUE);
-
-            // Rotate page ID to avoid concurrency issues with reused pages.
-            pageId = PageIdUtils.rotatePageId(pageId);
-            PageIO.setPageId(buf, pageId);
+            pageId = recyclePage(pageId, page, buf);
 
             if (release)
                 writeUnlockAndClose(page);
@@ -2411,9 +2562,14 @@ public abstract class BPlusTree<L, T extends L> {
             assert leafCnt > 0: leafCnt; // Leaf must be merged at this point already if it was empty.
 
             if (innerIdx < innerCnt) {
+                int leafIdx = leafCnt - 1; // Last leaf item.
+
                 // Update inner key with the new biggest key of left subtree.
-                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafCnt - 1);
-                leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
+                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
+
+                if (needWalDeltaRecord(inner.page))
+                    wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
+                        innerIdx, leaf.page.id(), leafIdx));
             }
             else {
                 // If after leaf merge parent have lost inner key, we don't need to update it anymore.
@@ -2858,6 +3014,8 @@ public abstract class BPlusTree<L, T extends L> {
             assert io.isLeaf();
             assert io.canGetRow();
 
+            checkDestroyed();
+
             nextPageId = io.getForward(buf);
             int cnt = io.getCount(buf);
 
@@ -2962,6 +3120,21 @@ public abstract class BPlusTree<L, T extends L> {
         /** {@inheritDoc} */
         @Override public final boolean releaseAfterWrite(long pageId, Page page, G g, int lvl) {
             return g.canRelease(pageId, page, lvl);
+        }
+    }
+
+    /**
+     * Reuse bag for destroy.
+     */
+    private static final class DestroyBag extends GridLongList implements ReuseBag {
+        /** {@inheritDoc} */
+        @Override public void addFreePage(long pageId) {
+            add(pageId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long pollFreePage() {
+            return remove();
         }
     }
 

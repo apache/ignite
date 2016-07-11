@@ -29,11 +29,4 @@ public interface H2RowLinkIO {
      * @return Row link.
      */
     public long getLink(ByteBuffer buf, int idx);
-
-    /**
-     * @param buf Buffer.
-     * @param idx Index.
-     * @param link Row link.
-     */
-    public void setLink(ByteBuffer buf, int idx, long link);
 }

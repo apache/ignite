@@ -468,8 +468,9 @@ public class DataPageIO extends PageIO {
     /**
      * @param buf Buffer.
      * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     * @throws IgniteCheckedException If failed.
      */
-    public void removeRow(ByteBuffer buf, int itemId) {
+    public void removeRow(ByteBuffer buf, int itemId) throws IgniteCheckedException {
         assert check(itemId) : itemId;
 
         // Record original counts to calculate delta in free space in the end of remove.
@@ -546,10 +547,8 @@ public class DataPageIO extends PageIO {
     private static void moveItems(ByteBuffer buf, int idx, int cnt, int step) {
         assert cnt >= 0: cnt;
 
-        if (cnt == 0)
-            return;
-
-        moveBytes(buf, itemOffset(idx), cnt * ITEM_SIZE, step * ITEM_SIZE);
+        if (cnt != 0)
+            moveBytes(buf, itemOffset(idx), cnt * ITEM_SIZE, step * ITEM_SIZE);
     }
 
     /**
@@ -561,16 +560,6 @@ public class DataPageIO extends PageIO {
      */
     public static boolean isEnoughSpace(int newEntrySizeWithItem, int firstEntryOff, int directCnt, int indirectCnt) {
         return ITEMS_OFF + ITEM_SIZE * (directCnt + indirectCnt) <= firstEntryOff - newEntrySizeWithItem;
-    }
-
-    /**
-     * @param buf Buffer.
-     * @param newEntrySizeWithItem New entry size as returned by {@link #getEntrySize(int, int)}.
-     * @return {@code true} If there is enough space for the entry.
-     */
-    public boolean isEnoughSpace(ByteBuffer buf, int newEntrySizeWithItem) {
-        return isEnoughSpace(newEntrySizeWithItem,
-            getFirstEntryOffset(buf), getDirectCount(buf), getIndirectCount(buf));
     }
 
     /**
@@ -622,7 +611,6 @@ public class DataPageIO extends PageIO {
         setFreeSpace(buf, getFreeSpace(buf) - entrySizeWithItem + (getIndirectCount(buf) != indirectCnt ? ITEM_SIZE : 0));
 
         assert getFreeSpace(buf) >= 0;
-
         assert (itemId & ~0xFF) == 0;
 
         return itemId;

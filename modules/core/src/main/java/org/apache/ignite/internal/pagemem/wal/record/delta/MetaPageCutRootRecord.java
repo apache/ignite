@@ -15,21 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.pagemem.wal.record.delta;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 
 /**
  *
  */
-public class StorageException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class MetaPageCutRootRecord extends PageDeltaRecord {
     /**
-     * @param e Cause exception.
+     * @param cacheId Cache ID.
+     * @param pageId  Page ID.
      */
-    public StorageException(Exception e) {
-        super(e);
+    public MetaPageCutRootRecord(int cacheId, long pageId) {
+        super(cacheId, pageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException {
+        BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
+
+        io.cutRoot(buf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.BTREE_META_PAGE_CUT_ROOT;
     }
 }

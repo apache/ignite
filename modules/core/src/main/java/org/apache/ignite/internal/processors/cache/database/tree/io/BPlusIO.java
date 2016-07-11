@@ -64,6 +64,13 @@ public abstract class BPlusIO<L> extends PageIO {
         this.itemSize = itemSize;
     }
 
+    /**
+     * @return Item size in bytes.
+     */
+    public final int getItemSize() {
+        return itemSize;
+    }
+
     /** {@inheritDoc} */
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
         super.initNewPage(buf, pageId);
@@ -161,9 +168,33 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param idx Index.
      * @param row Lookup or full row.
+     * @param rowBytes Row bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract void store(ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
+    public final void store(ByteBuffer buf, int idx, L row, byte[] rowBytes) throws IgniteCheckedException {
+        int off = offset(idx);
+
+        if (rowBytes == null)
+            storeByOffset(buf, off, row);
+        else
+            putBytes(buf, off, rowBytes);
+    }
+
+    /**
+     * @param idx Index of element.
+     * @return Offset from byte buffer begin in bytes.
+     */
+    protected abstract int offset(int idx);
+
+    /**
+     * Store the needed info about the row in the page. Leaf and inner pages can store different info.
+     *
+     * @param buf Buffer.
+     * @param off Offset in bytes.
+     * @param row Lookup or full row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract void storeByOffset(ByteBuffer buf, int off, L row) throws IgniteCheckedException;
 
     /**
      * Store row info from the given source.
@@ -203,4 +234,158 @@ public abstract class BPlusIO<L> extends PageIO {
      */
     public abstract void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt, boolean cpLeft)
         throws IgniteCheckedException;
+
+    // Methods for B+Tree logic.
+
+    /**
+     * @param buf Buffer.
+     * @param idx Index.
+     * @param row Row to insert.
+     * @param rowBytes Row bytes.
+     * @param rightId Page ID which will be to the right child for the inserted item.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void insert(ByteBuffer buf, int idx, L row, byte[] rowBytes, long rightId)
+        throws IgniteCheckedException {
+        int cnt = getCount(buf);
+
+        // Move right all the greater elements to make a free slot for a new row link.
+        copyItems(buf, buf, idx, idx + 1, cnt - idx, false);
+
+        setCount(buf, cnt + 1);
+
+        store(buf, idx, row, rowBytes);
+    }
+
+    /**
+     * @param buf Splitting buffer.
+     * @param fwdId Forward page ID.
+     * @param fwdBuf Forward buffer.
+     * @param mid Bisection index.
+     * @param cnt Initial elements count in the page being split.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void splitForwardPage(
+        ByteBuffer buf,
+        long fwdId,
+        ByteBuffer fwdBuf,
+        int mid,
+        int cnt
+    ) throws IgniteCheckedException {
+        initNewPage(fwdBuf, fwdId);
+
+        cnt -= mid;
+
+        copyItems(buf, fwdBuf, mid, 0, cnt, true);
+
+        setCount(fwdBuf, cnt);
+        setForward(fwdBuf, getForward(buf));
+
+        // Copy remove ID to make sure that if inner remove touched this page, then retry
+        // will happen even for newly allocated forward page.
+        setRemoveId(fwdBuf, getRemoveId(buf));
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param mid Bisection index.
+     * @param fwdId New forward page ID.
+     */
+    public void splitExistingPage(ByteBuffer buf, int mid, long fwdId) {
+        setCount(buf, mid);
+        setForward(buf, fwdId);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param idx Index.
+     * @param cnt Count.
+     * @param rmvId Remove ID or {@code 0} to ignore.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void remove(ByteBuffer buf, int idx, int cnt, long rmvId) throws IgniteCheckedException {
+        cnt--;
+
+        copyItems(buf, buf, idx + 1, idx, cnt - idx, false);
+        setCount(buf, cnt);
+
+        if (rmvId != 0)
+            setRemoveId(buf, rmvId);
+    }
+
+    /**
+     * @param prntIo Parent IO.
+     * @param prnt Parent buffer.
+     * @param prntIdx Split key index in parent.
+     * @param left Left buffer.
+     * @param right Right buffer.
+     * @param emptyBranch We are merging an empty branch.
+     * @return {@code false} If we were not able to merge.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean merge(
+        BPlusIO<L> prntIo,
+        ByteBuffer prnt,
+        int prntIdx,
+        ByteBuffer left,
+        ByteBuffer right,
+        boolean emptyBranch
+    ) throws IgniteCheckedException {
+        int prntCnt = prntIo.getCount(prnt);
+        int leftCnt = getCount(left);
+        int rightCnt = getCount(right);
+
+        int newCnt = leftCnt + rightCnt;
+
+        // Need to move down split key in inner pages. For empty branch merge parent key will be just dropped.
+        if (!isLeaf() && !emptyBranch)
+            newCnt++;
+
+        if (newCnt > getMaxCount(left)) {
+            assert !emptyBranch;
+
+            return false;
+        }
+
+        setCount(left, newCnt);
+
+        // Move down split key in inner pages.
+        if (!isLeaf() && !emptyBranch) {
+            assert prntIdx < prntCnt; // It must be adjusted already.
+
+            // We can be sure that we have enough free space to store split key here,
+            // because we've done remove already and did not release child locks.
+            store(left, leftCnt, prntIo, prnt, prntIdx);
+
+            leftCnt++;
+        }
+
+        copyItems(right, left, 0, leftCnt, rightCnt, !emptyBranch);
+        setForward(left, getForward(right));
+
+        long rmvId = getRemoveId(right);
+
+        // Need to have maximum remove ID.
+        if (rmvId > getRemoveId(left))
+            setRemoveId(left, rmvId);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param pos Position in buffer.
+     * @param bytes Bytes.
+     */
+    private static void putBytes(ByteBuffer buf, int pos, byte[] bytes) {
+        int oldPos = buf.position();
+
+        try {
+            buf.position(pos);
+            buf.put(bytes);
+        }
+        finally {
+            buf.position(oldPos);
+        }
+    }
 }

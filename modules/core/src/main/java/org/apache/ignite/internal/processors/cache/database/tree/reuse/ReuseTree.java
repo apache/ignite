@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
@@ -36,13 +37,21 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseTree(String name, ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
-        throws IgniteCheckedException {
-        super(name, cacheId, pageMem, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
+    public ReuseTree(
+        String name,
+        ReuseList reuseList,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        FullPageId metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
+        super(name, cacheId, pageMem, wal, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)
             initNew();
