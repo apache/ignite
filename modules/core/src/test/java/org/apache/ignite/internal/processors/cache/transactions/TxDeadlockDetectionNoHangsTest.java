@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -34,7 +35,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -175,7 +175,9 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
             long stopTime = System.currentTimeMillis() + 2 * 60_000L;
 
             for (int i = 0; System.currentTimeMillis() < stopTime; i++) {
-                log.info(">>> Iteration " + i);
+                boolean detectionEnabled = grid(0).context().cache().context().tm().deadlockDetectionEnabled();
+
+                log.info(">>> Iteration " + i + " (detection is " + (detectionEnabled ? "enabled" : "disabled") + ')');
 
                 final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -188,7 +190,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
                         IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
                         try (Transaction tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ, 500, 0)) {
-                            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                             for (int i = 0; i < 50; i++) {
                                 int key = rnd.nextInt(50);

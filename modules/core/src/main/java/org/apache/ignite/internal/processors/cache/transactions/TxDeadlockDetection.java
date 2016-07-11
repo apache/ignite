@@ -464,8 +464,8 @@ public class TxDeadlockDetection {
 
                 for (TxLock lock : e.getValue().txLocks()) {
                     if (lock.owner() && txOwner == null) {
-                        //assert txOwner == null;
-
+                        // Actually we can get lock list with more than one owner. In this case ignore all owners
+                        // except first because likely the first owner was cause of deadlock.
                         txOwner = lock.txId();
 
                         if (keys.contains(e.getKey()) && !txId.equals(lock.txId())) {

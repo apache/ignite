@@ -905,7 +905,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                             proceedPrepare(mappings);
 
                         // Finish this mini future.
-                        onDone((GridNearTxPrepareResponse)null);
+                        if (!cctx.tm().deadlockDetectionEnabled() || !deadlockDetectionStarted.get())
+                            onDone((GridNearTxPrepareResponse)null);
                     }
                 }
             }
