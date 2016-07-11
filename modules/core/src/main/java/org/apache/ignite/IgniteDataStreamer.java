@@ -206,11 +206,15 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Total timeout time for {@link #flush()} operation;
      * Total timeout time for {@link #close()} operation.
      * By default timeout is disabled.
+     *
+     * @param timeout Timeout in milliseconds.
+     * @throws IllegalArgumentException If {@param timeout} is zero or less, then {@code -1}.
      */
     public void timeout(long timeout);
 
     /**
      * Gets timeout set by {@link #timeout(long)}.
+     *
      * @return Timeout in milliseconds.
      */
     public long timeout();

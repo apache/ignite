@@ -459,13 +459,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @Override public void timeout(long timeout) {
-        if (timeout < -1)
+        if (timeout < -1 || timeout == 0)
             throw new IllegalArgumentException();
 
-        if (timeout < 1)
-            this.timeout = DFLT_UNLIMIT_TIMEOUT;
-        else
-            this.timeout = timeout;
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
@@ -884,8 +881,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     try {
                         if (timeout == DFLT_UNLIMIT_TIMEOUT)
                             fut.get();
-                        else
-                            fut.get(timeout - U.currentTimeMillis() + startTimeMillis);
+                        else {
+                            long timeRemain = timeout - U.currentTimeMillis() + startTimeMillis;
+
+                            if (timeRemain <= 0)
+                                throw new TimeoutException("Data streamer exceeded timeout when flushing.");
+
+                            fut.get(timeRemain);
+                        }
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         if (log.isDebugEnabled())
