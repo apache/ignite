@@ -1465,13 +1465,17 @@ public abstract class BPlusTree<L, T extends L> {
      * Destroys tree. This method is allowed to be invoked only when the tree is out of use (no concurrent operations
      * are trying to read or update the tree after destroy beginning).
      *
-     * @return Number of pages deallocated from this tree. If the tree was destroyed by someone else concurrently returns {@code 0},
-     *      otherwise should return at least {@code 2} for meta page and root page.
+     * @return Number of pages recycled from this tree. If the tree was destroyed by someone else concurrently
+     *      returns {@code 0}, otherwise it should return at least {@code 2} (for meta page and root page) or {@code -1}
+     *      if we don't have a reuse list and did not do recycling at all.
      * @throws IgniteCheckedException If failed.
      */
     public final long destroy() throws IgniteCheckedException {
         if (!destroyed.compareAndSet(false, true))
             return 0;
+
+        if (reuseList == null)
+            return -1;
 
         DestroyBag bag = new DestroyBag();
 
@@ -1507,7 +1511,7 @@ public abstract class BPlusTree<L, T extends L> {
                             }
                         }
 
-                        if (reuseList != null && bag.size() == 128) {
+                        if (bag.size() == 128) {
                             reuseList.add(this, bag);
 
                             assert bag.size() == 0 : bag.size();
@@ -1524,12 +1528,9 @@ public abstract class BPlusTree<L, T extends L> {
             }
         }
 
-        if (reuseList != null) {
-            reuseList.add(this, bag);
+        reuseList.add(this, bag);
 
-            assert bag.size() == 0 : bag.size();
-        }
-
+        assert bag.size() == 0 : bag.size();
         assert pagesCnt >= 2 : pagesCnt;
 
         return pagesCnt;
