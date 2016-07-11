@@ -121,6 +121,9 @@ namespace ignite
             public:
                 friend class EnableSharedFromThis<T>;
 
+                template<typename To, typename From>
+                friend SharedPointer<To> StaticPointerCast(const SharedPointer<From>& sp);
+
                 /**
                  * Constructor.
                  */
@@ -199,9 +202,9 @@ namespace ignite
                 {
                     if (impl && impl->Decrement())
                     {
-                        T* ptr = Get();
+                        void* ptr = impl->Pointer();
 
-                        void(*deleter)(T*) = reinterpret_cast<void(*)(T*)>(impl->Deleter());
+                        void(*deleter)(void*) = impl->Deleter();
 
                         deleter(ptr);
 
@@ -249,6 +252,28 @@ namespace ignite
                 /** Implementation. */
                 SharedPointerImpl* impl;
             };
+
+            /**
+             * Returns a copy of sp of the proper type with its stored pointer
+             * casted statically to desired type.
+             *
+             * @param sp A shared pointer instance.
+             * @return A SharedPointer object that owns the same pointer as sp
+             *     (if any) and has a shared pointer that points to the same
+             *     object as sp with a potentially different type.
+             */
+            template<typename To, typename From>
+            SharedPointer<To> StaticPointerCast(const SharedPointer<From>& sp)
+            {
+                SharedPointer<To> res(static_cast<To*>(static_cast<From*>(0)));
+
+                res.impl = sp.impl;
+
+                if (res.impl)
+                    res.impl->Increment();
+
+                return res;
+            }
 
             /**
              * The class provides functionality that allows objects of derived

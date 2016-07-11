@@ -26,7 +26,7 @@ using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
-using namespace ignite::cache::query::continuous;
+using namespace ignite::impl::cache::query::continuous;
 
 namespace ignite 
 {
@@ -91,13 +91,26 @@ namespace ignite
 
             SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
 
-            ContinuousQueryBase* contQry = reinterpret_cast<ContinuousQueryBase*>(lsnrPtr);
+            ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(lsnrPtr);
 
             InteropInputStream stream(mem.Get());
             BinaryReaderImpl reader(&stream);
             BinaryRawReader rawReader(&reader);
 
             contQry->ReadAndProcessEvents(rawReader);
+        }
+
+        /**
+         * Continuous query event listener callback.
+         *
+         * @param target Target environment.
+         * @param filterPtr Filter pointer.
+         */
+        void IGNITE_CALL ContinuousQueryFilterRelease(void* target, long long filterPtr)
+        {
+            assert(target != 0);
+
+            // No-op.
         }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
@@ -128,6 +141,7 @@ namespace ignite
             hnds.memRealloc = MemoryReallocate;
 
             hnds.contQryLsnrApply = ContinuousQueryListenerApply;
+            hnds.contQryFilterRelease = ContinuousQueryFilterRelease;
 
             hnds.error = NULL;
 

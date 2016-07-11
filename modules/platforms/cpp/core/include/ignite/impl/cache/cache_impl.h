@@ -23,9 +23,9 @@
 #include <ignite/cache/query/query_text.h>
 #include <ignite/cache/query/query_sql_fields.h>
 #include <ignite/cache/query/continuous/continuous_query_handle.h>
-#include <ignite/cache/query/continuous/continuous_query.h>
 #include <ignite/impl/cache/query/query_impl.h>
 #include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 
 #include <ignite/impl/interop/interop_target.h>
 
@@ -338,7 +338,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const ignite::cache::query::continuous::ContinuousQueryBase &qry, IgniteError& err);
+                    const query::continuous::ContinuousQueryImplBase &qry, IgniteError& err);
 
                 /**
                  * Start continuous query execution with initial query.
@@ -349,7 +349,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const ignite::cache::query::continuous::ContinuousQueryBase &qry,
+                    const query::continuous::ContinuousQueryImplBase &qry,
                     const ignite::cache::query::SqlQuery& initialQry, IgniteError& err);
 
                 /**
@@ -361,7 +361,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const ignite::cache::query::continuous::ContinuousQueryBase &qry,
+                    const query::continuous::ContinuousQueryImplBase &qry,
                     const ignite::cache::query::TextQuery& initialQry, IgniteError& err);
 
                 /**
@@ -373,7 +373,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const ignite::cache::query::continuous::ContinuousQueryBase &qry,
+                    const query::continuous::ContinuousQueryImplBase &qry,
                     const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
 
             private:
@@ -435,12 +435,12 @@ namespace ignite
                  */
                 template<typename T>
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const ignite::cache::query::continuous::ContinuousQueryBase &qry,
+                    const query::continuous::ContinuousQueryImplBase &qry,
                     const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
                 {
-                    ignite::jni::java::JniErrorInfo jniErr;
+                    jni::java::JniErrorInfo jniErr;
 
-                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
                     binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
@@ -471,10 +471,10 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                    if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
+                    if (jniErr.code == java::IGNITE_JNI_ERR_SUCCESS)
                         return new query::continuous::ContinuousQueryHandleImpl(GetEnvironmentPointer(), qryJavaRef);
-                    else
-                        return 0;
+
+                    return 0;
                 }
             };
         }

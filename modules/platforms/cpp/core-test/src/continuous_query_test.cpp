@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 
     ContinuousQuery<int, TestEntry> qry(lsnr);
 
-    cache.QueryContinuous(qry);
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
 
     CheckEvents(cache, lsnr);
 }
@@ -404,6 +404,23 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryText)
     CheckEvents(cache, lsnr);
 }
 
+BOOST_AUTO_TEST_CASE(TestExpiredQuery)
+{
+    Listener<int, TestEntry> lsnr;
+    ContinuousQueryHandle<int, TestEntry> handle;
+
+    {
+        // Query scope.
+        ContinuousQuery<int, TestEntry> qry(lsnr);
+
+        handle = cache.QueryContinuous(qry);
+    }
+
+    // Query is destroyed here.
+
+    CheckEvents(cache, lsnr);
+}
+
 BOOST_AUTO_TEST_CASE(TestBasicNoExcept)
 {
     Listener<int, TestEntry> lsnr;
@@ -412,7 +429,7 @@ BOOST_AUTO_TEST_CASE(TestBasicNoExcept)
 
     IgniteError err;
 
-    cache.QueryContinuous(qry, err);
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, err);
 
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
 

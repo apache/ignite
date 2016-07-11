@@ -24,6 +24,7 @@
 #define _IGNITE_IMPL_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE_IMPL
 
 #include "ignite/cache/query/query_cursor.h"
+#include "ignite/impl/cache/query/continuous/continuous_query_impl.h"
 
 namespace ignite
 {
@@ -41,6 +42,7 @@ namespace ignite
                     class IGNITE_IMPORT_EXPORT ContinuousQueryHandleImpl
                     {
                         typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+                        typedef common::concurrent::SharedPointer<ContinuousQueryImplBase> SP_ContinuousQueryImplBase;
                     public:
                         /**
                          * Default constructor.
@@ -64,12 +66,22 @@ namespace ignite
                          */
                         QueryCursorImpl* GetInitialQueryCursor(IgniteError& err);
 
+                        /**
+                         * Set query to keep pointer to.
+                         *
+                         * @param query Query.
+                         */
+                        void SetQuery(SP_ContinuousQueryImplBase query);
+
                     private:
                         /** Environment. */
                         SP_IgniteEnvironment env;
 
                         /** Handle to Java object. */
                         jobject javaRef;
+
+                        /** Shared pointer to query. Kept for query to live long enough. */
+                        SP_ContinuousQueryImplBase qry;
 
                         /** Cursor extracted. */
                         bool extracted;

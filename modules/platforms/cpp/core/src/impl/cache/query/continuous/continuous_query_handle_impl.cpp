@@ -43,6 +43,8 @@ namespace ignite
 
                     ContinuousQueryHandleImpl::~ContinuousQueryHandleImpl()
                     {
+                        env.Get()->Context()->ContinuousQueryClose(javaRef);
+
                         JniContext::Release(javaRef);
                     }
 
@@ -68,6 +70,11 @@ namespace ignite
                         extracted = true;
 
                         return new QueryCursorImpl(env, res);
+                    }
+
+                    void ContinuousQueryHandleImpl::SetQuery(SP_ContinuousQueryImplBase query)
+                    {
+                        qry = query;
                     }
                 }
             }

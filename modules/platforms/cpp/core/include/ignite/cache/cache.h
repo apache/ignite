@@ -1369,8 +1369,13 @@ namespace ignite
             query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
                 const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
             {
-                impl::cache::query::continuous::ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry, err);
+                using namespace impl::cache::query::continuous;
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(*qry.impl.Get(), err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(common::concurrent::StaticPointerCast<ContinuousQueryImplBase>(qry.impl));
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
@@ -1409,8 +1414,13 @@ namespace ignite
                 const query::continuous::ContinuousQuery<K, V>& qry,
                 const Q& initialQry, IgniteError& err)
             {
-                impl::cache::query::continuous::ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry, initialQry, err);
+                using namespace impl::cache::query::continuous;
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(*qry.impl.Get(), initialQry, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(common::concurrent::StaticPointerCast<ContinuousQueryImplBase>(qry.impl));
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
