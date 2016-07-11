@@ -192,7 +192,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             return null;
         }
 
-        if (ctx.affinityCacheName() != null && ctx.partition() >= 0) {
+        if (ctx.partition() >= 0) {
             Integer affCallAttempt = ctx.getJobResult().getJobContext().getAttribute(AFFINITY_CALL_ATTEMPT);
 
             if (affCallAttempt == null)
@@ -207,7 +207,6 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             }
             else {
                 ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
-                ignite.affinity("").mapKeyToNode(null);
 
                 return ((IgniteEx)ignite).context().cache().cache(ctx.affinityCacheName()).context()
                     .affinity().primary(ctx.partition(), ((GridFailoverContextImpl)ctx).affinityTopologyVersion());

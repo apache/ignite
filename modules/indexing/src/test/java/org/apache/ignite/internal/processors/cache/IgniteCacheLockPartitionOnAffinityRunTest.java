@@ -293,11 +293,6 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                 }
             }).setLocal(true)).getAll();
 
-        if (ignite.context().isStopping()) {
-            System.out.println("+++ Stopping: size " + res.size());
-            return PERS_AT_ORG_COUNT;
-        }
-
         return res.size();
     }
 
