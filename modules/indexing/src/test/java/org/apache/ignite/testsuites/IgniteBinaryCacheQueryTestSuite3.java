@@ -17,8 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.HashSet;
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingContinuousQueryErrorTest;
+import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
+import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -32,7 +37,12 @@ public class IgniteBinaryCacheQueryTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        TestSuite suite = IgniteCacheQuerySelfTestSuite3.suite();
+        Set<Class> ignoredTests = new HashSet<>();
+
+        // Tests that are not ready to be used with PortableMarshaller
+        ignoredTests.add(IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class);
+
+        TestSuite suite = IgniteCacheQuerySelfTestSuite3.suite(ignoredTests);
 
         return suite;
     }

@@ -23,16 +23,16 @@ import org.apache.ignite.events.EventAdapter;
 /**
  * Cache fail event.
  */
-public class CacheFailEvent extends EventAdapter {
+public class CacheExceptionEvent extends EventAdapter {
     /** */
     private Exception ex;
 
     /** {@inheritDoc} */
-    public CacheFailEvent() {
+    public CacheExceptionEvent() {
     }
 
     /** {@inheritDoc} */
-    public CacheFailEvent(ClusterNode node, String msg, Exception ex, int type) {
+    public CacheExceptionEvent(ClusterNode node, String msg, Exception ex, int type) {
         super(node, msg, type);
         this.ex = ex;
     }

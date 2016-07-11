@@ -44,7 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.CacheFailEvent;
+import org.apache.ignite.events.CacheExceptionEvent;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -682,11 +682,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 else
                     U.error(ctx.log(getClass()), shortMsg, ex);
 
-                queryManager.onCacheFails();
+                queryManager.onUnhandledException();
                 ctx.exceptionRegistry().onException(shortMsg, ex);
 
                 ClusterNode node = ctx.discovery().localNode();
-                CacheFailEvent evt = new CacheFailEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+                CacheExceptionEvent evt = new CacheExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
                 ctx.event().record(evt);
             }
         }

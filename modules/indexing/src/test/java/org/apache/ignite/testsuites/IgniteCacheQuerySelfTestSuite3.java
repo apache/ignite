@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheC
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTxReconnectTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryImmutableEntryTest;
+import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
@@ -74,9 +75,18 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_
 public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 3");
 
         System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
@@ -129,6 +139,8 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
 
         suite.addTestSuite(IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class);
+
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class, ignoredTests);
 
         return suite;
     }
