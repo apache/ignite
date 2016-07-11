@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -86,6 +87,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 public abstract class BPlusTree<L, T extends L> {
     /** */
     public static Random rnd;
+
+    /** */
+    private final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     /** */
     private final String name;
@@ -745,12 +749,21 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * Check if the tree is getting destroyed.
+     */
+    private void checkDestroyed() {
+        assert !destroyed.get(): "Tree is being concurrently destroyed: " + name;
+    }
+
+    /**
      * @param lower Lower bound.
      * @param upper Upper bound.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+        checkDestroyed();
+
         try {
             if (lower == null)
                 return findLowerUnbounded(upper);
@@ -778,6 +791,8 @@ public abstract class BPlusTree<L, T extends L> {
      */
     @SuppressWarnings("unchecked")
     public final T findOne(L row) throws IgniteCheckedException {
+        checkDestroyed();
+
         try {
             GetOne g = new GetOne(row);
 
@@ -1158,6 +1173,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     private T doRemove(L row, boolean ceil, ReuseBag bag) throws IgniteCheckedException {
+        checkDestroyed();
+
         Remove r = new Remove(row, ceil, bag);
 
         try {
@@ -1341,6 +1358,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final int rootLevel() throws IgniteCheckedException {
+        checkDestroyed();
+
         try (Page meta = page(metaPageId)) {
             return getRootLevel(meta);
         }
@@ -1353,6 +1372,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final long size() throws IgniteCheckedException {
+        checkDestroyed();
+
         long pageId;
 
         try (Page meta = page(metaPageId)) {
@@ -1404,6 +1425,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final T put(T row, ReuseBag bag) throws IgniteCheckedException {
+        checkDestroyed();
+
         Put p = new Put(row, bag);
 
         try {
@@ -1436,6 +1459,100 @@ public abstract class BPlusTree<L, T extends L> {
         finally {
             p.releaseMeta();
         }
+    }
+
+    /**
+     * Destroys tree. This method is allowed to be invoked only when the tree is out of use (no concurrent operations
+     * are trying to read or update the tree after destroy beginning).
+     *
+     * @return Number of pages deallocated from this tree. If the tree was destroyed by someone else concurrently returns {@code 0},
+     *      otherwise should return at least {@code 2} for meta page and root page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final long destroy() throws IgniteCheckedException {
+        if (!destroyed.compareAndSet(false, true))
+            return 0;
+
+        DestroyBag bag = new DestroyBag();
+
+        long pagesCnt = 0;
+
+        try (Page meta = page(metaPageId)) {
+            ByteBuffer metaBuf = meta.getForWrite();
+
+            try {
+                BPlusMetaIO mio = BPlusMetaIO.VERSIONS.forPage(metaBuf);
+
+                for (int lvl = mio.getRootLevel(metaBuf); lvl >= 0; lvl--) {
+                    long pageId = mio.getFirstPageId(metaBuf, lvl);
+
+                    assert pageId != 0;
+
+                    do {
+                        try (Page page = page(pageId)) {
+                            ByteBuffer buf = page.getForWrite();
+
+                            try {
+                                BPlusIO<L> io = io(buf);
+
+                                long fwdPageId = io.getForward(buf);
+
+                                bag.addFreePage(recyclePage(pageId, page, buf));
+                                pagesCnt++;
+
+                                pageId = fwdPageId;
+                            }
+                            finally {
+                                page.releaseWrite(true);
+                            }
+                        }
+
+                        if (reuseList != null && bag.size() == 128) {
+                            reuseList.add(this, bag);
+
+                            assert bag.size() == 0 : bag.size();
+                        }
+                    }
+                    while (pageId != 0);
+                }
+
+                bag.addFreePage(recyclePage(metaPageId, meta, metaBuf));
+                pagesCnt++;
+            }
+            finally {
+                meta.releaseWrite(true);
+            }
+        }
+
+        if (reuseList != null) {
+            reuseList.add(this, bag);
+
+            assert bag.size() == 0 : bag.size();
+        }
+
+        assert pagesCnt >= 2 : pagesCnt;
+
+        return pagesCnt;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Buffer.
+     * @return Recycled page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long recyclePage(long pageId, Page page, ByteBuffer buf) throws IgniteCheckedException {
+        // Rotate page ID to avoid concurrency issues with reused pages.
+        pageId = PageIdUtils.rotatePageId(pageId);
+
+        // Update page ID inside of the buffer, Page.id() will always return the original page ID.
+        PageIO.setPageId(buf, pageId);
+
+        if (needWalDeltaRecord(page))
+            wal.log(new RecycleRecord(cacheId, page.id(), pageId));
+
+        return pageId;
     }
 
     /**
@@ -2407,13 +2524,7 @@ public abstract class BPlusTree<L, T extends L> {
                 writePage(metaPageId, meta, cutRoot, null, lvl);
             }
 
-            // Rotate page ID to avoid concurrency issues with reused pages.
-            pageId = PageIdUtils.rotatePageId(pageId);
-
-            io.recycle(buf, pageId);
-
-            if (needWalDeltaRecord(page))
-                wal.log(new RecycleRecord(cacheId, page.id(), pageId));
+            pageId = recyclePage(pageId, page, buf);
 
             if (release)
                 writeUnlockAndClose(page);
@@ -2902,6 +3013,8 @@ public abstract class BPlusTree<L, T extends L> {
             assert io.isLeaf();
             assert io.canGetRow();
 
+            checkDestroyed();
+
             nextPageId = io.getForward(buf);
             int cnt = io.getCount(buf);
 
@@ -3006,6 +3119,21 @@ public abstract class BPlusTree<L, T extends L> {
         /** {@inheritDoc} */
         @Override public final boolean releaseAfterWrite(long pageId, Page page, G g, int lvl) {
             return g.canRelease(pageId, page, lvl);
+        }
+    }
+
+    /**
+     * Reuse bag for destroy.
+     */
+    private static final class DestroyBag extends GridLongList implements ReuseBag {
+        /** {@inheritDoc} */
+        @Override public void addFreePage(long pageId) {
+            add(pageId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long pollFreePage() {
+            return remove();
         }
     }
 

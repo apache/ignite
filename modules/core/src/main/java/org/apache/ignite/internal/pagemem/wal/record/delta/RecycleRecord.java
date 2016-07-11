@@ -20,7 +20,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
 /**
@@ -43,9 +42,7 @@ public class RecycleRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException {
-        BPlusIO<?> io = PageIO.getBPlusIO(buf);
-
-        io.recycle(buf, newPageId);
+        PageIO.setPageId(buf, newPageId);
     }
 
     /** {@inheritDoc} */
