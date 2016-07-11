@@ -2763,7 +2763,7 @@ public abstract class BPlusTree<L, T extends L> {
         if (leafIos.getType() == type)
             return leafIos.forVersion(ver);
 
-        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + PageIO.getPageId(buf));
+        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + U.hexLong(PageIO.getPageId(buf)));
     }
 
     /**

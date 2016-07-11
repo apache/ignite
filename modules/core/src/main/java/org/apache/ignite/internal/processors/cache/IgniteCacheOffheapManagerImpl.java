@@ -25,7 +25,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -171,7 +170,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 assert cctx.cache() instanceof GridLocalCache : cctx.cache();
 
                 locCacheDataStore = createCacheDataStore(0, (GridLocalCache) cctx.cache());
-
             }
         }
         finally {
