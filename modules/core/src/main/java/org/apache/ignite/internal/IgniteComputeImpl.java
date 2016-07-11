@@ -111,8 +111,11 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes(),
-                null));
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            int partId = ctx.cache().cache(cacheName).affinity().partition(affKey0);
+            saveOrGet(ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, affKey,
+                job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -123,15 +126,39 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
-        @NotNull Collection<String> extraCaches) {
+    @Override public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, Object affKey) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
+        A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
 
         guard();
 
         try {
-            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes(), extraCaches));
+            final String cacheName = cacheNames.iterator().next();
+
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            int partId = ctx.cache().cache(cacheName).affinity().partition(affKey0);
+            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, affKey, job, prj.nodes()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, int partId) {
+        A.ensure(partId >= 0, "partId = " + partId);
+        A.notNull(job, "job");
+        A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
+
+        guard();
+
+        try {
+            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, null, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -149,8 +176,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes(),
-                null));
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            int partId = ctx.cache().cache(cacheName).affinity().partition(affKey0);
+            return saveOrGet(ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, affKey, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -161,15 +190,40 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job,
-        @NotNull Collection<String> extraCaches) {
+    @Override public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, Object affKey) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
+        A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
 
         guard();
 
         try {
-            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes(), extraCaches));
+            final String cacheName = cacheNames.iterator().next();
+
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            int partId = ctx.cache().cache(cacheName).affinity().partition(affKey0);
+
+            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, affKey, job, prj.nodes()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, int partId) {
+        A.ensure(partId >= 0, "partId = " + partId);
+        A.notNull(job, "job");
+        A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
+
+        guard();
+
+        try {
+            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, null, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

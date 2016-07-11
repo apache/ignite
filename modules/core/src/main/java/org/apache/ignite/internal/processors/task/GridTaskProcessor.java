@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CachePeekModes;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -368,7 +369,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null, -1, null);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null);
         }
         finally {
             lock.readUnlock();
@@ -383,29 +384,27 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
-        return execute(task, arg, false, null, -1, null);
+        return execute(task, arg, false, null);
     }
 
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
-     * @param caches Caches to partition reserve.
-     * @param part Partition to reserve.
      * @param mapTopVer Topology version of jobs mapping.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
-        @Nullable Collection<String> caches, int part, AffinityTopologyVersion mapTopVer) {
+        AffinityTopologyVersion mapTopVer) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys, caches, part, mapTopVer);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys, mapTopVer);
         }
         finally {
             lock.readUnlock();
@@ -449,7 +448,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null, -1, null);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null);
         }
         finally {
             lock.readUnlock();
@@ -463,8 +462,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task session ID.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
-     * @param caches Caches to lock  partition for task execution.
-     * @param part Partitions to lock for task execution.
      * @param mapTopVer Topology version of job mapping.
      * @return Task future.
      */
@@ -476,8 +473,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         IgniteUuid sesId,
         @Nullable T arg,
         boolean sys,
-        @Nullable Collection<String> caches,
-        int part,
         AffinityTopologyVersion mapTopVer) {
         assert sesId != null;
 
@@ -651,6 +646,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (dep == null || !dep.acquire())
                 handleException(new IgniteDeploymentCheckedException("Task not deployed: " + ses.getTaskName()), fut);
             else {
+                Collection<String> caches = null;
+                int part = -1;
+                if (task instanceof AffinityTask) {
+                    caches = ((AffinityTask)task).affinityCacheNames();
+                    part = ((AffinityTask)task).partition();
+                }
+
                 GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
                     ctx,
                     arg,
@@ -662,8 +664,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     new TaskEventListener(),
                     map,
                     subjId,
-                    caches,
-                    part,
                     mapTopVer);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);

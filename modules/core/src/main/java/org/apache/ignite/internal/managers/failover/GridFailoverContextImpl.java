@@ -44,7 +44,10 @@ public class GridFailoverContextImpl implements FailoverContext {
     @GridToStringExclude
     private final GridLoadBalancerManager loadMgr;
 
-    /** Affinity key for affinityCall. */
+    /** Partition key for affinityCall. */
+    private final int partId;
+
+    /** Partition key for affinityCall. */
     private final Object affKey;
 
     /** Affinity cache name for affinityCall. */
@@ -58,6 +61,7 @@ public class GridFailoverContextImpl implements FailoverContext {
      *  @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
+     * @param partId Partition.
      * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
      * @param topVer Affinity topology version.
@@ -65,6 +69,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     public GridFailoverContextImpl(GridTaskSessionImpl taskSes,
         ComputeJobResult jobRes,
         GridLoadBalancerManager loadMgr,
+        int partId,
         @Nullable Object affKey,
         @Nullable String affCacheName,
         @NotNull AffinityTopologyVersion topVer) {
@@ -76,6 +81,7 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
         this.affKey = affKey;
+        this.partId = partId;
         this.affCacheName = affCacheName;
         this.topVer = topVer;
     }
@@ -103,6 +109,11 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Nullable @Override public String affinityCacheName() {
         return affCacheName;
+    }
+
+    /** {@inheritDoc} */
+    public int partition() {
+        return partId;
     }
 
     /**

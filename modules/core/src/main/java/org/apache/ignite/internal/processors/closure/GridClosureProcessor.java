@@ -194,7 +194,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T1(mode, jobs), null, sys, null, -1, null);
+            return ctx.task().execute(new T1(mode, jobs), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -235,7 +235,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T2(mode, job), null, sys, null, -1, null);
+            return ctx.task().execute(new T2(mode, job), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -420,7 +420,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1, null);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -441,43 +441,33 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cacheNames Cache names.
+     * @param partId Partition.
      * @param affKey Affinity key.
-     * @param job Job.
+     * @param job Closure to execute.
      * @param nodes Grid nodes.
-     * @param extraCaches Extra caches to reserve partition.
-     * @return Job future.
+     * @param <R> Type.
+     * @return Grid future for collection of closure results.
      */
-    public <R> ComputeTaskInternalFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
-        @Nullable Collection<ClusterNode> nodes, @Nullable Collection<String> extraCaches) {
+    public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames, int partId,
+        @Nullable Object affKey, Callable<R> job, @Nullable Collection<ClusterNode> nodes) {
         busyLock.readLock();
 
         try {
             if (F.isEmpty(nodes))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
 
-            // In case cache key is passed instead of affinity key.
-            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            final String cacheName = cacheNames.iterator().next();
 
             final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
-            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0, mapTopVer);
+            final ClusterNode node = ctx.cache().cache(cacheName).context().affinity().primary(partId, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            Set<String> caches = U.newHashSet((extraCaches != null) ? extraCaches.size() + 1 : 1);
-            caches.add(cacheName);
-            if (extraCaches != null)
-                caches.addAll(extraCaches);
-
-            int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
-
-            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false, caches, part, mapTopVer);
-        }
-        catch (IgniteCheckedException e) {
-            return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
+            return ctx.task().execute(new T5(node, job, cacheNames, partId, affKey), null, false, mapTopVer);
         }
         finally {
             busyLock.readUnlock();
@@ -485,43 +475,32 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cacheNames Cache names.
+     * @param partId Partition.
      * @param affKey Affinity key.
      * @param job Job.
      * @param nodes Grid nodes.
-     * @param extraCaches Extra caches to reserve partition.
      * @return Job future.
      */
-    public ComputeTaskInternalFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
-        @Nullable Collection<ClusterNode> nodes, @Nullable Collection<String> extraCaches) {
+    public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames, int partId,
+        @Nullable Object affKey, Runnable job, @Nullable Collection<ClusterNode> nodes) {
         busyLock.readLock();
 
         try {
             if (F.isEmpty(nodes))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
 
-            // In case cache key is passed instead of affinity key.
-            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+            final String cacheName = cacheNames.iterator().next();
 
             final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
-            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0, mapTopVer);
+            final ClusterNode node = ctx.cache().cache(cacheName).context().affinity().primary(partId, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            Set<String> caches = new HashSet<>();
-            caches.add(cacheName);
-            if (extraCaches != null)
-                caches.addAll(extraCaches);
-
-            int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
-
-            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false, caches, part, mapTopVer);
-        }
-        catch (IgniteCheckedException e) {
-            return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
+            return ctx.task().execute(new T4(node, job, cacheNames, partId, affKey), null, false, mapTopVer);
         }
         finally {
             busyLock.readUnlock();
@@ -552,7 +531,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1, null);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -584,7 +563,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1, null);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -615,7 +594,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1, null);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null);
         }
         finally {
             busyLock.readUnlock();
@@ -638,7 +617,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8(job, arg), null, false, null, -1, null);
+            return ctx.task().execute(new T8(job, arg), null, false, null);
         }
         finally {
             busyLock.readUnlock();
@@ -661,7 +640,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null, -1, null);
+            return ctx.task().execute(new T11<>(job), arg, false, null);
         }
         finally {
             busyLock.readUnlock();
@@ -685,7 +664,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null, -1, null);
+            return ctx.task().execute(new T11<>(job), arg, false, null);
         }
         finally {
             busyLock.readUnlock();
@@ -710,7 +689,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T9<>(job, args), null, false, null, -1, null);
+            return ctx.task().execute(new T9<>(job, args), null, false, null);
         }
         finally {
             busyLock.readUnlock();
@@ -734,7 +713,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null, -1, null);
+            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null);
         }
         finally {
             busyLock.readUnlock();
@@ -1184,7 +1163,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /**
-         *
+         * @return Map.
          */
         public Map<ComputeJob, ClusterNode> map() {
             return map;
@@ -1347,23 +1326,29 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Object affKey;
 
         /** */
-        private String affCacheName;
+        private int partId;
+
+        /** */
+        private Collection<String> affCacheNames;
+
 
         /**
          * @param node Cluster node.
-         * @param job Job.
+         * @param job Job affinity partition.
+         * @param affCacheNames Affinity caches.
+         * @param partId Partition.
          * @param affKey Affinity key.
-         * @param affCacheName Affinity cache name.
          */
-        private T4(ClusterNode node, Runnable job, Object affKey, String affCacheName) {
+        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId, Object affKey) {
             super(U.peerDeployAware0(job));
 
-            assert affKey != null;
+            assert partId >= 0;
 
             this.node = node;
             this.job = job;
+            this.affCacheNames = affCacheNames;
+            this.partId = partId;
             this.affKey = affKey;
-            this.affCacheName = affCacheName;
         }
 
         /** {@inheritDoc} */
@@ -1372,13 +1357,18 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object affinityKey() {
-            return affKey;
+        @Override public int partition() {
+            return partId;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String affinityCacheName() {
-            return affCacheName;
+        @Nullable @Override public Collection<String> affinityCacheNames() {
+            return affCacheNames;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object affinityKey() {
+            return affKey;
         }
     }
 
@@ -1399,23 +1389,28 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Object affKey;
 
         /** */
-        private String affCacheName;
+        private int partId;
+
+        /** */
+        private Collection<String> affCacheNames;
+
+
 
         /**
          * @param node Cluster node.
-         * @param job Job.
+         * @param job Job affinity partition.
+         * @param affCacheNames Affinity caches.
+         * @param partId Partition.
          * @param affKey Affinity key.
-         * @param affCacheName Affinity cache name.
          */
-        private T5(ClusterNode node, Callable<R> job, Object affKey, String affCacheName) {
+        private T5(ClusterNode node, Callable<R> job, Collection<String> affCacheNames, int partId, Object affKey) {
             super(U.peerDeployAware0(job));
-
-            assert affKey != null;
 
             this.node = node;
             this.job = job;
+            this.affCacheNames = affCacheNames;
+            this.partId = partId;
             this.affKey = affKey;
-            this.affCacheName = affCacheName;
         }
 
         /** {@inheritDoc} */
@@ -1434,13 +1429,18 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object affinityKey() {
+        @Nullable @Override public Object affinityKey() {
             return affKey;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String affinityCacheName() {
-            return affCacheName;
+        @Override public int partition() {
+            return partId;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<String> affinityCacheNames() {
+            return affCacheNames;
         }
     }
 

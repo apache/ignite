@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.closure;
 
+import java.util.Collection;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,10 +27,15 @@ public interface AffinityTask {
     /**
      * @return Affinity key.
      */
-    public Object affinityKey();
+    @Nullable public Object affinityKey();
+
+    /**
+     * @return Partition.
+     */
+    public int partition();
 
     /**
      * @return Affinity cache name.
      */
-    @Nullable public String affinityCacheName();
+    @Nullable public Collection<String> affinityCacheNames();
 }

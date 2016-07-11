@@ -38,6 +38,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.FailoverSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -139,34 +140,29 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * will not be migrated from the target node while the job is executed. The data
      * of the extra caches' partitions with the same partition number also will not be migrated.
      *
-     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @param extraCaches additional caches to reserve the partition similar to
-     * partition of the affKey for job execution.
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
-        Collection<String> extraCaches) throws IgniteException;
+    public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, Object affKey)
+        throws IgniteException;
 
     /**
-     * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed. The data
-     * of the extra caches' partitions with the same partition number also will not be migrated.
+     * Executes given job on the node where partition is located (the partition is primary on the node)
+     * The data of the partition will not be migrated from the target node
+     * while the job is executed. The data of the extra caches' partitions with the same partition number
+     * also will not be migrated.
      *
-     * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @param extraCaches additional caches to reserve the partition similar to
-     * partition of the affKey for job execution.
-     * @return Job result.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param partId Partition number.
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job,
-        Collection<String> extraCaches) throws IgniteException;
+    public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, int partId)
+        throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
@@ -181,6 +177,38 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed. The data
+     * of the extra caches' partitions with the same partition number also will not be migrated.
+     *
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return Job result.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, Object affKey)
+        throws IgniteException;
+
+    /**
+     * Executes given job on the node where partition is located (the partition is primary on the node)
+     * The data of the partition will not be migrated from the target node
+     * while the job is executed. The data of the extra caches' partitions with the same partition number
+     * also will not be migrated.
+     *
+     * @param partId Partition to reserve.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return Job result.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, int partId)
+        throws IgniteException;
 
     /**
      * Executes given task on within the cluster group. For step-by-step explanation of task execution process

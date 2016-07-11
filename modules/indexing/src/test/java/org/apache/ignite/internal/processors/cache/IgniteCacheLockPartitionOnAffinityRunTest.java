@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -93,7 +94,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     private static final int PERS_AT_ORG_COUNT = 10_000;
 
     /** Test timeout. */
-    private static final long TEST_TIMEOUT = 5 * 60 * 1000;
+    private static final long TEST_TIMEOUT = 4 * 60_000;
+
+    /** Test timeout. */
+    private static final long TEST_DURATION = TEST_TIMEOUT - 60_000;
 
     /** Timeout between restart of a node. */
     private static final long RESTART_TIMEOUT = 3_000;
@@ -117,7 +121,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     private final AtomicBoolean stop = new AtomicBoolean();
 
     /** Test end time. */
-    private long endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
+    private static volatile long endTime;
 
     /**
      * @param ignite Ignite.
@@ -363,7 +367,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
+        endTime = System.currentTimeMillis() + TEST_DURATION;
     }
 
     /**
@@ -472,9 +476,9 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
      */
     private void affinityRunWithExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgIds.get(0),
-            new TestAffinityRun(personsCountGetter, orgIds.get(0)),
-            Collections.singletonList(Person.class.getSimpleName()));
+        grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgIds.get(0)),
+            Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
+            orgIds.get(0));
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -483,9 +487,9 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
             @Override public void run() {
                 while (System.currentTimeMillis() < endTime) {
                     for (final int orgId : orgIds) {
-                        grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId,
-                            new TestAffinityRun(personsCountGetter, orgId),
-                            Collections.singletonList(Person.class.getSimpleName()));
+                        grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgId),
+                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                            orgId);
                     }
                 }
             }
@@ -529,10 +533,9 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
      */
     private void affinityCallWithExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityCall(Organization.class.getSimpleName(),
-            orgIds.get(0),
-            new TestAffinityCall(personsCountGetter, orgIds.get(0)),
-            Collections.singletonList(Person.class.getSimpleName()));
+        grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgIds.get(0)),
+            Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
+            orgIds.get(0));
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -541,10 +544,9 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
             @Override public void run() {
                 while (System.currentTimeMillis() < endTime) {
                     for (final int orgId : orgIds) {
-                        int personsCnt = grid(0).compute().affinityCall(Organization.class.getSimpleName(),
-                            orgId,
-                            new TestAffinityCall(personsCountGetter, orgId),
-                            Collections.singletonList(Person.class.getSimpleName()));
+                        int personsCnt = grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgId),
+                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                            orgId);
 
                         assertEquals(PERS_AT_ORG_COUNT, personsCnt);
                     }
@@ -723,11 +725,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         }
 
         try {
-            grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+            grid(0).compute().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     // No-op.
                 }
-            }, Collections.singletonList(OTHER_CACHE_NAME));
+            }, Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME), orgId);
 
             fail("Exception is expected");
         }
@@ -743,11 +745,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final int orgId = orgIds.get(0);
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
-        grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+        grid(0).compute().affinityRun(new IgniteRunnable() {
             @Override public void run() {
                 checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
             }
-        }, Collections.singletonList(Person.class.getSimpleName()));
+        }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
         checkPartitionsReservations((IgniteEx)grid(node), orgId, 0);
     }
@@ -760,12 +762,12 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
         try {
-            grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+            grid(0).compute().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
                     throw new RuntimeException("Test job throws exception");
                 }
-            }, Collections.singletonList(Person.class.getSimpleName()));
+            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
             fail("Exception must be thrown");
         }
         catch (Exception e) {
@@ -781,12 +783,12 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
         try {
-            grid(1).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+            grid(1).compute().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
                     throw new Error("Test job throws error");
                 }
-            }, Collections.singletonList(Person.class.getSimpleName()));
+            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
             fail("Error must be thrown");
         }
         catch (Throwable e) {
@@ -803,8 +805,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
 
         // Test job unmarshaling fails
         try {
-            grid(1).compute().affinityRun(Organization.class.getSimpleName(), orgId, new JobFailUnmarshaling(),
-                Collections.singletonList(Person.class.getSimpleName()));
+            grid(1).compute().affinityRun(new JobFailUnmarshaling(),
+                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
             fail("Unmarshaling exception must be thrown");
         }
         catch (Exception e) {
@@ -822,11 +824,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         try {
             collisionSpiCancelAll = true;
 
-            grid(1).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+            grid(1).compute().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     fail("Must not be executed");
                 }
-            }, Collections.singletonList(Person.class.getSimpleName()));
+            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
             fail("Error must be thrown");
         }
         catch (ClusterTopologyException e) {
@@ -845,7 +847,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
         try {
-            grid(1).compute().withAsync().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
+            grid(1).compute().withAsync().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
                     try {
@@ -855,7 +857,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                         // No-op.
                     }
                 }
-            }, Collections.singletonList(Person.class.getSimpleName()));
+            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
             stopGrid(1, true);
             Thread.sleep(3000);
@@ -879,7 +881,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
         try {
-            grid(1).compute().withAsync().affinityRun(Organization.class.getSimpleName(), orgId, new RunnableWithMasterLeave() {
+            grid(1).compute().withAsync().affinityRun(new RunnableWithMasterLeave() {
                 @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteException {
                 }
 
@@ -892,7 +894,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                         // No-op.
                     }
                 }
-            }, Collections.singletonList(Person.class.getSimpleName()));
+            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
             stopGrid(1, true);
             Thread.sleep(3000);
