@@ -99,7 +99,7 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
         try (QueryCursor<Cache.Entry<TestKey, String>> cur = jcache(0).query(qry)) {
             jcache(0).put(testKey, "value");
 
-            assertTrue(!latch.await(1000, TimeUnit.MILLISECONDS));
+            assertFalse(!latch.await(1000, TimeUnit.MILLISECONDS));
         }
 
         GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)jcache(0).queryMetrics();
