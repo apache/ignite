@@ -298,8 +298,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /**
      * @return Entries.
      */
-    public synchronized Collection<GridDhtCacheEntry> entriesCopy() {
-        return new ArrayList<>(entries());
+    public Collection<GridDhtCacheEntry> entriesCopy() {
+        synchronized (futs) {
+            return new ArrayList<>(entries());
+        }
     }
 
     /**
@@ -412,7 +414,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             return null;
         }
 
-        synchronized (this) {
+        synchronized (futs) {
             entries.add(c == null || c.reentry() ? null : entry);
 
             if (c != null && !c.reentry())
@@ -621,7 +623,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param t Error.
      */
     public void onError(Throwable t) {
-        synchronized (this) {
+        synchronized (futs) {
             if (err != null)
                 return;
 
@@ -661,15 +663,16 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone())
+        if (isDone() || (inTx() && tx.remainingTime() == -1))
             return false; // Check other futures.
 
         if (log.isDebugEnabled())
             log.debug("Received onOwnerChanged() callback [entry=" + entry + ", owner=" + owner + "]");
 
         if (owner != null && owner.version().equals(lockVer)) {
-            synchronized (this) {
-                pendingLocks.remove(entry.key());
+            synchronized (futs) {
+                if (!pendingLocks.remove(entry.key()))
+                    return false;
             }
 
             if (checkLocks())
@@ -684,8 +687,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /**
      * @return {@code True} if locks have been acquired.
      */
-    private synchronized boolean checkLocks() {
-        return pendingLocks.isEmpty();
+    private boolean checkLocks() {
+        synchronized (futs) {
+            return pendingLocks.isEmpty();
+        }
     }
 
     /** {@inheritDoc} */
@@ -716,7 +721,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (isDone() || (err == null && success && !checkLocks()))
             return false;
 
-        synchronized (this) {
+        synchronized (futs) {
             if (this.err == null)
                 this.err = err;
         }
@@ -797,7 +802,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param entries Entries.
      */
     private void map(Iterable<GridDhtCacheEntry> entries) {
-        synchronized (this) {
+        synchronized (futs) {
             if (mapped)
                 return;
 
@@ -1107,7 +1112,13 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            timedOut = true;
+            synchronized (futs) {
+                timedOut = true;
+
+                pendingLocks.clear();
+
+                futs.clear();
+            }
 
             boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 

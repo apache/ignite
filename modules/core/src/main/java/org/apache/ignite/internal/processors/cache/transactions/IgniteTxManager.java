@@ -130,7 +130,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.19");
 
     /** Deadlock detection maximum iterations. */
-    static final int DEADLOCK_MAX_ITERS =
+    static int DEADLOCK_MAX_ITERS =
         IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000);
 
     /** Committing transactions. */
