@@ -239,6 +239,12 @@ printInstanceInfo()
 # Applies specified tag to EC2 instance
 createTag()
 {
+    if [ -z "$EC2_INSTANCE_REGION" ]; then
+        EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
+        EC2_INSTANCE_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+        export EC2_INSTANCE_REGION
+    fi
+
     for i in 0 9;
     do
         aws ec2 create-tags --resources $1 --tags Key=$2,Value=$3 --region $EC2_INSTANCE_REGION

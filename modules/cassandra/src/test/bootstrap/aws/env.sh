@@ -30,7 +30,6 @@
 # -----------------------------------------------------------------------------------------------
 
 # EC2 tagging related settings
-export EC2_INSTANCE_REGION=us-west-2
 export EC2_OWNER_TAG=ignite@apache.org
 export EC2_PROJECT_TAG=ignite
 export EC2_CASSANDRA_TAG=CASSANDRA
