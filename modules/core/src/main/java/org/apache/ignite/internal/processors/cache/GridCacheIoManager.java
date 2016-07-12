@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.UnhandledExceptionEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -72,6 +73,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_UNHANDLED_EXCEPTION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -519,19 +521,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 59: {
-                GridCacheQueryResponse res = (GridCacheQueryResponse)msg;
-
-                cctx.io().sendOrderedMessage(
-                    ctx.node(nodeId),
-                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, res.requestId()),
-                    res,
-                    ctx.ioPolicy(),
-                    Long.MAX_VALUE);
-            }
-
-            break;
-
             case 114: {
                 processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
@@ -576,9 +565,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            default:
-                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]", msg.classError());
+            default: {
+                String desc = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
+
+                IgniteCheckedException ex = new IgniteCheckedException(desc, msg.classError());
+
+                ClusterNode node = ctx.discovery().localNode();
+
+                UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, desc, ex, EVT_UNHANDLED_EXCEPTION);
+
+                ctx.kernalContext().event().record(evt);
+
+                throw ex;
+            }
         }
     }
 

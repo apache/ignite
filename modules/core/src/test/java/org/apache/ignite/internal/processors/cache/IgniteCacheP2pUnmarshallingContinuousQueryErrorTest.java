@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -49,24 +50,30 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
         cfg.setGridLogger(stringLogger);
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         final TestKey testKey = new TestKey(String.valueOf(++key));
+
         final AtomicInteger unhandledExceptionCounter = new AtomicInteger();
+
         final CountDownLatch latch = new CountDownLatch(1);
 
         grid(0).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
                 unhandledExceptionCounter.incrementAndGet();
+
                 return true;
             }
         }, EventType.EVT_UNHANDLED_EXCEPTION);
 
         ContinuousQuery<TestKey, String> qry = new ContinuousQuery<>();
+
         qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
             @Override public boolean apply(TestKey key, String val) {
                 return true;
@@ -77,36 +84,34 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends TestKey, ? extends String>> evts) {
                 for (CacheEntryEvent<? extends TestKey, ? extends String> e : evts) {
                     assertEquals(e.getKey(), testKey);
+
                     assertEquals(e.getValue(), "value");
 
                     latch.countDown();
-                    System.out.println("key=" + e.getKey() + ", val=" + e.getValue());
+
+                    log.debug("key=" + e.getKey() + ", val=" + e.getValue());
                 }
             }
         });
 
-        Boolean latchAwait = null;
         readCnt.set(2); // counter for testKey.readExternal
 
         try (QueryCursor<Cache.Entry<TestKey, String>> cur = jcache(0).query(qry)) {
             jcache(0).put(testKey, "value");
-            latchAwait = latch.await(1000, TimeUnit.MILLISECONDS);
-        }
-        catch(Exception ex) {
-            ex.printStackTrace();
+
+            assertTrue(!latch.await(1000, TimeUnit.MILLISECONDS));
         }
 
         GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)jcache(0).queryMetrics();
-        System.out.println("QueryMetrics: executions=" + metr.executions() + ", fails=" + metr.fails());
-        System.out.println("latchAwait=" + latchAwait + ", inhandledExceptionCounter=" + unhandledExceptionCounter);
 
-        String exceptionLog = stringLogger.toString();
-        assertTrue(!exceptionLog.contains("Unsupported direct type [message"));
+        log.debug("QueryMetrics: executions=" + metr.executions() + ", fails=" + metr.fails());
 
-        assert !latchAwait;
-        assert unhandledExceptionCounter.intValue() == 1;
+        log.debug("inhandledExceptionCounter=" + unhandledExceptionCounter);
 
-        assert metr.executions() == 1;
-        assert metr.fails() == 1;
+        assertEquals(unhandledExceptionCounter.intValue(), 1);
+
+        assertEquals(metr.executions(), 1);
+
+        assertEquals(metr.fails(), 1);
     }
 }

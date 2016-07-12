@@ -677,16 +677,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
             catch (IgniteCheckedException ex) {
                 String shortMsg = "Failed to unmarshal entry.";
+
                 if (ignoreClsNotFound)
                     assert internal;
                 else
                     U.error(ctx.log(getClass()), shortMsg, ex);
 
                 queryManager.onUnhandledException();
+
                 ctx.exceptionRegistry().onException(shortMsg, ex);
 
                 ClusterNode node = ctx.discovery().localNode();
+
                 UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+
                 ctx.event().record(evt);
             }
         }
