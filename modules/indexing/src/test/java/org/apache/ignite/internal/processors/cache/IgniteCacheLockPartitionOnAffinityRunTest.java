@@ -96,7 +96,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 4 * 60_000;
 
-    /** Test timeout. */
+    /** Test duration. */
     private static final long TEST_DURATION = TEST_TIMEOUT - 60_000;
 
     /** Timeout between restart of a node. */
@@ -360,9 +360,9 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         endTime = System.currentTimeMillis() + TEST_DURATION;
+
+        super.beforeTest();
     }
 
     /**
@@ -451,18 +451,26 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         // Run restart threads: start re-balancing
         beginNodesRestart();
 
-        IgniteInternalFuture<Long> affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (System.currentTimeMillis() < endTime) {
-                    for (final int orgId : orgIds) {
-                        grid(0).compute().affinityRun(Person.class.getSimpleName(), new Person(0, orgId).createKey(),
-                            new TestAffinityRun(personsCountGetter, orgId));
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    while (System.currentTimeMillis() < endTime) {
+                        for (final int orgId : orgIds) {
+                            if (System.currentTimeMillis() >= endTime)
+                                break;
+
+                            grid(0).compute().affinityRun(Person.class.getSimpleName(), new Person(0, orgId).createKey(),
+                                new TestAffinityRun(personsCountGetter, orgId));
+                        }
                     }
                 }
-            }
-        }, AFFINITY_THREADS_COUNT, "affinity-run");
-
-        affFut.get();
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+        }
     }
 
     /**
@@ -478,19 +486,27 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         // Run restart threads: start re-balancing
         beginNodesRestart();
 
-        IgniteInternalFuture<Long> affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (System.currentTimeMillis() < endTime) {
-                    for (final int orgId : orgIds) {
-                        grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgId),
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            orgId);
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    while (System.currentTimeMillis() < endTime) {
+                        for (final int orgId : orgIds) {
+                            if (System.currentTimeMillis() >= endTime)
+                                break;
+
+                            grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgId),
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                orgId);
+                        }
                     }
                 }
-            }
-        }, AFFINITY_THREADS_COUNT, "affinity-run");
-
-        affFut.get();
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+        }
     }
 
     /**
@@ -506,20 +522,28 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         // Run restart threads: start re-balancing
         beginNodesRestart();
 
-        IgniteInternalFuture<Long> affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (System.currentTimeMillis() < endTime) {
-                    for (final int orgId : orgIds) {
-                        int personsCnt = grid(0).compute().affinityCall(Person.class.getSimpleName(),
-                            new Person(0, orgId).createKey(),
-                            new TestAffinityCall(personsCountGetter, orgId));
-                        assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    while (System.currentTimeMillis() < endTime) {
+                        for (final int orgId : orgIds) {
+                            if (System.currentTimeMillis() >= endTime)
+                                break;
+
+                            int personsCnt = grid(0).compute().affinityCall(Person.class.getSimpleName(),
+                                new Person(0, orgId).createKey(),
+                                new TestAffinityCall(personsCountGetter, orgId));
+                            assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+                        }
                     }
                 }
-            }
-        }, AFFINITY_THREADS_COUNT, "affinity-run");
-
-        affFut.get();
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+        }
     }
 
     /**
@@ -535,21 +559,29 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         // Run restart threads: start re-balancing
         beginNodesRestart();
 
-        IgniteInternalFuture<Long> affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (System.currentTimeMillis() < endTime) {
-                    for (final int orgId : orgIds) {
-                        int personsCnt = grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgId),
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            orgId);
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    while (System.currentTimeMillis() < endTime) {
+                        for (final int orgId : orgIds) {
+                            if (System.currentTimeMillis() >= endTime)
+                                break;
 
-                        assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+                            int personsCnt = grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgId),
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                orgId);
+
+                            assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+                        }
                     }
                 }
-            }
-        }, AFFINITY_THREADS_COUNT, "affinity-run");
-
-        affFut.get();
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+        }
     }
 
     /**
