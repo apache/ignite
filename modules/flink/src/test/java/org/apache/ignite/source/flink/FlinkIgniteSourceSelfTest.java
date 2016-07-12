@@ -18,18 +18,27 @@
 package org.apache.ignite.source.flink;
 
 
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.sink.flink.IgniteSink;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests for {@link IgniteSource}.
@@ -82,30 +91,23 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         env.getConfig().disableSysoutLogging();
+        IgniteCache cache = ignite.cache(TEST_CACHE);
 
         IgniteSource igniteSource = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
 
-        igniteSource.start();
+        igniteSource.start(10, 10, "PUT");
 
-        DataStream<Map> stream = env.addSource(igniteSource);
-
-        IgniteCache cache = ignite.cache(TEST_CACHE);
+        DataStream<Object> stream = env.addSource(igniteSource);
 
         int cnt = 0;
-
-        while (cnt < DFLT_STREAMING_EVENT)  {
-            cache.put(cnt, "ignite-" + cnt);
+        while (cnt < 10)  {
+            cache.put(cnt, cnt);
             cnt++;
         }
-
-        stream.addSink(new SinkFunction<Map>() {
-            @Override
-            public void invoke(Map map) throws Exception {
-                System.out.println(map);
-            }
-        });
+        stream.print();
         try {
             env.execute();
+
         }
         finally {
             igniteSource.stop();

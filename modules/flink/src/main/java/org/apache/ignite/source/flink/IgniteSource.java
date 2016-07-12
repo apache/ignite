@@ -17,10 +17,17 @@
 
 package org.apache.ignite.source.flink;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
+import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -38,7 +45,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Apache Flink Ignite source implemented as a RichSourceFunction.
  */
-public class IgniteSource extends RichSourceFunction<Map>{
+public class IgniteSource extends RichSourceFunction<Object> {
 
     private static final long serialVersionUID = 1L;
 
@@ -46,13 +53,13 @@ public class IgniteSource extends RichSourceFunction<Map>{
     private static final Logger log = LoggerFactory.getLogger(IgniteSource.class);
 
     /** Event buffer size. */
-    private static int evtBufSize = 10;
+    private static int evtBufSize = 100000;
 
     /** Event buffer. */
     private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>(evtBufSize);
 
     /** Max number of events taken from the buffer at once. */
-    private static int evtBatchSize = 10;
+    private static int evtBatchSize = 100;
 
     /** Remote Listener id. */
     private static UUID rmtLsnrId;
@@ -103,20 +110,27 @@ public class IgniteSource extends RichSourceFunction<Map>{
 
     /**
      * Starts Ignite source.
+     * @param evtBufSize Event buffer size for the Blocking Queue.
+     * @param evtBatchSize Event batch size to publish events.
+     * @param cacheEvents Converts comma-delimited cache events strings to Ignite internal representation.
      *
      * @throws IgniteException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start() throws IgniteException {
+    public void start(int evtBufSize, int evtBatchSize, String cacheEvents) throws Exception {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
+
+        this.evtBufSize = evtBufSize;
+        this.evtBatchSize = evtBatchSize;
 
         Ignite ignite = IgniteSource.IgniteContext.getIgnite();
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName);
 
         try {
+            int[] evts = cacheEvents(cacheEvents);
             rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                    .remoteListen(locLsnr, rmtLsnr, EVT_CACHE_OBJECT_PUT);
+                    .remoteListen(locLsnr, rmtLsnr, evts);
         }
         catch (Exception e) {
             log.error("Failed to register event listener!", e);
@@ -157,30 +171,61 @@ public class IgniteSource extends RichSourceFunction<Map>{
      * @param ctx SourceContext.
      */
     @Override
-    public void run(SourceContext<Map> ctx) {
+    public void run(SourceContext<Object> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
-        Map map = new HashMap();
+
+        if (stopped)
+            return;
 
         try{
           while (!stopped) {
-              synchronized (ctx.getCheckpointLock()) {
 
-                  if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
+              if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
+                  synchronized (ctx.getCheckpointLock()) {
+
                       for (CacheEvent evt : evts) {
-                          map.put(evt.key(),evt.newValue());
+                          Object o = (Object) evt;
+                          ctx.collect(evt);
                       }
                   }
-                  ctx.collect(map);
               }
           }
         } catch (Exception e){
             log.error("Error while processing OUT of " + cacheName, e);
         }
+        return;
     }
 
     @Override
     public void cancel() {
         stopped = true;
+    }
+
+    /**
+     * Converts comma-delimited cache events strings to Ignite internal representation.
+     *
+     * @param evtPropsStr Comma-delimited cache event names.
+     * @return Ignite internal representation of cache events to be registered with the remote listener.
+     * @throws Exception If error.
+     */
+    private int[] cacheEvents(String evtPropsStr) throws Exception {
+        String[] evtStr = evtPropsStr.split("\\s*,\\s*");
+
+        if (evtStr.length == 0)
+            return EventType.EVTS_CACHE;
+
+        int[] evts = new int[evtStr.length];
+
+        try {
+            for (int i = 0; i < evtStr.length; i++)
+                evts[i] = CacheEvt.valueOf(evtStr[i].toUpperCase()).getId();
+        }
+        catch (Exception e) {
+            log.error("Failed to recognize the provided cache event!", e);
+
+            throw new Exception(e);
+        }
+        return evts;
     }
 
     /**
@@ -256,6 +301,50 @@ public class IgniteSource extends RichSourceFunction<Map>{
             }
 
             return true;
+        }
+    }
+    /** Cache events available for listening. */
+    private enum CacheEvt {
+        /** */
+        CREATED(EventType.EVT_CACHE_ENTRY_CREATED),
+        /** */
+        DESTROYED(EventType.EVT_CACHE_ENTRY_DESTROYED),
+        /** */
+        PUT(EventType.EVT_CACHE_OBJECT_PUT),
+        /** */
+        READ(EventType.EVT_CACHE_OBJECT_READ),
+        /** */
+        REMOVED(EventType.EVT_CACHE_OBJECT_REMOVED),
+        /** */
+        LOCKED(EventType.EVT_CACHE_OBJECT_LOCKED),
+        /** */
+        UNLOCKED(EventType.EVT_CACHE_OBJECT_UNLOCKED),
+        /** */
+        SWAPPED(EventType.EVT_CACHE_OBJECT_SWAPPED),
+        /** */
+        UNSWAPPED(EventType.EVT_CACHE_OBJECT_UNSWAPPED),
+        /** */
+        EXPIRED(EventType.EVT_CACHE_OBJECT_EXPIRED);
+
+        /** Internal Ignite event id. */
+        private final int id;
+
+        /**
+         * Constructor.
+         *
+         * @param id Internal Ignite event id.
+         */
+        CacheEvt(int id) {
+            this.id = id;
+        }
+
+        /**
+         * Gets Ignite event id.
+         *
+         * @return Ignite event id.
+         */
+        int getId() {
+            return id;
         }
     }
 }
