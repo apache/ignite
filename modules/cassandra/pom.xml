@@ -43,11 +43,7 @@
         <minlog.version>1.3.0</minlog.version>
         <asm.version>5.0.3</asm.version>
         <objenesis.version>2.1</objenesis.version>
-        <netty-handler.version>4.0.27.Final</netty-handler.version>
-        <netty-buffer.version>4.0.27.Final</netty-buffer.version>
-        <netty-common.version>4.0.27.Final</netty-common.version>
-        <netty-transport.version>4.0.27.Final</netty-transport.version>
-        <netty-codec.version>4.0.27.Final</netty-codec.version>
+        <netty.version>4.0.33.Final</netty.version>
         <guava.version>19.0</guava.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
@@ -121,31 +117,31 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>${netty-handler.version}</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>${netty-buffer.version}</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
-            <version>${netty-common.version}</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
-            <version>${netty-transport.version}</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>${netty-codec.version}</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
