@@ -7475,7 +7475,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!decodedBuf.hasRemaining() && decodedBuf.limit() < decodedBuf.capacity())
                         decodedBuf.limit(decodedBuf.capacity());
 
-                    decodedBuf.put(appBuf); // TODO BufferOverflow
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+
+                    decodedBuf.put(appBuf);
 
                     decodedBuf.flip();
                 }
@@ -7529,7 +7531,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!decodedBuf.hasRemaining())
                         decodedBuf.clear();
 
-                    decodedBuf.put(appBuf); // TODO BufferOverflow
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+
+                    decodedBuf.put(appBuf);
 
                     decodedBuf.flip();
 
