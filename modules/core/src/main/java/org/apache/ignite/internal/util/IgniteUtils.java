@@ -8581,7 +8581,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
         Collection<String> hostNames) throws IgniteCheckedException {
-        List<InetAddress> res = new ArrayList<>(addrs.size());
+        Set<InetAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8614,7 +8614,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return Collections.unmodifiableList(res);
+        return res;
     }
 
     /**
@@ -8640,7 +8640,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
         Collection<String> hostNames, int port) {
-        List<InetSocketAddress> res = new ArrayList<>(addrs.size());
+        Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8661,7 +8661,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return Collections.unmodifiableList(res);
+        return res;
     }
 
     /**
@@ -8686,20 +8686,47 @@ public abstract class IgniteUtils {
             InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
 
             if (!sockAddr.isUnresolved()) {
-                try {
-                    Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
+                Collection<InetSocketAddress> extAddrs0 = resolveAddress(addrRslvr, sockAddr);
 
-                    if (extAddrs0 != null)
-                        extAddrs.addAll(extAddrs0);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSpiException("Failed to get mapped external addresses " +
-                        "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
-                }
+                if (extAddrs0 != null)
+                    extAddrs.addAll(extAddrs0);
             }
         }
 
         return extAddrs;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    public static Collection<InetSocketAddress> resolveAddresses(AddressResolver addrRslvr,
+        Collection<InetSocketAddress> sockAddr) {
+        if (addrRslvr == null)
+            return sockAddr;
+
+        Collection<InetSocketAddress> resolved = new HashSet<>();
+
+        for (InetSocketAddress address :sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, address));
+
+        return resolved;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    private static Collection<InetSocketAddress> resolveAddress(AddressResolver addrRslvr, InetSocketAddress sockAddr) {
+        try {
+            return addrRslvr.getExternalAddresses(sockAddr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to get mapped external addresses " +
+                "[addrRslvr=" + addrRslvr + ", addr=" + sockAddr + ']', e);
+        }
     }
 
     /**

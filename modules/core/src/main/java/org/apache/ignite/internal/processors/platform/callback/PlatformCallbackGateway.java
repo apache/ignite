@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -88,7 +89,8 @@ public class PlatformCallbackGateway {
      * @param objPtr Object pointer.
      */
     public void cacheStoreDestroy(long objPtr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // no need to destroy stores on grid stop
 
         try {
             PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
@@ -947,6 +949,104 @@ public class PlatformCallbackGateway {
         block();
 
         PlatformCallbackUtils.onStop(envPtr);
+    }
+
+    /**
+     * Initializes affinity function.
+     *
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
+     * @return Affinity function pointer.
+     */
+    public long affinityFunctionInit(long memPtr, PlatformAffinityFunctionTarget baseFunc) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr, baseFunc);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Gets the partition from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with key object.
+     * @return Partition number for a given key.
+     */
+    public int affinityFunctionPartition(long ptr, long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionPartition(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Assigns the affinity partitions.
+     *
+     * @param ptr Affinity function pointer.
+     * @param outMemPtr Pointer to a stream with affinity context.
+     * @param inMemPtr Pointer to a stream with result.
+     */
+    public void affinityFunctionAssignPartitions(long ptr, long outMemPtr, long inMemPtr){
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionAssignPartitions(envPtr, ptr, outMemPtr, inMemPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Removes the node from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with node id.
+     */
+    public void affinityFunctionRemoveNode(long ptr, long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionRemoveNode(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Destroys the affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     */
+    public void affinityFunctionDestroy(long ptr) {
+        if (!lock.enterBusy())
+            return;  // skip: destroy is not necessary during shutdown.
+
+        try {
+            PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Redirects the console output to platform.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    public static void consoleWrite(String str, boolean isErr) {
+        PlatformCallbackUtils.consoleWrite(str, isErr);
     }
 
     /**

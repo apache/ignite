@@ -103,10 +103,10 @@ module.exports.factory = function(_, express, mongo) {
 
                     return (new mongo.Cluster(params)).save()
                         .then((cluster) =>
-                            mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec()
-                                .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                                .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
-                                .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                            mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: cluster._id}}, {multi: true}).exec()
+                                .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: cluster._id}}, {multi: true}).exec())
+                                .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: cluster._id}}, {multi: true}).exec())
+                                .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: cluster._id}}, {multi: true}).exec())
                                 .then(() => res.send(cluster._id))
                         );
                 })
