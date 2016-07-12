@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -450,17 +451,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames, int partId,
-        @Nullable Object affKey, Callable<R> job, @Nullable Collection<ClusterNode> nodes) {
+        @Nullable Object affKey, Callable<R> job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert partId >= 0;
+
         busyLock.readLock();
 
         try {
             if (F.isEmpty(nodes))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
 
-            final String cacheName = cacheNames.iterator().next();
+            final String cacheName = F.first(cacheNames);
 
             final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
-            final ClusterNode node = ctx.cache().cache(cacheName).context().affinity().primary(partId, mapTopVer);
+            final ClusterNode node = ctx.affinity().mapPartToNode(cacheName, partId, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
@@ -483,17 +486,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      */
     public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames, int partId,
-        @Nullable Object affKey, Runnable job, @Nullable Collection<ClusterNode> nodes) {
+        @Nullable Object affKey, Runnable job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert partId >= 0;
+
         busyLock.readLock();
 
         try {
             if (F.isEmpty(nodes))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
 
-            final String cacheName = cacheNames.iterator().next();
+            final String cacheName = F.first(cacheNames);
 
             final AffinityTopologyVersion mapTopVer = ctx.discovery().topologyVersionEx();
-            final ClusterNode node = ctx.cache().cache(cacheName).context().affinity().primary(partId, mapTopVer);
+            final ClusterNode node = ctx.affinity().mapPartToNode(cacheName, partId, mapTopVer);
 
             if (node == null)
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());

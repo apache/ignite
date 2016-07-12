@@ -984,8 +984,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     @Override public void run() {
                         try {
 
-                            ClusterNode newNode = ctx.cache().cache(affCaches.iterator().next()).context().affinity()
-                                .primary(affPartId, mapTopVer);
+                            ClusterNode newNode = ctx.affinity().mapPartToNode(F.first(affCaches), affPartId,
+                                mapTopVer);
 
                             if (newNode == null)
                                 throw U.emptyTopologyException();
@@ -1159,7 +1159,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         try {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
-            String affCache = (affCaches != null && !affCaches.isEmpty()) ? affCaches.iterator().next() : null;
+            String affCache = F.first(affCaches);
 
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affPartId,
                 affKey, affCache, mapTopVer);

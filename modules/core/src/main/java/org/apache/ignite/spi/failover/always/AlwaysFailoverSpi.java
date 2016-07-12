@@ -208,8 +208,15 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             else {
                 ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
 
-                return ((IgniteEx)ignite).context().cache().cache(ctx.affinityCacheName()).context()
-                    .affinity().primary(ctx.partition(), ((GridFailoverContextImpl)ctx).affinityTopologyVersion());
+                try {
+                    return ((IgniteEx)ignite).context().affinity().mapPartToNode(ctx.affinityCacheName(), ctx.partition(),
+                        ((GridFailoverContextImpl)ctx).affinityTopologyVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to get map job to node on failover: " + ctx, e);
+
+                    return null;
+                }
             }
         }
 
