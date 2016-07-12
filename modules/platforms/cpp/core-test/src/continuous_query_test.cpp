@@ -404,23 +404,6 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryText)
     CheckEvents(cache, lsnr);
 }
 
-BOOST_AUTO_TEST_CASE(TestExpiredQuery)
-{
-    Listener<int, TestEntry> lsnr;
-    ContinuousQueryHandle<int, TestEntry> handle;
-
-    {
-        // Query scope.
-        ContinuousQuery<int, TestEntry> qry(lsnr);
-
-        handle = cache.QueryContinuous(qry);
-    }
-
-    // Query is destroyed here.
-
-    CheckEvents(cache, lsnr);
-}
-
 BOOST_AUTO_TEST_CASE(TestBasicNoExcept)
 {
     Listener<int, TestEntry> lsnr;
@@ -531,6 +514,84 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryTextNoExcept)
     BOOST_CHECK_EQUAL(vals[0].GetKey(), 22);
 
     BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestExpiredQuery)
+{
+    Listener<int, TestEntry> lsnr;
+    ContinuousQueryHandle<int, TestEntry> handle;
+
+    {
+        // Query scope.
+        ContinuousQuery<int, TestEntry> qry(lsnr);
+
+        handle = cache.QueryContinuous(qry);
+    }
+
+    // Query is destroyed here.
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestSetGetLocal)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    BOOST_CHECK(!qry.GetLocal());
+
+    qry.SetLocal(true);
+
+    BOOST_CHECK(qry.GetLocal());
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    BOOST_CHECK(qry.GetLocal());
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
+{
+    typedef ContinuousQuery<int, TestEntry> QueryType;
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    BOOST_CHECK(qry.GetBufferSize() == QueryType::DEFAULT_BUFFER_SIZE);
+
+    qry.SetBufferSize(2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    BOOST_CHECK(qry.GetBufferSize() == 2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    BOOST_CHECK(qry.GetBufferSize() == 2 * QueryType::DEFAULT_BUFFER_SIZE);
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
+{
+    typedef ContinuousQuery<int, TestEntry> QueryType;
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    qry.SetBufferSize(10);
+
+    BOOST_CHECK_EQUAL(qry.GetTimeInterval(), QueryType::DEFAULT_TIME_INTERVAL);
+
+    qry.SetTimeInterval(500);
+
+    BOOST_CHECK_EQUAL(qry.GetTimeInterval(), 500);
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    BOOST_CHECK_EQUAL(qry.GetTimeInterval(), 500);
 
     CheckEvents(cache, lsnr);
 }
