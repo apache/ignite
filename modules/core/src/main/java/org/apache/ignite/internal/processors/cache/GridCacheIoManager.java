@@ -566,15 +566,16 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             default: {
-                String desc = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
+                String shortMsg = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
 
-                IgniteCheckedException ex = new IgniteCheckedException(desc, msg.classError());
+                IgniteCheckedException ex = new IgniteCheckedException(shortMsg, msg.classError());
 
                 ClusterNode node = ctx.discovery().localNode();
 
-                UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, desc, ex, EVT_UNHANDLED_EXCEPTION);
+                UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
 
                 ctx.kernalContext().event().record(evt);
+                ctx.kernalContext().exceptionRegistry().onException(shortMsg, ex);
 
                 throw ex;
             }
