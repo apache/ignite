@@ -61,12 +61,12 @@ namespace ignite
                     /**
                      * Default value for the buffer size.
                      */
-                    enum { DEFAULT_BUFFER_SIZE = impl::cache::query::continuous::ContinuousQueryImplBase::DEFAULT_BUFFER_SIZE };
+                    enum { DEFAULT_BUFFER_SIZE = 1 };
 
                     /**
                      * Default value for the time interval.
                      */
-                    enum { DEFAULT_TIME_INTERVAL = impl::cache::query::continuous::ContinuousQueryImplBase::DEFAULT_TIME_INTERVAL };
+                    enum { DEFAULT_TIME_INTERVAL = 0 };
 
                     /**
                      * Destructor.

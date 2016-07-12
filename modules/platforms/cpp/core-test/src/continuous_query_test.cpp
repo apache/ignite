@@ -596,4 +596,16 @@ BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
     CheckEvents(cache, lsnr);
 }
 
+BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
+{
+    typedef ContinuousQuery<int, TestEntry> QueryType;
+    typedef impl::cache::query::continuous::ContinuousQueryImpl<int, TestEntry> QueryImplType;
+    
+    BOOST_CHECK_EQUAL(static_cast<int>(QueryImplType::DEFAULT_TIME_INTERVAL),
+        static_cast<int>(QueryType::DEFAULT_TIME_INTERVAL));
+
+    BOOST_CHECK_EQUAL(static_cast<int>(QueryImplType::DEFAULT_BUFFER_SIZE),
+        static_cast<int>(QueryType::DEFAULT_BUFFER_SIZE));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
