@@ -2336,7 +2336,8 @@ public abstract class BPlusTree<L, T extends L> {
 
             if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl) {
                 // Free root if it became empty after merge.
-                freePage(tail.pageId, tail.page, tail.buf, tail.io, tail.lvl, false);
+                cutRoot(tail.lvl);
+                freePage(tail.pageId, tail.page, tail.buf, false);
             }
             else if (tail.sibling != null &&
                 tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
@@ -2503,7 +2504,7 @@ public abstract class BPlusTree<L, T extends L> {
                 doRemove(prnt.page, prnt.io, prnt.buf, prntCnt, prntIdx, 0L);
 
             // Forward page is now empty and has no links, can free and release it right away.
-            freePage(right.pageId, right.page, right.buf, right.io, right.lvl, true);
+            freePage(right.pageId, right.page, right.buf, true);
 
             return true;
         }
@@ -2512,26 +2513,25 @@ public abstract class BPlusTree<L, T extends L> {
          * @param pageId Page ID.
          * @param page Page.
          * @param buf Buffer.
-         * @param io IO.
-         * @param lvl Level.
          * @param release Release write lock and release page.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
-        private void freePage(long pageId, Page page, ByteBuffer buf, BPlusIO io, int lvl, boolean release)
+        private void freePage(long pageId, Page page, ByteBuffer buf, boolean release)
             throws IgniteCheckedException {
-            if (getFirstPageId(meta, lvl) == pageId) {
-                // This can be only root because otherwise we never drop first pages,
-                // we merge forward pages into backward ones.
-                writePage(metaPageId, meta, cutRoot, null, lvl);
-            }
-
             pageId = recyclePage(pageId, page, buf);
 
             if (release)
                 writeUnlockAndClose(page);
 
             bag().addFreePage(pageId);
+        }
+
+        /**
+         * @param lvl Expected root level.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void cutRoot(int lvl) throws IgniteCheckedException {
+            writePage(metaPageId, meta, cutRoot, null, lvl);
         }
 
         /**
