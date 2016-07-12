@@ -147,7 +147,7 @@ public class MetadataStorage implements MetaStore {
                 if (reuseList == null)
                     pageMem.freePage(cacheId, rmv.pageId);
                 else
-                    reuseList.add(new Bag(rmv.pageId)); // TODO remove when BPlusTree.destroy() will be available.
+                    reuseList.add(new Bag(rmv.pageId));
             }
 
         } while (rmv != null);
