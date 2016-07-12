@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree;
 
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -3127,6 +3128,16 @@ public abstract class BPlusTree<L, T extends L> {
      * Reuse bag for destroy.
      */
     private static final class DestroyBag extends GridLongList implements ReuseBag {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Default constructor for {@link Externalizable}.
+         */
+        public DestroyBag() {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public void addFreePage(long pageId) {
             add(pageId);
