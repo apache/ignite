@@ -374,16 +374,6 @@ public abstract class BPlusIO<L> extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param pageId Recycled page ID.
-     */
-    public void recycle(ByteBuffer buf, long pageId) {
-        setRemoveId(buf, Long.MAX_VALUE); // Mark removed.
-
-        PageIO.setPageId(buf, pageId);
-    }
-
-    /**
-     * @param buf Buffer.
      * @param pos Position in buffer.
      * @param bytes Bytes.
      */
