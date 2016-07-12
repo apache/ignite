@@ -128,14 +128,14 @@ public class MetadataStorage implements MetaStore {
             if (reuseList == null)
                 pageMem.freePage(cacheId, row.pageId);
             else
-                reuseList.add(new Bag(row.pageId)); // TODO remove when BPlusTree.destroy() will be available.
+                reuseList.add(new Bag(row.pageId));
         }
 
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
     /**
-     * TODO remove when BPlusTree.destroy() will be available.
+     *
      */
     private static class Bag implements ReuseBag {
         /** */
