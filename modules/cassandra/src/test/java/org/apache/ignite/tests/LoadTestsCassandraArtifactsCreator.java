@@ -88,6 +88,15 @@ public class LoadTestsCassandraArtifactsCreator {
 
             System.out.println("[INFO] All required Cassandra artifacts were successfully recreated");
         }
+        catch (Throwable e) {
+            System.out.println("[ERROR] Failed to recreate Cassandra artifacts");
+            e.printStackTrace();
+
+            if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
+            else
+                throw new RuntimeException(e);
+        }
         finally {
             CassandraHelper.releaseCassandraResources();
         }
