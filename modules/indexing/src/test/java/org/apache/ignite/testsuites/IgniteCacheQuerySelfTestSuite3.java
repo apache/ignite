@@ -136,8 +136,6 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheKeepBinaryIterationNearEnabledTest.class);
         suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
 
-        suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
-
         suite.addTestSuite(IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.class, ignoredTests);

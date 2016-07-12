@@ -17,61 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.UnhandledExceptionEvent;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
-    /** */
-    private GridStringLogger stringLogger = new GridStringLogger();
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setGridLogger(stringLogger);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        final TestKey testKey = new TestKey(String.valueOf(++key));
 
         final AtomicInteger unhandledExceptionCounter = new AtomicInteger();
 
-        final CountDownLatch unhandledExceptionDownLatch = new CountDownLatch(1);
-
         grid(0).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
-                unhandledExceptionCounter.incrementAndGet();
 
-                unhandledExceptionDownLatch.countDown();
+                UnhandledExceptionEvent uex = (UnhandledExceptionEvent)event;
+
+                String exceptionMsg = uex.toString();
+
+                assertTrue(exceptionMsg.contains("Class can not be unmarshalled"));
+
+                unhandledExceptionCounter.incrementAndGet();
 
                 return true;
             }
@@ -87,7 +73,7 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
         qry.setLocalListener(new CacheEntryUpdatedListener<TestKey, String>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends TestKey, ? extends String>> evts) {
-                throw new IgniteException("This line newer calls");
+                fail("This line newer calls");
             }
         });
 
@@ -95,24 +81,23 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
         GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)jcache(0).queryMetrics();
 
-        assertValues(0, metr, unhandledExceptionCounter);
+        assertEquals(metr.fails(), 0);
+        assertEquals(metr.executions(), 0);
+        assertEquals(unhandledExceptionCounter.intValue(), 0);
 
         try (QueryCursor<Cache.Entry<TestKey, String>> cur = jcache(0).query(qry)) {
+
+            TestKey testKey = new TestKey("key1");
+
             // this line run exception on server
-            jcache(0).put(testKey, "value");
+            jcache(1).put(testKey, "value1");
 
-            assertTrue(unhandledExceptionDownLatch.await(3000, TimeUnit.MILLISECONDS));
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)jcache(0).queryMetrics();
+                    return metr.fails() == 1 && metr.executions() == 1 && unhandledExceptionCounter.intValue() == 1;
+                }
+            }, 5000));
         }
-
-        assertValues(1, metr, unhandledExceptionCounter);
-    }
-
-    public void assertValues(int validValue, GridCacheQueryMetricsAdapter metr, AtomicInteger unhandledExceptionCounter) {
-        assertEquals(unhandledExceptionCounter.intValue(), validValue);
-
-        assertEquals(metr.executions(), validValue);
-
-        assertEquals(metr.fails(), validValue);
-
     }
 }

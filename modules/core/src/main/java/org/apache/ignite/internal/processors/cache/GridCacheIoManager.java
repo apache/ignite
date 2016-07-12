@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.UnhandledExceptionEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -574,13 +575,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
 
-                ctx.kernalContext().event().record(evt);
-                ctx.kernalContext().exceptionRegistry().onException(shortMsg, ex);
+                GridKernalContext cont = ctx.kernalContext();
+
+                cont.exceptionRegistry().onException(shortMsg, ex);
+
+                cont.event().record(evt);
 
                 throw ex;
             }
         }
     }
+
 
     /**
      * @param nodeId Node ID.
