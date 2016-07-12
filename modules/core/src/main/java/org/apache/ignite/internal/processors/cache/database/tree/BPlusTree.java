@@ -1510,7 +1510,7 @@ public abstract class BPlusTree<L, T extends L> {
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.add(this, bag);
+                            reuseList.add(bag);
 
                             assert bag.size() == 0 : bag.size();
                         }
@@ -1526,7 +1526,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
         }
 
-        reuseList.add(this, bag);
+        reuseList.add(bag);
 
         assert bag.size() == 0 : bag.size();
         assert pagesCnt >= 2 : pagesCnt;

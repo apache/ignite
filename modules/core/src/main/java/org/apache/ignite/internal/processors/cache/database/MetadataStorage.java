@@ -152,7 +152,7 @@ public class MetadataStorage implements MetaStore {
 
         } while (rmv != null);
 
-        metaTree.init();
+        metaTree.destroy();
     }
 
     /**
@@ -209,17 +209,6 @@ public class MetadataStorage implements MetaStore {
 
             if (initNew)
                 initNew();
-        }
-
-        /**
-         * Init tree.
-         *
-         * @throws IgniteCheckedException
-         */
-        public void init() throws IgniteCheckedException {
-            assert size() == 0 : "Reinit non-empty meta tree.";
-
-            initNew();
         }
 
         /** {@inheritDoc} */
