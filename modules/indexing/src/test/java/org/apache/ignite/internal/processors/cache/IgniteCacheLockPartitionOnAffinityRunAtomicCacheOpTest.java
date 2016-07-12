@@ -1,0 +1,264 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.GridTestUtils;
+
+/**
+ * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
+ */
+public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
+    /** Atomic cache. */
+    private static final String ATOMIC_CACHE = "atomic";
+    /** Transact cache. */
+    private static final String TRANSACT_CACHE = "transact";
+    /** Transact cache. */
+    private static final long TEST_TIMEOUT = 10 * 60_000;
+    /** Keys count. */
+    private static int KEYS_CNT = 1000;
+    /** Key. */
+    private static AtomicInteger key = new AtomicInteger(0);
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TEST_TIMEOUT;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param mode Atomicity mode.
+     * @throws Exception If failed.
+     */
+    private void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(grid(0).name());
+        ccfg.setName(cacheName);
+
+        ccfg.setAtomicityMode(mode);
+
+        grid(0).createCache(ccfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        key.set(0);
+        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
+        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(ATOMIC_CACHE);
+        grid(0).destroyCache(TRANSACT_CACHE);
+
+        super.afterTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotReservedAtomicCacheOp() throws Exception {
+        notReservedCacheOp(ATOMIC_CACHE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotReservedTransactCacheOp() throws Exception {
+        notReservedCacheOp(TRANSACT_CACHE);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @throws Exception If failed.
+     */
+    private void notReservedCacheOp(final String cacheName) throws Exception {
+        // Workaround for initial update job metadata.
+        grid(0).compute().affinityRun(new NotReservedCacheOpAffinityRun(orgIds.get(0), cacheName),
+            Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
+            orgIds.get(0));
+
+        // Run restart threads: start re-balancing
+        beginNodesRestart();
+
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    for (final int orgId : orgIds) {
+                        grid(0).compute().affinityRun(new NotReservedCacheOpAffinityRun(orgId, cacheName),
+                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                            orgId);
+                    }
+                }
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+
+            stopRestartThread.set(true);
+            nodeRestartFut.get();
+            awaitPartitionMapExchange();
+            Thread.sleep(5000);
+
+            IgniteCache cache = grid(0).cache(cacheName);
+            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size() + KEYS_CNT, cache.size());
+            cache.clear();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReservedPartitionCacheOp() throws Exception {
+        // Workaround for initial update job metadata.
+        grid(0).cache(Person.class.getSimpleName()).clear();
+        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgIds.get(0)),
+            Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
+            orgIds.get(0));
+
+        // Run restart threads: start re-balancing
+        beginNodesRestart();
+
+        IgniteInternalFuture<Long> affFut = null;
+        try {
+            affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    for (final int orgId : orgIds) {
+                        if (System.currentTimeMillis() >= endTime)
+                            break;
+
+                        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgId),
+                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                            orgId);
+                    }
+                }
+            }, AFFINITY_THREADS_COUNT, "affinity-run");
+        }
+        finally {
+            if (affFut != null)
+                affFut.get();
+
+            stopRestartThread.set(true);
+            nodeRestartFut.get();
+            awaitPartitionMapExchange();
+            Thread.sleep(5000);
+
+            IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
+            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size() + KEYS_CNT, cache.size());
+            cache.clear();
+        }
+    }
+
+    /** */
+    private static class NotReservedCacheOpAffinityRun implements IgniteRunnable {
+        /** Org id. */
+        int orgId;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** */
+        public NotReservedCacheOpAffinityRun() {
+            // No-op.
+        }
+
+        /**
+         * @param orgId Organization.
+         * @param cacheName Cache name.
+         */
+        public NotReservedCacheOpAffinityRun(int orgId, String cacheName) {
+            this.orgId = orgId;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            log.info("Begin run");
+            IgniteCache cache = ignite.cache(cacheName);
+
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                int k = key.getAndIncrement();
+                cache.put(k, k);
+                if (k % 100 == 0)
+                    log.info("Put " + k);
+            }
+        }
+    }
+
+    /** */
+    private static class ReservedPartititonCacheOpAffinityRun implements IgniteRunnable {
+        /** Org id. */
+        int orgId;
+
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** */
+        public ReservedPartititonCacheOpAffinityRun() {
+            // No-op.
+        }
+
+        /**
+         * @param orgId Organization Id.
+         */
+        public ReservedPartititonCacheOpAffinityRun(int orgId) {
+            this.orgId = orgId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            log.info("Begin run");
+            IgniteCache cache = ignite.cache(Person.class.getSimpleName());
+
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                int k = key.getAndIncrement();
+                Person p = new Person(k, orgId);
+                cache.put(p.createKey(), p);
+                if (k % 100 == 0)
+                    log.info("Put " + k);
+            }
+        }
+    }
+}

@@ -78,8 +78,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
         suite.addTestSuite(CacheOperationsWithExpirationTest.class);
 
-        suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTest.class);
-
         return suite;
     }
 }
