@@ -561,15 +561,15 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 
     ContinuousQuery<int, TestEntry> qry(lsnr);
 
-    BOOST_CHECK(qry.GetBufferSize() == QueryType::DEFAULT_BUFFER_SIZE);
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), QueryType::DEFAULT_BUFFER_SIZE);
 
     qry.SetBufferSize(2 * QueryType::DEFAULT_BUFFER_SIZE);
 
-    BOOST_CHECK(qry.GetBufferSize() == 2 * QueryType::DEFAULT_BUFFER_SIZE);
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
 
     ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
 
-    BOOST_CHECK(qry.GetBufferSize() == 2 * QueryType::DEFAULT_BUFFER_SIZE);
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
 
     CheckEvents(cache, lsnr);
 }
@@ -583,7 +583,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
 
     qry.SetBufferSize(10);
 
-    BOOST_CHECK_EQUAL(qry.GetTimeInterval(), QueryType::DEFAULT_TIME_INTERVAL);
+    BOOST_CHECK_EQUAL(qry.GetTimeInterval(), static_cast<int>(QueryType::DEFAULT_TIME_INTERVAL));
 
     qry.SetTimeInterval(500);
 
