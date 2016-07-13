@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTransactCacheOpTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest;
 
 /**
  * Compute and Cache tests for affinityRun/Call. These tests is extracted into separate suite
@@ -35,6 +36,7 @@ public class IgniteCacheAffinityRunTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Compute and Cache Affinity Run Test Suite");
 
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTest.class);
+        suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest.class);
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest.class);
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTransactCacheOpTest.class);
 
