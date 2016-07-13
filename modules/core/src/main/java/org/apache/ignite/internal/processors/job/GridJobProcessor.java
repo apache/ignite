@@ -960,21 +960,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
-        List<GridReservable> reservedParts = null;
+        PartitionsReservation partsReservation = null;
         try {
             long endTime = req.getCreateTime() + req.getTimeout();
             if (req.getCaches() != null) {
                 assert req.getPartition() >= 0;
                 assert !req.getCaches().isEmpty();
-                reservedParts = new ArrayList<>(req.getCaches().size());
+                partsReservation = new PartitionsReservation(req.getCaches(), req.getPartition(), req.getTopVer());
 
                 try {
-                    if (!reservePartitions(reservedParts, req.getCaches(), req.getPartition(), req.getTopVer())) {
+                    if (!partsReservation.reserve()) {
                         sendRetry(node, req, endTime);
                         return;
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (Throwable e) {
                     IgniteException ex = new IgniteException("Failed to lock partitions " +
                         "[taskName=" + req.getTaskName() + ']', e);
 
@@ -1118,7 +1118,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.isInternal(),
                             evtLsnr,
                             holdLsnr,
-                            reservedParts,
+                            partsReservation,
                             req.getTopVer());
 
                         jobCtx.job(job);
@@ -1131,7 +1131,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             if (job.isInternal()) {
                                 // The collection of the reserved parts has been passed to GridJobWorker.
                                 // Reservations will be released by GridJobWorker#finishJob
-                                reservedParts = null;
+                                partsReservation = null;
                                 // This is an internal job and can be executed inside busy lock
                                 // since job is expected to be short.
                                 // This is essential for proper stop without races.
@@ -1145,7 +1145,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     if (ctx.localNodeId().equals(node.id())) {
                                         // The collection of the reserved parts has been passed to GridJobWorker.
                                         // Reservations will be released by GridJobWorker#finishJob
-                                        reservedParts = null;
+                                        partsReservation = null;
 
                                         // Always execute in another thread for local node.
                                         executeAsync(job);
@@ -1165,7 +1165,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             else {
                                 // The collection of the reserved parts has been passed to GridJobWorker.
                                 // Reservations will be released by GridJobWorker#finishJob
-                                reservedParts = null;
+                                partsReservation = null;
 
                                 GridJobWorker old = passiveJobs.putIfAbsent(job.getJobId(), job);
 
@@ -1211,17 +1211,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (job != null) {
                 // The collection of the reserved parts has been passed to GridJobWorker.
                 // Reservations will be released by GridJobWorker#finishJob
-                reservedParts = null;
+                partsReservation = null;
 
                 job.run();
             }
         }
         finally {
             // Release partitions in case retry or synchronous job execute
-            if (reservedParts != null) {
-                for (int i = 0, size = reservedParts.size(); i < size; ++i)
-                    reservedParts.get(i).release();
-            }
+            if (partsReservation != null)
+                partsReservation.release();
         }
     }
 
@@ -1552,67 +1550,65 @@ public class GridJobProcessor extends GridProcessorAdapter {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
     }
 
-    /**
-     * @param reserved Reserved.
-     * @param caches Caches.
-     * @param partId Partition.
-     * @param topVer Topology version.
-     * @return true if partition are reserved successful. Otherwise false.
-     * @throws IgniteCheckedException is case partId of some cache is not primary on this node on requested topology
-     *          version
-     */
-    private boolean reservePartitions(List<GridReservable> reserved, Collection<String> caches, int partId,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        for (String cacheName : caches) {
-            GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
-            if (cacheAdapter == null)
-                return false;
-
-            GridCacheContext<?, ?> cctx = cacheAdapter.context();
-
-            if (cctx == null) // Cache was not found, probably was not deployed yet.
-                return false;
-
-            if (cctx.isLocal() || !cctx.rebalanceEnabled())
-                continue;
-
-            boolean checkPartMapping = false;
-            try {
-                if (cctx.isReplicated()) {
-                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-                        topVer, false);
-
-                    // We don't need to reserve partitions because they will not be evicted in replicated caches.
-                    if (part == null || part.state() != OWNING) {
-                        checkPartMapping = true;
-                        return false;
-                    }
-                }
-
-                GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-                    topVer, false);
-
-                if (part == null || part.state() != OWNING || !part.reserve()) {
-                    checkPartMapping = true;
-                    return false;
-                }
-
-                reserved.add(part);
-
-                // Double check that we are still in owning state and partition contents are not cleared.
-                if (part.state() != OWNING) {
-                    checkPartMapping = true;
-                    return false;
-                }
-            }
-            finally {
-                if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
-                    throw new IgniteCheckedException("Partition " + partId + " of the cache " + cacheName +
-                        " is not primary on the node " + ctx.localNodeId() + ", on topology: " + topVer);
-            }
-        }
-        return true;
-    }
+//    /**
+//     * @param reserved Reserved.
+//     * @param caches Caches.
+//     * @param partId Partition.
+//     * @param topVer Topology version.
+//     * @return true if partition are reserved successful. Otherwise false.
+//     */
+//    private boolean reservePartitions(List<GridReservable> reserved, Collection<String> caches, int partId,
+//        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+//        for (String cacheName : caches) {
+//            GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
+//            if (cacheAdapter == null)
+//                return false;
+//
+//            GridCacheContext<?, ?> cctx = cacheAdapter.context();
+//
+//            if (cctx == null) // Cache was not found, probably was not deployed yet.
+//                return false;
+//
+//            if (cctx.isLocal() || !cctx.rebalanceEnabled())
+//                continue;
+//
+//            boolean checkPartMapping = false;
+//            try {
+//                if (cctx.isReplicated()) {
+//                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+//                        topVer, false);
+//
+//                    // We don't need to reserve partitions because they will not be evicted in replicated caches.
+//                    if (part == null || part.state() != OWNING) {
+//                        checkPartMapping = true;
+//                        return false;
+//                    }
+//                }
+//
+//                GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+//                    topVer, false);
+//
+//                if (part == null || part.state() != OWNING || !part.reserve()) {
+//                    checkPartMapping = true;
+//                    return false;
+//                }
+//
+//                reserved.add(part);
+//
+//                // Double check that we are still in owning state and partition contents are not cleared.
+//                if (part.state() != OWNING) {
+//                    checkPartMapping = true;
+//                    return false;
+//                }
+//            }
+//            finally {
+//                if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+//                    throw new IgniteCheckedException("Partition " + partId + " of the cache " + cacheName +
+//                        " is not primary on the node " + ctx.localNodeId() + ", on topology: " + topVer);
+//            }
+//        }
+//        return true;
+//    }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
@@ -1624,6 +1620,103 @@ public class GridJobProcessor extends GridProcessorAdapter {
         X.println(">>>   cancelReqsSize: " + cancelReqs.sizex());
         X.println(">>>   finishedJobsSize: " + finishedJobs.sizex());
     }
+
+    /**
+     *
+     */
+    private class PartitionsReservation implements GridReservable {
+        /** Partititons. */
+        private GridDhtLocalPartition [] partititons;
+        /** Caches. */
+        private final Collection<String> caches;
+        /** Partition id. */
+        private final int partId;
+        /** Topology version. */
+        private final AffinityTopologyVersion topVer;
+
+        /**
+         * @param caches Cache names collection.
+         * @param partId Partition number.
+         * @param topVer Affinity topology version.
+         */
+        public PartitionsReservation(Collection<String> caches, int partId,
+            AffinityTopologyVersion topVer) {
+            this.caches = caches;
+            this.partId = partId;
+            this.topVer = topVer;
+            partititons = new GridDhtLocalPartition[caches.size()];
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean reserve() throws IgniteCheckedException {
+            int i = 0;
+            for (String cacheName : caches) {
+                GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
+                if (cacheAdapter == null)
+                    return false;
+
+                GridCacheContext<?, ?> cctx = cacheAdapter.context();
+
+                if (cctx == null) // Cache was not found, probably was not deployed yet.
+                    return false;
+
+                if (!cctx.started()) // Cache not started.
+                    return false;
+
+                if (cctx.isLocal() || !cctx.rebalanceEnabled())
+                    continue;
+
+                boolean checkPartMapping = false;
+                try {
+                    if (cctx.isReplicated()) {
+                        GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+                            topVer, false);
+
+                        // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                        if (part == null || part.state() != OWNING) {
+                            checkPartMapping = true;
+                            return false;
+                        }
+                    }
+
+                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+                        topVer, false);
+
+                    if (part == null || part.state() != OWNING || !part.reserve()) {
+                        checkPartMapping = true;
+                        return false;
+                    }
+
+                    log.info("+++ Reserve " + part);
+                    partititons[i] = part;
+                    ++i;
+
+                    // Double check that we are still in owning state and partition contents are not cleared.
+                    if (part.state() != OWNING) {
+                        checkPartMapping = true;
+                        return false;
+                    }
+                }
+                finally {
+                    if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+                        throw new IgniteCheckedException("Partition " + partId + " of the cache " + cacheName +
+                            " is not primary on the node " + ctx.localNodeId() + ", on topology: " + topVer);
+                }
+            }
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void release() {
+            for (int i = 0; i < partititons.length; ++i)
+                if (partititons[i] != null) {
+                    log.info("+++ Release " + partititons[i]);
+                    partititons[i].release();
+                    partititons[i] = null;
+                }
+        }
+    }
+
 
     /**
      *

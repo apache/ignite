@@ -159,7 +159,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final GridJobHoldListener holdLsnr;
 
     /** Reserved parts. */
-    private final List<GridReservable> reservedParts;
+    private final GridReservable partsReservation;
 
     /** Request topology version. */
     AffinityTopologyVersion reqTopVer;
@@ -176,7 +176,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param internal Whether or not task was marked with {@link GridInternal}
      * @param evtLsnr Job event listener.
      * @param holdLsnr Hold listener.
-     * @param reservedParts reserved partitions (must be released at the job finish).
+     * @param partsReservation reserved partitions (must be released at the job finish).
      * @param reqTopVer affinity topology version of the job request.
      */
     GridJobWorker(
@@ -191,7 +191,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         boolean internal,
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr,
-        List<GridReservable> reservedParts,
+        GridReservable partsReservation,
         AffinityTopologyVersion reqTopVer) {
         super(ctx.gridName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
@@ -213,7 +213,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.taskNode = taskNode;
         this.internal = internal;
         this.holdLsnr = holdLsnr;
-        this.reservedParts = reservedParts;
+        this.partsReservation = partsReservation;
 
         if (job != null)
             this.job = job;
@@ -709,10 +709,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         @Nullable IgniteException ex,
         boolean sndReply)
     {
-        if (reservedParts != null) {
-            for (int i = 0, size = reservedParts.size(); i < size; ++i)
-                reservedParts.get(i).release();
-        }
+        if (partsReservation != null)
+            partsReservation.release();
 
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
