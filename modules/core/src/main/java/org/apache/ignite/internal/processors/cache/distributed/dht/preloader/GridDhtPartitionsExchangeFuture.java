@@ -1269,30 +1269,31 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.versions().onExchange(lastVer.get().order());
 
-            if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                assert discoEvt instanceof DiscoveryCustomEvent;
+            DiscoveryCustomMessage customMsg = null;
 
-                if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof BackupMessage) {
-                    IgniteInternalFuture fut = cctx.database().wakeupForCheckpoint();
+            if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT)
+                customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
-                    if (fut == null)
+            if (customMsg != null && customMsg instanceof BackupMessage) {
+                IgniteInternalFuture fut = cctx.database().wakeupForCheckpoint();
+
+                if (fut == null)
+                    onDone(exchangeId().topologyVersion());
+                else if (fut.isDone()) {
+                    if (fut.error() != null)
+                        onDone(fut.error());
+                    else
                         onDone(exchangeId().topologyVersion());
-                    else if (fut.isDone()) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                        else
-                            onDone(exchangeId().topologyVersion());
-                    }
-                    else {
-                        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture future) {
-                                if (future.error() != null)
-                                    onDone(future.error());
-                                else
-                                    onDone(exchangeId().topologyVersion());
-                            }
-                        });
-                    }
+                }
+                else {
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                        @Override public void apply(IgniteInternalFuture future) {
+                            if (future.error() != null)
+                                onDone(future.error());
+                            else
+                                onDone(exchangeId().topologyVersion());
+                        }
+                    });
                 }
             }
             else if (centralizedAff) {
