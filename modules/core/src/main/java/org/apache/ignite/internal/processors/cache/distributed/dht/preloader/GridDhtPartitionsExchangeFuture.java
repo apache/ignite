@@ -44,7 +44,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
+import org.apache.ignite.internal.pagemem.StartBackupMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -443,8 +445,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) discoEvt).customMessage();
+
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
+                else if (customMsg instanceof StartBackupMessage)
+                    exchange = onServerNodeEvent(crdNode);
                 else {
                     assert affChangeMsg != null : this;
 
