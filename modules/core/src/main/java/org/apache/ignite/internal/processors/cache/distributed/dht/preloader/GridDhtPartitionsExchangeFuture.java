@@ -652,7 +652,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+//            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
             cctx.affinity().onServerJoin(this, crd);
         }
@@ -1269,34 +1269,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.versions().onExchange(lastVer.get().order());
 
-            DiscoveryCustomMessage customMsg = null;
-
-            if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT)
-                customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
-
-            if (customMsg != null && customMsg instanceof BackupMessage) {
-                IgniteInternalFuture fut = cctx.database().wakeupForCheckpoint();
-
-                if (fut == null)
-                    onDone(exchangeId().topologyVersion());
-                else if (fut.isDone()) {
-                    if (fut.error() != null)
-                        onDone(fut.error());
-                    else
-                        onDone(exchangeId().topologyVersion());
-                }
-                else {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture future) {
-                            if (future.error() != null)
-                                onDone(future.error());
-                            else
-                                onDone(exchangeId().topologyVersion());
-                        }
-                    });
-                }
-            }
-            else if (centralizedAff) {
+            if (centralizedAff) {
                 IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
 
                 if (!fut.isDone()) {
