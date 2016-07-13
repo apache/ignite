@@ -742,7 +742,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return;
 
         for (int i = 0; i < args.length; i++) {
-            if (!U.isPrimitiveOrWrapper(args[i].getClass())
+            if (args[i] != null &&
+                !U.isPrimitiveOrWrapper(args[i].getClass())
                 && !(args[i] instanceof String)
                 && !args[i].getClass().isEnum()
                 && !(args[i] instanceof BinaryObject))
