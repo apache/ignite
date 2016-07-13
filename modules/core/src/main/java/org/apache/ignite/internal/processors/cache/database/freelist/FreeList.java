@@ -59,46 +59,21 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<CacheDataRow, Void> writeRow = new PageHandler<CacheDataRow, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
-            throws IgniteCheckedException {
-            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
-
-            assert idx >= 0 : idx;
-
-            FreeTree tree = tree(row.partition());
-
-            if (tree.needWalDeltaRecord(page))
-                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
-                    row.version(), idx, entrySize));
-
-            row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
-
-            final int freeSlots = io.getFreeItemSlots(buf);
-
-            // If no free slots available then assume that page is full
-            int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
-
-            // Put our free item.
-            tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
-
-            return null;
-        }
-    };
-
-    /** */
-    private final PageHandler<DataPageIO.FragmentContext, Void> writeFragmentRow = new PageHandler<DataPageIO.FragmentContext, Void>() {
+    private final PageHandler<DataPageIO.FragmentContext, Void> writeRow = new PageHandler<DataPageIO.FragmentContext, Void>() {
         @Override public Void run(long pageId, Page page, ByteBuffer buf, DataPageIO.FragmentContext fctx, int entrySize)
             throws IgniteCheckedException {
+            final boolean fragmented = fctx.chunks > 1;
+
             final CacheDataRow row = fctx.row;
 
             fctx.buf = buf;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            io.writeRowFragment(fctx);
+            if (fragmented)
+                io.writeRowFragment(fctx);
+            else
+                fctx.lastIdx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
 
             assert fctx.lastIdx >= 0 : fctx.lastIdx;
 
@@ -117,6 +92,8 @@ public class FreeList {
 
             // Put our free item.
             tree.put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
+
+            row.link(fctx.lastLink);
 
             return null;
         }
@@ -300,14 +277,14 @@ public class FreeList {
                             // It is a newly allocated page and we will not write record to WAL here.
                             assert !page.isDirty();
 
-                            writeFragmentRow.run(page.id(), page, buf, fctx, 0);
+                            writeRow.run(page.id(), page, buf, fctx, 0);
                         }
                         finally {
                             page.releaseWrite(true);
                         }
                     }
                     else
-                        writePage(page.id(), page, writeFragmentRow, fctx, 0);
+                        writePage(page.id(), page, writeRow, fctx, 0);
 
                     fctx.lastLink = PageIdUtils.linkFromDwordOffset(page.id(), fctx.lastIdx);
                 }
@@ -323,6 +300,9 @@ public class FreeList {
                 allocateDataPage(row.partition()) :
                 pageMem.page(item.cacheId(), item.pageId())
             ) {
+                final DataPageIO.FragmentContext fctx
+                    = new DataPageIO.FragmentContext(entrySize, 1, entrySize, row, cctx.cacheObjectContext());
+
                 if (item == null) {
                     DataPageIO io = DataPageIO.VERSIONS.latest();
 
@@ -334,12 +314,12 @@ public class FreeList {
                         // It is a newly allocated page and we will not write record to WAL here.
                         assert !page.isDirty();
 
-                        writeRow.run(page.id(), page, buf, row, entrySize);
+                        writeRow.run(page.id(), page, buf, fctx, entrySize);
                     } finally {
                         page.releaseWrite(true);
                     }
                 } else
-                    writePage(page.id(), page, writeRow, row, entrySize);
+                    writePage(page.id(), page, writeRow, fctx, entrySize);
             }
         }
     }
