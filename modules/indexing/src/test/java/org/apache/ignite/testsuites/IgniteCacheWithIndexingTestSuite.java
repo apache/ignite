@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfT
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapAtomicLocalSelfTest;
