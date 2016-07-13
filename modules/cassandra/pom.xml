@@ -213,6 +213,9 @@
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
+                            <excludeArtifactIds>
+                                netty-all
+                            </excludeArtifactIds>
                         </configuration>
                     </execution>
 <!-- -->
