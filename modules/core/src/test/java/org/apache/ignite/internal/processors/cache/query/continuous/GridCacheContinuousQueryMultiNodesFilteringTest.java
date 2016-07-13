@@ -32,17 +32,21 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /** */
 @SuppressWarnings("unchecked")
@@ -56,13 +60,21 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /** Cache entry operations' counts. */
     private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap8<>();
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /** */
     public void testFiltersAndListeners() throws Exception {
         for (int i = 1; i <= SERVER_GRIDS_COUNT; i++)
             startGrid(i, false);
+
         startGrid(SERVER_GRIDS_COUNT + 1, true);
 
-        for (int i = 1; i <= SERVER_GRIDS_COUNT + 1; i++)
+        for (int i = 1; i <= SERVER_GRIDS_COUNT + 1; i++) {
             for (int j = 0; j < i; j++) {
                 jcache(i, "part" + i).put("k" + j, "v0");
                 jcache(i, "repl" + i).put("k" + j, "v0");
@@ -74,8 +86,19 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
                 jcache(i, "part" + i).remove("k" + j);
                 jcache(i, "repl" + i).remove("k" + j);
             }
+        }
 
         for (int i = 1; i <= SERVER_GRIDS_COUNT + 1; i++) {
+            // For each i, we did 3 ops on 2 caches on i keys, hence expected number.
+            final int expTotal = i * 3 * 2;
+            final int i0 = i;
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return opCounts.get("qry"  + i0 + "_total").get() == expTotal;
+                }
+            }, 5000);
+
             int partInserts = opCounts.get("part" + i + "_ins").get();
             int replInserts = opCounts.get("repl" + i + "_ins").get();
             int partUpdates = opCounts.get("part" + i + "_upd").get();
@@ -93,8 +116,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
             assertEquals(i, partRemoves);
             assertEquals(i, replRemoves);
 
-            // For each i, we did 3 ops on 2 caches on i keys, hence expected number
-            assertEquals(i * 3 * 2, totalQryOps);
+            assertEquals(expTotal, totalQryOps);
 
             assertEquals(totalQryOps, partInserts + replInserts + partUpdates + replUpdates + partRemoves + replRemoves);
         }
@@ -103,37 +125,42 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /** */
     private Ignite startGrid(final int idx, boolean isClientMode) throws Exception {
         String gridName = getTestGridName(idx);
+
         IgniteConfiguration cfg = optimize(getConfiguration(gridName)).setClientMode(isClientMode);
+
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
         cfg.setUserAttributes(Collections.singletonMap("idx", idx));
+
         Ignite node = startGrid(gridName, cfg);
+
         IgnitePredicate<ClusterNode> nodeFilter = new NodeFilter(idx);
 
         String partCacheName = "part" + idx;
 
         IgniteCache partCache = node.createCache(defaultCacheConfiguration().setName("part" + idx)
-            .setCacheMode(CacheMode.PARTITIONED).setNodeFilter(nodeFilter));
+            .setCacheMode(PARTITIONED).setBackups(1).setNodeFilter(nodeFilter));
 
         opCounts.put(partCacheName + "_ins", new AtomicInteger());
         opCounts.put(partCacheName + "_upd", new AtomicInteger());
         opCounts.put(partCacheName + "_rmv", new AtomicInteger());
 
-        partCache.registerCacheEntryListener(new EntryLsnrCfg(partCacheName, EntryLsnrCfg.Op.INS));
-        partCache.registerCacheEntryListener(new EntryLsnrCfg(partCacheName, EntryLsnrCfg.Op.UPD));
-        partCache.registerCacheEntryListener(new EntryLsnrCfg(partCacheName, EntryLsnrCfg.Op.RMV));
+        partCache.registerCacheEntryListener(new ListenerConfiguration(partCacheName, ListenerConfiguration.Op.INSERT));
+        partCache.registerCacheEntryListener(new ListenerConfiguration(partCacheName, ListenerConfiguration.Op.UPDATE));
+        partCache.registerCacheEntryListener(new ListenerConfiguration(partCacheName, ListenerConfiguration.Op.REMOVE));
 
         String replCacheName = "repl" + idx;
 
         IgniteCache replCache = node.createCache(defaultCacheConfiguration().setName("repl" + idx)
-            .setCacheMode(CacheMode.REPLICATED).setBackups(1).setNodeFilter(nodeFilter));
+            .setCacheMode(REPLICATED).setNodeFilter(nodeFilter));
 
         opCounts.put(replCacheName + "_ins", new AtomicInteger());
         opCounts.put(replCacheName + "_upd", new AtomicInteger());
         opCounts.put(replCacheName + "_rmv", new AtomicInteger());
 
-        replCache.registerCacheEntryListener(new EntryLsnrCfg(replCacheName, EntryLsnrCfg.Op.INS));
-        replCache.registerCacheEntryListener(new EntryLsnrCfg(replCacheName, EntryLsnrCfg.Op.UPD));
-        replCache.registerCacheEntryListener(new EntryLsnrCfg(replCacheName, EntryLsnrCfg.Op.RMV));
+        replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.INSERT));
+        replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.UPDATE));
+        replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.REMOVE));
 
         opCounts.put("qry" + idx + "_total", new AtomicInteger());
 
@@ -153,44 +180,47 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class EntryLsnrCfg extends MutableCacheEntryListenerConfiguration {
+    private final static class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
         /** Operation. */
         enum Op {
             /** Insert. */
-            INS,
+            INSERT,
 
             /** Update. */
-            UPD,
+            UPDATE,
 
             /** Remove. */
-            RMV
+            REMOVE
         }
 
         /** */
-        EntryLsnrCfg(final String cacheName, final Op op) {
+        ListenerConfiguration(final String cacheName, final Op op) {
             super(new Factory<CacheEntryListener>() {
                 /** {@inheritDoc} */
                 @Override public CacheEntryListener create() {
                     switch (op) {
-                        case INS:
+                        case INSERT:
                             return new CacheEntryCreatedListener() {
                                 /** {@inheritDoc} */
-                                @Override public void onCreated(Iterable iterable) throws CacheEntryListenerException {
-                                    opCounts.get(cacheName + "_ins").getAndIncrement();
+                                @Override public void onCreated(Iterable iterable) {
+                                    for (Object evt : iterable)
+                                        opCounts.get(cacheName + "_ins").getAndIncrement();
                                 }
                             };
-                        case UPD:
+                        case UPDATE:
                             return new CacheEntryUpdatedListener() {
                                 /** {@inheritDoc} */
-                                @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-                                    opCounts.get(cacheName + "_upd").getAndIncrement();
+                                @Override public void onUpdated(Iterable iterable) {
+                                    for (Object evt : iterable)
+                                        opCounts.get(cacheName + "_upd").getAndIncrement();
                                 }
                             };
-                        case RMV:
+                        case REMOVE:
                             return new CacheEntryRemovedListener() {
                                 /** {@inheritDoc} */
-                                @Override public void onRemoved(Iterable iterable) throws CacheEntryListenerException {
-                                    opCounts.get(cacheName + "_rmv").getAndIncrement();
+                                @Override public void onRemoved(Iterable iterable) {
+                                    for (Object evt : iterable)
+                                        opCounts.get(cacheName + "_rmv").getAndIncrement();
                                 }
                             };
                         default:
@@ -203,6 +233,10 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
     /** */
     private final static class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** Grid index to determine whether node filter has been invoked. */
         private final int idx;
 
@@ -216,9 +250,10 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
             return new CacheEntryEventFilter() {
                 /** {@inheritDoc} */
                 @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
-                    int evtNodeIdx = (Integer)((IgniteCacheProxy)evt.getSource()).context().grid().localNode()
-                        .attributes().get("idx");
+                    int evtNodeIdx = (Integer)(ignite.cluster().localNode().attributes().get("idx"));
+
                     assertTrue(evtNodeIdx % 2 == idx % 2);
+
                     return true;
                 }
             };

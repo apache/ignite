@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 @SuppressWarnings("unused")
-public class GridCacheContinuousQueryNodesFilteringSelfTest extends GridCommonAbstractTest implements Serializable {
+public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryNodesFilteringSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryNodesFilteringTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionTxOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionedOnlySelfTest;
@@ -117,7 +117,7 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryExecuteInPrimaryTest.class);
         suite.addTestSuite(CacheContinuousQueryLostPartitionTest.class);
         suite.addTestSuite(ContinuousQueryRemoteFilterMissingInClassPathSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringSelfTest.class);
+        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
         suite.addTestSuite(GridCacheContinuousQueryMultiNodesFilteringTest.class);
         suite.addTestSuite(IgniteCacheContinuousQueryImmutableEntryTest.class);
         suite.addTestSuite(CacheKeepBinaryIterationTest.class);
