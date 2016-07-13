@@ -100,7 +100,7 @@ public class H2RowFactory {
                     ver = readVersion(buf);
                 }
                 else {
-                    DataPageIO.setForFragment(buf, dataOff);
+                    DataPageIO.setPositionAndLimitOnFragment(buf, dataOff);
 
                     final IncompleteEntry entry = new IncompleteEntry();
 
@@ -119,7 +119,7 @@ public class H2RowFactory {
 
                                 nextLink = DataPageIO.getNextFragmentLink(b, off);
 
-                                DataPageIO.setForFragment(b, off);
+                                DataPageIO.setPositionAndLimitOnFragment(b, off);
 
                                 entry.read(b);
                             }

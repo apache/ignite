@@ -406,7 +406,8 @@ public class DataPageIO extends PageIO {
                 return 0;
 
             return buf.getLong();
-        } finally {
+        }
+        finally {
             buf.position(pos);
         }
     }
@@ -428,7 +429,7 @@ public class DataPageIO extends PageIO {
      * @param buf Byte buffer.
      * @param dataOff Points to the entry start.
      */
-    public static void setForFragment(final ByteBuffer buf, final int dataOff) {
+    public static void setPositionAndLimitOnFragment(final ByteBuffer buf, final int dataOff) {
         final int size = getFragmentSize(buf, dataOff);
 
         buf.position(dataOff + KV_LEN_SIZE + LINK_SIZE);
@@ -717,7 +718,8 @@ public class DataPageIO extends PageIO {
         final int entrySizeWithItem,
         final int directCnt,
         final int indirectCnt,
-        int dataOff) {
+        int dataOff
+    ) {
         if (!isEnoughSpace(entrySizeWithItem, dataOff, directCnt, indirectCnt)) {
             dataOff = compactDataEntries(buf, directCnt);
 
@@ -873,7 +875,7 @@ public class DataPageIO extends PageIO {
     /**
      *
      */
-    private enum ObjType {
+    private enum ObjType { // TODO fix naming
         /** */
         KEY,
 
@@ -1057,7 +1059,7 @@ public class DataPageIO extends PageIO {
     /**
      *
      */
-    public static class FragmentCtx {
+    public static class FragmentCtx { // TODO fix naming
         /** Totally written data (with overhead) */
         private int written;
 
@@ -1136,7 +1138,7 @@ public class DataPageIO extends PageIO {
          * @return Value size to be written.
          * @throws IgniteCheckedException If fail.
          */
-        public int valSize() throws IgniteCheckedException {
+        public int valSize() throws IgniteCheckedException { // TODO fix naming
             return row.value().valueBytesLength(ctx);
         }
 

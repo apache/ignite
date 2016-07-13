@@ -301,7 +301,8 @@ public class FreeList {
                             assert !page.isDirty();
 
                             writeFragmentRow.run(page.id(), page, buf, fctx, 0);
-                        } finally {
+                        }
+                        finally {
                             page.releaseWrite(true);
                         }
                     }

@@ -730,7 +730,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     }
                     else {
                         // Init fragmented entry
-                        DataPageIO.setForFragment(buf, dataOff);
+                        DataPageIO.setPositionAndLimitOnFragment(buf, dataOff);
 
                         IncompleteCacheObject incompleteObj = doInitFragmentedData(buf, null);
 
@@ -749,7 +749,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                                     nextLink = DataPageIO.getNextFragmentLink(b, off);
 
-                                    DataPageIO.setForFragment(b, off);
+                                    DataPageIO.setPositionAndLimitOnFragment(b, off);
 
                                     incompleteObj = doInitFragmentedData(b, incompleteObj);
 
