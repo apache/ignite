@@ -1687,7 +1687,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return false;
                     }
 
-                    log.info("+++ Reserve " + part);
                     partititons[i] = part;
                     ++i;
 
@@ -1710,7 +1709,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         @Override public void release() {
             for (int i = 0; i < partititons.length; ++i)
                 if (partititons[i] != null) {
-                    log.info("+++ Release " + partititons[i]);
                     partititons[i].release();
                     partititons[i] = null;
                 }

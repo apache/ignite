@@ -215,7 +215,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     private void affinityRunWithoutExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgIds.get(0),
+        grid(0).compute().affinityRun(Person.class.getSimpleName(),
+            new Person(0, orgIds.get(0)).createKey(),
             new TestAffinityRun(personsCountGetter, orgIds.get(0)));
 
         // Run restart threads: start re-balancing
@@ -230,7 +231,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                             if (System.currentTimeMillis() >= endTime)
                                 break;
 
-                            grid(0).compute().affinityRun(Person.class.getSimpleName(), new Person(0, orgId).createKey(),
+                            grid(0).compute().affinityRun(Person.class.getSimpleName(),
+                                new Person(0, orgId).createKey(),
                                 new TestAffinityRun(personsCountGetter, orgId));
                         }
                     }
