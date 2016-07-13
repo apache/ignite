@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './fragmentizer.jade!';
+import templateUrl from './fragmentizer.jade';
 
 export default ['igniteConfigurationIgfsFragmentizer', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

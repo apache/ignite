@@ -16,7 +16,7 @@
  */
 
 // Java built-in class names.
-import POM_DEPENDENCIES from 'app/data/pom-dependencies.json!';
+import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
 
 /**
  * Pom file generation entry point.

@@ -15,11 +15,19 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import sass from 'gulp-sass';
+// Filter domain models with key fields configuration.
+export default ['domainsValidation', ['IgniteLegacyUtils', (LegacyUtils) => (domains, valid, invalid) => {
+    if (valid && invalid)
+        return domains;
 
-gulp.task('sass', () =>
-    gulp.src('./public/stylesheets/style.scss')
-        .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./public/stylesheets'))
-);
+    const out = [];
+
+    _.forEach(domains, function(domain) {
+        const _valid = !LegacyUtils.domainForStoreConfigured(domain) || LegacyUtils.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
+
+        if (valid && _valid || invalid && !_valid)
+            out.push(domain);
+    });
+
+    return out;
+}]];
