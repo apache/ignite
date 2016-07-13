@@ -46,7 +46,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.TimeoutException;
+import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -535,7 +535,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             return new IgniteCacheFutureImpl<>(resFut);
         }
-        catch (TimeoutException e) {
+        catch (IgniteDataStreamerTimeoutException e) {
             throw e;
         }
         catch (IgniteException e) {
@@ -593,7 +593,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         catch (Throwable e) {
             resFut.onDone(e);
 
-            if (e instanceof Error || e instanceof TimeoutException)
+            if (e instanceof Error || e instanceof IgniteDataStreamerTimeoutException)
                 throw e;
 
             return new IgniteFinishedFutureImpl<>(e);
@@ -885,7 +885,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             long timeRemain = timeout - U.currentTimeMillis() + startTimeMillis;
 
                             if (timeRemain <= 0)
-                                throw new TimeoutException("Data streamer exceeded timeout when flushing.");
+                                throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when flushing.");
 
                             fut.get(timeRemain);
                         }
@@ -900,7 +900,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (log.isDebugEnabled())
                             log.debug("Failed to flush buffer: " + e);
 
-                        throw new TimeoutException("Data streamer exceeded timeout when flushing.", e);
+                        throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when flushing.", e);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -1029,7 +1029,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ctx.io().removeMessageListener(topic);
         }
-        catch (IgniteCheckedException | TimeoutException e) {
+        catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
             fut.onDone(e);
             throw e;
         }
@@ -1283,7 +1283,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     if (log.isDebugEnabled())
                         log.debug("Failed to add parallel operation.");
 
-                    throw new TimeoutException("Data streamer exceeded timeout when starts parallel operation.");
+                    throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
                 }
         }
 
@@ -1312,7 +1312,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             try {
                 incrementActiveTasks();
-            } catch (TimeoutException e) {
+            } catch (IgniteDataStreamerTimeoutException e) {
                 curFut.onDone(e);
                 throw e;
             }

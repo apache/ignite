@@ -3,7 +3,7 @@ package org.apache.ignite;
 /**
  * The exception thrown whenever time out take place.
  */
-public class TimeoutException extends IgniteException {
+public class IgniteDataStreamerTimeoutException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -12,7 +12,7 @@ public class TimeoutException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public TimeoutException(String msg) {
+    public IgniteDataStreamerTimeoutException(String msg) {
         super(msg);
     }
 
@@ -22,7 +22,7 @@ public class TimeoutException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public TimeoutException(String msg, Throwable cause) {
+    public IgniteDataStreamerTimeoutException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

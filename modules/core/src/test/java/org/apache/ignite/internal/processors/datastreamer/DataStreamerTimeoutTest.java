@@ -5,14 +5,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.TimeoutException;
+import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -74,7 +73,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
                 ldr.addData(i, i);
 
         }
-        catch (TimeoutException e) {
+        catch (IgniteDataStreamerTimeoutException e) {
             assertEquals(e.getMessage(), "Data streamer exceeded timeout when flushing.");
             thrown = true;
         }
@@ -106,7 +105,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
                 for (int i=0; i < ENTRY_AMOUNT; i++)
                     ldr.addData(i, i);
             }
-            catch (TimeoutException e) {
+            catch (IgniteDataStreamerTimeoutException e) {
                 assertEquals(e.getMessage(), "Data streamer exceeded timeout when starts parallel operation.");
 
                 thrown = true;
