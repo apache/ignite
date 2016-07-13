@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemo
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
@@ -393,7 +394,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *      {@code false} otherwise.
      */
     public boolean isCompleted(IgniteInternalTx tx) {
-        return completedVersHashMap.containsKey(tx.xidVersion());
+        boolean completed = completedVersHashMap.containsKey(tx.xidVersion());
+
+        if (!completed && tx.local() && tx.dht() && tx.timeout() > 0)
+            return completedVersHashMap.containsKey(tx.nearXidVersion());
+
+        return completed;
     }
 
     /**
@@ -1998,6 +2004,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     if (fut != null)
                         requestedKeys = fut.requestedKeys();
+
+                    GridNearLockFuture nearFut = (GridNearLockFuture)mvccFuture(tx, GridNearLockFuture.class);
+
+                    if (nearFut != null) {
+                        Set<IgniteTxKey> nearRequestedKeys = nearFut.requestedKeys();
+
+                        if (nearRequestedKeys != null) {
+                            if (requestedKeys == null)
+                                requestedKeys = nearRequestedKeys;
+                            else
+                                requestedKeys = nearRequestedKeys;
+                        }
+                    }
                 }
                 else {
                     GridNearOptimisticTxPrepareFuture fut =

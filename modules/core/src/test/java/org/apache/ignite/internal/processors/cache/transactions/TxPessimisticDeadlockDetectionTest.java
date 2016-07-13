@@ -135,7 +135,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testDeadlocksPartitionedNear() throws Exception {
+    public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
@@ -361,8 +361,6 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
                             "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
-
-                        break;
                     }
                 }
             }
@@ -388,7 +386,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         }
 
         if (fail)
-            fail();
+            fail("Some transactions still exist");
 
         // Check deadlock report
         String msg = deadlockE.getMessage();

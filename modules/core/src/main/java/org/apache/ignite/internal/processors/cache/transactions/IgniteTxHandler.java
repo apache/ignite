@@ -652,6 +652,9 @@ public class IgniteTxHandler {
         assert nodeId != null;
         assert req != null;
 
+        if (!req.commit() && req.baseVersion() != null)
+            ctx.tm().addRolledbackTx(null, req.baseVersion());
+
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
             return new GridFinishedFuture<IgniteInternalTx>(locTx);

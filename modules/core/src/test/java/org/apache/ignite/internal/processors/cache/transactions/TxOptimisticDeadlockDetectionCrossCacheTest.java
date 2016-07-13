@@ -114,6 +114,14 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testDeadlock() throws Exception {
+        // Sometimes boh transactions perform commit, so we repeat attempt.
+        while (!doTestDeadlock()) {}
+    }
+
+        /**
+         * @throws Exception If failed.
+         */
+    private boolean doTestDeadlock() throws Exception {
         TestCommunicationSpi.init(2);
 
         final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -121,6 +129,8 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         final AtomicInteger threadCnt = new AtomicInteger();
 
         final AtomicBoolean deadlock = new AtomicBoolean();
+
+        final AtomicInteger commitCnt = new AtomicInteger();
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -152,6 +162,8 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
                     cache2.put(key2, 1);
 
                     tx.commit();
+
+                    commitCnt.incrementAndGet();
                 }
                 catch (Throwable e) {
                     // At least one stack trace should contain TransactionDeadlockException.
@@ -168,6 +180,9 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
         fut.get();
 
+        if (commitCnt.get() == 2)
+            return false;
+
         assertTrue(deadlock.get());
 
         for (int i = 0; i < NODES_CNT ; i++) {
@@ -179,6 +194,8 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
             assertTrue(futs.isEmpty());
         }
+
+        return true;
     }
 
     /**

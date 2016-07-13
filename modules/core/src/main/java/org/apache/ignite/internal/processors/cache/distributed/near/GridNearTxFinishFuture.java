@@ -617,6 +617,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         assert !m.empty();
 
+        GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
+
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
@@ -630,7 +632,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            null,
+            completedVer,
             null,
             null,
             tx.size(),
