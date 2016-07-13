@@ -40,6 +40,7 @@ import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
@@ -88,6 +89,7 @@ public class IgniteBinaryBasicTestSuite extends TestSuite {
         ignoredTests.add(GridDeploymentMessageCountSelfTest.class);
         ignoredTests.add(DynamicProxySerializationMultiJvmSelfTest.class);
         ignoredTests.add(GridHandleTableSelfTest.class);
+        ignoredTests.add(OptimizedMarshallerPooledSelfTest.class);
 
         // TODO: check and delete if pass.
         ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);
