@@ -764,7 +764,7 @@ public class DataPageIO extends PageIO {
      *             it keeps writing state.
      * @throws IgniteCheckedException If fail.
      */
-    public void writeRowFragment(final FragmentCtx fctx) throws IgniteCheckedException {
+    public void writeRowFragment(final FragmentContext fctx) throws IgniteCheckedException {
         assert fctx != null;
 
         final boolean lastChunk = fctx.written == 0;
@@ -809,13 +809,13 @@ public class DataPageIO extends PageIO {
      * @param totalLen Data length that should be written in a fragment.
      * @throws IgniteCheckedException If fail.
      */
-    private void writeFragmentData(final FragmentCtx fctx, final int totalOff, final int totalLen)
+    private void writeFragmentData(final FragmentContext fctx, final int totalOff, final int totalLen)
         throws IgniteCheckedException {
-        int written = writeFragment(fctx, totalOff, totalLen, ObjType.KEY);
+        int written = writeFragment(fctx, totalOff, totalLen, EntryPart.KEY);
 
-        written += writeFragment(fctx, totalOff + written, totalLen - written, ObjType.VAL);
+        written += writeFragment(fctx, totalOff + written, totalLen - written, EntryPart.VAL);
 
-        writeFragment(fctx, totalOff + written, totalLen - written, ObjType.VER);
+        writeFragment(fctx, totalOff + written, totalLen - written, EntryPart.VER);
     }
 
     /**
@@ -828,7 +828,7 @@ public class DataPageIO extends PageIO {
      * @return Actually written data.
      * @throws IgniteCheckedException If fail.
      */
-    private int writeFragment(final FragmentCtx fctx, final int totalOff, final int totalLen, final ObjType type)
+    private int writeFragment(final FragmentContext fctx, final int totalOff, final int totalLen, final EntryPart type)
         throws IgniteCheckedException {
         final int prevLen;
         final int curLen;
@@ -861,8 +861,8 @@ public class DataPageIO extends PageIO {
 
         final int len = Math.min(curLen - totalOff, totalLen);
 
-        if (type == ObjType.KEY || type == ObjType.VAL) {
-            final CacheObject co = type == ObjType.KEY ? fctx.row.key() : fctx.row.value();
+        if (type == EntryPart.KEY || type == EntryPart.VAL) {
+            final CacheObject co = type == EntryPart.KEY ? fctx.row.key() : fctx.row.value();
 
             co.putValue(fctx.buf, totalOff - prevLen, len, fctx.ctx);
         }
@@ -875,7 +875,7 @@ public class DataPageIO extends PageIO {
     /**
      *
      */
-    private enum ObjType { // TODO fix naming
+    private enum EntryPart {
         /** */
         KEY,
 
@@ -1059,7 +1059,7 @@ public class DataPageIO extends PageIO {
     /**
      *
      */
-    public static class FragmentCtx { // TODO fix naming
+    public static class FragmentContext {
         /** Totally written data (with overhead) */
         private int written;
 
@@ -1107,7 +1107,7 @@ public class DataPageIO extends PageIO {
          * @param ctx Cache object context.
          * @throws IgniteCheckedException If fail.
          */
-        public FragmentCtx(
+        public FragmentContext(
             final int totalEntrySize,
             final int chunks,
             final int chunkSize,
@@ -1124,22 +1124,6 @@ public class DataPageIO extends PageIO {
             valSize = row.value().valueBytesLength(ctx);
 
             dataSize = keySize + valSize + VER_SIZE;
-        }
-
-        /**
-         * @return Key size to be written.
-         * @throws IgniteCheckedException If fail.
-         */
-        public int keySize() throws IgniteCheckedException {
-            return row.key().valueBytesLength(ctx);
-        }
-
-        /**
-         * @return Value size to be written.
-         * @throws IgniteCheckedException If fail.
-         */
-        public int valSize() throws IgniteCheckedException { // TODO fix naming
-            return row.value().valueBytesLength(ctx);
         }
 
         /**

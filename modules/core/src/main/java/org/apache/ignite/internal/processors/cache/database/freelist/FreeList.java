@@ -89,8 +89,8 @@ public class FreeList {
     };
 
     /** */
-    private final PageHandler<DataPageIO.FragmentCtx, Void> writeFragmentRow = new PageHandler<DataPageIO.FragmentCtx, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, DataPageIO.FragmentCtx fctx, int entrySize)
+    private final PageHandler<DataPageIO.FragmentContext, Void> writeFragmentRow = new PageHandler<DataPageIO.FragmentContext, Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, DataPageIO.FragmentContext fctx, int entrySize)
             throws IgniteCheckedException {
             final CacheDataRow row = fctx.row;
 
@@ -274,8 +274,8 @@ public class FreeList {
 
             assert chunks > 1 : chunks;
 
-            final DataPageIO.FragmentCtx fctx =
-                new DataPageIO.FragmentCtx(entrySize, chunks, availablePageSize, row, coctx);
+            final DataPageIO.FragmentContext fctx =
+                new DataPageIO.FragmentContext(entrySize, chunks, availablePageSize, row, coctx);
 
             final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
 
