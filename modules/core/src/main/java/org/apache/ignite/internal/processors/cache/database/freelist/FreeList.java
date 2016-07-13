@@ -245,68 +245,35 @@ public class FreeList {
 
         FreeTree tree = tree(row.partition());
 
-        if (availablePageSize < entrySize) {
-            // write fragmented entry
-            final int chunks = DataPageIO.getChunksNum(availablePageSize, entrySize);
+        // write fragmented entry
+        final int chunks = DataPageIO.getChunksNum(availablePageSize, entrySize);
 
-            assert chunks > 1 : chunks;
+        assert chunks > 0;
 
-            final DataPageIO.FragmentContext fctx =
-                new DataPageIO.FragmentContext(entrySize, chunks, availablePageSize, row, coctx);
+        final DataPageIO.FragmentContext fctx =
+            new DataPageIO.FragmentContext(entrySize, chunks, availablePageSize, row, coctx);
 
-            final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
+        final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
 
-            for (int i = 0; i < chunks; i++) {
-                FreeItem item = take(tree,
-                    new FreeItem(i == 0 ? freeLast : availablePageSize, 0, cctx.cacheId()));
+        for (int i = 0; i < chunks; i++) {
+            int free = entrySize;
 
-                try (Page page = item == null ?
-                    allocateDataPage(row.partition()) :
-                    pageMem.page(item.cacheId(), item.pageId())
-                ) {
-                    if (item == null) {
-                        DataPageIO io = DataPageIO.VERSIONS.latest();
+            if (chunks > 1)
+                free = i == 0 ? freeLast : availablePageSize;
 
-                        ByteBuffer buf = page.getForWrite(); // Initial write.
-
-                        fctx.buf = buf;
-
-                        try {
-                            io.initNewPage(buf, page.id());
-
-                            // It is a newly allocated page and we will not write record to WAL here.
-                            assert !page.isDirty();
-
-                            writeRow.run(page.id(), page, buf, fctx, 0);
-                        }
-                        finally {
-                            page.releaseWrite(true);
-                        }
-                    }
-                    else
-                        writePage(page.id(), page, writeRow, fctx, 0);
-
-                    fctx.lastLink = PageIdUtils.linkFromDwordOffset(page.id(), fctx.lastIdx);
-                }
-            }
-
-            row.link(fctx.lastLink);
-        }
-        else {
-            // TODO add random pageIndex here for lower contention?
-            FreeItem item = take(tree, new FreeItem(entrySize, 0, cctx.cacheId()));
+            FreeItem item = take(tree,
+                new FreeItem(free, 0, cctx.cacheId()));
 
             try (Page page = item == null ?
                 allocateDataPage(row.partition()) :
                 pageMem.page(item.cacheId(), item.pageId())
             ) {
-                final DataPageIO.FragmentContext fctx
-                    = new DataPageIO.FragmentContext(entrySize, 1, entrySize, row, cctx.cacheObjectContext());
-
                 if (item == null) {
                     DataPageIO io = DataPageIO.VERSIONS.latest();
 
                     ByteBuffer buf = page.getForWrite(); // Initial write.
+
+                    fctx.buf = buf;
 
                     try {
                         io.initNewPage(buf, page.id());
@@ -315,10 +282,12 @@ public class FreeList {
                         assert !page.isDirty();
 
                         writeRow.run(page.id(), page, buf, fctx, entrySize);
-                    } finally {
+                    }
+                    finally {
                         page.releaseWrite(true);
                     }
-                } else
+                }
+                else
                     writePage(page.id(), page, writeRow, fctx, entrySize);
             }
         }
