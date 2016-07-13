@@ -169,38 +169,38 @@ class GridServiceProxy<T> implements Serializable {
 
                         // If service is deployed locally, then execute locally.
                         if (node.isLocal()) {
-                            ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
+                                ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
-                        if (svcCtx != null) {
-                            Service svc = svcCtx.service();
+                            if (svcCtx != null) {
+                                Service svc = svcCtx.service();
 
-                            if (svc != null)
-                                return mtd.invoke(svc, args);
+                                if (svc != null)
+                                    return mtd.invoke(svc, args);
+                            }
+                        }
+                        else {
+                            // Execute service remotely.
+                            return ctx.closure().callAsyncNoFailover(
+                                BALANCE,
+                                new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                                Collections.singleton(node),
+                                false
+                            ).get();
                         }
                     }
-                    else {
-                        // Execute service remotely.
-                        return ctx.closure().callAsyncNoFailover(
-                            BALANCE,
-                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
-                            Collections.singleton(node),
-                            false
-                        ).get();
+                    catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
                     }
-                }
-                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                }
-                catch (RuntimeException | Error e) {
-                    throw e;
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
+                    catch (RuntimeException | Error e) {
+                        throw e;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
 
                     // If we are here, that means that service was not found
                     // or topology was changed. In this case, we erase the
