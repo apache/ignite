@@ -46,7 +46,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
-import org.apache.ignite.internal.pagemem.StartBackupMessage;
+import org.apache.ignite.internal.pagemem.BackupMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -445,11 +445,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) discoEvt).customMessage();
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMsg instanceof StartBackupMessage)
+                else if (customMsg instanceof BackupMessage)
                     exchange = onServerNodeEvent(crdNode);
                 else {
                     assert affChangeMsg != null : this;
@@ -523,7 +523,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-      * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
         if (crd != null) {
@@ -1269,7 +1269,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.versions().onExchange(lastVer.get().order());
 
-            if (centralizedAff) {
+            if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                assert discoEvt instanceof DiscoveryCustomEvent;
+
+                if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof BackupMessage) {
+                    IgniteInternalFuture fut = cctx.database().wakeupForCheckpoint();
+
+                    if (fut == null)
+                        onDone(exchangeId().topologyVersion());
+                    else if (fut.isDone()) {
+                        if (fut.error() != null)
+                            onDone(fut.error());
+                        else
+                            onDone(exchangeId().topologyVersion());
+                    }
+                    else {
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture future) {
+                                if (future.error() != null)
+                                    onDone(future.error());
+                                else
+                                    onDone(exchangeId().topologyVersion());
+                            }
+                        });
+                    }
+                }
+            }
+            else if (centralizedAff) {
                 IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
 
                 if (!fut.isDone()) {
@@ -1389,7 +1415,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(node)) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
-                            ", nodeId=" + node.id() + ']');
+                        ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
                     fullMsgs.put(node, msg);

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
@@ -95,6 +97,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void checkpointReadUnlock() {
         // No-op.
+    }
+
+    /**
+     *
+     */
+    @Nullable public IgniteInternalFuture wakeupForCheckpoint() {
+        return null;
     }
 
     /**

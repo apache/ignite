@@ -22,17 +22,22 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-public class StartBackupMessage implements DiscoveryCustomMessage {
+public class BackupMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Custom message ID. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
 
     @Override public IgniteUuid id() {
-        throw new UnsupportedOperationException("Not implemented");
+        return id;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        throw new UnsupportedOperationException("Not implemented");
+        return null;
     }
 
     @Override public boolean isMutable() {
-        throw new UnsupportedOperationException("Not implemented");
+        return false;
     }
 }
