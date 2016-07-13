@@ -38,8 +38,10 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -86,6 +88,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -136,6 +140,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
+
+    /** Pending compute job contexts that waiting for utility cache initialization. */
+    private final List<ComputeJobContext> pendingJobCtxs = new ArrayList<>(0);
 
     /** Deployment executor service. */
     private final ExecutorService depExe;
@@ -1325,6 +1332,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Called right after utility cache is started and ready for the usage.
+     */
+    public void onUtilityCacheStarted() {
+        synchronized (pendingJobCtxs) {
+            if (pendingJobCtxs.size() == 0)
+                return;
+
+            Iterator<ComputeJobContext> iter = pendingJobCtxs.iterator();
+
+            while (iter.hasNext()) {
+                iter.next().callcc();
+                iter.remove();
+            }
+        }
+    }
+
+    /**
      * Service deployment listener.
      */
     @SuppressWarnings("unchecked")
@@ -1809,8 +1833,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private final String svcName;
 
         /** */
+        private boolean waitedCacheInit;
+
+        /** */
         @IgniteInstanceResource
         private IgniteEx ignite;
+
+        /** */
+        @JobContextResource
+        private ComputeJobContext jCtx;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
 
         /**
          * @param svcName Service name.
@@ -1821,7 +1856,40 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Map<UUID, Integer> call() throws Exception {
-            return serviceTopology(ignite.context().cache().utilityCache(), svcName);
+            IgniteInternalCache<Object, Object> cache = ignite.context().cache().utilityCache();
+
+            if (cache == null) {
+                List<ComputeJobContext> pendingCtxs = ignite.context().service().pendingJobCtxs;
+
+                synchronized (pendingCtxs) {
+                    // Double check cache reference after lock acqusition.
+                    cache = ignite.context().cache().utilityCache();
+
+                    if (cache == null) {
+                        if (!waitedCacheInit) {
+                            log.debug("Utility cache hasn't been initialized yet. Waiting.");
+
+                            // waiting for a minute for cache initialization.
+                            jCtx.holdcc(60 * 1000);
+
+                            pendingCtxs.add(jCtx);
+
+                            waitedCacheInit = true;
+
+                            return null;
+                        }
+                        else {
+                            log.error("Failed to gather service topology. Utility " +
+                                "cache initialization is stuck.");
+
+                            throw new IgniteCheckedException("Failed to gather service topology. Utility " +
+                                "cache initialization is stuck.");
+                        }
+                    }
+                }
+            }
+
+            return serviceTopology(cache, svcName);
         }
     }
 
