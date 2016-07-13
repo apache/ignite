@@ -56,8 +56,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             meta = new MetadataStorage(pageMem, cctx.wal());
         }
-
-        cctx.discovery().activate();
     }
 
     /** {@inheritDoc} */
