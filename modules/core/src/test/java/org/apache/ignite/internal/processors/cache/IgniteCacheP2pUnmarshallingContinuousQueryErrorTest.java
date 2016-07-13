@@ -24,12 +24,12 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.UnhandledExceptionEvent;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -53,9 +53,9 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
                 UnhandledExceptionEvent uex = (UnhandledExceptionEvent)event;
 
-                String exceptionMsg = uex.toString();
+                String exceptionMsg = X.getFullStackTrace(uex.getException());
 
-                assertTrue(exceptionMsg.contains("Class can not be unmarshalled"));
+                assertTrue(exceptionMsg.contains("IOException: Class can not be unmarshalled"));
 
                 unhandledExceptionCounter.incrementAndGet();
 
