@@ -1761,12 +1761,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 futs.clear();
 
                 lockKeys.clear();
-
-                err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                        "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
             }
 
-            onComplete(null);
+            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
+                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
         }
 
         /** {@inheritDoc} */
