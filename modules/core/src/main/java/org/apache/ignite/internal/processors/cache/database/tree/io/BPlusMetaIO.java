@@ -43,9 +43,19 @@ public class BPlusMetaIO extends PageIO {
 
     /** {@inheritDoc} */
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
-        super.initNewPage(buf, pageId);
+        throw new IllegalStateException("Should never be called, use overloaded version.");
+    }
 
-        setLevelsCount(buf, 0);
+    /**
+     * @param buf Buffer.
+     * @param metaId Meta page ID.
+     * @param rootId Root page ID.
+     */
+    public void initNewPage(ByteBuffer buf, long metaId, long rootId) {
+        super.initNewPage(buf, metaId);
+
+        setLevelsCount(buf, 1);
+        setFirstPageId(buf, 0, rootId);
     }
 
     /**
@@ -108,5 +118,25 @@ public class BPlusMetaIO extends PageIO {
         assert lvls > 0 : lvls;
 
         return lvls - 1;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param rootPageId New root page ID.
+     */
+    public void addRoot(ByteBuffer buf, long rootPageId) {
+        int lvl = getLevelsCount(buf);
+
+        setLevelsCount(buf, lvl + 1);
+        setFirstPageId(buf, lvl, rootPageId);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public void cutRoot(ByteBuffer buf) {
+        int lvl = getRootLevel(buf);
+
+        setLevelsCount(buf, lvl); // Decrease tree height.
     }
 }

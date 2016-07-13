@@ -27,6 +27,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
  */
 public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     /**
+     * @return {@code true} If we have to always write full pages.
+     */
+    public boolean isAlwaysWriteFullPages();
+
+    /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
      */
