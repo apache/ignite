@@ -27,6 +27,7 @@ public interface AffinityTask {
     /**
      * @return Affinity key.
      */
+    @Deprecated
     @Nullable public Object affinityKey();
 
     /**

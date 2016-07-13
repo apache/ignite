@@ -47,7 +47,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** Partition key for affinityCall. */
     private final int partId;
 
-    /** Partition key for affinityCall. */
+    /** Affinity key for affinityCall. */
     private final Object affKey;
 
     /** Affinity cache name for affinityCall. */
@@ -80,8 +80,8 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
-        this.affKey = affKey;
         this.partId = partId;
+        this.affKey = affKey;
         this.affCacheName = affCacheName;
         this.topVer = topVer;
     }

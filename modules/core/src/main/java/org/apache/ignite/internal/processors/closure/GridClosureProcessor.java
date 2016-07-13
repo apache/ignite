@@ -23,10 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -449,6 +446,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
+     * @throws IgniteCheckedException If failed.
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames, int partId,
         @Nullable Object affKey, Callable<R> job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
@@ -484,6 +482,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param job Job.
      * @param nodes Grid nodes.
      * @return Job future.
+     * @throws IgniteCheckedException If failed.
      */
     public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames, int partId,
         @Nullable Object affKey, Runnable job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {

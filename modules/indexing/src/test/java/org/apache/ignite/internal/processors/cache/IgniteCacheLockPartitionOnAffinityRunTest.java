@@ -57,30 +57,6 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
 public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
-    /** Flag to use custom CollisionSpi that cancels all jobs. */
-    private static boolean collisionSpiCancelAll;
-
-    /**
-     * @param ignite Ignite.
-     * @param orgId Org id.
-     * @param expectedReservations Expected reservations.
-     */
-    private static void checkPartitionsReservations(final IgniteEx ignite, int orgId,
-        int expectedReservations) {
-        int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
-
-        GridDhtLocalPartition pPers = ignite.context().cache()
-            .internalCache(Person.class.getSimpleName()).context().topology()
-            .localPartition(part, AffinityTopologyVersion.NONE, false);
-
-        GridDhtLocalPartition pOrgs = ignite.context().cache()
-            .internalCache(Organization.class.getSimpleName()).context().topology()
-            .localPartition(part, AffinityTopologyVersion.NONE, false);
-
-        assertEquals("Unexpected reservations count", expectedReservations, pOrgs.reservations());
-        assertEquals("Unexpected reservations count", expectedReservations, pPers.reservations());
-    }
-
     /**
      * @param ignite Ignite.
      * @param log Logger.
@@ -638,31 +614,6 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
-    public void testReleasePartitionJobCanceledByCollisionSpi() throws Exception {
-        final int orgId = orgIds.get(0);
-        final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
-
-        try {
-            collisionSpiCancelAll = true;
-
-            grid(1).compute().affinityRun(new IgniteRunnable() {
-                @Override public void run() {
-                    fail("Must not be executed");
-                }
-            }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
-            fail("Error must be thrown");
-        }
-        catch (ClusterTopologyException e) {
-            checkPartitionsReservations((IgniteEx)grid(node), orgId, 0);
-        }
-        finally {
-            collisionSpiCancelAll = false;
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReleasePartitionJobMasterLeave() throws Exception {
         final int orgId = orgIds.get(0);
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
@@ -845,48 +796,6 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             log.info("Begin run");
             int cnt = personsCountGetter.getPersonsCount(ignite, log, orgId);
             assertEquals(PERS_AT_ORG_COUNT, cnt);
-        }
-    }
-
-    /** */
-    @SuppressWarnings({"PublicInnerClass"})
-    @IgniteSpiMultipleInstancesSupport(true)
-    public static class TestCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
-        /** Grid logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** {@inheritDoc} */
-        @Override public void onCollision(CollisionContext ctx) {
-
-            if (!collisionSpiCancelAll) {
-                Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
-
-                for (CollisionJobContext job : waitJobs)
-                    job.activate();
-            }
-            else {
-                Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
-
-                for (CollisionJobContext job : waitJobs)
-                    job.cancel();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
-            // Start SPI start stopwatch.
-            startStopwatch();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
-            // No-op.
         }
     }
 

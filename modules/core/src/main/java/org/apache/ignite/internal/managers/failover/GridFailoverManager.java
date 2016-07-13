@@ -61,6 +61,7 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
      * @param jobRes Job result.
      * @param top Collection of all topology nodes.
      * @param affPartId Partition number.
+     * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
      * @param topVer Affinity topology version.
      * @return New node to route this job to.

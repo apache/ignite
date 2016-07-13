@@ -17,8 +17,11 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -81,7 +84,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMarshaller(new BinaryMarshaller());
-        cfg.setCollisionSpi(new IgniteCacheLockPartitionOnAffinityRunTest.TestCollisionSpi());
 
         return cfg;
     }
@@ -214,6 +216,27 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
                 return null;
             }
         }, "restart-node");
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param orgId Org id.
+     * @param expectedReservations Expected reservations.
+     */
+    protected static void checkPartitionsReservations(final IgniteEx ignite, int orgId,
+        int expectedReservations) {
+        int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
+
+        GridDhtLocalPartition pPers = ignite.context().cache()
+            .internalCache(Person.class.getSimpleName()).context().topology()
+            .localPartition(part, AffinityTopologyVersion.NONE, false);
+
+        GridDhtLocalPartition pOrgs = ignite.context().cache()
+            .internalCache(Organization.class.getSimpleName()).context().topology()
+            .localPartition(part, AffinityTopologyVersion.NONE, false);
+
+        assertEquals("Unexpected reservations count", expectedReservations, pOrgs.reservations());
+        assertEquals("Unexpected reservations count", expectedReservations, pPers.reservations());
     }
 
     /** */
