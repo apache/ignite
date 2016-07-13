@@ -396,6 +396,11 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void makeBackup() {
+        // no-op
+    }
+
     /**
      * @param staticCfg Configuration.
      */

@@ -547,4 +547,6 @@ public interface Ignite extends AutoCloseable {
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    public void makeBackup();
 }

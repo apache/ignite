@@ -622,6 +622,11 @@ public class IgniteProcessProxy implements IgniteEx {
         return new AffinityProcessProxy<>(cacheName, this);
     }
 
+    /** {@inheritDoc} */
+    @Override public void makeBackup() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
     /**
      * @return Jvm process in which grid node started.
      */
