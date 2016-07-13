@@ -49,11 +49,13 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
  *
  */
+@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends CommunicationSpi>
     extends GridSpiAbstractTest<T> {
     /** */
@@ -151,6 +153,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             int expMsgs = 0;
 
+            long totAcked = 0;
+
             for (int i = 0; i < 5; i++) {
                 info("Iteration: " + i);
 
@@ -172,6 +176,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
                 expMsgs += msgPerIter;
 
+                final long totAcked0 = totAcked;
+
                 for (TcpCommunicationSpi spi : spis) {
                     GridNioServer srv = U.field(spi, "nioSrvr");
 
@@ -186,6 +192,14 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
                         if (recoveryDesc != null) {
                             found = true;
+
+                            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    long acked = GridTestUtils.getFieldValue(recoveryDesc, "acked");
+
+                                    return acked > totAcked0;
+                                }
+                            }, 5000);
 
                             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                                 @Override public boolean apply() {
@@ -218,6 +232,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                 }
 
                 assertEquals(msgPerIter * 2, ackMsgs.get());
+
+                totAcked += msgPerIter;
             }
         }
         finally {
@@ -337,6 +353,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                 return expMsgs == ackMsgs.get();
             }
         }, 5000);
+
+        assertEquals(expMsgs, ackMsgs.get());
     }
 
     /**
