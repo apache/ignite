@@ -53,11 +53,11 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /** Count of objects. */
     private static final int ORGS_COUNT_PER_NODE = 2;
 
-    /** Test timeout. */
-    private static final long TEST_TIMEOUT = 4 * 60_000;
-
     /** Test duration. */
-    private static final long TEST_DURATION = TEST_TIMEOUT - 60_000;
+    private static final long TEST_DURATION = 3 * 60_000;
+
+    /** Test timeout. */
+    private static final long TEST_TIMEOUT = TEST_DURATION + 2 * 60_000;
 
     /** Timeout between restart of a node. */
     private static final long RESTART_TIMEOUT = 3_000;

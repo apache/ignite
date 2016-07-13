@@ -1129,6 +1129,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
                             // Internal jobs will always be executed synchronously.
                             if (job.isInternal()) {
+                                // The collection of the reserved parts has been passed to GridJobWorker.
+                                // Reservations will be released by GridJobWorker#finishJob
+                                reservedParts = null;
                                 // This is an internal job and can be executed inside busy lock
                                 // since job is expected to be short.
                                 // This is essential for proper stop without races.
@@ -1205,9 +1208,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 rwLock.readUnlock();
             }
 
-            if (job != null)
-                job.run();
+            if (job != null) {
+                // The collection of the reserved parts has been passed to GridJobWorker.
+                // Reservations will be released by GridJobWorker#finishJob
+                reservedParts = null;
 
+                job.run();
+            }
         }
         finally {
             // Release partitions in case retry or synchronous job execute
