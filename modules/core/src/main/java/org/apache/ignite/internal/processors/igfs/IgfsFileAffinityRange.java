@@ -25,6 +25,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Affinity range.
  */
-public class IgfsFileAffinityRange implements Message, Externalizable {
+public class IgfsFileAffinityRange implements Message, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -236,11 +244,14 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, affKey);
-
         out.writeInt(status);
-
         out.writeLong(startOff);
         out.writeLong(endOff);
     }
@@ -248,9 +259,27 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         affKey = U.readGridUuid(in);
-
         status = in.readInt();
+        startOff = in.readLong();
+        endOff = in.readLong();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        BinaryUtils.writeIgniteUuid(out, affKey);
+        out.writeInt(status);
+        out.writeLong(startOff);
+        out.writeLong(endOff);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        affKey = BinaryUtils.readIgniteUuid(in);
+        status = in.readInt();
         startOff = in.readLong();
         endOff = in.readLong();
     }

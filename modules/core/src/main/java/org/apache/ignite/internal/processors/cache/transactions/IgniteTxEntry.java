@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -46,6 +48,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -55,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.OLD_VAL_ON_PRIMARY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
@@ -72,6 +76,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
     public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
+
+    /** */
+    public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 0, 2);
+
+    /** */
+    public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 0, 3);
 
     /** Owning transaction. */
     @GridToStringExclude
@@ -177,9 +187,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private byte[] expiryPlcBytes;
 
     /**
-     * Additional flags.
-     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
-     * GridCacheUtils.KEEP_BINARY_FLAG_MASK - for withKeepBinary flag.
+     * Additional flags:
+     * <ul>
+     * <li>{@link GridCacheUtils#SKIP_STORE_FLAG_MASK} - for skipStore flag value.</li>
+     * <li>{@link GridCacheUtils#KEEP_BINARY_FLAG_MASK} - for withKeepBinary flag.</li>
+     * </ul>
      */
     private byte flags;
 
@@ -475,6 +487,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param oldValOnPrimary {@code True} If old value for 'invoke' operation was non null on primary node.
+     */
+    public void oldValueOnPrimary(boolean oldValOnPrimary) {
+        setFlag(oldValOnPrimary, OLD_VAL_ON_PRIMARY);
+    }
+
+    /**
+     * @return {@code True} If old value for 'invoke' operation was non null on primary node.
+     */
+    public boolean oldValueOnPrimary() {
+        return isFlag(OLD_VAL_ON_PRIMARY);
+    }
+
+    /**
      * Sets keep binary flag value.
      *
      * @param keepBinary Keep binary flag value.
@@ -679,8 +705,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
-                    ver, keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
+                    ver, keepBinary(), cached());
 
                 EntryProcessor processor = t.get1();
 
@@ -852,7 +878,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes,
+                U.resolveClassLoader(clsLdr, ctx.gridConfig()));
 
         if (filters == null)
             filters = CU.empty0();
@@ -868,7 +895,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         val.unmarshal(this.ctx, clsLdr);
 
         if (expiryPlcBytes != null)
-            expiryPlc =  ctx.marshaller().unmarshal(expiryPlcBytes, clsLdr);
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
     }
 
     /**
@@ -909,13 +936,35 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @param serReadVer Read version for serializable transaction.
+     * Gets stored entry version. Version is stored for all entries in serializable transaction or
+     * when value is read using {@link IgniteCache#getEntry(Object)} method.
+     *
+     * @return Entry version.
      */
-    public void serializableReadVersion(GridCacheVersion serReadVer) {
-        assert this.serReadVer == null;
-        assert serReadVer != null;
+    @Nullable public GridCacheVersion entryReadVersion() {
+        return serReadVer;
+    }
 
-        this.serReadVer = serReadVer;
+    /**
+     * @param ver Entry version.
+     */
+    public void entryReadVersion(GridCacheVersion ver) {
+        assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
+        assert ver != null;
+
+        this.serReadVer = ver;
+    }
+
+    /**
+     * Clears recorded read version, should be done before starting commit of not serializable/optimistic transaction.
+     */
+    public void clearEntryReadVersion() {
+        serReadVer = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

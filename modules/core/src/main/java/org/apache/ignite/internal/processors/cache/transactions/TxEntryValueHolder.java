@@ -154,6 +154,11 @@ public class TxEntryValueHolder implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "[op=" + op +", val=" + val + ']';
     }

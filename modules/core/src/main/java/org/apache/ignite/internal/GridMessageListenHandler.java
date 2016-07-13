@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
@@ -82,6 +83,22 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         this.pred = pred;
     }
 
+    /**
+     *
+     * @param orig Handler to be copied.
+     */
+    public GridMessageListenHandler(GridMessageListenHandler orig) {
+        assert orig != null;
+
+        this.clsName = orig.clsName;
+        this.depInfo = orig.depInfo;
+        this.pred = orig.pred;
+        this.predBytes = orig.predBytes;
+        this.topic = orig.topic;
+        this.topicBytes = orig.topicBytes;
+        this.depEnabled = false;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isEvents() {
         return false;
@@ -108,12 +125,14 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(Map<Integer, Long> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx)
+        throws IgniteCheckedException {
         ctx.io().addUserMessageListener(topic, pred);
 
         return RegisterStatus.REGISTERED;
@@ -174,9 +193,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         ClassLoader ldr = dep.classLoader();
 
         if (topicBytes != null)
-            topic = ctx.config().getMarshaller().unmarshal(topicBytes, ldr);
+            topic = ctx.config().getMarshaller().unmarshal(topicBytes, U.resolveClassLoader(ldr, ctx.config()));
 
-        pred = ctx.config().getMarshaller().unmarshal(predBytes, ldr);
+        pred = ctx.config().getMarshaller().unmarshal(predBytes, U.resolveClassLoader(ldr, ctx.config()));
     }
 
     /** {@inheritDoc} */

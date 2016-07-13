@@ -104,7 +104,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    GridCacheVersion serReadVer = txEntry.serializableReadVersion();
+                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();
@@ -182,7 +182,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
 
-        if (e instanceof IgniteTxOptimisticCheckedException) {
+        if (e instanceof IgniteTxOptimisticCheckedException || e instanceof IgniteTxTimeoutCheckedException) {
             if (m != null)
                 tx.removeMapping(m.node().id());
         }
@@ -422,10 +422,22 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         final ClusterNode n = m.node();
 
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1) {
+            IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Transaction timed out and " +
+                "was rolled back: " + this);
+
+            fut.onResult(err);
+
+            return err;
+        }
+
         GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
             futId,
             tx.topologyVersion(),
             tx,
+            timeout,
             m.reads(),
             m.writes(),
             m.near(),

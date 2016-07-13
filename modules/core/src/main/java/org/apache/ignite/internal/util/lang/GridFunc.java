@@ -1705,6 +1705,7 @@ public class GridFunc {
      * @return Light-weight view on given list with provided transformation.
      */
     @SuppressWarnings("RedundantTypeArguments")
+    @Deprecated
     public static <T1, T2> List<T2> viewListReadOnly(@Nullable final List<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans) {
         A.notNull(trans, "trans");
@@ -1748,6 +1749,7 @@ public class GridFunc {
      * @param p Optional predicates. If predicates are not provided - all elements will be in the view.
      * @return View on given list with provided predicate.
      */
+    @Deprecated
     public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
         IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +35,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -88,9 +93,8 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -107,9 +111,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
-
-    /** Cleanup history size. */
-    public static final int EXCH_FUT_CLEANUP_HISTORY_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 100);
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -162,6 +163,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private volatile IgniteCheckedException stopErr;
+
+    /** */
+    private int longRunningOpsDumpCnt;
+
+    /** */
+    private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -938,15 +945,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 skipped++;
 
-                if (skipped == EXCH_FUT_CLEANUP_HISTORY_SIZE) {
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (err == null) {
-                            if (!cacheCtx.isLocal())
-                                cacheCtx.affinity().cleanUpCache(fut.topologyVersion());
-                        }
-                    }
-                }
-
                 if (skipped > 10)
                     fut.cleanUp();
             }
@@ -1092,9 +1090,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    public void dumpDebugInfo() {
+    public void dumpDebugInfo() throws Exception {
         U.warn(log, "Ready affinity version: " + readyTopVer.get());
 
         U.warn(log, "Last exchange future: " + lastInitializedFut);
@@ -1130,12 +1128,109 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
+
+        // Dump IO manager statistics.
+        cctx.gridIO().dumpStats();
     }
 
     /**
-     *
+     * @param timeout Operation timeout.
      */
-    public void dumpPendingObjects() {
+    public void dumpLongRunningOperations(long timeout) {
+        try {
+            GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+            // If exchange is in progress it will dump all hanging operations if any.
+            if (lastFut != null && !lastFut.isDone())
+                return;
+
+            long curTime = U.currentTimeMillis();
+
+            boolean found = false;
+
+            IgniteTxManager tm = cctx.tm();
+
+            if (tm != null) {
+                for (IgniteInternalTx tx : tm.activeTransactions()) {
+                    if (curTime - tx.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+            }
+
+            GridCacheMvccManager mvcc = cctx.mvcc();
+
+            if (mvcc != null) {
+                for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
+                    if (curTime - fut.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+
+                for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
+                    if (curTime - fut.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+            }
+
+            if (found) {
+                if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                    longRunningOpsDumpCnt++;
+
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
+                        U.warn(log, "Found long running cache operations, dump threads.");
+
+                        U.dumpThreads(log);
+                    }
+
+                    U.warn(log, "Found long running cache operations, dump IO statistics.");
+
+                    // Dump IO manager statistics.
+                    cctx.gridIO().dumpStats();
+                }
+            }
+            else
+                longRunningOpsDumpCnt = 0;
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug information: " + e, e);
+        }
+    }
+
+    /**
+     * @param time Time.
+     * @return Time string.
+     */
+    private String formatTime(long time) {
+        return dateFormat.format(new Date(time));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void dumpPendingObjects() throws Exception {
         IgniteTxManager tm = cctx.tm();
 
         if (tm != null) {
@@ -1162,6 +1257,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures())
                 U.warn(log, ">>> " + fut);
+
+            if (tm != null) {
+                U.warn(log, "Pending transaction deadlock detection futures:");
+
+                for (IgniteInternalFuture<?> fut : tm.deadlockDetectionFutures())
+                    U.warn(log, ">>> " + fut);
+            }
         }
 
         for (GridCacheContext ctx : cctx.cacheContexts()) {
@@ -1261,13 +1363,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
                     }
 
-                    // If not first preloading and no more topology events present,
-                    // then we periodically refresh partition map.
-                    if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished) {
-                        refreshPartitions(timeout);
-
+                    // If not first preloading and no more topology events present.
+                    if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished)
                         timeout = cctx.gridConfig().getNetworkTimeout();
-                    }
 
                     // After workers line up and before preloading starts we initialize all futures.
                     if (log.isDebugEnabled())
@@ -1296,7 +1394,36 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             exchFut.init();
 
-                            exchFut.get();
+                            int dumpedObjects = 0;
+
+                            while (true) {
+                                try {
+                                    exchFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
+
+                                    break;
+                                }
+                                catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    U.warn(log, "Failed to wait for partition map exchange [" +
+                                        "topVer=" + exchFut.topologyVersion() +
+                                        ", node=" + cctx.localNodeId() + "]. " +
+                                        "Dumping pending objects that might be the cause: ");
+
+                                    if (dumpedObjects < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                                        try {
+                                            dumpDebugInfo();
+                                        }
+                                        catch (Exception e) {
+                                            U.error(log, "Failed to dump debug information: " + e, e);
+                                        }
+
+                                        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                            U.dumpThreads(log);
+
+                                        dumpedObjects++;
+                                    }
+                                }
+                            }
+
 
                             if (log.isDebugEnabled())
                                 log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
@@ -1423,7 +1550,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (marshR != null || !rebalanceQ.isEmpty()) {
                             if (futQ.isEmpty()) {
-                                U.log(log, "Rebalancing required" +
+                                U.log(log, "Rebalancing required " +
                                     "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                     ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
 

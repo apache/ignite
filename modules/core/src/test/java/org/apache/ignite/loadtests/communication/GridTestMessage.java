@@ -94,6 +94,11 @@ class GridTestMessage implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         out.writeLong(field1);

@@ -169,6 +169,11 @@ public class GridIoMessage implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        msg.onAckReceived();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         throw new AssertionError();
     }

@@ -113,6 +113,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperation")]
         public static extern void TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureAndGet")]
+        public static extern void* TargetListenFutAndGet(void* ctx, void* target, long futId, int typ);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
+        public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAffinityPartitions")]
         public static extern int AffinityParts(void* ctx, void* target);
 
@@ -178,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void ComputeWithTimeout(void* ctx, void* target, long timeout);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeExecuteNative")]
-        public static extern void ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
+        public static extern void* ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryClose")]
         public static extern void ContinuousQryClose(void* ctx, void* target);
@@ -354,5 +360,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongClose")]
         public static extern void AtomicLongClose(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableCancel")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ListenableCancel(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ListenableIsCancelled(void* ctx, void* target);
     }
 }

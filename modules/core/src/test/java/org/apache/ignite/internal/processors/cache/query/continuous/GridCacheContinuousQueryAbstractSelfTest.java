@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -76,6 +77,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -117,6 +119,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
             cacheCfg.setLoadPreviousValue(true);
+            cacheCfg.setMemoryMode(memoryMode());
 
             cfg.setCacheConfiguration(cacheCfg);
         }
@@ -132,6 +135,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache memory mode.
+     */
+    protected CacheMemoryMode memoryMode() {
+        return ONHEAP_TIERED;
     }
 
     /**
@@ -199,7 +209,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = grid(i).context().continuous();
 
-            assertEquals(String.valueOf(i), 3, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "stopFuts")).size());
@@ -393,8 +403,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        try (QueryCursor<Cache.Entry<Integer, Integer>> query2 = cache1.query(qry2);
-            QueryCursor<Cache.Entry<Integer, Integer>> query1 = cache.query(qry1)) {
+        try (QueryCursor<Cache.Entry<Integer, Integer>> qryCur2 = cache1.query(qry2);
+             QueryCursor<Cache.Entry<Integer, Integer>> qryCur1 = cache.query(qry1)) {
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache0 = grid(i).cache(null);
 
@@ -448,7 +458,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     }
                 });
 
-                QueryCursor<Cache.Entry<Integer, Integer>> query = cache.query(qry);
+                QueryCursor<Cache.Entry<Integer, Integer>> qryCur = cache.query(qry);
 
                 for (int key = 0; key < keyCnt; key++)
                     cache.put(key, key);
@@ -461,7 +471,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     }, 2000L);
                 }
                 finally {
-                    query.close();
+                    qryCur.close();
                 }
             }
             else {

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -76,6 +77,19 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      */
     public void responded(boolean responded) {
         setFlag(RESPONDED_FLAG_POS, responded);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        // NOTE!
+        // Do not call super. As IDs will differ, but we can ignore this.
+
+        if (!(obj instanceof TcpDiscoveryJoinRequestMessage))
+            return false;
+
+        TcpDiscoveryJoinRequestMessage other = (TcpDiscoveryJoinRequestMessage)obj;
+
+        return F.eqNodes(other.node, node);
     }
 
     /** {@inheritDoc} */

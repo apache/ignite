@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -190,7 +191,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         super.finishUnmarshal(ctx, ldr);
 
         if (topicBytes != null)
-            topic = ctx.marshaller().unmarshal(topicBytes, ldr);
+            topic = ctx.marshaller().unmarshal(topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

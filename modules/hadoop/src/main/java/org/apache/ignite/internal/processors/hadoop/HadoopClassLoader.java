@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -30,23 +27,31 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopNativeCodeLoader;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
+import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
 
@@ -55,7 +60,7 @@ import org.objectweb.asm.commons.RemappingClassAdapter;
  * Also supports class parsing for finding dependencies which contain transitive dependencies
  * unavailable for parent.
  */
-public class HadoopClassLoader extends URLClassLoader {
+public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     /**
      * We are very parallel capable.
      */
@@ -65,6 +70,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /** Name of the Hadoop daemon class. */
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
+    /** Name of libhadoop library. */
+    private static final String LIBHADOOP = "hadoop.";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -81,9 +89,15 @@ public class HadoopClassLoader extends URLClassLoader {
     /** */
     private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
 
+    /** Class cache. */
+    private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
+
     /** Diagnostic name of this class loader. */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
+
+    /** Native library names. */
+    private final String[] libNames;
 
     /**
      * Gets name for Job class loader. The name is specific for local node id.
@@ -108,14 +122,76 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
+     * Constructor.
+     *
      * @param urls Urls.
+     * @param name Classloader name.
+     * @param libNames Optional additional native library names to be linked from parent classloader.
      */
-    public HadoopClassLoader(URL[] urls, String name) {
+    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+        this.libNames = libNames;
+
+        initializeNativeLibraries();
+    }
+
+    /**
+     * Workaround to load native Hadoop libraries. Java doesn't allow native libraries to be loaded from different
+     * classloaders. But we load Hadoop classes many times and one of these classes - {@code NativeCodeLoader} - tries
+     * to load the same native library over and over again.
+     * <p>
+     * To fix the problem, we force native library load in parent class loader and then "link" handle to this native
+     * library to our class loader. As a result, our class loader will think that the library is already loaded and will
+     * be able to link native methods.
+     *
+     * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
+     *     JNI specification</a>
+     */
+    private void initializeNativeLibraries() {
+        try {
+            // This must trigger native library load.
+            Class.forName(NativeCodeLoader.class.getName(), true, APP_CLS_LDR);
+
+            final Vector<Object> curVector = U.field(this, "nativeLibraries");
+
+            ClassLoader ldr = APP_CLS_LDR;
+
+            while (ldr != null) {
+                Vector vector = U.field(ldr, "nativeLibraries");
+
+                for (Object lib : vector) {
+                    String name = U.field(lib, "name");
+
+                    boolean add = name.contains(LIBHADOOP);
+
+                    if (!add && libNames != null) {
+                        for (String libName : libNames) {
+                            if (libName != null && name.contains(libName)) {
+                                add = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (add) {
+                        curVector.add(lib);
+
+                        return;
+                    }
+                }
+
+                ldr = ldr.getParent();
+            }
+        }
+        catch (Exception e) {
+            U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
+                "(native Hadoop methods might not work properly): " + e);
+        }
     }
 
     /**
@@ -125,10 +201,14 @@ public class HadoopClassLoader extends URLClassLoader {
      * @return {@code true} if we need to check this class.
      */
     private static boolean isHadoopIgfs(String cls) {
-        String ignitePackagePrefix = "org.apache.ignite";
-        int len = ignitePackagePrefix.length();
+        String ignitePkgPrefix = "org.apache.ignite";
 
-        return cls.startsWith(ignitePackagePrefix) && (cls.indexOf("igfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
+        int len = ignitePkgPrefix.length();
+
+        return cls.startsWith(ignitePkgPrefix) && (
+            cls.indexOf("igfs.", len) != -1 ||
+            cls.indexOf(".fs.", len) != -1 ||
+            cls.indexOf("hadoop.", len) != -1);
     }
 
     /**
@@ -145,8 +225,6 @@ public class HadoopClassLoader extends URLClassLoader {
             if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
                 if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
-                else if (name.endsWith(".util.NativeCodeLoader"))
-                    return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
                 else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
                     // We replace this in order to be able to forcibly stop some daemon threads
                     // that otherwise never stop (e.g. PeerCache runnables):
@@ -159,7 +237,7 @@ public class HadoopClassLoader extends URLClassLoader {
                 Boolean hasDeps = cache.get(name);
 
                 if (hasDeps == null) {
-                    hasDeps = hasExternalDependencies(name, new HashSet<String>());
+                    hasDeps = hasExternalDependencies(name);
 
                     cache.put(name, hasDeps);
                 }
@@ -228,6 +306,20 @@ public class HadoopClassLoader extends URLClassLoader {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Class<?> getFromCache(String clsName) throws ClassNotFoundException {
+        Class<?> cls = cacheMap.get(clsName);
+
+        if (cls == null) {
+            Class old = cacheMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, this));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
+    }
+
     /**
      * @param name Class name.
      * @param resolve Resolve class.
@@ -266,10 +358,30 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
+     * Check whether class has external dependencies on Hadoop.
+     *
      * @param clsName Class name.
+     * @return {@code True} if class has external dependencies.
+     */
+    boolean hasExternalDependencies(String clsName) {
+        CollectingContext ctx = new CollectingContext();
+
+        ctx.annVisitor = new CollectingAnnotationVisitor(ctx);
+        ctx.mthdVisitor = new CollectingMethodVisitor(ctx, ctx.annVisitor);
+        ctx.fldVisitor = new CollectingFieldVisitor(ctx, ctx.annVisitor);
+        ctx.clsVisitor = new CollectingClassVisitor(ctx, ctx.annVisitor, ctx.mthdVisitor, ctx.fldVisitor);
+
+        return hasExternalDependencies(clsName, ctx);
+    }
+
+    /**
+     * Check whether class has external dependencies on Hadoop.
+     *
+     * @param clsName Class name.
+     * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
-    boolean hasExternalDependencies(final String clsName, final Set<String> visited) {
+    boolean hasExternalDependencies(String clsName, CollectingContext ctx) {
         if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
@@ -291,157 +403,14 @@ public class HadoopClassLoader extends URLClassLoader {
             throw new RuntimeException("Failed to read class: " + clsName, e);
         }
 
-        visited.add(clsName);
+        ctx.visited.add(clsName);
 
-        final AtomicBoolean hasDeps = new AtomicBoolean();
+        rdr.accept(ctx.clsVisitor, 0);
 
-        rdr.accept(new ClassVisitor(Opcodes.ASM4) {
-            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
-                // TODO
-            };
-
-            FieldVisitor fv = new FieldVisitor(Opcodes.ASM4) {
-                @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
-                    onType(desc);
-
-                    return av;
-                }
-            };
-
-            MethodVisitor mv = new MethodVisitor(Opcodes.ASM4) {
-                @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
-                    onType(desc);
-
-                    return av;
-                }
-
-                @Override public AnnotationVisitor visitParameterAnnotation(int i, String desc, boolean b) {
-                    onType(desc);
-
-                    return av;
-                }
-
-                @Override public AnnotationVisitor visitAnnotationDefault() {
-                    return av;
-                }
-
-                @Override public void visitFieldInsn(int i, String owner, String name, String desc) {
-                    onType(owner);
-                    onType(desc);
-                }
-
-                @Override public void visitFrame(int i, int i2, Object[] locTypes, int i3, Object[] stackTypes) {
-                    for (Object o : locTypes) {
-                        if (o instanceof String)
-                            onType((String)o);
-                    }
-
-                    for (Object o : stackTypes) {
-                        if (o instanceof String)
-                            onType((String)o);
-                    }
-                }
-
-                @Override public void visitLocalVariable(String name, String desc, String signature, Label lb,
-                    Label lb2, int i) {
-                    onType(desc);
-                }
-
-                @Override public void visitMethodInsn(int i, String owner, String name, String desc) {
-                    onType(owner);
-                }
-
-                @Override public void visitMultiANewArrayInsn(String desc, int dim) {
-                    onType(desc);
-                }
-
-                @Override public void visitTryCatchBlock(Label lb, Label lb2, Label lb3, String e) {
-                    onType(e);
-                }
-            };
-
-            void onClass(String depCls) {
-                assert validateClassName(depCls) : depCls;
-
-                if (depCls.startsWith("java.")) // Filter out platform classes.
-                    return;
-
-                if (visited.contains(depCls))
-                    return;
-
-                Boolean res = cache.get(depCls);
-
-                if (res == Boolean.TRUE || (res == null && hasExternalDependencies(depCls, visited)))
-                    hasDeps.set(true);
-            }
-
-            void onType(String type) {
-                if (type == null)
-                    return;
-
-                int off = 0;
-
-                while (type.charAt(off) == '[')
-                    off++; // Handle arrays.
-
-                if (off != 0)
-                    type = type.substring(off);
-
-                if (type.length() == 1)
-                    return; // Get rid of primitives.
-
-                if (type.charAt(type.length() - 1) == ';') {
-                    assert type.charAt(0) == 'L' : type;
-
-                    type = type.substring(1, type.length() - 1);
-                }
-
-                type = type.replace('/', '.');
-
-                onClass(type);
-            }
-
-            @Override public void visit(int i, int i2, String name, String signature, String superName,
-                String[] ifaces) {
-                onType(superName);
-
-                if (ifaces != null) {
-                    for (String iface : ifaces)
-                        onType(iface);
-                }
-            }
-
-            @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-                onType(desc);
-
-                return av;
-            }
-
-            @Override public void visitInnerClass(String name, String outerName, String innerName, int i) {
-                onType(name);
-            }
-
-            @Override public FieldVisitor visitField(int i, String name, String desc, String signature, Object val) {
-                onType(desc);
-
-                return fv;
-            }
-
-            @Override public MethodVisitor visitMethod(int i, String name, String desc, String signature,
-                String[] exceptions) {
-                if (exceptions != null) {
-                    for (String e : exceptions)
-                        onType(e);
-                }
-
-                return mv;
-            }
-        }, 0);
-
-        if (hasDeps.get()) // We already know that we have dependencies, no need to check parent.
+        if (ctx.found) // We already know that we have dependencies, no need to check parent.
             return true;
 
-        // Here we are known to not have any dependencies but possibly we have a parent which have them.
+        // Here we are known to not have any dependencies but possibly we have a parent which has them.
         int idx = clsName.lastIndexOf('$');
 
         if (idx == -1) // No parent class.
@@ -449,13 +418,13 @@ public class HadoopClassLoader extends URLClassLoader {
 
         String parentCls = clsName.substring(0, idx);
 
-        if (visited.contains(parentCls))
+        if (ctx.visited.contains(parentCls))
             return false;
 
         Boolean res = cache.get(parentCls);
 
         if (res == null)
-            res = hasExternalDependencies(parentCls, visited);
+            res = hasExternalDependencies(parentCls, ctx);
 
         return res;
     }
@@ -488,40 +457,6 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * @param name Variable name.
-     * @param dflt Default.
-     * @return Value.
-     */
-    private static String getEnv(String name, String dflt) {
-        String res = System.getProperty(name);
-
-        if (F.isEmpty(res))
-            res = System.getenv(name);
-
-        return F.isEmpty(res) ? dflt : res;
-    }
-
-    /**
-     * @param res Result.
-     * @param dir Directory.
-     * @param startsWith Starts with prefix.
-     * @throws MalformedURLException If failed.
-     */
-    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws Exception {
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return startsWith == null || name.startsWith(startsWith);
-            }
-        });
-
-        if (files == null)
-            throw new IOException("Path is not a directory: " + dir);
-
-        for (File file : files)
-            res.add(file.toURI().toURL());
-    }
-
-    /**
      * @param urls URLs.
      * @return URLs.
      */
@@ -547,13 +482,6 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * @return HADOOP_HOME Variable.
-     */
-    @Nullable public static String hadoopHome() {
-        return getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
-    }
-
-    /**
      * @return Collection of jar URLs.
      * @throws IgniteCheckedException If failed.
      */
@@ -569,34 +497,11 @@ public class HadoopClassLoader extends URLClassLoader {
             if (hadoopUrls != null)
                 return hadoopUrls;
 
-            hadoopUrls = new ArrayList<>();
-
-            String hadoopPrefix = hadoopHome();
-
-            if (F.isEmpty(hadoopPrefix))
-                throw new IgniteCheckedException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
-                    "HADOOP_HOME environment variables must be set.");
-
-            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
-            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
-            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
-
             try {
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(hdfsHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(mapredHome + "/lib"), null);
-
-                addUrls(hadoopUrls, new File(hdfsHome), "hadoop-hdfs-");
-
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-common-");
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-auth-");
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), "hadoop-auth-");
-
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-common");
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-core");
+                hadoopUrls = HadoopClasspathUtils.classpathUrls();
             }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to resolve Hadoop JAR locations: " + e.getMessage(), e);
             }
 
             hadoopJars = hadoopUrls;
@@ -615,5 +520,447 @@ public class HadoopClassLoader extends URLClassLoader {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Context for dependencies collection.
+     */
+    private class CollectingContext {
+        /** Visited classes. */
+        private final Set<String> visited = new HashSet<>();
+
+        /** Whether dependency found. */
+        private boolean found;
+
+        /** Annotation visitor. */
+        private AnnotationVisitor annVisitor;
+
+        /** Method visitor. */
+        private MethodVisitor mthdVisitor;
+
+        /** Field visitor. */
+        private FieldVisitor fldVisitor;
+
+        /** Class visitor. */
+        private ClassVisitor clsVisitor;
+
+        /**
+         * Processes a method descriptor
+         * @param methDesc The method desc String.
+         */
+        void onMethodsDesc(final String methDesc) {
+            // Process method return type:
+            onType(Type.getReturnType(methDesc));
+
+            if (found)
+                return;
+
+            // Process method argument types:
+            for (Type t: Type.getArgumentTypes(methDesc)) {
+                onType(t);
+
+                if (found)
+                    return;
+            }
+        }
+
+        /**
+         * Processes dependencies of a class.
+         *
+         * @param depCls The class name as dot-notated FQN.
+         */
+        void onClass(final String depCls) {
+            assert depCls.indexOf('/') == -1 : depCls; // class name should be fully converted to dot notation.
+            assert depCls.charAt(0) != 'L' : depCls;
+            assert validateClassName(depCls) : depCls;
+
+            if (depCls.startsWith("java.") || depCls.startsWith("javax.")) // Filter out platform classes.
+                return;
+
+            if (visited.contains(depCls))
+                return;
+
+            Boolean res = cache.get(depCls);
+
+            if (res == Boolean.TRUE || (res == null && hasExternalDependencies(depCls, this)))
+                found = true;
+        }
+
+        /**
+         * Analyses dependencies of given type.
+         *
+         * @param t The type to process.
+         */
+        void onType(Type t) {
+            if (t == null)
+                return;
+
+            int sort = t.getSort();
+
+            switch (sort) {
+                case Type.ARRAY:
+                    onType(t.getElementType());
+
+                    break;
+
+                case Type.OBJECT:
+                    onClass(t.getClassName());
+
+                    break;
+            }
+        }
+
+        /**
+         * Analyses dependencies of given object type.
+         *
+         * @param objType The object type to process.
+         */
+        void onInternalTypeName(String objType) {
+            if (objType == null)
+                return;
+
+            assert objType.length() > 1 : objType;
+
+            if (objType.charAt(0) == '[')
+                // handle array. In this case this is a type descriptor notation, like "[Ljava/lang/Object;"
+                onType(objType);
+            else {
+                assert objType.indexOf('.') == -1 : objType; // Must be slash-separated FQN.
+
+                String clsName = objType.replace('/', '.'); // Convert it to dot notation.
+
+                onClass(clsName); // Process.
+            }
+        }
+
+        /**
+         * Type description analyser.
+         *
+         * @param desc The description.
+         */
+        void onType(String desc) {
+            if (!F.isEmpty(desc)) {
+                if (desc.length() <= 1)
+                    return; // Optimization: filter out primitive types in early stage.
+
+                Type t = Type.getType(desc);
+
+                onType(t);
+            }
+        }
+    }
+
+    /**
+     * Annotation visitor.
+     */
+    private static class CollectingAnnotationVisitor extends AnnotationVisitor {
+        /** */
+        final CollectingContext ctx;
+
+        /**
+         * Annotation visitor.
+         *
+         * @param ctx The collector.
+         */
+        CollectingAnnotationVisitor(CollectingContext ctx) {
+            super(Opcodes.ASM4);
+
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitAnnotation(String name, String desc) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitEnum(String name, String desc, String val) {
+            if (ctx.found)
+                return;
+
+            ctx.onType(desc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitArray(String name) {
+            return ctx.found ? null : this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(String name, Object val) {
+            if (ctx.found)
+                return;
+
+            if (val instanceof Type)
+                ctx.onType((Type)val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitEnd() {
+            // No-op.
+        }
+    }
+
+    /**
+     * Field visitor.
+     */
+    private static class CollectingFieldVisitor extends FieldVisitor {
+        /** Collector. */
+        private final CollectingContext ctx;
+
+        /** Annotation visitor. */
+        private final AnnotationVisitor av;
+
+        /**
+         * Constructor.
+         */
+        CollectingFieldVisitor(CollectingContext ctx, AnnotationVisitor av) {
+            super(Opcodes.ASM4);
+
+            this.ctx = ctx;
+            this.av = av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return ctx.found ? null : av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitAttribute(Attribute attr) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitEnd() {
+            // No-op.
+        }
+    }
+
+    /**
+     * Class visitor.
+     */
+    private static class CollectingClassVisitor extends ClassVisitor {
+        /** Collector. */
+        private final CollectingContext ctx;
+
+        /** Annotation visitor. */
+        private final AnnotationVisitor av;
+
+        /** Method visitor. */
+        private final MethodVisitor mv;
+
+        /** Field visitor. */
+        private final FieldVisitor fv;
+
+        /**
+         * Constructor.
+         *
+         * @param ctx Collector.
+         * @param av Annotation visitor.
+         * @param mv Method visitor.
+         * @param fv Field visitor.
+         */
+        CollectingClassVisitor(CollectingContext ctx, AnnotationVisitor av, MethodVisitor mv, FieldVisitor fv) {
+            super(Opcodes.ASM4);
+
+            this.ctx = ctx;
+            this.av = av;
+            this.mv = mv;
+            this.fv = fv;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(int i, int i2, String name, String signature, String superName, String[] ifaces) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(superName);
+
+            if (ctx.found)
+                return;
+
+            if (ifaces != null) {
+                for (String iface : ifaces) {
+                    ctx.onInternalTypeName(iface);
+
+                    if (ctx.found)
+                        return;
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return ctx.found ? null : av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitInnerClass(String name, String outerName, String innerName, int i) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public FieldVisitor visitField(int i, String name, String desc, String signature, Object val) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return ctx.found ? null : fv;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MethodVisitor visitMethod(int i, String name, String desc, String signature,
+            String[] exceptions) {
+            if (ctx.found)
+                return null;
+
+            ctx.onMethodsDesc(desc);
+
+            // Process declared method exceptions:
+            if (exceptions != null) {
+                for (String e : exceptions)
+                    ctx.onInternalTypeName(e);
+            }
+
+            return ctx.found ? null : mv;
+        }
+    }
+
+    /**
+     * Method visitor.
+     */
+    private static class CollectingMethodVisitor extends MethodVisitor {
+        /** Collector. */
+        private final CollectingContext ctx;
+
+        /** Annotation visitor. */
+        private final AnnotationVisitor av;
+
+        /**
+         * Constructor.
+         *
+         * @param ctx Collector.
+         * @param av Annotation visitor.
+         */
+        private CollectingMethodVisitor(CollectingContext ctx, AnnotationVisitor av) {
+            super(Opcodes.ASM4);
+
+            this.ctx = ctx;
+            this.av = av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return ctx.found ? null : av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitParameterAnnotation(int i, String desc, boolean b) {
+            if (ctx.found)
+                return null;
+
+            ctx.onType(desc);
+
+            return ctx.found ? null : av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public AnnotationVisitor visitAnnotationDefault() {
+            return ctx.found ? null : av;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(owner);
+
+            if (ctx.found)
+                return;
+
+            ctx.onType(desc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitFrame(int type, int nLoc, Object[] locTypes, int nStack, Object[] stackTypes) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitLocalVariable(String name, String desc, String signature, Label lb,
+            Label lb2, int i) {
+            if (ctx.found)
+                return;
+
+            ctx.onType(desc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitMethodInsn(int i, String owner, String name, String desc) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(owner);
+
+            if (ctx.found)
+                return;
+
+            ctx.onMethodsDesc(desc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitMultiANewArrayInsn(String desc, int dim) {
+            if (ctx.found)
+                return;
+
+            ctx.onType(desc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitTryCatchBlock(Label start, Label end, Label hndl, String typeStr) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(typeStr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visitTypeInsn(int opcode, String type) {
+            if (ctx.found)
+                return;
+
+            ctx.onInternalTypeName(type);
+        }
     }
 }

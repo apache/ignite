@@ -40,6 +40,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private Map<Integer, Long> updateCntrs;
 
+    /** */
+    private Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
+
     /** Keep binary flag. */
     private boolean keepBinary;
 
@@ -72,7 +75,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /**
      * @param cntrs Update counters.
      */
-    public void addUpdateCounters(Map<Integer, Long> cntrs) {
+    private void addUpdateCounters(Map<Integer, Long> cntrs) {
         if (updateCntrs == null)
             updateCntrs = new HashMap<>();
 
@@ -83,6 +86,21 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
             if (cntr0 == null || cntr1 > cntr0)
                 updateCntrs.put(e.getKey(), cntr1);
         }
+    }
+
+    /**
+     * @param nodeId Local node ID.
+     * @param cntrs Update counters.
+     */
+    public void addUpdateCounters(UUID nodeId, Map<Integer, Long> cntrs) {
+        addUpdateCounters(cntrs);
+
+        if (updateCntrsPerNode == null)
+            updateCntrsPerNode = new HashMap<>();
+
+        Map<Integer, Long> old = updateCntrsPerNode.put(nodeId, cntrs);
+
+        assert old == null : old;
     }
 
     /**
@@ -106,7 +124,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs);
+        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
     }
 
     /** {@inheritDoc} */

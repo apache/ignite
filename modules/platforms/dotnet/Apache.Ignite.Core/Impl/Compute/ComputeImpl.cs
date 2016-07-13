@@ -165,7 +165,8 @@ namespace Apache.Ignite.Core.Impl.Compute
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepBinary.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) =>
+                        UU.TargetListenFutureAndGet(Target, futId, futTyp), _keepBinary.Value);
                 });
 
                 return fut;
@@ -192,9 +193,13 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
+            var futTarget = UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
 
-            return holder.Future;
+            var future = holder.Future;
+
+            future.SetTarget(futTarget);
+
+            return future;
         }
 
         /// <summary>
@@ -522,7 +527,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 try
                 {
-                    DoOutOp(opId, writer =>
+                    var futTarget = DoOutOpObject(opId, writer =>
                     {
                         writer.WriteLong(taskHandle);
 
@@ -546,6 +551,8 @@ namespace Apache.Ignite.Core.Impl.Compute
                         if (writeAction != null)
                             writeAction(writer);
                     });
+
+                    holder.Future.SetTarget(futTarget);
                 }
                 catch (Exception e)
                 {

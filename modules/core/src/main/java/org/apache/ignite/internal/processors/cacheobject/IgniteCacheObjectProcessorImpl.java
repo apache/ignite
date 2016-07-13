@@ -107,7 +107,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException
     {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, clsLdr);
+        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, U.resolveClassLoader(clsLdr,
+            ctx.kernalContext().config()));
     }
 
     /** {@inheritDoc} */
@@ -231,6 +232,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         assert obj != null;
 
         return IMMUTABLE_CLS.contains(obj.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

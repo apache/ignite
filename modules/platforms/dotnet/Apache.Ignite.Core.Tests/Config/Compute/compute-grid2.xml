@@ -45,6 +45,36 @@
             </list>
         </property>
 
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum" />
+                            <property name="enum" value="true" />
+                        </bean>
+                    </list>
+                </property>
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
+                </property>
+                <property name="nameMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

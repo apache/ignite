@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -90,7 +94,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
-        // Check marshaller
+        // Check marshaller.
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
@@ -109,8 +113,36 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
+
+            dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
+                "note that binary name mapper is set to " + bCfg.getNameMapper()
+                + " and binary ID mapper is set to " + bCfg.getIdMapper()
+                + " (other nodes must have the same binary name and ID mapper types)."));
+        }
+        else {
+            BinaryNameMapper nameMapper = bCfg.getNameMapper();
+
+            if (nameMapper == null) {
+                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
+                    bCfg.getNameMapper()
+                    + " (other nodes must have the same binary name mapper type)."));
+            }
+
+            BinaryIdMapper idMapper = bCfg.getIdMapper();
+
+            if (idMapper == null) {
+                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
+                    bCfg.getIdMapper()
+                    + " (other nodes must have the same binary ID mapper type)."));
+            }
         }
 
         if (bCfg.isCompactFooter())

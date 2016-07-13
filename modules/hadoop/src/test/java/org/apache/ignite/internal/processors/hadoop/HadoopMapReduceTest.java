@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.hadoop;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -37,6 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount2;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -110,7 +114,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
      * @return The owner.
      */
     private static String getOwner(IgfsEx i, IgfsPath p) {
-        return i.info(p).property(IgfsEx.PROP_USER_NAME);
+        return i.info(p).property(IgfsUtils.PROP_USER_NAME);
     }
 
     /**
@@ -122,7 +126,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
     private static String getOwnerSecondary(final IgfsSecondaryFileSystem secFs, final IgfsPath p) {
         return IgfsUserContext.doAs(USER, new IgniteOutClosure<String>() {
             @Override public String apply() {
-                return secFs.info(p).property(IgfsEx.PROP_USER_NAME);
+                return secFs.info(p).property(IgfsUtils.PROP_USER_NAME);
             }
         });
     }
@@ -183,7 +187,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             Job job = Job.getInstance(jobConf);
 
-            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer);
+            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
 
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
@@ -207,15 +211,26 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             checkOwner(new IgfsPath(outFile));
 
+            String actual = readAndSortFile(outFile, job.getConfiguration());
+
             assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
                 "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
                 "yellow\t" + yellow + "\n",
-                readAndSortFile(outFile)
+                actual
             );
         }
+    }
+
+    /**
+     * Gets if to compress output data with Snappy.
+     *
+     * @return If to compress output data with Snappy.
+     */
+    protected boolean compressOutputSnappy() {
+        return false;
     }
 
     /**

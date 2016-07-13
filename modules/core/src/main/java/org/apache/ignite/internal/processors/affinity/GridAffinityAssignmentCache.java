@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,12 +48,17 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Affinity cached function.
  */
 public class GridAffinityAssignmentCache {
+    /** Cleanup history size. */
+    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+
     /** Cache name. */
     private final String cacheName;
 
@@ -85,6 +91,9 @@ public class GridAffinityAssignmentCache {
 
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
+
+    /** History size ignoring*/
+    private final AtomicInteger histSize = new AtomicInteger();
 
     /**
      * Constructs affinity cached calculations.
@@ -141,6 +150,8 @@ public class GridAffinityAssignmentCache {
                 entry.getValue().onDone(topVer);
             }
         }
+
+        onHistoryAdded(assignment);
     }
 
     /**
@@ -244,6 +255,8 @@ public class GridAffinityAssignmentCache {
             }
         }
 
+        onHistoryAdded(updated);
+
         return updated.assignment();
     }
 
@@ -274,6 +287,8 @@ public class GridAffinityAssignmentCache {
                 entry.getValue().onDone(topVer);
             }
         }
+
+        onHistoryAdded(assignmentCpy);
     }
 
     /**
@@ -281,21 +296,6 @@ public class GridAffinityAssignmentCache {
      */
     public AffinityTopologyVersion lastVersion() {
         return head.get().topologyVersion();
-    }
-
-    /**
-     * Clean up outdated cache items.
-     *
-     * @param topVer Actual topology version, older versions will be removed.
-     */
-    public void cleanUpCache(AffinityTopologyVersion topVer) {
-        if (log.isDebugEnabled())
-            log.debug("Cleaning up cache for version [locNodeId=" + ctx.localNodeId() +
-                ", topVer=" + topVer + ']');
-
-        for (Iterator<AffinityTopologyVersion> it = affCache.keySet().iterator(); it.hasNext(); )
-            if (it.next().compareTo(topVer) < 0)
-                it.remove();
     }
 
     /**
@@ -481,6 +481,43 @@ public class GridAffinityAssignmentCache {
                 e);
         }
     }
+
+    /**
+     * @param aff Added affinity assignment.
+     */
+    private void onHistoryAdded(GridAffinityAssignment aff) {
+        int size;
+
+        if (aff.clientEventChange())
+            size = histSize.get();
+        else
+            size = histSize.incrementAndGet();
+
+        int rmvCnt = size - MAX_HIST_SIZE;
+
+        if (rmvCnt <= 0) {
+            int sizex = affCache.sizex();
+
+            if (sizex > MAX_HIST_SIZE * 2)
+                rmvCnt = MAX_HIST_SIZE;
+        }
+
+        if (rmvCnt > 0) {
+            Iterator<GridAffinityAssignment> it = affCache.values().iterator();
+
+            while (it.hasNext() && rmvCnt > 0) {
+                GridAffinityAssignment aff0 = it.next();
+
+                it.remove();
+
+                rmvCnt--;
+
+                if (!aff0.clientEventChange())
+                    histSize.decrementAndGet();
+            }
+        }
+    }
+
 
     /**
      * Affinity ready future. Will remove itself from ready futures map.

@@ -18,9 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
@@ -35,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Task completion source. */
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
+        /** */
+        private volatile IUnmanagedTarget _unmanagedTarget;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -44,7 +51,9 @@ namespace Apache.Ignite.Core.Impl.Common
             _converter = converter;
         }
 
-        /** <inheritdoc/> */
+        /// <summary>
+        /// Gets the result.
+        /// </summary>
         public T Get()
         {
             try
@@ -57,10 +66,26 @@ namespace Apache.Ignite.Core.Impl.Common
             }
         }
 
-        /** <inheritdoc/> */
+        /// <summary>
+        /// Gets the task.
+        /// </summary>
         public Task<T> Task
         {
             get { return _taskCompletionSource.Task; }
+        }
+
+        /// <summary>
+        /// Gets the task with cancellation.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public Task<T> GetTask(CancellationToken cancellationToken)
+        {
+            Debug.Assert(_unmanagedTarget != null);
+
+            // OnTokenCancel will fire even if cancellationToken is already cancelled.
+            cancellationToken.Register(OnTokenCancel);
+
+            return Task;
         }
 
         /** <inheritdoc /> */
@@ -80,7 +105,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnError(Exception err)
         {
-            _taskCompletionSource.TrySetException(err);
+            if (err is IgniteFutureCancelledException)
+                _taskCompletionSource.TrySetCanceled();
+            else
+                _taskCompletionSource.TrySetException(err);
         }
 
         /** <inheritdoc /> */
@@ -123,6 +151,46 @@ namespace Apache.Ignite.Core.Impl.Common
                 OnError(err);
             else
                 OnResult(res);
+        }
+
+        /// <summary>
+        /// Sets unmanaged future target for cancellation.
+        /// </summary>
+        internal void SetTarget(IUnmanagedTarget target)
+        {
+            Debug.Assert(target != null);
+
+            _unmanagedTarget = target;
+        }
+
+        /// <summary>
+        /// Cancels this instance.
+        /// </summary>
+        internal bool Cancel()
+        {
+            if (_unmanagedTarget == null)
+                return false;
+
+            return UnmanagedUtils.ListenableCancel(_unmanagedTarget);
+        }
+
+        /// <summary>
+        /// Determines whether this instance is cancelled.
+        /// </summary>
+        internal bool IsCancelled()
+        {
+            if (_unmanagedTarget == null)
+                return false;
+
+            return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
+        }
+
+        /// <summary>
+        /// Called when token cancellation occurs.
+        /// </summary>
+        private void OnTokenCancel()
+        {
+            Cancel();
         }
     }
 }

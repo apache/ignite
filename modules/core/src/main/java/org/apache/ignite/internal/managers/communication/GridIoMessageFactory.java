@@ -26,13 +26,13 @@ import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
@@ -99,6 +99,10 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
+import org.apache.ignite.internal.processors.cache.transactions.TxLock;
+import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -156,6 +160,26 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -26:
+                msg = new TxLockList();
+
+                break;
+
+            case -25:
+                msg = new TxLock();
+
+                break;
+
+            case -24:
+                msg = new TxLocksRequest();
+
+                break;
+
+            case -23:
+                msg = new TxLocksResponse();
+
+                break;
+
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
                 msg = new TcpCommunicationSpi.NodeIdMessage();
 

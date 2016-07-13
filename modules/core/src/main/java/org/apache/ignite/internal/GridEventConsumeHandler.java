@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -135,7 +136,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(Map<Integer, Long> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
         // No-op.
     }
 
@@ -336,7 +338,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 }
 
                 try {
-                    wrapper.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
+                    wrapper.p2pUnmarshal(ctx.config().getMarshaller(), U.resolveClassLoader(ldr, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to unmarshal event.", e);
@@ -385,7 +387,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
+            filter = ctx.config().getMarshaller().unmarshal(filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
         }
     }
 

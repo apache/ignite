@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -67,10 +68,15 @@ public class PlatformFutureUtils {
      * @param fut Java future.
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
+     * @return Resulting listenable.
      */
-    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
-        PlatformAbstractTarget target) {
-        listen(ctx, new InternalFutureListenable(fut), futPtr, typ, null, target);
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
+        final int typ, PlatformAbstractTarget target) {
+        PlatformListenable listenable = getListenable(fut);
+
+        listen(ctx, listenable, futPtr, typ, null, target);
+
+        return listenable;
     }
     /**
      * Listen future.
@@ -79,10 +85,15 @@ public class PlatformFutureUtils {
      * @param fut Java future.
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
+     * @return Resulting listenable.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
-        PlatformAbstractTarget target) {
-        listen(ctx, new FutureListenable(fut), futPtr, typ, null, target);
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr,
+        final int typ, PlatformAbstractTarget target) {
+        PlatformListenable listenable = getListenable(fut);
+
+        listen(ctx, listenable, futPtr, typ, null, target);
+
+        return listenable;
     }
 
     /**
@@ -93,37 +104,72 @@ public class PlatformFutureUtils {
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
      * @param writer Writer.
+     * @return Resulting listenable.
      */
-    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
+        final int typ, Writer writer, PlatformAbstractTarget target) {
+        PlatformListenable listenable = getListenable(fut);
+
+        listen(ctx, listenable, futPtr, typ, writer, target);
+
+        return listenable;
+    }
+
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param typ Expected return type.
+     * @param writer Writer.
+     * @return Resulting listenable.
+     */
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr,
+        final int typ, Writer writer, PlatformAbstractTarget target) {
+        PlatformListenable listenable = getListenable(fut);
+
+        listen(ctx, listenable, futPtr, typ, writer, target);
+
+        return listenable;
+    }
+
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param writer Writer.
+     * @return Resulting listenable.
+     */
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
         Writer writer, PlatformAbstractTarget target) {
-        listen(ctx, new InternalFutureListenable(fut), futPtr, typ, writer, target);
+        PlatformListenable listenable = getListenable(fut);
+
+        listen(ctx, listenable, futPtr, TYP_OBJ, writer, target);
+
+        return listenable;
     }
 
     /**
-     * Listen future.
+     * Gets the listenable.
      *
-     * @param ctx Context.
-     * @param fut Java future.
-     * @param futPtr Native future pointer.
-     * @param typ Expected return type.
-     * @param writer Writer.
+     * @param fut Future.
+     * @return Platform listenable.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
-        Writer writer, PlatformAbstractTarget target) {
-        listen(ctx, new FutureListenable(fut), futPtr, typ, writer, target);
+    public static PlatformListenable getListenable(IgniteInternalFuture fut) {
+        return new InternalFutureListenable(fut);
     }
 
     /**
-     * Listen future.
+     * Gets the listenable.
      *
-     * @param ctx Context.
-     * @param fut Java future.
-     * @param futPtr Native future pointer.
-     * @param writer Writer.
+     * @param fut Future.
+     * @return Platform listenable.
      */
-    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer,
-        PlatformAbstractTarget target) {
-        listen(ctx, new InternalFutureListenable(fut), futPtr, TYP_OBJ, writer, target);
+    public static PlatformListenable getListenable(IgniteFuture fut) {
+        return new FutureListenable(fut);
     }
 
     /**
@@ -136,8 +182,8 @@ public class PlatformFutureUtils {
      * @param writer Optional writer.
      */
     @SuppressWarnings("unchecked")
-    private static void listen(final PlatformContext ctx, Listenable listenable, final long futPtr, final int typ,
-        @Nullable final Writer writer, final PlatformAbstractTarget target) {
+    private static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
+        int typ, @Nullable final Writer writer, final PlatformAbstractTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 
         listenable.listen(new IgniteBiInClosure<Object, Throwable>() {
@@ -312,21 +358,9 @@ public class PlatformFutureUtils {
     }
 
     /**
-     * Listenable entry.
-     */
-    private static interface Listenable {
-        /**
-         * Listen.
-         *
-         * @param lsnr Listener.
-         */
-        public void listen(IgniteBiInClosure<Object, Throwable> lsnr);
-    }
-
-    /**
      * Listenable around Ignite future.
      */
-    private static class FutureListenable implements Listenable {
+    private static class FutureListenable implements PlatformListenable {
         /** Future. */
         private final IgniteFuture fut;
 
@@ -358,12 +392,22 @@ public class PlatformFutureUtils {
                 }
             });
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() {
+            return fut.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return fut.isCancelled();
+        }
     }
 
     /**
      * Listenable around Ignite future.
      */
-    private static class InternalFutureListenable implements Listenable {
+    private static class InternalFutureListenable implements PlatformListenable {
         /** Future. */
         private final IgniteInternalFuture fut;
 
@@ -392,6 +436,15 @@ public class PlatformFutureUtils {
                 }
             });
         }
-    }
 
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return fut.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return fut.isCancelled();
+        }
+    }
 }

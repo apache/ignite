@@ -75,6 +75,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -87,7 +88,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture {
     /** */
-    private static final int DUMP_PENDING_OBJECTS_THRESHOLD =
+    public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
 
     /** */
@@ -569,6 +570,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
                             else
                                 cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
+
+                            if (!exchId.isJoined())
+                                cacheCtx.preloader().unwindUndeploys();
                         }
 
                         if (exchId.isLeft())
@@ -783,7 +787,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         // Print pending transactions and locks that might have led to hang.
                         if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
-                            dumpPendingObjects();
+                            U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
+                                ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
+
+                            try {
+                                cctx.exchange().dumpDebugInfo();
+                            }
+                            catch (Exception e) {
+                                U.error(log, "Failed to dump debug information: " + e, e);
+                            }
+
+                            if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                U.dumpThreads(log);
 
                             dumpedObjects++;
                         }
@@ -845,8 +860,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     // Partition release future is done so we can flush the write-behind store.
                     cacheCtx.store().forceFlush();
 
-                    // Process queued undeploys prior to sending/spreading map.
-                    cacheCtx.preloader().unwindUndeploys();
+                    if (!exchId.isJoined())
+                        // Process queued undeploys prior to sending/spreading map.
+                        cacheCtx.preloader().unwindUndeploys();
 
                     GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -919,16 +935,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     *
-     */
-    private void dumpPendingObjects() {
-        U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
-            ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
-
-        cctx.exchange().dumpPendingObjects();
-    }
-
-    /**
      * @param cacheId Cache ID to check.
      * @return {@code True} if cache is stopping by this exchange.
      */
@@ -989,7 +995,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
-                
+
                 m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
             }
         }

@@ -71,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -787,20 +788,28 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut.get();
 
         if (fut == null) {
+            long timeout = remainingTime();
+
             // Future must be created before any exception can be thrown.
             if (optimistic()) {
-                fut = serializable() ?
-                    new GridNearOptimisticSerializableTxPrepareFuture(cctx, this) :
-                    new GridNearOptimisticTxPrepareFuture(cctx, this);
+                if (serializable())
+                    fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
+                else
+                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this);
             }
             else
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
 
             if (!prepFut.compareAndSet(null, fut))
                 return prepFut.get();
+
+            if (timeout == -1) {
+                fut.onDone(this, timeoutException());
+
+                return fut;
+            }
         }
         else
-            // Prepare was called explicitly.
             return fut;
 
         mapExplicitLocks();
@@ -815,6 +824,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
+
+        if (fastFinish()) {
+            state(PREPARING);
+            state(PREPARED);
+            state(COMMITTING);
+
+            cctx.tm().fastFinishTx(this, true);
+
+            state(COMMITTED);
+
+            return new GridFinishedFuture<>((IgniteInternalTx)this);
+        }
 
         prepareAsync();
 
@@ -859,6 +880,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
+
+        if (fastFinish()) {
+            state(PREPARING);
+            state(PREPARED);
+            state(ROLLING_BACK);
+
+            cctx.tm().fastFinishTx(this, false);
+
+            state(ROLLED_BACK);
+
+            return new GridFinishedFuture<>((IgniteInternalTx)this);
+        }
 
         GridNearTxFinishFuture fut = rollbackFut.get();
 
@@ -908,6 +941,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /**
+     * @return {@code True} if 'fast finish' path can be used for transaction completion.
+     */
+    private boolean fastFinish() {
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
+    }
+
+    /**
      * Prepares next batch of entries in dht transaction.
      *
      * @param reads Read entries.
@@ -923,8 +963,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Map<UUID, Collection<UUID>> txNodes,
         boolean last
     ) {
+        long timeout = remainingTime();
+
         if (state() != PREPARING) {
-            if (timedOut())
+            if (timeout == -1)
                 return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
@@ -934,11 +976,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
         init();
 
         GridDhtTxPrepareFuture fut = new GridDhtTxPrepareFuture(
             cctx,
             this,
+            timeout,
             IgniteUuid.randomUuid(),
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
@@ -1106,16 +1152,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys.
-     * @param implicit Implicit flag.
+     * @param retval Return value flag.
      * @param read Read flag.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
-        boolean implicit,
+        boolean retval,
         boolean read,
         long accessTtl,
         boolean skipStore,
@@ -1139,12 +1186,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys: " + keys);
 
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
         IgniteInternalFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
-            lockTimeout(),
+            timeout,
             this,
             isInvalidate(),
             read,
-            /*retval*/false,
+            retval,
             isolation,
             accessTtl,
             CU.empty0(),

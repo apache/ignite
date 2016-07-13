@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -47,8 +48,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
     private GridLongList activeCacheIds = new GridLongList();
-    /** Per-transaction read map. */
 
+    /** Per-transaction read map. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
@@ -321,7 +322,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean init(int txSize) {
         if (txMap == null) {
-            txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
+            txMap = new ConcurrentLinkedHashMap<>(txSize > 0 ? txSize : 16);
 
             readView = new IgniteTxMap(txMap, CU.reads());
             writeView = new IgniteTxMap(txMap, CU.writes());

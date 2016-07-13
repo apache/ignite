@@ -40,7 +40,10 @@ public interface GridComponent {
         CACHE_PROC,
 
         /** */
-        PLUGIN
+        PLUGIN,
+
+        /** */
+        CLUSTER_PROC
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
@@ -384,7 +385,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         volatile CountDownLatch writeLatch;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                 CountDownLatch writeLatch0 = writeLatch;
@@ -396,7 +397,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 }
             }
 
-            super.writeToSocket(sock, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 

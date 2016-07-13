@@ -18,12 +18,14 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -96,6 +98,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         stmt.executeUpdate("CREATE TABLE Person (" +
             " id INTEGER PRIMARY KEY," +
             " org_id INTEGER," +
+            " birthday DATE," +
             " name VARCHAR(50))");
 
         conn.commit();
@@ -179,6 +182,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         storeTypes[1].setValueFields(
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
+            new JdbcTypeField(Types.DATE, "BIRTHDAY", Date.class, "birthday"),
             new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"));
 
         return storeTypes;
@@ -218,6 +222,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected void fillSampleDatabase(Connection conn) throws SQLException {
         info("Start to fill sample database...");
 
+        Random rnd = new Random();
+
         PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
         for (int i = 0; i < ORGANIZATION_CNT; i++) {
@@ -234,12 +240,14 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         conn.commit();
 
-        PreparedStatement prnStmt = conn.prepareStatement("INSERT INTO Person(id, org_id, name) VALUES (?, ?, ?)");
+        PreparedStatement prnStmt = conn.prepareStatement(
+            "INSERT INTO Person(id, org_id, birthday, name) VALUES (?, ?, ?, ?)");
 
         for (int i = 0; i < PERSON_CNT; i++) {
             prnStmt.setInt(1, i);
             prnStmt.setInt(2, i % 100);
-            prnStmt.setString(3, "name" + i);
+            prnStmt.setDate(3, Date.valueOf(String.format("%d-%d-%d", 1970 + rnd.nextInt(50), 1 + rnd.nextInt(11), 1 + rnd.nextInt(27))));
+            prnStmt.setString(4, "name" + i);
 
             prnStmt.addBatch();
         }
@@ -328,7 +336,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         Connection conn = getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, NAME FROM PERSON WHERE ID = ?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME FROM PERSON WHERE ID = ?");
 
             stmt.setInt(1, -1);
 
@@ -341,7 +349,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             // Test put-insert.
             PersonKey key = new PersonKey(-1);
 
-            c1.put(key, new Person(-1, -2, "Person-to-test-put-insert", 999));
+            Date testDate = Date.valueOf("2001-05-05");
+
+            c1.put(key, new Person(-1, -2, testDate, "Person-to-test-put-insert", 999));
 
             rs = stmt.executeQuery();
 
@@ -349,14 +359,17 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             assertEquals(-1, rs.getInt(1));
             assertEquals(-2, rs.getInt(2));
-            assertEquals("Person-to-test-put-insert", rs.getString(3));
+            assertEquals(testDate, rs.getDate(3));
+            assertEquals("Person-to-test-put-insert", rs.getString(4));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
             U.closeQuiet(rs);
 
             // Test put-update.
-            c1.put(key, new Person(-1, -3, "Person-to-test-put-update", 999));
+            testDate = Date.valueOf("2016-04-04");
+
+            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999));
 
             rs = stmt.executeQuery();
 
@@ -364,7 +377,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             assertEquals(-1, rs.getInt(1));
             assertEquals(-3, rs.getInt(2));
-            assertEquals("Person-to-test-put-update", rs.getString(3));
+            assertEquals(testDate, rs.getDate(3));
+            assertEquals("Person-to-test-put-update", rs.getString(4));
 
             assertFalse("Unexpected more data in result set", rs.next());
 

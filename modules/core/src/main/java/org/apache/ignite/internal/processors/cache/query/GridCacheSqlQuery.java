@@ -21,10 +21,12 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -145,13 +147,18 @@ public class GridCacheSqlQuery implements Message {
      * @param m Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
+    public void unmarshallParams(Marshaller m, GridKernalContext ctx) throws IgniteCheckedException {
         if (params != null)
             return;
 
         assert paramsBytes != null;
 
-        params = m.unmarshal(paramsBytes, null);
+        params = m.unmarshal(paramsBytes, U.resolveClassLoader(ctx.config()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -88,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -300,6 +301,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected IgniteStripedThreadPoolExecutor callbackExecSvc;
+
+    /** */
+    @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
@@ -374,6 +379,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
@@ -390,6 +396,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+        this.callbackExecSvc = callbackExecSvc;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -736,6 +743,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService marshallerCachePool() {
         return marshCachePool;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
+        return callbackExecSvc;
     }
 
     /** {@inheritDoc} */

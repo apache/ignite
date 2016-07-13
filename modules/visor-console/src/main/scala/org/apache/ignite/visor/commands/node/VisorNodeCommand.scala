@@ -157,6 +157,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
 
                         t += ("ID", node.id)
                         t += ("ID8", nid8(node))
+                        t += ("Node Type", if (node.isClient) "Client" else "Server")
                         t += ("Order", node.order)
 
                         (0 /: sortAddresses(node.addresses))((b, a) => { t += ("Address (" + b + ")", a); b + 1 })

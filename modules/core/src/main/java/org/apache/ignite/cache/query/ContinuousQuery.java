@@ -18,9 +18,13 @@
 package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 
 /**
  * API for configuring continuous cache queries.
@@ -90,6 +94,16 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
  * Note that this works even if you didn't provide initial query. Cursor will
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
+ * <p>
+ * {@link IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
+ * (see {@link #setRemoteFilterFactory(Factory)}) and {@link CacheEntryUpdatedListener}
+ * (see {@link #setLocalListener(CacheEntryUpdatedListener)}).
+ * If filter and/or listener are annotated with {@link IgniteAsyncCallback} then annotated callback
+ * is executed in async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
+ * and notification order is kept the same as update order for given cache key.
+ *
+ * @see IgniteAsyncCallback
+ * @see IgniteConfiguration#getAsyncCallbackPoolSize()
  */
 public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
@@ -118,6 +132,9 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** Remote filter. */
     private CacheEntryEventSerializableFilter<K, V> rmtFilter;
+
+    /** Remote filter factory. */
+    private Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory;
 
     /** Time interval. */
     private long timeInterval = DFLT_TIME_INTERVAL;
@@ -168,9 +185,14 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking (e.g.,
      * synchronization or transactional cache operations), should be executed asynchronously without
      * blocking the thread that called the callback. Otherwise, you can get deadlocks.
+     * <p>
+     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in async callback pool
+     * (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
      *
      * @param locLsnr Local callback.
      * @return {@code this} for chaining.
+     * @see IgniteAsyncCallback
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
      */
     public ContinuousQuery<K, V> setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
         this.locLsnr = locLsnr;
@@ -193,10 +215,18 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking
      * (e.g., synchronization or transactional cache operations), should be executed asynchronously
      * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
+     * <p>
+     * If remote filter are annotated with {@link IgniteAsyncCallback} then it is executed in async callback
+     * pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
      *
      * @param rmtFilter Key-value filter.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setRemoteFilterFactory(Factory)} instead.
+     * @see IgniteAsyncCallback
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
      */
+    @Deprecated
     public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventSerializableFilter<K, V> rmtFilter) {
         this.rmtFilter = rmtFilter;
 
@@ -210,6 +240,38 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public CacheEntryEventSerializableFilter<K, V> getRemoteFilter() {
         return rmtFilter;
+    }
+
+    /**
+     * Sets optional key-value filter factory. This factory produces filter is called before entry is
+     * sent to the master node.
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local or distributed locking
+     * (e.g., synchronization or transactional cache operations), should be executed asynchronously
+     * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
+     * <p>
+     * If remote filter are annotated with {@link IgniteAsyncCallback} then it is executed in async callback
+     * pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
+     *
+     * @param rmtFilterFactory Key-value filter factory.
+     * @return {@code this} for chaining.
+     * @see IgniteAsyncCallback
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     */
+    public ContinuousQuery<K, V> setRemoteFilterFactory(
+        Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory) {
+        this.rmtFilterFactory = rmtFilterFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets remote filter.
+     *
+     * @return Remote filter.
+     */
+    public Factory<? extends CacheEntryEventFilter<K, V>> getRemoteFilterFactory() {
+        return rmtFilterFactory;
     }
 
     /**

@@ -129,6 +129,7 @@
                 <exclude>org.apache.ignite:ignite-schema-import</exclude>
                 <exclude>org.apache.ignite:ignite-codegen</exclude>
                 <exclude>org.apache.ignite:ignite-apache-license-gen</exclude>
+                <exclude>org.apache.ignite:ignite-weblogic-test</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

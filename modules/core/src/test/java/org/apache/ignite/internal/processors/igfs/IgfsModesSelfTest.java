@@ -102,6 +102,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setInitializeDefaultPathModes(true);
 
         if (setNullMode)
             igfsCfg.setDefaultMode(null);

@@ -19,12 +19,14 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
 import org.apache.ignite.internal.GridDiscoverySelfTest;
 import org.apache.ignite.internal.GridFailedInputParametersSelfTest;
 import org.apache.ignite.internal.GridHomePathSelfTest;
 import org.apache.ignite.internal.GridKernalConcurrentAccessStopSelfTest;
+import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.GridListenActorSelfTest;
 import org.apache.ignite.internal.GridLocalEventListenerSelfTest;
 import org.apache.ignite.internal.GridNodeFilterSelfTest;
@@ -33,8 +35,8 @@ import org.apache.ignite.internal.GridNodeVisorAttributesSelfTest;
 import org.apache.ignite.internal.GridRuntimeExceptionSelfTest;
 import org.apache.ignite.internal.GridSameVmStartupSelfTest;
 import org.apache.ignite.internal.GridSpiExceptionSelfTest;
-import org.apache.ignite.internal.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.GridVersionSelfTest;
+import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
@@ -44,14 +46,26 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerSelfTes
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
+import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
+import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
+import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorProxySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorSingleNodeSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorStopSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.util.GridStartupWithSpecifiedWorkDirectorySelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
@@ -106,9 +120,13 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
+        suite.addTestSuite(IgniteConcurrentEntryProcessorAccessStopTest.class);
         suite.addTestSuite(GridUpdateNotifierSelfTest.class);
+        suite.addTestSuite(GridAddressResolverSelfTest.class);
+        suite.addTestSuite(IgniteUpdateNotifierPerClusterSettingSelfTest.class);
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
         suite.addTestSuite(IgniteTopologyPrintFormatSelfTest.class);
+        suite.addTestSuite(ComputeJobCancelWithServiceSelfTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
@@ -119,6 +137,17 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceClientNodeTest.class);
         suite.addTestSuite(GridServiceProcessorStopSelfTest.class);
         suite.addTestSuite(ServicePredicateAccessCacheTest.class);
+        suite.addTestSuite(GridServicePackagePrivateSelfTest.class);
+        suite.addTestSuite(GridServiceSerializationSelfTest.class);
+        suite.addTestSuite(GridServiceProxyNodeStopSelfTest.class);
+        suite.addTestSuite(IgniteServiceReassignmentTest.class);
+
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
 
         return suite;
     }

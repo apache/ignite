@@ -1029,7 +1029,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(), task.getTask().getClass().getClassLoader());
+                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(),
+                    U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
 
@@ -1304,7 +1305,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), null);
+                        topic = marsh.unmarshal(req.topicBytes(), U.resolveClassLoader(ctx.config()));
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);

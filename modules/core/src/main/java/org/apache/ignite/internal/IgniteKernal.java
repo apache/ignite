@@ -28,7 +28,6 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -83,6 +81,9 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryEnumCache;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.managers.GridManager;
@@ -96,8 +97,6 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -115,6 +114,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
@@ -135,7 +135,6 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -169,6 +168,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -178,7 +178,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -206,6 +206,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -234,16 +235,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Ignite site that is shown in log messages. */
-    static final String SITE = "ignite.apache.org";
+    public static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
     private static final String NL = U.nl();
-
-    /** Periodic version check delay. */
-    private static final long PERIODIC_VER_CHECK_DELAY = 1000 * 60 * 60; // Every hour.
-
-    /** Periodic version check delay. */
-    private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
 
     /** Periodic starvation check interval. */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
@@ -299,15 +294,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** */
     @GridToStringExclude
-    private Timer updateNtfTimer;
-
-    /** */
-    @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask starveTask;
 
     /** */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
+
+    /** */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
     /** Indicate error on grid stop. */
     @GridToStringExclude
@@ -324,10 +319,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
-
-    /** Version checker. */
-    @GridToStringExclude
-    private GridUpdateNotifier verChecker;
 
     /**
      * No-arg constructor is required by externalization.
@@ -675,6 +666,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
         throws IgniteCheckedException
     {
@@ -745,9 +737,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
-
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
             log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
@@ -782,13 +771,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc,
+                callbackExecSvc,
                 plugins);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
-            startProcessor(new ClusterProcessor(ctx));
+            ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
-            fillNodeAttributes(notifyEnabled);
+            startProcessor(clusterProc);
 
             U.onGridStart();
 
@@ -819,24 +809,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
-
-            verChecker = null;
-
-            if (notifyEnabled) {
-                try {
-                    verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
-
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
-
-                    // Setup periodic version check.
-                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
-                        0, PERIODIC_VER_CHECK_DELAY);
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to create GridUpdateNotifier: " + e);
-                }
-            }
 
             // Off-heap processor has no dependencies.
             startProcessor(new GridOffHeapProcessor(ctx));
@@ -886,6 +858,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
             startProcessor(new GridCacheProcessor(ctx));
             startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new GridServiceProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
             startProcessor(new GridJobProcessor(ctx));
             startProcessor(new GridTaskProcessor(ctx));
@@ -894,10 +867,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
-            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor((GridProcessor)createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
@@ -907,6 +877,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
 
@@ -1105,6 +1077,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
+        final long longOpDumpTimeout =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+
+        if (longOpDumpTimeout > 0) {
+            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
+                @Override public void run() {
+                    GridKernalContext ctx = IgniteKernal.this.ctx;
+
+                    if (ctx != null)
+                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                }
+            }, longOpDumpTimeout, longOpDumpTimeout);
+        }
+
         ctx.performance().logSuggestions(log, gridName);
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
@@ -1113,6 +1099,54 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
+    }
+
+    /**
+     * Create Hadoop component.
+     *
+     * @return Non-null Hadoop component: workable or no-op.
+     * @throws IgniteCheckedException If the component is mandatory and cannot be initialized.
+     */
+    private HadoopProcessorAdapter createHadoopComponent() throws IgniteCheckedException {
+        boolean mandatory = cfg.getHadoopConfiguration() != null;
+
+        if (mandatory) {
+            if (cfg.isPeerClassLoadingEnabled())
+                throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
+                    "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
+
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+
+            res.validateEnvironment();
+
+            return res;
+        }
+        else {
+            HadoopProcessorAdapter cmp = null;
+
+            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+                U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
+                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
+                    "to use Hadoop module).");
+            }
+            else {
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+
+                try {
+                    cmp.validateEnvironment();
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+
+                    cmp = null;
+                }
+            }
+
+            if (cmp == null)
+                cmp = IgniteComponentType.HADOOP.create(ctx, true);
+
+            return cmp;
+        }
     }
 
     /**
@@ -1285,6 +1319,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
                 BinaryConfiguration.DFLT_COMPACT_FOOTER :
                 cfg.getBinaryConfiguration().isCompactFooter());
+
+            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
         }
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
@@ -1857,18 +1895,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
-            // Cancel update notification timer.
-            if (updateNtfTimer != null)
-                updateNtfTimer.cancel();
-
-            if (verChecker != null)
-                verChecker.stop();
-
             if (starveTask != null)
                 starveTask.close();
 
             if (metricsLogTask != null)
                 metricsLogTask.close();
+
+            if (longOpDumpTask != null)
+                longOpDumpTask.close();
 
             boolean interrupted = false;
 
@@ -1888,11 +1922,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                GridCacheProcessor cache = ctx.cache();
-
-                if (cache != null)
-                    cache.blockGateways();
-
                 assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
@@ -1906,6 +1935,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            // Stopping cache operations.
+            GridCacheProcessor cache = ctx.cache();
+
+            if (cache != null)
+                cache.blockGateways();
 
             // Unregister MBeans.
             if (!(
@@ -2842,7 +2877,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            return verChecker != null ? verChecker.latestVersion() : null;
+            return ctx.cluster().latestVersion();
         }
         finally {
             ctx.gateway().readUnlock();
@@ -3280,71 +3315,5 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
-    }
-
-    /**
-     * Update notifier timer task.
-     */
-    private static class UpdateNotifierTimerTask extends GridTimerTask {
-        /** Reference to kernal. */
-        private final WeakReference<IgniteKernal> kernalRef;
-
-        /** Logger. */
-        private final IgniteLogger log;
-
-        /** Executor service. */
-        private final ExecutorService execSvc;
-
-        /** Version checker. */
-        private final GridUpdateNotifier verChecker;
-
-        /** Whether this is the first run. */
-        private boolean first = true;
-
-        /**
-         * Constructor.
-         *
-         * @param kernal Kernal.
-         * @param execSvc Executor service.
-         * @param verChecker Version checker.
-         */
-        private UpdateNotifierTimerTask(IgniteKernal kernal, ExecutorService execSvc, GridUpdateNotifier verChecker) {
-            kernalRef = new WeakReference<>(kernal);
-
-            log = kernal.log.getLogger(UpdateNotifierTimerTask.class);
-
-            this.execSvc = execSvc;
-            this.verChecker = verChecker;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void safeRun() throws InterruptedException {
-            if (!first) {
-                IgniteKernal kernal = kernalRef.get();
-
-                if (kernal != null)
-                    verChecker.topologySize(kernal.cluster().nodes().size());
-            }
-
-            verChecker.checkForNewVersion(log);
-
-            // Just wait for 10 secs.
-            Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
-
-            // Just wait another 60 secs in order to get
-            // version info even on slow connection.
-            for (int i = 0; i < 60 && verChecker.latestVersion() == null; i++)
-                Thread.sleep(1000);
-
-            // Report status if one is available.
-            // No-op if status is NOT available.
-            verChecker.reportStatus(log);
-
-            if (first) {
-                first = false;
-
-                verChecker.reportOnlyNew(true);
-            }
-        }
     }
 }

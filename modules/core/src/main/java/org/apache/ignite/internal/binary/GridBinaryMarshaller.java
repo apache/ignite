@@ -144,6 +144,9 @@ public class GridBinaryMarshaller {
     /** Timestamp array. */
     public static final byte TIMESTAMP_ARR = 34;
 
+    /** Proxy. */
+    public static final byte PROXY = 35;
+
     /** */
     public static final byte NULL = (byte)101;
 
@@ -176,6 +179,9 @@ public class GridBinaryMarshaller {
 
     /** */
     public static final byte LINKED_HASH_MAP = 2;
+
+    /** */
+    public static final byte PLATFORM_JAVA_OBJECT_FACTORY_PROXY = 99;
 
     /** */
     public static final int OBJECT_TYPE_ID = -1;

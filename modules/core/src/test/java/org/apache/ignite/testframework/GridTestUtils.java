@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
@@ -581,6 +582,32 @@ public final class GridTestUtils {
      */
     public static long runMultiThreaded(Callable<?> call, int threadNum, String threadName) throws Exception {
         List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
+
+        return runMultiThreaded(calls, threadName);
+    }
+
+    /**
+     * @param call Closure that receives thread index.
+     * @param threadNum Number of threads.
+     * @param threadName Thread names.
+     * @return Execution time in milliseconds.
+     * @throws Exception If failed.
+     */
+    public static long runMultiThreaded(final IgniteInClosure<Integer> call, int threadNum, String threadName)
+        throws Exception {
+        List<Callable<?>> calls = new ArrayList<>(threadNum);
+
+        for (int i = 0; i < threadNum; i++) {
+            final int idx = i;
+
+            calls.add(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    call.apply(idx);
+
+                    return null;
+                }
+            });
+        }
 
         return runMultiThreaded(calls, threadName);
     }

@@ -179,54 +179,58 @@ public class IgniteHadoopMapReducePlanner implements HadoopMapReducePlanner {
                     igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
                 if (igfs != null && !igfs.isProxy(split0.file())) {
-                    Collection<IgfsBlockLocation> blocks;
+                    IgfsPath path = new IgfsPath(split0.file());
 
-                    try {
-                        blocks = igfs.affinity(new IgfsPath(split0.file()), split0.start(), split0.length());
-                    }
-                    catch (IgniteException e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                    if (igfs.exists(path)) {
+                        Collection<IgfsBlockLocation> blocks;
 
-                    assert blocks != null;
+                        try {
+                            blocks = igfs.affinity(path, split0.start(), split0.length());
+                        }
+                        catch (IgniteException e) {
+                            throw new IgniteCheckedException(e);
+                        }
 
-                    if (blocks.size() == 1)
-                        // Fast-path, split consists of one IGFS block (as in most cases).
-                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
-                    else {
-                        // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
-                        Map<UUID, Long> nodeMap = new HashMap<>();
+                        assert blocks != null;
 
-                        List<UUID> bestNodeIds = null;
-                        long bestLen = -1L;
+                        if (blocks.size() == 1)
+                            // Fast-path, split consists of one IGFS block (as in most cases).
+                            return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
+                        else {
+                            // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
+                            Map<UUID, Long> nodeMap = new HashMap<>();
 
-                        for (IgfsBlockLocation block : blocks) {
-                            for (UUID blockNodeId : block.nodeIds()) {
-                                if (topIds.contains(blockNodeId)) {
-                                    Long oldLen = nodeMap.get(blockNodeId);
-                                    long newLen = oldLen == null ? block.length() : oldLen + block.length();
+                            List<UUID> bestNodeIds = null;
+                            long bestLen = -1L;
 
-                                    nodeMap.put(blockNodeId, newLen);
+                            for (IgfsBlockLocation block : blocks) {
+                                for (UUID blockNodeId : block.nodeIds()) {
+                                    if (topIds.contains(blockNodeId)) {
+                                        Long oldLen = nodeMap.get(blockNodeId);
+                                        long newLen = oldLen == null ? block.length() : oldLen + block.length();
 
-                                    if (bestNodeIds == null || bestLen < newLen) {
-                                        bestNodeIds = new ArrayList<>(1);
+                                        nodeMap.put(blockNodeId, newLen);
 
-                                        bestNodeIds.add(blockNodeId);
+                                        if (bestNodeIds == null || bestLen < newLen) {
+                                            bestNodeIds = new ArrayList<>(1);
 
-                                        bestLen = newLen;
-                                    }
-                                    else if (bestLen == newLen) {
-                                        assert !F.isEmpty(bestNodeIds);
+                                            bestNodeIds.add(blockNodeId);
 
-                                        bestNodeIds.add(blockNodeId);
+                                            bestLen = newLen;
+                                        }
+                                        else if (bestLen == newLen) {
+                                            assert !F.isEmpty(bestNodeIds);
+
+                                            bestNodeIds.add(blockNodeId);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if (bestNodeIds != null) {
-                            return bestNodeIds.size() == 1 ? bestNodeIds.get(0) :
-                                bestNode(bestNodeIds, topIds, nodeLoads, true);
+                            if (bestNodeIds != null) {
+                                return bestNodeIds.size() == 1 ? bestNodeIds.get(0) :
+                                    bestNode(bestNodeIds, topIds, nodeLoads, true);
+                            }
                         }
                     }
                 }
