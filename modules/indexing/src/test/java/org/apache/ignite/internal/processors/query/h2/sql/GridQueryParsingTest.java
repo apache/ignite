@@ -111,6 +111,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select (select 1)");
         checkQuery("select (select 1, select ?)");
         checkQuery("select ((select 1), select ? + ?)");
+        checkQuery("select CURRENT_DATE");
+        checkQuery("select CURRENT_DATE()");
 
         checkQuery("select extract(year from ?)");
         checkQuery("select convert(?, timestamp)");
