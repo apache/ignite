@@ -939,7 +939,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Integer part = qry.partition();
 
-        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups) :
+        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups, topVer) :
             cctx.swap().rawSwapIterator(part);
 
         if (expPlc != null)
