@@ -982,8 +982,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
                 final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
-                    backups,
-                    cache.context().keepBinary());
+                    backups, cache.context().keepBinary(), topVer);
 
                 return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
                     /** */

@@ -206,7 +206,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
                 int restartGrid = GRID_CNT - RESTARTED_NODE_CNT;
                 while (!stopRestartThread.get() && System.currentTimeMillis() < endTime) {
                     log.info("Restart grid: " + restartGrid);
-                    stopGrid(restartGrid);
+                    stopGrid(restartGrid, true);
                     Thread.sleep(500);
                     startGrid(restartGrid);
 
