@@ -1699,11 +1699,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void release() {
-            for (int i = 0; i < partititons.length; ++i)
+            for (int i = 0; i < partititons.length; ++i) {
                 if (partititons[i] != null) {
                     partititons[i].release();
                     partititons[i] = null;
                 }
+            }
         }
     }
 

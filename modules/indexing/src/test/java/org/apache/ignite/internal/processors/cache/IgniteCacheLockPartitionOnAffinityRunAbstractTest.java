@@ -134,6 +134,13 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
             nodeRestartFut = null;
         }
 
+        for (int i = 0; i < gridCount(); i++) {
+            if (grid(i).context().isStopping())
+                startGrid(i);
+        }
+
+        awaitPartitionMapExchange();
+
         super.afterTest();
     }
 
