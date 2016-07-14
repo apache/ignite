@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -513,6 +514,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ctx.job().currentTaskSession(ses);
 
             GridQueryProcessor.setAffinityTopologyVersion(reqTopVer);
+            GridCacheQueryManager.setAffinityTopologyVersion(reqTopVer);
 
             // If job has timed out, then
             // avoid computation altogether.
@@ -582,6 +584,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ctx.job().currentTaskSession(null);
 
             GridQueryProcessor.setAffinityTopologyVersion(null);
+            GridCacheQueryManager.setAffinityTopologyVersion(null);
         }
     }
 
