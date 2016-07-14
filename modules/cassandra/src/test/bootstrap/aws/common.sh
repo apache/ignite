@@ -236,6 +236,30 @@ printInstanceInfo()
     fi
 }
 
+# Clone git repository
+gitClone()
+{
+    echo "[INFO] Cloning git repository $1 to $2"
+
+    rm -Rf $2
+
+    for i in 0 9;
+    do
+        git clone $1 $2
+
+        if [ $code -eq 0 ]; then
+            echo "[INFO] Git repository $1 was successfully cloned to $2"
+            return 0
+        fi
+
+        echo "[WARN] Failed to clone git repository $1 from $i attempt, sleeping extra 5sec"
+        rm -Rf $2
+        sleep 5s
+    done
+
+    terminate "All 10 attempts to clone git repository $1 are failed"
+}
+
 # Applies specified tag to EC2 instance
 createTag()
 {
@@ -243,6 +267,7 @@ createTag()
         EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
         EC2_INSTANCE_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
         export EC2_INSTANCE_REGION
+        echo "[INFO] EC2 instance region: $EC2_INSTANCE_REGION"
     fi
 
     for i in 0 9;
@@ -1081,11 +1106,7 @@ installGangliaPackages()
 
     echo "[INFO] Installig ganglia-core"
 
-    git clone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
-    fi
+    gitClone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
 
     pushd /opt/monitor-core
 
@@ -1125,11 +1146,7 @@ installGangliaPackages()
 
     echo "[INFO] Installing ganglia-web"
 
-    git clone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_DOWNLOAD_URL"
-    fi
+    gitClone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
 
     cat /opt/web/Makefile | sed -r "s/GDESTDIR = \/usr\/share\/ganglia-webfrontend/GDESTDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile1
     cat /opt/web/Makefile1 | sed -r "s/GCONFDIR = \/etc\/ganglia-web/GCONFDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile2
