@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -89,6 +88,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -343,10 +343,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param ret Result.
      */
     public void implicitSingleResult(GridCacheReturn ret) {
-        if (ret.invokeResult())
+       implicitSingleResult(ret, false);
+    }
+
+    /**
+     * @param ret Result.
+     * @param override Override flag.
+     */
+    public void implicitSingleResult(GridCacheReturn ret, boolean override) {
+        if (ret.invokeResult() && !override)
             implicitRes.mergeEntryProcessResults(ret);
-        else
+        else {
+            assert ret.success();
+
             implicitRes = ret;
+        }
     }
 
     /**

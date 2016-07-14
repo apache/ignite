@@ -31,10 +31,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -62,6 +64,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     implements GridCacheFuture<IgniteInternalTx> {
     /** */
     public static final IgniteProductVersion FINISH_NEAR_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.4.0");
+
+    /** */
+    public static final IgniteProductVersion ACK_DHT_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.5.30");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -219,6 +224,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         found = true;
 
                         assert f.node().id().equals(nodeId);
+
+                        if (res.returnValue() != null)
+                            tx.implicitSingleResult(res.returnValue(), true);
 
                         f.onResult(res);
                     }
@@ -394,6 +402,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 markInitialized();
 
+                if (tx.onePhaseCommit())
+                    ackBackup();
+
                 if (!isSync() && !isDone()) {
                     boolean complete = true;
 
@@ -424,6 +435,46 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         }
         catch (IgniteCheckedException e) {
             onDone(e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void ackBackup(){
+        GridDistributedTxMapping mapping = mappings.singleMapping();
+
+        if (mapping != null) {
+            UUID nodeId = mapping.node().id();
+
+            Collection<UUID> backups = tx.transactionNodes().get(nodeId);
+
+            if (!F.isEmpty(backups)) {
+                assert backups.size() == 1;
+
+                UUID backupId = F.first(backups);
+
+                ClusterNode backup = cctx.discovery().node(backupId);
+
+                GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
+
+                // Nothing to do if backup has left the grid.
+                if (backup == null) {
+                    // No-op.
+                }
+                else if (backup.isLocal())
+                    cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                else {
+                    try {
+                        if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                            cctx.io().send(backup, ackReq, tx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send one phase commit ack to backup node [backup=" +
+                            backup + ']', e);
+                    }
+                }
+            }
         }
     }
 
@@ -466,8 +517,17 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     readyNearMappingFromBackup(mapping);
 
-                    if (committed)
+                    if (committed) {
+                        GridCacheReturn retVal = cctx.tm().getCommittedTxReturn(tx.xidVersion());
+
+                        if (retVal != null) {
+                            tx.implicitSingleResult(retVal, true);
+
+                            cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                        }
+
                         mini.onDone(tx);
+                    }
                     else {
                         ClusterTopologyCheckedException cause =
                             new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);

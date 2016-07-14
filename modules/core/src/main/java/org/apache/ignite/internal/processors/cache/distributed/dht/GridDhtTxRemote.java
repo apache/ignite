@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -29,8 +28,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
@@ -65,6 +64,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
+
+    /** Cache return value. */
+    private GridCacheReturn retVal;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -189,9 +191,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             commitVer,
             sys,
             plc,
-            concurrency, 
-            isolation, 
-            invalidate, 
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
             subjId,
@@ -280,6 +282,20 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         super.addInvalidPartition(cacheCtx, part);
 
         txState.invalidPartition(part);
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    public GridCacheReturn getReturnValue() {
+        return retVal;
+    }
+
+    /**
+     * @param retVal Invoke result.
+     */
+    public void setReturnValue(GridCacheReturn retVal) {
+        this.retVal = retVal;
     }
 
     /**
