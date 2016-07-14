@@ -71,6 +71,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         key.set(0);
         createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
         createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -101,7 +102,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
      */
     private void notReservedCacheOp(final String cacheName) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityRun(new NotReservedCacheOpAffinityRun(orgIds.get(0), cacheName),
+        grid(0).compute().affinityRun(
+            new NotReservedCacheOpAffinityRun(orgIds.get(0), 0, cacheName),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -113,7 +115,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     for (final int orgId : orgIds) {
-                        grid(0).compute().affinityRun(new NotReservedCacheOpAffinityRun(orgId, cacheName),
+                        grid(0).compute().affinityRun(
+                            new NotReservedCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT, cacheName),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                             orgId);
                     }
@@ -130,7 +133,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             Thread.sleep(5000);
 
             IgniteCache cache = grid(0).cache(cacheName);
-            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size() + KEYS_CNT, cache.size());
+            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size(), cache.size());
             cache.clear();
         }
     }
@@ -141,7 +144,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
-        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgIds.get(0)),
+        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgIds.get(0), 0),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -156,7 +159,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                         if (System.currentTimeMillis() >= endTime)
                             break;
 
-                        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgId),
+                        grid(0).compute().affinityRun(
+                            new ReservedPartititonCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                             orgId);
                     }
@@ -173,7 +177,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             Thread.sleep(5000);
 
             IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
-            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size() + KEYS_CNT, cache.size());
+            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size(), cache.size());
             cache.clear();
         }
     }
@@ -182,6 +186,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     private static class NotReservedCacheOpAffinityRun implements IgniteRunnable {
         /** Org id. */
         int orgId;
+
+        /** Begin of key. */
+        int keyBegin;
 
         /** Cache name. */
         private String cacheName;
@@ -201,10 +208,12 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
         /**
          * @param orgId Organization.
+         * @param keyBegin Begin key value.
          * @param cacheName Cache name.
          */
-        public NotReservedCacheOpAffinityRun(int orgId, String cacheName) {
+        public NotReservedCacheOpAffinityRun(int orgId, int keyBegin, String cacheName) {
             this.orgId = orgId;
+            this.keyBegin = keyBegin;
             this.cacheName = cacheName;
         }
 
@@ -213,12 +222,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             log.info("Begin run");
             IgniteCache cache = ignite.cache(cacheName);
 
-            for (int i = 0; i < KEYS_CNT; ++i) {
-                int k = key.getAndIncrement();
-                cache.put(k, k);
-                if (k % 100 == 0)
-                    log.info("Put " + k);
-            }
+            for (int i = 0; i < KEYS_CNT; ++i)
+                cache.put(i + keyBegin, i + keyBegin);
         }
     }
 
@@ -226,6 +231,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     private static class ReservedPartititonCacheOpAffinityRun implements IgniteRunnable {
         /** Org id. */
         int orgId;
+
+        /** Begin of key. */
+        int keyBegin;
 
         /** */
         @IgniteInstanceResource
@@ -242,8 +250,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
         /**
          * @param orgId Organization Id.
+         * @param keyBegin Begin key value;
          */
-        public ReservedPartititonCacheOpAffinityRun(int orgId) {
+        public ReservedPartititonCacheOpAffinityRun(int orgId, int keyBegin) {
             this.orgId = orgId;
         }
 

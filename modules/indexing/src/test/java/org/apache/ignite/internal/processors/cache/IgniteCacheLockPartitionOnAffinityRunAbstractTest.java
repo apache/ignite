@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -82,6 +83,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -206,7 +208,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
                 int restartGrid = GRID_CNT - RESTARTED_NODE_CNT;
                 while (!stopRestartThread.get() && System.currentTimeMillis() < endTime) {
                     log.info("Restart grid: " + restartGrid);
-                    stopGrid(restartGrid, true);
+                    stopGrid(restartGrid);
                     Thread.sleep(500);
                     startGrid(restartGrid);
 

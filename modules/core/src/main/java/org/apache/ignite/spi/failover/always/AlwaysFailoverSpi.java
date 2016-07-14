@@ -97,7 +97,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
 @IgniteSpiConsistencyChecked(optional = true)
 public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, AlwaysFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
-    public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
+    public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 50;
 
     /**
      * Name of job context attribute containing all nodes a job failed on.
