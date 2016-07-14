@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Explain;
+import org.h2.command.dml.Insert;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
@@ -218,6 +220,24 @@ public class GridSqlQueryParser {
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
 
     /** */
+    private static final Getter<Insert, Table> INSERT_TABLE = getter(Insert.class, "table");
+
+    /** */
+    private static final Getter<Insert, Column[]> INSERT_COLUMNS = getter(Insert.class, "columns");
+
+    /** */
+    private static final Getter<Insert, List<Expression[]>> INSERT_ROWS = getter(Insert.class, "list");
+
+    /** */
+    private static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
+
+    /** */
+    private static final Getter<Insert, Boolean> INSERT_DIRECT = getter(Insert.class, "insertFromSelect");
+
+    /** */
+    private static final Getter<Insert, Boolean> INSERT_SORTED = getter(Insert.class, "sortedInsertMode");
+
+    /** */
     private static volatile Getter<Command, Prepared> prepared;
 
     /** */
@@ -252,25 +272,7 @@ public class GridSqlQueryParser {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
-            Table tbl = filter.getTable();
-
-            if (tbl instanceof TableBase)
-                res = new GridSqlTable(tbl.getSchema().getName(), tbl.getName());
-            else if (tbl instanceof TableView) {
-                Query qry = VIEW_QUERY.get((TableView)tbl);
-
-                res = new GridSqlSubquery(parse(qry));
-            }
-            else if (tbl instanceof FunctionTable)
-                res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl), false);
-            else if (tbl instanceof RangeTable) {
-                res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
-
-                res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
-                res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
-            }
-            else
-                assert0(false, filter.getSelect().getSQL());
+            res = parseTable(filter.getTable(), filter.getSelect().getSQL());
 
             String alias = ALIAS.get(filter);
 
@@ -278,6 +280,38 @@ public class GridSqlQueryParser {
                 res = new GridSqlAlias(alias, res, false);
 
             h2ObjToGridObj.put(filter, res);
+        }
+
+        return res;
+    }
+
+
+    /**
+     * @param tbl Table.
+     */
+    private GridSqlElement parseTable(Table tbl, String sql) {
+        GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(tbl);
+
+        if (res == null) {
+            if (tbl instanceof TableBase)
+                res = new GridSqlTable(tbl.getSchema().getName(), tbl.getName());
+            else if (tbl instanceof TableView) {
+                Query qry = VIEW_QUERY.get((TableView) tbl);
+
+                res = new GridSqlSubquery(parse(qry));
+            }
+            else if (tbl instanceof FunctionTable)
+                res = parseExpression(FUNC_EXPR.get((FunctionTable) tbl), false);
+            else if (tbl instanceof RangeTable) {
+                res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
+
+                res.addChild(parseExpression(RANGE_MIN.get((RangeTable) tbl), false));
+                res.addChild(parseExpression(RANGE_MAX.get((RangeTable) tbl), false));
+            }
+            else
+                assert0(false, sql);
+
+            h2ObjToGridObj.put(tbl, res);
         }
 
         return res;
@@ -344,6 +378,52 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param insert Insert.
+     * @see <a href="http://h2database.com/html/grammar.html#insert">H2 insert spec</a>
+     */
+    public GridSqlInsert parse(Insert insert) {
+        GridSqlInsert res = (GridSqlInsert)h2ObjToGridObj.get(insert);
+
+        if (res != null)
+            return res;
+
+        res = new GridSqlInsert();
+        h2ObjToGridObj.put(insert, res);
+
+        GridSqlElement tbl = parseTable(INSERT_TABLE.get(insert), insert.getSQL());
+
+        res.into(tbl).
+            direct(INSERT_DIRECT.get(insert)).
+            sorted(INSERT_SORTED.get(insert));
+
+        Column[] srcCols = INSERT_COLUMNS.get(insert);
+        GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
+        for (int i = 0; i < srcCols.length; i++)
+            cols[i] = new GridSqlColumn(tbl, srcCols[i].getName(), srcCols[i].getSQL());
+        res.columns(cols);
+
+        List<Expression[]> srcRows = INSERT_ROWS.get(insert);
+        if (!srcRows.isEmpty()) {
+            List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
+            for (Expression[] srcRow : srcRows) {
+                GridSqlElement[] row = new GridSqlElement[srcRow.length];
+
+                for (int i = 0; i < srcRow.length; i++)
+                    row[i] = parseExpression(srcRow[i], false);
+
+                rows.add(row);
+            }
+            res.rows(rows);
+        }
+        else {
+            res.rows(Collections.emptyList());
+            res.query(parse(INSERT_QUERY.get(insert)));
+        }
+
+        return res;
+    }
+
+    /**
      * @param sortOrder Sort order.
      * @param qry Query.
      */
@@ -374,6 +454,9 @@ public class GridSqlQueryParser {
 
         if (qry instanceof SelectUnion)
             return parse((SelectUnion)qry);
+
+        if (qry instanceof Insert)
+            return parse((Insert)qry);
 
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
