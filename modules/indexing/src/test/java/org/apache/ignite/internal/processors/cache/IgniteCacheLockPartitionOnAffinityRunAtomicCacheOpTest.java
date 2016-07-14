@@ -110,6 +110,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         // Run restart threads: start re-balancing
         beginNodesRestart();
 
+        grid(0).cache(cacheName).clear();
+
         IgniteInternalFuture<Long> affFut = null;
         try {
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
@@ -150,6 +152,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
+
+//        grid(0).cache(Person.class.getSimpleName()).clear();
 
         IgniteInternalFuture<Long> affFut = null;
         try {
@@ -219,7 +223,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
         /** {@inheritDoc} */
         @Override public void run() {
-            log.info("Begin run");
+            log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(cacheName);
 
             for (int i = 0; i < KEYS_CNT; ++i)
@@ -254,19 +258,17 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
          */
         public ReservedPartititonCacheOpAffinityRun(int orgId, int keyBegin) {
             this.orgId = orgId;
+            this.keyBegin = keyBegin;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            log.info("Begin run");
+            log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(Person.class.getSimpleName());
 
             for (int i = 0; i < KEYS_CNT; ++i) {
-                int k = key.getAndIncrement();
-                Person p = new Person(k, orgId);
+                Person p = new Person(i + keyBegin, orgId);
                 cache.put(p.createKey(), p);
-                if (k % 100 == 0)
-                    log.info("Put " + k);
             }
         }
     }
