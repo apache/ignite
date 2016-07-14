@@ -1404,6 +1404,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (cctx.database().persistenceEnabled())
                                 assignRolesByCounters(cacheCtx.topology());
 
+                            cacheCtx.topology().resetLostPartitions();
+
                             cacheCtx.state(req.state());
                         }
                     }

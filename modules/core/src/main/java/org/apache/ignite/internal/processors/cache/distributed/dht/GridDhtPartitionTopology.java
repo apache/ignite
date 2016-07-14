@@ -238,6 +238,11 @@ public interface GridDhtPartitionTopology {
     public boolean detectLostPartitions(DiscoveryEvent discoEvt);
 
     /**
+     * Resets the state of all LOST partitions to OWNING.
+     */
+    public void resetLostPartitions();
+
+    /**
      * @return Collection of lost partitions, if any.
      */
     public Collection<Integer> lostPartitions();

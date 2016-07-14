@@ -1395,6 +1395,56 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
+    @Override public void resetLostPartitions() {
+        lock.writeLock().lock();
+
+        try {
+            int parts = cctx.affinity().partitions();
+            long updSeq = updateSeq.incrementAndGet();
+
+            for (int part = 0; part < parts; part++) {
+                Set<UUID> nodeIds = part2node.get(part);
+
+                if (nodeIds != null) {
+                    boolean lost = false;
+
+                    for (UUID node : nodeIds) {
+                        GridDhtPartitionMap2 map = node2part.get(node);
+
+                        if (map.get(part) == LOST) {
+                            lost = true;
+
+                            break;
+                        }
+                    }
+
+                    if (lost) {
+                        GridDhtLocalPartition locPart = localPartition(part, topVer, false);
+
+                        if (locPart != null) {
+                            boolean marked = locPart.own();
+
+                            if (marked)
+                                updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+                        }
+
+                        for (UUID nodeId : nodeIds) {
+                            GridDhtPartitionMap2 nodeMap = node2part.get(nodeId);
+
+                            nodeMap.put(part, OWNING);
+                        }
+                    }
+                }
+            }
+
+            checkEvictions(updSeq, cctx.affinity().assignments(topVer));
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         lock.readLock().lock();
 

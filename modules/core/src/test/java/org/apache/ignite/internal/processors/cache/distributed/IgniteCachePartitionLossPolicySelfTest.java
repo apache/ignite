@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -163,12 +164,16 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         }
 
         // Check that partition state does not change after we start a new node.
-        startGrid(3);
+        IgniteEx grd = startGrid(3);
+
+        info("Newly started node: " + grd.cluster().localNode().id());
 
         for (Ignite ig : G.allGrids())
             verifyCacheOps(canWrite, safe, part, ig);
 
         ignite(0).cache(CACHE_NAME).resetLostPartitions();
+
+        awaitPartitionMapExchange(true, true);
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);

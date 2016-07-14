@@ -739,6 +739,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void resetLostPartitions() {
+        assert false;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         assert false;
 

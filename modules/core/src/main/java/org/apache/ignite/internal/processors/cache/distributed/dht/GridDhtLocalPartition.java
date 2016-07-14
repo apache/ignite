@@ -532,15 +532,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (true) {
             long reservations = state.get();
 
-            int ord = (int)(reservations >> 32);
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)(reservations >> 32));
 
-            if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
+            if (state == RENTING || state == EVICTED)
                 return false;
 
-            if (ord == OWNING.ordinal())
+            if (state == OWNING)
                 return true;
 
-            assert ord == MOVING.ordinal();
+            assert state == MOVING || state == LOST;
 
             if (casState(reservations, OWNING)) {
                 if (log.isDebugEnabled())
