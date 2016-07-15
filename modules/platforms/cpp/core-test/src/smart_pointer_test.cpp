@@ -49,11 +49,11 @@ private:
 };
 
 
-template<typename T>
-SmartPointer<typename T::element_type>* Pack(T ptr)
+void TestFunction(SmartPointer<LivenessMarker> ptr)
 {
-    return new SmartPointerHolder<T>(std::move(ptr));
+    //
 }
+
 
 BOOST_AUTO_TEST_SUITE(SmartPointerTestSuite)
 
@@ -65,15 +65,15 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(shared);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(shared);
 
-    BOOST_CHECK(objAlive);
+        BOOST_CHECK(objAlive);
 
-    shared.reset();
+        shared.reset();
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(!objAlive);
 }
@@ -86,11 +86,11 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(shared);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(shared);
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(objAlive);
 
@@ -107,11 +107,11 @@ BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(autop);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(autop);
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(!objAlive);
 }
@@ -124,11 +124,11 @@ BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(std::move(unique));
-    
-    BOOST_CHECK(objAlive);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(std::move(unique));
 
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(!objAlive);
 }
@@ -141,15 +141,15 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestBefore)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(shared);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(shared);
 
-    BOOST_CHECK(objAlive);
+        BOOST_CHECK(objAlive);
 
-    shared.reset();
+        shared.reset();
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(!objAlive);
 }
@@ -162,11 +162,11 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(shared);
+    {
+        SmartPointer<LivenessMarker> smart = Pack(shared);
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(objAlive);
 
@@ -183,11 +183,11 @@ BOOST_AUTO_TEST_CASE(BoostUniquePointerTest)
 
     BOOST_CHECK(objAlive);
 
-    SmartPointer<LivenessMarker>* smart = Pack(boost::move(unique));
+    {
+        SmartPointer<LivenessMarker> smart = Pack(boost::move(unique));
 
-    BOOST_CHECK(objAlive);
-
-    delete smart;
+        BOOST_CHECK(objAlive);
+    }
 
     BOOST_CHECK(!objAlive);
 }

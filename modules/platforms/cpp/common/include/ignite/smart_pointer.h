@@ -27,79 +27,116 @@
 
 namespace ignite
 {
+    namespace impl
+    {
+        template<typename T>
+        class SmartPointerImplBase
+        {
+        public:
+            /**
+             * Destructor.
+             */
+            virtual ~SmartPointerImplBase()
+            {
+                // No-op.
+            }
+
+            virtual const T& Get() const = 0;
+
+            virtual T& Get() = 0;
+
+            virtual bool IsNull() const = 0;
+        };
+
+        /**
+         * Smart pointer wrapper class.
+         *
+         * Note, this class does not implement any smart pointer functionality
+         * itself, instead it wraps existing wide-spread smart pointer
+         * implementations and provides unified interface for them.
+         */
+        template<typename P>
+        class SmartPointerImpl : public SmartPointerImplBase<typename P::element_type>
+        {
+        public:
+            typedef typename P::element_type ElementType;
+
+            /**
+             * Destructor.
+             */
+            virtual ~SmartPointerImpl()
+            {
+                // No-op.
+            }
+
+            /**
+             * Default constructor.
+             */
+            SmartPointerImpl() :
+                ptr()
+            {
+                // No-op.
+            }
+
+            SmartPointerImpl(P& ptr) :
+                ptr(std::move(ptr))
+            {
+                // No-op.
+            }
+
+            const ElementType& Get() const
+            {
+                return *ptr;
+            }
+
+            ElementType& Get()
+            {
+                return *ptr;
+            }
+
+            bool IsNull() const
+            {
+                return 0 == ptr.get();
+            }
+
+        private:
+            P ptr;
+        };
+
+    }
+
     template<typename T>
     class SmartPointer
     {
     public:
-        /**
-         * Destructor.
-         */
-        virtual ~SmartPointer()
+        SmartPointer() :
+            ptr(0)
         {
             // No-op.
         }
 
-        virtual const T& Get() const = 0;
-
-        virtual T& Get() = 0;
-
-        virtual bool IsNull() const = 0;
-    };
-
-    /**
-     * Smart pointer wrapper class.
-     *
-     * Note, this class does not implement any smart pointer functionality
-     * itself, instead it wraps existing wide-spread smart pointer
-     * implementations and provides unified interface for them.
-     */
-    template<typename P>
-    class SmartPointerHolder : public SmartPointer<typename P::element_type>
-    {
-    public:
-        typedef typename P::element_type ElementType;
-
-        /**
-         * Destructor.
-         */
-        virtual ~SmartPointerHolder()
+        SmartPointer(impl::SmartPointerImplBase<T>* ptr) :
+            ptr(ptr)
         {
             // No-op.
         }
 
-        /**
-         * Default constructor.
-         */
-        SmartPointerHolder() :
-            ptr()
+        ~SmartPointer()
         {
-            // No-op.
-        }
-
-        SmartPointerHolder(P ptr) :
-            ptr(std::move(ptr))
-        {
-            // No-op.
-        }
-
-        const ElementType& Get() const
-        {
-            return *ptr;
-        }
-
-        ElementType& Get()
-        {
-            return *ptr;
-        }
-
-        bool IsNull() const
-        {
-            return 0 == ptr.get();
+            delete ptr;
         }
 
     private:
-        P ptr;
+        IGNITE_NO_COPY_ASSIGNMENT(SmartPointer);
+
+        impl::SmartPointerImplBase<T>* ptr;
     };
+
+    template<typename T>
+    impl::SmartPointerImplBase<typename T::element_type>* Pack(T ptr)
+    {
+        return new impl::SmartPointerImpl<T>(ptr);
+    }
 }
 
 #endif //_IGNITE_IGNITE_SMART_POINTER
