@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -72,6 +73,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CacheMode.LOCAL);
 
+        atomicityMode();
+
         // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -85,6 +88,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 
         return cfg;
+    }
+
+    /**
+     *
+     * @return CacheAtomicityMode for the cache.
+     */
+    protected CacheAtomicityMode atomicityMode(){
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**

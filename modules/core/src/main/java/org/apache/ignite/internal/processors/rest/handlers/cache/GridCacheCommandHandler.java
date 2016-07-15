@@ -213,14 +213,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (val == null)
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
-        if (!cache.containsKey(key)) {
-            if (prepend) {
-                throw new IgniteCheckedException("Failing prepend operation (Invalid key is not allowed).");
-            } else if (!prepend) {
-                throw new IgniteCheckedException("Failing append operation (Invalid key is not allowed).");
-            }
-        }
-
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
@@ -231,7 +223,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         if (cache.configuration().getAtomicityMode().equals(CacheAtomicityMode.TRANSACTIONAL)) {
                             try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
 
-                                Object curVal = cache.get(key);
+                                Object curVal = entry.getValue();
                                 if (curVal == null)
                                     return false;
 
@@ -239,7 +231,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                                 Object newVal = appendOrPrepend(curVal, val, !prepend);
 
                                 // Put new value asynchronously.
-                                cache.put(key, newVal);
+                                entry.setValue(newVal);
                                 tx.commit();
                                 return true;
 
@@ -248,7 +240,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                             }
                         } else {
                             try {
-                                Object curVal = cache.get(key);
+                                Object curVal = entry.getValue();
                                 if (curVal == null)
                                     return false;
 
@@ -256,7 +248,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                                 Object newVal = appendOrPrepend(curVal, val, !prepend);
 
                                 // Put new value asynchronously.
-                                cache.put(key, newVal);
+                                entry.setValue(newVal);
 
                                 return true;
 
