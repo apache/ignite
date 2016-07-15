@@ -33,8 +33,11 @@ class OptimizedObjectStreamRegistry {
     /** Holders. */
     private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
 
-    /** Holders pool. */
-    private static BlockingQueue<StreamHolder> pool;
+    /** Output streams pool. */
+    private static BlockingQueue<OptimizedObjectOutputStream> outPool;
+
+    /** Input streams pool. */
+    private static BlockingQueue<OptimizedObjectInputStream> inPool;
 
     /**
      * Ensures singleton.
@@ -50,16 +53,18 @@ class OptimizedObjectStreamRegistry {
      */
     static void poolSize(int size) {
         if (size > 0) {
-            pool = new LinkedBlockingQueue<>(size);
+            outPool = new LinkedBlockingQueue<>(size);
+            inPool = new LinkedBlockingQueue<>(size);
 
             for (int i = 0; i < size; i++) {
-                boolean b = pool.offer(new StreamHolder());
-
-                assert b;
+                outPool.offer(createOut());
+                inPool.offer(createIn());
             }
         }
-        else
-            pool = null;
+        else {
+            outPool = null;
+            inPool = null;
+        }
     }
 
     /**
@@ -69,7 +74,17 @@ class OptimizedObjectStreamRegistry {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
     static OptimizedObjectOutputStream out() throws IgniteInterruptedCheckedException {
-        return holder().acquireOut();
+        if (outPool != null) {
+            try {
+                return outPool.take();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(
+                    "Failed to take output object stream from pool (thread interrupted).", e);
+            }
+        }
+        else
+            return holder().acquireOut();
     }
 
     /**
@@ -79,7 +94,17 @@ class OptimizedObjectStreamRegistry {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
     static OptimizedObjectInputStream in() throws IgniteInterruptedCheckedException {
-        return holder().acquireIn();
+        if (inPool != null) {
+            try {
+                return inPool.take();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(
+                    "Failed to take input object stream from pool (thread interrupted).", e);
+            }
+        }
+        else
+            return holder().acquireIn();
     }
 
     /**
@@ -90,16 +115,16 @@ class OptimizedObjectStreamRegistry {
     static void closeOut(OptimizedObjectOutputStream out) {
         U.close(out, null);
 
-        StreamHolder holder = holders.get();
-
-        holder.releaseOut();
-
-        if (pool != null) {
-            holders.remove();
-
-            boolean b = pool.offer(holder);
+        if (outPool != null) {
+            boolean b = outPool.offer(out);
 
             assert b;
+        }
+        else {
+            StreamHolder holder = holders.get();
+
+            if (holder != null)
+                holder.releaseOut();
         }
     }
 
@@ -112,16 +137,16 @@ class OptimizedObjectStreamRegistry {
     static void closeIn(OptimizedObjectInputStream in) {
         U.close(in, null);
 
-        StreamHolder holder = holders.get();
-
-        holder.releaseIn();
-
-        if (pool != null) {
-            holders.remove();
-
-            boolean b = pool.offer(holder);
+        if (inPool != null) {
+            boolean b = inPool.offer(in);
 
             assert b;
+        }
+        else {
+            StreamHolder holder = holders.get();
+
+            if (holder != null)
+                holder.releaseIn();
         }
     }
 
@@ -134,16 +159,38 @@ class OptimizedObjectStreamRegistry {
     private static StreamHolder holder() throws IgniteInterruptedCheckedException {
         StreamHolder holder = holders.get();
 
-        if (holder == null) {
-            try {
-                holders.set(holder = pool != null ? pool.take() : new StreamHolder());
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedCheckedException("Failed to take object stream from pool (thread interrupted).", e);
-            }
-        }
+        if (holder == null)
+            holders.set(holder = new StreamHolder());
 
         return holder;
+    }
+
+    /**
+     * Creates output stream.
+     *
+     * @return Object output stream.
+     */
+    private static OptimizedObjectOutputStream createOut() {
+        try {
+            return new OptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to create object output stream.", e);
+        }
+    }
+
+    /**
+     * Creates input stream.
+     *
+     * @return Object input stream.
+     */
+    private static OptimizedObjectInputStream createIn() {
+        try {
+            return new OptimizedObjectInputStream(new GridUnsafeDataInput());
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to create object input stream.", e);
+        }
     }
 
     /**
@@ -192,34 +239,6 @@ class OptimizedObjectStreamRegistry {
          */
         void releaseIn() {
             inAcquireCnt--;
-        }
-
-        /**
-         * Creates output stream.
-         *
-         * @return Object output stream.
-         */
-        private OptimizedObjectOutputStream createOut() {
-            try {
-                return new OptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
-            }
-            catch (IOException e) {
-                throw new IgniteException("Failed to create object output stream.", e);
-            }
-        }
-
-        /**
-         * Creates input stream.
-         *
-         * @return Object input stream.
-         */
-        private OptimizedObjectInputStream createIn() {
-            try {
-                return new OptimizedObjectInputStream(new GridUnsafeDataInput());
-            }
-            catch (IOException e) {
-                throw new IgniteException("Failed to create object input stream.", e);
-            }
         }
     }
 }
