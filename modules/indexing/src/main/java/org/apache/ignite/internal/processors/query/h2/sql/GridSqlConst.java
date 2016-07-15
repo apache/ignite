@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
+import org.h2.command.Parser;
+import org.h2.expression.ValueExpression;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
+import org.h2.value.ValueString;
 
 /**
  * Constant value.
@@ -28,6 +31,13 @@ public class GridSqlConst extends GridSqlElement implements GridSqlValue {
     /** */
     public static final GridSqlElement TRUE = new GridSqlConst(ValueBoolean.get(true))
         .resultType(GridSqlType.BOOLEAN);
+
+    /**
+     * Special element to indicate default update value - analogous to H2
+     * @see ValueExpression#getDefault()
+     * @see Parser#parseUpdate()
+     */
+    static final GridSqlElement DEFAULT  = new GridSqlConst(ValueString.get("DEFAULT"));
 
     /** */
     private final Value val;
@@ -50,6 +60,6 @@ public class GridSqlConst extends GridSqlElement implements GridSqlValue {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return val.getSQL();
+        return this == DEFAULT ? "DEFAULT" : val.getSQL();
     }
 }

@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
@@ -31,6 +33,7 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
+import org.h2.command.dml.Update;
 import org.h2.engine.FunctionAlias;
 import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
@@ -60,6 +63,7 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -246,6 +250,22 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Delete, Expression> DELETE_LIMIT = getter(Delete.class, "limitExpr");
+
+    /** */
+    private static final Getter<Update, TableFilter> UPDATE_TARGET = getter(Update.class, "tableFilter");
+
+    /** */
+    private static final Getter<Update, ArrayList<Column>> UPDATE_COLUMNS = getter(Update.class, "columns");
+
+    /** */
+    private static final Getter<Update, HashMap<Column, Expression>> UPDATE_SET = getter(Update.class,
+        "expressionMap");
+
+    /** */
+    private static final Getter<Update, Expression> UPDATE_WHERE = getter(Update.class, "condition");
+
+    /** */
+    static final Getter<Update, Expression> UPDATE_LIMIT = getter(Update.class, "limitExpr");
 
     /** */
     private static volatile Getter<Command, Prepared> prepared;
@@ -436,22 +456,56 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param delete Delete.
+     * @param del Delete.
      * @see <a href="http://h2database.com/html/grammar.html#delete">H2 delete spec</a>
      */
-    public GridSqlDelete parse(Delete delete) {
-        GridSqlDelete res = (GridSqlDelete) h2ObjToGridObj.get(delete);
+    public GridSqlDelete parse(Delete del) {
+        GridSqlDelete res = (GridSqlDelete) h2ObjToGridObj.get(del);
 
         if (res != null)
             return res;
 
         res = new GridSqlDelete();
-        h2ObjToGridObj.put(delete, res);
+        h2ObjToGridObj.put(del, res);
 
-        GridSqlElement tbl = parseTable(DELETE_FROM.get(delete));
-        GridSqlElement where = parseExpression(DELETE_WHERE.get(delete), false);
-        GridSqlElement limit = parseExpression(DELETE_LIMIT.get(delete), false);
+        GridSqlElement tbl = parseTable(DELETE_FROM.get(del));
+        GridSqlElement where = parseExpression(DELETE_WHERE.get(del), false);
+        GridSqlElement limit = parseExpression(DELETE_LIMIT.get(del), false);
         res.from(tbl).where(where).limit(limit);
+        return res;
+    }
+
+    /**
+     * @param update Update.
+     * @see <a href="http://h2database.com/html/grammar.html#update">H2 update spec</a>
+     */
+    public GridSqlUpdate parse(Update update) {
+        GridSqlUpdate res = (GridSqlUpdate)h2ObjToGridObj.get(update);
+
+        if (res != null)
+            return res;
+
+        res = new GridSqlUpdate();
+        h2ObjToGridObj.put(update, res);
+
+        GridSqlElement tbl = parseTable(UPDATE_TARGET.get(update));
+
+        List<Column> srcCols = UPDATE_COLUMNS.get(update);
+        Map<Column, Expression> srcSet = UPDATE_SET.get(update);
+
+        ArrayList<GridSqlColumn> cols = new ArrayList<>(srcCols.size());
+        HashMap<GridSqlColumn, GridSqlElement> set = new HashMap<>(srcSet.size());
+
+        for (Column c : srcCols) {
+            GridSqlColumn col = new GridSqlColumn(tbl, c.getName(), c.getSQL());
+            cols.add(col);
+            set.put(col, parseExpression(srcSet.get(c), false));
+        }
+
+        GridSqlElement where = parseExpression(UPDATE_WHERE.get(update), false);
+        GridSqlElement limit = parseExpression(UPDATE_LIMIT.get(update), false);
+
+        res.target(tbl).cols(cols).set(set).where(where).limit(limit);
         return res;
     }
 
@@ -492,6 +546,9 @@ public class GridSqlQueryParser {
 
         if (qry instanceof Delete)
             return parse((Delete) qry);
+
+        if (qry instanceof Update)
+            return parse((Update) qry);
 
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
@@ -567,7 +624,9 @@ public class GridSqlQueryParser {
                 parseExpression(expression.getNonAliasExpression(), calcTypes), true);
 
         if (expression instanceof ValueExpression)
-            return new GridSqlConst(expression.getValue(null));
+            // == comparison is legit, see ValueExpression#getSQL()
+            return expression == ValueExpression.getDefault() ? GridSqlConst.DEFAULT :
+                new GridSqlConst(expression.getValue(null));
 
         if (expression instanceof Operation) {
             Operation operation = (Operation)expression;
@@ -803,7 +862,7 @@ public class GridSqlQueryParser {
      * Field getter.
      */
     @SuppressWarnings("unchecked")
-    private static class Getter<T, R> {
+    static class Getter<T, R> {
         /** */
         private final Field fld;
 

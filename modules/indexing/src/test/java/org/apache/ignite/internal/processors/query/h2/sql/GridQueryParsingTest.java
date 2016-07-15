@@ -40,8 +40,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
+import org.h2.command.dml.Update;
 import org.h2.engine.Session;
+import org.h2.expression.Expression;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.util.StringUtils;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -258,6 +261,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("insert into Person(old, name) values(5, 'John')");
         checkQuery("insert into Person(name) values(DEFAULT)");
+        checkQuery("insert into Person default values");
         checkQuery("insert into Person() values()");
         checkQuery("insert into Person(name) values(DEFAULT), (null)");
         checkQuery("insert into Person(name) values(DEFAULT),");
@@ -296,12 +300,26 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /** */
     public void testParseDelete() throws Exception {
         checkQuery("delete from Person");
-        checkQuery("delete from Person where old > ?");
+        checkQuery("delete from Person p where p.old > ?");
         checkQuery("delete from Person where old in (select (40, 41, 42))");
         checkQuery("delete top 5 from Person where old in (select (40, 41, 42))");
         checkQuery("delete top ? from Person where old > 5 and length(name) < ?");
         checkQuery("delete from Person where name in ('Ivan', 'Peter') limit 20");
         checkQuery("delete from Person where name in ('Ivan', ?) limit ?");
+    }
+
+    /** */
+    public void testParseUpdate() throws Exception {
+        checkQuery("update Person set name='Peter'");
+        checkQuery("update Person per set name='Peter', old = 5");
+        checkQuery("update Person p set name='Peter' limit 20");
+        checkQuery("update Person p set name='Peter', old = length('zzz') limit 20");
+        checkQuery("update Person p set name=DEFAULT, old = null limit ?");
+        checkQuery("update Person p set name=? where old >= ? and old < ? limit ?");
+        checkQuery("update Person p set name=(select a.Street from Address a where a.id=p.addrId), old = (select 42)" +
+            " where old = sqrt(?)");
+        checkQuery("update Person p set (name, old) = (select 'Peter', 42)");
+        checkQuery("update Person p set (name, old) = (select street, id from Address where id > 5 and id <= ?)");
     }
 
     /**
@@ -370,13 +388,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
+        // For some reason, Update#getPlanSQL does not include LIMIT into its result, so we'll have to add it ourselves
+        String updateLimitSql = null;
+        if (prepared instanceof Update) {
+            Expression limit = GridSqlQueryParser.UPDATE_LIMIT.get((Update)prepared);
+            if (limit != null)
+                updateLimitSql = " LIMIT (" + StringUtils.unEnclose(limit.getSQL()) + ')';
+        }
+
         GridSqlQuery gQry = new GridSqlQueryParser().parse(prepared);
 
         String res = gQry.getSQL();
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(prepared.getPlanSQL(), res);
+        assertSqlEquals(prepared.getPlanSQL() + U.firstNotNull(updateLimitSql, ""), res);
     }
 
     @QuerySqlFunction
