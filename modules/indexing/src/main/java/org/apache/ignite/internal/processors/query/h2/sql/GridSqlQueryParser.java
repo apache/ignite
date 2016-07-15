@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Query;
@@ -238,6 +239,15 @@ public class GridSqlQueryParser {
     private static final Getter<Insert, Boolean> INSERT_SORTED = getter(Insert.class, "sortedInsertMode");
 
     /** */
+    private static final Getter<Delete, TableFilter> DELETE_FROM = getter(Delete.class, "tableFilter");
+
+    /** */
+    private static final Getter<Delete, Expression> DELETE_WHERE = getter(Delete.class, "condition");
+
+    /** */
+    private static final Getter<Delete, Expression> DELETE_LIMIT = getter(Delete.class, "limitExpr");
+
+    /** */
     private static volatile Getter<Command, Prepared> prepared;
 
     /** */
@@ -272,7 +282,7 @@ public class GridSqlQueryParser {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
-            res = parseTable(filter.getTable(), filter.getSelect().getSQL());
+            res = parseTable(filter.getTable(), filter.getSelect() != null ? filter.getSelect().getSQL() : null);
 
             String alias = ALIAS.get(filter);
 
@@ -309,7 +319,8 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable) tbl), false));
             }
             else
-                assert0(false, sql);
+                assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ", " +
+                    "sql=" + sql + ']');
 
             h2ObjToGridObj.put(tbl, res);
         }
@@ -390,7 +401,8 @@ public class GridSqlQueryParser {
         res = new GridSqlInsert();
         h2ObjToGridObj.put(insert, res);
 
-        GridSqlElement tbl = parseTable(INSERT_TABLE.get(insert), insert.getSQL());
+        Table srcTbl = INSERT_TABLE.get(insert);
+        GridSqlElement tbl = parseTable(srcTbl, insert.getSQL());
 
         res.into(tbl).
             direct(INSERT_DIRECT.get(insert)).
@@ -420,6 +432,26 @@ public class GridSqlQueryParser {
             res.query(parse(INSERT_QUERY.get(insert)));
         }
 
+        return res;
+    }
+
+    /**
+     * @param delete Delete.
+     * @see <a href="http://h2database.com/html/grammar.html#delete">H2 delete spec</a>
+     */
+    public GridSqlDelete parse(Delete delete) {
+        GridSqlDelete res = (GridSqlDelete) h2ObjToGridObj.get(delete);
+
+        if (res != null)
+            return res;
+
+        res = new GridSqlDelete();
+        h2ObjToGridObj.put(delete, res);
+
+        GridSqlElement tbl = parseTable(DELETE_FROM.get(delete));
+        GridSqlElement where = parseExpression(DELETE_WHERE.get(delete), false);
+        GridSqlElement limit = parseExpression(DELETE_LIMIT.get(delete), false);
+        res.from(tbl).where(where).limit(limit);
         return res;
     }
 
@@ -457,6 +489,9 @@ public class GridSqlQueryParser {
 
         if (qry instanceof Insert)
             return parse((Insert)qry);
+
+        if (qry instanceof Delete)
+            return parse((Delete) qry);
 
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);

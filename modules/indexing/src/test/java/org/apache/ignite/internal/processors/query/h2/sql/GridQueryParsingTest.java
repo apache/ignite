@@ -293,6 +293,17 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("insert into Person(old) select 5 from Person UNION select street from Address limit ? offset ?");
     }
 
+    /** */
+    public void testParseDelete() throws Exception {
+        checkQuery("delete from Person");
+        checkQuery("delete from Person where old > ?");
+        checkQuery("delete from Person where old in (select (40, 41, 42))");
+        checkQuery("delete top 5 from Person where old in (select (40, 41, 42))");
+        checkQuery("delete top ? from Person where old > 5 and length(name) < ?");
+        checkQuery("delete from Person where name in ('Ivan', 'Peter') limit 20");
+        checkQuery("delete from Person where name in ('Ivan', ?) limit ?");
+    }
+
     /**
      *
      */
