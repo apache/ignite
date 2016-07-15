@@ -961,24 +961,28 @@ public class GridJobProcessor extends GridProcessorAdapter {
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
         PartitionsReservation partsReservation = null;
+
         try {
             long endTime = req.getCreateTime() + req.getTimeout();
+
             if (req.getCaches() != null) {
-                assert req.getPartition() >= 0;
-                assert !req.getCaches().isEmpty();
+                assert req.getPartition() >= 0 : req;
+                assert !req.getCaches().isEmpty() : req;
+
                 partsReservation = new PartitionsReservation(req.getCaches(), req.getPartition(), req.getTopVer());
 
                 try {
                     if (!partsReservation.reserve()) {
                         sendRetry(node, req, endTime);
+
                         return;
                     }
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     IgniteException ex = new IgniteException("Failed to lock partitions " +
                         "[taskName=" + req.getTaskName() + ']', e);
 
-                    U.error(log, ex.getMessage(), e);
+                    U.error(log, "Failed to lock partitions [req=" + req + ']', e);
 
                     handleException(node, req, ex, endTime);
 
@@ -999,7 +1003,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // Account for overflow.
                 if (endTime < 0)
                     endTime = Long.MAX_VALUE;
-
 
                 GridDeployment tmpDep = req.isForceLocalDeployment() ?
                     ctx.deploy().getLocalDeployment(req.getTaskClassName()) :
@@ -1209,7 +1212,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 job.run();
         }
         finally {
-            // Release partitions in case retry or synchronous job execute
+            // Release partitions in case retry or synchronous job execute.
             if (partsReservation != null)
                 partsReservation.release();
         }
@@ -1221,8 +1224,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param endTime End time.
      */
     private void sendRetry(ClusterNode node, GridJobExecuteRequest req, long endTime) {
-        assert req.getCaches() != null && !req.getCaches().isEmpty();
-        assert req.getPartition() >= 0;
+        assert !F.isEmpty(req.getCaches()) : req;
+        assert req.getPartition() >= 0 : req;
 
         sendResponse(node, req, null, endTime, true);
     }
@@ -1370,7 +1373,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private void sendResponse(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime,
         boolean retry) {
         assert ex != null || retry : "Normal response is handled by JobWorker. Retry flag or exception must be set. " +
-            "retry: " + retry + ", exception: " + ex;
+            " [retry=" + retry + ", err=" + ex + ']';
 
         UUID locNodeId = ctx.localNodeId();
 
@@ -1414,7 +1417,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 loc ? null : marsh.marshal(null),
                 null,
                 false,
-                (retry) ? ctx.cache().context().exchange().readyAffinityVersion() : null);
+                retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
             if (req.isSessionFullSupport()) {
                 // Send response to designated job topic.
@@ -1542,66 +1545,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
     }
 
-//    /**
-//     * @param reserved Reserved.
-//     * @param caches Caches.
-//     * @param partId Partition.
-//     * @param topVer Topology version.
-//     * @return true if partition are reserved successful. Otherwise false.
-//     */
-//    private boolean reservePartitions(List<GridReservable> reserved, Collection<String> caches, int partId,
-//        AffinityTopologyVersion topVer) throws IgniteCheckedException {
-//        for (String cacheName : caches) {
-//            GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
-//            if (cacheAdapter == null)
-//                return false;
-//
-//            GridCacheContext<?, ?> cctx = cacheAdapter.context();
-//
-//            if (cctx == null) // Cache was not found, probably was not deployed yet.
-//                return false;
-//
-//            if (cctx.isLocal() || !cctx.rebalanceEnabled())
-//                continue;
-//
-//            boolean checkPartMapping = false;
-//            try {
-//                if (cctx.isReplicated()) {
-//                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-//                        topVer, false);
-//
-//                    // We don't need to reserve partitions because they will not be evicted in replicated caches.
-//                    if (part == null || part.state() != OWNING) {
-//                        checkPartMapping = true;
-//                        return false;
-//                    }
-//                }
-//
-//                GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-//                    topVer, false);
-//
-//                if (part == null || part.state() != OWNING || !part.reserve()) {
-//                    checkPartMapping = true;
-//                    return false;
-//                }
-//
-//                reserved.add(part);
-//
-//                // Double check that we are still in owning state and partition contents are not cleared.
-//                if (part.state() != OWNING) {
-//                    checkPartMapping = true;
-//                    return false;
-//                }
-//            }
-//            finally {
-//                if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
-//                    throw new IgniteCheckedException("Partition " + partId + " of the cache " + cacheName +
-//                        " is not primary on the node " + ctx.localNodeId() + ", on topology: " + topVer);
-//            }
-//        }
-//        return true;
-//    }
-
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
@@ -1617,12 +1560,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      */
     private class PartitionsReservation implements GridReservable {
-        /** Partititons. */
+        /** Partitions. */
         private GridDhtLocalPartition [] partititons;
+
         /** Caches. */
         private final Collection<String> caches;
+
         /** Partition id. */
         private final int partId;
+
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
@@ -1642,8 +1588,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public boolean reserve() throws IgniteCheckedException {
             int i = 0;
+
             for (String cacheName : caches) {
                 GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
+
                 if (cacheAdapter == null)
                     return false;
 
@@ -1659,6 +1607,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     continue;
 
                 boolean checkPartMapping = false;
+
                 try {
                     if (cctx.isReplicated()) {
                         GridDhtLocalPartition part = cctx.topology().localPartition(partId,
@@ -1667,15 +1616,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         // We don't need to reserve partitions because they will not be evicted in replicated caches.
                         if (part == null || part.state() != OWNING) {
                             checkPartMapping = true;
+
                             return false;
                         }
                     }
 
-                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-                        topVer, false);
+                    GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
                     if (part == null || part.state() != OWNING || !part.reserve()) {
                         checkPartMapping = true;
+
                         return false;
                     }
 
@@ -1685,6 +1635,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // Double check that we are still in owning state and partition contents are not cleared.
                     if (part.state() != OWNING) {
                         checkPartMapping = true;
+
                         return false;
                     }
                 }
@@ -1700,10 +1651,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void release() {
             for (int i = 0; i < partititons.length; ++i) {
-                if (partititons[i] != null) {
+                if (partititons[i] != null)
                     partititons[i].release();
-                    partititons[i] = null;
-                }
+                else
+                    break;
             }
         }
     }

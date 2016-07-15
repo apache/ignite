@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+
 /**
- * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
+ * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310.
  */
-public class IgniteCacheLockPartitionOnAffinityRunTransactCacheOpTest
+public class IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest
     extends IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest {
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+        return TRANSACTIONAL;
     }
 }

@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CachePeekModes;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -462,6 +461,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task session ID.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
+     * // TODO IGNITE-2310: move mapTopVer to AffinityTask.
      * @param mapTopVer Topology version of job mapping.
      * @return Task future.
      */
@@ -646,13 +646,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (dep == null || !dep.acquire())
                 handleException(new IgniteDeploymentCheckedException("Task not deployed: " + ses.getTaskName()), fut);
             else {
-                Collection<String> caches = null;
-                int part = -1;
-                if (task instanceof AffinityTask) {
-                    caches = ((AffinityTask)task).affinityCacheNames();
-                    part = ((AffinityTask)task).partition();
-                }
-
                 GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
                     ctx,
                     arg,

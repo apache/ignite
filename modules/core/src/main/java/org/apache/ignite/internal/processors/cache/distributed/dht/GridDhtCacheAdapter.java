@@ -1186,7 +1186,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
         final boolean keepBinary) {
-            return localEntriesIterator(primary, backup, keepBinary, ctx.affinity().affinityTopologyVersion());
+        return localEntriesIterator(primary,
+            backup,
+            keepBinary,
+            ctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -1198,7 +1201,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
-        final boolean keepBinary, final AffinityTopologyVersion topVer) {
+        final boolean keepBinary,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)

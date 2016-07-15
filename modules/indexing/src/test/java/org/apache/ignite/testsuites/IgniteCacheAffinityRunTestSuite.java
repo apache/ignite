@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTransactCacheOpTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest;
 
 /**
@@ -38,7 +38,7 @@ public class IgniteCacheAffinityRunTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTest.class);
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest.class);
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest.class);
-        suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTransactCacheOpTest.class);
+        suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class);
 
         return suite;
     }

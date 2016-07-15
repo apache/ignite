@@ -9563,12 +9563,6 @@ public abstract class IgniteUtils {
      * @return Maximal object o t0 and t1.
      */
     public static <T extends Comparable<? super T>> T max(T t0, T t1) {
-        if (t0 == null) {
-            if (t1 == null) return t0;
-            else return t1;
-        }
-        if (t1 == null)
-            return t0;
         return t0.compareTo(t1) > 0 ? t0 : t1;
     }
 }

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.spi.failover.FailoverSpi;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,7 +71,7 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
         int affPartId,
         @Nullable Object affKey,
         @Nullable String affCacheName,
-        @NotNull AffinityTopologyVersion topVer) {
+        @Nullable AffinityTopologyVersion topVer) {
         return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes, jobRes,
             ctx.loadBalancing(), affPartId, affKey, affCacheName, topVer), top);
     }

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.failover.FailoverContext;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,7 +57,8 @@ public class GridFailoverContextImpl implements FailoverContext {
 
     /**
      * Initializes failover context.
-     *  @param taskSes Grid task session.
+     *
+     * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
      * @param partId Partition.
@@ -72,7 +72,7 @@ public class GridFailoverContextImpl implements FailoverContext {
         int partId,
         @Nullable Object affKey,
         @Nullable String affCacheName,
-        @NotNull AffinityTopologyVersion topVer) {
+        @Nullable AffinityTopologyVersion topVer) {
         assert taskSes != null;
         assert jobRes != null;
         assert loadMgr != null;
@@ -119,7 +119,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     /**
      * @return Affinity topology version.
      */
-    @NotNull public AffinityTopologyVersion affinityTopologyVersion() {
+    @Nullable public AffinityTopologyVersion affinityTopologyVersion() {
         return topVer;
     }
 

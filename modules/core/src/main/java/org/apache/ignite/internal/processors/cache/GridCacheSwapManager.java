@@ -2011,6 +2011,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
+        assert topVer != null;
+
         if (!swapEnabled || (!primary && !backup))
             return new GridEmptyCloseableIterator<>();
 

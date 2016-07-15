@@ -35,12 +35,12 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCacheAbstractSelfTest {
     /** Count of affinity run threads. */
-    protected static final int AFFINITY_THREADS_COUNT = 10;
+    protected static final int AFFINITY_THREADS_CNT = 10;
 
     /** Count of collocated objects. */
-    protected static final int PERS_AT_ORG_COUNT = 10_000;
+    protected static final int PERS_AT_ORG_CNT = 10_000;
 
-    /** Name of the cache with special affinity functon (all partition are placed on the first node). */
+    /** Name of the cache with special affinity function (all partition are placed on the first node). */
     protected static final String OTHER_CACHE_NAME = "otherCache";
 
     /** Regex for reserved partition exception message (when the partition is mapped to another node). */
@@ -87,6 +87,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setMarshaller(new BinaryMarshaller());
@@ -122,13 +123,18 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         return PARTITIONED;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
         info("Fill caches begin...");
+
         fillCaches();
+
         info("Caches are filled");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         grid(0).destroyCache(Organization.class.getSimpleName());
         grid(0).destroyCache(Person.class.getSimpleName());
@@ -177,9 +183,11 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     private void fillCaches() throws Exception {
         grid(0).createCache(Organization.class.getSimpleName());
         grid(0).createCache(Person.class.getSimpleName());
+
         createCacheWithAffinity(OTHER_CACHE_NAME);
 
         orgIds = new ArrayList<>(ORGS_COUNT_PER_NODE * RESTARTED_NODE_CNT);
+
         for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
             orgIds.addAll(primaryKeys(grid(i).cache(Organization.class.getSimpleName()), ORGS_COUNT_PER_NODE));
 
@@ -194,12 +202,13 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
                 Organization org = new Organization(orgId);
                 orgStreamer.addData(orgId, org);
 
-                for (int persCnt = 0; persCnt < PERS_AT_ORG_COUNT; ++persCnt, ++persId) {
+                for (int persCnt = 0; persCnt < PERS_AT_ORG_CNT; ++persCnt, ++persId) {
                     Person pers = new Person(persId, orgId);
                     persStreamer.addData(pers.createKey(), pers);
                 }
             }
         }
+
         awaitPartitionMapExchange();
     }
 
@@ -235,37 +244,42 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /**
      * @param ignite Ignite.
      * @param orgId Org id.
-     * @param expectedReservations Expected reservations.
+     * @param expReservations Expected reservations.
      */
     protected static void checkPartitionsReservations(final IgniteEx ignite, int orgId,
-        int expectedReservations) {
+        int expReservations) {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         GridDhtLocalPartition pPers = ignite.context().cache()
             .internalCache(Person.class.getSimpleName()).context().topology()
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
+        assertNotNull(pPers);
+
         GridDhtLocalPartition pOrgs = ignite.context().cache()
             .internalCache(Organization.class.getSimpleName()).context().topology()
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
-        assertEquals("Unexpected reservations count", expectedReservations, pOrgs.reservations());
-        assertEquals("Unexpected reservations count", expectedReservations, pPers.reservations());
+        assertNotNull(pOrgs);
+        assertEquals("Unexpected reservations count", expReservations, pOrgs.reservations());
+        assertEquals("Unexpected reservations count", expReservations, pPers.reservations());
     }
 
     /** */
     private static class DummyAffinity extends RendezvousAffinityFunction {
-
         /**
          * Default constructor.
          */
         public DummyAffinity() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
+
             List<List<ClusterNode>> assign = new ArrayList<>(partitions());
+
             for (int i = 0; i < partitions(); ++i)
                 assign.add(Collections.singletonList(nodes.get(0)));
 
@@ -310,6 +324,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         @QuerySqlField
         private final int id;
 
+        /** */
         @QuerySqlField(index = true)
         private final int orgId;
 
@@ -339,8 +354,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         /**
          * @return Affinity key.
          */
-        public IgniteCacheLockPartitionOnAffinityRunTest.Person.Key createKey() {
-            return new IgniteCacheLockPartitionOnAffinityRunTest.Person.Key(id, orgId);
+        public Person.Key createKey() {
+            return new Person.Key(id, orgId);
         }
 
         /** {@inheritDoc} */
@@ -375,7 +390,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
                 if (o == null || getClass() != o.getClass())
                     return false;
 
-                IgniteCacheLockPartitionOnAffinityRunTest.Person.Key key = (IgniteCacheLockPartitionOnAffinityRunTest.Person.Key)o;
+                Person.Key key = (Person.Key)o;
 
                 return id == key.id && orgId == key.orgId;
             }

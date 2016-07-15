@@ -124,7 +124,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                             orgId);
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -136,7 +136,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             Thread.sleep(5000);
 
             IgniteCache cache = grid(0).cache(cacheName);
-            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size(), cache.size());
             cache.clear();
         }
     }
@@ -147,7 +146,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
-        grid(0).compute().affinityRun(new ReservedPartititonCacheOpAffinityRun(orgIds.get(0), 0),
+        grid(0).compute().affinityRun(new ReservedPartitionCacheOpAffinityRun(orgIds.get(0), 0),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -163,12 +162,12 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                             break;
 
                         grid(0).compute().affinityRun(
-                            new ReservedPartititonCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT),
+                            new ReservedPartitionCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                             orgId);
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -180,7 +179,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             Thread.sleep(5000);
 
             IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
-            assertEquals(KEYS_CNT * AFFINITY_THREADS_COUNT * orgIds.size(), cache.size());
+            assertEquals(KEYS_CNT * AFFINITY_THREADS_CNT * orgIds.size(), cache.size());
             cache.clear();
         }
     }
@@ -231,7 +230,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     }
 
     /** */
-    private static class ReservedPartititonCacheOpAffinityRun implements IgniteRunnable {
+    private static class ReservedPartitionCacheOpAffinityRun implements IgniteRunnable {
         /** Org id. */
         int orgId;
 
@@ -247,7 +246,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         private IgniteLogger log;
 
         /** */
-        public ReservedPartititonCacheOpAffinityRun() {
+        public ReservedPartitionCacheOpAffinityRun() {
             // No-op.
         }
 
@@ -255,7 +254,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
          * @param orgId Organization Id.
          * @param keyBegin Begin key value;
          */
-        public ReservedPartititonCacheOpAffinityRun(int orgId, int keyBegin) {
+        public ReservedPartitionCacheOpAffinityRun(int orgId, int keyBegin) {
             this.orgId = orgId;
             this.keyBegin = keyBegin;
         }

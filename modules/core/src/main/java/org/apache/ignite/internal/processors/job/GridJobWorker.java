@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -163,7 +161,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final GridReservable partsReservation;
 
     /** Request topology version. */
-    AffinityTopologyVersion reqTopVer;
+    private final AffinityTopologyVersion reqTopVer;
 
     /**
      * @param ctx Kernal context.
@@ -177,8 +175,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param internal Whether or not task was marked with {@link GridInternal}
      * @param evtLsnr Job event listener.
      * @param holdLsnr Hold listener.
-     * @param partsReservation reserved partitions (must be released at the job finish).
-     * @param reqTopVer affinity topology version of the job request.
+     * @param partsReservation Reserved partitions (must be released at the job finish).
+     * @param reqTopVer Affinity topology version of the job request.
      */
     GridJobWorker(
         GridKernalContext ctx,
@@ -513,8 +511,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         try {
             ctx.job().currentTaskSession(ses);
 
-            GridQueryProcessor.setAffinityTopologyVersion(reqTopVer);
-            GridCacheQueryManager.setAffinityTopologyVersion(reqTopVer);
+            if (reqTopVer != null)
+                GridQueryProcessor.setAffinityTopologyVersion(reqTopVer);
 
             // If job has timed out, then
             // avoid computation altogether.
@@ -583,8 +581,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             ctx.job().currentTaskSession(null);
 
-            GridQueryProcessor.setAffinityTopologyVersion(null);
-            GridCacheQueryManager.setAffinityTopologyVersion(null);
+            if (reqTopVer != null)
+                GridQueryProcessor.setAffinityTopologyVersion(null);
         }
     }
 

@@ -22,35 +22,25 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.collision.CollisionContext;
-import org.apache.ignite.spi.collision.CollisionExternalListener;
-import org.apache.ignite.spi.collision.CollisionJobContext;
-import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -64,7 +54,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @return Count of found Person object with specified orgId
      */
     private static int getPersonsCountFromPartitionMapCheckBothCaches(final IgniteEx ignite, IgniteLogger log,
-        int orgId) {
+        int orgId) throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         GridCacheAdapter<?, ?> cacheAdapterOrg = ignite.context().cache()
@@ -80,14 +70,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             int cnt = 0;
             for (GridCacheMapEntry e : pPers.entries()) {
                 Person.Key k = (Person.Key)e.keyValue(false);
-                Person p = null;
-                try {
-                    p = e.val.value(ignite.context().cacheObjects().contextForCache(
-                        cacheAdapterPers.cacheCfg), false);
-                }
-                catch (IgniteCheckedException e1) {
-                    // No-op.
-                }
+                Person p = e.val.value(ignite.context().cacheObjects().contextForCache(
+                    cacheAdapterPers.cacheCfg), false);
 
                 if (p != null && p.getOrgId() == orgId && k.orgId == orgId)
                     ++cnt;
@@ -107,7 +91,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log, int orgId) {
+    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         GridCacheAdapter<?, ?> cacheAdapterPers = ignite.context().cache()
@@ -120,14 +104,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             int cnt = 0;
             for (GridCacheMapEntry e : pPers.entries()) {
                 Person.Key k = (Person.Key)e.keyValue(false);
-                Person p = null;
-                try {
-                    p = e.val.value(ignite.context().cacheObjects().contextForCache(
+                Person p = e.val.value(ignite.context().cacheObjects().contextForCache(
                         cacheAdapterPers.cacheCfg), false);
-                }
-                catch (IgniteCheckedException e1) {
-                    // No-op.
-                }
 
                 if (p != null && p.getOrgId() == orgId && k.orgId == orgId)
                     ++cnt;
@@ -147,7 +125,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountBySqlFieledLocalQuery(final IgniteEx ignite, IgniteLogger log, int orgId) {
+    private static int getPersonsCountBySqlFieldLocalQuery(final IgniteEx ignite, IgniteLogger log, int orgId) {
         List res = ignite.cache(Person.class.getSimpleName())
             .query(new SqlFieldsQuery(
                 String.format("SELECT p.id FROM \"%s\".Person as p " +
@@ -210,19 +188,20 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     }
 
     /**
-     * @param personsCountGetter Interface to calculate count Person objects
+     * @param personsCntGetter Interface to calculate count Person objects
      * @throws Exception If failed.
      */
-    private void affinityRunWithoutExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
+    private void affinityRunWithoutExtraCaches(final PersonsCountGetter personsCntGetter) throws Exception {
         // Workaround for initial update job metadata.
         grid(0).compute().affinityRun(Person.class.getSimpleName(),
             new Person(0, orgIds.get(0)).createKey(),
-            new TestAffinityRun(personsCountGetter, orgIds.get(0)));
+            new TestAffinityRun(personsCntGetter, orgIds.get(0)));
 
-        // Run restart threads: start re-balancing
+        // Run restart threads: start re-balancing.
         beginNodesRestart();
 
         IgniteInternalFuture<Long> affFut = null;
+
         try {
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -233,11 +212,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
                             grid(0).compute().affinityRun(Person.class.getSimpleName(),
                                 new Person(0, orgId).createKey(),
-                                new TestAffinityRun(personsCountGetter, orgId));
+                                new TestAffinityRun(personsCntGetter, orgId));
                         }
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -246,12 +225,12 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     }
 
     /**
-     * @param personsCountGetter Persons count getter interface
+     * @param personsCntGetter Persons count getter interface
      * @throws Exception If failed.
      */
-    private void affinityRunWithExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
+    private void affinityRunWithExtraCaches(final PersonsCountGetter personsCntGetter) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgIds.get(0)),
+        grid(0).compute().affinityRun(new TestAffinityRun(personsCntGetter, orgIds.get(0)),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -259,6 +238,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         beginNodesRestart();
 
         IgniteInternalFuture<Long> affFut = null;
+
         try {
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -267,13 +247,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                             if (System.currentTimeMillis() >= endTime)
                                 break;
 
-                            grid(0).compute().affinityRun(new TestAffinityRun(personsCountGetter, orgId),
+                            grid(0).compute().affinityRun(new TestAffinityRun(personsCntGetter, orgId),
                                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                                 orgId);
                         }
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -282,14 +262,14 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     }
 
     /**
-     * @param personsCountGetter Persons count getter interface
+     * @param personsCntGetter Persons count getter interface
      * @throws Exception If failed.
      */
-    private void affinityCallWithoutExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
+    private void affinityCallWithoutExtraCaches(final PersonsCountGetter personsCntGetter) throws Exception {
         // Workaround for initial update job metadata.
         grid(0).compute().affinityCall(Person.class.getSimpleName(),
             new Person(0, orgIds.get(0)).createKey(),
-            new TestAffinityCall(personsCountGetter, orgIds.get(0)));
+            new TestAffinityCall(personsCntGetter, orgIds.get(0)));
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -305,12 +285,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
                             int personsCnt = grid(0).compute().affinityCall(Person.class.getSimpleName(),
                                 new Person(0, orgId).createKey(),
-                                new TestAffinityCall(personsCountGetter, orgId));
-                            assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+                                new TestAffinityCall(personsCntGetter, orgId));
+
+                            assertEquals(PERS_AT_ORG_CNT, personsCnt);
                         }
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -319,12 +300,12 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     }
 
     /**
-     * @param personsCountGetter Persons count getter interface
+     * @param personsCntGetter Persons count getter interface
      * @throws Exception If failed.
      */
-    private void affinityCallWithExtraCaches(final PersonsCountGetter personsCountGetter) throws Exception {
+    private void affinityCallWithExtraCaches(final PersonsCountGetter personsCntGetter) throws Exception {
         // Workaround for initial update job metadata.
-        grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgIds.get(0)),
+        grid(0).compute().affinityCall(new TestAffinityCall(personsCntGetter, orgIds.get(0)),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -340,15 +321,15 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                             if (System.currentTimeMillis() >= endTime)
                                 break;
 
-                            int personsCnt = grid(0).compute().affinityCall(new TestAffinityCall(personsCountGetter, orgId),
+                            int personsCnt = grid(0).compute().affinityCall(new TestAffinityCall(personsCntGetter, orgId),
                                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                                 orgId);
 
-                            assertEquals(PERS_AT_ORG_COUNT, personsCnt);
+                            assertEquals(PERS_AT_ORG_CNT, personsCnt);
                         }
                     }
                 }
-            }, AFFINITY_THREADS_COUNT, "affinity-run");
+            }, AFFINITY_THREADS_CNT, "affinity-run");
         }
         finally {
             if (affFut != null)
@@ -361,7 +342,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     public void testRunCheckDhtPartition() throws Exception {
         affinityRunWithoutExtraCaches(new PersonsCountGetter() {
-            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
+            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountFromPartitionMap(ignite, log, orgId);
             }
         });
@@ -372,7 +353,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     public void testRunWithCachesCheckDhtPartition() throws Exception {
         affinityRunWithExtraCaches(new PersonsCountGetter() {
-            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
+            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountFromPartitionMapCheckBothCaches(ignite, log, orgId);
             }
         });
@@ -384,7 +365,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     public void testRunCheckSqlFieldLocalQuery() throws Exception {
         affinityRunWithoutExtraCaches(new PersonsCountGetter() {
             @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
-                return getPersonsCountBySqlFieledLocalQuery(ignite, log, orgId);
+                return getPersonsCountBySqlFieldLocalQuery(ignite, log, orgId);
             }
         });
     }
@@ -438,7 +419,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     public void testCallCheckDhtPartition() throws Exception {
         affinityCallWithoutExtraCaches(new PersonsCountGetter() {
-            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
+            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountFromPartitionMap(ignite, log, orgId);
             }
         });
@@ -449,7 +430,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     public void testCallWithCachesCheckDhtPartition() throws Exception {
         affinityCallWithExtraCaches(new PersonsCountGetter() {
-            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
+            @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountFromPartitionMap(ignite, log, orgId);
             }
         });
@@ -461,7 +442,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     public void testCallCheckSqlFieldLocalQuery() throws Exception {
         affinityCallWithoutExtraCaches(new PersonsCountGetter() {
             @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) {
-                return getPersonsCountBySqlFieledLocalQuery(ignite, log, orgId);
+                return getPersonsCountBySqlFieldLocalQuery(ignite, log, orgId);
             }
         });
     }
@@ -514,19 +495,25 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @throws Exception If failed.
      */
     public void testCheckReservePartitionException() throws Exception {
-
-        int orgId = 0;
-        for (Integer orgId1 : orgIds) {
-            orgId = orgId1;
-            ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
-            if (!grid(0).localNode().id().equals(node.id()))
-                break;
-        }
+        int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
         try {
             grid(0).compute().affinityRun(new IgniteRunnable() {
                 @Override public void run() {
                     // No-op.
+                }
+            }, Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME), orgId);
+
+            fail("Exception is expected");
+        }
+        catch (Exception e) {
+            assertTrue(EXCEPTION_MSG_REGEX.matcher(e.getCause().getMessage()).find());
+        }
+
+        try {
+            grid(0).compute().affinityCall(new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    return null;
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME), orgId);
 
@@ -567,6 +554,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                     throw new RuntimeException("Test job throws exception");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
+
             fail("Exception must be thrown");
         }
         catch (Exception e) {
@@ -588,6 +576,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                     throw new Error("Test job throws error");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
+
             fail("Error must be thrown");
         }
         catch (Throwable e) {
@@ -602,7 +591,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         final int orgId = orgIds.get(0);
         final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
 
-        // Test job unmarshaling fails
+        // Test job unmarshaling fails.
         try {
             grid(1).compute().affinityRun(new JobFailUnmarshaling(),
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -617,13 +606,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @throws Exception If failed.
      */
     public void testReleasePartitionJobMasterLeave() throws Exception {
-        final int orgId = orgIds.get(0);
-        final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
+        final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 
         try {
             grid(1).compute().withAsync().affinityRun(new IgniteRunnable() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
                 @Override public void run() {
-                    checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
+                    checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+
                     try {
                         Thread.sleep(1000);
                     }
@@ -634,15 +626,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
             stopGrid(1, true);
+
             Thread.sleep(3000);
 
-            waitForRebalancing((IgniteEx)grid(node),
-                ((IgniteEx)grid(node)).context().cache().context().exchange().topologyVersion());
+            awaitPartitionMapExchange();
 
-            checkPartitionsReservations((IgniteEx)grid(node), orgId, 0);
+            checkPartitionsReservations(grid(0), orgId, 0);
         }
         finally {
             startGrid(1);
+
             awaitPartitionMapExchange();
         }
     }
@@ -651,16 +644,20 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @throws Exception If failed.
      */
     public void testReleasePartitionJobImplementMasterLeave() throws Exception {
-        final int orgId = orgIds.get(0);
-        final ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(orgId);
+        final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 
         try {
             grid(1).compute().withAsync().affinityRun(new RunnableWithMasterLeave() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
                 @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteException {
+                    // No-op.
                 }
 
                 @Override public void run() {
-                    checkPartitionsReservations((IgniteEx)grid(node), orgId, 1);
+                    checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+
                     try {
                         Thread.sleep(1000);
                     }
@@ -671,43 +668,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
             stopGrid(1, true);
+
             Thread.sleep(3000);
 
-            waitForRebalancing((IgniteEx)grid(node),
-                ((IgniteEx)grid(node)).context().cache().context().exchange().topologyVersion());
+            awaitPartitionMapExchange();
 
-            checkPartitionsReservations((IgniteEx)grid(node), orgId, 0);
+            checkPartitionsReservations(grid(0), orgId, 0);
         }
         finally {
             startGrid(1);
             awaitPartitionMapExchange();
-        }
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param top Topology.
-     * @throws IgniteCheckedException If failed
-     */
-    protected void waitForRebalancing(IgniteEx ignite, AffinityTopologyVersion top) throws IgniteCheckedException {
-        boolean finished = false;
-
-        while (!finished) {
-            finished = true;
-
-            for (GridCacheAdapter c : ignite.context().cache().internalCaches()) {
-                GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-                if (fut.topologyVersion() == null || !fut.topologyVersion().equals(top)) {
-                    finished = false;
-
-                    break;
-                }
-                else if (!fut.get()) {
-                    finished = false;
-
-                    log.warning("Rebalancing finished with missed partitions.");
-                }
-            }
         }
     }
 
@@ -719,7 +689,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
          * @param orgId Org id.
          * @return Count of found Person object with specified orgId
          */
-        int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId);
+        int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception;
     }
 
     /** */
@@ -729,7 +699,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /** */
     private static class TestAffinityCall implements IgniteCallable<Integer> {
         /** Persons count getter. */
-        PersonsCountGetter personsCountGetter;
+        PersonsCountGetter personsCntGetter;
 
         /** Org id. */
         int orgId;
@@ -748,25 +718,25 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         }
 
         /**
-         * @param personsCountGetter Object to count Person.
+         * @param personsCntGetter Object to count Person.
          * @param orgId Organization Id.
          */
-        public TestAffinityCall(PersonsCountGetter personsCountGetter, int orgId) {
-            this.personsCountGetter = personsCountGetter;
+        public TestAffinityCall(PersonsCountGetter personsCntGetter, int orgId) {
+            this.personsCntGetter = personsCntGetter;
             this.orgId = orgId;
         }
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
             log.info("Begin call. orgId " + orgId);
-            return personsCountGetter.getPersonsCount(ignite, log, orgId);
+            return personsCntGetter.getPersonsCount(ignite, log, orgId);
         }
     }
 
     /** */
     private static class TestAffinityRun implements IgniteRunnable {
         /** Persons count getter. */
-        PersonsCountGetter personsCountGetter;
+        PersonsCountGetter personsCntGetter;
 
         /** Org id. */
         int orgId;
@@ -785,25 +755,29 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         }
 
         /**
-         * @param personsCountGetter Object to count Person.
+         * @param personsCntGetter Object to count Person.
          * @param orgId Organization Id.
          */
-        public TestAffinityRun(PersonsCountGetter personsCountGetter, int orgId) {
-            this.personsCountGetter = personsCountGetter;
+        public TestAffinityRun(PersonsCountGetter personsCntGetter, int orgId) {
+            this.personsCntGetter = personsCntGetter;
             this.orgId = orgId;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            log.info("Begin run");
-            int cnt = personsCountGetter.getPersonsCount(ignite, log, orgId);
-            assertEquals(PERS_AT_ORG_COUNT, cnt);
+            try {
+                log.info("Begin run");
+                int cnt = personsCntGetter.getPersonsCount(ignite, log, orgId);
+                assertEquals(PERS_AT_ORG_CNT, cnt);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 
     /** */
     static class JobFailUnmarshaling implements Externalizable, IgniteRunnable {
-
         /**
          * Default constructor (required by Externalizable).
          */

@@ -848,9 +848,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final ExpiryPolicy plc = cctx.expiry();
 
-            final AffinityTopologyVersion topVer = (querySpecifiedTopVer.get() == null) ?
-                cctx.affinity().affinityTopologyVersion() :
-                querySpecifiedTopVer.get();
+            AffinityTopologyVersion topVer = querySpecifiedTopVer.get();
+
+            if (topVer == null)
+                topVer = cctx.affinity().affinityTopologyVersion();
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
@@ -3327,6 +3328,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * TODO 2310 remove.
+     *
      * @param ver Version.
      */
     public static void setAffinityTopologyVersion(AffinityTopologyVersion ver) {

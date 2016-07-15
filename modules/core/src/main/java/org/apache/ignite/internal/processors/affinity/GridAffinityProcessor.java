@@ -151,8 +151,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Partition number. Negative in case stopped cache or error.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public int mapKeyToPart(@Nullable String cacheName, Object key)
-        throws IgniteCheckedException {
+    public int partition(@Nullable String cacheName, Object key) throws IgniteCheckedException {
         AffinityInfo affInfo = affinityCache(cacheName, AffinityTopologyVersion.NONE);
 
         return (affInfo != null) ? affInfo.affFunc.partition(key) : -1;
@@ -167,14 +166,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public ClusterNode mapPartToNode(@Nullable String cacheName, int partId, AffinityTopologyVersion topVer)
+    @Nullable public ClusterNode mapPartitionToNode(@Nullable String cacheName, int partId, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
-        if (affInfo == null)
-            return null;
-
-        return (affInfo != null) ? F.first(affInfo.assignment().get(partId)) : null;
+        return affInfo != null ? F.first(affInfo.assignment().get(partId)) : null;
     }
 
     /**

@@ -98,7 +98,7 @@ public class GridJobExecuteResponse implements Message {
      * @param jobAttrsBytes Serialized job attributes.
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
-     * @param retry Topology version for that partitions haven't been reserved on the affinity node
+     * @param retry Topology version for that partitions haven't been reserved on the affinity node.
      */
     public GridJobExecuteResponse(UUID nodeId,
         IgniteUuid sesId,
@@ -214,15 +214,15 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /**
-     * @return retried flag
+     * @return {@code True} if need retry job.
      */
-    public boolean isRetried() {
+    public boolean retry() {
         return retry != null;
     }
 
     /**
-     * @return topology version for that specified partitions haven't been reserved
-     *          on the affinity node
+     * @return Topology version for that specified partitions haven't been reserved
+     *          on the affinity node.
      */
     public AffinityTopologyVersion getRetryTopologyVersion() {
         return (retry != null) ? retry : AffinityTopologyVersion.NONE;

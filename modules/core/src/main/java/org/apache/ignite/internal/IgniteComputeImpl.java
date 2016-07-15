@@ -36,9 +36,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -117,7 +114,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         try {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-            int partId = ctx.affinity().mapKeyToPart(cacheName, affKey0);
+            int partId = ctx.affinity().partition(cacheName, affKey0);
             saveOrGet(ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, affKey,
                 job, prj.nodes()));
         }
@@ -142,7 +139,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-            int partId = ctx.affinity().mapKeyToPart(cacheName, affKey0);
+            int partId = ctx.affinity().partition(cacheName, affKey0);
             saveOrGet(ctx.closure().affinityRun(cacheNames, partId, affKey, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
@@ -182,7 +179,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         try {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-            int partId = ctx.affinity().mapKeyToPart(cacheName, affKey0);
+            int partId = ctx.affinity().partition(cacheName, affKey0);
             return saveOrGet(ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, affKey, job,
                 prj.nodes()));
         }
@@ -207,7 +204,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-            int partId = ctx.affinity().mapKeyToPart(cacheName, affKey0);
+            int partId = ctx.affinity().partition(cacheName, affKey0);
 
             return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, affKey, job, prj.nodes()));
         }

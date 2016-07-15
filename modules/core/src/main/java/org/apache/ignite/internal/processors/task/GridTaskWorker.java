@@ -785,8 +785,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                 if (res.getFakeException() != null)
                     jobRes.onResponse(null, res.getFakeException(), null, false);
-                else if (res.isRetried()) {
+                else if (res.retry()) {
                     retry(res);
+
                     return;
                 }
                 else {
@@ -952,23 +953,26 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param resp Response.
      */
     private void retry(final GridJobExecuteResponse resp) {
-        // Used only with affinity call / run
+        // Used only with affinity call / run.
         assert affCaches != null;
 
         mapTopVer = U.max(resp.getRetryTopologyVersion(), ctx.discovery().topologyVersionEx());
 
         final GridJobResultImpl res = jobRes.get(resp.getJobId());
+
         retryAttemptCnt++;
+
         final long wait = retryAttemptCnt * RETRY_DELAY_MULT_MS;
 
         IgniteInternalFuture<?> affFut = ctx.cache().context().exchange().affinityReadyFuture(mapTopVer);
 
-        if (affFut != null)
+        if (affFut != null) {
             affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut0) {
                     sendRetryRequest(wait, res);
                 }
             });
+        }
         else
             sendRetryRequest(wait, res);
     }
@@ -983,18 +987,22 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 ctx.closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
                         try {
-
-                            ClusterNode newNode = ctx.affinity().mapPartToNode(F.first(affCaches), affPartId,
+                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(F.first(affCaches), affPartId,
                                 mapTopVer);
 
-                            if (newNode == null)
-                                throw U.emptyTopologyException();
+                            if (newNode == null) {
+                                finishTask(null, U.emptyTopologyException());
+
+                                return;
+                            }
 
                             res.setNode(newNode);
+
                             sendRequest(res);
                         }
                         catch (Exception e) {
-                            U.error(log, "Failed to re-map job or retry request; [ses=" + ses + "]", e);
+                            U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+
                             finishTask(null, e);
                         }
                     }
