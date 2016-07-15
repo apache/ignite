@@ -212,7 +212,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * By default the timeout is disabled.
      *
      * @param timeout Timeout in milliseconds.
-     * @throws IllegalArgumentException If {@param timeout} is zero or less than {@code -1}.
+     * @throws IllegalArgumentException If timeout is zero or less than {@code -1}.
      */
     public void timeout(long timeout);
 
@@ -424,7 +424,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @param cancel {@code True} to cancel ongoing streaming operations.
      * @throws CacheException If failed to map key to node.
      * @throws IgniteInterruptedException If thread has been interrupted.
-     * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded, only if {@param cancel} is {@code false}.
+     * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded, only if cancel is {@code false}.
      */
     public void close(boolean cancel) throws CacheException, IgniteInterruptedException,
         IgniteDataStreamerTimeoutException;
