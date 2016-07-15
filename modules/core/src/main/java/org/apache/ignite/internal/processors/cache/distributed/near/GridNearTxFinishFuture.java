@@ -442,40 +442,46 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void ackBackup(){
-        GridDistributedTxMapping mapping = mappings.singleMapping();
+        Collection<GridDistributedTxMapping> mappings0;
 
-        if (mapping != null) {
-            UUID nodeId = mapping.node().id();
+        if (mappings.single())
+            mappings0 = Collections.singleton(mappings.singleMapping());
+        else
+            mappings0 = mappings.mappings();
 
-            Collection<UUID> backups = tx.transactionNodes().get(nodeId);
+        for (GridDistributedTxMapping mapping : mappings0)
+            if (mapping != null) {
+                UUID nodeId = mapping.node().id();
 
-            if (!F.isEmpty(backups)) {
-                assert backups.size() == 1;
+                Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
-                UUID backupId = F.first(backups);
+                if (!F.isEmpty(backups)) {
+                    assert backups.size() == 1;
 
-                ClusterNode backup = cctx.discovery().node(backupId);
+                    UUID backupId = F.first(backups);
 
-                GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
+                    ClusterNode backup = cctx.discovery().node(backupId);
 
-                // Nothing to do if backup has left the grid.
-                if (backup == null) {
-                    // No-op.
-                }
-                else if (backup.isLocal())
-                    cctx.tm().removeTxReturn(tx.xidVersion(), null);
-                else {
-                    try {
-                        if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
-                            cctx.io().send(backup, ackReq, tx.ioPolicy());
+                    GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
+
+                    // Nothing to do if backup has left the grid.
+                    if (backup == null) {
+                        // No-op.
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send one phase commit ack to backup node [backup=" +
-                            backup + ']', e);
+                    else if (backup.isLocal())
+                        cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                    else {
+                        try {
+                            if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                                cctx.io().send(backup, ackReq, tx.ioPolicy());
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to send one phase commit ack to backup node [backup=" +
+                                backup + ']', e);
+                        }
                     }
                 }
             }
-        }
     }
 
     /**
