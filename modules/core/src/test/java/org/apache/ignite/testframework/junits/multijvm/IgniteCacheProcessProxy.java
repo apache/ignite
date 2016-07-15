@@ -724,7 +724,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
      *
      */
     private static class PartitionSizeLongTask extends CacheTaskAdapter<Void, Void, Long> {
-
         /** Partition. */
         int partition;
 
@@ -742,7 +741,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param loc Local.
          */
         public PartitionSizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, int partition, boolean loc) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.loc = loc;
             this.peekModes = peekModes;
             this.partition = partition;
