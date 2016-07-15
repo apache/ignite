@@ -71,6 +71,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         key.set(0);
         createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
         createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+
         awaitPartitionMapExchange();
     }
 
@@ -152,8 +153,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
-
-//        grid(0).cache(Person.class.getSimpleName()).clear();
 
         IgniteInternalFuture<Long> affFut = null;
         try {

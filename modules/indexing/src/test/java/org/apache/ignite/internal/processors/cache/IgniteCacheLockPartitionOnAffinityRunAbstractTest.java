@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -63,6 +64,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /** Timeout between restart of a node. */
     private static final long RESTART_TIMEOUT = 3_000;
 
+    /** Max failover attempts. */
+    private static final int MAX_FAILOVER_ATTEMPTS = 100;
+
     /** Organization ids. */
     protected static List<Integer> orgIds;
 
@@ -86,6 +90,10 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
+        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
+        cfg.setFailoverSpi(failSpi);
 
         return cfg;
     }
@@ -134,11 +142,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         if (nodeRestartFut != null) {
             nodeRestartFut.get();
             nodeRestartFut = null;
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).context().isStopping())
-                startGrid(i);
         }
 
         awaitPartitionMapExchange();
