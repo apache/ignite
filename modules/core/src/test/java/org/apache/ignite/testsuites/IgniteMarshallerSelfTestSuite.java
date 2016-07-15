@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTes
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
@@ -59,6 +60,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerNodeFailoverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerSerialPersistentFieldsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridHandleTableSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerPooledSelfTest.class, ignoredTests);
 
         return suite;
     }
