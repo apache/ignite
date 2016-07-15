@@ -252,6 +252,8 @@ int main()
         Populate(personCache);
         Populate(orgCache);
 
+        Sleep(1000000);
+
         std::cout << std::endl;
         std::cout << ">>> Getting list of persons:" << std::endl;
 

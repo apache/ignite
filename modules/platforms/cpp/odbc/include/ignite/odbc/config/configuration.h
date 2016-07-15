@@ -24,6 +24,10 @@
 
 #include <ignite/common/common.h>
 
+#ifdef SetPort
+#undef SetPort
+#endif
+
 namespace ignite
 {
     namespace odbc
@@ -87,6 +91,16 @@ namespace ignite
                 }
 
                 /**
+                 * Set server port.
+                 *
+                 * @param port Server port.
+                 */
+                void SetPort(uint16_t port)
+                {
+                    this->port = port;
+                }
+
+                /**
                  * Get DSN.
                  *
                  * @return Data Source Name.
@@ -94,6 +108,16 @@ namespace ignite
                 const std::string& GetDsn() const
                 {
                     return dsn;
+                }
+
+                /**
+                 * Set DSN.
+                 *
+                 * @param dsn Data Source Name.
+                 */
+                void SetDsn(const std::string& dsn)
+                {
+                    this->dsn = dsn;
                 }
 
                 /**
@@ -117,6 +141,16 @@ namespace ignite
                 }
 
                 /**
+                 * Set server host.
+                 *
+                 * @param host Server host.
+                 */
+                void SetHost(const std::string& host)
+                {
+                    this->host = host;
+                }
+
+                /**
                  * Get cache.
                  *
                  * @return Cache name.
@@ -124,6 +158,16 @@ namespace ignite
                 const std::string& GetCache() const
                 {
                     return cache;
+                }
+
+                /**
+                 * Set cache.
+                 *
+                 * @param cache Cache name.
+                 */
+                void SetCache(const std::string& cache)
+                {
+                    this->cache = cache;
                 }
 
             private:

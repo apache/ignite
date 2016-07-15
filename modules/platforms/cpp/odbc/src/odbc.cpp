@@ -32,57 +32,6 @@
 
 namespace ignite
 {
-
-    BOOL ConfigDSN(HWND     hwndParent,
-                   WORD     req,
-                   LPCSTR   driver,
-                   LPCSTR   attributes)
-    {
-        LOG_MSG("ConfigDSN called\n");
-
-        ignite::odbc::config::Configuration config;
-
-        config.FillFromConfigAttributes(attributes);
-
-        if (!SQLValidDSN(config.GetDsn().c_str()))
-            return SQL_FALSE;
-
-        LOG_MSG("Driver: %s\n", driver);
-        LOG_MSG("Attributes: %s\n", attributes);
-
-        LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
-
-        switch (req)
-        {
-            case ODBC_ADD_DSN:
-            {
-                LOG_MSG("ODBC_ADD_DSN\n");
-
-                return SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
-            }
-
-            case ODBC_CONFIG_DSN:
-            {
-                LOG_MSG("ODBC_CONFIG_DSN\n");
-                break;
-            }
-
-            case ODBC_REMOVE_DSN:
-            {
-                LOG_MSG("ODBC_REMOVE_DSN\n");
-
-                return SQLRemoveDSNFromIni(config.GetDsn().c_str());
-            }
-
-            default:
-            {
-                return SQL_FALSE;
-            }
-        }
-
-        return SQL_TRUE;
-    }
-
     SQLRETURN SQLGetInfo(SQLHDBC        conn,
                          SQLUSMALLINT   infoType,
                          SQLPOINTER     infoValue,
@@ -1168,7 +1117,7 @@ namespace ignite
         SqlLen outResLen;
         ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
 
-        outBuffer.PutString(record.GetMessage());
+        outBuffer.PutString(record.GetMessageText());
 
         *msgLen = static_cast<SQLSMALLINT>(outResLen);
 
