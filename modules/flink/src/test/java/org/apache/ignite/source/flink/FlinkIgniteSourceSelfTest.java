@@ -18,6 +18,7 @@
 package org.apache.ignite.source.flink;
 
 
+import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -89,7 +90,8 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     public void testFlinkIgniteSource() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
+        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
+        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
         env.getConfig().disableSysoutLogging();
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
@@ -97,7 +99,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         igniteSource.start(10, 10, "PUT");
 
-        DataStream<Object> stream = env.addSource(igniteSource);
+        DataStream<CacheEvent> stream = env.addSource(igniteSource);
 
         int cnt = 0;
         while (cnt < 10)  {

@@ -45,7 +45,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Apache Flink Ignite source implemented as a RichSourceFunction.
  */
-public class IgniteSource extends RichSourceFunction<Object> {
+public class IgniteSource extends RichSourceFunction<CacheEvent> {
 
     private static final long serialVersionUID = 1L;
 
@@ -171,7 +171,7 @@ public class IgniteSource extends RichSourceFunction<Object> {
      * @param ctx SourceContext.
      */
     @Override
-    public void run(SourceContext<Object> ctx) {
+    public void run(SourceContext<CacheEvent> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
 
         if (stopped)
@@ -184,7 +184,6 @@ public class IgniteSource extends RichSourceFunction<Object> {
                   synchronized (ctx.getCheckpointLock()) {
 
                       for (CacheEvent evt : evts) {
-                          Object o = (Object) evt;
                           ctx.collect(evt);
                       }
                   }
