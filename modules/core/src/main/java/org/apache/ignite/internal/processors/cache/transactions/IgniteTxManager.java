@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -174,8 +175,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             PER_SEGMENT_Q);
 
     /** Committed but not acknowledged one phase commit transactions per node. */
-    private final ConcurrentLinkedHashMap<UUID, Collection<GridCacheVersion>> nodesToTxs =
-        new ConcurrentLinkedHashMap<>();
+    private final ConcurrentHashMap<UUID, Collection<GridCacheVersion>> nodesToTxs =
+        new ConcurrentHashMap<>();
 
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
@@ -957,7 +958,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             xidVer = new CommittedVersion(xidVer, nearXidVer);
 
         if (retVal != null) {
-            UUID nodeId = tx.subjectId(); // Originating node.
+            UUID nodeId = tx.otherNodeId(); // Originating node.
 
             if (!cctx.localNodeId().equals(nodeId)) { // No reason to keep failover map if current node is originating.
                 Collection<GridCacheVersion> txs = nodesToTxs.get(nodeId);
