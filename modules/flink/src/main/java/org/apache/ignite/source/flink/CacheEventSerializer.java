@@ -28,7 +28,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
- * Deserializer based on {@link JdkMarshaller}.
+ * Serializer based on {@link JdkMarshaller}.
  */
 public class CacheEventSerializer extends Serializer<CacheEvent> {
 
@@ -36,7 +36,7 @@ public class CacheEventSerializer extends Serializer<CacheEvent> {
     private static final Marshaller marsh = new JdkMarshaller();
 
     /**
-     *If true, the type this serializer will be used for is considered immutable.
+     * If true, the type this serializer will be used for is considered immutable.
      * This causes {@link #copy(Kryo, Object)} to return the original object.
      * */
     public CacheEventSerializer(){

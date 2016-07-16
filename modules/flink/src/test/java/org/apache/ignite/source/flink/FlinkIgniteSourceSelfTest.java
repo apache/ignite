@@ -18,6 +18,7 @@
 package org.apache.ignite.source.flink;
 
 
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -49,9 +50,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10_000;
-    }
+    @Override protected long getTestTimeout() { return 10_000;}
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -77,8 +76,10 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     public void testFlinkIgniteSource() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
         env.getConfig().disableSysoutLogging();
         env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
+
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
         IgniteSource igniteSource = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
@@ -88,19 +89,30 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         DataStream<CacheEvent> stream = env.addSource(igniteSource);
 
         int cnt = 0;
+
         while (cnt < 10)  {
             cache.put(cnt, cnt);
             cnt++;
         }
+
         X.println(">>> Printing stream results.");
+
         stream.print();
+
         stream.addSink(new SinkFunction<CacheEvent>() {
+            int sinkEventCounter = 0;
+
             @Override
             public void invoke(CacheEvent cacheEvent) throws Exception {
+                sinkEventCounter++;
                 assertNotNull(cacheEvent.newValue().toString());
                 assertTrue(Integer.parseInt(cacheEvent.newValue().toString()) < 10);
+                if(sinkEventCounter == 10){
+                    igniteSource.stop();
+                }
             }
         });
+
         try {
             env.execute();
         }
