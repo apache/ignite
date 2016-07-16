@@ -36,6 +36,7 @@
 
     <properties>
         <flink.version>1.0.0</flink.version>
+        <kryo-serializers.version>0.38</kryo-serializers.version>
     </properties>
 
     <dependencies>
@@ -165,8 +166,7 @@
         <dependency>
             <groupId>de.javakaffee</groupId>
             <artifactId>kryo-serializers</artifactId>
-            <version>0.27</version>
-            <scope>test</scope>
+            <version>${kryo-serializers.version}</version>
         </dependency>
     </dependencies>
 

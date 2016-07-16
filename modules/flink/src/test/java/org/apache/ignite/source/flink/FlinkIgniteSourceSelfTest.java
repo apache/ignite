@@ -19,27 +19,20 @@ package org.apache.ignite.source.flink;
 
 
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.sink.flink.IgniteSink;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Tests for {@link IgniteSource}.
@@ -90,14 +83,13 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     public void testFlinkIgniteSource() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
         env.getConfig().disableSysoutLogging();
+        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
         IgniteSource igniteSource = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
 
-        igniteSource.start(10, 10, "PUT");
+        igniteSource.start(10, 10, 10, "PUT");
 
         DataStream<CacheEvent> stream = env.addSource(igniteSource);
 
@@ -106,10 +98,17 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             cache.put(cnt, cnt);
             cnt++;
         }
+        X.println(">>> Printing stream results.");
         stream.print();
+        stream.addSink(new SinkFunction<CacheEvent>() {
+            @Override
+            public void invoke(CacheEvent cacheEvent) throws Exception {
+                assertNotNull(cacheEvent.newValue().toString());
+                assertTrue(Integer.parseInt(cacheEvent.newValue().toString()) < 10);
+            }
+        });
         try {
             env.execute();
-
         }
         finally {
             igniteSource.stop();

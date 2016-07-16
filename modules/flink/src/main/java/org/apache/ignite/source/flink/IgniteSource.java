@@ -16,18 +16,12 @@
  */
 
 package org.apache.ignite.source.flink;
-
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
-import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
-import org.apache.flink.streaming.util.serialization.DeserializationSchema;
-import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
+import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -40,12 +34,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-
 /**
- * Apache Flink Ignite source implemented as a RichSourceFunction.
+ * Apache Flink Ignite source implemented as a SourceFunction.
  */
-public class IgniteSource extends RichSourceFunction<CacheEvent> {
+public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     private static final long serialVersionUID = 1L;
 
@@ -60,6 +52,9 @@ public class IgniteSource extends RichSourceFunction<CacheEvent> {
 
     /** Max number of events taken from the buffer at once. */
     private static int evtBatchSize = 100;
+
+    /** Number of milliseconds timeout for event buffer queue operation. */
+    private static int evtBufferTimeout = 10;
 
     /** Remote Listener id. */
     private static UUID rmtLsnrId;
@@ -117,12 +112,13 @@ public class IgniteSource extends RichSourceFunction<CacheEvent> {
      * @throws IgniteException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start(int evtBufSize, int evtBatchSize, String cacheEvents) throws Exception {
+    public void start(int evtBufSize, int evtBatchSize, int evtBufferTimeout, String cacheEvents) throws Exception {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
         this.evtBufSize = evtBufSize;
         this.evtBatchSize = evtBatchSize;
+        this.evtBufferTimeout = evtBufferTimeout;
 
         Ignite ignite = IgniteSource.IgniteContext.getIgnite();
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName);
@@ -190,7 +186,7 @@ public class IgniteSource extends RichSourceFunction<CacheEvent> {
               }
           }
         } catch (Exception e){
-            log.error("Error while processing OUT of " + cacheName, e);
+            log.error("Error while processing cache event of " + cacheName, e);
         }
         return;
     }
@@ -292,7 +288,7 @@ public class IgniteSource extends RichSourceFunction<CacheEvent> {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID id, CacheEvent evt) {
             try {
-                if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
+                if (!evtBuf.offer(evt, evtBufferTimeout, TimeUnit.MILLISECONDS))
                     log.error("Failed to buffer event {}", evt.name());
             }
             catch (InterruptedException e) {
