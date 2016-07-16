@@ -18,21 +18,15 @@
 package org.apache.ignite.source.flink;
 
 
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
-import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Tests for {@link IgniteSource}.

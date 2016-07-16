@@ -17,7 +17,6 @@
 
 package org.apache.ignite.source.flink;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
-import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.events.CacheEvent;
