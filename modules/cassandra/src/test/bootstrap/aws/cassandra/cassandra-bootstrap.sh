@@ -293,21 +293,21 @@ setupCassandra()
         fi
     fi
 
-    rm -Rf /storage/cassandra
-
-    echo "[INFO] Creating '/storage/cassandra' storage"
-    mkdir -p /storage/cassandra
-    chown -R cassandra:cassandra /storage/cassandra
-    if [ $? -ne 0 ]; then
-        terminate "Failed to setup Cassandra storage dir: /storage/cassandra"
-    fi
-
     rm -f /opt/cassandra/conf/cassandra-env.sh /opt/cassandra/conf/cassandra-template.yaml
 
     cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-env.sh /opt/cassandra/conf
     cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-template.yaml /opt/cassandra/conf
 
     chown -R cassandra:cassandra /opt/cassandra /opt/ignite-cassandra-tests
+
+    createCassandraStorageLayout
+
+    cat /opt/cassandra/conf/cassandra-template.yaml | sed -r "s/\\\$\{CASSANDRA_DATA_DIR\}/$CASSANDRA_DATA_DIR/g" > /opt/cassandra/conf/cassandra-template-1.yaml
+    cat /opt/cassandra/conf/cassandra-template-1.yaml | sed -r "s/\\\$\{CASSANDRA_COMMITLOG_DIR\}/$CASSANDRA_COMMITLOG_DIR/g" > /opt/cassandra/conf/cassandra-template-2.yaml
+    cat /opt/cassandra/conf/cassandra-template-2.yaml | sed -r "s/\\\$\{CASSANDRA_CACHES_DIR\}/$CASSANDRA_CACHES_DIR/g" > /opt/cassandra/conf/cassandra-template-3.yaml
+
+    rm -f /opt/cassandra/conf/cassandra-template.yaml /opt/cassandra/conf/cassandra-template-1.yaml /opt/cassandra/conf/cassandra-template-2.yaml
+    mv /opt/cassandra/conf/cassandra-template-3.yaml /opt/cassandra/conf/cassandra-template.yaml
 
     echo "export JAVA_HOME=/opt/java" >> $1
     echo "export CASSANDRA_HOME=/opt/cassandra" >> $1
