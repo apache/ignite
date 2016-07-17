@@ -29,41 +29,26 @@
 
 uploadLogs()
 {
-    if [ ! -d "$1" ] && [ ! -f "$1" ]; then
-        echo "[INFO] Logs source doesn't exist: $1"
+    if [ ! -d "$1" ]; then
+        echo "[INFO] Logs directory doesn't exist: $1"
         return 0
     fi
 
-    if [ -d "$1" ]; then
-        echo "[INFO] Uploading logs from directory: $1"
+    echo "[INFO] Uploading logs from directory: $1"
 
-        dirList=$(ls $1 | head -1)
+    dirList=$(ls $1 | head -1)
 
-        if [ -z "$dirList" ]; then
-            echo "[INFO] Directory is empty: $1"
-            return 0
-        fi
-    else
-        echo "[INFO] Uploading logs file: $1"
+    if [ -z "$dirList" ]; then
+        echo "[INFO] Directory is empty: $1"
     fi
 
     for i in 0 9;
     do
-        if [ -d "$1" ]; then
-            aws s3 sync --sse AES256 "$1" "$S3_LOGS_FOLDER"
-            code=$?
-        else
-            aws s3 cp --sse AES256 "$1" "${S3_LOGS_FOLDER}/"
-            code=$?
-        fi
+        aws s3 sync --sse AES256 --delete "$1" "$S3_LOGS_FOLDER"
+        code=$?
 
         if [ $code -eq 0 ]; then
-            if [ -d "$1" ]; then
-                echo "[INFO] Successfully uploaded logs from directory: $1"
-            else
-                echo "[INFO] Successfully uploaded logs file: $1"
-            fi
-
+            echo "[INFO] Successfully uploaded logs from directory: $1"
             return 0
         fi
 
@@ -71,11 +56,68 @@ uploadLogs()
         sleep 30s
     done
 
-    if [ -d "$1" ]; then
-        echo "[ERROR] All 10 attempts to upload logs are failed for the directory: $1"
-    else
-        echo "[ERROR] All 10 attempts to upload logs are failed for the file: $1"
+    echo "[ERROR] All 10 attempts to upload logs are failed for the directory: $1"
+}
+
+createNewLogsSnapshot()
+{
+    rm -f ~/logs-collector.snapshot.new
+
+    for log_src in "$@"
+    do
+        if [ -d "$log_src" ] || [ -f "$log_src" ]; then
+            ls -alR $log_src >> ~/logs-collector.snapshot.new
+
+        fi
+    done
+}
+
+checkLogsChanged()
+{
+    createNewLogsSnapshot $@
+
+    if [ ! -f "~/logs-collector.snapshot" ]; then
+        return 1
     fi
+
+    diff "~/logs-collector.snapshot" "~/logs-collector.snapshot.new" > /dev/null
+
+    return $?
+}
+
+updateLogsSnapshot()
+{
+    if [ ! -f "~/logs-collector.snapshot.new" ]; then
+        return 0
+    fi
+
+    rm -f "~/logs-collector.snapshot"
+    mv "~/logs-collector.snapshot.new" "~/logs-collector.snapshot"
+}
+
+collectLogs()
+{
+    createNewLogsSnapshot
+
+    rm -Rf ~/logs-collector-logs
+    mkdir -p ~/logs-collector-logs
+
+    for log_src in "$@"
+    do
+        if [ -f "$log_src" ]; then
+            echo "[INFO] Collecting log file: $log_src"
+            cp -f $log_src ~/logs-collector-logs
+        elif [ -d "$log_src" ]; then
+            echo "[INFO] Collecting logs from folder: $log_src"
+            cp -Rf $log_src ~/logs-collector-logs
+        fi
+    done
+
+    uploadLogs ~/logs-collector-logs
+
+    rm -Rf ~/logs-collector-logs
+
+    updateLogsSnapshot
 }
 
 echo "[INFO] Running Logs collector service"
@@ -116,26 +158,16 @@ while true; do
     STATE=$(aws s3 ls $S3_LOGS_TRIGGER_URL)
 
     if [ -z "$STATE" ] || [ "$STATE" == "$TRIGGER_STATE" ]; then
-        continue
+        checkLogsChanged
+
+        if [ $? -eq 0 ]; then
+            continue
+        fi
     fi
 
     TRIGGER_STATE=$STATE
 
-    echo "[INFO] Cleaning S3 logs folder: $S3_LOGS_FOLDER"
-
-    aws s3 rm --recursive $S3_LOGS_FOLDER
-
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to clean S3 logs folder: $S3_LOGS_FOLDER"
-    fi
-
-    for log_src in "$@"
-    do
-        uploadLogs $log_src
-    done
-
-    uploadLogs "/var/log/cloud-init.log"
-    uploadLogs "/var/log/cloud-init-output.log"
+    collectLogs $@ /var/log/cloud-init.log /var/log/cloud-init-output.log
 
     echo "--------------------------------------------------------------------"
 done
