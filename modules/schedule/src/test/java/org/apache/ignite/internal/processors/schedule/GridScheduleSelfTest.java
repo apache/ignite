@@ -332,6 +332,23 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testSchedulerCloseBehaviour() throws Exception {
+        SchedulerFuture<Integer> future = null;
+        try {
+            future = grid(0).scheduler().scheduleLocal(() -> 1, "{55} 53 3/5 * * *");
+            //Invalid Pattern will close the future
+            assert future.isDone();
+            //On closing Scheduler nextExecutionTime returns default behaviour
+            assert future.nextExecutionTime() == -1;
+        }
+        finally {
+            assert future != null;
+            if (!future.isCancelled())
+                future.cancel();
+
+        }
+    }
+
     /**
      * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
      * of attempts with 100ms interval between them.
