@@ -292,7 +292,7 @@ setupTestsPackage()
     chown -R ignite:ignite /opt/ignite-cassandra-tests
 
     echo "export JAVA_HOME=/opt/jdk1.8.0_77" >> $1
-    echo "export PATH=\$JAVA_HOME/bin:\IGNITE_HOME/bin:\$PATH" >> $1
+    echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> $1
 }
 
 ###################################################################################################################

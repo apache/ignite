@@ -310,7 +310,7 @@ setupIgnite()
     echo "export JAVA_HOME=/opt/java" >> $1
     echo "export IGNITE_HOME=/opt/ignite" >> $1
     echo "export USER_LIBS=\$IGNITE_HOME/libs/optional/ignite-cassandra/*:\$IGNITE_HOME/libs/optional/ignite-slf4j/*" >> $1
-    echo "export PATH=\$JAVA_HOME/bin:\IGNITE_HOME/bin:\$PATH" >> $1
+    echo "export PATH=\$JAVA_HOME/bin:\$IGNITE_HOME/bin:\$PATH" >> $1
 }
 
 ###################################################################################################################
