@@ -453,12 +453,10 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
     /** {@inheritDoc} */
     @Override public long nextExecutionTime() {
-
         if (isDone() || isCancelled())
             return DEFAULT_TIME;
 
         return nextExecutionTimes(1, U.currentTimeMillis())[0];
-
     }
 
     /** {@inheritDoc} */

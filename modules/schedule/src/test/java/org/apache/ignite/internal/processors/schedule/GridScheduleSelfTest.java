@@ -345,7 +345,6 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             assert future != null;
             if (!future.isCancelled())
                 future.cancel();
-
         }
     }
 
