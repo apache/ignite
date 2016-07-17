@@ -1210,6 +1210,210 @@ bootstrapGangliaAgent()
     echo "[INFO] Ganglia daemon job id: $!"
 }
 
+# Partitioning, formatting to ext4 and mounting all unpartitioned drives.
+# As a result env array MOUNT_POINTS provides all newly created mount points.
+mountUnpartitionedDrives()
+{
+    MOUNT_POINTS=
+
+    echo "[INFO] Mounting unpartitioned drives"
+
+    lsblk -V &> /dev/null
+
+    if [ $? -ne 0 ]; then
+        echo "[WARN] lsblk utility doesn't exist"
+        echo "[INFO] Installing util-linux-ng package"
+
+        yum -y install util-linux-ng
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to install util-linux-ng package"
+        fi
+    fi
+
+    parted -v &> /dev/null
+
+    if [ $? -ne 0 ]; then
+        echo "[WARN] parted utility doesn't exist"
+        echo "[INFO] Installing parted package"
+
+        yum -y install parted
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to install parted package"
+        fi
+    fi
+
+    drives=$(lsblk -io KNAME,TYPE | grep disk | sed -r "s/disk//g" | xargs)
+
+    echo "[INFO] Found HDDs: $drives"
+
+    unpartDrives=
+    partDrives=$(lsblk -io KNAME,TYPE | grep part | sed -r "s/[0-9]*//g" | sed -r "s/part//g" | xargs)
+
+    drives=($drives)
+	count=${#drives[@]}
+	iter=1
+
+	for (( i=0; i<=$(( $count -1 )); i++ ))
+	do
+		drive=${drives[$i]}
+
+        if [ -z "$drive" ]; then
+            continue
+        fi
+
+        isPartitioned=$(echo $partDrives | grep "$drive")
+
+        if [ -n "$isPartitioned" ]; then
+            continue
+        fi
+
+        echo "[INFO] Creating partition for the drive: $drive"
+
+        parted -s -a opt /dev/$drive mklabel gpt mkpart primary 0% 100%
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to create partition for the drive: $drive"
+        fi
+
+        partition=$(lsblk -io KNAME,TYPE | grep part | grep $drive | sed -r "s/part//g" | xargs)
+
+        echo "[INFO] Successfully created partition $partition for the drive: $drive"
+
+        echo "[INFO] Formatting partition /dev/$partition to ext4"
+
+        mkfs.ext4 -F -q /dev/$partition
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to format partition: /dev/$partition"
+        fi
+
+        echo "[INFO] Partition /dev/$partition was successfully formatted to ext4"
+
+        echo "[INFO] Mounting partition /dev/$partition to /storage$iter"
+
+        mkdir -p /storage$iter
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to create mount point directory: /storage$iter"
+        fi
+
+        echo "/dev/$partition               /storage$iter               ext4    defaults        1 1" >> /etc/fstab
+
+        mount /storage$iter
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to mount /storage$iter mount point for partition /dev/$partition"
+        fi
+
+        echo "[INFO] Partition /dev/$partition was successfully mounted to /storage$iter"
+
+        if [ -n "$MOUNT_POINTS" ]; then
+            MOUNT_POINTS="$MOUNT_POINTS "
+        fi
+
+        MOUNT_POINTS="${MOUNT_POINTS}/storage${iter}"
+
+        iter=$(($iter+1))
+    done
+
+    if [ -z "$MOUNT_POINTS" ]; then
+        echo "[INFO] All drives already have partitions created"
+    fi
+
+    MOUNT_POINTS=($MOUNT_POINTS)
+}
+
+# Creates storage directories for Cassandra: data files, commit log, saved caches.
+# As a result CASSANDRA_DATA_DIR, CASSANDRA_COMMITLOG_DIR, CASSANDRA_CACHES_DIR will point to appropriate directories.
+createCassandraStorageLayout()
+{
+    CASSANDRA_DATA_DIR=
+    CASSANDRA_COMMITLOG_DIR=
+    CASSANDRA_CACHES_DIR=
+
+    mountUnpartitionedDrives
+
+    echo "[INFO] Creating Cassandra storage layout"
+
+	count=${#MOUNT_POINTS[@]}
+
+	for (( i=0; i<=$(( $count -1 )); i++ ))
+    do
+        mountPoint=${MOUNT_POINTS[$i]}
+
+        if [ -z "$CASSANDRA_DATA_DIR" ]; then
+            CASSANDRA_DATA_DIR=$mountPoint
+        elif [ -z "$CASSANDRA_COMMITLOG_DIR" ]; then
+            CASSANDRA_COMMITLOG_DIR=$mountPoint
+        elif [ -z "$CASSANDRA_CACHES_DIR" ]; then
+            CASSANDRA_CACHES_DIR=$mountPoint
+        else
+            CASSANDRA_DATA_DIR="$CASSANDRA_DATA_DIR $mountPoint"
+        fi
+    done
+
+    if [ -z "$CASSANDRA_DATA_DIR" ]; then
+        CASSANDRA_DATA_DIR="/storage/cassandra/data"
+    else
+        CASSANDRA_DATA_DIR="$CASSANDRA_DATA_DIR/cassandra_data"
+    fi
+
+    if [ -z "$CASSANDRA_COMMITLOG_DIR" ]; then
+        CASSANDRA_COMMITLOG_DIR="/storage/cassandra/commitlog"
+    else
+        CASSANDRA_COMMITLOG_DIR="$CASSANDRA_COMMITLOG_DIR/cassandra_commitlog"
+    fi
+
+    if [ -z "$CASSANDRA_CACHES_DIR" ]; then
+        CASSANDRA_CACHES_DIR="/storage/cassandra/saved_caches"
+    else
+        CASSANDRA_CACHES_DIR="$CASSANDRA_CACHES_DIR/cassandra_caches"
+    fi
+
+    echo "[INFO] Cassandra data dir: $CASSANDRA_DATA_DIR"
+    echo "[INFO] Cassandra commit log dir: $CASSANDRA_COMMITLOG_DIR"
+    echo "[INFO] Cassandra saved caches dir: $CASSANDRA_CACHES_DIR"
+
+    dirs=("$CASSANDRA_DATA_DIR $CASSANDRA_COMMITLOG_DIR $CASSANDRA_CACHES_DIR")
+
+	count=${#dirs[@]}
+
+	for (( i=0; i<=$(( $count -1 )); i++ ))
+    do
+        directory=${dirs[$i]}
+
+        mkdir -p $directory
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to create directory: $directory"
+        fi
+
+        chown -R cassandra:cassandra $directory
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to assign cassandra:cassandra as an owner of directory $directory"
+        fi
+    done
+
+    DATA_DIR_SPEC="\n"
+
+    dirs=($CASSANDRA_DATA_DIR)
+
+	count=${#dirs[@]}
+
+	for (( i=0; i<=$(( $count -1 )); i++ ))
+    do
+        dataDir=${dirs[$i]}
+        DATA_DIR_SPEC="${DATA_DIR_SPEC}     - ${dataDir}\n"
+    done
+
+    CASSANDRA_DATA_DIR=$(echo $DATA_DIR_SPEC | sed -r "s/\//\\\\\//g")
+    CASSANDRA_COMMITLOG_DIR=$(echo $CASSANDRA_COMMITLOG_DIR | sed -r "s/\//\\\\\//g")
+    CASSANDRA_CACHES_DIR=$(echo $CASSANDRA_CACHES_DIR | sed -r "s/\//\\\\\//g")
+}
+
 # Attaches environment configuration settings
 . $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/env.sh
 
