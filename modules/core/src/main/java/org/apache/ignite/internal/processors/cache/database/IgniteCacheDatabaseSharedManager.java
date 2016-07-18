@@ -102,7 +102,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForCheckpoint() {
+    @Nullable public IgniteInternalFuture wakeupForCheckpoint(boolean backup) {
         return null;
     }
 
