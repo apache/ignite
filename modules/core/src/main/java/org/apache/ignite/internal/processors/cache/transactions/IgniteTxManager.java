@@ -926,12 +926,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (!tx.local() &&
             !tx.near() &&
             tx.onePhaseCommit() &&
-            !cctx.localNodeId().equals(tx.otherNodeId())) {
-            IgniteTxEntry entry = F.first(tx.allEntries());
-
-            if (entry.context().affinity().backup(cctx.localNode(), entry.cached().partition(), tx.topologyVersion()))
-                addCommittedTx(tx, tx.nearXidVersion(), null, ((GridDhtTxRemote)tx).getReturnValue());
-        }
+            !cctx.localNodeId().equals(tx.otherNodeId()))
+            addCommittedTx(tx, tx.nearXidVersion(), null, ((GridDhtTxRemote)tx).getReturnValue());
 
         addCommittedTx(tx, tx.xidVersion(), tx.nearXidVersion());
     }

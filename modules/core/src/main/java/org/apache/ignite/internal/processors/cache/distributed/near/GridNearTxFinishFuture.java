@@ -399,7 +399,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     else
                         finish(mappings.mappings());
                 }
-                else if (tx.onePhaseCommit())
+
+                if (tx.onePhaseCommit())
                     ackBackup();
 
                 markInitialized();
@@ -457,7 +458,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
 
-                // Nothing to do if backup has left the grid.
+                // Nothing to do if backup has left the grid or local.
                 if (backup == null || backup.isLocal()) {
                     // No-op.
                 }
