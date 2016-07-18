@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.EntryAssembler;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cacheobject.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -63,8 +62,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  *
@@ -676,29 +673,15 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /**
-         * @param buf Buffer.
+         * @param link Entry link.
          * @throws IgniteCheckedException If failed.
          */
-        protected void doInitData(ByteBuffer buf) throws IgniteCheckedException {
-            key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
-        }
+        protected void doInitData(final long link) throws IgniteCheckedException {
+            final EntryAssembler assembler = new EntryAssembler();
 
-        /**
-         * @param buf Byte buffer.
-         * @param incompleteObj Incomplete object.
-         * @return Incomplete cache object.
-         * @throws IgniteCheckedException
-         */
-        @SuppressWarnings("unchecked")
-        protected IncompleteCacheObject doInitFragmentedData(ByteBuffer buf,
-            @Nullable IncompleteCacheObject incompleteObj)
-            throws IgniteCheckedException {
-            incompleteObj = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
+            assembler.readRow(cctx, link, true);
 
-            if (incompleteObj.isReady())
-                key = (KeyCacheObject) incompleteObj.cacheObject();
-
-            return incompleteObj;
+            key = assembler.key();
         }
 
         /**
@@ -710,66 +693,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             assert link != 0;
 
-            try (Page page = page(pageId(link))) {
-                ByteBuffer buf = page.getForRead();
-
-                try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-                    int dataOff = io.getDataOffset(buf, dwordsOffset(link));
-
-                    long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
-
-                    if (nextLink == 0) {
-                        buf.position(dataOff);
-
-                        // Skip entry size.
-                        buf.getShort();
-
-                        doInitData(buf);
-                    }
-                    else {
-                        // Init fragmented entry
-                        DataPageIO.setPositionAndLimitOnFragment(buf, dataOff);
-
-                        IncompleteCacheObject incompleteObj = doInitFragmentedData(buf, null);
-
-                        // If we need only key.
-                        if (incompleteObj.isReady())
-                            return;
-
-                        while (nextLink != 0) {
-                            try (final Page p = page(pageId(nextLink))) {
-                                try {
-                                    final ByteBuffer b = p.getForRead();
-
-                                    final DataPageIO pageIo = DataPageIO.VERSIONS.forPage(b);
-
-                                    final int off = pageIo.getDataOffset(b, dwordsOffset(nextLink));
-
-                                    nextLink = DataPageIO.getNextFragmentLink(b, off);
-
-                                    DataPageIO.setPositionAndLimitOnFragment(b, off);
-
-                                    incompleteObj = doInitFragmentedData(b, incompleteObj);
-
-                                    if (incompleteObj.isReady())
-                                        return;
-
-                                    assert !b.hasRemaining() : b.remaining();
-                                } finally {
-                                    p.releaseRead();
-                                }
-                            }
-                        }
-                    }
-                }
-                finally {
-                    page.releaseRead();
-                }
+            try {
+                doInitData(link);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw new IgniteException(e.getMessage(), e);
             }
         }
 
@@ -833,11 +761,15 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override protected void doInitData(ByteBuffer buf) throws IgniteCheckedException {
-            key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
-            val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
+        @Override protected void doInitData(final long link) throws IgniteCheckedException {
+            final EntryAssembler assembler = new EntryAssembler();
 
-            ver = readVersion(buf);
+            assembler.readRow(cctx, link, false);
+
+            key = assembler.key();
+            val = assembler.value();
+
+            ver = assembler.version();
         }
 
         /**
@@ -851,64 +783,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long order = buf.getLong();
 
             return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-        }
-
-        /**
-         * @param buf Byte buffer.
-         * @param incompleteObj Incomplete object.
-         * @return Incomplete cache object.
-         * @throws IgniteCheckedException If fail.
-         */
-        @SuppressWarnings("unchecked")
-        @Override protected IncompleteCacheObject doInitFragmentedData(final ByteBuffer buf,
-            IncompleteCacheObject incompleteObj) throws IgniteCheckedException {
-            if (readStage == 0) {
-                incompleteObj = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
-
-                if (incompleteObj.isReady()) {
-                    key = (KeyCacheObject) incompleteObj.cacheObject();
-
-                    readStage = 1;
-
-                    incompleteObj = null;
-                }
-                else
-                    return incompleteObj;
-            }
-
-            if (readStage == 1) {
-                incompleteObj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf, incompleteObj);
-
-                if (incompleteObj.isReady()) {
-                    val = incompleteObj.cacheObject();
-
-                    readStage = 2;
-
-                    incompleteObj = null;
-                }
-                else
-                    return incompleteObj;
-            }
-
-            if (readStage == 2) {
-                if (incompleteObj == null)
-                    incompleteObj = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte) 0);
-
-                incompleteObj.readData(buf);
-
-                if (incompleteObj.isReady()) {
-                    final ByteBuffer verBuf = ByteBuffer.wrap(incompleteObj.data());
-
-                    verBuf.order(buf.order());
-
-                    // reset for reuse
-                    readStage = 0;
-
-                    ver = readVersion(verBuf);
-                }
-            }
-
-            return incompleteObj;
         }
 
         /** {@inheritDoc} */
