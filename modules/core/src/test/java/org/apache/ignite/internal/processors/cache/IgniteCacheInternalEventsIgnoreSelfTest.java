@@ -26,27 +26,35 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** */
-public class IgniteCacheInternalEventsIgnoreTest extends GridCommonAbstractTest {
+/**
+ *
+ */
+public class IgniteCacheInternalEventsIgnoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicBoolean evtFlag = new AtomicBoolean();
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
     public void testInternalEventsIgnore() throws Exception {
         Ignite ignite = startGrid(1);
-        ignite.events().localListen(new EvtLsnr(), EventType.EVT_TASK_STARTED, EventType.EVT_TASK_REDUCED,
+        ignite.events().localListen(new EventListener(), EventType.EVT_TASK_STARTED, EventType.EVT_TASK_REDUCED,
             EventType.EVT_TASK_FINISHED);
         IgniteCache cache = ignite.createCache(defaultCacheConfiguration().setName("myTestCache"));
         cache.size(CachePeekMode.ALL);
         cache.sizeLong(CachePeekMode.ALL);
+
         assertFalse(evtFlag.get());
     }
 
-    /** */
-    private static final class EvtLsnr implements IgnitePredicate<Event> {
+    /**
+     *
+     */
+    private static final class EventListener implements IgnitePredicate<Event> {
         /** {@inheritDoc} */
         @Override public boolean apply(Event e) {
             evtFlag.set(true);
+
             return true;
         }
     }

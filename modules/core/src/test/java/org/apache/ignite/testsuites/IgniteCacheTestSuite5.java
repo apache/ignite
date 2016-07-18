@@ -21,7 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheInternalEventsIgnoreTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInternalEventsIgnoreSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
@@ -45,7 +45,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
         suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
-        suite.addTestSuite(IgniteCacheInternalEventsIgnoreTest.class);
+        suite.addTestSuite(IgniteCacheInternalEventsIgnoreSelfTest.class);
 
         return suite;
     }
