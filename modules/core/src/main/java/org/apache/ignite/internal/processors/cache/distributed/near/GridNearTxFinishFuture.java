@@ -442,6 +442,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void ackBackup() {
+        if (mappings.empty())
+            return;
+
         GridDistributedTxMapping mapping = mappings.singleMapping();
 
         if (mapping != null) {
