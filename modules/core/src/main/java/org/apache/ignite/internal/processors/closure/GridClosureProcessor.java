@@ -192,7 +192,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T1(mode, jobs), null, sys, null);
+            return ctx.task().execute(new T1(mode, jobs), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -233,7 +233,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T2(mode, job), null, sys, null);
+            return ctx.task().execute(new T2(mode, job), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -418,7 +418,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -468,7 +468,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5(node, job, cacheNames, partId, affKey), null, false, mapTopVer);
+            return ctx.task().execute(new T5(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -504,7 +504,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T4(node, job, cacheNames, partId, affKey), null, false, mapTopVer);
+            return ctx.task().execute(new T4(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -535,7 +535,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null);
+            return ctx.task().execute(new T7<>(mode, job), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -567,7 +567,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -598,7 +598,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys, null);
+            return ctx.task().execute(new T7<>(mode, job), null, sys);
         }
         finally {
             busyLock.readUnlock();
@@ -621,7 +621,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8(job, arg), null, false, null);
+            return ctx.task().execute(new T8(job, arg), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -644,7 +644,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -668,7 +668,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job), arg, false, null);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -693,7 +693,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T9<>(job, args), null, false, null);
+            return ctx.task().execute(new T9<>(job, args), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -717,7 +717,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null);
+            return ctx.task().execute(new T10<>(job, args, rdc), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -1333,6 +1333,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private int partId;
 
         /** */
+        private AffinityTopologyVersion topVer;
+
+        /** */
         private Collection<String> affCacheNames;
 
 
@@ -1342,8 +1345,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
          * @param affKey Affinity key.
+         * @param topVer Affinity topology version.
          */
-        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId, Object affKey) {
+        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId, Object affKey,
+            AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
             assert partId >= 0;
@@ -1353,6 +1358,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.affCacheNames = affCacheNames;
             this.partId = partId;
             this.affKey = affKey;
+            this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
@@ -1368,6 +1374,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Nullable @Override public Collection<String> affinityCacheNames() {
             return affCacheNames;
+        }
+
+        @Nullable @Override public AffinityTopologyVersion topologyVersion() {
+            return topVer;
         }
 
         /** {@inheritDoc} */
@@ -1396,6 +1406,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private int partId;
 
         /** */
+        private AffinityTopologyVersion topVer;
+
+        /** */
         private Collection<String> affCacheNames;
 
 
@@ -1406,8 +1419,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
          * @param affKey Affinity key.
+         * @param topVer Affinity topology version.
          */
-        private T5(ClusterNode node, Callable<R> job, Collection<String> affCacheNames, int partId, Object affKey) {
+        private T5(ClusterNode node, Callable<R> job, Collection<String> affCacheNames, int partId, Object affKey,
+            AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
             this.node = node;
@@ -1415,6 +1430,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.affCacheNames = affCacheNames;
             this.partId = partId;
             this.affKey = affKey;
+            this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
@@ -1445,6 +1461,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Nullable @Override public Collection<String> affinityCacheNames() {
             return affCacheNames;
+        }
+
+        @Nullable @Override public AffinityTopologyVersion topologyVersion() {
+            return topVer;
         }
     }
 

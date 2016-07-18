@@ -154,7 +154,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     public int partition(@Nullable String cacheName, Object key) throws IgniteCheckedException {
         AffinityInfo affInfo = affinityCache(cacheName, AffinityTopologyVersion.NONE);
 
-        return (affInfo != null) ? affInfo.affFunc.partition(key) : -1;
+        return (affInfo != null) ? partition(affInfo, key) : -1;
     }
 
     /**
@@ -528,10 +528,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     private <K> ClusterNode primary(AffinityInfo aff, K key) throws IgniteCheckedException {
-        if (key instanceof CacheObject && !(key instanceof BinaryObject))
-            key = ((CacheObject)key).value(aff.cacheObjCtx, false);
-
-        int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
+        int part = partition(aff, key);
 
         Collection<ClusterNode> nodes = aff.assignment.get(part);
 
@@ -539,6 +536,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
 
         return nodes.iterator().next();
+    }
+
+    /**
+     * @param aff Affinity function.
+     * @param key Key to check.
+     * @param <K> Key type.
+     * @return Partition number.
+     */
+    private <K> int partition(AffinityInfo aff, K key)
+    {
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+            key = ((CacheObject)key).value(aff.cacheObjCtx, false);
+
+        return aff.affFunc.partition(aff.mapper.affinityKey(key));
     }
 
     /**

@@ -147,7 +147,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridQueryIndexing idx;
 
     /** */
-    private static final ThreadLocal<AffinityTopologyVersion> topVer = new ThreadLocal<>();
+    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -882,7 +882,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             sqlQry,
                             F.asList(params),
                             typeDesc,
-                            idx.backupFilter(null, topVer.get(), null));
+                            idx.backupFilter(null, requestTopVer.get(), null));
 
                         sendQueryExecutedEvent(
                             sqlQry,
@@ -968,7 +968,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     Object[] args = qry.getArgs();
 
                     final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
-                        idx.backupFilter(null, topVer.get(), null));
+                        idx.backupFilter(null, requestTopVer.get(), null));
 
                     sendQueryExecutedEvent(sql, args);
 
@@ -1821,8 +1821,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param ver Version.
      */
-    public static void setAffinityTopologyVersion(AffinityTopologyVersion ver) {
-        topVer.set(ver);
+    public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
+        requestTopVer.set(ver);
+    }
+
+    /**
+     * @return Affinity topology version of the current request.
+     */
+    public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
+        return requestTopVer.get();
     }
 
     /**

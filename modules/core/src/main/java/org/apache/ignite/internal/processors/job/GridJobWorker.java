@@ -487,102 +487,126 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         // Make sure flag is not set for current thread.
         HOLD.set(false);
 
-        if (isCancelled())
-            // If job was cancelled prior to assigning runner to it?
-            super.cancel();
-
-        if (!skipNtf) {
-            if (holdLsnr.onUnheld(this))
-                held.decrementAndGet();
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Ignoring job execution (job was not held).");
-
-                return;
-            }
-        }
-
-        boolean sndRes = true;
-
-        Object res = null;
-
-        IgniteException ex = null;
-
         try {
-            ctx.job().currentTaskSession(ses);
-
-            if (reqTopVer != null)
-                GridQueryProcessor.setAffinityTopologyVersion(reqTopVer);
-
-            // If job has timed out, then
-            // avoid computation altogether.
-            if (isTimedOut())
-                sndRes = false;
-            else {
-                res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                    @Nullable @Override public Object call() {
-                        try {
-                            if (internal && ctx.config().isPeerClassLoadingEnabled())
-                                ctx.job().internal(true);
-
-                            return job.execute();
-                        }
-                        finally {
-                            if (internal && ctx.config().isPeerClassLoadingEnabled())
-                                ctx.job().internal(false);
-                        }
+            if (partsReservation != null) {
+                try {
+                    if (!partsReservation.reserve()) {
+                        finishJob(null, null, true, true);
+                        return;
                     }
-                });
+                }
+                catch (Exception e) {
+                    IgniteException ex = new IgniteException("Failed to lock partitions " +
+                        "[jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
-                if (log.isDebugEnabled())
-                    log.debug("Job execution has successfully finished [job=" + job + ", res=" + res + ']');
+                    U.error(log, "Failed to lock partitions [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);;
+
+                    finishJob(null, ex, true);
+
+                    return;
+                }
             }
-        }
-        catch (IgniteException e) {
-            if (sysStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+
+            if (isCancelled())
+                // If job was cancelled prior to assigning runner to it?
+                super.cancel();
+
+            if (!skipNtf) {
+                if (holdLsnr.onUnheld(this))
+                    held.decrementAndGet();
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Ignoring job execution (job was not held).");
+
+                    return;
+                }
+            }
+
+            boolean sndRes = true;
+
+            Object res = null;
+
+            IgniteException ex = null;
+
+            try {
+                ctx.job().currentTaskSession(ses);
+
+                if (reqTopVer != null)
+                    GridQueryProcessor.setRequestAffinityTopologyVersion(reqTopVer);
+
+                // If job has timed out, then
+                // avoid computation altogether.
+                if (isTimedOut())
+                    sndRes = false;
+                else {
+                    res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
+                        @Nullable @Override public Object call() {
+                            try {
+                                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                                    ctx.job().internal(true);
+
+                                return job.execute();
+                            }
+                            finally {
+                                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                                    ctx.job().internal(false);
+                            }
+                        }
+                    });
+
+                    if (log.isDebugEnabled())
+                        log.debug("Job execution has successfully finished [job=" + job + ", res=" + res + ']');
+                }
+            }
+            catch (IgniteException e) {
+                if (sysStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+                    ex = handleThrowable(e);
+
+                    assert ex != null;
+                }
+                else {
+                    if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgfsOutOfSpaceException.class)) {
+                        // Print exception for internal errors only if debug is enabled.
+                        if (log.isDebugEnabled())
+                            U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+                    }
+                    else if (X.hasCause(e, InterruptedException.class)) {
+                        String msg = "Job was cancelled [jobId=" + ses.getJobId() + ", ses=" + ses + ']';
+
+                        if (log.isDebugEnabled())
+                            U.error(log, msg, e);
+                        else
+                            U.warn(log, msg);
+                    }
+                    else
+                        U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+
+                    ex = e;
+                }
+            }
+            // Catch Throwable to protect against bad user code except
+            // InterruptedException if job is being cancelled.
+            catch (Throwable e) {
                 ex = handleThrowable(e);
 
                 assert ex != null;
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
-            else {
-                if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgfsOutOfSpaceException.class)) {
-                    // Print exception for internal errors only if debug is enabled.
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
-                }
-                else if (X.hasCause(e, InterruptedException.class)) {
-                    String msg = "Job was cancelled [jobId=" + ses.getJobId() + ", ses=" + ses + ']';
+            finally {
+                // Finish here only if not held by this thread.
+                if (!HOLD.get())
+                    finishJob(res, ex, sndRes);
 
-                    if (log.isDebugEnabled())
-                        U.error(log, msg, e);
-                    else
-                        U.warn(log, msg);
-                }
-                else
-                    U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+                ctx.job().currentTaskSession(null);
 
-                ex = e;
+                if (reqTopVer != null)
+                    GridQueryProcessor.setRequestAffinityTopologyVersion(null);
             }
-        }
-        // Catch Throwable to protect against bad user code except
-        // InterruptedException if job is being cancelled.
-        catch (Throwable e) {
-            ex = handleThrowable(e);
-
-            assert ex != null;
-
-            if (e instanceof Error)
-                throw (Error)e;
-        }
-        finally {
-            // Finish here only if not held by this thread.
-            if (!HOLD.get())
-                finishJob(res, ex, sndRes);
-
-            ctx.job().currentTaskSession(null);
-
-            if (reqTopVer != null)
-                GridQueryProcessor.setAffinityTopologyVersion(null);
+        } finally {
+            if (partsReservation != null)
+                partsReservation.release();
         }
     }
 
@@ -708,11 +732,21 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     void finishJob(@Nullable Object res,
         @Nullable IgniteException ex,
-        boolean sndReply)
-    {
-        if (partsReservation != null)
-            partsReservation.release();
+        boolean sndReply) {
+        finishJob(res, ex, sndReply, false);
+    }
 
+    /**
+     * @param res Resuilt.
+     * @param ex Exception
+     * @param sndReply If {@code true}, reply will be sent.
+     * @param retry If {@code true}, retry response will be sent.
+     */
+    void finishJob(@Nullable Object res,
+        @Nullable IgniteException ex,
+        boolean sndReply,
+        boolean retry)
+    {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -776,7 +810,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 loc ? null : marsh.marshal(attrs),
                                 loc ? attrs : null,
                                 isCancelled(),
-                                null);
+                                retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 

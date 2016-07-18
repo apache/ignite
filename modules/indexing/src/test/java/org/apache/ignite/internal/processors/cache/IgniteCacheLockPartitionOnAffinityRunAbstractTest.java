@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCacheAbstractSelfTest {
     /** Count of affinity run threads. */
-    protected static final int AFFINITY_THREADS_CNT = 10;
+    protected static final int AFFINITY_THREADS_CNT = 1;
 
     /** Count of collocated objects. */
     protected static final int PERS_AT_ORG_CNT = 10_000;
@@ -185,6 +185,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         grid(0).createCache(Person.class.getSimpleName());
 
         createCacheWithAffinity(OTHER_CACHE_NAME);
+
+        awaitPartitionMapExchange();
 
         orgIds = new ArrayList<>(ORGS_COUNT_PER_NODE * RESTARTED_NODE_CNT);
 

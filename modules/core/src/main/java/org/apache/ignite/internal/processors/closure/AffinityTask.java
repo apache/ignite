@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.closure;
 
 import java.util.Collection;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,4 +40,9 @@ public interface AffinityTask {
      * @return Affinity cache name.
      */
     @Nullable public Collection<String> affinityCacheNames();
+
+    /**
+     * @return Affinity topology version.
+     */
+    @Nullable public AffinityTopologyVersion topologyVersion();
 }

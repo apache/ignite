@@ -138,8 +138,7 @@ public class GridJobExecuteRequest implements Message {
     private Collection<UUID> top;
 
     /** */
-    @GridDirectCollection(value = String.class)
-    private Collection<String> caches;
+    private int[] cacheIds;
 
     /** */
     private int part;
@@ -180,7 +179,7 @@ public class GridJobExecuteRequest implements Message {
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
      * @param subjId Subject ID.
-     * @param caches Caches to lock partition.
+     * @param cacheIds Caches' identifiers to reserve partition.
      * @param part Partition to lock.
      * @param topVer Affinity topology version of job mapping.
      */
@@ -210,7 +209,7 @@ public class GridJobExecuteRequest implements Message {
             boolean sesFullSup,
             boolean internal,
             UUID subjId,
-            @Nullable Collection<String> caches,
+            @Nullable int[] cacheIds,
             int part,
             @Nullable AffinityTopologyVersion topVer) {
         this.top = top;
@@ -249,7 +248,7 @@ public class GridJobExecuteRequest implements Message {
         this.sesFullSup = sesFullSup;
         this.internal = internal;
         this.subjId = subjId;
-        this.caches = caches;
+        this.cacheIds = cacheIds;
         this.part = part;
         this.topVer = topVer;
 
@@ -442,10 +441,10 @@ public class GridJobExecuteRequest implements Message {
     }
 
     /**
-     * @return Partitions to lock for job execution.
+     * @return Caches' identifiers to reserve specified partition for job execution.
      */
-    public Collection<String> getCaches() {
-        return caches;
+    public int[] getCacheIds() {
+        return cacheIds;
     }
 
     /**
@@ -480,7 +479,7 @@ public class GridJobExecuteRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("caches", caches, MessageCollectionItemType.STRING))
+                if (!writer.writeIntArray("cacheIds", cacheIds))
                     return false;
 
                 writer.incrementState();
@@ -546,7 +545,7 @@ public class GridJobExecuteRequest implements Message {
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeInt("partition", part))
+                if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
@@ -637,7 +636,7 @@ public class GridJobExecuteRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                caches = reader.readCollection("caches", MessageCollectionItemType.STRING);
+                cacheIds = reader.readIntArray("cacheIds");
 
                 if (!reader.isLastRead())
                     return false;

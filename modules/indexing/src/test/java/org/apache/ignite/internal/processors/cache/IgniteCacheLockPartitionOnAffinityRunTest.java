@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -52,6 +53,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
+     * @throws Exception If failed.
      */
     private static int getPersonsCountFromPartitionMapCheckBothCaches(final IgniteEx ignite, IgniteLogger log,
         int orgId) throws Exception {
@@ -90,8 +92,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
+     * @throws Exception If failed.
      */
-    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
+    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log, int orgId)
+        throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         GridCacheAdapter<?, ?> cacheAdapterPers = ignite.context().cache()
@@ -203,16 +207,32 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         IgniteInternalFuture<Long> affFut = null;
 
         try {
+            final AtomicInteger threadNum = new AtomicInteger(0);
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
-                    while (System.currentTimeMillis() < endTime) {
-                        for (final int orgId : orgIds) {
-                            if (System.currentTimeMillis() >= endTime)
-                                break;
+                    if (threadNum.getAndIncrement() % 2 == 0) {
+                        while (System.currentTimeMillis() < endTime) {
+                            for (final int orgId : orgIds) {
+                                if (System.currentTimeMillis() >= endTime)
+                                    break;
 
-                            grid(0).compute().affinityRun(Person.class.getSimpleName(),
-                                new Person(0, orgId).createKey(),
-                                new TestAffinityRun(personsCntGetter, orgId));
+                                grid(0).compute().affinityRun(Person.class.getSimpleName(),
+                                    new Person(0, orgId).createKey(),
+                                    new TestAffinityRun(personsCntGetter, orgId));
+                            }
+                        }
+                    } else {
+                        while (System.currentTimeMillis() < endTime) {
+                            for (final int orgId : orgIds) {
+                                if (System.currentTimeMillis() >= endTime)
+                                    break;
+
+                                int personsCnt = grid(0).compute().affinityCall(Person.class.getSimpleName(),
+                                    new Person(0, orgId).createKey(),
+                                    new TestAffinityCall(personsCntGetter, orgId));
+
+                                assertEquals(PERS_AT_ORG_CNT, personsCnt);
+                            }
                         }
                     }
                 }
@@ -688,6 +708,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
          * @param log Logger.
          * @param orgId Org id.
          * @return Count of found Person object with specified orgId
+         * @throws Exception If failed.
          */
         int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception;
     }

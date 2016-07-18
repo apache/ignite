@@ -171,9 +171,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private AffinityTopologyVersion qryTopVer;
 
-    /** */
-    private static final ThreadLocal<AffinityTopologyVersion> querySpecifiedTopVer = new ThreadLocal<>();
-
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
@@ -848,7 +845,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final ExpiryPolicy plc = cctx.expiry();
 
-            AffinityTopologyVersion topVer = querySpecifiedTopVer.get();
+            AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
 
             if (topVer == null)
                 topVer = cctx.affinity().affinityTopologyVersion();
@@ -3325,15 +3322,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary);
-    }
-
-    /**
-     * TODO 2310 remove.
-     *
-     * @param ver Version.
-     */
-    public static void setAffinityTopologyVersion(AffinityTopologyVersion ver) {
-        querySpecifiedTopVer.set(ver);
     }
 
     /**

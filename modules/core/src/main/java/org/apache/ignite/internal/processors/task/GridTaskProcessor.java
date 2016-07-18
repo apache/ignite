@@ -368,7 +368,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -383,27 +383,25 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
-        return execute(task, arg, false, null);
+        return execute(task, arg, false);
     }
 
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
-     * @param mapTopVer Topology version of jobs mapping.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
-        AffinityTopologyVersion mapTopVer) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys, mapTopVer);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys);
         }
         finally {
             lock.readUnlock();
@@ -447,7 +445,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -462,7 +460,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
      * // TODO IGNITE-2310: move mapTopVer to AffinityTask.
-     * @param mapTopVer Topology version of job mapping.
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
@@ -472,8 +469,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
-        boolean sys,
-        AffinityTopologyVersion mapTopVer) {
+        boolean sys) {
         assert sesId != null;
 
         String taskClsName;
@@ -656,8 +652,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     dep,
                     new TaskEventListener(),
                     map,
-                    subjId,
-                    mapTopVer);
+                    subjId);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 

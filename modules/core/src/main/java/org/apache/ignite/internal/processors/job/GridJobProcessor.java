@@ -61,7 +61,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -960,274 +959,228 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
+        long endTime = req.getCreateTime() + req.getTimeout();
+
         PartitionsReservation partsReservation = null;
+        if (req.getCacheIds() != null) {
+            assert req.getPartition() >= 0 : req;
+            assert !F.isEmpty(req.getCacheIds()) : req;
+
+            partsReservation = new PartitionsReservation(req.getCacheIds(), req.getPartition(), req.getTopVer());
+        }
+
+        GridJobWorker job = null;
+
+        if (!rwLock.tryReadLock()) {
+            if (log.isDebugEnabled())
+                log.debug("Received job execution request while stopping this node (will ignore): " + req);
+
+            return;
+        }
 
         try {
-            long endTime = req.getCreateTime() + req.getTimeout();
+            // Account for overflow.
+            if (endTime < 0)
+                endTime = Long.MAX_VALUE;
 
-            if (req.getCaches() != null) {
-                assert req.getPartition() >= 0 : req;
-                assert !req.getCaches().isEmpty() : req;
+            GridDeployment tmpDep = req.isForceLocalDeployment() ?
+                ctx.deploy().getLocalDeployment(req.getTaskClassName()) :
+                ctx.deploy().getGlobalDeployment(
+                    req.getDeploymentMode(),
+                    req.getTaskName(),
+                    req.getTaskClassName(),
+                    req.getUserVersion(),
+                    node.id(),
+                    req.getClassLoaderId(),
+                    req.getLoaderParticipants(),
+                    null);
 
-                partsReservation = new PartitionsReservation(req.getCaches(), req.getPartition(), req.getTopVer());
+            if (tmpDep == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Checking local tasks...");
 
-                try {
-                    if (!partsReservation.reserve()) {
-                        sendRetry(node, req, endTime);
+                // Check local tasks.
+                for (Map.Entry<String, GridDeployment> d : ctx.task().getUsedDeploymentMap().entrySet()) {
+                    if (d.getValue().classLoaderId().equals(req.getClassLoaderId())) {
+                        assert d.getValue().local();
+
+                        tmpDep = d.getValue();
+
+                        break;
+                    }
+                }
+            }
+
+            final GridDeployment dep = tmpDep;
+
+            if (log.isDebugEnabled())
+                log.debug("Deployment: " + dep);
+
+            boolean releaseDep = true;
+
+            try {
+                if (dep != null && dep.acquire()) {
+                    GridJobSessionImpl jobSes;
+                    GridJobContextImpl jobCtx;
+
+                    try {
+                        List<ComputeJobSibling> siblings = null;
+
+                        if (!req.isDynamicSiblings()) {
+                            Collection<ComputeJobSibling> siblings0 = req.getSiblings();
+
+                            if (siblings0 == null) {
+                                assert req.getSiblingsBytes() != null;
+
+                                siblings0 = marsh.unmarshal(req.getSiblingsBytes(), U.resolveClassLoader(ctx.config()));
+                            }
+
+                            siblings = new ArrayList<>(siblings0);
+                        }
+
+                        Map<Object, Object> sesAttrs = null;
+
+                        if (req.isSessionFullSupport()) {
+                            sesAttrs = req.getSessionAttributes();
+
+                            if (sesAttrs == null)
+                                sesAttrs = marsh.unmarshal(req.getSessionAttributesBytes(),
+                                    U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
+
+                        // Note that we unmarshal session/job attributes here with proper class loader.
+                        GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
+                            req.getSessionId(),
+                            node.id(),
+                            req.getTaskName(),
+                            dep,
+                            req.getTaskClassName(),
+                            req.topology(),
+                            req.getStartTaskTime(),
+                            endTime,
+                            siblings,
+                            sesAttrs,
+                            req.isSessionFullSupport(),
+                            req.getSubjectId());
+
+                        taskSes.setCheckpointSpi(req.getCheckpointSpi());
+                        taskSes.setClassLoader(dep.classLoader());
+
+                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.getJobId());
+
+                        Map<? extends Serializable, ? extends Serializable> jobAttrs = req.getJobAttributes();
+
+                        if (jobAttrs == null)
+                            jobAttrs = marsh.unmarshal(req.getJobAttributesBytes(),
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+
+                        jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
+                    }
+                    catch (IgniteCheckedException e) {
+                        IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
+                            "[taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
+                            ", codeVer=" + req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+
+                        U.error(log, ex.getMessage(), e);
+
+                        handleException(node, req, ex, endTime);
 
                         return;
                     }
-                }
-                catch (Exception e) {
-                    IgniteException ex = new IgniteException("Failed to lock partitions " +
-                        "[taskName=" + req.getTaskName() + ']', e);
 
-                    U.error(log, "Failed to lock partitions [req=" + req + ']', e);
+                    job = new GridJobWorker(
+                        ctx,
+                        dep,
+                        req.getCreateTime(),
+                        jobSes,
+                        jobCtx,
+                        req.getJobBytes(),
+                        req.getJob(),
+                        node,
+                        req.isInternal(),
+                        evtLsnr,
+                        holdLsnr,
+                        partsReservation,
+                        req.getTopVer());
+
+                    jobCtx.job(job);
+
+                    // If exception occurs on job initialization, deployment is released in job listener.
+                    releaseDep = false;
+
+                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
+                        // Internal jobs will always be executed synchronously.
+                        if (job.isInternal()) {
+                            // This is an internal job and can be executed inside busy lock
+                            // since job is expected to be short.
+                            // This is essential for proper stop without races.
+                            job.run();
+
+                            // No execution outside lock.
+                            job = null;
+                        }
+                        else if (jobAlwaysActivate) {
+                            if (onBeforeActivateJob(job)) {
+                                if (ctx.localNodeId().equals(node.id())) {
+                                    // Always execute in another thread for local node.
+                                    executeAsync(job);
+
+                                    // No sync execution.
+                                    job = null;
+                                }
+                                else if (metricsUpdateFreq > -1L)
+                                    // Job will be executed synchronously.
+                                    startedJobsCnt.increment();
+                            }
+                            else
+                                // Job has been cancelled.
+                                // Set to null, to avoid sync execution.
+                                job = null;
+                        }
+                        else {
+                            GridJobWorker old = passiveJobs.putIfAbsent(job.getJobId(), job);
+
+                            if (old == null)
+                                handleCollisions();
+                            else
+                                U.error(log, "Received computation request with duplicate job ID (could be " +
+                                    "network malfunction, source node may hang if task timeout was not set) " +
+                                    "[srcNode=" + node.id() +
+                                    ", jobId=" + req.getJobId() + ", sesId=" + req.getSessionId() +
+                                    ", locNodeId=" + ctx.localNodeId() + ']');
+
+                            // No sync execution.
+                            job = null;
+                        }
+                    }
+                    else
+                        // Job was not initialized, no execution.
+                        job = null;
+                }
+                else {
+                    // Deployment is null.
+                    IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
+                        "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
+                        ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
+                        ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
+                        ", dep=" + dep + ']');
+
+                    U.error(log, ex.getMessage(), ex);
 
                     handleException(node, req, ex, endTime);
-
-                    return;
-                }
-            }
-
-            GridJobWorker job = null;
-
-            if (!rwLock.tryReadLock()) {
-                if (log.isDebugEnabled())
-                    log.debug("Received job execution request while stopping this node (will ignore): " + req);
-
-                return;
-            }
-
-            try {
-                // Account for overflow.
-                if (endTime < 0)
-                    endTime = Long.MAX_VALUE;
-
-                GridDeployment tmpDep = req.isForceLocalDeployment() ?
-                    ctx.deploy().getLocalDeployment(req.getTaskClassName()) :
-                    ctx.deploy().getGlobalDeployment(
-                        req.getDeploymentMode(),
-                        req.getTaskName(),
-                        req.getTaskClassName(),
-                        req.getUserVersion(),
-                        node.id(),
-                        req.getClassLoaderId(),
-                        req.getLoaderParticipants(),
-                        null);
-
-                if (tmpDep == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Checking local tasks...");
-
-                    // Check local tasks.
-                    for (Map.Entry<String, GridDeployment> d : ctx.task().getUsedDeploymentMap().entrySet()) {
-                        if (d.getValue().classLoaderId().equals(req.getClassLoaderId())) {
-                            assert d.getValue().local();
-
-                            tmpDep = d.getValue();
-
-                            break;
-                        }
-                    }
-                }
-
-                final GridDeployment dep = tmpDep;
-
-                if (log.isDebugEnabled())
-                    log.debug("Deployment: " + dep);
-
-                boolean releaseDep = true;
-
-                try {
-                    if (dep != null && dep.acquire()) {
-                        GridJobSessionImpl jobSes;
-                        GridJobContextImpl jobCtx;
-
-                        try {
-                            List<ComputeJobSibling> siblings = null;
-
-                            if (!req.isDynamicSiblings()) {
-                                Collection<ComputeJobSibling> siblings0 = req.getSiblings();
-
-                                if (siblings0 == null) {
-                                    assert req.getSiblingsBytes() != null;
-
-                                    siblings0 = marsh.unmarshal(req.getSiblingsBytes(), U.resolveClassLoader(ctx.config()));
-                                }
-
-                                siblings = new ArrayList<>(siblings0);
-                            }
-
-                            Map<Object, Object> sesAttrs = null;
-
-                            if (req.isSessionFullSupport()) {
-                                sesAttrs = req.getSessionAttributes();
-
-                                if (sesAttrs == null)
-                                    sesAttrs = marsh.unmarshal(req.getSessionAttributesBytes(),
-                                        U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                            }
-
-                            // Note that we unmarshal session/job attributes here with proper class loader.
-                            GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
-                                req.getSessionId(),
-                                node.id(),
-                                req.getTaskName(),
-                                dep,
-                                req.getTaskClassName(),
-                                req.topology(),
-                                req.getStartTaskTime(),
-                                endTime,
-                                siblings,
-                                sesAttrs,
-                                req.isSessionFullSupport(),
-                                req.getSubjectId());
-
-                            taskSes.setCheckpointSpi(req.getCheckpointSpi());
-                            taskSes.setClassLoader(dep.classLoader());
-
-                            jobSes = new GridJobSessionImpl(ctx, taskSes, req.getJobId());
-
-                            Map<? extends Serializable, ? extends Serializable> jobAttrs = req.getJobAttributes();
-
-                            if (jobAttrs == null)
-                                jobAttrs = marsh.unmarshal(req.getJobAttributesBytes(),
-                                    U.resolveClassLoader(dep.classLoader(), ctx.config()));
-
-                            jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
-                        }
-                        catch (IgniteCheckedException e) {
-                            IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
-                                "[taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
-                                ", codeVer=" + req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
-
-                            U.error(log, ex.getMessage(), e);
-
-                            handleException(node, req, ex, endTime);
-
-                            return;
-                        }
-
-                        job = new GridJobWorker(
-                            ctx,
-                            dep,
-                            req.getCreateTime(),
-                            jobSes,
-                            jobCtx,
-                            req.getJobBytes(),
-                            req.getJob(),
-                            node,
-                            req.isInternal(),
-                            evtLsnr,
-                            holdLsnr,
-                            partsReservation,
-                            req.getTopVer());
-
-                        jobCtx.job(job);
-
-                        // If exception occurs on job initialization, deployment is released in job listener.
-                        releaseDep = false;
-
-                        if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
-                            // Internal jobs will always be executed synchronously.
-                            if (job.isInternal()) {
-                                // This is an internal job and can be executed inside busy lock
-                                // since job is expected to be short.
-                                // This is essential for proper stop without races.
-                                job.run();
-
-                                // No execution outside lock.
-                                job = null;
-                            }
-                            else if (jobAlwaysActivate) {
-                                if (onBeforeActivateJob(job)) {
-                                    if (ctx.localNodeId().equals(node.id())) {
-                                        // The collection of the reserved parts has been passed to GridJobWorker.
-                                        // Reservations will be released by GridJobWorker#finishJob
-                                        partsReservation = null;
-
-                                        // Always execute in another thread for local node.
-                                        executeAsync(job);
-
-                                        // No sync execution.
-                                        job = null;
-                                    }
-                                    else if (metricsUpdateFreq > -1L)
-                                        // Job will be executed synchronously.
-                                        startedJobsCnt.increment();
-                                }
-                                else
-                                    // Job has been cancelled.
-                                    // Set to null, to avoid sync execution.
-                                    job = null;
-                            }
-                            else {
-                                // The collection of the reserved parts has been passed to GridJobWorker.
-                                // Reservations will be released by GridJobWorker#finishJob
-                                partsReservation = null;
-
-                                GridJobWorker old = passiveJobs.putIfAbsent(job.getJobId(), job);
-
-                                if (old == null)
-                                    handleCollisions();
-                                else
-                                    U.error(log, "Received computation request with duplicate job ID (could be " +
-                                        "network malfunction, source node may hang if task timeout was not set) " +
-                                        "[srcNode=" + node.id() +
-                                        ", jobId=" + req.getJobId() + ", sesId=" + req.getSessionId() +
-                                        ", locNodeId=" + ctx.localNodeId() + ']');
-
-                                // No sync execution.
-                                job = null;
-                            }
-                        }
-                        else
-                            // Job was not initialized, no execution.
-                            job = null;
-                    }
-                    else {
-                        // Deployment is null.
-                        IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
-                            "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
-                            ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
-                            ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
-                            ", dep=" + dep + ']');
-
-                        U.error(log, ex.getMessage(), ex);
-
-                        handleException(node, req, ex, endTime);
-                    }
-                }
-                finally {
-                    if (dep != null && releaseDep)
-                        release(dep);
                 }
             }
             finally {
-                rwLock.readUnlock();
+                if (dep != null && releaseDep)
+                    release(dep);
             }
-
-            if (job != null)
-                job.run();
         }
         finally {
-            // Release partitions in case retry or synchronous job execute.
-            if (partsReservation != null)
-                partsReservation.release();
+            rwLock.readUnlock();
         }
-    }
 
-    /**
-     * @param node Node.
-     * @param req Request.
-     * @param endTime End time.
-     */
-    private void sendRetry(ClusterNode node, GridJobExecuteRequest req, long endTime) {
-        assert !F.isEmpty(req.getCaches()) : req;
-        assert req.getPartition() >= 0 : req;
-
-        sendResponse(node, req, null, endTime, true);
+        if (job != null)
+            job.run();
     }
 
     /**
@@ -1368,7 +1321,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param req Job execution request.
      * @param ex Exception that happened.
      * @param endTime Job end time.
-     * @param retry Retry sesponse flag.
+     * @param retry Retry response flag.
      */
     private void sendResponse(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime,
         boolean retry) {
@@ -1560,11 +1513,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      */
     private class PartitionsReservation implements GridReservable {
-        /** Partitions. */
-        private GridDhtLocalPartition [] partititons;
-
         /** Caches. */
-        private final Collection<String> caches;
+        private final int[] cacheIds;
 
         /** Partition id. */
         private final int partId;
@@ -1572,93 +1522,100 @@ public class GridJobProcessor extends GridProcessorAdapter {
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
+        /** Partitions. */
+        private GridDhtLocalPartition[] partititons;
+
         /**
-         * @param caches Cache names collection.
+         * @param cacheIds Cache identifiers array.
          * @param partId Partition number.
          * @param topVer Affinity topology version.
          */
-        public PartitionsReservation(Collection<String> caches, int partId,
+        public PartitionsReservation(int[] cacheIds, int partId,
             AffinityTopologyVersion topVer) {
-            this.caches = caches;
+            this.cacheIds = cacheIds;
             this.partId = partId;
             this.topVer = topVer;
-            partititons = new GridDhtLocalPartition[caches.size()];
+            partititons = new GridDhtLocalPartition[cacheIds.length];
         }
 
         /** {@inheritDoc} */
         @Override public boolean reserve() throws IgniteCheckedException {
-            int i = 0;
+            boolean reserved = false;
+            try {
+                for (int i = 0; i < cacheIds.length; ++i) {
+                    GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds[i]);
+                    if (cctx == null) // Cache was not found, probably was not deployed yet.
+                        return reserved;
 
-            for (String cacheName : caches) {
-                GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(cacheName);
+                    if (!cctx.started()) // Cache not started.
+                        return reserved;
 
-                if (cacheAdapter == null)
-                    return false;
+                    if (cctx.isLocal() || !cctx.rebalanceEnabled())
+                        continue;
 
-                GridCacheContext<?, ?> cctx = cacheAdapter.context();
+                    boolean checkPartMapping = false;
 
-                if (cctx == null) // Cache was not found, probably was not deployed yet.
-                    return false;
+                    try {
+                        if (cctx.isReplicated()) {
+                            GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+                                topVer, false);
 
-                if (!cctx.started()) // Cache not started.
-                    return false;
+                            // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                            if (part == null || part.state() != OWNING) {
+                                checkPartMapping = true;
 
-                if (cctx.isLocal() || !cctx.rebalanceEnabled())
-                    continue;
+                                return reserved;
+                            }
+                        }
 
-                boolean checkPartMapping = false;
+                        GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                try {
-                    if (cctx.isReplicated()) {
-                        GridDhtLocalPartition part = cctx.topology().localPartition(partId,
-                            topVer, false);
-
-                        // We don't need to reserve partitions because they will not be evicted in replicated caches.
-                        if (part == null || part.state() != OWNING) {
+                        if (part == null || part.state() != OWNING || !part.reserve()) {
                             checkPartMapping = true;
 
-                            return false;
+                            return reserved;
+                        }
+
+                        log.info("+++ Reserved " + part);
+                        partititons[i] = part;
+
+                        // Double check that we are still in owning state and partition contents are not cleared.
+                        if (part.state() != OWNING) {
+                            checkPartMapping = true;
+
+                            return reserved;
                         }
                     }
-
-                    GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
-
-                    if (part == null || part.state() != OWNING || !part.reserve()) {
-                        checkPartMapping = true;
-
-                        return false;
-                    }
-
-                    partititons[i] = part;
-                    ++i;
-
-                    // Double check that we are still in owning state and partition contents are not cleared.
-                    if (part.state() != OWNING) {
-                        checkPartMapping = true;
-
-                        return false;
+                    finally {
+                        if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+                            throw new IgniteCheckedException("Failed partition reservation. " +
+                                "Partition is not primary on the node. [partition=" + partId + ", cacheName=" + cctx.name() +
+                                ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');
                     }
                 }
-                finally {
-                    if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
-                        throw new IgniteCheckedException("Partition " + partId + " of the cache " + cacheName +
-                            " is not primary on the node " + ctx.localNodeId() + ", on topology: " + topVer);
-                }
+                reserved = true;
+            }
+            finally {
+                if (!reserved)
+                    release();
             }
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public void release() {
+            log.info("+++ Release ");
             for (int i = 0; i < partititons.length; ++i) {
-                if (partititons[i] != null)
-                    partititons[i].release();
-                else
+                if (partititons[i] == null)
                     break;
+
+                log.info("+++ Release " + "#" + i + " " + partititons[i]);
+
+                partititons[i].release();
+                partititons[i] = null;
             }
         }
     }
-
 
     /**
      *

@@ -115,6 +115,11 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
             int partId = ctx.affinity().partition(cacheName, affKey0);
+
+            if (partId < 0)
+                throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
+                    + affKey + ']');
+
             saveOrGet(ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, affKey,
                 job, prj.nodes()));
         }
@@ -140,6 +145,11 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
             int partId = ctx.affinity().partition(cacheName, affKey0);
+
+            if (partId < 0)
+                throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
+                    + affKey + ']');
+
             saveOrGet(ctx.closure().affinityRun(cacheNames, partId, affKey, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
@@ -180,6 +190,11 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
             int partId = ctx.affinity().partition(cacheName, affKey0);
+
+            if (partId < 0)
+                throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
+                    + affKey + ']');
+
             return saveOrGet(ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, affKey, job,
                 prj.nodes()));
         }
@@ -205,6 +220,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
             int partId = ctx.affinity().partition(cacheName, affKey0);
+
+            if (partId < 0)
+                throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
+                    + affKey + ']');
 
             return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, affKey, job, prj.nodes()));
         }
