@@ -923,7 +923,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Committed transaction.
      */
     public void addCommittedTx(IgniteInternalTx tx) {
-        if (!tx.local() && !tx.near() && tx.onePhaseCommit()) {
+        if (!tx.local() &&
+            !tx.near() &&
+            tx.onePhaseCommit() &&
+            !cctx.localNodeId().equals(tx.otherNodeId())) {
             IgniteTxEntry entry = F.first(tx.allEntries());
 
             if (entry.context().affinity().backup(cctx.localNode(), entry.cached().partition(), tx.topologyVersion()))
@@ -960,19 +963,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (retVal != null) {
             UUID nodeId = tx.otherNodeId(); // Originating node.
 
-            if (!cctx.localNodeId().equals(nodeId)) { // No reason to keep failover map if current node is originating.
-                Collection<GridCacheVersion> txs = nodesToTxs.get(nodeId);
+            Collection<GridCacheVersion> txs = nodesToTxs.get(nodeId);
 
-                if (txs == null) {
-                    Collection<GridCacheVersion> txs0 = new GridConcurrentHashSet<>();
+            if (txs == null) {
+                Collection<GridCacheVersion> txs0 = new GridConcurrentHashSet<>();
 
-                    Collection<GridCacheVersion> txsPrev = nodesToTxs.putIfAbsent(nodeId, txs0);
+                Collection<GridCacheVersion> txsPrev = nodesToTxs.putIfAbsent(nodeId, txs0);
 
-                    txs = txsPrev != null ? txsPrev : txs0;
-                }
-
-                txs.add(xidVer);
+                txs = txsPrev != null ? txsPrev : txs0;
             }
+
+            txs.add(xidVer);
         }
 
         Object committed0 = completedVersHashMap.putIfAbsent(xidVer, retVal != null ? retVal : true);
