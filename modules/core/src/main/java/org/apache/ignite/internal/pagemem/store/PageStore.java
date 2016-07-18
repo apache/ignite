@@ -35,6 +35,8 @@ public interface PageStore {
      */
     public long allocatePage() throws IgniteCheckedException;
 
+    public long lastPage();
+
     /**
      * Reads a page.
      *
