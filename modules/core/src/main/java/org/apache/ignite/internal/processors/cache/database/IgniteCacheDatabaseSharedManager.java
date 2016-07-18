@@ -109,8 +109,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param discoEvt Before exchange for the given discovery event.
      */
-    public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
-        // No-op.
+    @Nullable public IgniteInternalFuture beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
+        return null;
     }
 
     /**

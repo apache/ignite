@@ -189,6 +189,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
+    private IgniteInternalFuture checkpointFuture;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -506,6 +508,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             finally {
                 cctx.database().checkpointReadUnlock();
             }
+
+            if (checkpointFuture != null)
+                checkpointFuture.get();
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -743,7 +748,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
-        cctx.database().beforeExchange(discoEvt);
+        checkpointFuture = cctx.database().beforeExchange(discoEvt);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
