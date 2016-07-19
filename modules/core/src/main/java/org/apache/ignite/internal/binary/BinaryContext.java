@@ -1127,13 +1127,17 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                false
+                true
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
+
+            // Registering in order to support the interoperability between Java, C++ and .Net.
+            // https://issues.apache.org/jira/browse/IGNITE-3455
+            predefinedTypes.put(id, desc);
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
