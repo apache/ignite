@@ -118,6 +118,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** The partition should be renting. The partition cannot be reserved in this state */
+    private volatile boolean shouldBeRenting = false;
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -385,6 +388,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     @Override public boolean reserve() {
         while (true) {
+            if (shouldBeRenting)
+                return false;
+
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -462,6 +468,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             // Don't change the state of the partition in case one is reserved.
             if (state.compareAndSet(s, RENTING, 0, 0)) {
+                shouldBeRenting = false;
                 if (log.isDebugEnabled())
                     log.debug("Moved partition to RENTING state: " + this);
 
@@ -470,6 +477,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 tryEvictAsync(updateSeq);
                 break;
             } else {
+                shouldBeRenting = true;
                 GridFutureAdapter f = new GridFutureAdapter();
                 f.onDone();
                 return f;
