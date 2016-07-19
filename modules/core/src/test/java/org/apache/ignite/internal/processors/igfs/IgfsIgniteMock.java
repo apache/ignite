@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
@@ -436,6 +437,14 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe, boolean create)
+        throws IgniteException {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
         throws IgniteException {
         throwUnsupported();
 
