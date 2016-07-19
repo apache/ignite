@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
-{
-    using System;
-    using Apache.Ignite.Core.Impl.Cache.Affinity;
+package org.apache.ignite.internal.processors.hadoop;
 
-    /// <summary>
-    /// Affinity function for partitioned cache based on Highest Random Weight algorithm.
-    /// </summary>
-    [Serializable]
-    public class RendezvousAffinityFunction : AffinityFunctionBase
-    {
-        // No-op.
-        // Actual implementation is in Java, see AffinityFunctionSerializer.Write method.
+import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
+
+/**
+ * Tests whole map-red execution Weighted planner.
+ */
+public class HadoopWeightedPlannerMapReduceTest extends HadoopMapReduceTest {
+    /** {@inheritDoc} */
+    @Override protected HadoopConfiguration createHadoopConfiguration() {
+        HadoopConfiguration hadoopCfg = new HadoopConfiguration();
+
+        // Use weighted planner with default settings:
+        IgniteHadoopWeightedMapReducePlanner planner = new IgniteHadoopWeightedMapReducePlanner();
+
+        hadoopCfg.setMapReducePlanner(planner);
+
+        return hadoopCfg;
     }
 }
