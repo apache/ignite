@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCacheAbstractSelfTest {
     /** Count of affinity run threads. */
-    protected static final int AFFINITY_THREADS_CNT = 1;
+    protected static final int AFFINITY_THREADS_CNT = 10;
 
     /** Count of collocated objects. */
     protected static final int PERS_AT_ORG_CNT = 10_000;
@@ -43,29 +43,26 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /** Name of the cache with special affinity function (all partition are placed on the first node). */
     protected static final String OTHER_CACHE_NAME = "otherCache";
 
-    /** Regex for reserved partition exception message (when the partition is mapped to another node). */
-    protected static final Pattern EXCEPTION_MSG_REGEX = Pattern.compile("Partition \\d+ of the cache \\w+ is not primary on the node");
-
     /** Grid count. */
-    private static final int GRID_CNT = 4;
+    protected static final int GRID_CNT = 4;
 
     /** Count of restarted nodes. */
-    private static final int RESTARTED_NODE_CNT = 2;
+    protected static final int RESTARTED_NODE_CNT = 2;
 
     /** Count of objects. */
-    private static final int ORGS_COUNT_PER_NODE = 2;
+    protected static final int ORGS_COUNT_PER_NODE = 2;
 
     /** Test duration. */
-    private static final long TEST_DURATION = 3 * 60_000;
+    protected static final long TEST_DURATION = 5 * 60_000;
 
     /** Test timeout. */
-    private static final long TEST_TIMEOUT = TEST_DURATION + 2 * 60_000;
+    protected static final long TEST_TIMEOUT = TEST_DURATION + 2 * 60_000;
 
     /** Timeout between restart of a node. */
-    private static final long RESTART_TIMEOUT = 3_000;
+    protected static final long RESTART_TIMEOUT = 3_000;
 
     /** Max failover attempts. */
-    private static final int MAX_FAILOVER_ATTEMPTS = 100;
+    protected static final int MAX_FAILOVER_ATTEMPTS = 100;
 
     /** Organization ids. */
     protected static List<Integer> orgIds;

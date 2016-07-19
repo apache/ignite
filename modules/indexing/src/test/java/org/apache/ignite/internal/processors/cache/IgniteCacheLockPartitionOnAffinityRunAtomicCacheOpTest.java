@@ -18,13 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -41,13 +46,47 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /** Transact cache. */
     private static final long TEST_TIMEOUT = 10 * 60_000;
     /** Keys count. */
-    private static int KEYS_CNT = 1000;
+    private static int KEYS_CNT = 100;
+    /** Keys count. */
+    private static int PARTS_CNT = 16;
     /** Key. */
     private static AtomicInteger key = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beginNodesRestart() {
+        stopRestartThread.set(false);
+        nodeRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stopRestartThread.get() && System.currentTimeMillis() < endTime) {
+                    log.info("Restart nodes");
+                    for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
+                        stopGrid(i);
+                    Thread.sleep(500);
+                    for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
+                        startGrid(i);
+
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return !stopRestartThread.get();
+                        }
+                    }, RESTART_TIMEOUT);
+                }
+                return null;
+            }
+        }, "restart-node");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+        ccfg.setBackups(0);
+
+        return  ccfg;
     }
 
     /**
@@ -60,6 +99,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         ccfg.setName(cacheName);
 
         ccfg.setAtomicityMode(mode);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         grid(0).createCache(ccfg);
     }
@@ -93,7 +134,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
-    public void testNotReservedTransactCacheOp() throws Exception {
+    public void testNotReservedTxCacheOp() throws Exception {
         notReservedCacheOp(TRANSACT_CACHE);
     }
 
@@ -104,7 +145,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     private void notReservedCacheOp(final String cacheName) throws Exception {
         // Workaround for initial update job metadata.
         grid(0).compute().affinityRun(
-            new NotReservedCacheOpAffinityRun(orgIds.get(0), 0, cacheName),
+            new NotReservedCacheOpAffinityRun(0, 0, cacheName),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
             orgIds.get(0));
 
@@ -117,11 +158,11 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         try {
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
-                    for (final int orgId : orgIds) {
+                    for (int i = 0; i < PARTS_CNT; ++i) {
                         grid(0).compute().affinityRun(
-                            new NotReservedCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT, cacheName),
+                            new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            orgId);
+                            i);
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -132,8 +173,11 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
             stopRestartThread.set(true);
             nodeRestartFut.get();
-            awaitPartitionMapExchange();
+
             Thread.sleep(5000);
+
+            log.info("Final await. Timed out if failed");
+            awaitPartitionMapExchange();
 
             IgniteCache cache = grid(0).cache(cacheName);
             cache.clear();
@@ -146,9 +190,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
-        grid(0).compute().affinityRun(new ReservedPartitionCacheOpAffinityRun(orgIds.get(0), 0),
+        grid(0).compute().affinityRun(new ReservedPartitionCacheOpAffinityRun(0, 0),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
-            orgIds.get(0));
+            0);
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -157,14 +201,14 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         try {
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
-                    for (final int orgId : orgIds) {
+                    for (int i = 0; i < PARTS_CNT; ++i) {
                         if (System.currentTimeMillis() >= endTime)
                             break;
 
                         grid(0).compute().affinityRun(
-                            new ReservedPartitionCacheOpAffinityRun(orgId, key.getAndIncrement() * KEYS_CNT),
+                            new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            orgId);
+                            i);
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -175,11 +219,13 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
             stopRestartThread.set(true);
             nodeRestartFut.get();
-            awaitPartitionMapExchange();
+
             Thread.sleep(5000);
 
+            log.info("Final await. Timed out if failed");
+            awaitPartitionMapExchange();
+
             IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
-            assertEquals(KEYS_CNT * AFFINITY_THREADS_CNT * orgIds.size(), cache.size());
             cache.clear();
         }
     }
@@ -223,9 +269,13 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         @Override public void run() {
             log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(cacheName);
+            Map<Integer, Integer> vals = new HashMap<>();
 
             for (int i = 0; i < KEYS_CNT; ++i)
                 cache.put(i + keyBegin, i + keyBegin);
+//                vals.put(i + keyBegin, i + keyBegin);
+
+//            cache.putAll(vals);
         }
     }
 
@@ -263,11 +313,15 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         @Override public void run() {
             log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(Person.class.getSimpleName());
+            Map<Person.Key, Person> pers = new HashMap<>();
 
             for (int i = 0; i < KEYS_CNT; ++i) {
                 Person p = new Person(i + keyBegin, orgId);
+//                pers.put(p.createKey(), p);
                 cache.put(p.createKey(), p);
             }
+
+//            cache.putAll(pers);
         }
     }
 }

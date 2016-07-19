@@ -33,8 +33,9 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest extends I
         JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
         // One job at a time.
         colSpi.setActiveJobsThreshold(1);
-        colSpi.setWaitJobsThreshold(0);
-        colSpi.setMessageExpireTime(5000);
+        colSpi.setWaitJobsThreshold(1);
+        colSpi.setMessageExpireTime(10_000);
+        colSpi.setMaximumStealingAttempts(1);
 
         cfg.setCollisionSpi(colSpi);
 

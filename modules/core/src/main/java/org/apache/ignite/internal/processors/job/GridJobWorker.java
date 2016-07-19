@@ -747,6 +747,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         boolean sndReply,
         boolean retry)
     {
+        if (partsReservation != null)
+            partsReservation.release();
+
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;

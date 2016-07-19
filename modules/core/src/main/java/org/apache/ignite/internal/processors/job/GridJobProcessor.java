@@ -1576,7 +1576,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             return reserved;
                         }
 
-                        log.info("+++ Reserved " + part);
                         partititons[i] = part;
 
                         // Double check that we are still in owning state and partition contents are not cleared.
@@ -1604,12 +1603,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void release() {
-            log.info("+++ Release ");
             for (int i = 0; i < partititons.length; ++i) {
                 if (partititons[i] == null)
                     break;
-
-                log.info("+++ Release " + "#" + i + " " + partititons[i]);
 
                 partititons[i].release();
                 partititons[i] = null;
