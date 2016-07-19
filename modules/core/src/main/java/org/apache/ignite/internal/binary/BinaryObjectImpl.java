@@ -586,4 +586,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
         return reader(rCtx, null);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        if (arr == null || ctx == null)
+            return "BinaryObjectImpl [arr= " + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";
+
+        return super.toString();
+    }
 }
