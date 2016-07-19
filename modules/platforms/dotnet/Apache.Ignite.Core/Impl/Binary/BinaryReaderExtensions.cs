@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Reader extensions.
@@ -47,6 +48,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IBinaryRawReader reader)
         {
             return (Dictionary<TKey, TValue>) reader.ReadDictionary(size => new Dictionary<TKey, TValue>(size));
+        }
+
+        /// <summary>
+        /// Reads the object either as a normal object or as a [typeName+props] wrapper.
+        /// </summary>
+        public static T ReadObjectEx<T>(this IBinaryRawReader reader)
+        {
+            var obj = reader.ReadObject<object>();
+
+            if (obj == null)
+                return default(T);
+
+            return obj is T ? (T)obj : ((ObjectInfoHolder)obj).CreateInstance<T>();
         }
     }
 }
