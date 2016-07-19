@@ -400,7 +400,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         finish(mappings.mappings());
                 }
 
-                if (tx.onePhaseCommit())
+                if (tx.onePhaseCommit() &&
+                    !tx.writeMap().isEmpty()) // Readonly operations required no ack.
                     ackBackup();
 
                 markInitialized();
