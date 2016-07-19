@@ -598,7 +598,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
                 loc,
-                keepBinary);
+                keepBinary,
+                qry.isIncludeExpired());
 
             final QueryCursor<Cache.Entry<K, V>> cur =
                 qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
