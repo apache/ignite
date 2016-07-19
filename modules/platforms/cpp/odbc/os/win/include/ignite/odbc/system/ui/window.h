@@ -30,10 +30,11 @@ namespace ignite
             namespace ui
             {
                 /**
-                 * Process UI messages in current thread.
-                 * Blocks until quit message has been received.
+                 * Get handle for the current module.
+                 *
+                 * @return Handle for the current module.
                  */
-                void ProcessMessages();
+                HINSTANCE GetHInstance();
 
                 /**
                  * Window class.
@@ -42,14 +43,21 @@ namespace ignite
                 {
                 public:
                     /**
-                     * Constructor.
+                     * Constructor for a new window that is going to be created.
                      *
                      * @param parent Parent window handle.
                      * @param className Window class name.
                      * @param title Window title.
                      * @param callback Event processing function.
                      */
-                    Window(HWND parent, const char* className, const char* title);
+                    Window(Window* parent, const char* className, const char* title);
+
+                    /**
+                     * Constructor for the existing window.
+                     *
+                     * @param handle Window handle.
+                     */
+                    Window(HWND handle);
 
                     /**
                      * Destructor.
@@ -59,10 +67,14 @@ namespace ignite
                     /**
                      * Create window.
                      *
+                     * @param style Window style.
+                     * @param posX Window x position.
+                     * @param posY Window y position.
                      * @param width Window width.
                      * @param height Window height.
+                     * @param id ID for child window.
                      */
-                    void Create(int width, int height);
+                    void Create(DWORD style, int posX, int posY, int width, int height, int id);
 
                     /**
                      * Show window.
@@ -75,21 +87,9 @@ namespace ignite
                     void Update();
 
                     /**
-                     * Callback which is called upon receiving new message.
-                     * Pure virtual. Should be defined by user.
-                     *
-                     * @param msg Message.
-                     * @param wParam Word-sized parameter.
-                     * @param lParam Long parameter.
-                     * @return Should return true if the message has been
-                     *     processed by the handler and false otherwise.
+                     * Destroy window.
                      */
-                    virtual bool OnMessage(UINT msg, WPARAM wParam, LPARAM lParam) = 0;
-
-                    /**
-                     * Callback that is called upon window creation.
-                     */
-                    virtual void OnCreate() = 0;
+                    void Destroy();
 
                     /**
                      * Get window handle.
@@ -101,7 +101,7 @@ namespace ignite
                         return handle;
                     }
 
-                private:
+                protected:
                     /**
                      * Set window handle.
                      *
@@ -112,24 +112,6 @@ namespace ignite
                         handle = value;
                     }
 
-                    /**
-                     * Get handle for the current module.
-                     *
-                     * @return Handle for the current module.
-                     */
-                    static HINSTANCE GetHInstance();
-
-                    /**
-                     * Static callback.
-                     *
-                     * @param hwnd Window handle.
-                     * @param msg Message.
-                     * @param wParam Word-sized parameter.
-                     * @param lParam Long parameter.
-                     * @return Operation result.
-                     */
-                    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
                     /** Window class name. */
                     std::string className;
 
@@ -139,8 +121,17 @@ namespace ignite
                     /** Window handle. */
                     HWND handle;
 
-                    /** Window parent handle. */
-                    HWND parentHandle;
+                    /** Specifies whether window has been created by the thread and needs destruction. */
+                    bool created;
+
+                    /** Window parent. */
+                    Window* parent;
+
+                    /** Window x position. */
+                    int posX;
+
+                    /** Window y position. */
+                    int posY;
 
                     /** Window width. */
                     int width;

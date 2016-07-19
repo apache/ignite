@@ -27,120 +27,78 @@ namespace ignite
         {
             namespace ui
             {
-                void ProcessMessages()
+                HINSTANCE GetHInstance()
                 {
-                    MSG msg;
+                    HINSTANCE hInstance = GetModuleHandle(TARGET_MODULE_FULL_NAME);
 
-                    while (GetMessage(&msg, NULL, 0, 0) > 0)
-                    {
-                        TranslateMessage(&msg);
+                    if (hInstance == NULL)
+                        throw IgniteError(GetLastError(), "Can not get hInstance for the module.");
 
-                        DispatchMessage(&msg);
-                    }
+                    return hInstance;
                 }
 
-                LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-                {
-                    Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-
-                    switch (msg)
-                    {
-                        case WM_NCCREATE:
-                        {
-                            _ASSERT(lParam != NULL);
-
-                            CREATESTRUCT* createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
-
-                            LONG_PTR longSelfPtr = reinterpret_cast<LONG_PTR>(createStruct->lpCreateParams);
-
-                            SetWindowLongPtr(hwnd, GWLP_USERDATA, longSelfPtr);
-
-                            return DefWindowProc(hwnd, msg, wParam, lParam);
-                        }
-
-                        case WM_CREATE:
-                        {
-                            _ASSERT(window != NULL);
-
-                            window->SetHandle(hwnd);
-
-                            window->OnCreate();
-
-                            return 0;
-                        }
-
-                        default:
-                            break;
-                    }
-
-                    if (window && window->OnMessage(msg, wParam, lParam))
-                        return 0;
-
-                    return DefWindowProc(hwnd, msg, wParam, lParam);
-                }
-
-                Window::Window(HWND parent, const char* className, const char* title) :
+                Window::Window(Window* parent, const char* className, const char* title) :
                     className(className),
                     title(title),
                     handle(NULL),
-                    parentHandle(parent),
+                    created(false),
+                    parent(parent),
+                    posX(0),
+                    posY(0),
                     width(0),
                     height(0)
                 {
-                    WNDCLASS wcx;
+                    // No-op.
+                }
 
-                    wcx.style = CS_HREDRAW | CS_VREDRAW;
-                    wcx.lpfnWndProc = WndProc;
-                    wcx.cbClsExtra = 0;
-                    wcx.cbWndExtra = 0;
-                    wcx.hInstance = GetHInstance();
-                    wcx.hIcon = NULL;
-                    wcx.hCursor = NULL;
-                    wcx.hbrBackground = NULL;
-                    wcx.lpszMenuName = NULL;
-                    wcx.lpszClassName = className;
-
-                    if (!RegisterClass(&wcx))
-                        throw IgniteError(GetLastError(), "Can not register window class");
+                Window::Window(HWND handle) :
+                    className(),
+                    title(),
+                    handle(handle),
+                    created(false),
+                    parent(0),
+                    posX(0),
+                    posY(0),
+                    width(0),
+                    height(0)
+                {
+                    // No-op.
                 }
 
                 Window::~Window()
                 {
-                    if (handle)
-                        DestroyWindow(handle);
-
-                    UnregisterClass(className.c_str(), GetHInstance());
+                    if (created)
+                        Destroy();
                 }
 
-                void Window::Create(int width, int height)
+                void Window::Create(DWORD style, int posX, int posY, int width, int height, int id)
                 {
+                    if (handle)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Window already created");
+
+                    this->posX = posX;
+                    this->posY = posY;
                     this->width = width;
                     this->height = height;
 
-                    // Finding out parent position.
-                    RECT parentRect;
-                    GetWindowRect(parentHandle, &parentRect);
-
-                    // Positioning window to the center of parent window.
-                    const int posX = parentRect.left + (parentRect.right - parentRect.left - width) / 2;
-                    const int posY = parentRect.top + (parentRect.bottom - parentRect.top - height) / 2;
-                    
                     handle = CreateWindow(
                         className.c_str(),
                         title.c_str(),
-                        WS_OVERLAPPED | WS_SYSMENU,
+                        style,
                         posX,
                         posY,
                         width,
                         height,
-                        parentHandle,
-                        NULL,
+                        parent ? parent->GetHandle() : NULL,
+                        reinterpret_cast<HMENU>(id),
                         GetHInstance(),
                         this
                     );
 
                     if (!handle)
                         throw IgniteError(GetLastError(), "Can not create window");
+
+                    created = true;
                 }
 
                 void Window::Show()
@@ -153,14 +111,12 @@ namespace ignite
                     UpdateWindow(handle);
                 }
 
-                HINSTANCE Window::GetHInstance()
+                void Window::Destroy()
                 {
-                    HINSTANCE hInstance = GetModuleHandle(TARGET_MODULE_FULL_NAME);
+                    if (handle)
+                        DestroyWindow(handle);
 
-                    if (hInstance == NULL)
-                        throw IgniteError(GetLastError(), "Can not get hInstance for the module.");
-
-                    return hInstance;
+                    handle = NULL;
                 }
             }
         }

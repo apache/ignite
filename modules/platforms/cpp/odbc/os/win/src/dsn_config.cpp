@@ -19,14 +19,14 @@
 #include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/system/ui/window.h"
+#include "ignite/odbc/system/ui/custom_window.h"
 
 using ignite::odbc::config::Configuration;
 
 /**
  * Configuration window class.
  */
-class ConfigurationWindow : public ignite::odbc::system::ui::Window
+class ConfigurationWindow : public ignite::odbc::system::ui::CustomWindow
 {
     enum ElementId
     {
@@ -40,8 +40,8 @@ public:
      *
      * @param parent Parent window handle.
      */
-    explicit ConfigurationWindow(HWND parent) :
-        Window(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
+    explicit ConfigurationWindow(Window* parent) :
+        CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
         nameEdit(NULL),
         okButton(NULL),
         cancelButton(NULL)
@@ -55,6 +55,22 @@ public:
     virtual ~ConfigurationWindow()
     {
         // No-op.
+    }
+
+    void Create()
+    {
+        // Finding out parent position.
+        RECT parentRect;
+        GetWindowRect(parent->GetHandle(), &parentRect);
+
+        // Positioning window to the center of parent window.
+        const int posX = parentRect.left + (parentRect.right - parentRect.left - width) / 2;
+        const int posY = parentRect.top + (parentRect.bottom - parentRect.top - height) / 2;
+
+        Window::Create(WS_OVERLAPPED | WS_SYSMENU, posX, posY, 320, 480, 0);
+
+        if (!handle)
+            throw ignite::IgniteError(GetLastError(), "Can not create window");
     }
 
     virtual void OnCreate()
@@ -158,9 +174,11 @@ void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)
 
     try
     {
-        ConfigurationWindow window(hwndParent);
+        Window parent(hwndParent);
 
-        window.Create(320, 480);
+        ConfigurationWindow window(&parent);
+
+        window.Create();
 
         window.Show();
         window.Update();
