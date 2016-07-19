@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.rest.handlers.cache;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
+ * Tests command handler directly for atomic cache.
  */
-public interface PlatformBootstrap {
+public class GridCacheAtomicCommandHandlerSelfTest extends GridCacheCommandHandlerSelfTest {
     /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param springCtx Optional Spring resource context.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Platform processor.
+     * Constructor.
      */
-    public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
-        long envPtr, long dataPtr);
+    public GridCacheAtomicCommandHandlerSelfTest() {
+        super();
+    }
 
     /**
-     * Init the bootstrap.
-     *
+     * @return CacheAtomicityMode for the cache.
      */
-    public void init();
+    @Override protected CacheAtomicityMode atomicityMode(){
+        return CacheAtomicityMode.ATOMIC;
+    }
 }
