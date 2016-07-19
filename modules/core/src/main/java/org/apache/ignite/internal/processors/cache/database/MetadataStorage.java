@@ -129,25 +129,6 @@ public class MetadataStorage implements MetaStore {
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void dropAllRootPages() throws IgniteCheckedException {
-        final IndexItem item = new IndexItem(new byte[MAX_IDX_NAME_LEN + 1], 0);
-
-        IndexItem rmv;
-
-        do {
-            rmv = metaTree.removeCeil(item, null);
-
-            if (rmv != null) {
-                if (reuseList == null)
-                    pageMem.freePage(cacheId, rmv.pageId);
-            }
-
-        } while (rmv != null);
-
-        metaTree.destroy();
-    }
-
     /**
      *
      */

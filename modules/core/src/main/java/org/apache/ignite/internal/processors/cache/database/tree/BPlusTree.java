@@ -645,7 +645,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
-        long rootId = allocatePage(null);
+        long rootId = allocatePageForNew();
 
         // Allocate the first leaf page, it will be our root.
         try (Page root = page(rootId)) {
@@ -2919,6 +2919,16 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * Allocates page for new BPlus tree.
+     *
+     * @return New page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected long allocatePageForNew() throws IgniteCheckedException {
+        return allocatePage(null);
+    }
+
+    /**
      * @return Page ID of newly allocated page.
      * @throws IgniteCheckedException
      */
@@ -3142,7 +3152,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         /** {@inheritDoc} */
         @Override public long pollFreePage() {
-            return remove();
+            return isEmpty() ? 0 : remove();
         }
     }
 

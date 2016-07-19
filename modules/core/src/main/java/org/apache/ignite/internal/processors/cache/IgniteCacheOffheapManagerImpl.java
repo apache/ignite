@@ -152,7 +152,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                         initNew = true;
                     }
-                } finally {
+                }
+                finally {
                     meta.releaseWrite(!initialized);
                 }
             }
@@ -209,7 +210,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @return Allocated metapages.
      * @throws IgniteCheckedException
      */
-    private long[] allocateMetas(
+    protected long[] allocateMetas(
         final PageMemory pageMem,
         final int cacheId,
         final boolean persistenceEnabled) throws IgniteCheckedException {
@@ -240,8 +241,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 finally {
                     meta.releaseWrite(true);
                 }
-
-                metaStore.dropAllRootPages();
             } catch (IgniteCheckedException e) {
                 throw new IgniteException(e.getMessage(), e);
             }

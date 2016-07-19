@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -42,8 +41,15 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseTree(String name, ReuseList reuseList, int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew)
-        throws IgniteCheckedException {
+    public ReuseTree(
+        String name,
+        ReuseList reuseList,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)
@@ -51,14 +57,19 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<Number> io, ByteBuffer buf, int idx, Number row)
-        throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<Number> io, ByteBuffer buf, int idx, Number row) {
         int pageIdx = io.isLeaf() ?
             PageIdUtils.pageIndex(((ReuseLeafIO)io).getPageId(buf, idx)) :
             (((ReuseInnerIO)io).getPageIndex(buf, idx));
 
         // Compare as unsigned int.
         return Long.compare(pageIdx & 0xFFFFFFFFL, toPageIndex(row) & 0xFFFFFFFFL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long allocatePageForNew() throws IgniteCheckedException {
+        // Do not call reuse list when allocating a new ReuseTree.
+        return allocatePage0();
     }
 
     /**
@@ -73,8 +84,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Long getRow(BPlusIO<Number> io, ByteBuffer buf, int idx)
-        throws IgniteCheckedException {
+    @Override protected Long getRow(BPlusIO<Number> io, ByteBuffer buf, int idx) {
         assert io.isLeaf();
 
         return ((ReuseLeafIO)io).getPageId(buf, idx);

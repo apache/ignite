@@ -41,16 +41,13 @@ public final class ReuseList {
     public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long[] rooIds, boolean initNew) throws IgniteCheckedException {
         A.ensure(rooIds.length > 1, "Segments must be greater than 1.");
 
-        ReuseTree[] trees0 = new ReuseTree[rooIds.length];
+        trees = new ReuseTree[rooIds.length];
 
         for (int i = 0; i < rooIds.length; i++) {
             String idxName = BPlusTree.treeName("s" + i, "Reuse");
 
-            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rooIds[i], initNew);
+            trees[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rooIds[i], initNew);
         }
-
-        // Later assignment is done intentionally, see null check in method take.
-        trees = trees0;
     }
 
     /**
@@ -97,9 +94,6 @@ public final class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public long take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
-        if (trees == null)
-            return 0;
-
         // Remove and return page at min possible position.
         Long pageId = tree(client).removeCeil(0L, bag);
 
