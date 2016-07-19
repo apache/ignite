@@ -15,37 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
- *
+ * Optimized marshaller self test.
  */
-public class IgniteCacheAtomicPeekModesTest extends IgniteCachePeekModesAbstractTest {
+@GridCommonTest(group = "Marshaller")
+public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 4;
+    @Override protected Marshaller marshaller() {
+        OptimizedMarshaller m = new OptimizedMarshaller(false);
+
+        m.setPoolSize(8);
+
+        return m;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+        // Reset static registry.
+        new OptimizedMarshaller().setPoolSize(0);
     }
 }

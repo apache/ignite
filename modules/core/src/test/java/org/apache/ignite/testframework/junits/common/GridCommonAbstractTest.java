@@ -159,12 +159,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+    protected static <K, V> GridCacheAdapter<K, V> internalCache0(IgniteCache<K, V> cache) {
         if (isMultiJvmObject(cache))
-            throw new UnsupportedOperationException("Oparetion can't be supported automatically for multi jvm " +
+            throw new UnsupportedOperationException("Operation can't be supported automatically for multi jvm " +
                 "(send closure instead).");
 
         return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+        return internalCache0(cache);
     }
 
     /**
