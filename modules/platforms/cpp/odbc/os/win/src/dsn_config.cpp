@@ -42,9 +42,9 @@ public:
      */
     explicit ConfigurationWindow(Window* parent) :
         CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
-        nameEdit(NULL),
-        okButton(NULL),
-        cancelButton(NULL)
+        nameEdit(),
+        okButton(),
+        cancelButton()
     {
         // No-op.
     }
@@ -57,17 +57,23 @@ public:
         // No-op.
     }
 
+    /**
+     * Create window in the center of the parent window.
+     */
     void Create()
     {
         // Finding out parent position.
         RECT parentRect;
         GetWindowRect(parent->GetHandle(), &parentRect);
 
+        width = 320;
+        height = 480;
+
         // Positioning window to the center of parent window.
         const int posX = parentRect.left + (parentRect.right - parentRect.left - width) / 2;
         const int posY = parentRect.top + (parentRect.bottom - parentRect.top - height) / 2;
 
-        Window::Create(WS_OVERLAPPED | WS_SYSMENU, posX, posY, 320, 480, 0);
+        Window::Create(WS_OVERLAPPED | WS_SYSMENU, posX, posY, width, height, 0);
 
         if (!handle)
             throw ignite::IgniteError(GetLastError(), "Can not create window");
@@ -75,48 +81,16 @@ public:
 
     virtual void OnCreate()
     {
-        LOG_MSG("Handle: %p\n", GetHandle());
+        nameEdit.reset(new Window(this, "Edit", ""));
+        nameEdit->Create(WS_CHILD | WS_VISIBLE | WS_BORDER, 50, 50, 150, 20, ID_NAME_EDIT);
 
-        nameEdit = CreateWindow(
-            "Edit",
-            "Test",
-            WS_CHILD | WS_VISIBLE | WS_BORDER,
-            50, 50, 150, 20,
-            GetHandle(),
-            reinterpret_cast<HMENU>(ID_NAME_EDIT),
-            NULL,
-            NULL);
+        okButton.reset(new Window(this, "Button", "Ok"));
+        okButton->Create(WS_CHILD | WS_VISIBLE , 50, 100, 80, 25, ID_OK_BUTTON);
 
-        LOG_MSG("nameEdit: %p\n", nameEdit);
-
-        okButton = CreateWindow(
-            "Button",
-            "Ok",
-            WS_CHILD | WS_VISIBLE,
-            50, 100, 80, 25,
-            GetHandle(),
-            reinterpret_cast<HMENU>(ID_OK_BUTTON),
-            NULL,
-            NULL);
-
-        LOG_MSG("okButton: %p\n", okButton);
-
-        cancelButton = CreateWindow(
-            "Button",
-            "Cancel",
-            WS_CHILD | WS_VISIBLE,
-            190, 100, 80, 25,
-            GetHandle(),
-            reinterpret_cast<HMENU>(ID_CANCEL_BUTTON),
-            NULL,
-            NULL);
-
-        LOG_MSG("cancelButton: %p\n", cancelButton);
+        cancelButton.reset(new Window(this, "Button", "Cancel"));
+        cancelButton->Create(WS_CHILD | WS_VISIBLE, 190, 100, 80, 25, ID_CANCEL_BUTTON);
     }
 
-    /**
-     * @copydoc ignite::odbc::system::ui::Window::OnMessage
-     */
     virtual bool OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg)
@@ -159,10 +133,10 @@ public:
     }
 
 private:
-    HWND nameEdit;
+    std::auto_ptr<Window> nameEdit;
 
-    HWND okButton;
-    HWND cancelButton;
+    std::auto_ptr<Window> okButton;
+    std::auto_ptr<Window> cancelButton;
 };
 
 void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)

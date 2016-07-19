@@ -90,10 +90,11 @@ namespace ignite
                     wcx.cbWndExtra = 0;
                     wcx.hInstance = GetHInstance();
                     wcx.hIcon = NULL;
-                    wcx.hCursor = NULL;
-                    wcx.hbrBackground = NULL;
+                    wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
+                    wcx.hbrBackground = (HBRUSH)COLOR_WINDOW;
                     wcx.lpszMenuName = NULL;
                     wcx.lpszClassName = className;
+
 
                     if (!RegisterClass(&wcx))
                         throw IgniteError(GetLastError(), "Can not register window class");

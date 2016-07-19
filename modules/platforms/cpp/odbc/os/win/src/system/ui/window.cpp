@@ -99,6 +99,10 @@ namespace ignite
                         throw IgniteError(GetLastError(), "Can not create window");
 
                     created = true;
+
+                    HGDIOBJ hfDefault = GetStockObject(DEFAULT_GUI_FONT);
+
+                    SendMessage(GetHandle(), WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE, 0));
                 }
 
                 void Window::Show()
