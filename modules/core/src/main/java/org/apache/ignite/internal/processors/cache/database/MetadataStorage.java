@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -32,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
@@ -127,15 +124,13 @@ public class MetadataStorage implements MetaStore {
         if (row != null) {
             if (reuseList == null)
                 pageMem.freePage(cacheId, row.pageId);
-            else
-                reuseList.add(new Bag(row.pageId));
         }
 
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
     /** {@inheritDoc} */
-    public void dropAllRootPages() throws IgniteCheckedException {
+    @Override public void dropAllRootPages() throws IgniteCheckedException {
         final IndexItem item = new IndexItem(new byte[MAX_IDX_NAME_LEN + 1], 0);
 
         IndexItem rmv;
@@ -146,42 +141,11 @@ public class MetadataStorage implements MetaStore {
             if (rmv != null) {
                 if (reuseList == null)
                     pageMem.freePage(cacheId, rmv.pageId);
-                else
-                    reuseList.add(new Bag(rmv.pageId));
             }
 
         } while (rmv != null);
 
         metaTree.destroy();
-    }
-
-    /**
-     *
-     */
-    private static class Bag implements ReuseBag {
-        /** */
-        private long pageId;
-
-        /**
-         * @param pageId Page ID.
-         */
-        public Bag(final long pageId) {
-            this.pageId = pageId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addFreePage(final long pageId) {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public long pollFreePage() {
-            final long pid = pageId;
-
-            pageId = 0;
-
-            return pid;
-        }
     }
 
     /**
