@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -42,6 +43,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Arguments. */
     @GridToStringInclude
     private Object[] args;
+
+    /** Timeout in seconds. */
+    private int timeout;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -128,6 +132,22 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.type = type;
 
         return this;
+    }
+
+    /**
+     * Gets the query execution timeout in seconds.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout. Query will be automatically cancelled if the timeout is exceeded.
+     * @param timeout Timeout value.
+     * @param timeUnit Time unit.
+     */
+    public void setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = (int)TimeUnit.SECONDS.convert(timeout, timeUnit);
     }
 
     /** {@inheritDoc} */

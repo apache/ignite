@@ -31,13 +31,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisable
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQueryErrorTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryRunnableSelfTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopNodeFailSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSwapScanQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceFieldsQueryAtomicSelfTest;
@@ -105,6 +108,11 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         // Other.
         suite.addTestSuite(CacheQueryNewClientSelfTest.class);
         suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
+        suite.addTestSuite(IgniteCacheSqlQueryRunnableSelfTest .class);
+
+        // Query cancellation
+        suite.addTestSuite(IgniteCacheQueryStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryStopNodeFailSelfTest.class);
 
         return suite;
     }

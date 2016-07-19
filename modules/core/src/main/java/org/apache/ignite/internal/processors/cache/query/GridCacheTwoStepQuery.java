@@ -50,6 +50,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private final boolean skipMergeTbl;
 
+    /** Timeout. */
+    private int timeout;
+
     /**
      * @param spaces All spaces accessed in query.
      * @param rdc Reduce query.
@@ -154,5 +157,19 @@ public class GridCacheTwoStepQuery {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
+    }
+
+    /**
+     * @param timeout Timeout.
+     */
+    public void timeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    /**
+     * Returns query timeout or 0 if it's disabled.
+     */
+    public int timeout() {
+        return this.timeout;
     }
 }

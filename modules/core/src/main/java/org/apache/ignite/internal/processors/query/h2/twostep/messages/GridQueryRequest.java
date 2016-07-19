@@ -39,7 +39,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridQueryRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
-
     /** */
     private long reqId;
 
@@ -66,6 +65,9 @@ public class GridQueryRequest implements Message {
     @GridToStringInclude
     private int[] parts;
 
+    /** Timeout. */
+    private int timeout;
+
     /**
      * Default constructor.
      */
@@ -89,7 +91,8 @@ public class GridQueryRequest implements Message {
         Collection<GridCacheSqlQuery> qrys,
         AffinityTopologyVersion topVer,
         List<String> extraSpaces,
-        int[] parts) {
+        int[] parts,
+        int timeout) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
@@ -98,6 +101,7 @@ public class GridQueryRequest implements Message {
         this.topVer = topVer;
         this.extraSpaces = extraSpaces;
         this.parts = parts;
+        this.timeout = timeout;
     }
 
     /**
@@ -233,6 +237,12 @@ public class GridQueryRequest implements Message {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeInt("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -302,6 +312,14 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                timeout = reader.readInt("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryRequest.class);
@@ -314,6 +332,13 @@ public class GridQueryRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
+    }
+
+    /**
+     * Timeout.
+     */
+    public int timeout() {
+        return this.timeout;
     }
 }

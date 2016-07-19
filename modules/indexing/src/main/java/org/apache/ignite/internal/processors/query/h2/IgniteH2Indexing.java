@@ -49,8 +49,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -810,23 +814,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query.
      *
-     * @param conn Connection,.
      * @param sql Sql query.
      * @param params Parameters.
-     * @param useStmtCache If {@code true} uses statement cache.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQuery(Connection conn, String sql, Collection<Object> params, boolean useStmtCache)
+    private ResultSet executeSqlQuery(String sql, PreparedStatement stmt, Collection<Object> params)
         throws IgniteCheckedException {
-        PreparedStatement stmt;
-
-        try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-        }
 
         switch (commandType(stmt)) {
             case CommandInterface.SELECT:
@@ -844,6 +838,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return stmt.executeQuery();
         }
         catch (SQLException e) {
+            onSqlException();
+
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         }
     }
@@ -864,35 +860,160 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql,
         @Nullable Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
-
         try {
-            ResultSet rs = executeSqlQuery(conn, sql, params, useStmtCache);
+            return new SqlQueryCallable(space, conn, sql, params, useStmtCache).call();
+        }
+        catch(IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
 
-            long time = U.currentTimeMillis() - start;
+    /**
+     * Returns future suitable for running SQL query.
+     * Future can be used for query cancellation from another thread
+     * or running query with automatic cancellation on timeout.
+     *
+     * @param space Space name.
+     * @param conn Connection,.
+     * @param sql Sql query.
+     * @param params Parameters.
+     * @param useStmtCache If {@code true} uses statement cache.
+     * @param timeout Query timeout in milliseconds.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public RunnableFuture<ResultSet> sqlQueryFuture(String space,
+        Connection conn,
+        final String sql,
+        @Nullable Collection<Object> params,
+        boolean useStmtCache,
+        final int timeout) throws IgniteCheckedException {
+        final SqlQueryCallable fut = new SqlQueryCallable(space, conn, sql, params, useStmtCache);
 
-            long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
+        return new FutureTask<ResultSet>(fut) {
+            private GridTimeoutProcessor.CancelableTask timeoutTask;
 
-            if (time > longQryExecTimeout) {
-                String msg = "Query execution is too long (" + time + " ms): " + sql;
+            @Override public void run() {
+                // Set timeout handler before run.
+                if (timeout > 0) {
+                    timeoutTask = ctx.timeout().schedule(new Runnable() {
+                        @Override public void run() {
+                            cancel(false);
+                        }
+                    }, timeout * 1000L, -1);
+                }
 
-                ResultSet plan = executeSqlQuery(conn, "EXPLAIN " + sql, params, false);
-
-                plan.next();
-
-                // Add SQL explain result message into log.
-                String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
-
-                LT.warn(log, null, longMsg, msg);
+                super.run();
             }
 
-            return rs;
-        }
-        catch (SQLException e) {
-            onSqlException();
+            @Override public boolean cancel(boolean mayInterruptIfRunning) {
+                boolean cancelled = super.cancel(mayInterruptIfRunning);
 
-            throw new IgniteCheckedException(e);
+                if (cancelled)
+                    try {
+                        fut.cancel();
+
+                        // Prevent timeout closure to run if a query was cancelled before.
+                        if (timeoutTask != null)
+                            timeoutTask.close();
+                    }
+                    catch (SQLException e) {
+                        IgniteH2Indexing.this.log.error("Failed to cancel SQL query " + sql, e);
+                    }
+
+                return cancelled;
+            }
+        };
+    }
+
+    /** */
+    private class SqlQueryCallable implements Callable<ResultSet> {
+        /** */
+        private final String space;
+
+        /** */
+        private final Connection conn;
+
+        /** */
+        private final String sql;
+
+        /** */
+        private final Collection<Object> params;
+
+        /** */
+        private PreparedStatement stmt;
+
+        /**
+         * @param space Space.
+         * @param conn Connection.
+         * @param sql Query.
+         * @param params Params.
+         * @param useStmtCache Use cache?
+         */
+        public SqlQueryCallable(String space, Connection conn, String sql, Collection<Object> params,
+            boolean useStmtCache) throws IgniteCheckedException {
+
+            this.space = space;
+            this.conn = conn;
+            this.sql = sql;
+            this.params = params;
+
+            try {
+                stmt = prepareStatement(conn, sql, useStmtCache);
+            }
+            catch (SQLException e) {
+                throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public ResultSet call() throws Exception {
+            long start = U.currentTimeMillis();
+
+            try {
+                ResultSet rs = executeSqlQuery(sql, stmt, params);
+
+                long time = U.currentTimeMillis() - start;
+
+                long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
+
+                if (time > longQryExecTimeout) {
+                    String msg = "Query execution is too long (" + time + " ms): " + sql;
+
+                    String explainSql = "EXPLAIN " + sql;
+                    try {
+                        stmt = prepareStatement(conn, explainSql, false);
+                    }
+                    catch (SQLException e) {
+                        throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                    }
+
+                    java.sql.ResultSet plan = executeSqlQuery(explainSql, stmt, params);
+
+                    plan.next();
+
+                    // Add SQL explain result message into log.
+                    String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
+
+                    LT.warn(log, null, longMsg, msg);
+                }
+
+                return rs;
+            }
+            catch (SQLException e) {
+                onSqlException();
+
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** */
+        public void cancel() throws SQLException {
+            stmt.cancel();
         }
     }
 
@@ -966,11 +1087,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public Iterable<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj) {
-        return new Iterable<List<?>>() {
+
+        GridReduceQueryExecutor.CancellationCtx ctx = new GridReduceQueryExecutor.CancellationCtx();
+
+        return new CtxIterable<List<?>>(ctx) {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj);
+                return rdcQryExec.query(ctx, cctx, qry, keepCacheObj);
             }
         };
+    }
+
+    /** */
+    private static abstract class CtxIterable<T> implements Iterable<T> {
+        /** */
+        final GridReduceQueryExecutor.CancellationCtx ctx;
+
+        /**
+         * @param ctx Manager.
+         */
+        public CtxIterable(GridReduceQueryExecutor.CancellationCtx ctx) {
+            this.ctx = ctx;
+        }
     }
 
     /** {@inheritDoc} */
@@ -997,6 +1134,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
+        fqry.setTimeout(qry.getTimeout(), TimeUnit.SECONDS);
 
         final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
 
@@ -1037,7 +1175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Connection c = connectionForSpace(space);
 
-        GridCacheTwoStepQuery twoStepQry;
+        final GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
 
         final T3<String, String, Boolean> cachedQryKey = new T3<>(space, sqlQry, qry.isCollocated());
@@ -1103,8 +1241,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
         twoStepQry.pageSize(qry.getPageSize());
+        twoStepQry.timeout(qry.getTimeout());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(queryTwoStep(cctx, twoStepQry, cctx.keepBinary()));
+        final CtxIterable<List<?>> iterable = (CtxIterable<List<?>>)queryTwoStep(cctx, twoStepQry, cctx.keepBinary());
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<List<?>>(iterable) {
+            @Override public void close() {
+                rdcQryExec.cancel(iterable.ctx);
+
+                super.close();
+            }
+        };
 
         cursor.fieldsMeta(meta);
 

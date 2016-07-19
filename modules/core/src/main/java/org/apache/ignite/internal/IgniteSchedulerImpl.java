@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.scheduler.SchedulerFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgniteScheduler} implementation.
@@ -103,6 +106,20 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
 
         try {
             return ctx.schedule().schedule(job, ptrn);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    @Override public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit) {
+        A.notNull(r, "r");
+        A.ensure(delay >= 0, "Illegal delay");
+
+        guard();
+
+        try {
+            return ctx.timeout().schedule(r, timeUnit.toMillis(delay), -1);
         }
         finally {
             unguard();

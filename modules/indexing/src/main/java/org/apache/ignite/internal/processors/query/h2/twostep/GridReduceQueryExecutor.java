@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -33,9 +34,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -51,6 +56,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -72,9 +78,13 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
@@ -446,12 +456,14 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     *
+     * @param cnctx Cancellation context.
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
+    public Iterator<List<?>> query(CancellationCtx cnctx, GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry, boolean keepBinary) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -464,9 +476,9 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            long qryReqId = reqIdGen.incrementAndGet();
+            final long qryReqId = reqIdGen.incrementAndGet();
 
-            QueryRun r = new QueryRun();
+            final QueryRun r = new QueryRun();
 
             r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
@@ -503,12 +515,38 @@ public class GridReduceQueryExecutor {
             assert !nodes.isEmpty();
 
             if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                assert qry.explain() || !nodes.contains(this.ctx.discovery().localNode()) :
                     "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
             }
+
+            final Collection<ClusterNode> finalNodes = nodes;
+
+            r.rmtCancellationClo = new CI1<UUID>() {
+                @Override public void apply(final UUID nodeId) {
+                    if (nodeId == null)
+                        send(finalNodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+                    else {
+                        // Do not send message to failed node.
+                        send(new GridFilteredIterator<ClusterNode>(finalNodes.iterator()) {
+                            @Override protected boolean accept(ClusterNode node) {
+                                return !node.id().equals(nodeId);
+                            }
+                        }, new GridQueryCancelRequest(qryReqId), null);
+                    }
+
+                    // Give a change to the reduce query to terminate.
+                    if ( r.fut != null )
+                        try {
+                            r.fut.cancel(false);
+                        }
+                        catch (Exception e) {
+                            throw new IgniteException("Failed to cancel a reduce query", e);
+                        }
+                }
+            };
 
             int tblIdx = 0;
 
@@ -532,7 +570,7 @@ public class GridReduceQueryExecutor {
                     fakeTable(r.conn, tblIdx++).setInnerTable(tbl);
                 }
                 else
-                    idx = GridMergeIndexUnsorted.createDummy(ctx);
+                    idx = GridMergeIndexUnsorted.createDummy(this.ctx);
 
                 for (ClusterNode node : nodes)
                     idx.addSource(node.id());
@@ -544,10 +582,16 @@ public class GridReduceQueryExecutor {
 
             runs.put(qryReqId, r);
 
+            // Skip next run if the query was cancelled.
+            if (cnctx.cancelled.get())
+                throw new CacheException("Query was cancelled by user", new GridRemoteQueryCancelledException());
+
+            cnctx.run = r;
+
             try {
-                if (ctx.clientDisconnected()) {
+                if (this.ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
-                        new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
+                        new IgniteClientDisconnectedException(this.ctx.cluster().clientReconnectFuture(),
                         "Client node disconnected."));
                 }
 
@@ -561,7 +605,7 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
-                    Marshaller m = ctx.config().getMarshaller();
+                    Marshaller m = this.ctx.config().getMarshaller();
 
                     for (GridCacheSqlQuery mapQry : mapQrys)
                         mapQry.marshallParams(m);
@@ -569,8 +613,8 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                if (send(nodes,
-                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null), partsMap)) {
+                if (send(nodes.iterator(),
+                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, qry.timeout()), partsMap)) {
                     awaitAllReplies(r, nodes);
 
                     Object state = r.state.get();
@@ -580,6 +624,9 @@ public class GridReduceQueryExecutor {
                             CacheException err = (CacheException)state;
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
+                                throw err;
+
+                            if (err.getCause() instanceof GridRemoteQueryCancelledException)
                                 throw err;
 
                             throw new CacheException("Failed to run map query remotely.", err);
@@ -630,22 +677,42 @@ public class GridReduceQueryExecutor {
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
-                        ResultSet res = h2.executeSqlQueryWithTimer(space,
+                        RunnableFuture<ResultSet> fut = h2.sqlQueryFuture(space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
-                            false);
+                            false,
+                            qry.timeout());
+
+                        r.fut = fut;
+
+                        fut.run();
+
+                        ResultSet res = fut.get();
 
                         resIter = new Iter(res);
                     }
                 }
 
+                boolean cancelled = false;
+
                 for (GridMergeIndex idx : r.idxs) {
-                    if (!idx.fetchedAll()) // We have to explicitly cancel queries on remote nodes.
-                        send(nodes, new GridQueryCancelRequest(qryReqId), null);
+                    if (!idx.fetchedAll()) {
+                        // We have to explicitly cancel queries on remote nodes.
+                        send(nodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+
+                        cancelled = true;
+
+                        break;
+                    }
                 }
 
                 if (retry) {
+                    /** Make sure remote executions are cancelled in case {@link #send(Iterator, Message, Map)}
+                     * was not successful. */
+                    if (!cancelled)
+                        send(nodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
@@ -654,7 +721,7 @@ public class GridReduceQueryExecutor {
 
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepBinary);
             }
-            catch (IgniteCheckedException | RuntimeException e) {
+            catch (IgniteCheckedException | RuntimeException | InterruptedException | ExecutionException e) {
                 U.closeQuiet(r.conn);
 
                 if (e instanceof CacheException)
@@ -670,9 +737,15 @@ public class GridReduceQueryExecutor {
                         cause = disconnectedErr;
                 }
 
+                // Throw correct exception if the reduce query was cancelled by user.
+                if (e instanceof CancellationException)
+                    throw cancellationException();
+
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
+                cnctx.run = null;
+
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
@@ -702,6 +775,17 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    public static class CancellationCtx {
+        /** Current run. */
+        public volatile GridReduceQueryExecutor.QueryRun run;
+
+        /** Cancelled flag. */
+        public volatile AtomicBoolean cancelled = new AtomicBoolean();
     }
 
     /**
@@ -1036,7 +1120,7 @@ public class GridReduceQueryExecutor {
      * @return {@code true} If all messages sent successfully.
      */
     private boolean send(
-        Collection<ClusterNode> nodes,
+        Iterator<ClusterNode> nodes,
         Message msg,
         Map<ClusterNode,IntArray> partsMap
     ) {
@@ -1044,7 +1128,8 @@ public class GridReduceQueryExecutor {
 
         boolean ok = true;
 
-        for (ClusterNode node : nodes) {
+        while (nodes.hasNext()) {
+            ClusterNode node = nodes.next();
             if (node.isLocal()) {
                 locNodeFound = true;
 
@@ -1161,13 +1246,37 @@ public class GridReduceQueryExecutor {
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected."));
 
         for (Map.Entry<Long, QueryRun> e : runs.entrySet())
-            e.getValue().disconnected(err);
+            e.getValue().failed(err);
+    }
+
+    /**
+     * Cancels a query.
+     * @param ctx context.
+     */
+    public void cancel(CancellationCtx ctx) {
+        // Do nothing if already cancelled.
+        if (!ctx.cancelled.compareAndSet(false, true))
+            return;
+
+        QueryRun run = ctx.run;
+
+        if ( run == null ) return;
+
+        run.failed(cancellationException());
+    }
+
+    /**
+     * Constructs cancellation exception.
+     */
+    protected CacheException cancellationException() {
+        return new CacheException("Query was cancelled by user.",
+            new GridRemoteQueryCancelledException());
     }
 
     /**
      *
      */
-    private static class QueryRun {
+    public static class QueryRun {
         /** */
         private List<GridMergeIndex> idxs;
 
@@ -1183,6 +1292,12 @@ public class GridReduceQueryExecutor {
         /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
         private final AtomicReference<Object> state = new AtomicReference<>();
 
+        /** Closure for cancelling remote queries. */
+        public CI1<UUID> rmtCancellationClo;
+
+        /** */
+        public volatile RunnableFuture<ResultSet> fut;
+
         /**
          * @param o Fail state object.
          * @param nodeId Node ID.
@@ -1194,6 +1309,8 @@ public class GridReduceQueryExecutor {
             if (!state.compareAndSet(null, o))
                 return;
 
+            rmtCancellationClo.apply(nodeId); // Explicitly cancel query execution on remote nodes.
+
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
 
@@ -1204,9 +1321,11 @@ public class GridReduceQueryExecutor {
         /**
          * @param e Error.
          */
-        void disconnected(CacheException e) {
+        void failed(CacheException e) {
             if (!state.compareAndSet(null, e))
                 return;
+
+            rmtCancellationClo.apply(null); // Stop active executions.
 
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
