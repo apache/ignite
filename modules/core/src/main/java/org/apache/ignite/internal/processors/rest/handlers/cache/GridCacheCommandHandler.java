@@ -31,9 +31,15 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -55,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -66,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -195,7 +203,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static IgniteInternalFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
         final IgniteInternalCache<Object, Object> cache,
-        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
+        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException, EntryProcessorException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -206,22 +214,50 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Object curVal = cache.get(key);
+            @Override
+            public Object call() throws Exception {
+                cache.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
+                    @Override
+                    public Boolean process(MutableEntry<Object, Object> entry,
+                                           Object... objects) throws EntryProcessorException {
+                        if (cache.configuration().getAtomicityMode().equals(CacheAtomicityMode.TRANSACTIONAL)) {
+                            try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
 
-                    if (curVal == null)
-                        return false;
+                                Object curVal = entry.getValue();
+                                if (curVal == null)
+                                    return false;
 
-                    // Modify current value with appendix one.
-                    Object newVal = appendOrPrepend(curVal, val, !prepend);
+                                // Modify current value with appendix one.
+                                Object newVal = appendOrPrepend(curVal, val, !prepend);
 
-                    // Put new value asynchronously.
-                    cache.put(key, newVal);
+                                // Put new value asynchronously.
+                                entry.setValue(newVal);
+                                tx.commit();
+                                return true;
 
-                    tx.commit();
-                }
+                            } catch (IgniteCheckedException e) {
+                                throw new EntryProcessorException(e);
+                            }
+                        } else {
+                            try {
+                                Object curVal = entry.getValue();
+                                if (curVal == null)
+                                    return false;
 
+                                // Modify current value with appendix one.
+                                Object newVal = appendOrPrepend(curVal, val, !prepend);
+
+                                // Put new value asynchronously.
+                                entry.setValue(newVal);
+
+                                return true;
+
+                            } catch (IgniteCheckedException e) {
+                                throw new EntryProcessorException(e);
+                            }
+                        }
+                    }
+                });
                 return true;
             }
         }, false);
