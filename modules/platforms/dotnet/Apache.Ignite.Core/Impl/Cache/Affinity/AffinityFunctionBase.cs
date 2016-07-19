@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Affinity
+namespace Apache.Ignite.Core.Impl.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 

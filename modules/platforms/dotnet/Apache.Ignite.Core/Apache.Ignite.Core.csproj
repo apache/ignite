@@ -55,11 +55,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\Package-Info.cs" />
-    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
     <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Fair\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
     <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
@@ -114,6 +116,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
