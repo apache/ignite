@@ -257,6 +257,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return {@code true} If the partition should be renting.
+     */
+    public boolean shouldBeRenting() {
+        return shouldBeRenting;
+    }
+
+    /**
      * @param entry Entry to add.
      */
     void onAdded(GridDhtCacheEntry entry) {
@@ -388,9 +395,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     @Override public boolean reserve() {
         while (true) {
-            if (shouldBeRenting)
-                return false;
-
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();

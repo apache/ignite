@@ -1572,7 +1572,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                         GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                        if (part == null || part.state() != OWNING || !part.reserve()) {
+                        if (part == null || part.state() != OWNING || part.shouldBeRenting() || !part.reserve()) {
                             checkPartMapping = true;
 
                             return reserved;
