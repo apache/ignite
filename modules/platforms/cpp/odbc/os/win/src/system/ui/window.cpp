@@ -19,29 +19,6 @@
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/system/ui/window.h"
 
-
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    switch (msg)
-    {
-        case WM_CLOSE:
-        {
-            DestroyWindow(hwnd);
-            break;
-        }
-
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            break;
-        }
-
-        default:
-            return DefWindowProc(hwnd, msg, wParam, lParam);
-    }
-    return 0;
-}
-
 namespace ignite
 {
     namespace odbc
@@ -50,23 +27,73 @@ namespace ignite
         {
             namespace ui
             {
+                void ProcessMessages()
+                {
+                    MSG msg;
+
+                    while (GetMessage(&msg, NULL, 0, 0) > 0)
+                    {
+                        TranslateMessage(&msg);
+
+                        DispatchMessage(&msg);
+                    }
+                }
+
+                LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+                {
+                    Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+
+                    switch (msg)
+                    {
+                        case WM_NCCREATE:
+                        {
+                            _ASSERT(lParam != NULL);
+
+                            CREATESTRUCT* createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
+
+                            LONG_PTR longSelfPtr = reinterpret_cast<LONG_PTR>(createStruct->lpCreateParams);
+
+                            SetWindowLongPtr(hwnd, GWLP_USERDATA, longSelfPtr);
+
+                            return DefWindowProc(hwnd, msg, wParam, lParam);
+                        }
+
+                        case WM_CREATE:
+                        {
+                            _ASSERT(window != NULL);
+
+                            window->SetHandle(hwnd);
+
+                            window->OnCreate();
+
+                            return 0;
+                        }
+
+                        default:
+                            break;
+                    }
+
+                    if (window && window->OnMessage(msg, wParam, lParam))
+                        return 0;
+
+                    return DefWindowProc(hwnd, msg, wParam, lParam);
+                }
+
                 Window::Window(HWND parent, const char* className, const char* title) :
                     className(className),
                     title(title),
-                    parentHandle(parent)
+                    handle(NULL),
+                    parentHandle(parent),
+                    width(0),
+                    height(0)
                 {
                     WNDCLASS wcx;
-
-                    HINSTANCE hInstance = GetHInstance();
-
-                    if (hInstance == NULL)
-                        throw IgniteError(GetLastError(), "Can not get hInstance for the module.");
 
                     wcx.style = CS_HREDRAW | CS_VREDRAW;
                     wcx.lpfnWndProc = WndProc;
                     wcx.cbClsExtra = 0;
                     wcx.cbWndExtra = 0;
-                    wcx.hInstance = hInstance;
+                    wcx.hInstance = GetHInstance();
                     wcx.hIcon = NULL;
                     wcx.hCursor = NULL;
                     wcx.hbrBackground = NULL;
@@ -75,38 +102,6 @@ namespace ignite
 
                     if (!RegisterClass(&wcx))
                         throw IgniteError(GetLastError(), "Can not register window class");
-
-                    // Finding out parent position.
-                    RECT parentRect;
-                    GetWindowRect(parent, &parentRect);
-
-                    const int sizeX = 320;
-                    const int sizeY = 480;
-
-                    // Positioning window to the center of parent window.
-                    const int posX = parentRect.left + (parentRect.right - parentRect.left - sizeX) / 2;
-                    const int posY = parentRect.top + (parentRect.bottom - parentRect.top - sizeY) / 2;
-
-                    handle = CreateWindow(
-                        className,
-                        title,
-                        WS_OVERLAPPED | WS_SYSMENU,
-                        posX,
-                        posY,
-                        sizeX,
-                        sizeY,
-                        parentHandle,
-                        NULL,
-                        hInstance,
-                        NULL
-                    );
-
-                    if (!handle)
-                    {
-                        UnregisterClass(className, hInstance);
-
-                        throw IgniteError(GetLastError(), "Can not create window");
-                    }
                 }
 
                 Window::~Window()
@@ -115,6 +110,37 @@ namespace ignite
                         DestroyWindow(handle);
 
                     UnregisterClass(className.c_str(), GetHInstance());
+                }
+
+                void Window::Create(int width, int height)
+                {
+                    this->width = width;
+                    this->height = height;
+
+                    // Finding out parent position.
+                    RECT parentRect;
+                    GetWindowRect(parentHandle, &parentRect);
+
+                    // Positioning window to the center of parent window.
+                    const int posX = parentRect.left + (parentRect.right - parentRect.left - width) / 2;
+                    const int posY = parentRect.top + (parentRect.bottom - parentRect.top - height) / 2;
+                    
+                    handle = CreateWindow(
+                        className.c_str(),
+                        title.c_str(),
+                        WS_OVERLAPPED | WS_SYSMENU,
+                        posX,
+                        posY,
+                        width,
+                        height,
+                        parentHandle,
+                        NULL,
+                        GetHInstance(),
+                        this
+                    );
+
+                    if (!handle)
+                        throw IgniteError(GetLastError(), "Can not create window");
                 }
 
                 void Window::Show()
@@ -127,21 +153,14 @@ namespace ignite
                     UpdateWindow(handle);
                 }
 
-                void Window::ProcessMessages()
-                {
-                    MSG msg;
-
-                    while (GetMessage(&msg, NULL, 0, 0) > 0)
-                    {
-                        TranslateMessage(&msg);
-
-                        DispatchMessage(&msg);
-                    }
-                }
-
                 HINSTANCE Window::GetHInstance()
                 {
-                    return GetModuleHandle("ignite.odbc.dll");
+                    HINSTANCE hInstance = GetModuleHandle(TARGET_MODULE_FULL_NAME);
+
+                    if (hInstance == NULL)
+                        throw IgniteError(GetLastError(), "Can not get hInstance for the module.");
+
+                    return hInstance;
                 }
             }
         }

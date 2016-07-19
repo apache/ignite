@@ -23,22 +23,149 @@
 
 using ignite::odbc::config::Configuration;
 
+/**
+ * Configuration window class.
+ */
+class ConfigurationWindow : public ignite::odbc::system::ui::Window
+{
+    enum ElementId
+    {
+        ID_NAME_EDIT,
+        ID_OK_BUTTON,
+        ID_CANCEL_BUTTON
+    };
+public:
+    /**
+     * Constructor.
+     *
+     * @param parent Parent window handle.
+     */
+    explicit ConfigurationWindow(HWND parent) :
+        Window(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
+        nameEdit(NULL),
+        okButton(NULL),
+        cancelButton(NULL)
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    virtual ~ConfigurationWindow()
+    {
+        // No-op.
+    }
+
+    virtual void OnCreate()
+    {
+        LOG_MSG("Handle: %p\n", GetHandle());
+
+        nameEdit = CreateWindow(
+            "Edit",
+            "Test",
+            WS_CHILD | WS_VISIBLE | WS_BORDER,
+            50, 50, 150, 20,
+            GetHandle(),
+            reinterpret_cast<HMENU>(ID_NAME_EDIT),
+            NULL,
+            NULL);
+
+        LOG_MSG("nameEdit: %p\n", nameEdit);
+
+        okButton = CreateWindow(
+            "Button",
+            "Ok",
+            WS_CHILD | WS_VISIBLE,
+            50, 100, 80, 25,
+            GetHandle(),
+            reinterpret_cast<HMENU>(ID_OK_BUTTON),
+            NULL,
+            NULL);
+
+        LOG_MSG("okButton: %p\n", okButton);
+
+        cancelButton = CreateWindow(
+            "Button",
+            "Cancel",
+            WS_CHILD | WS_VISIBLE,
+            190, 100, 80, 25,
+            GetHandle(),
+            reinterpret_cast<HMENU>(ID_CANCEL_BUTTON),
+            NULL,
+            NULL);
+
+        LOG_MSG("cancelButton: %p\n", cancelButton);
+    }
+
+    /**
+     * @copydoc ignite::odbc::system::ui::Window::OnMessage
+     */
+    virtual bool OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
+    {
+        switch (msg)
+        {
+            case WM_COMMAND:
+            {
+                LOG_MSG("WM_COMMAND\n");
+
+                switch (LOWORD(wParam))
+                {
+                    case ID_OK_BUTTON:
+                    case ID_CANCEL_BUTTON:
+                    {
+                        DestroyWindow(GetHandle());
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                break;
+            }
+
+            case WM_DESTROY:
+            {
+                LOG_MSG("WM_DESTROY\n");
+
+                PostQuitMessage(0);
+
+                break;
+            }
+
+            default:
+                return false;
+        }
+
+        return true;
+    }
+
+private:
+    HWND nameEdit;
+
+    HWND okButton;
+    HWND cancelButton;
+};
 
 void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)
 {
-    using ignite::odbc::system::ui::Window;
+    using namespace ignite::odbc::system::ui;
 
     if (!hwndParent)
         return;
 
     try
     {
-        Window window(hwndParent, "IgniteConfigureDsn", "Configure Apache Ignite DSN");
+        ConfigurationWindow window(hwndParent);
+
+        window.Create(320, 480);
 
         window.Show();
         window.Update();
 
-        Window::ProcessMessages();
+        ProcessMessages();
     }
     catch (const ignite::IgniteError& err)
     {
@@ -85,7 +212,7 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
 
             DisplayAddDsnWindow(hwndParent, config);
 
-            return SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
+            return SQL_FALSE;// SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
         }
 
         case ODBC_CONFIG_DSN:

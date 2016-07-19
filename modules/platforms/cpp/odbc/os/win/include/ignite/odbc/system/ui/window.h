@@ -29,21 +29,106 @@ namespace ignite
         {
             namespace ui
             {
+                /**
+                 * Process UI messages in current thread.
+                 * Blocks until quit message has been received.
+                 */
+                void ProcessMessages();
+
+                /**
+                 * Window class.
+                 */
                 class Window
                 {
                 public:
+                    /**
+                     * Constructor.
+                     *
+                     * @param parent Parent window handle.
+                     * @param className Window class name.
+                     * @param title Window title.
+                     * @param callback Event processing function.
+                     */
                     Window(HWND parent, const char* className, const char* title);
 
-                    ~Window();
+                    /**
+                     * Destructor.
+                     */
+                    virtual ~Window();
 
+                    /**
+                     * Create window.
+                     *
+                     * @param width Window width.
+                     * @param height Window height.
+                     */
+                    void Create(int width, int height);
+
+                    /**
+                     * Show window.
+                     */
                     void Show();
 
+                    /**
+                     * Update window.
+                     */
                     void Update();
 
-                    static void ProcessMessages();
+                    /**
+                     * Callback which is called upon receiving new message.
+                     * Pure virtual. Should be defined by user.
+                     *
+                     * @param msg Message.
+                     * @param wParam Word-sized parameter.
+                     * @param lParam Long parameter.
+                     * @return Should return true if the message has been
+                     *     processed by the handler and false otherwise.
+                     */
+                    virtual bool OnMessage(UINT msg, WPARAM wParam, LPARAM lParam) = 0;
+
+                    /**
+                     * Callback that is called upon window creation.
+                     */
+                    virtual void OnCreate() = 0;
+
+                    /**
+                     * Get window handle.
+                     *
+                     * @return Window handle.
+                     */
+                    HWND GetHandle() const
+                    {
+                        return handle;
+                    }
 
                 private:
+                    /**
+                     * Set window handle.
+                     *
+                     * @param value Window handle.
+                     */
+                    void SetHandle(HWND value)
+                    {
+                        handle = value;
+                    }
+
+                    /**
+                     * Get handle for the current module.
+                     *
+                     * @return Handle for the current module.
+                     */
                     static HINSTANCE GetHInstance();
+
+                    /**
+                     * Static callback.
+                     *
+                     * @param hwnd Window handle.
+                     * @param msg Message.
+                     * @param wParam Word-sized parameter.
+                     * @param lParam Long parameter.
+                     * @return Operation result.
+                     */
+                    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
                     /** Window class name. */
                     std::string className;
@@ -51,11 +136,17 @@ namespace ignite
                     /** Window title. */
                     std::string title;
 
-                    /** Window handle */
+                    /** Window handle. */
                     HWND handle;
 
-                    /** Window parent handle */
+                    /** Window parent handle. */
                     HWND parentHandle;
+
+                    /** Window width. */
+                    int width;
+
+                    /** Window height. */
+                    int height;
                 };
             }
         }
