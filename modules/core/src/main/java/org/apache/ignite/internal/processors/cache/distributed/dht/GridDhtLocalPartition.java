@@ -455,22 +455,24 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
         while (true) {
-            int reservations = state.getStamp();
-
             GridDhtPartitionState s = state.getReference();
 
             if (s == RENTING || s == EVICTED)
                 return rent;
 
-            if (state.compareAndSet(s, RENTING, reservations, reservations)) {
+            // Don't change the state of the partition in case one is reserved.
+            if (state.compareAndSet(s, RENTING, 0, 0)) {
                 if (log.isDebugEnabled())
                     log.debug("Moved partition to RENTING state: " + this);
 
                 // Evict asynchronously, as the 'rent' method may be called
                 // from within write locks on local partition.
                 tryEvictAsync(updateSeq);
-
                 break;
+            } else {
+                GridFutureAdapter f = new GridFutureAdapter();
+                f.onDone();
+                return f;
             }
         }
 

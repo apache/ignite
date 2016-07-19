@@ -276,6 +276,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 //                vals.put(i + keyBegin, i + keyBegin);
 
 //            cache.putAll(vals);
+            log.info("End run " + keyBegin);
         }
     }
 

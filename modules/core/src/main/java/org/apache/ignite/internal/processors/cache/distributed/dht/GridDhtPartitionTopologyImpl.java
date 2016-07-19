@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -182,7 +183,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     log.debug("Waiting for renting partition: " + p);
 
                 // Wait for partition to empty out.
-                p.rent(true).get();
+                try {
+                    p.rent(true).get(30000);
+                } catch (IgniteFutureTimeoutCheckedException e) {
+                    log.info("+++ Cannot rent #" + cctx.cacheId() + " " + p);
+                    p.rent(true).get();
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for renting partition: " + p);

@@ -1540,6 +1540,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean reserve() throws IgniteCheckedException {
+            if (false)
+                return true;
             boolean reserved = false;
             try {
                 for (int i = 0; i < cacheIds.length; ++i) {
@@ -1577,6 +1579,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
 
                         partititons[i] = part;
+                        log.info("+++ Reserve #" + cacheIds[i] + " " + partititons[i]);
 
                         // Double check that we are still in owning state and partition contents are not cleared.
                         if (part.state() != OWNING) {
@@ -1608,6 +1611,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     break;
 
                 partititons[i].release();
+                log.info("+++ Release #" + cacheIds[i] + " " + partititons[i]);
                 partititons[i] = null;
             }
         }
