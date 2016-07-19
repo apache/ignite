@@ -15,32 +15,45 @@
  * limitations under the License.
  */
 
-export default ['$cleanup', () => {
-    const cleanup = (original, dist) => {
+// Service to normalize objects for dirty checks.
+export default ['IgniteModelNormalizer', () => {
+    /**
+     * Normalize object for dirty checks.
+     *
+     * @param original
+     * @param dest
+     * @returns {*}
+     */
+    const normalize = (original, dest) => {
         if (_.isUndefined(original))
-            return dist;
+            return dest;
 
         if (_.isObject(original)) {
             _.forOwn(original, (value, key) => {
                 if (/\$\$hashKey/.test(key))
                     return;
 
-                const attr = cleanup(value);
+                const attr = normalize(value);
 
                 if (!_.isNil(attr)) {
-                    dist = dist || {};
-                    dist[key] = attr;
+                    dest = dest || {};
+                    dest[key] = attr;
                 }
             });
         } else if (_.isBoolean(original) && original === true)
-            dist = original;
+            dest = original;
         else if ((_.isString(original) && original.length) || _.isNumber(original))
-            dist = original;
+            dest = original;
         else if (_.isArray(original) && original.length)
-            dist = _.map(original, (value) => cleanup(value, {}));
+            dest = _.map(original, (value) => normalize(value, {}));
 
-        return dist;
+        return dest;
     };
 
-    return cleanup;
+    return {
+        normalize,
+        isEqual(prev, cur) {
+            return _.isEqual(prev, normalize(cur));
+        }
+    };
 }];

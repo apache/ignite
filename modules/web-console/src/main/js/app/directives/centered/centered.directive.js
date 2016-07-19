@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import './centered.css!';
+import './centered.css';
 
 export default ['centered', [() => {
     return {

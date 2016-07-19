@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './google.jade!';
+import templateUrl from './google.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryGoogle', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
