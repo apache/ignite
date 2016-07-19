@@ -461,10 +461,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
 
-                // Nothing to do if backup has left the grid or local.
-                if (backup == null || backup.isLocal()) {
+                // Nothing to do if backup has left the grid.
+                if (backup == null) {
                     // No-op.
                 }
+                else if (backup.isLocal())
+                    cctx.tm().removeTxReturn(tx.xidVersion(), null);
                 else {
                     try {
                         if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)

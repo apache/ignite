@@ -441,7 +441,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             for (Map.Entry<UUID, Collection> nodeVers : nodesToTxs.entrySet()) {
                 assertEquals(nodeVers.getKey(), grid(0).context().localNodeId());
 
-                assertEquals("nodesToTxs should be empty since all tx finished.", 0, nodeVers.getValue().size());
+                assertEquals("nodesToTxs should be empty since all tx finished. [node=" + i + "]", 0, nodeVers.getValue().size());
             }
 
             Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
