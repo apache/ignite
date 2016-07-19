@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -760,100 +759,185 @@ public class DataPageIO extends PageIO {
     /**
      * Writes next entry fragment.
      *
-     * @param fctx Fragment context. Must be used the same context for each fragment, because
-     *             it keeps writing state.
-     * @throws IgniteCheckedException If fail.
+     * @param key Entry key.
+     * @param val Entry value
+     * @param ver Grid cache version.
+     * @param buf Page buffer.
+     * @param ctx Cache object context.
+     * @param written Actual written entry bytes from the end.
+     * @param totalEntrySize Total entry size with overhead.
+     * @param chunkSize Fragment size.
+     * @param chunks Number of fragments.
+     * @param lastLink Last fragment link or 0 if it is the first one (from the entry end).
+     * @return Updated written bytes value and fragment index in the page.
+     * @throws IgniteCheckedException If failed.
      */
-    public void writeRowFragment(final FragmentContext fctx) throws IgniteCheckedException {
-        assert fctx != null;
+    public FragmentWritten writeRowFragment(
+        final KeyCacheObject key,
+        final CacheObject val,
+        final GridCacheVersion ver,
+        final ByteBuffer buf,
+        final CacheObjectContext ctx,
+        int written,
+        final int totalEntrySize,
+        final int chunkSize,
+        final int chunks,
+        final long lastLink
+    ) throws IgniteCheckedException {
+        final boolean lastChunk = written == 0;
 
-        final boolean lastChunk = fctx.written == 0;
+        final int dataSize = key.valueBytesLength(ctx) + val.valueBytesLength(ctx) + VER_SIZE;
 
-        final int toWrite = lastChunk ? fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1)
-            : fctx.chunkSize;
+        final int toWrite = lastChunk ? totalEntrySize - chunkSize * (chunks - 1) : chunkSize;
 
-        int directCnt = getDirectCount(fctx.buf);
-        int indirectCnt = getIndirectCount(fctx.buf);
-        int dataOff = getFirstEntryOffset(fctx.buf);
+        int directCnt = getDirectCount(buf);
+        int indirectCnt = getIndirectCount(buf);
+        int dataOff = getFirstEntryOffset(buf);
 
         // Compact if we do not have enough space for entry.
-        dataOff = compactIfNeed(fctx.buf, toWrite, directCnt, indirectCnt, dataOff);
+        dataOff = compactIfNeed(buf, toWrite, directCnt, indirectCnt, dataOff);
 
         dataOff -= toWrite - ITEM_SIZE;
 
         try {
-            fctx.buf.position(dataOff);
+            buf.position(dataOff);
 
             final int len = toWrite - ITEM_SIZE - KV_LEN_SIZE - LINK_SIZE;
-            final int off = Math.abs(fctx.written - fctx.dataSize) - len;
+            final int off = Math.abs(written - dataSize) - len;
 
-            fctx.buf.putShort((short) (len | FRAGMENTED_FLAG));
-            fctx.buf.putLong(fctx.lastLink);
+            buf.putShort((short) (len | FRAGMENTED_FLAG));
+            buf.putLong(lastLink);
 
-            writeFragmentData(fctx, off, len);
+            writeFragmentData(key, val, ver, buf, ctx, off, len);
 
-            fctx.written += len;
+            written += len;
         }
         finally {
-            fctx.buf.position(0);
+            buf.position(0);
         }
 
-        fctx.lastIdx = writeItemId(fctx.buf, toWrite, directCnt, indirectCnt, dataOff);
+        final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
+
+        return new FragmentWritten(written, idx, dataOff + KV_LEN_SIZE + LINK_SIZE);
+    }
+
+    /**
+     * Write prepared fragment data to page.
+     *
+     * @param dataBuf Actual fragment data.
+     * @param buf Page buffer.
+     * @param written Actual written entry bytes from the end.
+     * @param lastLink Last fragment linc.
+     * @return Updated written bytes value and fragment index in the page.
+     */
+    public FragmentWritten writeFragmentData(
+        final ByteBuffer dataBuf,
+        final ByteBuffer buf,
+        int written,
+        final long lastLink
+    ) {
+        final int toWrite = dataBuf.remaining() + ITEM_SIZE + KV_LEN_SIZE + LINK_SIZE;
+
+        int directCnt = getDirectCount(buf);
+        int indirectCnt = getIndirectCount(buf);
+        int dataOff = getFirstEntryOffset(buf);
+
+        // Compact if we do not have enough space for entry.
+        dataOff = compactIfNeed(buf, toWrite, directCnt, indirectCnt, dataOff);
+
+        dataOff -= toWrite - ITEM_SIZE;
+
+        try {
+            buf.position(dataOff);
+
+            final int len = dataBuf.remaining();
+
+            buf.putShort((short) (len | FRAGMENTED_FLAG));
+            buf.putLong(lastLink);
+
+            buf.put(dataBuf);
+
+            written += len;
+        }
+        finally {
+            buf.position(0);
+        }
+
+        final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
+
+        return new FragmentWritten(written, idx, dataOff);
     }
 
     /**
      * Write actual entry data according to state in {@code fctx}.
      *
-     * @param fctx Fragment context.
      * @param totalOff Offset in actual entry data.
      * @param totalLen Data length that should be written in a fragment.
      * @throws IgniteCheckedException If fail.
      */
-    private void writeFragmentData(final FragmentContext fctx, final int totalOff, final int totalLen)
-        throws IgniteCheckedException {
-        int written = writeFragment(fctx, totalOff, totalLen, EntryPart.KEY);
+    private void writeFragmentData(
+        final KeyCacheObject key,
+        final CacheObject val,
+        final GridCacheVersion ver,
+        final ByteBuffer buf,
+        final CacheObjectContext ctx,
+        final int totalOff,
+        final int totalLen
+    ) throws IgniteCheckedException {
+        int written = writeFragment(key, val, ver, buf, ctx, totalOff, totalLen, EntryPart.KEY);
 
-        written += writeFragment(fctx, totalOff + written, totalLen - written, EntryPart.VAL);
+        written += writeFragment(key, val, ver, buf, ctx, totalOff + written, totalLen - written, EntryPart.VAL);
 
-        writeFragment(fctx, totalOff + written, totalLen - written, EntryPart.VER);
+        writeFragment(key, val, ver, buf, ctx, totalOff + written, totalLen - written, EntryPart.VER);
     }
 
     /**
      * Try to write fragment data.
      *
-     * @param fctx Fragment context.
      * @param totalOff Offset in actual entry data.
      * @param totalLen Data length that should be written in a fragment.
      * @param type Type of the part of entry.
      * @return Actually written data.
      * @throws IgniteCheckedException If fail.
      */
-    private int writeFragment(final FragmentContext fctx, final int totalOff, final int totalLen, final EntryPart type)
+    private int writeFragment(
+        final KeyCacheObject key,
+        final CacheObject val,
+        final GridCacheVersion ver,
+        final ByteBuffer buf,
+        final CacheObjectContext ctx,
+        final int totalOff,
+        final int totalLen,
+        final EntryPart type
+    )
         throws IgniteCheckedException {
         final int prevLen;
         final int curLen;
 
+        final int keySize = key.valueBytesLength(ctx);
+        final int valSize = val.valueBytesLength(ctx);
+
         switch (type) {
             case KEY:
                 prevLen = 0;
-                curLen = fctx.keySize;
+                curLen = keySize;
 
                 break;
 
             case VAL:
-                prevLen = fctx.keySize;
-                curLen = fctx.keySize + fctx.valSize;
+                prevLen = keySize;
+                curLen = keySize + valSize;
 
                 break;
 
             case VER:
-                prevLen = fctx.keySize + fctx.valSize;
-                curLen = fctx.keySize + fctx.valSize + VER_SIZE;
+                prevLen = keySize + valSize;
+                curLen = keySize + valSize + VER_SIZE;
 
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown object type: " + type);
+                throw new IllegalArgumentException("Unknown entry part type: " + type);
         }
 
         if (curLen <= totalOff || totalLen == 0)
@@ -862,12 +946,19 @@ public class DataPageIO extends PageIO {
         final int len = Math.min(curLen - totalOff, totalLen);
 
         if (type == EntryPart.KEY || type == EntryPart.VAL) {
-            final CacheObject co = type == EntryPart.KEY ? fctx.row.key() : fctx.row.value();
+            final CacheObject co = type == EntryPart.KEY ? key : val;
 
-            co.putValue(fctx.buf, totalOff - prevLen, len, fctx.ctx);
+            co.putValue(buf, totalOff - prevLen, len, ctx);
         }
-        else
-            fctx.buf.put(fctx.gridVersionData(fctx.buf.order()), totalOff - prevLen, len);
+        else {
+            final ByteBuffer verBuf = ByteBuffer.allocate(VER_SIZE);
+
+            verBuf.order(buf.order());
+
+            writeGridCacheVersion(verBuf, ver);
+
+            buf.put(verBuf.array(), totalOff - prevLen, len);
+        }
 
         return len;
     }
@@ -1059,92 +1150,46 @@ public class DataPageIO extends PageIO {
     /**
      *
      */
-    public static class FragmentContext {
-        /** Totally written data (with overhead) */
-        private int written;
+    public static class FragmentWritten {
+        /** Total written entry bytes from the entry end. */
+        private final int writtenBytes;
 
-        /** Index to last written chunk. */
-        public int lastIdx;
+        /** Last fragment index. */
+        private final int idx;
 
-        /** Link to last written chunk. */
-        public long lastLink;
-
-        /** Page buffer. */
-        public ByteBuffer buf;
-
-        /** Entry size with overhead all over the chunks. */
-        public final int totalEntrySize;
-
-        /** Number of chunks. */
-        public final int chunks;
-
-        /** Size of the chunk with overhead (except of last chunk, it may be smaller.) */
-        public final int chunkSize;
-
-        /** Data row to be written. */
-        public final CacheDataRow row;
-
-        /** Size of the actual entry data (without overhead). */
-        private final int dataSize;
-
-        /** Cache object context. */
-        private final CacheObjectContext ctx;
-
-        /** Key size. */
-        private final int keySize;
-
-        /** Value size. */
-        private final int valSize;
-
-        /** Grid cache version data. */
-        private byte[] verData;
+        /** Data offset that points to fragment actual data without overhead. */
+        private final int dataOff;
 
         /**
-         * @param totalEntrySize Entry size with overhead all over the chunks.
-         * @param chunks Number of chunks.
-         * @param chunkSize Size of the chunk with overhead (but not last chunk, it may be smaller.)
-         * @param row Data row to be written.
-         * @param ctx Cache object context.
-         * @throws IgniteCheckedException If fail.
+         * @param writtenBytes Total written entry bytes from the entry end.
+         * @param idx Last fragment index.
+         * @param dataOff Data offset that points to fragment actual data without overhead.
          */
-        public FragmentContext(
-            final int totalEntrySize,
-            final int chunks,
-            final int chunkSize,
-            final CacheDataRow row,
-            final CacheObjectContext ctx) throws IgniteCheckedException {
-            this.totalEntrySize = totalEntrySize;
-            this.chunks = chunks;
-            this.chunkSize = chunkSize;
-            this.row = row;
-            this.ctx = ctx;
-
-            keySize = row.key().valueBytesLength(ctx);
-
-            valSize = row.value().valueBytesLength(ctx);
-
-            dataSize = keySize + valSize + VER_SIZE;
+        public FragmentWritten(final int writtenBytes, final int idx, final int dataOff) {
+            this.writtenBytes = writtenBytes;
+            this.idx = idx;
+            this.dataOff = dataOff;
         }
 
         /**
-         * Lazily initializes version data array and writes fields in
-         * specified byte order.
-         *
-         * @param order Byte order.
-         * @return Version data.
+         * @return Total written entry bytes from the entry end.
          */
-        public byte[] gridVersionData(final ByteOrder order) {
-            if (verData == null) {
-                verData = new byte[VER_SIZE];
+        public int writtenBytes() {
+            return writtenBytes;
+        }
 
-                final ByteBuffer verBuf = ByteBuffer.wrap(verData);
+        /**
+         * @return Last fragment index.
+         */
+        public int writtenIndex() {
+            return idx;
+        }
 
-                verBuf.order(order);
-
-                writeGridCacheVersion(verBuf, row.version());
-            }
-
-            return verData;
+        /**
+         * @return Data offset that points to fragment actual data without overhead.
+         */
+        public int dataOffset() {
+            return dataOff;
         }
     }
 }

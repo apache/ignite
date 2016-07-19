@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -59,19 +61,30 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<DataPageIO.FragmentContext, Void> writeRow = new PageHandler<DataPageIO.FragmentContext, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, DataPageIO.FragmentContext fctx, int entrySize)
+    private final PageHandler<FragmentContext, Void> writeRow = new PageHandler<FragmentContext, Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, FragmentContext fctx, int entrySize)
             throws IgniteCheckedException {
             final boolean fragmented = fctx.chunks > 1;
 
             final CacheDataRow row = fctx.row;
 
-            fctx.buf = buf;
-
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            if (fragmented)
-                io.writeRowFragment(fctx);
+            DataPageIO.FragmentWritten written = null;
+
+            if (fragmented) {
+                written = io.writeRowFragment(
+                    fctx.row.key(),
+                    fctx.row.value(),
+                    fctx.row.version(),
+                    buf,
+                    cctx.cacheObjectContext(),
+                    fctx.written,
+                    fctx.totalEntrySize,
+                    fctx.chunkSize,
+                    fctx.chunks,
+                    fctx.lastLink);
+            }
             else
                 fctx.lastIdx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
 
@@ -79,11 +92,36 @@ public class FreeList {
 
             FreeTree tree = tree(row.partition());
 
-            fctx.lastLink = PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIdx);
+            if (tree.needWalDeltaRecord(page)) {
+                if (!fragmented) {
+                    wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
+                        row.version(), fctx.lastIdx, entrySize));
+                }
+                else {
+                    final byte[] frData = new byte[written.writtenBytes() - fctx.written];
 
-            if (tree.needWalDeltaRecord(page))
-                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
-                    row.version(), fctx.lastIdx, entrySize));
+                    buf.position(written.dataOffset());
+
+                    buf.get(frData);
+
+                    wal.log(new DataPageInsertFragmentRecord(
+                        cctx.cacheId(),
+                        pageId,
+                        fctx.written,
+                        fctx.lastLink,
+                        frData));
+
+                    buf.position(0);
+                }
+            }
+
+            if (fragmented) {
+                fctx.written = written.writtenBytes();
+
+                fctx.lastIdx = written.writtenIndex();
+            }
+
+            fctx.lastLink = PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIdx);
 
             final int freeSlots = io.getFreeItemSlots(buf);
 
@@ -250,8 +288,8 @@ public class FreeList {
 
         assert chunks > 0;
 
-        final DataPageIO.FragmentContext fctx =
-            new DataPageIO.FragmentContext(entrySize, chunks, availablePageSize, row, coctx);
+        final FragmentContext fctx =
+            new FragmentContext(entrySize, chunks, availablePageSize, row);
 
         final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
 
@@ -272,8 +310,6 @@ public class FreeList {
                     DataPageIO io = DataPageIO.VERSIONS.latest();
 
                     ByteBuffer buf = page.getForWrite(); // Initial write.
-
-                    fctx.buf = buf;
 
                     try {
                         io.initNewPage(buf, page.id());
@@ -302,5 +338,51 @@ public class FreeList {
         long pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
 
         return pageMem.page(cctx.cacheId(), pageId);
+    }
+
+    /**
+     *
+     */
+    public static class FragmentContext {
+        /** Totally written data (with overhead) */
+        private int written;
+
+        /** Index to last written chunk. */
+        public int lastIdx;
+
+        /** Link to last written chunk. */
+        public long lastLink;
+
+        /** Entry size with overhead all over the chunks. */
+        public final int totalEntrySize;
+
+        /** Number of chunks. */
+        public final int chunks;
+
+        /** Size of the chunk with overhead (except of last chunk, it may be smaller.) */
+        public final int chunkSize;
+
+        /** Data row to be written. */
+        public final CacheDataRow row;
+
+        /**
+         * @param totalEntrySize Entry size with overhead all over the chunks.
+         * @param chunks Number of chunks.
+         * @param chunkSize Size of the chunk with overhead (but not last chunk, it may be smaller.)
+         * @param row Data row to be written.
+         * @throws IgniteCheckedException If fail.
+         */
+        public FragmentContext(
+            final int totalEntrySize,
+            final int chunks,
+            final int chunkSize,
+            final CacheDataRow row
+        ) throws IgniteCheckedException {
+            this.totalEntrySize = totalEntrySize;
+            this.chunks = chunks;
+            this.chunkSize = chunkSize;
+            this.row = row;
+        }
+
     }
 }

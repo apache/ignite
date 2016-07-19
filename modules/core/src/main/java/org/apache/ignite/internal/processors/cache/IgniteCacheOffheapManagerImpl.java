@@ -729,9 +729,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** */
         private int part = -1;
 
-        /** */
-        private int readStage;
-
         /**
          * @param hash Hash code.
          * @param link Link.
@@ -770,19 +767,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             val = assembler.value();
 
             ver = assembler.version();
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Grid cache version.
-         */
-        private GridCacheVersion readVersion(final ByteBuffer buf) {
-            int topVer = buf.getInt();
-            int nodeOrderDrId = buf.getInt();
-            long globalTime = buf.getLong();
-            long order = buf.getLong();
-
-            return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
         }
 
         /** {@inheritDoc} */

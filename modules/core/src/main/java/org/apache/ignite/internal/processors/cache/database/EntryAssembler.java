@@ -66,7 +66,8 @@ public class EntryAssembler {
      * @param keyOnly {@code True} if need read only key object.
      * @throws IgniteCheckedException If failed.
      */
-    public void readRow(final GridCacheContext<?, ?> cctx, final long link, boolean keyOnly) throws IgniteCheckedException {
+    public void readRow(final GridCacheContext<?, ?> cctx, final long link, boolean keyOnly)
+        throws IgniteCheckedException {
         phase = 0;
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
