@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
 import java.nio.ByteBuffer;
 
@@ -35,6 +33,11 @@ public interface PageStore {
      */
     public long allocatePage() throws IgniteCheckedException;
 
+    /**
+     * Gets number of allocated pages.
+     *
+     * @return Number of allocated pages.
+     */
     public int pages();
 
     /**
