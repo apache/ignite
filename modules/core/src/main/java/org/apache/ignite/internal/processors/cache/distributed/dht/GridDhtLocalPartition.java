@@ -428,6 +428,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 break;
             }
         }
+
+        if (state.getStamp() == 0 && shouldBeRenting)
+            rent(true);
     }
 
     /**
@@ -481,6 +484,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 tryEvictAsync(updateSeq);
                 break;
             } else {
+                // Set the flag to prevent partition reservation by affinity jobs.
                 shouldBeRenting = true;
                 GridFutureAdapter f = new GridFutureAdapter();
                 f.onDone();
