@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -154,6 +155,22 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     Test(ignite1, ignite2);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Tests interop scenario: Java and .NET exchange an object with the same type id, 
+        /// but marshaller cache contains different entries for different platforms for the same id.
+        /// </summary>
+        [Test]
+        public void TestJavaType()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
+                    ComputeApiTest.EchoTypeBinarizable);
+
+                Assert.AreEqual(1, fromJava.Field);
             }
         }
 
