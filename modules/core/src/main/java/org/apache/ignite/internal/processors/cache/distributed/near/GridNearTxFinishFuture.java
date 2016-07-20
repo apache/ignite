@@ -400,10 +400,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         finish(mappings.mappings());
                 }
 
-                if (tx.onePhaseCommit() &&
-                    !tx.writeMap().isEmpty()) // Readonly operations required no ack.
-                    ackBackup();
-
                 markInitialized();
 
                 if (!isSync() && !isDone()) {
@@ -424,6 +420,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     if (complete)
                         onComplete();
+
+                    if (tx.onePhaseCommit() &&
+                        !tx.writeMap().isEmpty()) // Readonly operations required no ack.
+                        ackBackup();
                 }
             }
             else
