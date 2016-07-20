@@ -397,7 +397,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public void makeBackup() {
+    @Override public void makeBackup(Collection<String> cacheNames) {
         // no-op
     }
 

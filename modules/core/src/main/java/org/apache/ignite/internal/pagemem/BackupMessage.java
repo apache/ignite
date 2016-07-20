@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import java.util.Collection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -36,8 +37,11 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     private long backupId;
 
-    public BackupMessage(long backupId) {
+    private Collection<String> cacheNames;
+
+    public BackupMessage(long backupId, Collection<String> cacheNames) {
         this.backupId = backupId;
+        this.cacheNames = cacheNames;
     }
 
     @Override public IgniteUuid id() {
@@ -46,6 +50,10 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     public long backupId() {
         return backupId;
+    }
+
+    public Collection<String> cacheNames() {
+        return cacheNames;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {

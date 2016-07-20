@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -111,7 +112,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId) {
+    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId, Collection<String> cacheNames) {
         return null;
     }
 

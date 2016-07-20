@@ -623,7 +623,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void makeBackup() {
+    @Override public void makeBackup(Collection<String> cacheNames) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

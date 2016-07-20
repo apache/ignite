@@ -491,8 +491,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public void makeBackup() {
-        g.makeBackup();
+    @Override public void makeBackup(Collection<String> cacheNames) {
+        g.makeBackup(cacheNames);
     }
 
     /** {@inheritDoc} */
