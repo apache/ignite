@@ -991,6 +991,16 @@ public class PlatformUtils {
     }
 
     /**
+     * Gets the entire nested stack-trace of an throwable.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        return X.getFullStackTrace(throwable);
+    }
+
+    /**
      * Private constructor.
      */
     private PlatformUtils() {
