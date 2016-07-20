@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -45,8 +46,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import static java.lang.Math.abs;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.UNSAFE;
 
 /**
  * Skip list tests.
@@ -201,7 +200,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF, size);
+                GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
 
                 dataInput.bytes(buf, size);
 

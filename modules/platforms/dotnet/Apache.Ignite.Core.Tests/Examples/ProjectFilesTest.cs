@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 .Distinct()
                 .ToList();
 
-            Assert.AreEqual(4, paths.Count);
+            Assert.AreEqual(1, paths.Count);
 
             paths.ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
         }

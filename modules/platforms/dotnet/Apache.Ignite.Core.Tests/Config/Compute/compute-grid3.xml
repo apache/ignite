@@ -25,27 +25,47 @@
       <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-      <property name="clientMode" value="true"/>
+        <property name="clientMode" value="true"/>
 
-      <property name="gridName" value="grid3"/>
+        <property name="gridName" value="grid3"/>
 
-      <property name="metricsUpdateFrequency" value="1000"/>
-      <property name="metricsLogFrequency" value="0"/>
+        <property name="metricsUpdateFrequency" value="1000"/>
+        <property name="metricsLogFrequency" value="0"/>
 
-      <property name="discoverySpi">
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="true"/>
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum" />
+                            <property name="enum" value="true" />
+                        </bean>
+                    </list>
+                </property>
+
+            </bean>
+        </property>
+
+        <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="forceServerMode" value="true"/>
-
                 <property name="ipFinder">
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47502</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

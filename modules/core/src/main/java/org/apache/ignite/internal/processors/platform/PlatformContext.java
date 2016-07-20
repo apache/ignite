@@ -143,6 +143,15 @@ public interface PlatformContext {
     public void writeAllMetadata(BinaryRawWriterEx writer);
 
     /**
+     * Write schema for the given type ID and schema ID.
+     *
+     * @param writer Writer.
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     */
+    public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId);
+
+    /**
      * Write cluster metrics.
      *
      * @param writer Writer.
@@ -272,4 +281,11 @@ public interface PlatformContext {
      * @return Cluster node filter.
      */
     public PlatformClusterNodeFilter createClusterNodeFilter(Object filter);
+
+    /**
+     * Gets the current platform name.
+     *
+     * @return Current platform name.
+     */
+    public String platform();
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -27,8 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridNoStorageCacheMap;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -36,6 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
 /**
  * Tests that cache specified in configuration start on client nodes.
@@ -226,6 +228,77 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCache1() throws Exception {
+        Ignite ignite0 = startGrid(0);
+
+        client = true;
+
+        Ignite clientNode = startGrid(1);
+
+        client = false;
+
+        ignite0.createCache(new CacheConfiguration<>());
+
+        clientNode.cache(null);
+
+        clientNode.cache(null).close();
+
+        clientNode.cache(null);
+
+        startGrid(2);
+
+        checkCache(clientNode, null, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCache2_1() throws Exception {
+        createCloseClientCache2(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCache2_2() throws Exception {
+        createCloseClientCache2(true);
+    }
+
+    /**
+     * @param createFromCacheClient If {@code true} creates cache from cache client node.
+     * @throws Exception If failed.
+     */
+    private void createCloseClientCache2(boolean createFromCacheClient) throws Exception {
+        Ignite ignite0 = startGrid(0);
+
+        Ignite ignite1 = startGrid(1);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setNodeFilter(new CachePredicate(F.asList(ignite0.name())));
+
+        if (createFromCacheClient)
+            ignite0.createCache(ccfg);
+        else {
+            ignite1.createCache(ccfg);
+
+            assertNull(((IgniteKernal)ignite0).context().cache().internalCache(null));
+        }
+
+        assertNotNull(ignite0.cache(null));
+
+        ignite0.cache(null).close();
+
+        assertNotNull(ignite0.cache(null));
+
+        startGrid(2);
+
+        checkCache(ignite0, null, false, false);
+    }
+
+    /**
      * @param ignite Node.
      * @param cacheName Cache name
      * @param srv {@code True} if server cache is expected.
@@ -237,14 +310,6 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
         assertNotNull("No cache on node " + ignite.name(), cache);
 
         assertEquals(near, cache.context().isNear());
-
-        if (near)
-            cache = ((GridNearCacheAdapter)cache).dht();
-
-        if (srv)
-            assertSame(GridCacheConcurrentMap.class, cache.map().getClass());
-        else
-            assertSame(GridNoStorageCacheMap.class, cache.map().getClass());
 
         ClusterNode node = ((IgniteKernal)ignite).localNode();
 
@@ -281,6 +346,28 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
             assertFalse(disco.cacheNode(node, cacheName));
             assertFalse(disco.cacheAffinityNode(node, cacheName));
             assertFalse(disco.cacheNearNode(node, cacheName));
+        }
+    }
+
+    /**
+     *
+     */
+    static class CachePredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private List<String> excludeNodes;
+
+        /**
+         * @param excludeNodes Nodes names.
+         */
+        public CachePredicate(List<String> excludeNodes) {
+            this.excludeNodes = excludeNodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            String name = clusterNode.attribute(ATTR_GRID_NAME).toString();
+
+            return !excludeNodes.contains(name);
         }
     }
 }

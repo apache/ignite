@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -61,6 +62,14 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
             writer.onHeaderWritten();
         }
 
+        switch (writer.state()) {
+            case 8:
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+        }
+
         return true;
     }
 
@@ -74,6 +83,16 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
         if (!super.readFrom(buf, reader))
             return false;
 
+        switch (reader.state()) {
+            case 8:
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
         return reader.afterMessageRead(GridNearUnlockRequest.class);
     }
 
@@ -84,7 +103,7 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

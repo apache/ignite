@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -46,7 +46,7 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         cc.setName(CACHE_NAME);
         cc.setAtomicityMode(atomicityMode());
         cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_ASYNC);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setNearConfiguration(null);
         cc.setStartSize(20);
         cc.setRebalanceMode(rebalancMode);

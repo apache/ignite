@@ -62,4 +62,11 @@ public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     @Override protected String className(int id) {
         return map.get(id);
     }
+
+    /**
+     * @return Internal map.
+     */
+    public ConcurrentMap<Integer, String> internalMap() {
+        return map;
+    }
 }

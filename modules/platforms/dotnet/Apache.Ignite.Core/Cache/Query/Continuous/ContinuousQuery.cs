@@ -47,8 +47,8 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <summary>
         /// Default time interval.
         /// </summary>
-        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         public static readonly TimeSpan DfltTimeInterval = new TimeSpan(0);
 
         /// <summary>

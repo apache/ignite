@@ -51,7 +51,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
 
         cfg.setDiscoverySpi(disco);
 
@@ -73,7 +72,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(1, 2);
+        startGrid(2);
+
+        startGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -84,25 +85,27 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAffinity() throws IgniteCheckedException {
+    public void testAffinity() throws Exception {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
-        Map<ClusterNode, Collection<String>> map = g1.cluster().mapKeysToNodes(null, F.asList("1"));
+        awaitPartitionMapExchange();
+
+        Map<ClusterNode, Collection<String>> map = g1.<String>affinity(null).mapKeysToNodes(F.asList("1"));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
         assertEquals(F.first(map.keySet()), g2.cluster().localNode());
 
-        UUID id1 = g1.cluster().mapKeyToNode(null, "2").id();
+        UUID id1 = g1.affinity(null).mapKeyToNode("2").id();
 
         assertNotNull(id1);
         assertEquals(g2.cluster().localNode().id(), id1);
 
-        UUID id2 = g1.cluster().mapKeyToNode(null, "3").id();
+        UUID id2 = g1.affinity(null).mapKeyToNode("3").id();
 
         assertNotNull(id2);
         assertEquals(g2.cluster().localNode().id(), id2);
@@ -116,7 +119,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
                 return !CU.MARSH_CACHE_NAME.equals(c.getName()) && !CU.UTILITY_CACHE_NAME.equals(c.getName()) &&
-                    !CU.ATOMICS_CACHE_NAME.equals(c.getName());
+                    !CU.ATOMICS_CACHE_NAME.equals(c.getName()) && !CU.SYS_CACHE_HADOOP_MR.equals(c.getName());
             }
         });
     }

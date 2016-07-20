@@ -56,6 +56,7 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // This optional local callback is called for each event notification
                 // that passed remote predicate listener.
@@ -91,6 +92,10 @@ public class CacheEventsExample {
 
                 // Wait for a while while callback is notified about remaining puts.
                 Thread.sleep(2000);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

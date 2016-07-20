@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="key">The key.</param>
         /// <param name="valueFactory">The function used to generate a value for the key.</param>
         /// <returns>The value for the key.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
             lock (this)

@@ -211,6 +211,7 @@ namespace Apache.Ignite.Core.Impl.Handle
                     {
                         target0.Release();
                     }
+                    // ReSharper disable once EmptyGeneralCatchClause
                     catch (Exception)
                     {
                         // No-op.

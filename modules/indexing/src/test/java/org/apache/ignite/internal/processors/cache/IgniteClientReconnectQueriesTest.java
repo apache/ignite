@@ -321,7 +321,14 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
 
         QueryCursor<Cache.Entry<Integer, Person>> qryCursor2 = clnCache.query(scanQry);
 
-        assertEquals(setPart ? 1 : 3, qryCursor2.getAll().size());
+        List<Cache.Entry<Integer, Person>> entries = qryCursor2.getAll();
+
+        assertEquals(setPart ? 1 : 3, entries.size());
+
+        for (Cache.Entry<Integer, Person> entry : entries) {
+            assertEquals(Integer.class, entry.getKey().getClass());
+            assertEquals(Person.class, entry.getValue().getClass());
+        }
     }
 
     /**
@@ -329,7 +336,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
      */
     private void blockMessage(Class<?> clazz) {
         for (int i = 0; i < serverCount(); i++) {
-            BlockTpcCommunicationSpi commSpi = commSpi(grid(i));
+            BlockTcpCommunicationSpi commSpi = commSpi(grid(i));
 
             commSpi.blockMessage(clazz);
         }
@@ -340,7 +347,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
      */
     private void unblockMessage() {
         for (int i = 0; i < serverCount(); i++) {
-            BlockTpcCommunicationSpi commSpi = commSpi(grid(i));
+            BlockTcpCommunicationSpi commSpi = commSpi(grid(i));
 
             commSpi.unblockMessage();
         }

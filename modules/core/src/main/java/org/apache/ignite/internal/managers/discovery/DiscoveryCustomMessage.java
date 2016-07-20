@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,14 +29,6 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @return Unique custom message ID.
      */
     public IgniteUuid id();
-
-    /**
-     * Whether or not minor version of topology should be increased on message receive.
-     *
-     * @return {@code true} if minor topology version should be increased.
-     * @see AffinityTopologyVersion#minorTopVer
-     */
-    public boolean incrementMinorTopologyVersion();
 
     /**
      * Called when custom message has been handled by all nodes.

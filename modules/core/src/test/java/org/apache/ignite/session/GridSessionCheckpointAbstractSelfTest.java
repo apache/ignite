@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
@@ -36,11 +37,11 @@ import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -83,7 +84,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
         serState = spi.loadCheckpoint(globalKey);
 
-        Marshaller marshaller = getTestResources().getMarshaller();
+        Marshaller marshaller = IgniteTestResources.getMarshaller();
 
         assert marshaller != null;
 
@@ -173,6 +174,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
     /** */
     @ComputeTaskName("GridCheckpointTestTask")
     @ComputeTaskSessionFullSupport
+    @ComputeTaskMapAsync
     private static class GridCheckpointTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @TaskSessionResource

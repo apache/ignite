@@ -23,12 +23,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -39,6 +42,10 @@ import org.jetbrains.annotations.Nullable;
  * Affinity interface implementation.
  */
 public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
+
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
@@ -56,7 +63,12 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return cctx.config().getAffinity().partitions();
+        CacheConfiguration ccfg = cctx.config();
+
+        if (ccfg == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return ccfg.getAffinity().partitions();
     }
 
     /** {@inheritDoc} */
@@ -151,10 +163,21 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (key instanceof CacheObject && !(key instanceof BinaryObject))
-            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+        if (key instanceof CacheObject && !(key instanceof BinaryObject)) {
+            CacheObjectContext ctx = cctx.cacheObjectContext();
 
-        return cctx.config().getAffinityMapper().affinityKey(key);
+            if (ctx == null)
+                throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+            key = ((CacheObject)key).value(ctx, false);
+        }
+
+        CacheConfiguration ccfg = cctx.config();
+
+        if (ccfg == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return ccfg.getAffinityMapper().affinityKey(key);
     }
 
     /** {@inheritDoc} */
@@ -170,7 +193,12 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
         AffinityTopologyVersion topVer = topologyVersion();
 
-        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
+        int nodesCnt;
+
+        if (!cctx.isLocal())
+            nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
+        else
+            nodesCnt = 1;
 
         // Must return empty map if no alive nodes present or keys is empty.
         Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);
@@ -178,17 +206,18 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         for (K key : keys) {
             ClusterNode primary = cctx.affinity().primary(key, topVer);
 
-            if (primary != null) {
-                Collection<K> mapped = res.get(primary);
+            if (primary == null)
+                throw new IgniteException("Failed to get primary node [topVer=" + topVer + ", key=" + key + ']');
 
-                if (mapped == null) {
-                    mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
+            Collection<K> mapped = res.get(primary);
 
-                    res.put(primary, mapped);
-                }
+            if (mapped == null) {
+                mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
 
-                mapped.add(key);
+                res.put(primary, mapped);
             }
+
+            mapped.add(key);
         }
 
         return res;

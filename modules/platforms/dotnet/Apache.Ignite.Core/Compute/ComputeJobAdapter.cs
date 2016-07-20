@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Compute
         public TArg GetArgument<TArg>(int idx)
         {
             if (_args == null || idx < 0 || idx >= _args.Length)
-                throw new IndexOutOfRangeException("Invalid argument index: " + idx);
+                throw new ArgumentOutOfRangeException("Invalid argument index: " + idx);
 
             return (TArg)_args[idx];
         }

@@ -272,7 +272,7 @@ public class GridDsiClient implements Callable {
                             String terminalId = String.valueOf(++tid);
 
                             // Server partition cache.
-                            if (!srvrId.equals(g.cluster().mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
+                            if (!srvrId.equals(g.affinity("PARTITIONED_CACHE").mapKeyToNode(terminalId).id()))
                                 continue;
 
                             if (terminalsPerSrv < srvMaxNoTerminals) {

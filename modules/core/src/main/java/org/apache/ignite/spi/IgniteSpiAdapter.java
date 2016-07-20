@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -95,10 +97,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private boolean failureDetectionTimeoutEnabled = true;
 
     /**
-     *  Failure detection timeout. Initialized with the value of
-     *  {@link IgniteConfiguration#getFailureDetectionTimeout()}.
+     * Failure detection timeout. Initialized with the value of
+     * {@link IgniteConfiguration#getFailureDetectionTimeout()}.
      */
     private long failureDetectionTimeout;
+
+    /** Start flag to deny repeating start attempts. */
+    private final AtomicBoolean startedFlag = new AtomicBoolean();
 
     /**
      * Creates new adapter and initializes it from the current (this) class.
@@ -114,6 +119,26 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected void startStopwatch() {
         startTstamp = U.currentTimeMillis();
+    }
+
+    /**
+     * This method is called by built-in managers implementation to avoid
+     * repeating SPI start attempts.
+     */
+    public final void onBeforeStart() {
+        if (!startedFlag.compareAndSet(false, true))
+            throw new IllegalStateException("SPI has already been started " +
+                "(always create new configuration instance for each starting Ignite instances) " +
+                "[spi=" + this + ']');
+    }
+
+    /**
+     * Checks if {@link #onBeforeStart()} has been called on this SPI instance.
+     *
+     * @return {@code True} if {@link #onBeforeStart()} has already been called.
+     */
+    public final boolean started() {
+        return startedFlag.get();
     }
 
     /** {@inheritDoc} */
@@ -448,6 +473,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * @return {@code true} if client cluster nodes should be checked.
+     */
+    private boolean checkClient() {
+        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
+
+        return ann != null && ann.checkClient();
+    }
+
+    /**
      * Method which is called in the end of checkConfigurationConsistency() method. May be overriden in SPIs.
      *
      * @param spiCtx SPI context.
@@ -480,8 +514,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
          */
         boolean optional = checkOptional();
         boolean enabled = checkEnabled();
+        boolean checkClient = checkClient();
 
         if (!enabled)
+            return;
+
+        if (!checkClient && (CU.clientNode(getLocalNode()) || CU.clientNode(node)))
             return;
 
         String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);

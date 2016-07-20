@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         public BinaryReaderHandleDictionary(int key, object val)
-            : base(key, val)
+            : base(key, val, null)
         {
             // No-op.
         }

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -153,7 +154,10 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public String cacheName();
 
     /**
+     * @param cntrsPerNode Init state partition counters for node.
      * @param cntrs Init state for partition counters.
+     * @param topVer Topology version.
      */
-    public void updateCounters(Map<Integer, Long> cntrs);
+    public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs);
 }

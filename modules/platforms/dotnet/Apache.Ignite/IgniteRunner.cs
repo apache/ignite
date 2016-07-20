@@ -49,8 +49,6 @@ namespace Apache.Ignite
         /// </summary>
         internal static void Main(string[] args)
         {
-            IgniteConfiguration cfg;
-
             bool svc = false;
             bool install = false;
 
@@ -59,7 +57,7 @@ namespace Apache.Ignite
                 // Check for special cases.
                 if (args.Length > 0)
                 {
-                    string first = args[0].ToLower();
+                    string first = args[0].ToLowerInvariant();
 
                     if (Help.Contains(first))
                     {
@@ -91,19 +89,15 @@ namespace Apache.Ignite
 
                 if (!svc)
                 {
-                    // Pick application configuration.
-                    cfg = new IgniteConfiguration();
-
-                    new AppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
-
-                    // Pick command line arguments.
-                    new ArgsConfigurator().Configure(cfg, args);
+                    // Pick application configuration first, command line arguments second.
+                    var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
+                        .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
 
                     if (install)
-                        IgniteService.DoInstall(cfg);
+                        IgniteService.DoInstall(allArgs);
                     else
                     {
-                        Ignition.Start(cfg);
+                        Ignition.Start(Configurator.GetConfiguration(allArgs));
 
                         IgniteManager.DestroyJvm();
                     }
@@ -113,16 +107,14 @@ namespace Apache.Ignite
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR: " + e.Message);
+                Console.WriteLine("ERROR: " + e);
 
                 Environment.Exit(-1);
             }
 
             // If we are here, then this is a service call.
-            cfg = new IgniteConfiguration();
-
             // Use only arguments, not app.config.
-            new ArgsConfigurator().Configure(cfg, args);
+            var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
 
             ServiceBase.Run(new IgniteService(cfg));
         }

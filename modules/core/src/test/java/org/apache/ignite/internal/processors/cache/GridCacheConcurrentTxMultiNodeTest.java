@@ -228,7 +228,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.cluster().mapKeyToNode(null, terminalId).id();
+                    UUID mappedId = srvr1.affinity(null).mapKeyToNode(terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;

@@ -17,8 +17,12 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary type configuration.
@@ -26,33 +30,55 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryConfiguration
     {
         /// <summary>
-        /// Constructor.
+        /// Default <see cref="CompactFooter"/> setting.
+        /// </summary>
+        public const bool DefaultCompactFooter = true;
+
+        /// <summary>
+        /// Default <see cref="DefaultKeepDeserialized"/> setting.
+        /// </summary>
+        public const bool DefaultDefaultKeepDeserialized = true;
+
+        /** Footer setting. */
+        private bool? _compactFooter;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
         public BinaryConfiguration()
         {
-            DefaultKeepDeserialized = true;
+            DefaultKeepDeserialized = DefaultDefaultKeepDeserialized;
         }
 
         /// <summary>
-        /// Copying constructor.
+        /// Initializes a new instance of the <see cref="BinaryConfiguration" /> class.
         /// </summary>
-        /// <param name="cfg">Configuration to copy.</param>
+        /// <param name="cfg">The binary configuration to copy.</param>
         public BinaryConfiguration(BinaryConfiguration cfg)
         {
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
+
             DefaultIdMapper = cfg.DefaultIdMapper;
             DefaultNameMapper = cfg.DefaultNameMapper;
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
-            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
+            TypeConfigurations = cfg.TypeConfigurations == null
+                ? null
+                : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
 
-            if (cfg.TypeConfigurations != null)
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
+            Types = cfg.Types == null ? null : cfg.Types.ToList();
 
-                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
-                    TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
-            }
+            CompactFooter = cfg.CompactFooter;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
+        /// </summary>
+        /// <param name="binaryTypes">Binary types to register.</param>
+        public BinaryConfiguration(params Type[] binaryTypes)
+        {
+            TypeConfigurations = binaryTypes.Select(t => new BinaryTypeConfiguration(t)).ToList();
         }
 
         /// <summary>
@@ -85,6 +111,32 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
+        [DefaultValue(DefaultDefaultKeepDeserialized)]
         public bool DefaultKeepDeserialized { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to write footers in compact form.
+        /// When enabled, Ignite will not write fields metadata when serializing objects, 
+        /// because internally metadata is distributed inside cluster.
+        /// This increases serialization performance.
+        /// <para/>
+        /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
+        /// Otherwise binary objects without any associated metadata could could not be deserialized.
+        /// </summary>
+        [DefaultValue(DefaultCompactFooter)]
+        public bool CompactFooter
+        {
+            get { return _compactFooter ?? DefaultCompactFooter; }
+            set { _compactFooter = value; }
+        }
+
+        /// <summary>
+        /// Gets the compact footer internal nullable value.
+        /// </summary>
+        internal bool? CompactFooterInternal
+        {
+            get { return _compactFooter; }
+        }
     }
 }

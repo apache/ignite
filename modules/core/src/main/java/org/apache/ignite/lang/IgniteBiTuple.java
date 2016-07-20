@@ -250,7 +250,9 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
 
     /** {@inheritDoc} */
     @Override public Set<Map.Entry<V1, V2>> entrySet() {
-        return Collections.<Entry<V1, V2>>singleton(this);
+        return isEmpty() ?
+            Collections.<Entry<V1,V2>>emptySet() :
+            Collections.<Entry<V1, V2>>singleton(this);
     }
 
     /** {@inheritDoc} */

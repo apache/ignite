@@ -19,13 +19,14 @@ package org.apache.ignite.cache.affinity;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides affinity information to detect which node is primary and which nodes are
  * backups for a partitioned cache. You can get an instance of this interface by calling
- * {@code Cache.affinity()} method.
+ * {@code Ignite.affinity(cacheName)} method.
  * <p>
  * Mapping of a key to a node is a three-step operation. First step will get an affinity key for given key
  * using {@link AffinityKeyMapper}. If mapper is not specified, the original key will be used. Second step
@@ -41,6 +42,7 @@ public interface Affinity<K> {
      * Gets number of partitions in cache according to configured affinity function.
      *
      * @return Number of cache partitions.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -52,6 +54,7 @@ public interface Affinity<K> {
      *
      * @param key Key to get partition id for.
      * @return Partition id.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -64,6 +67,7 @@ public interface Affinity<K> {
      * @param n Node to check.
      * @param key Key to check.
      * @return {@code True} if local node is the primary node for given key.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public boolean isPrimary(ClusterNode n, K key);
 
@@ -73,6 +77,7 @@ public interface Affinity<K> {
      * @param n Node to check.
      * @param key Key to check.
      * @return {@code True} if local node is one of the backup nodes for given key.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public boolean isBackup(ClusterNode n, K key);
 
@@ -86,6 +91,7 @@ public interface Affinity<K> {
      * @param n Node to check.
      * @param key Key to check.
      * @return {@code True} if local node is primary or backup for given key.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public boolean isPrimaryOrBackup(ClusterNode n, K key);
 
@@ -94,6 +100,7 @@ public interface Affinity<K> {
      *
      * @param n Cluster node.
      * @return Partition ids for which given cluster node has primary ownership.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -105,6 +112,7 @@ public interface Affinity<K> {
      *
      * @param n Cluster node.
      * @return Partition ids for which given cluster node has backup ownership.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -117,6 +125,7 @@ public interface Affinity<K> {
      *
      * @param n Cluster node.
      * @return Partition ids for which given cluster node has any ownership, primary or backup.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -132,6 +141,7 @@ public interface Affinity<K> {
      * @param key Key to map.
      * @return Key to be used for node-to-affinity mapping (may be the same
      *      key as passed in).
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public Object affinityKey(K key);
 
@@ -151,7 +161,8 @@ public interface Affinity<K> {
      * </ul>
      *
      * @param keys Keys to map to nodes.
-     * @return Map of nodes to keys or empty map if there are no alive nodes for this cache.
+     * @return Map of nodes to keys.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public Map<ClusterNode, Collection<K>> mapKeysToNodes(Collection<? extends K> keys);
 
@@ -171,7 +182,8 @@ public interface Affinity<K> {
      * </ul>
      *
      * @param key Keys to map to a node.
-     * @return Primary node for the key or {@code null} if there are no alive nodes for this cache.
+     * @return Primary node for the key.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     @Nullable public ClusterNode mapKeyToNode(K key);
 
@@ -182,6 +194,7 @@ public interface Affinity<K> {
      * @param key Key to get affinity nodes for.
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
@@ -190,6 +203,7 @@ public interface Affinity<K> {
      *
      * @param part Partition id.
      * @return Primary node for the given partition.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -201,6 +215,7 @@ public interface Affinity<K> {
      *
      * @param parts Partition ids.
      * @return Mapping of given partitions to their primary nodes.
+     * @throws IgniteException If there are no alive nodes for this cache.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -214,6 +229,7 @@ public interface Affinity<K> {
      * @param part Partition to get affinity nodes for.
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
      */
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
 }

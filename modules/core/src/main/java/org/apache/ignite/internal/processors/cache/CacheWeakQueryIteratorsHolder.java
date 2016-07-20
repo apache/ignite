@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -34,11 +35,10 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class CacheWeakQueryIteratorsHolder<V> {
     /** Iterators weak references queue. */
-    private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
+    private final ReferenceQueue refQueue = new ReferenceQueue();
 
     /** Iterators futures. */
-    private final Map<WeakReference<WeakQueryFutureIterator>,CacheQueryFuture<V>> futs =
-        new ConcurrentHashMap8<>();
+    private final Map<WeakReference, AutoCloseable> refs = new ConcurrentHashMap8<>();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -56,10 +56,27 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param <T> Type for the iterator.
      * @return Iterator over the cache.
      */
-    public <T> WeakQueryFutureIterator iterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
+    public <T> WeakReferenceCloseableIterator<T> iterator(final CacheQueryFuture<V> fut,
+        CacheIteratorConverter<T, V> convert) {
         WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
 
-        CacheQueryFuture<V> old = futs.put(it.weakReference(), fut);
+        AutoCloseable old = refs.put(it.weakReference(), fut);
+
+        assert old == null;
+
+        return it;
+    }
+
+    /**
+     * @param iter Closeable iterator.
+     * @param <T> Type for the iterator.
+     * @return Iterator over the cache.
+     */
+    public <T> WeakReferenceCloseableIterator<T> iterator(final GridCloseableIterator<V> iter,
+        CacheIteratorConverter<T, V> convert) {
+        WeakQueryCloseableIterator it = new WeakQueryCloseableIterator(iter, convert);
+
+        AutoCloseable old = refs.put(it.weakReference(), iter);
 
         assert old == null;
 
@@ -71,8 +88,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
      *
      * @throws IgniteCheckedException If failed.
      */
-    public void removeIterator(WeakQueryFutureIterator it) throws IgniteCheckedException {
-        futs.remove(it.weakReference());
+    public void removeIterator(WeakReferenceCloseableIterator it) throws IgniteCheckedException {
+        refs.remove(it.weakReference());
 
         it.close();
     }
@@ -81,17 +98,17 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * Closes unreachable iterators.
      */
     public void checkWeakQueue() {
-        for (Reference<? extends WeakQueryFutureIterator> itRef = refQueue.poll(); itRef != null;
+        for (Reference itRef = refQueue.poll(); itRef != null;
             itRef = refQueue.poll()) {
             try {
-                WeakReference<WeakQueryFutureIterator> weakRef = (WeakReference<WeakQueryFutureIterator>)itRef;
+                WeakReference weakRef = (WeakReference)itRef;
 
-                CacheQueryFuture<?> fut = futs.remove(weakRef);
+                AutoCloseable rsrc = refs.remove(weakRef);
 
-                if (fut != null)
-                    fut.cancel();
+                if (rsrc != null)
+                    rsrc.close();
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Failed to close iterator.", e);
             }
         }
@@ -101,16 +118,16 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * Cancel all cache queries.
      */
     public void clearQueries(){
-        for (CacheQueryFuture<?> fut : futs.values()) {
+        for (AutoCloseable rsrc : refs.values()) {
             try {
-                fut.cancel();
+                rsrc.close();
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Failed to close iterator.", e);
             }
         }
 
-        futs.clear();
+        refs.clear();
     }
 
 
@@ -119,7 +136,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
      *
      * @param <T> Type for iterator.
      */
-    public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T> {
+    private class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T>
+        implements WeakReferenceCloseableIterator<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -204,10 +222,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
             cur = null;
         }
 
-        /**
-         * @return Iterator weak reference.
-         */
-        private WeakReference<WeakQueryFutureIterator<T>> weakReference() {
+        /** {@inheritDoc} */
+        @Override public WeakReference<WeakQueryFutureIterator<T>> weakReference() {
             return weakRef;
         }
 
@@ -217,7 +233,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         private void clearWeakReference() {
             weakRef.clear();
 
-            futs.remove(weakRef);
+            refs.remove(weakRef);
         }
 
         /**
@@ -232,5 +248,110 @@ public class CacheWeakQueryIteratorsHolder<V> {
                 init = true;
             }
         }
+    }
+
+    /**
+     * @param <T> Type.
+     */
+    public class WeakQueryCloseableIterator<T> extends GridCloseableIteratorAdapter<T>
+        implements WeakReferenceCloseableIterator<T> {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        private final GridCloseableIterator<V> iter;
+
+        /** */
+        private final CacheIteratorConverter<T, V> convert;
+
+        /** */
+        private final WeakReference weakRef;
+
+        /** */
+        private T cur;
+
+        /**
+         * @param iter Iterator.
+         * @param convert Converter.
+         */
+        WeakQueryCloseableIterator(GridCloseableIterator<V> iter, CacheIteratorConverter<T, V> convert) {
+            this.iter = iter;
+            this.convert = convert;
+
+            weakRef = new WeakReference(this, refQueue);
+       }
+
+
+        /** {@inheritDoc} */
+        @Override protected T onNext() throws IgniteCheckedException {
+            V next;
+
+            try {
+                next = iter.nextX();
+            }
+            catch (NoSuchElementException e){
+                clearWeakReference();
+
+                throw e;
+            }
+
+            if (next == null)
+                clearWeakReference();
+
+            cur = next != null ? convert.convert(next) : null;
+
+            return cur;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            boolean hasNextX = iter.hasNextX();
+
+            if (!hasNextX)
+                clearWeakReference();
+
+            return hasNextX;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onRemove() throws IgniteCheckedException {
+            if (cur == null)
+                throw new IllegalStateException();
+
+            convert.remove(cur);
+
+            cur = null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            iter.close();
+
+            clearWeakReference();
+        }
+
+        /**
+         * Clears weak reference.
+         */
+        private void clearWeakReference() {
+            weakRef.clear();
+
+            refs.remove(weakRef);
+        }
+
+        /** {@inheritDoc} */
+        @Override public WeakReference weakReference() {
+            return weakRef;
+        }
+    }
+
+    /**
+     *
+     */
+    public static interface WeakReferenceCloseableIterator<T> extends GridCloseableIterator<T> {
+        /**
+         * @return Iterator weak reference.
+         */
+        public WeakReference weakReference();
     }
 }

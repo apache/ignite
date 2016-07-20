@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -114,6 +115,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assert aff.backups() >= 0;
 
         startGrids(grids);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -233,8 +236,20 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         List<KeyCacheObject> cacheKeys = F.asList(ctx.toCacheKeyObject(1), ctx.toCacheKeyObject(2));
 
-        ((IgniteKernal)g1).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
-        ((IgniteKernal)g2).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
+        IgniteInternalFuture<Object> f1 = ((IgniteKernal)g1).internalCache(null).preloader().request(
+            cacheKeys,
+            new AffinityTopologyVersion(2));
+
+        if (f1 != null)
+            f1.get();
+
+
+        IgniteInternalFuture<Object> f2 = ((IgniteKernal)g2).internalCache(null).preloader().request(
+            cacheKeys,
+            new AffinityTopologyVersion(2));
+
+        if (f2 != null)
+            f2.get();
 
         IgniteCache<Integer, String> cache1 = g1.cache(null);
         IgniteCache<Integer, String> cache2 = g2.cache(null);

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Abstract memory chunk.
@@ -38,6 +39,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public virtual PlatformMemoryStream GetStream()
         {
             return BitConverter.IsLittleEndian ? new PlatformMemoryStream(this) : 

@@ -1,0 +1,32 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+nav(ng-if='numPages && pages.length >= 2')
+    ul.pagination
+        li(ng-if='currentPage > 1')
+            a(href='javascript:void(0);' ng-click='selectPage(1)' bs-tooltip='' data-title='First page' data-placement='bottom')
+                i.fa.fa-angle-double-left
+        li(ng-if='currentPage > 1')
+            a(href='javascript:void(0);' ng-click='selectPage(currentPage-1)' bs-tooltip='' data-title='Previous page' data-placement='bottom')
+                i.fa.fa-angle-left
+        li(ng-repeat='page in pages' ng-class='{active: page==currentPage}')
+            a(href='javascript:void(0);' ng-click='selectPage(page)') {{page}}
+        li(ng-if='currentPage < numPages')
+            a(href='javascript:void(0);' ng-click='selectPage(currentPage+1)' bs-tooltip='' data-title='Next page' data-placement='bottom')
+                i.fa.fa-angle-right
+        li(ng-if='currentPage < numPages')
+            a(href='javascript:void(0);' ng-click='selectPage(numPages)' bs-tooltip='' data-title='Last page' data-placement='bottom')
+                i.fa.fa-angle-double-right

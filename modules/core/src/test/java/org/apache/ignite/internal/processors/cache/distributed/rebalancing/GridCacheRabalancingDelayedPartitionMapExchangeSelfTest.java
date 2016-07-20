@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -99,7 +100,7 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
      * @throws Exception e.
      */
     public void test() throws Exception {
-        startGrid(0);
+        IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
 
@@ -114,25 +115,28 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         startGrid(2);
         startGrid(3);
 
-        awaitPartitionMapExchange(true);
+        awaitPartitionMapExchange(true, true);
 
         for (int i = 0; i < 2; i++) {
             stopGrid(3);
 
-            awaitPartitionMapExchange(true);
+            awaitPartitionMapExchange(true, true);
 
             startGrid(3);
 
-            awaitPartitionMapExchange(true);
+            awaitPartitionMapExchange(true, true);
         }
 
         startGrid(4);
 
-        awaitPartitionMapExchange(true);
+        awaitPartitionMapExchange(true, true);
 
         assert rs.isEmpty();
 
         record = true;
+
+        // Emulate latest GridDhtPartitionsFullMessages.
+        ignite.context().cache().context().exchange().scheduleResendPartitions();
 
         while (rs.size() < 3) { // N - 1 nodes.
             U.sleep(10);

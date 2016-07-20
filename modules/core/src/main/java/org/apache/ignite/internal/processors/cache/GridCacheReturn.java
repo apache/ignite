@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -169,6 +170,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param cctx Cache context.
      * @param cacheObj Value to set.
      * @param success Success flag to set.
+     * @param keepBinary Keep binary flag.
      * @return This instance for chaining.
      */
     public GridCacheReturn set(
@@ -187,6 +189,7 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
      */
     private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean keepBinary) {
         if (loc)
@@ -216,6 +219,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param key0 Key value.
      * @param res Result.
      * @param err Error.
+     * @param keepBinary Keep binary.
      */
     @SuppressWarnings("unchecked")
     public synchronized void addEntryProcessResult(
@@ -223,7 +227,8 @@ public class GridCacheReturn implements Externalizable, Message {
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
-        @Nullable Exception err) {
+        @Nullable Exception err,
+        boolean keepBinary) {
         assert v == null || v instanceof Map : v;
         assert key != null;
         assert res != null || err != null;
@@ -241,7 +246,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
-            resMap.put(key0 != null ? key0 : CU.value(key, cctx, true), res0);
+            Object resKey = key0 != null ? key0 :
+                ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
+
+            resMap.put(resKey, res0);
         }
         else {
             assert v == null;
@@ -337,6 +345,11 @@ public class GridCacheReturn implements Externalizable, Message {
 
             v = map0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

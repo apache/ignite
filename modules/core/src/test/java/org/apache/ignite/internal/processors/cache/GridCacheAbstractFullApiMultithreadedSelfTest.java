@@ -324,10 +324,14 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
             @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd = random();
 
+                Set<Integer> ids = new HashSet<>(set);
+
                 cache.removeAll(rangeKeys(0, rnd));
 
-                for (int i = 0; i < rnd; i++)
-                    assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
+                for (int i = 0; i < rnd; i++) {
+                    if (ids.contains(i))
+                        assertNull(cache.localPeek("key" + i));
+                }
             }
         });
     }
@@ -350,7 +354,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
 
                 for (int i = 0; i < rnd; i++) {
                     if (ids.contains(i))
-                        assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
+                        assertNull(cache.localPeek("key" + i));
                 }
             }
         });
@@ -359,6 +363,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @param cache Cache.
      * @param key Key.
+     * @return Removed value.
      */
     private <K, V> V removeAsync(IgniteCache<K, V> cache, K key) {
         IgniteCache<K, V> cacheAsync = cache.withAsync();
@@ -371,6 +376,8 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @param cache Cache.
      * @param key Key.
+     * @param val Value.
+     * @return Remove result.
      */
     private <K, V> boolean removeAsync(IgniteCache<K, V> cache, K key, V val) {
         IgniteCache<K, V> cacheAsync = cache.withAsync();

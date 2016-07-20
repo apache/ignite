@@ -86,7 +86,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                 if (entry.IsExpected(fieldName, fieldType))
                     // Entry matches our expectations, return.
                     return entry.Id;
-                else if (entry.IsJumpTable)
+
+                if (entry.IsJumpTable)
                 {
                     // Entry is a pointer to a jump table.
                     Debug.Assert(entry.Id < _jumps.Length);

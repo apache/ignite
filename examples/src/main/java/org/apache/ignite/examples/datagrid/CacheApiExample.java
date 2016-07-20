@@ -50,9 +50,14 @@ public class CacheApiExample {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

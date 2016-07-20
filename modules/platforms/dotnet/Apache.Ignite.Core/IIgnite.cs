@@ -18,15 +18,18 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -93,6 +96,26 @@ namespace Apache.Ignite.Core
         ICache<TK, TV> GetOrCreateCache<TK, TV>(string name);
 
         /// <summary>
+        /// Gets existing cache with the given name or creates new one using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets existing cache with the given name or creates new one using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// /// <param name="nearConfiguration">Near cache configuration for client.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration);
+
+        /// <summary>
         /// Dynamically starts new cache using template configuration.
         /// </summary>
         /// <typeparam name="TK">Cache key type.</typeparam>
@@ -100,6 +123,33 @@ namespace Apache.Ignite.Core
         /// <param name="name">Cache name.</param>
         /// <returns>Existing or newly created cache.</returns>
         ICache<TK, TV> CreateCache<TK, TV>(string name);
+
+        /// <summary>
+        /// Dynamically starts new cache using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration);
+
+        /// <summary>
+        /// Dynamically starts new cache using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <param name="nearConfiguration">Near cache configuration for client.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration);
+
+        /// <summary>
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
+        /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
+        /// </summary>
+        /// <param name="name">The name of the cache to stop.</param>
+        void DestroyCache(string name);
 
         /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
@@ -164,5 +214,90 @@ namespace Apache.Ignite.Core
         /// or null if it does not exist and <c>create</c> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic sequence with specified name from cache.
+        /// Creates new atomic sequence in cache if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic sequence.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic sequence. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic sequence should be created if it does not exist.</param>
+        /// <returns>Atomic sequence instance with specified name, 
+        /// or null if it does not exist and <paramref name="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic sequence could not be fetched or created.</exception>
+        IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic reference with specified name from cache.
+        /// Creates new atomic reference in cache if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic reference.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic reference. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic reference should be created if it does not exist.</param>
+        /// <returns>Atomic reference instance with specified name, 
+        /// or null if it does not exist and <paramref name="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic reference could not be fetched or created.</exception>
+        IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create);
+
+        /// <summary>
+        /// Gets the configuration of this Ignite instance.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteConfiguration GetConfiguration();
+
+        /// <summary>
+        /// Starts a near cache on local node if cache with specified was previously started.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <returns>Near cache instance.</returns>
+        ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets existing near cache with the given name or creates a new one.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <returns>Near cache instance.</returns>
+        ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets the collection of names of currently available caches, or empty collection if there are no caches.
+        /// Note that null string is a valid cache name.
+        /// </summary>
+        /// <returns>Collection of names of currently available caches.</returns>
+        ICollection<string> GetCacheNames();
+
+        /// <summary>
+        /// Occurs when node begins to stop. Node is fully functional at this point.
+        /// See also: <see cref="LifecycleEventType.BeforeNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopping;
+
+        /// <summary>
+        /// Occurs when node has stopped. Node can't be used at this point.
+        /// See also: <see cref="LifecycleEventType.AfterNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopped;
+
+        /// <summary>
+        /// Occurs when client node disconnects from the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler ClientDisconnected;
+
+        /// <summary>
+        /// Occurs when client node reconnects to the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler<ClientReconnectEventArgs> ClientReconnected;
     }
 }

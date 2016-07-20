@@ -518,13 +518,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x1"))))
-                assertFalse("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, t.syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x2"))))
-            assertTrue("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, t.syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x3"))))
-                assertFalse("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, t.syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
-                assertTrue("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, t.syncMode());
         }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -152,19 +154,32 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        testGet(primaryKey(0));
+        testGet(primaryKey(0), false);
 
         afterTest();
 
         if (cacheMode() != LOCAL)
-            testGet(backupKey(0));
+            testGet(backupKey(0), false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntry() throws Exception {
+        testGet(primaryKey(0), true);
+
+        afterTest();
+
+        if (cacheMode() != LOCAL)
+            testGet(backupKey(0), true);
     }
 
     /**
      * @param key Key.
+     * @param needVer Need version.
      * @throws Exception If failed.
      */
-    private void testGet(String key) throws Exception {
+    private void testGet(String key, boolean needVer) throws Exception {
         // Try when value is not in cache.
 
         interceptor.retInterceptor = new NullGetInterceptor();
@@ -173,7 +188,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         IgniteCache<String, Integer> cache = jcache(0);
 
-        assertEquals(null, cache.get(key));
+        assertEquals(null, needVer ? cache.getEntry(key) : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -185,7 +200,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 2.");
 
-        assertEquals((Integer)1, cache.get(key));
+        assertEquals((Integer)1, needVer ? cache.getEntry(key).getValue() : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -207,7 +222,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 3.");
 
-        assertEquals(null, cache.get(key));
+        assertEquals(null, needVer ? cache.getEntry(key) : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -223,7 +238,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 4.");
 
-        assertEquals((Integer)101, cache.get(key));
+        assertEquals((Integer)101, needVer ? cache.getEntry(key).getValue() : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -241,9 +256,16 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
-        cacheAsync.get(key);
+        if (needVer) {
+            cacheAsync.getEntry(key);
 
-        assertEquals((Integer)101, cacheAsync.<Integer>future().get());
+            assertEquals((Integer)101, cacheAsync.<CacheEntry<String, Integer>>future().get().getValue());
+        }
+        else {
+            cacheAsync.get(key);
+
+            assertEquals((Integer)101, cacheAsync.<Integer>future().get());
+        }
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -258,6 +280,20 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGetAll() throws Exception {
+        testGetAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntries() throws Exception {
+        testGetAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testGetAll(boolean needVer) throws Exception {
         Set<String> keys = new LinkedHashSet<>();
 
         for (int i = 0; i < 1000; i++)
@@ -269,10 +305,19 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
-        Map<String, Integer> map = cache.getAll(keys);
+        Collection<CacheEntry<String, Integer>> c;
+        Map<String, Integer> map;
 
-        for (String key : keys)
-            assertEquals(null, map.get(key));
+        if (needVer){
+            c = cache.getEntries(keys);
+
+            assertTrue(c.isEmpty());
+        }else {
+            map = cache.getAll(keys);
+
+            for (String key : keys)
+                assertEquals(null, map.get(key));
+        }
 
         assertEquals(1000, interceptor.invokeCnt.get());
 
@@ -280,15 +325,28 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.retInterceptor = new GetAllInterceptor1();
 
-        map = cache.getAll(keys);
+        if (needVer) {
+            c = cache.getEntries(keys);
 
-        for (String key : keys) {
-            int k = Integer.valueOf(key);
+            assertEquals(500, c.size());
 
-            if (k % 2 == 0)
-                assertEquals(null, map.get(key));
-            else
-                assertEquals((Integer)(k * 2), map.get(key));
+            for (CacheEntry<String, Integer> e : c) {
+                int k = Integer.valueOf(e.getKey());
+
+                assertEquals((Integer)(k * 2), e.getValue());
+            }
+        }
+        else {
+            map = cache.getAll(keys);
+
+            for (String key : keys) {
+                int k = Integer.valueOf(key);
+
+                if (k % 2 == 0)
+                    assertEquals(null, map.get(key));
+                else
+                    assertEquals((Integer)(k * 2), map.get(key));
+            }
         }
 
         assertEquals(1000, interceptor.invokeCnt.get());
@@ -307,40 +365,72 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             interceptor.retInterceptor = new GetAllInterceptor2();
 
-            if (j == 0)
-                map = cache.getAll(keys);
-            else {
-                cacheAsync.getAll(keys);
+            if (needVer) {
+                if (j == 0)
+                    c = cache.getEntries(keys);
+                else {
+                    cacheAsync.getEntries(keys);
 
-                map = cacheAsync.<Map<String, Integer>>future().get();
-            }
-
-            int i = 0;
-
-            for (String key : keys) {
-                switch (i % 3) {
-                    case 0:
-                        assertEquals(null, map.get(key));
-
-                        break;
-
-                    case 1:
-                        Integer exp = i < 500 ? i : null;
-
-                        assertEquals(exp, map.get(key));
-
-                        break;
-
-                    case 2:
-                        assertEquals((Integer)(i * 3), map.get(key));
-
-                        break;
-
-                    default:
-                        fail();
+                    c = cacheAsync.<Collection<CacheEntry<String, Integer>>>future().get();
                 }
 
-                i++;
+                for (CacheEntry<String, Integer> e : c) {
+                    int k = Integer.valueOf(e.getKey());
+
+                    switch (k % 3) {
+                        case 1:
+                            Integer exp = k < 500 ? k : null;
+
+                            assertEquals(exp, e.getValue());
+
+                            break;
+
+                        case 2:
+                            assertEquals((Integer)(k * 3), e.getValue());
+
+                            break;
+
+                        default:
+                            fail();
+                    }
+                }
+            }
+            else {
+                if (j == 0)
+                    map = cache.getAll(keys);
+                else {
+                    cacheAsync.getAll(keys);
+
+                    map = cacheAsync.<Map<String, Integer>>future().get();
+                }
+
+                int i = 0;
+
+                for (String key : keys) {
+                    switch (i % 3) {
+                        case 0:
+                            assertEquals(null, map.get(key));
+
+                            break;
+
+                        case 1:
+                            Integer exp = i < 500 ? i : null;
+
+                            assertEquals(exp, map.get(key));
+
+                            break;
+
+                        case 2:
+                            assertEquals((Integer)(i * 3), map.get(key));
+
+                            break;
+
+                        default:
+                            fail();
+                    }
+
+                    i++;
+                }
             }
 
             assertEquals(1000, interceptor.invokeCnt.get());
@@ -1354,7 +1444,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = true;
 
         if (storeEnabled())
-            assertEquals("Unexpected store value", expVal, map.get(key));
+            assertEquals("Unexpected store value", expVal, storeStgy.getFromStore(key));
 
         try {
             for (int i = 0; i < gridCount(); i++)

@@ -73,12 +73,15 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *
  * ====Arguments====
  * {{{
- *     -id=<node-id>
- *         Full ID of the node to get cache statistics from.
- *         Either '-id8' or '-id' can be specified.
- *         If neither is specified statistics will be gathered from all nodes.
  *     -id8=<node-id>
  *         ID8 of the node to get cache statistics from.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
+ *         If neither is specified statistics will be gathered from all nodes.
+ *     -id=<node-id>
+ *         Full ID of the node to get cache statistics from.
  *         Either '-id8' or '-id' can be specified.
  *         If neither is specified statistics will be gathered from all nodes.
  *     -c=<cache-name>
@@ -259,8 +262,7 @@ class VisorCacheCommand {
 
             if (hasArgFlagIn("clear", "swap", "scan", "stop")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"),
-                        aggrData) match {
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"), aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -273,13 +275,13 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (!aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
+                        if (aggrData.nonEmpty && !aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
                                 VisorCacheSwapCommand().swap(argLst, node)
                             else if (hasArgFlag("stop", argLst))
-                                VisorCacheStopCommand().scan(argLst, node)
+                                VisorCacheStopCommand().stop(argLst, node)
                         }
                         else {
                             if (hasArgFlag("clear", argLst))
@@ -312,11 +314,16 @@ class VisorCacheCommand {
                 return
             }
 
-            println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+            node match {
+                case Some(n) =>
+                    println("ID8=" + nid8(n) + ", time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+                case None =>
+                    println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+            }
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -328,9 +335,12 @@ class VisorCacheCommand {
                         ad.mode(),
                         ad.nodes.size(),
                         (
-                            "min: " + ad.minimumSize,
-                            "avg: " + formatDouble(ad.averageSize),
-                            "max: " + ad.maximumSize
+                            "min: " + (ad.minimumHeapSize() + ad.minimumOffHeapSize()) +
+                                " (" + ad.minimumHeapSize() + " / " + ad.minimumOffHeapSize() + ")",
+                            "avg: " + formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) +
+                                " (" + formatDouble(ad.averageHeapSize()) + " / " + formatDouble(ad.averageOffHeapSize()) + ")",
+                            "max: " + (ad.maximumHeapSize() + ad.maximumOffHeapSize()) +
+                                " (" + ad.maximumHeapSize() + " / " + ad.maximumOffHeapSize() + ")"
                             ),
                         (
                             "min: " + ad.minimumHits,
@@ -382,7 +392,13 @@ class VisorCacheCommand {
 
                     csT += ("Name(@)", cacheNameVar)
                     csT += ("Nodes", m.size())
-                    csT += ("Size Min/Avg/Max", ad.minimumSize + " / " + formatDouble(ad.averageSize) + " / " + ad.maximumSize)
+                    csT += ("Total size Min/Avg/Max", (ad.minimumHeapSize() + ad.minimumOffHeapSize()) + " / " +
+                        formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) + " / " +
+                        (ad.maximumHeapSize() + ad.maximumOffHeapSize()))
+                    csT += ("  Heap size Min/Avg/Max", ad.minimumHeapSize() + " / " +
+                        formatDouble(ad.averageHeapSize()) + " / " + ad.maximumHeapSize())
+                    csT += ("  Off heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
+                        formatDouble(ad.averageOffHeapSize()) + " / " + ad.maximumOffHeapSize())
 
                     val ciT = VisorTextTable()
 
@@ -451,12 +467,12 @@ class VisorCacheCommand {
      */
     private def mkCacheName(@Nullable s: String): String = {
         if (s == null) {
-            val v = mfind(DFLT_CACHE_KEY)
+            val v = mfindHead(DFLT_CACHE_KEY)
 
             DFLT_CACHE_NAME + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
         else {
-            val v = mfind(s)
+            val v = mfindHead(s)
 
             s + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
@@ -617,7 +633,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Size")
+        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off heap)")
 
         sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
@@ -630,15 +646,18 @@ class VisorCacheCommand {
                 mkCacheName(ad.name()),
                 ad.mode(),
                 (
-                    "min: " + ad.minimumSize,
-                    "avg: " + formatDouble(ad.averageSize),
-                    "max: " + ad.maximumSize
+                    "min: " + (ad.minimumHeapSize() + ad.minimumOffHeapSize()) +
+                        " (" + ad.minimumHeapSize() + " / " + ad.minimumOffHeapSize() + ")",
+                    "avg: " + formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) +
+                        " (" + formatDouble(ad.averageHeapSize()) + " / " + formatDouble(ad.averageOffHeapSize()) + ")",
+                    "max: " + (ad.maximumHeapSize() + ad.maximumOffHeapSize()) +
+                        " (" + ad.maximumHeapSize() + " / " + ad.maximumOffHeapSize() + ")"
                 ))
         })
 
         sumT.render()
 
-        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "c")
+        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "0")
 
         if (a.toLowerCase == "c")
             None
@@ -692,16 +711,18 @@ object VisorCacheCommand {
             "cache -stop -c=<cache-name>"
     ),
         args = Seq(
+            "-id8=<node-id>" -> Seq(
+                "ID8 of the node to get cache statistics from.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
+                "If neither is specified statistics will be gathered from all nodes."
+            ),
             "-id=<node-id>" -> Seq(
                 "Full ID of the node to get cache statistics from.",
                 "Either '-id8' or '-id' can be specified.",
                 "If neither is specified statistics will be gathered from all nodes."
-            ),
-            "-id8=<node-id>" -> Seq(
-                "ID8 of the node to get cache statistics from.",
-                "Either '-id8' or '-id' can be specified.",
-                "If neither is specified statistics will be gathered from all nodes.",
-                "Note you can also use '@n0' ... '@nn' variables as shortcut to <node-id>."
             ),
             "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
@@ -709,6 +730,9 @@ object VisorCacheCommand {
             ),
             "-clear" -> Seq(
                 "Clears cache."
+            ),
+            "-system" -> Seq(
+                "Enable showing of information about system caches."
             ),
             "-scan" -> Seq(
                 "Prints list of all entries from cache."
@@ -748,7 +772,9 @@ object VisorCacheCommand {
         ),
         examples = Seq(
             "cache" ->
-                "Prints summary statistics about all caches.",
+                "Prints summary statistics about all non-system caches.",
+            "cache -system" ->
+                "Prints summary statistics about all caches including system cache.",
             "cache -i" ->
                 "Prints cache statistics for interactively selected node.",
             "cache -id8=12345678 -s=hi -r"  -> Seq(
@@ -866,7 +892,10 @@ object VisorCacheCommand {
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
         cacheT += ("Store Class", safe(storeCfg.store()))
         cacheT += ("Store Factory Class", storeCfg.storeFactory())
-        cacheT += ("Store Keep Binary", storeCfg.storeKeepBinary())
+        cacheT += ("Store Keep Binary", storeCfg match {
+            case cfg: VisorCacheStoreConfigurationV2 => cfg.storeKeepBinary()
+            case _ => false
+        })
         cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
         cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 
@@ -889,7 +918,10 @@ object VisorCacheCommand {
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
 
         cacheT +=("Query Execution Time Threshold", queryCfg.longQueryWarningTimeout())
-        cacheT +=("Query Schema Name", queryCfg.sqlSchema())
+        cacheT +=("Query Schema Name", queryCfg match {
+            case cfg: VisorCacheQueryConfigurationV2 => cfg.sqlSchema()
+            case _ => null
+        })
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
         cacheT +=("Query Onheap Cache Size", queryCfg.sqlOnheapRowCacheSize())
 

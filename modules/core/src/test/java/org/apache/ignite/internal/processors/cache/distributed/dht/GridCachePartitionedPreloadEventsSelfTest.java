@@ -31,6 +31,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadEventsAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
@@ -48,6 +49,16 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
     /** */
     private long rebalanceDelay;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        // 'testForcePreload' is not valid with late assignment.
+        cfg.setLateAffinityAssignment(false);
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {

@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Compute
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// This enumeration provides different types of actions following the last received job result. See 
     /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>

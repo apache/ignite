@@ -343,7 +343,7 @@ final class GridUriDeploymentFileProcessor {
             for (Class<? extends ComputeTask<?, ?>> task : tasks) {
                 if (!isAllowedTaskClass(task)) {
                     U.warn(log, "Failed to load task. Task should be public none-abstract class " +
-                        "(might be inner static one) that implements GridComputeTask interface [taskCls=" + task + ']');
+                        "(might be inner static one) that implements ComputeTask interface [taskCls=" + task + ']');
                 }
                 else {
                     if (log.isDebugEnabled())

@@ -72,12 +72,13 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType) {
+        GridDrType drType,
+        AffinityTopologyVersion topVer) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException {
+    @Override public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException {
         // No-op.
     }
 

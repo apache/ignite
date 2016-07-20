@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -411,7 +412,14 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
                     cmp.set(barrier);
 
-                    barrier.await(60_000, TimeUnit.MILLISECONDS);
+                    try {
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
+                    }
+                    catch (TimeoutException e) {
+                        U.dumpThreads(log);
+
+                        fail("Failed to check cache content: " + e);
+                    }
 
                     log.info("Cache content check done.");
 

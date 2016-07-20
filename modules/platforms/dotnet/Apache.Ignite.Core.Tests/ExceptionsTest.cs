@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests 
 {
     using System;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -60,40 +61,16 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid = StartGrid();
 
-            try
-            {
-                grid.GetCache<object, object>("invalidCacheName");
+            Assert.Throws<ArgumentException>(() => grid.GetCache<object, object>("invalidCacheName"));
 
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ArgumentException);
-            }
+            var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
-            try
-            {
-                grid.GetCluster().ForRemotes().GetMetrics();
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ClusterGroupEmptyException);
-            }
+            Assert.IsTrue(e.InnerException.Message.StartsWith(
+                    "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             grid.Dispose();
 
-            try
-            {
-                grid.GetCache<object, object>("cache1");
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is InvalidOperationException);
-            }
+            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
         }
 
         /// <summary>
@@ -209,6 +186,21 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that invalid spring URL results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidSpringUrl()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = "z:\\invalid.xml"
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         private static void TestPartialUpdateException<TK>(bool async, Func<int, IIgnite, TK> keyFunc)
@@ -228,6 +220,8 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
+                            // ReSharper disable once AccessToDisposedClosure
+                            // ReSharper disable once AccessToModifiedClosure
                             var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)
@@ -254,8 +248,12 @@ namespace Apache.Ignite.Core.Tests
 
                 while (true)
                 {
+                    Thread.Sleep(1000);
+
                     Ignition.Stop("grid_2", true);
                     StartGrid("grid_2");
+
+                    Thread.Sleep(1000);
 
                     if (putTask.Exception != null)
                         throw putTask.Exception;
@@ -285,7 +283,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return Ignition.Start(new IgniteConfigurationEx
+            return Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),

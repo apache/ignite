@@ -569,9 +569,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         GridNioServerListener lsnr,
         @Nullable Integer queueLimit) throws Exception {
         for (int i = 0; i < 10; i++) {
-            try {
-                int srvPort = port++;
+            int srvPort = port++;
 
+            try {
                 GridNioServer.Builder<?> builder = serverBuilder(srvPort, parser, lsnr);
 
                 if (queueLimit != null)
@@ -584,8 +584,11 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 return srvr;
             }
             catch (IgniteCheckedException e) {
-                if (i < 9 && e.hasCause(BindException.class))
-                    log.error("Failed to start server, will try another port: " + e);
+                if (i < 9 && e.hasCause(BindException.class)) {
+                    log.error("Failed to start server, will try another port [err=" + e + ", port=" + srvPort + ']');
+
+                    U.sleep(5000);
+                }
                 else
                     throw e;
             }

@@ -55,9 +55,14 @@ public class CacheApiExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

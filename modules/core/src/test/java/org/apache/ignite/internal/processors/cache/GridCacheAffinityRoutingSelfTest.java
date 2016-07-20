@@ -276,8 +276,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
         }
     }
 
@@ -412,8 +412,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
 
             return null;
         }

@@ -33,9 +33,11 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
@@ -75,10 +77,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
 
     /** */
-    private static final int TOP_CHANGE_CNT = 5;
+    private static final int TOP_CHANGE_CNT = 2;
 
     /** */
-    private static final int TOP_CHANGE_THREAD_CNT = 3;
+    private static final int TOP_CHANGE_THREAD_CNT = 2;
 
     /** */
     private boolean client;
@@ -404,282 +406,384 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
-    public void testSemaphoreTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
-
+    public void testSemaphoreFailoverSafe() throws Exception {
         try (IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
-            try {
-                Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_GRID_NAME);
 
-                assert g.semaphore(STRUCTURE_NAME, 20, true, true).availablePermits() == 20;
+            IgniteSemaphore semaphore2 = g.semaphore(STRUCTURE_NAME, 20, true, false);
 
-                g.semaphore(STRUCTURE_NAME, 20, true, true).acquire(10);
+            assertEquals(20, semaphore2.availablePermits());
 
-                stopGrid(NEW_GRID_NAME);
+            semaphore2.acquire(10);
 
-                assert grid(0).semaphore(STRUCTURE_NAME, 20, true, true).availablePermits() == 10;
-            }
-            finally {
-                grid(0).semaphore(STRUCTURE_NAME, 20, true, true).close();
-            }
+            stopGrid(NEW_GRID_NAME);
+
+            assertEquals(10, semaphore.availablePermits());
         }
-
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testSemaphoreConstantTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
+    public void testSemaphoreNonFailoverSafe() throws Exception {
+        try (IgniteSemaphore sem = grid(0).semaphore(STRUCTURE_NAME, 20, false, true)) {
+            Ignite g = startGrid(NEW_GRID_NAME);
 
-        try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, 10, false, true)) {
-            try {
-                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                    @Override public void apply() {
-                        try {
-                            for (int i = 0; i < TOP_CHANGE_CNT; i++) {
-                                String name = UUID.randomUUID().toString();
+            IgniteSemaphore sem2 = g.semaphore(STRUCTURE_NAME, 20, false, false);
 
-                                try {
-                                    log.info("Start node: " + name);
+            sem2.acquire(20);
 
-                                    Ignite g = startGrid(name);
+            assertEquals(0, sem.availablePermits());
 
-                                    assert g.semaphore(STRUCTURE_NAME, 10, false, false) != null;
-                                }
-                                finally {
-                                    if (i != TOP_CHANGE_CNT - 1)
-                                        stopGrid(name);
-                                }
-                            }
-                        }
-                        catch (Exception e) {
-                            throw F.wrap(e);
-                        }
-                    }
-                }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
-
-                int val = s.availablePermits();
-
-                while (!fut.isDone()) {
-                    assert s.availablePermits() == val;
-
-                    s.acquire();
-
-                    assert s.availablePermits() == val - 1;
-
-                    s.release();
+            new Timer().schedule(new TimerTask() {
+                @Override public void run() {
+                    stopGrid(NEW_GRID_NAME);
                 }
+            }, 2000);
 
-                fut.get();
-
-                for (Ignite g : G.allGrids())
-                    assert g.semaphore(STRUCTURE_NAME, 0, false, true).availablePermits() == val;
+            try {
+                sem.acquire(1);
             }
-            finally {
-                grid(0).semaphore(STRUCTURE_NAME, 0, false, true).close();
+            catch (IgniteInterruptedException e) {
+                // Expected exception.
+                return;
             }
         }
+
+        fail("Thread hasn't been interrupted");
     }
 
     /**
-     * This method tests if permits are successfully reassigned when a node fails in failoverSafe mode.
-     *
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreSingleNodeFailure() throws Exception {
+        final Ignite i1 = grid(0);
+
+        IgniteSemaphore sem1 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
+
+        sem1.acquire();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean failed = true;
+
+                IgniteSemaphore sem2 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
+
+                try {
+                    sem2.acquire();
+                }
+                catch (Exception e){
+                    failed = false;
+                }
+                finally {
+                    assertFalse(failed);
+
+                    sem2.release();
+                }
+                return null;
+            }
+        });
+
+        while(!sem1.hasQueuedThreads()){
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                fail();
+            }
+        }
+
+        i1.close();
+
+        fut.get();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSemaphoreConstantTopologyChangeFailoverSafe() throws Exception {
+        doTestSemaphore(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreConstantTopologyChangeNonFailoverSafe() throws Exception {
+        doTestSemaphore(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreMultipleTopologyChangeFailoverSafe() throws Exception {
+        doTestSemaphore(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreMultipleTopologyChangeNonFailoverSafe() throws Exception {
+        doTestSemaphore(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestSemaphore(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe) throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1977");
 
-        try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true)) {
-            try {
-                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                    @Override public void apply() {
+        final int permits = topWorker instanceof MultipleTopologyChangeWorker ||
+            topWorker instanceof PartitionedMultipleTopologyChangeWorker ? TOP_CHANGE_THREAD_CNT * 3 :
+            TOP_CHANGE_CNT;
+
+        try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, permits, failoverSafe, true)) {
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
+                @Override public Object apply(Ignite ignite) {
+                    IgniteSemaphore sem = ignite.semaphore(STRUCTURE_NAME, permits, failoverSafe, false);
+
+                    while (true) {
                         try {
-                            for (int i = 0; i < TOP_CHANGE_CNT; i++) {
-                                String name = UUID.randomUUID().toString();
+                            sem.acquire(1);
 
-                                try {
-                                    log.info("Start node: " + name);
-
-                                    Ignite g = startGrid(name);
-
-                                    final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
-
-                                    assertNotNull(sem);
-
-                                    sem.acquire();
-
-                                    if (i == TOP_CHANGE_CNT - 1)
-                                        sem.release();
-                                }
-                                finally {
-                                    if (i != TOP_CHANGE_CNT - 1)
-                                        stopGrid(name);
-                                }
-                            }
+                            break;
                         }
-                        catch (Exception e) {
-                            throw F.wrap(e);
+                        catch (IgniteInterruptedException e) {
+                            // Exception may happen in non failover safe mode.
+                            if (failoverSafe)
+                                throw e;
                         }
                     }
-                }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
 
-                while (!fut.isDone()) {
-                    s.release();
+                    return null;
+                }
+            });
 
-                    s.acquire();
+            while (!fut.isDone()) {
+                while (true) {
+                    try {
+                        s.acquire(1);
+
+                        break;
+                    }
+                    catch (IgniteInterruptedException e) {
+                        // Exception may happen in non failover safe mode.
+                        if (failoverSafe)
+                            throw e;
+                    }
                 }
 
-                fut.get();
+                assert s.availablePermits() < permits;
 
-                int val = s.availablePermits();
+                s.release();
 
-                assertEquals(val, TOP_CHANGE_CNT);
-
-                for (Ignite g : G.allGrids())
-                    assertEquals(val, g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true).availablePermits());
+                assert s.availablePermits() <= permits;
             }
-            finally {
-                grid(0).semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true).close();
-            }
+
+            fut.get();
+
+            for (Ignite g : G.allGrids())
+                assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
         }
     }
 
     /**
-     * This method tests if permits are successfully reassigned when multiple nodes fail in failoverSafe mode.
-     *
      * @throws Exception If failed.
      */
-    public void testSemaphoreConstantMultipleTopologyChangeFailoverSafe() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
-
-        final int numPermits = 3;
-
-        try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, numPermits, true, true)) {
-            try {
-                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                    @Override public void apply() {
-                        try {
-                            for (int i = 0; i < TOP_CHANGE_CNT; i++) {
-                                Collection<String> names = new GridLeanSet<>(3);
-
-                                try {
-                                    for (int j = 0; j < numPermits; j++) {
-                                        String name = UUID.randomUUID().toString();
-
-                                        names.add(name);
-
-                                        log.info("Start node: " + name);
-
-                                        Ignite g = startGrid(name);
-
-                                        final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
-
-                                        assertNotNull(sem);
-
-                                        sem.acquire();
-
-                                        if (i == TOP_CHANGE_CNT - 1)
-                                            sem.release();
-                                    }
-                                }
-                                finally {
-                                    if (i != TOP_CHANGE_CNT - 1)
-                                        for (String name : names) {
-                                            stopGrid(name);
-
-                                            awaitPartitionMapExchange();
-                                        }
-                                }
-                            }
-                        }
-                        catch (Exception e) {
-                            throw F.wrap(e);
-                        }
-                    }
-                }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
-
-                while (!fut.isDone()) {
-                    s.release();
-
-                    s.acquire();
-                }
-
-                fut.get();
-
-                int val = s.availablePermits();
-
-                assertEquals(val, numPermits);
-
-                for (Ignite g : G.allGrids())
-                    assertEquals(val, g.semaphore(STRUCTURE_NAME, 0, true, true).availablePermits());
-            }
-            finally {
-                grid(0).semaphore(STRUCTURE_NAME, 0, true, true).close();
-            }
-        }
+    public void testReentrantLockFailsWhenServersLeft() throws Exception {
+        testReentrantLockFailsWhenServersLeft(false);
     }
 
     /**
-     * This method test if exception is thrown when node fails in non FailoverSafe mode.
-     *
      * @throws Exception If failed.
      */
-    public void testSemaphoreConstantTopologyChangeNotFailoverSafe() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
+    public void testFairReentrantLockFailsWhenServersLeft() throws Exception {
+        testReentrantLockFailsWhenServersLeft(true);
+    }
 
-        try (IgniteSemaphore s = grid(0).semaphore(STRUCTURE_NAME, 1, false, true)) {
-            try {
-                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                    @Override public void apply() {
-                        try {
-                            for (int i = 0; i < 2; i++) {
-                                String name = UUID.randomUUID().toString();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockFailsWhenServersLeft(final boolean fair) throws Exception {
+        client = true;
 
-                                try {
-                                    log.info("Start node: " + name);
+        Ignite client = startGrid(gridCount());
 
-                                    Ignite g = startGrid(name);
+        Ignite server = grid(0);
 
-                                    final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
+        // Initialize lock.
+        IgniteLock srvLock = server.reentrantLock("lock", true, fair, true);
 
-                                    assertNotNull(sem);
+        IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
 
-                                    if (i != 1)
-                                        sem.acquire();
-                                }
-                                finally {
-                                    if (i != 1)
-                                        stopGrid(name);
-                                }
-                            }
+        IgniteCompute compute = client.compute().withAsync();
 
-                        }
-                        catch (Exception e) {
-                            throw F.wrap(e);
-                        }
-                    }
-                }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
+        compute.apply(new IgniteClosure<Ignite, Object>() {
+            @Override public Object apply(Ignite ignite) {
+                final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
 
-                while (s.availablePermits() != 0) {
-                    // Wait for semaphore to be acquired.
-                }
+                l.lock();
+
+                assertTrue(l.isHeldByCurrentThread());
+
+                l.unlock();
+
+                assertFalse(l.isHeldByCurrentThread());
+
+                // Signal the server to go down.
+                ignite.semaphore("sync", 0, true, true).release();
+
+                boolean isExceptionThrown = false;
 
                 try {
-                    s.acquire();
-                    fail("In non-FailoverSafe mode IgniteInterruptedCheckedException must be thrown.");
-                }
-                catch (Exception e) {
-                    assert (e instanceof IgniteInterruptedException);
-                }
+                    // Wait for the server to go down.
+                    Thread.sleep(1000);
 
-                assertTrue(s.isBroken());
+                    l.lock();
 
-                fut.get();
+                    fail("Exception must be thrown.");
+                }
+                catch (InterruptedException e) {
+                    fail("Interrupted exception not expected here.");
+                }
+                catch (IgniteException e) {
+                    isExceptionThrown = true;
+                }
+                finally {
+                    assertTrue(isExceptionThrown);
+
+                    assertFalse(l.isHeldByCurrentThread());
+                }
+                return null;
             }
-            finally {
-                grid(0).semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true).close();
+        }, client);
+
+        // Wait for the lock on client to be acquired then released.
+        semaphore.acquire();
+
+        for (int i = 0; i < gridCount(); i++)
+            stopGrid(i);
+
+        compute.future().get();
+
+        client.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe, final boolean fair) throws Exception {
+        try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
+                @Override public Object apply(Ignite ignite) {
+                    final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
+
+                    final AtomicBoolean done = new AtomicBoolean(false);
+
+                    IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            try{
+                                l.lock();
+                            }
+                            finally {
+                                done.set(true);
+                            }
+
+                            return null;
+                        }
+                    });
+
+                    // Wait until l.lock() has been called.
+                    while(!l.hasQueuedThreads() && !done.get()){
+                        // No-op.
+                    }
+
+                    return null;
+                }
+            });
+
+            while (!fut.isDone()) {
+                while (true) {
+                    try {
+                        lock.lock();
+                    }
+                    catch (IgniteException e) {
+                        // Exception may happen in non-failoversafe mode.
+                        if (failoverSafe)
+                            throw e;
+                    }
+                    finally {
+                        // Broken lock cannot be used in non-failoversafe mode.
+                        if(!lock.isBroken() || failoverSafe) {
+                            assertTrue(lock.isHeldByCurrentThread());
+
+                            lock.unlock();
+
+                            assertFalse(lock.isHeldByCurrentThread());
+                        }
+                        break;
+                    }
+                }
             }
+
+            fut.get();
+
+            for (Ignite g : G.allGrids())
+                assertFalse(g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false).isHeldByCurrentThread());
         }
     }
 
@@ -1069,6 +1173,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
          * @return Future.
          */
         IgniteInternalFuture<?> startChangingTopology(final IgniteClosure<Ignite, ?> cb) {
+            final AtomicInteger nodeIdx = new AtomicInteger(G.allGrids().size());
+
             return GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -1076,18 +1182,19 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             if (failed.get())
                                 return;
 
-                            String name = UUID.randomUUID().toString();
+                            int idx = nodeIdx.getAndIncrement();
+
+                            Thread.currentThread().setName("thread-" + getTestGridName(idx));
 
                             try {
-                                log.info("Start node: " + name);
+                                log.info("Start node: " + getTestGridName(idx));
 
-                                Ignite g = startGrid(name);
+                                Ignite g = startGrid(idx);
 
                                 cb.apply(g);
                             }
                             finally {
-                                if (i != TOP_CHANGE_CNT - 1)
-                                    stopGrid(name);
+                                stopGrid(idx);
                             }
                         }
                     }
@@ -1143,10 +1250,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 }
                             }
                             finally {
-                                if (i != TOP_CHANGE_CNT - 1) {
-                                    for (String name : names)
-                                        stopGrid(name);
-                                }
+                                for (String name : names)
+                                    stopGrid(name);
                             }
                         }
                     }

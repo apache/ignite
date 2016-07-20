@@ -66,7 +66,7 @@ public class DbMetadataParserTest extends AbstractSchemaImportTest {
 
         List<PojoField> fields = type.fields();
 
-        assertEquals("Value type should have 15 fields", 15, fields.size());
+        assertEquals("Value type should have 15 fields", 16, fields.size());
 
         Iterator<PojoField> fieldsIt = fields.iterator();
 

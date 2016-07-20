@@ -36,26 +36,12 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Creates classpath from the given configuration, or default classpath if given config is null.
         /// </summary>
         /// <param name="cfg">The configuration.</param>
-        /// <param name="forceTestClasspath">Append test directories even if <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
-        /// <returns>
-        /// Classpath string.
-        /// </returns>
-        public static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
-        {
-            return CreateClasspath(IgniteHome.Resolve(cfg), cfg, forceTestClasspath);
-        }
-
-        /// <summary>
-        /// Creates classpath from the given configuration, or default classpath if given config is null.
-        /// </summary>
-        /// <param name="ggHome">The home dir.</param>
-        /// <param name="cfg">The configuration.</param>
         /// <param name="forceTestClasspath">Append test directories even if
         ///     <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
-        internal static string CreateClasspath(string ggHome, IgniteConfiguration cfg, bool forceTestClasspath)
+        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
         {
             var cpStr = new StringBuilder();
 
@@ -66,6 +52,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (!cfg.JvmClasspath.EndsWith(";"))
                     cpStr.Append(';');
             }
+
+            var ggHome = IgniteHome.Resolve(cfg);
 
             if (!string.IsNullOrWhiteSpace(ggHome))
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);

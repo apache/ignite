@@ -21,6 +21,8 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * Set implementation based on on In-Memory Data Grid.
@@ -103,4 +105,26 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @return {@code True} if set was removed from cache {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Executes given job on collocated set on the node where the set is located
+     * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated sets.
+     *
+     * @param job Job which will be co-located with the set.
+     * @throws IgniteException If job failed.
+     */
+    public void affinityRun(IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job on collocated set on the node where the set is located
+     * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated sets.
+     *
+     * @param job Job which will be co-located with the set.
+     * @throws IgniteException If job failed.
+     */
+    public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
 }

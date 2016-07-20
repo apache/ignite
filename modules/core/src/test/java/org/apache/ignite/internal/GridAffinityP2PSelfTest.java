@@ -176,13 +176,13 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
             //Key 0 is mapped to partition 0, first node.
             //Key 1 is mapped to partition 1, second node.
             //key 2 is mapped to partition 0, first node because mapper substitutes key 2 with affinity key 0.
-            Map<ClusterNode, Collection<Integer>> map = g1.cluster().mapKeysToNodes(null, F.asList(0));
+            Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(null).mapKeysToNodes(F.asList(0));
 
             assertNotNull(map);
             assertEquals("Invalid map size: " + map.size(), 1, map.size());
             assertEquals(F.first(map.keySet()), first);
 
-            ClusterNode n1 = g1.cluster().mapKeyToNode(null, 1);
+            ClusterNode n1 = g1.affinity(null).mapKeyToNode(1);
 
             assertNotNull(n1);
 
@@ -191,7 +191,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
             assertNotNull(id1);
             assertEquals(second.id(), id1);
 
-            ClusterNode n2 = g1.cluster().mapKeyToNode(null, 2);
+            ClusterNode n2 = g1.affinity(null).mapKeyToNode(2);
 
             assertNotNull(n2);
 

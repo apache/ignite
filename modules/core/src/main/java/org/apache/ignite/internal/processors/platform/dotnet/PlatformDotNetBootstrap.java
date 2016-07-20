@@ -20,10 +20,22 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 
+import java.io.PrintStream;
+
 /**
  * Interop .Net bootstrap.
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
+    /** {@inheritDoc} */
+    @Override public void init() {
+        // Initialize console propagation.
+        // This call is idempotent, doing it on each node start is fine.
+        System.setOut(new PrintStream(new PlatformDotNetConsoleStream(false)));
+        System.setErr(new PrintStream(new PlatformDotNetConsoleStream(true)));
+
+        super.init();
+    }
+
     /** {@inheritDoc} */
     @Override protected PlatformAbstractConfigurationClosure closure(long envPtr) {
         return new PlatformDotNetConfigurationClosure(envPtr);

@@ -20,6 +20,7 @@ package org.apache.ignite.yarn;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -67,10 +70,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private long schedulerTimeout = TimeUnit.SECONDS.toMillis(1);
 
     /** Yarn configuration. */
-    private YarnConfiguration conf;
+    private final YarnConfiguration conf;
 
     /** Cluster properties. */
-    private ClusterProperties props;
+    private final ClusterProperties props;
 
     /** Network manager. */
     private NMClient nmClient;
@@ -79,7 +82,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
 
     /** Ignite path. */
-    private Path ignitePath;
+    private final Path ignitePath;
 
     /** Config path. */
     private Path cfgPath;
@@ -87,8 +90,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /** Hadoop file system. */
     private FileSystem fs;
 
+    /** Buffered tokens to be injected into newly allocated containers. */
+    private ByteBuffer allTokens;
+
     /** Running containers. */
-    private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
+    private final Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
      * @param ignitePath Hdfs path to ignite.
@@ -106,6 +112,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
             if (checkContainer(c)) {
                 try {
                     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+
+                    if (UserGroupInformation.isSecurityEnabled())
+                        // Set the tokens to the newly allocated container:
+                        ctx.setTokens(allTokens.duplicate());
 
                     Map<String, String> env = new HashMap<>(System.getenv());
 
@@ -137,8 +147,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                             + "cp -r ./libs/* ./ignite/*/libs/ || true && "
                             + "./ignite/*/bin/ignite.sh "
                             + "./ignite-config.xml"
-                            + " -J-Xmx" + c.getResource().getMemory() + "m"
-                            + " -J-Xms" + c.getResource().getMemory() + "m"
+                            + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
+                            + " -J-Xms" + ((int)props.memoryPerNode()) + "m"
                             + IgniteYarnUtils.YARN_LOG_OUT
                         ));
 
@@ -178,7 +188,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
-            || cont.getResource().getMemory() < props.memoryPerNode()) {
+            || cont.getResource().getMemory() < props.totalMemoryPerNode()) {
             log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
                 new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
                    cont.getResource().getMemory()});
@@ -192,10 +202,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /**
      * @return Address running nodes.
      */
-    private String getAddress(String address) {
+    private String getAddress(String addr) {
         if (containers.isEmpty()) {
-            if (address != null && !address.isEmpty())
-                return address + DEFAULT_PORT;
+            if (addr != null && !addr.isEmpty())
+                return addr + DEFAULT_PORT;
 
             return "";
         }
@@ -291,7 +301,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     // Resource requirements for worker containers.
                     Resource capability = Records.newRecord(Resource.class);
 
-                    capability.setMemory((int)props.memoryPerNode());
+                    capability.setMemory((int)props.totalMemoryPerNode());
                     capability.setVirtualCores((int)props.cpusPerNode());
 
                     for (int i = 0; i < props.instances() - runningCnt; ++i) {
@@ -302,7 +312,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                         rmClient.addContainerRequest(containerAsk);
 
                         log.log(Level.INFO, "Making request. Memory: {0}, cpu {1}.",
-                            new Object[]{props.memoryPerNode(), props.cpusPerNode()});
+                            new Object[]{props.totalMemoryPerNode(), props.cpusPerNode()});
                     }
                 }
 
@@ -329,7 +339,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private boolean checkAvailableResource() {
         Resource availableRes = rmClient.getAvailableResources();
 
-        return availableRes == null || availableRes.getMemory() >= props.memoryPerNode()
+        return availableRes == null || availableRes.getMemory() >= props.totalMemoryPerNode()
             && availableRes.getVirtualCores() >= props.cpusPerNode();
     }
 
@@ -337,6 +347,12 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      * @throws IOException
      */
     public void init() throws IOException {
+        if (UserGroupInformation.isSecurityEnabled()) {
+            Credentials cred = UserGroupInformation.getCurrentUser().getCredentials();
+
+            allTokens = IgniteYarnUtils.createTokenBuffer(cred);
+        }
+
         fs = FileSystem.get(conf);
 
         nmClient = NMClient.createNMClient();

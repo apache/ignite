@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -43,6 +27,19 @@ import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -52,9 +49,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private final BinaryContext ctx;
@@ -97,27 +91,37 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TYPE_ID_POS);
+        int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
+
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(off, size));
+
+            typeId = ctx.typeId(clsName);
+        }
+
+        return typeId;
     }
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TOTAL_LEN_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.HASH_CODE_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.SCHEMA_ID_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected BinarySchema createSchema() {
-        return reader(null).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -142,22 +146,24 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
+        return BinaryUtils.typeProxy(ctx, this);
+    }
 
-        return ctx.metadata(typeId());
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldName);
+        return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldId);
+        return (F) reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -166,20 +172,20 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         Object val;
 
         // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
@@ -307,12 +313,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx).unmarshalField(fieldName);
+        return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null).findFieldByName(fieldName);
+        return reader(null, false).findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -398,20 +404,26 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         throw new UnsupportedOperationException(); // To make sure it is not marshalled.
     }
 
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
     /**
      * @return Deserialized value.
      */
     private Object deserializeValue() {
-        return reader(null).deserialize();
+        return reader(null, true).deserialize();
     }
 
     /**
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
         stream.position(start);
@@ -419,6 +431,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         return new BinaryReaderExImpl(ctx,
             stream,
             ctx.configuration().getClassLoader(),
-            rCtx);
+            rCtx,
+            forUnmarshal);
     }
 }

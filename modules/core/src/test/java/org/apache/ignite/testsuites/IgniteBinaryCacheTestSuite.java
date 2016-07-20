@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicS
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorBinarySelfTest;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalOffheapExpiryPolicyTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
@@ -69,6 +71,7 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         ignoredTests.add(GridCacheOffHeapTieredAtomicSelfTest.class);
         ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
+        ignoredTests.add(IgniteCacheAtomicLocalOffheapExpiryPolicyTest.class);
         ignoredTests.add(GridCacheEntryMemorySizeSelfTest.class);
 
         // Tests that are not ready to be used with BinaryMarshaller
@@ -95,6 +98,7 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAffinityRoutingBinarySelfTest.class);
         suite.addTestSuite(GridBinaryCacheEntryMemorySizeSelfTest.class);
+        suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
 
         return suite;
     }

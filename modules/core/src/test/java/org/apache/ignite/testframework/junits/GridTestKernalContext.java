@@ -40,19 +40,28 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @param log Logger to use in context config.
      */
     public GridTestKernalContext(IgniteLogger log) throws IgniteCheckedException {
+        this(log, new IgniteConfiguration());
+    }
+
+    /**
+     * @param log Logger to use in context config.
+     * @param cfg Configuration to use in Test
+     */
+    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
         super(new GridLoggerProxy(log, null, null, null),
-            new IgniteKernal(null),
-            new IgniteConfiguration(),
-            new GridKernalGatewayImpl(null),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            U.allPluginProviders());
+                new IgniteKernal(null),
+                cfg,
+                new GridKernalGatewayImpl(null),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                U.allPluginProviders());
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 

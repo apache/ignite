@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -108,14 +107,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         #region Public IEnumerable methods
 
         /** <inheritdoc /> */
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public IEnumerator<T> GetEnumerator()
         {
             ThrowIfDisposed();
 
             if (_iterCalled)
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
-                    "GetEnumeartor() method has already been called.");
+                    "GetEnumerator() method has already been called.");
 
             if (_getAllCalled)
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 

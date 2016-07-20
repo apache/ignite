@@ -44,13 +44,13 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * </p>
  *
- * If you need to modify nested binary object you can get builder for nested object using
+ * If you need to modify nested binary object you can get an instance of a builder for nested binary object using
  * {@link #getField(String)}, changes made on nested builder will affect parent object,
  * for example:
  *
  * <pre name=code class=java>
  * BinaryObjectBuilder personBuilder = grid.binary().createBuilder(personBinaryObj);
- * BinaryObjectBuilder addressBuilder = personBuilder.setField("address");
+ * BinaryObjectBuilder addressBuilder = personBuilder.getField("address");
  *
  * addressBuilder.setField("city", "New York");
  *
@@ -60,13 +60,24 @@ import org.jetbrains.annotations.Nullable;
  * String city = personBinaryObj.getField("address").getField("city");
  * </pre>
  *
+ * <p>
+ * Make sure to set values for all the fields that an object from your domain model has.
+ * If you need to set null as a value use {@link #setField(String, Object, Class)} method directly specifying
+ * field's type.
+ * <p>
+ * If to follow this recommendation you'll reduce the size of internal metadata object that
+ * every binary object of a particular type has. Usually the metadata size grows because particular fields are not set
+ * to an instance of a binary object constructed with the builder. Every time when you construct an object
+ * setting only a subset of the fields the metadata object related to this type is expanded by the metadata
+ * processor which treats every new combination of the fields as the new version of the binary object.
+ *
  * @see org.apache.ignite.IgniteBinary#builder(String)
  * @see org.apache.ignite.IgniteBinary#builder(BinaryObject)
  */
 public interface BinaryObjectBuilder {
     /**
      * Returns value assigned to the specified field.
-     * If the value is a binary object instance of {@code BinaryObjectBuilder} will be returned,
+     * If the value is a binary object then an instance of {@code BinaryObjectBuilder} will be returned,
      * which can be modified.
      * <p>
      * Collections and maps returned from this method are modifiable.

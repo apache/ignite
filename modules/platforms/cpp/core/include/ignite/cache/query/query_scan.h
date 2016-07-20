@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::ScanQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SCAN
-#define _IGNITE_CACHE_QUERY_SCAN
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SCAN
+#define _IGNITE_CACHE_QUERY_QUERY_SCAN
 
 #include <stdint.h>
 #include <string>
@@ -29,11 +29,11 @@
 #include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {         
+        {
             /**
              * Scan query.
              */
@@ -41,13 +41,13 @@ namespace ignite
             {
             public:
                 /**
-                 * Constructor.
+                 * Default constructor.
                  */
                 ScanQuery() : part(-1), pageSize(1024), loc(false)
                 {
                     // No-op.
                 }
-                
+
                 /**
                  * Constructor.
                  *
@@ -57,7 +57,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-                
+
                 /**
                  * Get partition to scan.
                  *
@@ -117,7 +117,7 @@ namespace ignite
                 {
                     this->loc = loc;
                 }
-                
+
                 /**
                  * Write query info to the stream.
                  *
@@ -153,4 +153,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SCAN

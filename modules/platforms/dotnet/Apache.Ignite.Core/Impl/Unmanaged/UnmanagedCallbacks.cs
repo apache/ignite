@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,14 +21,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
-
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -54,6 +56,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
+        /** Console write delegate. */
+        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
+
+        /** Console write pointer. */
+        private static readonly void* ConsoleWritePtr =
+            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
+
         /** Unmanaged context. */
         private volatile UnmanagedContext _ctx;
 
@@ -70,13 +79,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon Ignite initialisation. */
+        /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
         private readonly GCHandle _thisHnd;
 
         /** Callbacks pointer. */
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
         /** Error type: generic. */
@@ -156,10 +166,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
         
-        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
+
+        private delegate void OnClientDisconnectedDelegate(void* target);
+        private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
+        private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
+        private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
+
+        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
         /// <summary>
         /// constructor.
@@ -240,7 +261,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
                 
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
+                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
+
+                onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
+                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+
+                affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
+                affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
+                affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
+                affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
+                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -275,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         if (_ignite != null)
                             cacheStore.Init(_ignite);
                         else
-                            _initActions.Add(g => cacheStore.Init(g));
+                            _initActions.Add(cacheStore.Init);
                     }
                 }
 
@@ -283,6 +313,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
             return SafeCall(() =>
@@ -603,7 +634,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr,
             byte keepBinary)
         {
             SafeCall(() =>
@@ -724,8 +756,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
+                    string stackTrace = reader.ReadString();
 
-                    Exception err = ExceptionUtils.GetException(errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -909,7 +942,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(svcPtr);
+
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return;
 
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -1024,13 +1062,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             // Allow context to be collected, which will cause resource cleanup in finalizer.
             _ctx = null;
+
+            // Notify grid
+            var ignite = _ignite;
+
+            if (ignite != null)
+                ignite.AfterNodeStop();
         }
         
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
-            int errMsgCharsLen, void* errData, int errDataLen)
+            int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
+            string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
 
             switch (errType)
             {
@@ -1040,13 +1085,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, 
+                            _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
-                    throw ExceptionUtils.GetException(errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
-                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
+                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg, stackTrace);
 
                 case ErrJvmAttach:
                     throw new IgniteException("Failed to attach to JVM.");
@@ -1056,8 +1102,123 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private void OnClientDisconnected(void* target)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientDisconnected();
+            });
+        }
+
+        private void OnClientReconnected(void* target, bool clusterRestarted)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
+        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
+        {
+            try
+            {
+                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+
+                var target = isErr ? Console.Error : Console.Out;
+
+                target.Write(str);
+
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
+            }
+        }
+
         #endregion
-        
+
+        #region AffinityFunction
+
+        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                    var func = reader.ReadObjectEx<IAffinityFunction>();
+
+                    ResourceProcessor.Inject(func, _ignite);
+
+                    var affBase = func as AffinityFunctionBase;
+
+                    if (affBase != null)
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(
+                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
+
+                    return _handleRegistry.Allocate(func);
+                }
+            });
+        }
+
+        private int AffinityFunctionPartition(void* target, long ptr, long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var key = _ignite.Marshaller.Unmarshal<object>(stream);
+
+                    return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
+                }
+            });
+        }
+
+        private void AffinityFunctionAssignPartitions(void* target, long ptr, long inMemPtr, long outMemPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                {
+                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(inStream));
+                    var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                    var parts = func.AssignPartitions(ctx);
+
+                    if (parts == null)
+                        throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
+
+                    using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
+                    {
+                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
+                    }
+                }
+            });
+        }
+
+        private void AffinityFunctionRemoveNode(void* target, long ptr, long memPtr)
+        {
+            SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+
+                    _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
+                }
+            });
+        }
+
+        private void AffinityFunctionDestroy(void* target, long ptr)
+        {
+            SafeCall(() =>
+            {
+                _handleRegistry.Release(ptr);
+            });
+        }
+
+        #endregion
+
         #region HELPERS
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -1159,6 +1320,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite = null;
             
             _handleRegistry.Close();
+        }
+
+        /// <summary>
+        /// Gets the console write handler.
+        /// </summary>
+        public static void* ConsoleWriteHandler
+        {
+            get { return ConsoleWritePtr; }
         }
     }
 }

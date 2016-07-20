@@ -139,7 +139,7 @@ public class IgfsServer {
         if (srvEndpoint.getPort() >= 0)
             igfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
-        hnd = new IgfsIpcHandler(igfsCtx);
+        hnd = new IgfsIpcHandler(igfsCtx, endpointCfg, mgmt);
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();

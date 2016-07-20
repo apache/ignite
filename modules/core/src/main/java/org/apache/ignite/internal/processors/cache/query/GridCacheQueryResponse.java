@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -122,11 +123,14 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (err != null)
+        if (err != null && errBytes == null)
             errBytes = ctx.marshaller().marshal(err);
 
-        metaDataBytes = marshalCollection(metadata, cctx);
-        dataBytes = marshalCollection(data, cctx);
+        if (metaDataBytes == null)
+            metaDataBytes = marshalCollection(metadata, cctx);
+
+        if (dataBytes == null)
+            dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
@@ -144,11 +148,14 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
-        data = unmarshalCollection(dataBytes, ctx, ldr);
+        if (metadata == null)
+            metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
+
+        if (data == null)
+            data = unmarshalCollection(dataBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -227,32 +228,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfOffheapIsDisabledAndMaxSpaceSizeIsGreater() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
-        g1IgfsCfg2.setMaxSpaceSize(999999999999999999L);
-
-        checkGridStartFails(g1Cfg, "Maximum IGFS space size cannot be greater that size of available heap", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfOffheapIsEnabledAndMaxSpaceSizeIsGreater() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
-        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
-            cc.setOffHeapMaxMemory(1000000);
-
-        g1IgfsCfg2.setMaxSpaceSize(999999999999999999L);
-
-        checkGridStartFails(g1Cfg,
-            "Maximum IGFS space size cannot be greater than size of available heap memory and offheap storage", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testLocalIfNonPrimaryModeAndHadoopFileSystemUriIsNull() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
@@ -439,6 +414,62 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         G.start(g1Cfg);
 
         checkGridStartFails(g2Cfg, "Path modes should be the same on all nodes in grid for IGFS", false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroEndpointTcpPort() throws Exception {
+        checkIvalidPort(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeEndpointTcpPort() throws Exception {
+        checkIvalidPort(-1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTooBigEndpointTcpPort() throws Exception {
+        checkIvalidPort(65536);
+    }
+
+    /**
+     * Check invalid port handling.
+     *
+     * @param port Port.
+     * @throws Exception If failed.
+     */
+    private void checkIvalidPort(int port) throws Exception {
+        final String failMsg = "IGFS endpoint TCP port is out of range";
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+
+        final String igfsCfgName = "igfs-cfg";
+        final IgfsIpcEndpointConfiguration igfsEndpointCfg = new IgfsIpcEndpointConfiguration();
+        igfsEndpointCfg.setPort(port);
+        g1IgfsCfg1.setName(igfsCfgName);
+        g1IgfsCfg1.setIpcEndpointConfiguration(igfsEndpointCfg);
+
+        checkGridStartFails(g1Cfg, failMsg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidEndpointThreadCount() throws Exception {
+        final String failMsg = "IGFS endpoint thread count must be positive";
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+
+        final String igfsCfgName = "igfs-cfg";
+        final IgfsIpcEndpointConfiguration igfsEndpointCfg = new IgfsIpcEndpointConfiguration();
+        igfsEndpointCfg.setThreadCount(0);
+        g1IgfsCfg1.setName(igfsCfgName);
+        g1IgfsCfg1.setIpcEndpointConfiguration(igfsEndpointCfg);
+
+        checkGridStartFails(g1Cfg, failMsg, true);
     }
 
     /**

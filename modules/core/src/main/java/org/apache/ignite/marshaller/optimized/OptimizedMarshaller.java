@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -274,9 +273,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     @SuppressWarnings({"TypeParameterExtendsFinalClass", "ErrorNotRethrown"})
     public static boolean available() {
         try {
-            Unsafe unsafe = GridUnsafe.unsafe();
-
-            Class<? extends Unsafe> unsafeCls = unsafe.getClass();
+            Class<? extends Unsafe> unsafeCls = Unsafe.class;
 
             unsafeCls.getMethod("allocateInstance", Class.class);
             unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);

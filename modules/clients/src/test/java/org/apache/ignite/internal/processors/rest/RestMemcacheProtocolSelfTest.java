@@ -205,8 +205,8 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMetrics() throws Exception {
-        grid().cache(null).mxBean().clear();
-        grid().cache(CACHE_NAME).mxBean().clear();
+        grid().cache(null).localMxBean().clear();
+        grid().cache(CACHE_NAME).localMxBean().clear();
 
         grid().cache(null).put("key1", "val");
         grid().cache(null).put("key2", "val");

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary type configuration.
@@ -47,6 +48,8 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="type">Type.</param> 
         public BinaryTypeConfiguration(Type type)
         {
+            IgniteArgumentCheck.NotNull(type, "type");
+
             TypeName = type.AssemblyQualifiedName;
             IsEnum = type.IsEnum;
         }
@@ -57,6 +60,8 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="cfg">Configuration to copy.</param>
         public BinaryTypeConfiguration(BinaryTypeConfiguration cfg)
         {
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
+
             AffinityKeyFieldName = cfg.AffinityKeyFieldName;
             IdMapper = cfg.IdMapper;
             NameMapper = cfg.NameMapper;

@@ -22,137 +22,24 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import javax.cache.CacheException;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Session listener for web sessions caching.
  */
 class WebSessionListener {
-    /** */
-    private static final long RETRY_DELAY = 1;
-
-    /** Cache. */
-    private final IgniteCache<String, WebSession> cache;
-
-    /** Maximum retries. */
-    private final int retries;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
     /**
-     * @param ignite Grid.
-     * @param cache Cache.
-     * @param retries Maximum retries.
+     * Creates new instance of attribute processor. Used for compatibility.
+     *
+     * @param updates Updates.
+     * @return New instance of attribute processor.
      */
-    WebSessionListener(Ignite ignite, IgniteCache<String, WebSession> cache, int retries) {
-        assert ignite != null;
-        assert cache != null;
-
-        this.cache = cache;
-        this.retries = retries > 0 ? retries : 1;
-
-        log = ignite.log();
-    }
-
-    /**
-     * @param sesId Session ID.
-     */
-    public void destroySession(String sesId) {
-        assert sesId != null;
-
-        try {
-            if (cache.remove(sesId) && log.isDebugEnabled())
-                log.debug("Session destroyed: " + sesId);
-        }
-        catch (CacheException e) {
-            U.error(log, "Failed to remove session: " + sesId, e);
-        }
-    }
-
-    /**
-     * @param sesId Session ID.
-     * @param updates Updates list.
-     * @param maxInactiveInterval Max session inactive interval.
-     */
-    @SuppressWarnings("unchecked")
-    public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
-        assert sesId != null;
-        assert updates != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Session attributes updated [id=" + sesId + ", updates=" + updates + ']');
-
-        try {
-            for (int i = 0; i < retries; i++) {
-                try {
-                    IgniteCache<String, WebSession> cache0;
-
-                    if (maxInactiveInterval > 0) {
-                        long ttl = maxInactiveInterval * 1000;
-
-                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
-
-                        cache0 = cache.withExpiryPolicy(plc);
-                    }
-                    else
-                        cache0 = cache;
-
-                    cache0.invoke(sesId, new AttributesProcessor(updates));
-
-                    break;
-                }
-                catch (CacheException | IgniteException e) {
-                    if (i == retries - 1) {
-                        U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                            sesId + ", retries=" + retries + ']');
-                    }
-                    else {
-                        U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
-
-                        IgniteFuture<?> retryFut = null;
-
-                        if (X.hasCause(e, ClusterTopologyException.class)) {
-                            ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
-
-                            assert cause != null : e;
-
-                            retryFut = cause.retryReadyFuture();
-                        }
-
-                        if (retryFut != null)
-                            retryFut.get();
-                        else
-                            U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(WebSessionListener.class, this);
+    public static EntryProcessor<String, WebSession, Void> newAttributeProcessor(
+        final Collection<T2<String, Object>> updates) {
+        return new AttributesProcessor(updates);
     }
 
     /**
@@ -186,7 +73,9 @@ class WebSessionListener {
             if (!entry.exists())
                 return null;
 
-            WebSession ses = new WebSession(entry.getValue());
+            WebSession ses0 = entry.getValue();
+
+            WebSession ses = new WebSession(ses0.getId(), ses0);
 
             for (T2<String, Object> update : updates) {
                 String name = update.get1();

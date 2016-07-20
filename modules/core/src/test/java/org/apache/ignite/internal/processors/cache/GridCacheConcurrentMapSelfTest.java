@@ -27,7 +27,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -165,17 +164,11 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 Iterator<Cache.Entry<Integer, String>> it = null;
 
-                boolean created = false;
-
                 for (int i = start; i < start + cnt; i++) {
                     int key = i % cnt;
 
-                    if (!created && i >= start + tid * 100) {
-                        if (it == null)
-                            it = c.iterator();
-
-                        created = true;
-                    }
+                    if (it == null && i >= start + tid * 100)
+                        it = c.iterator();
 
                     c.put(key, Integer.toString(key));
 
@@ -342,7 +335,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, Runtime.getRuntime().availableProcessors());
+            }, Math.min(16, Runtime.getRuntime().availableProcessors()));
 
             for (int r = 0; r < 10; r++) {
                 System.gc();

@@ -226,6 +226,8 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         }
 
         startGrids(4);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

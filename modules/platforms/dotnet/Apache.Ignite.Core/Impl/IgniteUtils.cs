@@ -19,6 +19,9 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -32,6 +35,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -45,11 +49,18 @@ namespace Apache.Ignite.Core.Impl
         /** Lookup paths. */
         private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
 
-        /** File: jvm.dll. */
-        private const string FileJvmDll = "jvm.dll";
+        /** Registry lookup paths. */
+        private static readonly string[] JreRegistryKeys =
+        {
+            @"Software\JavaSoft\Java Runtime Environment",
+            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+        };
 
-        /** File: Ignite.Common.dll. */
-        internal const string FileIgniteJniDll = "ignite.common.dll";
+        /** File: jvm.dll. */
+        internal const string FileJvmDll = "jvm.dll";
+
+        /** File: Ignite.Jni.dll. */
+        internal const string FileIgniteJniDll = "ignite.jni.dll";
         
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
@@ -64,6 +75,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Initializes the <see cref="IgniteUtils"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static IgniteUtils()
         {
             TryCleanTempDirectories();
@@ -72,10 +85,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets thread local random.
         /// </summary>
-        /// <returns>Thread local random.</returns>
-        private static Random ThreadLocalRandom()
+        /// <value>Thread local random.</value>
+        public static Random ThreadLocalRandom
         {
-            return _rnd ?? (_rnd = new Random());
+            get { return _rnd ?? (_rnd = new Random()); }
         }
 
         /// <summary>
@@ -89,7 +102,7 @@ namespace Apache.Ignite.Core.Impl
             if (cnt > 1) {
                 List<T> res = new List<T>(list);
 
-                Random rnd = ThreadLocalRandom();
+                Random rnd = ThreadLocalRandom;
 
                 while (cnt > 1)
                 {
@@ -128,8 +141,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create new instance of specified class.
         /// </summary>
         /// <param name="typeName">Class name</param>
+        /// <param name="props">Properties to set.</param>
         /// <returns>New Instance.</returns>
-        public static T CreateInstance<T>(string typeName)
+        public static T CreateInstance<T>(string typeName, IEnumerable<KeyValuePair<string, object>> props = null)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -138,7 +152,12 @@ namespace Apache.Ignite.Core.Impl
             if (type == null)
                 throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return (T) Activator.CreateInstance(type);
+            var res =  (T) Activator.CreateInstance(type);
+
+            if (props != null)
+                SetProperties(res, props);
+
+            return res;
         }
 
         /// <summary>
@@ -146,7 +165,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target object.</param>
         /// <param name="props">Properties.</param>
-        public static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
+        private static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
         {
             if (props == null)
                 return;
@@ -180,8 +199,8 @@ namespace Apache.Ignite.Core.Impl
                 if (errCode == 0)
                     return;
 
-                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, errorCode={2}]", 
-                    dllPath.Key, dllPath.Value, errCode));
+                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
+                    dllPath.Key, dllPath.Value, FormatWin32Error(errCode)));
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options
@@ -200,6 +219,23 @@ namespace Apache.Ignite.Core.Impl
 
             throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0}:\n{1}", 
                 FileJvmDll, combinedMessage));
+        }
+
+        /// <summary>
+        /// Formats the Win32 error.
+        /// </summary>
+        private static string FormatWin32Error(int errorCode)
+        {
+            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
+            {
+                var mode = Environment.Is64BitProcess ? "x64" : "x86";
+
+                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
+                                     "This is often caused by x64/x86 mismatch. " +
+                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
+
+            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
         }
 
         /// <summary>
@@ -253,19 +289,48 @@ namespace Apache.Ignite.Core.Impl
                 foreach (var path in JvmDllLookupPaths)
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+
+            // Get paths from the Windows Registry
+            foreach (var regPath in JreRegistryKeys)
+            {
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                {
+                    if (jSubKey == null)
+                        continue;
+
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                    {
+                        using (var verKey = jSubKey.OpenSubKey(ver))
+                        {
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
         /// </summary>
         /// <param name="resourceName">Resource name.</param>
-        /// <returns>Path to a temp file with an unpacked resource.</returns>
-        public static string UnpackEmbeddedResource(string resourceName)
+        /// <param name="fileName">Name of the resulting file.</param>
+        /// <returns>
+        /// Path to a temp file with an unpacked resource.
+        /// </returns>
+        public static string UnpackEmbeddedResource(string resourceName, string fileName)
         {
             var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
                 .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
-            return WriteResourceToTempFile(dllRes, resourceName);
+            return WriteResourceToTempFile(dllRes, fileName);
         }
 
         /// <summary>
@@ -413,6 +478,26 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Writes the node collection to a stream.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="nodes">The nodes.</param>
+        public static void WriteNodes(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
+        {
+            Debug.Assert(writer != null);
+
+            if (nodes != null)
+            {
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                    writer.WriteGuid(node.Id);
+            }
+            else
+                writer.WriteInt(-1);
         }
     }
 }

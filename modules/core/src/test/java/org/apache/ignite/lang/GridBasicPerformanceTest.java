@@ -50,7 +50,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ThreadLocalRandom8;
-import sun.misc.Unsafe;
 
 /**
  * Tests synchronization performance vs. lock.
@@ -948,16 +947,14 @@ public class GridBasicPerformanceTest {
 
         GridTimer t = new GridTimer("unsafe");
 
-        Unsafe unsafe = GridUnsafe.unsafe();
-
         int mem = 1024;
 
         for (int i = 0; i < MAX; i++) {
-            addrs[i] = unsafe.allocateMemory(mem);
+            addrs[i] = GridUnsafe.allocateMemory(mem);
 
-            unsafe.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
+            GridUnsafe.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
 
-            v = unsafe.getByte(addrs[i] + RAND.nextInt(mem));
+            v = GridUnsafe.getByte(addrs[i] + RAND.nextInt(mem));
         }
 
         X.println("Unsafe [time=" + t.stop() + "ms, v=" + v + ']');
@@ -965,7 +962,7 @@ public class GridBasicPerformanceTest {
         Thread.sleep(5000L);
 
         for (long l : addrs)
-            unsafe.freeMemory(l);
+            GridUnsafe.freeMemory(l);
     }
 
 

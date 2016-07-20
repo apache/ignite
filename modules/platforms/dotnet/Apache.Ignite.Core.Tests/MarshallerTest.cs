@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var grid = Ignition.Start("config\\marshaller-default.xml"))
             {
-                var cache = grid.GetOrCreateCache<int, int>(null);
+                var cache = grid.GetOrCreateCache<int, int>((string) null);
 
                 cache.Put(1, 1);
 
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var grid = Ignition.Start("config\\marshaller-explicit.xml"))
             {
-                var cache = grid.GetOrCreateCache<int, int>(null);
+                var cache = grid.GetOrCreateCache<int, int>((string) null);
 
                 cache.Put(1, 1);
 

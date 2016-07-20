@@ -157,7 +157,12 @@ public class HadoopJobTracker extends HadoopComponent {
 
         assert jobCls == null;
 
-        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId));
+        String[] libNames = null;
+
+        if (ctx.configuration() != null)
+            libNames = ctx.configuration().getNativeLibraryNames();
+
+        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId), libNames);
 
         try {
             jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());
@@ -255,7 +260,8 @@ public class HadoopJobTracker extends HadoopComponent {
             },
             null,
             true,
-            true
+            true,
+            false
         );
 
         ctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
@@ -726,6 +732,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param jobId  Job ID.
      * @param plan Map-reduce plan.
      */
+    @SuppressWarnings({"unused", "ConstantConditions" })
     private void printPlan(HadoopJobId jobId, HadoopMapReducePlan plan) {
         log.info("Plan for " + jobId);
 
@@ -884,6 +891,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
                     finishFut.onDone(jobId, meta.failCause());
                 }
+
+                assert job != null;
 
                 if (ctx.jobUpdateLeader())
                     job.cleanupStagingDirectory();
@@ -1051,7 +1060,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobCls, jobId, log);
+            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames());
 
             job.initialize(false, ctx.localNodeId());
 
@@ -1580,7 +1589,10 @@ public class HadoopJobTracker extends HadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(HadoopJobMetadata meta, HadoopJobMetadata cp) {
-            assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta;
+            final HadoopJobPhase currPhase = meta.phase();
+
+            assert currPhase == PHASE_CANCELLING || currPhase == PHASE_COMPLETE
+                    || err != null: "Invalid phase for cancel: " + currPhase;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 
@@ -1598,7 +1610,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            cp.phase(PHASE_CANCELLING);
+            if (currPhase != PHASE_COMPLETE && currPhase != PHASE_CANCELLING)
+                cp.phase(PHASE_CANCELLING);
 
             if (err != null)
                 cp.failCause(err);
@@ -1662,7 +1675,7 @@ public class HadoopJobTracker extends HadoopComponent {
             if (val != null)
                 e.setValue(val);
             else
-                e.remove();;
+                e.remove();
 
             return null;
         }

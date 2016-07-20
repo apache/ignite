@@ -19,27 +19,30 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 
 import java.util.ArrayList;
@@ -90,7 +93,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
-        // Check marshaller
+        // Check marshaller.
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
@@ -108,14 +111,37 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (bCfg == null) {
             bCfg = new BinaryConfiguration();
 
-            bCfg.setCompactFooter(false);
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
-        }
 
-        if (bCfg.isCompactFooter())
-            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
-                " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
+            dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
+                "note that binary name mapper is set to " + bCfg.getNameMapper()
+                + " and binary ID mapper is set to " + bCfg.getIdMapper()
+                + " (other nodes must have the same binary name and ID mapper types)."));
+        }
+        else {
+            BinaryNameMapper nameMapper = bCfg.getNameMapper();
+
+            if (nameMapper == null) {
+                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
+                    bCfg.getNameMapper()
+                    + " (other nodes must have the same binary name mapper type)."));
+            }
+
+            BinaryIdMapper idMapper = bCfg.getIdMapper();
+
+            if (idMapper == null) {
+                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
+                    bCfg.getIdMapper()
+                    + " (other nodes must have the same binary ID mapper type)."));
+            }
+        }
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
@@ -145,16 +171,18 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      */
     @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
-        this.cfg = igniteCfg;
+        cfg = igniteCfg;
 
         try (PlatformMemory outMem = memMgr.allocate()) {
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                BinaryRawWriterEx writer = marshaller().writer(out);
+                GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
+                BinaryRawWriterEx writer = marshaller.writer(out);
 
-                PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
+                PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
+                // Write .NET beans
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
                 writer.writeInt(beans.size());
@@ -164,12 +192,22 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     writer.writeMap(bean.getProperties());
                 }
 
+                // Write .NET affinity funcs
+                List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
+
+                writer.writeInt(affFuncs.size());
+
+                for (PlatformDotNetAffinityFunction func : affFuncs) {
+                    writer.writeString(func.getTypeName());
+                    writer.writeMap(func.getProperties());
+                }
+
                 out.synchronize();
 
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(inMem.input());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -179,9 +217,12 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(PlatformInputStream in) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
+
+        // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
 
@@ -213,6 +254,14 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 cfg.setLifecycleBeans(mergedBeans);
             }
         }
+
+        // Process affinity functions
+        List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
+
+        if (!affFuncs.isEmpty()) {
+            for (PlatformDotNetAffinityFunction aff : affFuncs)
+                aff.init(PlatformConfigurationUtils.readAffinityFunction(in));
+        }
     }
 
     /**
@@ -235,26 +284,23 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     }
 
     /**
-     * Create binary marshaller.
+     * Find .NET affinity functions in configuration.
      *
-     * @return Marshaller.
+     * @param cfg Configuration.
+     * @return affinity functions.
      */
-    @SuppressWarnings("deprecation")
-    private static GridBinaryMarshaller marshaller() {
-        try {
-            BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+    private static List<PlatformDotNetAffinityFunction> affinityFunctions(IgniteConfiguration cfg) {
+        List<PlatformDotNetAffinityFunction> res = new ArrayList<>();
 
-            BinaryMarshaller marsh = new BinaryMarshaller();
+        CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
-            marsh.setContext(new MarshallerContextImpl(null));
-
-            ctx.configure(marsh, new IgniteConfiguration());
-
-            return new GridBinaryMarshaller(ctx);
+        if (cacheCfg != null) {
+            for (CacheConfiguration ccfg : cacheCfg) {
+                if (ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction)
+                    res.add((PlatformDotNetAffinityFunction)ccfg.getAffinity());
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+
+        return res;
     }
 }

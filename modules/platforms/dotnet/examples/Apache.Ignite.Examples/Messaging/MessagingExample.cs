@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Apache.Ignite.Core;
 using Apache.Ignite.ExamplesDll.Messaging;
@@ -29,7 +28,7 @@ namespace Apache.Ignite.Examples.Messaging
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder;
     /// 2) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 3) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 4) Start example (F5 or Ctrl+F5).
@@ -42,13 +41,7 @@ namespace Apache.Ignite.Examples.Messaging
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 var remotes = ignite.GetCluster().ForRemotes();
 

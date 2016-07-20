@@ -166,8 +166,9 @@ namespace Apache.Ignite.Core.Transactions
         }
 
         /// <summary>
-        /// Timeout value in milliseconds for this transaction. If transaction times
+        /// Timeout for this transaction. If transaction times
         /// out prior to it's completion, an exception will be thrown.
+        /// <see cref="TimeSpan.Zero"/> for infinite timeout.
         /// </summary>
         TimeSpan Timeout
         {

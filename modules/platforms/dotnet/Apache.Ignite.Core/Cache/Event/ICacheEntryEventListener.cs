@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Event
     /// <summary>
     /// Cache entry event listener.
     /// </summary>
+    // ReSharper disable TypeParameterCanBeVariant
     public interface ICacheEntryEventListener<TK, TV>
     {
         /// <summary>

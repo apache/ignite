@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -104,6 +105,7 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Common abstract test for Ignite tests.
@@ -151,7 +153,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     /** Starting grid name. */
-    protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+    protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
     /**
      *
@@ -204,7 +206,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected <T> T allocateInstance(Class<T> cls) throws Exception {
-        return (T)GridUnsafe.unsafe().allocateInstance(cls);
+        return (T)GridUnsafe.allocateInstance(cls);
     }
 
     /**
@@ -213,7 +215,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @Nullable protected <T> T allocateInstance0(Class<T> cls) {
         try {
-            return (T)GridUnsafe.unsafe().allocateInstance(cls);
+            return (T)GridUnsafe.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             e.printStackTrace();
@@ -450,6 +452,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cfg Configuration to use in Test
+     * @return Test kernal context.
+     */
+    protected GridTestKernalContext newContext(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new GridTestKernalContext(log(), cfg);
+    }
+
+    /**
      * Called before execution of every test method in class.
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
@@ -474,7 +484,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        // Will clean and re-create marshaller directory from scratch.
+        U.resolveWorkDirectory("marshaller", true);
     }
 
     /**
@@ -518,7 +529,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+            info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -551,7 +562,7 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        info(">>> Starting test: " + getName() + " <<<");
+        info(">>> Starting test: " + testDescription() + " <<<");
 
         try {
             beforeTest();
@@ -568,6 +579,20 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         ts = System.currentTimeMillis();
+    }
+
+    /**
+     * @return Test description.
+     */
+    protected String testDescription() {
+        return GridTestUtils.fullSimpleName(getClass()) + "#" + getName();
+    }
+
+    /**
+     * @return Test class description.
+     */
+    protected String testClassDescription() {
+        return GridTestUtils.fullSimpleName(getClass());
     }
 
     /**
@@ -728,11 +753,32 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
+    }
+    /**
+     * Starts new grid with given name.
+     *
+     * @param gridName Grid name.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
         if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
 
             try {
-                return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+                Ignite node = IgnitionEx.start(cfg, ctx);
+
+                IgniteConfiguration nodeCfg = node.configuration();
+
+                log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
+                    + ", marshaller=" + nodeCfg.getMarshaller()
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
+
+                return node;
             }
             finally {
                 startingGrid.set(null);
@@ -1026,6 +1072,9 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
         URL cfgLocation = U.resolveIgniteUrl(springCfgPath);
 
+        if (cfgLocation == null)
+            cfgLocation = U.resolveIgniteUrl(springCfgPath, false);
+
         assert cfgLocation != null;
 
         ApplicationContext springCtx;
@@ -1138,6 +1187,18 @@ public abstract class GridAbstractTest extends TestCase {
 
                 bCfg.setCompactFooter(false);
             }
+        }
+
+        if (Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
+
+            if (bCfg == null) {
+                bCfg = new BinaryConfiguration();
+
+                cfg.setBinaryConfiguration(bCfg);
+            }
+
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
         }
 
         if (gridName != null && gridName.matches(".*\\d")) {
@@ -1350,7 +1411,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        info(">>> Stopping test: " + getName() + " in " + dur + " ms <<<");
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         TestCounters cntrs = getTestCounters();
 
@@ -1365,7 +1426,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+                info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
                 TestCounters counters = getTestCounters();
 
