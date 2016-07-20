@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
         }
-        
+
         /// <summary>
         /// After test.
         /// </summary>
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
             var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
             Assert.IsTrue(e.InnerException.Message.StartsWith(
-                    "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
+                "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             grid.Dispose();
 
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateExceptionSerialization(new CachePartialUpdateException("Msg",
                 new object[]
                 {
-                    new SerializableEntry(1), 
+                    new SerializableEntry(1),
                     new SerializableEntry(2),
                     new SerializableEntry(3)
                 }));
@@ -135,17 +135,17 @@ namespace Apache.Ignite.Core.Tests
             stream.Seek(0, SeekOrigin.Begin);
 
             var ex0 = (Exception) formatter.Deserialize(stream);
-                
+
             var updateEx = ((CachePartialUpdateException) ex);
 
             try
             {
                 Assert.AreEqual(updateEx.GetFailedKeys<object>(),
-                    ((CachePartialUpdateException)ex0).GetFailedKeys<object>());
+                    ((CachePartialUpdateException) ex0).GetFailedKeys<object>());
             }
             catch (Exception e)
             {
-                if (typeof (IgniteException) != e.GetType())
+                if (typeof(IgniteException) != e.GetType())
                     throw;
             }
 
@@ -198,6 +198,24 @@ namespace Apache.Ignite.Core.Tests
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
             Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+        }
+
+        /// <summary>
+        /// Tests that invalid configuration parameter results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidConfig()
+        {
+            var disco = TestUtils.GetStaticDiscovery();
+            disco.SocketTimeout = TimeSpan.FromSeconds(-1);  // set invalid timeout
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DiscoverySpi = disco
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("SPI parameter failed condition check: sockTimeout > 0"));
         }
 
         /// <summary>
