@@ -25,11 +25,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -44,6 +47,8 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -62,6 +67,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ccfg.setName("cache*");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(1);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -70,7 +76,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 3 * 60 * 1000L;
+        return 5 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */
@@ -96,8 +102,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                     final AtomicInteger idx = new AtomicInteger();
 
                     GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
+                        @Override public Void call() throws Exception {
                             int node = idx.getAndIncrement();
 
                             Ignite ignite = startGrid(node);

@@ -71,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -816,6 +817,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
+        if (fastFinish()) {
+            state(PREPARING);
+            state(PREPARED);
+            state(COMMITTING);
+
+            cctx.tm().fastFinishTx(this, true);
+
+            state(COMMITTED);
+
+            return new GridFinishedFuture<>((IgniteInternalTx)this);
+        }
+
         prepareAsync();
 
         GridNearTxFinishFuture fut = commitFut.get();
@@ -859,6 +872,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
+
+        if (fastFinish()) {
+            state(PREPARING);
+            state(PREPARED);
+            state(ROLLING_BACK);
+
+            cctx.tm().fastFinishTx(this, false);
+
+            state(ROLLED_BACK);
+
+            return new GridFinishedFuture<>((IgniteInternalTx)this);
+        }
 
         GridNearTxFinishFuture fut = rollbackFut.get();
 
@@ -905,6 +930,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         }
 
         return fut;
+    }
+
+    /**
+     * @return {@code True} if 'fast finish' path can be used for transaction completion.
+     */
+    private boolean fastFinish() {
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
     }
 
     /**
@@ -1106,16 +1138,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys.
-     * @param implicit Implicit flag.
+     * @param retval Return value flag.
      * @param read Read flag.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
-        boolean implicit,
+        boolean retval,
         boolean read,
         long accessTtl,
         boolean skipStore,
@@ -1139,12 +1172,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys: " + keys);
 
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
         IgniteInternalFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
-            lockTimeout(),
+            timeout,
             this,
             isInvalidate(),
             read,
-            /*retval*/false,
+            retval,
             isolation,
             accessTtl,
             CU.empty0(),

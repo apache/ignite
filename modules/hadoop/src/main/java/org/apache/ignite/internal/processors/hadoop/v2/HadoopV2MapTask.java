@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.map.WrappedMapper;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 
@@ -48,26 +44,17 @@ public class HadoopV2MapTask extends HadoopV2Task {
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void run0(HadoopV2TaskContext taskCtx) throws IgniteCheckedException {
-        HadoopInputSplit split = info().inputSplit();
-
-        InputSplit nativeSplit;
-
-        if (split instanceof HadoopFileBlock) {
-            HadoopFileBlock block = (HadoopFileBlock)split;
-
-            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), null);
-        }
-        else
-            nativeSplit = (InputSplit)taskCtx.getNativeSplit(split);
-
-        assert nativeSplit != null;
-
         OutputFormat outputFormat = null;
         Exception err = null;
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
         try {
+            InputSplit nativeSplit = hadoopContext().getInputSplit();
+
+            if (nativeSplit == null)
+                throw new IgniteCheckedException("Input split cannot be null.");
+
             InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(),
                 hadoopContext().getConfiguration());
 

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -157,12 +159,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+    protected static <K, V> GridCacheAdapter<K, V> internalCache0(IgniteCache<K, V> cache) {
         if (isMultiJvmObject(cache))
-            throw new UnsupportedOperationException("Oparetion can't be supported automatically for multi jvm " +
+            throw new UnsupportedOperationException("Operation can't be supported automatically for multi jvm " +
                 "(send closure instead).");
 
         return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+        return internalCache0(cache);
     }
 
     /**
@@ -416,15 +426,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
-        awaitPartitionMapExchange(false);
+        awaitPartitionMapExchange(false, false);
     }
 
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
+     * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @throws InterruptedException If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    protected void awaitPartitionMapExchange(boolean waitEvicts) throws InterruptedException {
+    protected void awaitPartitionMapExchange(boolean waitEvicts, boolean waitNode2PartUpdate) throws InterruptedException {
+        long timeout = 30_000;
+
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 
@@ -468,7 +481,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 if (affNodes.size() != owners.size() || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() == GridDhtPartitionState.RENTING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     LT.warn(log(), null, "Waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
@@ -501,7 +514,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                if (System.currentTimeMillis() - start > 30_000) {
+                                if (System.currentTimeMillis() - start > timeout) {
                                     U.dumpThreads(log);
 
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
@@ -524,6 +537,46 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) + "ms]");
 
                             break;
+                        }
+                    }
+
+                    if (waitNode2PartUpdate) {
+                        long start = System.currentTimeMillis();
+
+                        boolean failed = true;
+
+                        while (failed) {
+                            failed = false;
+
+                            for (GridDhtPartitionMap2 pMap : top.partitionMap(true).values()) {
+                                if (failed)
+                                    break;
+
+                                for (Map.Entry entry : pMap.entrySet()) {
+                                    if (System.currentTimeMillis() - start > timeout) {
+                                        U.dumpThreads(log);
+
+                                        throw new IgniteException("Timeout of waiting for partition state update [" +
+                                            "grid=" + g.name() +
+                                            ", cache=" + cfg.getName() +
+                                            ", cacheId=" + dht.context().cacheId() +
+                                            ", topVer=" + top.topologyVersion() +
+                                            ", locNode=" + g.cluster().localNode() + ']');
+                                    }
+
+                                    if (entry.getValue() != GridDhtPartitionState.OWNING) {
+                                        LT.warn(log(), null,
+                                            "Waiting for correct partition state, should be OWNING [state=" +
+                                                entry.getValue() + "]");
+
+                                        Thread.sleep(200); // Busy wait.
+
+                                        failed = true;
+
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -941,7 +994,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @return Near cache for key.
      */
-    protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
+    protected <K, V> IgniteCache<K, V> primaryCache(Object key, String cacheName) {
         return primaryNode(key, cacheName).cache(cacheName);
     }
 

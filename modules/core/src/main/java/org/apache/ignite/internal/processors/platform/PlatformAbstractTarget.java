@@ -25,8 +25,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -184,25 +183,23 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
+        listenFutureAndGet(futId, typ);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
+        listenFutureForOperationAndGet(futId, typ, opId);
     }
 
-    /**
-     * Get current future with proper exception conversions.
-     *
-     * @return Future.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
-        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
+    }
 
-        return fut.internalFuture();
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
+            throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -211,8 +208,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return current future.
      * @throws IgniteCheckedException
      */
-    protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + this.getClass());
+    protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
     /**
@@ -221,7 +218,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param opId Operation id.
      * @return A custom writer for given op id.
      */
-    protected @Nullable PlatformFutureUtils.Writer futureWriter(int opId){
+    @Nullable protected PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
     }
 

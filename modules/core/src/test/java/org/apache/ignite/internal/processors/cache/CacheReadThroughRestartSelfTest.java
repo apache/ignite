@@ -85,6 +85,20 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testReadThroughInTx() throws Exception {
+        testReadThroughInTx(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReadEntryThroughInTx() throws Exception {
+        testReadThroughInTx(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testReadThroughInTx(boolean needVer) throws Exception {
         IgniteCache<String, Integer> cache = grid(1).cache(null);
 
         for (int k = 0; k < 1000; k++)
@@ -104,7 +118,14 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
                     for (int k = 0; k < 1000; k++) {
                         String key = "key" + k;
 
-                        assertNotNull("Null value for key: " + key, cache.get(key));
+                        if (needVer) {
+                            assertNotNull("Null value for key: " + key, cache.getEntry(key));
+                            assertNotNull("Null value for key: " + key, cache.getEntry(key));
+                        }
+                        else {
+                            assertNotNull("Null value for key: " + key, cache.get(key));
+                            assertNotNull("Null value for key: " + key, cache.get(key));
+                        }
                     }
 
                     tx.commit();
@@ -117,6 +138,20 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
+        testReadThrough(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReadEntryThrough() throws Exception {
+        testReadThrough(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testReadThrough(boolean needVer) throws Exception {
         IgniteCache<String, Integer> cache = grid(1).cache(null);
 
         for (int k = 0; k < 1000; k++)
@@ -132,8 +167,10 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         for (int k = 0; k < 1000; k++) {
             String key = "key" + k;
-
-            assertNotNull("Null value for key: " + key, cache.get(key));
+            if (needVer)
+                assertNotNull("Null value for key: " + key, cache.getEntry(key));
+            else
+                assertNotNull("Null value for key: " + key, cache.get(key));
         }
     }
 }

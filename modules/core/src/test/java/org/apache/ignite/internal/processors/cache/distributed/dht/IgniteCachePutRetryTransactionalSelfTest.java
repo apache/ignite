@@ -88,16 +88,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void testGetAndPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -193,6 +183,64 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
+        ignite(0).createCache(cacheConfiguration(TestMemoryMode.HEAP, false));
+
+        final AtomicBoolean finished = new AtomicBoolean();
+
+        final int keysCnt = keysCount();
+
+        IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!finished.get()) {
+                    U.sleep(300);
+
+                    stopGrid(0);
+                    startGrid(0);
+                }
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<Object> fut2 = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+
+                while (!finished.get()) {
+                    try {
+                        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.invoke(i, new SetEntryProcessor(val));
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        try {
+            U.sleep(DURATION);
+        }
+        finally {
+            finished.set(true);
+
+            fut.get();
+            fut2.get();
+        }
+
+        checkOnePhaseCommitReturnValuesCleaned();
     }
 
     /**

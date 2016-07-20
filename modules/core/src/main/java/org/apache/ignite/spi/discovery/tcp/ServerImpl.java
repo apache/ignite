@@ -18,9 +18,11 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectStreamException;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -69,11 +71,11 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -128,8 +130,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -138,7 +142,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -156,10 +162,9 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 /**
  *
  */
-@SuppressWarnings("All")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 1024 * 10);
+    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 1024);
 
     /** */
     private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
@@ -198,7 +203,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     private StatisticsPrinter statsPrinter;
 
     /** Failed nodes (but still in topology). */
-    private final Collection<TcpDiscoveryNode> failedNodes = new HashSet<>();
+    private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
+
+    /** */
+    private final Collection<UUID> failedNodesMsgSent = new HashSet<>();
 
     /** Leaving nodes (but still in topology). */
     private final Collection<TcpDiscoveryNode> leavingNodes = new HashSet<>();
@@ -313,7 +321,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         else {
             if (F.isEmpty(spi.ipFinder.getRegisteredAddresses()))
                 throw new IgniteSpiException("Non-shared IP finder must have IP addresses specified in " +
-                    "GridTcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
+                    "TcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
                     "(specify list of IP addresses in configuration).");
 
             ipFinderHasLocAddr = spi.ipFinderHasLocalAddress();
@@ -570,8 +578,8 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param addr Address of the node.
      * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
-     * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
-     *         left a topology during the ping process.
+     * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has left
+     * a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
      */
     private @Nullable IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
@@ -774,7 +782,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (nodeAlive) {
             synchronized (mux) {
-                nodeAlive = !F.transform(failedNodes, F.node2id()).contains(nodeId) &&
+                nodeAlive = !F.transform(failedNodes.keySet(), F.node2id()).contains(nodeId) &&
                     !F.transform(leavingNodes, F.node2id()).contains(nodeId);
             }
         }
@@ -910,9 +918,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Tries to send join request message to a random node presenting in topology.
-     * Address is provided by {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
-     * sent to first node connection succeeded to.
+     * Tries to send join request message to a random node presenting in topology. Address is provided by {@link
+     * org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is sent to first node connection
+     * succeeded to.
      *
      * @return {@code true} if send succeeded.
      * @throws IgniteSpiException If any error occurs.
@@ -1071,7 +1079,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         int reconCnt = 0;
 
-        while (true){
+        while (true) {
             // Need to set to false on each new iteration,
             // since remote node may leave in the middle of the first iteration.
             joinReqSent = false;
@@ -1099,7 +1107,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean ignore = false;
 
                     synchronized (failedNodes) {
-                        for (TcpDiscoveryNode failedNode : failedNodes) {
+                        for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
                                 if (log.isDebugEnabled())
                                     log.debug("Ignore response from node from failed list: " + res);
@@ -1129,7 +1137,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                long tstamp0 = U.currentTimeMillis();
 
                 if (debugMode)
                     debugLog(msg, "Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
@@ -1144,7 +1152,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // E.g. due to class not found issue.
                 joinReqSent = msg instanceof TcpDiscoveryJoinRequestMessage;
 
-                return spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                int receipt = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                spi.stats.onMessageSent(msg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
+
+                return receipt;
             }
             catch (ClassCastException e) {
                 // This issue is rarely reproducible on AmazonEC2, but never
@@ -1297,7 +1309,8 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer,
+        Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -1315,8 +1328,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Checks whether local node is coordinator. Nodes that are leaving or failed
-     * (but are still in topology) are removed from search.
+     * Checks whether local node is coordinator. Nodes that are leaving or failed (but are still in topology) are
+     * removed from search.
      *
      * @return {@code true} if local node is coordinator.
      */
@@ -1345,28 +1358,27 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Resolves coordinator. Nodes that are leaving or failed (but are still in
-     * topology) are removed from search.
+     * Resolves coordinator. Nodes that are leaving or failed (but are still in topology) are removed from search.
      *
-     * @return Coordinator node or {@code null} if there are no coordinator
-     * (i.e. local node is the last one and is currently stopping).
+     * @return Coordinator node or {@code null} if there are no coordinator (i.e. local node is the last one and is
+     * currently stopping).
      */
     @Nullable private TcpDiscoveryNode resolveCoordinator() {
         return resolveCoordinator(null);
     }
 
     /**
-     * Resolves coordinator. Nodes that are leaving or failed (but are still in
-     * topology) are removed from search as well as provided filter.
+     * Resolves coordinator. Nodes that are leaving or failed (but are still in topology) are removed from search as
+     * well as provided filter.
      *
      * @param filter Nodes to exclude when resolving coordinator (optional).
-     * @return Coordinator node or {@code null} if there are no coordinator
-     * (i.e. local node is the last one and is currently stopping).
+     * @return Coordinator node or {@code null} if there are no coordinator (i.e. local node is the last one and is
+     * currently stopping).
      */
     @Nullable private TcpDiscoveryNode resolveCoordinator(
         @Nullable Collection<TcpDiscoveryNode> filter) {
         synchronized (mux) {
-            Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes, leavingNodes);
+            Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes.keySet(), leavingNodes);
 
             if (!F.isEmpty(filter))
                 excluded = F.concat(false, excluded, filter);
@@ -1397,6 +1409,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", topSize=" + ring.allNodes().size() +
                 ", leavingNodesSize=" + leavingNodesSize + ", failedNodesSize=" + failedNodesSize +
                 ", msgWorker.queue.size=" + (msgWorker != null ? msgWorker.queueSize() : "N/A") +
+                ", clients=" + ring.clientNodes().size() +
+                ", clientWorkers=" + clientMsgWorkers.size() +
                 ", lastUpdate=" + (locNode != null ? U.format(locNode.lastUpdateTime()) : "N/A") +
                 ", heapFree=" + runtime.freeMemory() / (1024 * 1024) +
                 "M, heapTotal=" + runtime.maxMemory() / (1024 * 1024) + "M]");
@@ -1415,7 +1429,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
         @Nullable IgniteUuid discardMsgId,
         @Nullable IgniteUuid discardCustomMsgId
-        ) {
+    ) {
         assert destNodeId != null;
 
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
@@ -1509,13 +1523,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * Simulates situation when next node is still alive but is bypassed
-     * since it has been excluded from the ring, possibly, due to short time
-     * network problems.
-     * <p>
-     * This method is intended for test purposes only.
+     * <strong>FOR TEST ONLY!!!</strong> <p> Simulates situation when next node is still alive but is bypassed since it
+     * has been excluded from the ring, possibly, due to short time network problems. <p> This method is intended for
+     * test purposes only.
      */
     void forceNextNodeFailure() {
         U.warn(log, "Next node will be forcibly failed (if any).");
@@ -1523,7 +1533,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         TcpDiscoveryNode next;
 
         synchronized (mux) {
-            next = ring.nextNode(failedNodes);
+            next = ring.nextNode(failedNodes.keySet());
         }
 
         if (next != null)
@@ -1532,9 +1542,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * This method is intended for test purposes only.
+     * <strong>FOR TEST ONLY!!!</strong> <p> This method is intended for test purposes only.
      *
      * @return Nodes ring.
      */
@@ -1596,7 +1604,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             b.append("Failed nodes: ").append(U.nl());
 
-            for (TcpDiscoveryNode node : failedNodes)
+            for (TcpDiscoveryNode node : failedNodes.keySet())
                 b.append("    ").append(node.id()).append(U.nl());
 
             b.append(U.nl());
@@ -1619,15 +1627,15 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions.
-     * Each permission belongs to one of three groups : cache, task or system.
+     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions. Each permission belongs
+     * to one of three groups : cache, task or system.
      *
      * @param locPerms The first set of permissions.
      * @param rmtPerms The second set of permissions.
      * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
      */
     private boolean permissionsEqual(SecurityPermissionSet locPerms, SecurityPermissionSet rmtPerms) {
-        boolean dfltAllowMatch = !(locPerms.defaultAllowAll() ^ rmtPerms.defaultAllowAll());
+        boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
 
         boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
             F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
@@ -1651,11 +1659,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Thread that cleans IP finder and keeps it in the correct state, unregistering
-     * addresses of the nodes that has left the topology.
-     * <p>
-     * This thread should run only on coordinator node and will clean IP finder
-     * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * Thread that cleans IP finder and keeps it in the correct state, unregistering addresses of the nodes that has
+     * left the topology. <p> This thread should run only on coordinator node and will clean IP finder if and only if
+     * {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
@@ -1793,10 +1799,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (failedNode != null) {
                     if (!failedNode.isLocal()) {
-                        boolean added;
+                        boolean added = false;
 
                         synchronized (mux) {
-                            added = failedNodes.add(failedNode);
+                            if (!failedNodes.containsKey(failedNode)) {
+                                failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+
+                                added = true;
+                            }
                         }
 
                         if (added && log.isDebugEnabled())
@@ -1846,17 +1856,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Gets messages starting from provided ID (exclusive). If such
-         * message is not found, {@code null} is returned (this indicates
-         * a failure condition when it was already removed from queue).
+         * Gets messages starting from provided ID (exclusive). If such message is not found, {@code null} is returned
+         * (this indicates a failure condition when it was already removed from queue).
          *
-         * @param lastMsgId Last message ID received on client. {@code Null} if client did not finish connect procedure.
+         * @param lastMsgId Last message ID received on client. {@code Null} if client did not finish connect
+         * procedure.
          * @param node Client node.
          * @return Collection of messages.
          */
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(@Nullable IgniteUuid lastMsgId,
-            TcpDiscoveryNode node)
-        {
+            TcpDiscoveryNode node) {
             assert node != null && node.isClient() : node;
 
             if (lastMsgId == null) {
@@ -1949,7 +1958,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final Queue<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
 
         /** Processed custom message IDs. */
-        private Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<IgniteUuid>(MAX * 2);
+        private Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<>(MAX * 2);
 
         /** Discarded message ID. */
         private IgniteUuid discardId;
@@ -1958,8 +1967,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private IgniteUuid customDiscardId;
 
         /**
-         * Adds pending message and shrinks queue if it exceeds limit
-         * (messages that were not discarded yet are never removed).
+         * Adds pending message and shrinks queue if it exceeds limit (messages that were not discarded yet are never
+         * removed).
          *
          * @param msg Message to add.
          */
@@ -2100,7 +2109,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Message worker thread for messages processing.
      */
-    private class RingMessageWorker extends MessageWorkerAdapter {
+    private class RingMessageWorker extends MessageWorkerAdapter<TcpDiscoveryAbstractMessage> {
         /** Next node. */
         @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private TcpDiscoveryNode next;
@@ -2119,6 +2128,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** Socket. */
         private Socket sock;
+
+        /** Output stream. */
+        private OutputStream out;
 
         /** Last time status message has been sent. */
         private long lastTimeStatusMsgSent;
@@ -2153,6 +2165,32 @@ class ServerImpl extends TcpDiscoveryImpl {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
+        }
+
+        /**
+         * Adds message to queue.
+         *
+         * @param msg Message to add.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg) {
+            if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
+                msg instanceof TcpDiscoveryJoinRequestMessage ||
+                msg instanceof TcpDiscoveryCustomEventMessage ||
+                msg instanceof TcpDiscoveryClientReconnectMessage) &&
+                queue.contains(msg)) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignoring duplicate message: " + msg);
+
+                return;
+            }
+
+            if (msg.highPriority())
+                queue.addFirst(msg);
+            else
+                queue.add(msg);
+
+            if (log.isDebugEnabled())
+                log.debug("Message has been added to queue: " + msg);
         }
 
         /** {@inheritDoc} */
@@ -2260,9 +2298,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
-                processClientHeartbeatMessage((TcpDiscoveryClientHeartbeatMessage)msg);
-
             else if (msg instanceof TcpDiscoveryHeartbeatMessage)
                 processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
 
@@ -2316,27 +2351,44 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void sendMessageToClients(TcpDiscoveryAbstractMessage msg) {
             if (redirectToClients(msg)) {
-                byte[] marshalledMsg = null;
+                byte[] msgBytes = null;
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
-                    // Send a clone to client to avoid ConcurrentModificationException
-                    TcpDiscoveryAbstractMessage msgClone;
+                    if (msgBytes == null) {
+                        try {
+                            msgBytes = spi.marsh.marshal(msg);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to marshal message: " + msg, e);
 
-                    try {
-                        if (marshalledMsg == null)
-                            marshalledMsg = spi.marsh.marshal(msg);
-
-                        msgClone = spi.marsh.unmarshal(marshalledMsg, null);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to marshal message: " + msg, e);
-
-                        msgClone = msg;
+                            break;
+                        }
                     }
 
-                    prepareNodeAddedMessage(msgClone, clientMsgWorker.clientNodeId, null, null, null);
+                    TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
 
-                    clientMsgWorker.addMessage(msgClone);
+                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                        TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
+
+                        TcpDiscoveryNode node = nodeAddedMsg.node();
+
+                        if (clientMsgWorker.clientNodeId.equals(node.id())) {
+                            try {
+                                msg0 = spi.marsh.unmarshal(msgBytes,
+                                    U.resolveClassLoader(spi.ignite().configuration()));
+
+                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null, null);
+
+                                msgBytes0 = null;
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to create message copy: " + msg, e);
+                            }
+                        }
+                    }
+
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }
@@ -2362,7 +2414,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(ServerImpl.this.failedNodes);
+                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
 
                 state = spiState;
             }
@@ -2423,10 +2475,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 List<InetSocketAddress> locNodeAddrs = U.arrayList(locNode.socketAddresses());
 
-                addr: for (InetSocketAddress addr : spi.getNodeAddresses(next, sameHost)) {
+                addr:
+                for (InetSocketAddress addr : spi.getNodeAddresses(next, sameHost)) {
                     long ackTimeout0 = spi.getAckTimeout();
 
-                    if (locNodeAddrs.contains(addr)){
+                    if (locNodeAddrs.contains(addr)) {
                         if (log.isDebugEnabled())
                             log.debug("Skip to send message to the local node (probably remote node has the same " +
                                 "loopback address that local node): " + addr);
@@ -2455,10 +2508,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 sock = spi.openSocket(addr, timeoutHelper);
 
+                                out = new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize());
+
                                 openSock = true;
 
                                 // Handshake.
-                                writeToSocket(sock, new TcpDiscoveryHandshakeRequest(locNodeId),
+                                spi.writeToSocket(sock, out, new TcpDiscoveryHandshakeRequest(locNodeId),
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
@@ -2563,6 +2618,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                             finally {
                                 if (!success) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Closing socket to next: " + next);
+
                                     U.closeQuiet(sock);
 
                                     sock = null;
@@ -2586,12 +2644,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
-                            boolean sndPending=
-                                (newNextNode && ring.minimumNodeVersion().compareTo(CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE) >= 0) ||
-                                failure ||
-                                forceSndPending;
-
-                            if (sndPending) {
+                            if (failure || forceSndPending) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
@@ -2612,16 +2665,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi);
 
                                     try {
-                                        writeToSocket(sock, pendingMsg, timeoutHelper.nextTimeoutChunk(
+                                        spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
                                             spi.getSocketTimeout()));
                                     }
                                     finally {
                                         clearNodeAddedMessage(pendingMsg);
                                     }
 
-                                    spi.stats.onMessageSent(pendingMsg, U.currentTimeMillis() - tstamp);
+                                    long tstamp0 = U.currentTimeMillis();
 
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                    spi.stats.onMessageSent(pendingMsg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Pending message has been sent to next node [msgId=" + msg.id() +
@@ -2664,11 +2719,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
                                 }
 
-                                writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                                long tstamp0 = U.currentTimeMillis();
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                spi.stats.onMessageSent(msg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
 
                                 onMessageExchanged();
 
@@ -2726,6 +2783,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             forceSndPending = false;
 
                             if (!sent) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Closing socket to next (not sent): " + next);
+
                                 U.closeQuiet(sock);
 
                                 sock = null;
@@ -2768,7 +2828,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             synchronized (mux) {
-                failedNodes.removeAll(ServerImpl.this.failedNodes);
+                failedNodes.removeAll(ServerImpl.this.failedNodes.keySet());
             }
 
             if (!failedNodes.isEmpty()) {
@@ -2782,7 +2842,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    ServerImpl.this.failedNodes.addAll(failedNodes);
+                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
+                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                    }
+
+                    for (TcpDiscoveryNode failedNode : failedNodes)
+                        failedNodesMsgSent.add(failedNode.id());
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -2817,8 +2883,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
-                        "To speed up failure detection please see 'Failure Detection' section under javadoc" +
-                        " for 'TcpDiscoverySpi'");
+                    "To speed up failure detection please see 'Failure Detection' section under javadoc" +
+                    " for 'TcpDiscoverySpi'");
             }
         }
 
@@ -2849,8 +2915,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Checks whether pending messages queue contains unprocessed {@link TcpDiscoveryNodeAddedMessage} for
-         * the node with {@code nodeId}.
+         * Checks whether pending messages queue contains unprocessed {@link TcpDiscoveryNodeAddedMessage} for the node
+         * with {@code nodeId}.
          *
          * @param nodeId Node ID.
          * @return {@code true} if contains, {@code false} otherwise.
@@ -2876,12 +2942,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Join request message.
          */
-        private void processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg) {
+        private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
 
-            TcpDiscoveryNode node = msg.node();
+            final TcpDiscoveryNode node = msg.node();
 
-            UUID locNodeId = getLocalNodeId();
+            final UUID locNodeId = getLocalNodeId();
 
             if (!msg.client()) {
                 boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
@@ -3089,132 +3155,151 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
                 if (err != null) {
-                    boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
-
-                    if (!ping) {
-                        if (log.isDebugEnabled())
-                            log.debug("Conflicting node has already left, need to wait for event. " +
-                                "Will ignore join request for now since it will be recent [req=" + msg +
-                                ", err=" + err.message() + ']');
-
-                        // Ignore join request.
-                        return;
-                    }
-
-                    LT.warn(log, null, err.message());
-
-                    // Always output in debug.
                     if (log.isDebugEnabled())
-                        log.debug(err.message());
+                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
 
-                    try {
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send hash ID resolver validation failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
 
-                        onException("Failed to send hash ID resolver validation failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                if (!ping) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Conflicting node has already left, need to wait for event. " +
+                                            "Will ignore join request for now since it will be recent [req=" + msg +
+                                            ", err=" + err.message() + ']');
+
+                                    // Ignore join request.
+                                    return;
+                                }
+
+                                LT.warn(log, null, err.message());
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(err.message());
+
+                                try {
+                                    trySendMessageDirectly(node,
+                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send hash ID resolver validation failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send hash ID resolver validation failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
 
                     // Ignore join request.
                     return;
                 }
 
-                String locMarsh = locNode.attribute(ATTR_MARSHALLER);
-                String rmtMarsh = node.attribute(ATTR_MARSHALLER);
+                final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
+                final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
 
                 if (!F.eq(locMarsh, rmtMarsh)) {
-                    String errMsg = "Local node's marshaller differs from remote node's marshaller " +
-                        "(to make sure all nodes in topology have identical marshaller, " +
-                        "configure marshaller explicitly in configuration) " +
-                        "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's marshaller differs from remote node's marshaller " +
+                                    "(to make sure all nodes in topology have identical marshaller, " +
+                                    "configure marshaller explicitly in configuration) " +
+                                    "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                                LT.warn(log, null, errMsg);
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
 
-                    try {
-                        String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
-                            "(to make sure all nodes in topology have identical marshaller, " +
-                            "configure marshaller explicitly in configuration) " +
-                            "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                                try {
+                                    String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
+                                        "(to make sure all nodes in topology have identical marshaller, " +
+                                        "configure marshaller explicitly in configuration) " +
+                                        "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
 
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                                    trySendMessageDirectly(node,
+                                        new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
 
                     // Ignore join request.
                     return;
                 }
 
                 // If node have no value for this attribute then we treat it as true.
-                Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
+                final Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean locMarshUseDfltSuidBool = locMarshUseDfltSuid == null ? true : locMarshUseDfltSuid;
 
-                Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
+                final Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
-                    String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical marshaller settings, " +
-                        "configure system property explicitly) " +
-                        "[locMarshUseDfltSuid=" + locMarshUseDfltSuid + ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(new Runnable() {
+                        @Override public void run() {
+                            String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                " property value differs from remote node's value " +
+                                "(to make sure all nodes in topology have identical marshaller settings, " +
+                                "configure system property explicitly) " +
+                                "[locMarshUseDfltSuid=" + locMarshUseDfltSuid + ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                            LT.warn(log, null, errMsg);
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
 
-                    try {
-                        String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                            " property value differs from remote node's value " +
-                            "(to make sure all nodes in topology have identical marshaller settings, " +
-                            "configure system property explicitly) " +
-                            "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                            ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                            try {
+                                String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                    ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                                trySendMessageDirectly(node,
+                                    new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (IgniteSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                onException("Failed to send marshaller check failed message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                            }
+                        }
+                    });
 
                     // Ignore join request.
                     return;
@@ -3222,45 +3307,202 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Validate compact footer flags.
                 Boolean locMarshCompactFooter = locNode.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
-                boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
+                final boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
 
                 Boolean rmtMarshCompactFooter = node.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
-                boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
+                final boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
 
                 if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
-                    String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same value " +
-                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                        ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                                    "the same property on remote node (make sure all nodes in topology have the same value " +
+                                    "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                                    ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                                LT.warn(log, null, errMsg);
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
 
-                    try {
-                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                            "the same property on remote node (make sure all nodes in topology have the same value " +
-                            "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                            ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                                try {
+                                    String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                                        "the same property on remote node (make sure all nodes in topology have the same value " +
+                                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                                        ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
 
-                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                    trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
+
+                    // Ignore join request.
+                    return;
+                }
+
+                // Validate String serialization mechanism used by the BinaryMarshaller.
+                final Boolean locMarshStrSerialVer2 = locNode.attribute(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2);
+                final boolean locMarshStrSerialVer2Bool = locMarshStrSerialVer2 != null ? locMarshStrSerialVer2 : false;
+
+                final Boolean rmtMarshStrSerialVer2 = node.attribute(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2);
+                final boolean rmtMarshStrSerialVer2Bool = rmtMarshStrSerialVer2 != null ? rmtMarshStrSerialVer2 : false;
+
+                if (locMarshStrSerialVer2Bool != rmtMarshStrSerialVer2Bool) {
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's " + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshStrSerialVer2=" + locMarshStrSerialVer2 +
+                                    ", rmtMarshStrSerialVer2=" + rmtMarshStrSerialVer2 +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+
+                                LT.warn(log, null, errMsg);
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
+
+                                String sndMsg = "Local node's " + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshStrSerialVer2=" + rmtMarshStrSerialVer2 +
+                                    ", rmtMarshStrSerialVer2=" + locMarshStrSerialVer2 +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                try {
+                                    trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        });
+
+                    // Ignore join request.
+                    return;
+                }
+
+                final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+
+                if (node.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
+                    final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+
+                    if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
+                        utilityPool.submit(
+                            new Runnable() {
+                                @Override public void run() {
+                                    String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                        " property value differs from remote node's value " +
+                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                        "configure system property explicitly) " +
+                                        "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                        ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                                    String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                        " property value differs from remote node's value " +
+                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                        "configure system property explicitly) " +
+                                        "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                        ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
+
+                                    LT.warn(log, null, errMsg);
+
+                                    // Always output in debug.
+                                    if (log.isDebugEnabled())
+                                        log.debug(errMsg);
+
+                                    try {
+                                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+                                    }
+                                    catch (IgniteSpiException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to send marshaller check failed message to node " +
+                                                "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                        onException("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                    }
+                                }
+                            });
+
+                        // Ignore join request.
+                        return;
                     }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                }
+                else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Remote node doesn't support lazy services configuration and " +
+                                    "cannot be joined to local node because local node's "
+                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
+                                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                String sndMsg = "Local node doesn't support lazy services configuration and " +
+                                    "cannot be joined to local node because remote node's "
+                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
+                                    "[locNodeAddrs=" + U.addressesAsString(node) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + ']';
+
+                                LT.warn(log, null, errMsg);
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
+
+                                try {
+                                    trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        });
 
                     // Ignore join request.
                     return;
@@ -3439,9 +3681,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Processes node added message.
          *
          * @param msg Node added message.
-         * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring,
-         *      if new node auth fails due to config inconsistency. So, we need to finish add
-         *      and only then initiate failure.
+         * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring, if new node
+         * auth fails due to config inconsistency. So, we need to finish add and only then initiate failure.
          */
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
@@ -3546,7 +3787,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             SecurityContext coordSubj = spi.marsh.unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.gridClassLoader());
+                                U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -3601,7 +3842,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        spi.onExchange(node.id(), node.id(), data, U.gridClassLoader());
+                        spi.onExchange(node.id(), node.id(), data,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                     msg.addDiscoveryData(locNodeId, spi.collectExchangeData(node.id()));
 
@@ -3666,7 +3908,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
                         }
                     }
-                    else  {
+                    else {
                         if (log.isDebugEnabled())
                             log.debug("Discarding node added message (this message has already been processed) " +
                                 "[spiState=" + spiState +
@@ -3680,7 +3922,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Notify outside of synchronized block.
                 if (dataMap != null) {
                     for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                        spi.onExchange(node.id(), entry.getKey(), entry.getValue(), U.gridClassLoader());
+                        spi.onExchange(node.id(), entry.getKey(), entry.getValue(),
+                            U.resolveClassLoader(spi.ignite().configuration()));
                 }
 
                 processMessageFailedNodes(msg);
@@ -3789,7 +4032,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     notifyDiscovery(EVT_NODE_JOINED, topVer, node);
 
                 try {
-                    if (spi.ipFinder.isShared() && locNodeCoord)
+                    if (spi.ipFinder.isShared() && locNodeCoord && !node.isClient())
                         spi.ipFinder.registerAddresses(node.socketAddresses());
                 }
                 catch (IgniteSpiException e) {
@@ -3854,7 +4097,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
                     if (spi.ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
-                            spi.ipFinder.unregisterAddresses(locNode.socketAddresses());
+                            spi.ipFinder.unregisterAddresses(
+                                U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
                         }
                         catch (IgniteSpiException e) {
                             U.error(log, "Failed to unregister local node address from IP finder.", e);
@@ -3953,7 +4197,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
                 else if (leftNode.equals(next) && sock != null) {
                     try {
-                        writeToSocket(sock, msg, spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeToSocket(sock, out, msg, spi.failureDetectionTimeoutEnabled() ?
                             spi.failureDetectionTimeout() : spi.getSocketTimeout());
 
                         if (log.isDebugEnabled())
@@ -3986,6 +4230,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(leftNode);
 
                     leavingNodes.remove(leftNode);
+
+                    failedNodesMsgSent.remove(leftNode.id());
                 }
             }
 
@@ -4045,7 +4291,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean contains;
 
                     synchronized (mux) {
-                        contains = failedNodes.contains(sndNode);
+                        contains = failedNodes.containsKey(sndNode);
                     }
 
                     if (contains) {
@@ -4074,7 +4320,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert !node.isLocal() || !msg.verified() : msg;
 
                 synchronized (mux) {
-                    failedNodes.add(node);
+                    if (!failedNodes.containsKey(node))
+                        failedNodes.put(node, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
                 }
             }
             else {
@@ -4134,6 +4381,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(node);
 
                     leavingNodes.remove(node);
+
+                    failedNodesMsgSent.remove(node.id());
 
                     ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
 
@@ -4410,7 +4659,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean failedNode;
 
                                     synchronized (mux) {
-                                        failedNode = failedNodes.contains(clientNode);
+                                        failedNode = failedNodes.containsKey(clientNode);
                                     }
 
                                     if (!failedNode) {
@@ -4439,22 +4688,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes client heartbeat message.
-         *
-         * @param msg Heartbeat message.
-         */
-        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
-            assert msg.client();
-
-            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
-
-            if (wrk != null)
-                wrk.metrics(msg.metrics());
-            else if (log.isDebugEnabled())
-                log.debug("Received heartbeat message from unknown client node: " + msg);
-        }
-
-        /**
          * @param nodeId Node ID.
          * @param metrics Metrics.
          * @param cacheMetrics Cache metrics.
@@ -4463,8 +4696,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void updateMetrics(UUID nodeId,
             ClusterMetrics metrics,
             Map<Integer, CacheMetrics> cacheMetrics,
-            long tstamp)
-        {
+            long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 
@@ -4542,7 +4774,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;
@@ -4605,7 +4838,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoverySpiCustomMessage msgObj = null;
 
                     try {
-                        msgObj = msg.message(spi.marsh);
+                        msgObj = msg.message(spi.marsh, U.resolveClassLoader(spi.ignite().configuration()));
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
@@ -4660,24 +4893,44 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Checks failed nodes list and sends {@link TcpDiscoveryNodeFailedMessage} if failed node
-         * is still in the ring.
+         * Checks failed nodes list and sends {@link TcpDiscoveryNodeFailedMessage} if failed node is still in the
+         * ring and node detected failure left ring.
          */
         private void checkFailedNodesList() {
             List<TcpDiscoveryNodeFailedMessage> msgs = null;
 
             synchronized (mux) {
-                for (Iterator<TcpDiscoveryNode> it = failedNodes.iterator(); it.hasNext();) {
-                    TcpDiscoveryNode node = it.next();
+                if (!failedNodes.isEmpty()) {
+                    for (Iterator<Map.Entry<TcpDiscoveryNode, UUID>> it = failedNodes.entrySet().iterator(); it.hasNext(); ) {
+                        Map.Entry<TcpDiscoveryNode, UUID> e = it.next();
 
-                    if (ring.node(node.id()) != null) {
-                        if (msgs == null)
-                            msgs = new ArrayList<>(failedNodes.size());
+                        TcpDiscoveryNode node = e.getKey();
+                        UUID failSndNode = e.getValue();
 
-                        msgs.add(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), node.id(), node.internalOrder()));
+                        if (ring.node(node.id()) == null) {
+                            it.remove();
+
+                            continue;
+                        }
+
+                        if (!nodeAlive(failSndNode) && !failedNodesMsgSent.contains(node.id())) {
+                            if (msgs == null)
+                                msgs = new ArrayList<>();
+
+                            msgs.add(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), node.id(), node.internalOrder()));
+
+                            failedNodesMsgSent.add(node.id());
+                        }
                     }
-                    else
-                        it.remove();
+                }
+
+                if (!failedNodesMsgSent.isEmpty()) {
+                    for (Iterator<UUID> it = failedNodesMsgSent.iterator(); it.hasNext(); ) {
+                        UUID nodeId = it.next();
+
+                        if (ring.node(nodeId) == null)
+                            it.remove();
+                    }
                 }
             }
 
@@ -4728,7 +4981,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     try {
-                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh);
+                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -4824,10 +5078,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Thread that accepts incoming TCP connections.
-     * <p>
-     * Tcp server will call provided closure when accepts incoming connection.
-     * From that moment server is no more responsible for the socket.
+     * Thread that accepts incoming TCP connections. <p> Tcp server will call provided closure when accepts incoming
+     * connection. From that moment server is no more responsible for the socket.
      */
     private class TcpServer extends IgniteSpiThread {
         /** Socket TCP server listens to. */
@@ -4970,7 +5222,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (IgniteInClosure<Socket> connLsnr : spi.incomeConnLsnrs)
                         connLsnr.apply(sock);
 
-                    in = new BufferedInputStream(sock.getInputStream());
+                    int rcvBufSize = sock.getReceiveBufferSize();
+
+                    in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
 
                     byte[] buf = new byte[4];
                     int read = 0;
@@ -4997,14 +5251,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?" +
-                                (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
+                                (!spi.isSslEnabled() ? " missed SSL configuration?" : "") +
                                 ") " +
                                 "[rmtAddr=" + sock.getRemoteSocketAddress() +
                                 ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, null, "Unknown connection detected (is some other software connecting to " +
                             "this Ignite port?" +
-                            (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
+                            (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "") +
                             ") [rmtAddr=" + sock.getInetAddress() + ']', true);
 
                         return;
@@ -5119,7 +5373,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
-                        U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+                        U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
                     if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
                         LT.warn(log, null, "Failed to initialize connection " +
@@ -5146,9 +5400,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
-                        U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+                        U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    onException("Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+                    onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
                     if (e.hasCause(SocketTimeoutException.class))
                         LT.warn(log, null, "Socket operation timed out on handshake " +
@@ -5174,7 +5428,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
-                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
 
@@ -5352,7 +5607,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
 
-                        msgWorker.addMessage(msg);
+                        TcpDiscoveryClientHeartbeatMessage heartbeatMsg = null;
+
+                        if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
+                            heartbeatMsg = (TcpDiscoveryClientHeartbeatMessage)msg;
+                        else
+                            msgWorker.addMessage(msg);
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -5364,6 +5624,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else
                             spi.writeToSocket(msg, sock, RES_OK, socketTimeout);
+
+                        if (heartbeatMsg != null)
+                            processClientHeartbeatMessage(heartbeatMsg);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -5428,6 +5691,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 U.closeQuiet(sock);
             }
+        }
+
+        /**
+         * Processes client heartbeat message.
+         *
+         * @param msg Heartbeat message.
+         */
+        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
+            assert msg.client();
+
+            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+
+            if (wrk != null)
+                wrk.metrics(msg.metrics());
+            else if (log.isDebugEnabled())
+                log.debug("Received heartbeat message from unknown client node: " + msg);
         }
 
         /**
@@ -5557,7 +5836,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      */
-    private class ClientMessageWorker extends MessageWorkerAdapter {
+    private class ClientMessageWorker extends MessageWorkerAdapter<T2<TcpDiscoveryAbstractMessage, byte[]>> {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -5577,7 +5856,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param sock Socket.
          * @param clientNodeId Node ID.
          */
-        protected ClientMessageWorker(Socket sock, UUID clientNodeId) {
+        protected ClientMessageWorker(Socket sock, UUID clientNodeId) throws IOException {
             super("tcp-disco-client-message-worker", 2000);
 
             this.sock = sock;
@@ -5605,10 +5884,42 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.metrics = metrics;
         }
 
+        /**
+         * @param msg Message.
+         */
+        public void addMessage(TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, null);
+        }
+
+        /**
+         * @param msg Message.
+         * @param msgBytes Optional message bytes.
+         */
+        public void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
+            T2 t = new T2<>(msg, msgBytes);
+
+            if (msg.highPriority())
+                queue.addFirst(t);
+            else
+                queue.add(t);
+
+            if (log.isDebugEnabled())
+                log.debug("Message has been added to client queue: " + msg);
+        }
+
         /** {@inheritDoc} */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(T2<TcpDiscoveryAbstractMessage, byte[]> msgT) {
+            boolean success = false;
+
+            TcpDiscoveryAbstractMessage msg = msgT.get1();
+
             try {
                 assert msg.verified() : msg;
+
+                byte[] msgBytes = msgT.get2();
+
+                if (msgBytes == null)
+                    msgBytes = spi.marsh.marshal(msg);
 
                 if (msg instanceof TcpDiscoveryClientAckResponse) {
                     if (clientVer == null) {
@@ -5628,7 +5939,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             log.debug("Sending message ack to client [sock=" + sock + ", locNodeId="
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
-                        writeToSocket(sock, msg, spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
                             spi.failureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
@@ -5639,9 +5950,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    writeToSocket(sock, msg, spi.failureDetectionTimeoutEnabled() ?
+                    spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
                         spi.failureDetectionTimeout() : spi.getSocketTimeout());
                 }
+
+                success = true;
             }
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
@@ -5650,12 +5963,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 onException("Client connection failed [sock=" + sock + ", locNodeId="
                     + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
+            }
+            finally {
+                if (!success) {
+                    clientMsgWorkers.remove(clientNodeId, this);
 
-                clientMsgWorkers.remove(clientNodeId, this);
+                    U.interrupt(this);
 
-                U.interrupt(this);
-
-                U.closeQuiet(sock);
+                    U.closeQuiet(sock);
+                }
             }
         }
 
@@ -5745,12 +6061,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Base class for message workers.
      */
-    protected abstract class MessageWorkerAdapter extends IgniteSpiThread {
-        /** Pre-allocated output stream (100K). */
-        private final GridByteArrayOutputStream bout = new GridByteArrayOutputStream(100 * 1024);
-
+    protected abstract class MessageWorkerAdapter<T> extends IgniteSpiThread {
         /** Message queue. */
-        private final BlockingDeque<TcpDiscoveryAbstractMessage> queue = new LinkedBlockingDeque<>();
+        protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
 
         /** Backed interrupted flag. */
         private volatile boolean interrupted;
@@ -5776,7 +6089,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
-                TcpDiscoveryAbstractMessage msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
+                T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
 
                 if (msg == null)
                     noMessageLoop();
@@ -5805,44 +6118,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Adds message to queue.
-         *
-         * @param msg Message to add.
-         */
-        void addMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg.highPriority())
-                queue.addFirst(msg);
-            else
-                queue.add(msg);
-
-            if (log.isDebugEnabled())
-                log.debug("Message has been added to queue: " + msg);
-        }
-
-        /**
          * @param msg Message.
          */
-        protected abstract void processMessage(TcpDiscoveryAbstractMessage msg);
+        protected abstract void processMessage(T msg);
 
         /**
          * Called when there is no message to process giving ability to perform other activity.
          */
         protected void noMessageLoop() {
             // No-op.
-        }
-
-        /**
-         * @param sock Socket.
-         * @param msg Message.
-         * @param timeout Socket timeout.
-         * @throws IOException If IO failed.
-         * @throws IgniteCheckedException If marshalling failed.
-         */
-        protected final void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
-            throws IOException, IgniteCheckedException {
-            bout.reset();
-
-            spi.writeToSocket(sock, msg, bout, timeout);
         }
     }
 

@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -166,9 +168,64 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * Initializes future.
      */
     void init() {
-        map(keys);
+        GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
 
-        markInitialized();
+        if (!F.isEmpty(fut.invalidPartitions())) {
+            if (retries == null)
+                retries = new HashSet<>();
+
+            retries.addAll(fut.invalidPartitions());
+        }
+
+        fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> fut) {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+
+                    onDone(e);
+
+                    return;
+                }
+
+                Map<KeyCacheObject, Boolean> mappedKeys = null;
+
+                // Assign keys to primary nodes.
+                for (Map.Entry<KeyCacheObject, Boolean> key : keys.entrySet()) {
+                    int part = cctx.affinity().partition(key.getKey());
+
+                    if (retries == null || !retries.contains(part)) {
+                        if (!map(key.getKey(), parts)) {
+                            if (retries == null)
+                                retries = new HashSet<>();
+
+                            retries.add(part);
+
+                            if (mappedKeys == null) {
+                                mappedKeys = U.newLinkedHashMap(keys.size());
+
+                                for (Map.Entry<KeyCacheObject, Boolean> key1 : keys.entrySet()) {
+                                    if (key1.getKey() == key.getKey())
+                                        break;
+
+                                    mappedKeys.put(key.getKey(), key1.getValue());
+                                }
+                            }
+                        }
+                        else if (mappedKeys != null)
+                            mappedKeys.put(key.getKey(), key.getValue());
+                    }
+                }
+
+                // Add new future.
+                add(getAsync(mappedKeys == null ? keys : mappedKeys));
+
+                markInitialized();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -201,68 +258,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return false;
-    }
-
-    /**
-     * @param keys Keys.
-     */
-    private void map(final Map<KeyCacheObject, Boolean> keys) {
-        GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
-
-        if (!F.isEmpty(fut.invalidPartitions())) {
-            if (retries == null)
-                retries = new HashSet<>();
-
-            retries.addAll(fut.invalidPartitions());
-        }
-
-        add(new GridEmbeddedFuture<>(
-            new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo>>() {
-                @Override public Collection<GridCacheEntryInfo> apply(Object o, Exception e) {
-                    if (e != null) { // Check error first.
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
-
-                        onDone(e);
-                    }
-
-                    Map<KeyCacheObject, Boolean> mappedKeys = null;
-
-                    // Assign keys to primary nodes.
-                    for (Map.Entry<KeyCacheObject, Boolean> key : keys.entrySet()) {
-                        int part = cctx.affinity().partition(key.getKey());
-
-                        if (retries == null || !retries.contains(part)) {
-                            if (!map(key.getKey(), parts)) {
-                                if (retries == null)
-                                    retries = new HashSet<>();
-
-                                retries.add(part);
-
-                                if (mappedKeys == null) {
-                                    mappedKeys = U.newLinkedHashMap(keys.size());
-
-                                    for (Map.Entry<KeyCacheObject, Boolean> key1 : keys.entrySet()) {
-                                        if (key1.getKey() == key.getKey())
-                                            break;
-
-                                        mappedKeys.put(key.getKey(), key1.getValue());
-                                    }
-                                }
-                            }
-                            else if (mappedKeys != null)
-                                mappedKeys.put(key.getKey(), key.getValue());
-                        }
-                    }
-
-                    // Add new future.
-                    add(getAsync(mappedKeys == null ? keys : mappedKeys));
-
-                    // Finish this one.
-                    return Collections.emptyList();
-                }
-            },
-            fut));
     }
 
     /**
@@ -383,7 +378,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     /*deserialize binary*/false,
                     skipVals,
                     /*keep cache objects*/true,
-                    /*skip store*/!readThrough);
+                    /*skip store*/!readThrough,
+                    false);
             }
         }
         else {
@@ -413,7 +409,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                 /*deserialize binary*/false,
                                 skipVals,
                                 /*keep cache objects*/true,
-                                /*skip store*/!readThrough);
+                                /*skip store*/!readThrough,
+                                false);
                         }
                     }
                 }

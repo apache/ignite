@@ -46,11 +46,11 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
 
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrimary.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(ShmemDualAsync.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
@@ -66,7 +66,7 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
@@ -76,7 +76,7 @@ public class IgfsEventsTestSuite extends TestSuite {
     /**
      * Shared memory IPC in PRIVATE mode.
      */
-    public static class ShmemPrivate extends IgfsEventsAbstractSelfTest {
+    public static class ShmemPrimary extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
@@ -95,7 +95,7 @@ public class IgfsEventsTestSuite extends TestSuite {
     /**
      * Loopback socket IPS in PRIVATE mode.
      */
-    public static class LoopbackPrivate extends IgfsEventsAbstractSelfTest {
+    public static class LoopbackPrimary extends IgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();

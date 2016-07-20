@@ -36,6 +36,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -318,7 +319,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    desc.name(meta.getSimpleValueType());
+                    String simpleValType = meta.getSimpleValueType();
+
+                    if (simpleValType == null)
+                        simpleValType = typeName(meta.getValueType());
+
+                    desc.name(simpleValType);
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -379,7 +385,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
 
             if (mustDeserializeClss != null) {
-                U.quietAndWarn(log, "Some classes in query configuration cannot be written in binary format " +
+                U.warn(log, "Some classes in query configuration cannot be written in binary format " +
                     "because they either implement Externalizable interface or have writeObject/readObject methods. " +
                     "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
                     "all nodes have these classes in classpath. To enable binary serialization either implement " +
@@ -1943,6 +1949,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Flag indicating that we already tried to take a field. */
         private volatile boolean fieldTaken;
 
+        /** Whether user was warned about missing property. */
+        private volatile boolean warned;
+
         /**
          * Constructor.
          *
@@ -1982,8 +1991,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
                         isKeyProp = isKeyProp0 = -1;
                     else {
-                        U.warn(log, "Neither key nor value have property " +
-                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+                        if (!warned) {
+                            U.warn(log, "Neither key nor value have property \"" + propName + "\" " +
+                                "(is cache indexing configured correctly?)");
+
+                            warned = true;
+                        }
 
                         return null;
                     }
@@ -2009,7 +2022,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {
-                BinaryType type = obj.type();
+                BinaryType type = obj instanceof BinaryObjectEx ? ((BinaryObjectEx)obj).rawType() : obj.type();
 
                 if (type != null) {
                     field0 = type.field(propName);

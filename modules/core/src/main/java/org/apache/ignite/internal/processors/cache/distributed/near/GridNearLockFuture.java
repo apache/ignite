@@ -118,7 +118,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private final CacheEntryPredicate[] filter;
@@ -180,6 +180,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.keys = keys;

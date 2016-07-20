@@ -72,7 +72,8 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType) {
+        GridDrType drType,
+        AffinityTopologyVersion topVer) {
         // No-op.
     }
 

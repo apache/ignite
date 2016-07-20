@@ -34,24 +34,24 @@ public abstract class IgfsUserContext {
      * The main contract of this method is that {@link #currentUser()} method invoked
      * inside closure always returns 'user' this callable executed with.
      * @param user the user name to invoke closure on behalf of.
-     * @param clo the closure to execute
+     * @param c the closure to execute
      * @param <T> The type of closure result.
      * @return the result of closure execution.
      * @throws IllegalArgumentException if user name is null or empty String or if the closure is null.
      */
-    public static <T> T doAs(String user, final IgniteOutClosure<T> clo) {
+    public static <T> T doAs(String user, final IgniteOutClosure<T> c) {
         if (F.isEmpty(user))
             throw new IllegalArgumentException("Failed to use null or empty user name.");
 
         final String ctxUser = userStackThreadLocal.get();
 
         if (F.eq(ctxUser, user))
-            return clo.apply(); // correct context is already there
+            return c.apply(); // correct context is already there
 
         userStackThreadLocal.set(user);
 
         try {
-            return clo.apply();
+            return c.apply();
         }
         finally {
             userStackThreadLocal.set(ctxUser);
@@ -81,24 +81,24 @@ public abstract class IgfsUserContext {
      *  }
      * </pre>
      * @param user the user name to invoke closure on behalf of.
-     * @param clbl the Callable to execute
+     * @param c the Callable to execute
      * @param <T> The type of callable result.
      * @return the result of closure execution.
      * @throws IllegalArgumentException if user name is null or empty String or if the closure is null.
      */
-    public static <T> T doAs(String user, final Callable<T> clbl) throws Exception {
+    public static <T> T doAs(String user, final Callable<T> c) throws Exception {
         if (F.isEmpty(user))
             throw new IllegalArgumentException("Failed to use null or empty user name.");
 
         final String ctxUser = userStackThreadLocal.get();
 
         if (F.eq(ctxUser, user))
-            return clbl.call(); // correct context is already there
+            return c.call(); // correct context is already there
 
         userStackThreadLocal.set(user);
 
         try {
-            return clbl.call();
+            return c.call();
         }
         finally {
             userStackThreadLocal.set(ctxUser);

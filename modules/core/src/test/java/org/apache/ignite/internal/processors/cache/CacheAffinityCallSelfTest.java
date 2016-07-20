@@ -50,9 +50,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 105;
-
-    /** */
     private static final int SERVERS_COUNT = 4;
 
     /** */
@@ -69,20 +66,21 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
-        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
         cfg.setFailoverSpi(failSpi);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-
-        cfg.setCacheConfiguration(ccfg);
-
+        // Do not configure cache on client.
         if (gridName.equals(getTestGridName(SERVERS_COUNT))) {
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);
+        }
+        else {
+            CacheConfiguration ccfg = defaultCacheConfiguration();
+            ccfg.setName(CACHE_NAME);
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setBackups(1);
+
+            cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
@@ -99,7 +97,28 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     public void testAffinityCallRestartNode() throws Exception {
         startGridsMultiThreaded(SERVERS_COUNT);
 
-        final int ITERS = 5;
+        affinityCallRestartNode(grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallFromClientRestartNode() throws Exception {
+        startGridsMultiThreaded(SERVERS_COUNT + 1);
+
+        Ignite client = grid(SERVERS_COUNT);
+
+        assertTrue(client.configuration().isClientMode());
+
+        affinityCallRestartNode(client);
+    }
+
+    /**
+     * @param node Node executing affinity call.
+     * @throws Exception If failed.
+     */
+    private void affinityCallRestartNode(Ignite node) throws Exception {
+        final int ITERS = 10;
 
         for (int i = 0; i < ITERS; i++) {
             log.info("Iteration: " + i);
@@ -119,7 +138,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             });
 
             while (!fut.isDone())
-                grid(1).compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, topVer, topVer + 1));
+                node.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, topVer, topVer + 1));
 
             fut.get();
 

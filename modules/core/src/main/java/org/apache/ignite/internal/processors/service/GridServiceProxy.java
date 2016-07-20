@@ -39,7 +39,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.Service;
 import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
@@ -148,60 +148,78 @@ class GridServiceProxy<T> implements Serializable {
         /** {@inheritDoc} */
         @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) {
-            while (true) {
-                ClusterNode node = null;
+            if (U.isHashCodeMethod(mtd))
+                return System.identityHashCode(proxy);
+            else if (U.isEqualsMethod(mtd))
+                return proxy == args[0];
+            else if (U.isToStringMethod(mtd))
+                return GridServiceProxy.class.getSimpleName() + " [name=" + name + ", sticky=" + sticky + ']';
 
-                try {
-                    node = nodeForService(name, sticky);
+            ctx.gateway().readLock();
 
-                    if (node == null)
-                        throw new IgniteException("Failed to find deployed service: " + name);
+            try {
+                while (true) {
+                    ClusterNode node = null;
 
-                    // If service is deployed locally, then execute locally.
-                    if (node.isLocal()) {
-                        ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
+                    try {
+                        node = nodeForService(name, sticky);
 
-                        if (svcCtx != null)
-                            return mtd.invoke(svcCtx.service(), args);
+                        if (node == null)
+                            throw new IgniteException("Failed to find deployed service: " + name);
+
+                        // If service is deployed locally, then execute locally.
+                        if (node.isLocal()) {
+                                ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
+
+                            if (svcCtx != null) {
+                                Service svc = svcCtx.service();
+
+                                if (svc != null)
+                                    return mtd.invoke(svc, args);
+                            }
+                        }
+                        else {
+                            // Execute service remotely.
+                            return ctx.closure().callAsyncNoFailover(
+                                BALANCE,
+                                new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                                Collections.singleton(node),
+                                false
+                            ).get();
+                        }
                     }
-                    else {
-                        // Execute service remotely.
-                        return ctx.closure().callAsyncNoFailover(
-                            BALANCE,
-                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
-                            Collections.singleton(node),
-                            false
-                        ).get();
+                    catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
+                    }
+                    catch (RuntimeException | Error e) {
+                        throw e;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+
+                    // If we are here, that means that service was not found
+                    // or topology was changed. In this case, we erase the
+                    // previous sticky node and try again.
+                    rmtNode.compareAndSet(node, null);
+
+                    // Add sleep between retries to avoid busy-wait loops.
+                    try {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IgniteException(e);
                     }
                 }
-                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                }
-                catch (RuntimeException | Error e) {
-                    throw e;
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-
-                // If we are here, that means that service was not found
-                // or topology was changed. In this case, we erase the
-                // previous sticky node and try again.
-                rmtNode.compareAndSet(node, null);
-
-                // Add sleep between retries to avoid busy-wait loops.
-                try {
-                    Thread.sleep(10);
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-
-                    throw new IgniteException(e);
-                }
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
@@ -210,7 +228,7 @@ class GridServiceProxy<T> implements Serializable {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-        private ClusterNode nodeForService(String name, boolean sticky) {
+        private ClusterNode nodeForService(String name, boolean sticky) throws IgniteCheckedException {
             do { // Repeat if reference to remote node was changed.
                 if (sticky) {
                     ClusterNode curNode = rmtNode.get();
@@ -237,11 +255,11 @@ class GridServiceProxy<T> implements Serializable {
          * @return Local node if it has a given service deployed or randomly chosen remote node,
          * otherwise ({@code null} if given service is not deployed on any node.
          */
-        private ClusterNode randomNodeForService(String name) {
+        private ClusterNode randomNodeForService(String name) throws IgniteCheckedException {
             if (hasLocNode && ctx.service().service(name) != null)
                 return ctx.discovery().localNode();
 
-            Map<UUID, Integer> snapshot = serviceTopology(name);
+            Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name);
 
             if (snapshot == null || snapshot.isEmpty())
                 return null;
@@ -307,19 +325,6 @@ class GridServiceProxy<T> implements Serializable {
 
             return null;
         }
-
-        /**
-         * @param name Service name.
-         * @return Map of number of service instances per node ID.
-         */
-        private Map<UUID, Integer> serviceTopology(String name) {
-            for (ServiceDescriptor desc : ctx.service().serviceDescriptors()) {
-                if (desc.name().equals(name))
-                    return desc.topologySnapshot();
-            }
-
-            return null;
-        }
     }
 
     /**
@@ -367,9 +372,9 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ServiceContextImpl svcCtx = ((IgniteKernal) ignite).context().service().serviceContext(svcName);
+            ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
 
-            if (svcCtx == null)
+            if (svcCtx == null || svcCtx.service() == null)
                 throw new GridServiceNotFoundException(svcName);
 
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);

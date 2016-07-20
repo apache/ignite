@@ -26,10 +26,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
@@ -38,14 +37,11 @@ import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,16 +50,7 @@ import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 /**
  * Default map-reduce planner implementation.
  */
-public class IgniteHadoopMapReducePlanner implements HadoopMapReducePlanner {
-    /** Injected grid. */
-    @IgniteInstanceResource
-    private Ignite ignite;
-
-    /** Logger. */
-    @SuppressWarnings("UnusedDeclaration")
-    @LoggerResource
-    private IgniteLogger log;
-
+public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner {
     /** {@inheritDoc} */
     @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException {
@@ -98,7 +85,7 @@ public class IgniteHadoopMapReducePlanner implements HadoopMapReducePlanner {
         Iterable<HadoopInputSplit> splits) throws IgniteCheckedException {
         Map<UUID, Collection<HadoopInputSplit>> mappers = new HashMap<>();
 
-        Map<String, Collection<UUID>> nodes = hosts(top);
+        Map<String, Collection<UUID>> nodes = groupByHost(top);
 
         Map<UUID, Integer> nodeLoads = new HashMap<>(top.size(), 1.0f); // Track node load.
 
@@ -129,33 +116,6 @@ public class IgniteHadoopMapReducePlanner implements HadoopMapReducePlanner {
     }
 
     /**
-     * Groups nodes by host names.
-     *
-     * @param top Topology to group.
-     * @return Map.
-     */
-    private static Map<String, Collection<UUID>> hosts(Collection<ClusterNode> top) {
-        Map<String, Collection<UUID>> grouped = U.newHashMap(top.size());
-
-        for (ClusterNode node : top) {
-            for (String host : node.hostNames()) {
-                Collection<UUID> nodeIds = grouped.get(host);
-
-                if (nodeIds == null) {
-                    // Expecting 1-2 nodes per host.
-                    nodeIds = new ArrayList<>(2);
-
-                    grouped.put(host, nodeIds);
-                }
-
-                nodeIds.add(node.id());
-            }
-        }
-
-        return grouped;
-    }
-
-    /**
      * Determine the best node for this split.
      *
      * @param split Split.
@@ -179,54 +139,58 @@ public class IgniteHadoopMapReducePlanner implements HadoopMapReducePlanner {
                     igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
                 if (igfs != null && !igfs.isProxy(split0.file())) {
-                    Collection<IgfsBlockLocation> blocks;
+                    IgfsPath path = new IgfsPath(split0.file());
 
-                    try {
-                        blocks = igfs.affinity(new IgfsPath(split0.file()), split0.start(), split0.length());
-                    }
-                    catch (IgniteException e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                    if (igfs.exists(path)) {
+                        Collection<IgfsBlockLocation> blocks;
 
-                    assert blocks != null;
+                        try {
+                            blocks = igfs.affinity(path, split0.start(), split0.length());
+                        }
+                        catch (IgniteException e) {
+                            throw new IgniteCheckedException(e);
+                        }
 
-                    if (blocks.size() == 1)
-                        // Fast-path, split consists of one IGFS block (as in most cases).
-                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
-                    else {
-                        // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
-                        Map<UUID, Long> nodeMap = new HashMap<>();
+                        assert blocks != null;
 
-                        List<UUID> bestNodeIds = null;
-                        long bestLen = -1L;
+                        if (blocks.size() == 1)
+                            // Fast-path, split consists of one IGFS block (as in most cases).
+                            return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
+                        else {
+                            // Slow-path, file consists of multiple IGFS blocks. First, find the most co-located nodes.
+                            Map<UUID, Long> nodeMap = new HashMap<>();
 
-                        for (IgfsBlockLocation block : blocks) {
-                            for (UUID blockNodeId : block.nodeIds()) {
-                                if (topIds.contains(blockNodeId)) {
-                                    Long oldLen = nodeMap.get(blockNodeId);
-                                    long newLen = oldLen == null ? block.length() : oldLen + block.length();
+                            List<UUID> bestNodeIds = null;
+                            long bestLen = -1L;
 
-                                    nodeMap.put(blockNodeId, newLen);
+                            for (IgfsBlockLocation block : blocks) {
+                                for (UUID blockNodeId : block.nodeIds()) {
+                                    if (topIds.contains(blockNodeId)) {
+                                        Long oldLen = nodeMap.get(blockNodeId);
+                                        long newLen = oldLen == null ? block.length() : oldLen + block.length();
 
-                                    if (bestNodeIds == null || bestLen < newLen) {
-                                        bestNodeIds = new ArrayList<>(1);
+                                        nodeMap.put(blockNodeId, newLen);
 
-                                        bestNodeIds.add(blockNodeId);
+                                        if (bestNodeIds == null || bestLen < newLen) {
+                                            bestNodeIds = new ArrayList<>(1);
 
-                                        bestLen = newLen;
-                                    }
-                                    else if (bestLen == newLen) {
-                                        assert !F.isEmpty(bestNodeIds);
+                                            bestNodeIds.add(blockNodeId);
 
-                                        bestNodeIds.add(blockNodeId);
+                                            bestLen = newLen;
+                                        }
+                                        else if (bestLen == newLen) {
+                                            assert !F.isEmpty(bestNodeIds);
+
+                                            bestNodeIds.add(blockNodeId);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if (bestNodeIds != null) {
-                            return bestNodeIds.size() == 1 ? bestNodeIds.get(0) :
-                                bestNode(bestNodeIds, topIds, nodeLoads, true);
+                            if (bestNodeIds != null) {
+                                return bestNodeIds.size() == 1 ? bestNodeIds.get(0) :
+                                    bestNode(bestNodeIds, topIds, nodeLoads, true);
+                            }
                         }
                     }
                 }

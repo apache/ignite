@@ -271,6 +271,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         subjId,
                         taskName,
                         null,
+                        null,
                         null);
 
                     if (updRes.removeVersion() != null)
@@ -372,6 +373,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             req.subjectId(),
                             taskName,
                             null,
+                            null,
                             null);
 
                         if (updRes.removeVersion() != null)
@@ -400,7 +402,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -423,7 +426,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),
-            canRemap);
+            canRemap,
+            needVer);
     }
 
     /** {@inheritDoc} */
@@ -469,8 +473,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
-        return dht.tryPutIfAbsent(key, val);
+    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
+        return dht.tryGetAndPut(key, val);
     }
 
     /** {@inheritDoc} */

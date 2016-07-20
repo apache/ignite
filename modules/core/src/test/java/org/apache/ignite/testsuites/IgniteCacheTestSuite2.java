@@ -23,6 +23,8 @@ import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionExcludeNeighbor
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDhtLocalPartitionAfterRemoveSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheTxRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFinishPartitionsSelfTest;
@@ -123,6 +125,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMultithre
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
+import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 
 /**
  * Test suite.
@@ -248,6 +251,10 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteDynamicCacheAndNodeStop.class));
         suite.addTest(new TestSuite(CacheLockReleaseNodeLeaveTest.class));
         suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
+
+        suite.addTest(new TestSuite(IgniteNoCustomEventsOnNodeStart.class));
 
         return suite;
     }

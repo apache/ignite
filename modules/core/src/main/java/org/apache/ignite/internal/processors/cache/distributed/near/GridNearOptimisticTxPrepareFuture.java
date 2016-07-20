@@ -160,6 +160,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 mini.onResult(nodeId, res);
             }
+            else {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near optimistic prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near optimistic prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
+            }
         }
     }
 
@@ -262,9 +278,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             IgniteTxEntry singleWrite = tx.singleWrite();
 
             if (singleWrite != null)
-                prepareSingle(singleWrite, topLocked);
+                prepareSingle(singleWrite, topLocked, remap);
             else
-                prepare(tx.writeEntries(), topLocked);
+                prepare(tx.writeEntries(), topLocked, remap);
 
             markInitialized();
         }
@@ -277,14 +293,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param write Write.
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
-    private void prepareSingle(IgniteTxEntry write, boolean topLocked) {
+    private void prepareSingle(IgniteTxEntry write, boolean topLocked, boolean remap) {
+        write.clearEntryReadVersion();
+
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
 
         txMapping = new GridDhtTxMapping();
 
-        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked);
+        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
         if (mapping.node().isLocal()) {
             if (write.context().isNear())
@@ -322,7 +340,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     private void prepare(
         Iterable<IgniteTxEntry> writes,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
@@ -338,7 +357,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
         for (IgniteTxEntry write : writes) {
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked);
+            write.clearEntryReadVersion();
+
+            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -475,6 +496,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             else {
                 try {
                     cctx.io().send(n, req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException e) {
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
@@ -482,6 +508,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     fut.onResult(e);
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near optimistic prepare fut, failed to sent request [txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onResult(e);
                 }
             }
@@ -503,7 +535,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
         @Nullable GridDistributedTxMapping cur,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -512,9 +545,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         GridCacheEntryEx cached0 = entry.cached();
 
         if (cached0.isDht())
-            nodes = cacheCtx.affinity().nodes(cached0.partition(), topVer);
+            nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
-            nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
+            nodes = cached0.isLocal() ?
+                cacheCtx.affinity().nodes(entry.key(), topVer) :
+                cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -537,7 +572,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
-            if (entry.explicitVersion() == null) {
+            if (entry.explicitVersion() == null && !remap) {
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
@@ -681,6 +716,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param e Node failure.
          */
         void onResult(ClusterTopologyCheckedException e) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", node=" + m.node().id() + ']');
+            }
+
             if (isDone())
                 return;
 

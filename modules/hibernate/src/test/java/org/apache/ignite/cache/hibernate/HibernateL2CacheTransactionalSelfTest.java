@@ -19,6 +19,7 @@ package org.apache.ignite.cache.hibernate;
 
 import java.util.Collections;
 import javax.cache.configuration.Factory;
+import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 import org.apache.commons.dbcp.managed.BasicManagedDataSource;
@@ -94,6 +95,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.getTransactionConfiguration().setTxManagerFactory(new TestTmFactory());
+        cfg.getTransactionConfiguration().setUseJtaSynchronization(useJtaSynchronization());
 
         return cfg;
     }
@@ -141,5 +143,12 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
     /** {@inheritDoc} */
     @Override protected AccessType[] accessTypes() {
         return new AccessType[]{AccessType.TRANSACTIONAL};
+    }
+
+    /**
+     * @return Whether to use {@link Synchronization}.
+     */
+    protected boolean useJtaSynchronization() {
+        return false;
     }
 }

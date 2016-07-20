@@ -104,7 +104,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    GridCacheVersion serReadVer = txEntry.serializableReadVersion();
+                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();
@@ -513,7 +513,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     ) {
         GridCacheContext cacheCtx = entry.context();
 
-        List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
+        List<ClusterNode> nodes = entry.cached().isLocal() ?
+            cacheCtx.affinity().nodes(entry.key(), topVer) :
+            cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
 

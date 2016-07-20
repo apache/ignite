@@ -19,25 +19,19 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Externalizable;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
-import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityNodeIdHashResolver;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.random.RandomEvictionPolicy;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -46,7 +40,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -54,7 +47,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -862,49 +854,9 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }, IgniteCheckedException.class, null);
     }
 
-    /** */
-    private static class TestStore implements CacheStore<Object,Object> {
-        /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<?, ?> entry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void deleteAll(Collection<?> keys) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sessionEnd(boolean commit) {
-            // No-op.
-        }
-    }
-
+    /**
+     *
+     */
     private static class TestRendezvousAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Empty constructor required by {@link Externalizable}.
@@ -941,6 +893,10 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         // No-op, just different class.
     }
 
+    /**
+     *
+     */
     private static class TestCacheDefaultAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+        // No-op, just different class.
     }
 }

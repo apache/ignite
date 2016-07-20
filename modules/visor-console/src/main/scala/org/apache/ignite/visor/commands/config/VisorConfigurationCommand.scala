@@ -54,11 +54,15 @@ import scala.language.implicitConversions
  *
  * ====Arguments====
  * {{{
+ *     -id8=<node-id8>
+ *         Node ID8.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
+ *         If neither is specified - command starts in interactive mode.
  *     -id=<node-id>
  *         Full node ID. Either '-id8' or '-id' can be specified.
- *         If neither is specified - command starts in interactive mode.
- *     -id8=<node-id8>
- *         Node ID8. Either '-id8' or '-id' can be specified.
  *         If neither is specified - command starts in interactive mode.
  * }}}
  *
@@ -388,14 +392,17 @@ object VisorConfigurationCommand {
             s"${cmd.name} {-id=<node-id>|id8=<node-id8>}"
         ),
         args = List(
+            "-id8=<node-id8>" -> List(
+                "Node ID8.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
+                "If neither is specified - command starts in interactive mode."
+            ),
             "-id=<node-id>" -> List(
                 "Full node ID. Either '-id8' or '-id' can be specified.",
                 "If neither is specified - command starts in interactive mode."
-            ),
-            "-id8=<node-id8>" -> List(
-                "Node ID8. Either '-id8' or '-id' can be specified.",
-                "If neither is specified - command starts in interactive mode.",
-                "Note you can also use '@n0' ... '@nn' variables as shortcut to <node-id>."
             )
         ),
         examples = List(

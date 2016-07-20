@@ -549,6 +549,8 @@ public class GridDhtPartitionDemander {
 
                     assert part != null;
 
+                    boolean last = supply.last().contains(p);
+
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
 
@@ -578,8 +580,6 @@ public class GridDhtPartitionDemander {
                                 }
                             }
 
-                            boolean last = supply.last().contains(p);
-
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
@@ -597,7 +597,9 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else {
-                        fut.partitionDone(id, p);
+                        if (last) {
+                            fut.partitionDone(id, p);
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
@@ -687,7 +689,8 @@ public class GridDhtPartitionDemander {
                         entry.expireTime(),
                         true,
                         topVer,
-                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE
+                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                        false
                     )) {
                         cctx.evicts().touch(cached, topVer); // Start tracking.
 
@@ -696,9 +699,14 @@ public class GridDhtPartitionDemander {
                                 (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                            ", part=" + p + ']');
+                    else {
+                        if (cctx.isSwapOrOffheapEnabled())
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
@@ -852,7 +860,7 @@ public class GridDhtPartitionDemander {
                     log.debug("Rebalancing is not required [cache=" + cctx.name() +
                         ", topology=" + topVer + "]");
 
-                checkIsDone(cancelled);
+                checkIsDone(cancelled, true);
             }
         }
 
@@ -876,7 +884,7 @@ public class GridDhtPartitionDemander {
 
                 remaining.clear();
 
-                checkIsDone(true /* cancelled */);
+                checkIsDone(true /* cancelled */, false);
             }
 
             return true;
@@ -1007,13 +1015,13 @@ public class GridDhtPartitionDemander {
          *
          */
         private void checkIsDone() {
-            checkIsDone(false);
+            checkIsDone(false, false);
         }
 
         /**
          * @param cancelled Is cancelled.
          */
-        private void checkIsDone(boolean cancelled) {
+        private void checkIsDone(boolean cancelled, boolean wasEmpty) {
             if (remaining.isEmpty()) {
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
@@ -1021,7 +1029,8 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Completed rebalance future: " + this);
 
-                cctx.shared().exchange().scheduleResendPartitions();
+                if (!wasEmpty)
+                    cctx.shared().exchange().scheduleResendPartitions();
 
                 Collection<Integer> m = new HashSet<>();
 

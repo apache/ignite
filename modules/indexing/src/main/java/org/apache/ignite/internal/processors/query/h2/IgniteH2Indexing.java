@@ -17,42 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -95,6 +59,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -151,7 +116,46 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
@@ -200,6 +204,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private static final String ESC_STR = ESC_CH + "" + ESC_CH;
+
+    /** The period of clean up the {@link #stmtCache}. */
+    private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
+
+    /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries. */
+    private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
+        Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+
+    /** */
+    private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
     /**
      * Command in H2 prepared statement.
@@ -331,6 +345,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (cache == null)
                     cache = cache0;
             }
+
+            cache.updateLastUsage();
 
             PreparedStatement stmt = cache.get(sql);
 
@@ -917,7 +933,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Executes regular query.
-     * Note that SQL query can not refer to table alias, so use full table name instead.
      *
      * @param spaceName Space name.
      * @param qry Query.
@@ -1112,16 +1127,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String from = " ";
 
         qry = qry.trim();
+
         String upper = qry.toUpperCase();
 
         if (upper.startsWith("SELECT")) {
             qry = qry.substring(6).trim();
 
-            if (!qry.startsWith("*"))
-                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
-                    "use SqlFieldsQuery instead: " + qry0);
+            final int star = qry.indexOf('*');
 
-            qry = qry.substring(1).trim();
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            }
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
+
             upper = qry.toUpperCase();
         }
 
@@ -1351,6 +1379,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
+     */
+    private void cleanupStatementCache() {
+        long cur = U.currentTimeMillis();
+
+        for(Iterator<Map.Entry<Thread, StatementCache>> it = stmtCache.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Thread, StatementCache> entry = it.next();
+
+            Thread t = entry.getKey();
+
+            if (t.getState() == Thread.State.TERMINATED
+                || cur - entry.getValue().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
+                it.remove();
+        }
+    }
+
+    /**
      * Gets space name from database schema.
      *
      * @param schemaName Schema name. Could not be null. Could be empty.
@@ -1472,6 +1517,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
+
+            stmtCacheCleanupTask = ctx.timeout().schedule(new Runnable() {
+                @Override public void run() {
+                    cleanupStatementCache();
+                }
+            }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
@@ -1488,7 +1539,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 @Override public Object deserialize(byte[] bytes) throws Exception {
-                    return marshaller.unmarshal(bytes, null);
+                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
+
+                    return marshaller.unmarshal(bytes, clsLdr);
                 }
             };
     }
@@ -1557,6 +1610,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
         }
+
+        if (stmtCacheCleanupTask != null)
+            stmtCacheCleanupTask.close();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2492,6 +2548,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private int size;
 
+        /** Last usage. */
+        private volatile long lastUsage;
+
         /**
          * @param size Size.
          */
@@ -2512,6 +2571,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return rmv;
+        }
+
+        /**
+         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused caches.
+         * @return last usage timestamp
+         */
+        private long lastUsage() {
+            return lastUsage;
+        }
+
+        /**
+         * Updates the {@link #lastUsage} timestamp by current time.
+         */
+        private void updateLastUsage() {
+            lastUsage = U.currentTimeMillis();
         }
     }
 }

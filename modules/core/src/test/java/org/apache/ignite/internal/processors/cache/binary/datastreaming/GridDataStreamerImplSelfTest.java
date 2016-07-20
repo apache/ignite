@@ -23,19 +23,20 @@ import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -230,6 +231,42 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(k, v.field("val"));
             }
+        }
+        finally {
+            G.stopAll(true);
+        }
+    }
+
+    /**
+     *  Tries to propagate cache with binary objects created using the builder.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAddBinaryCreatedWithBuilder() throws Exception {
+        try {
+            binaries = true;
+
+            startGrids(2);
+
+            awaitPartitionMapExchange();
+
+            Ignite g0 = grid(0);
+
+            IgniteDataStreamer<Integer, BinaryObject> dataLdr = g0.dataStreamer(null);
+
+            for (int i = 0; i < 500; i++) {
+                BinaryObjectBuilder obj = g0.binary().builder("NoExistedClass");
+
+                obj.setField("id", i);
+                obj.setField("name", String.valueOf("name = " + i));
+
+                dataLdr.addData(i, obj.build());
+            }
+
+            dataLdr.close(false);
+
+            assertEquals(500, g0.cache(null).size(CachePeekMode.ALL));
+            assertEquals(500, grid(1).cache(null).size(CachePeekMode.ALL));
         }
         finally {
             G.stopAll(true);

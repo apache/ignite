@@ -17,9 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,7 +31,7 @@ import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
-import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManager;
 import org.apache.ignite.internal.util.typedef.G;
@@ -43,6 +40,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -279,7 +280,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         // Wait for a while for prefetch to finish (if any).
         IgfsMetaManager meta = igfs.context().meta();
 
-        IgfsFileInfo info = meta.info(meta.fileId(FILE));
+        IgfsEntryInfo info = meta.info(meta.fileId(FILE));
 
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 

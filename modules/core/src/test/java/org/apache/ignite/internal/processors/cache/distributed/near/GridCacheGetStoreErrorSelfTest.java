@@ -107,7 +107,11 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         checkGetError(false, LOCAL);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @param nearEnabled Near cache flag.
+     * @param cacheMode Cache mode.
+     * @throws Exception If failed.
+     */
     private void checkGetError(boolean nearEnabled, CacheMode cacheMode) throws Exception {
         this.nearEnabled = nearEnabled;
         this.cacheMode = cacheMode;
@@ -147,14 +151,17 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
         @Override public Object load(Object key) {
             throw new IgniteException("Failed to get key from store: " + key);
         }
 
+        /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> entry) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void delete(Object key) {
             // No-op.
         }

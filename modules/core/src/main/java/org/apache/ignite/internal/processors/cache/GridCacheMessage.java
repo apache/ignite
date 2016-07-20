@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -457,7 +458,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
+            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         return args;
     }
@@ -583,6 +584,11 @@ public abstract class GridCacheMessage implements Message {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
     /**
      * @param byteCol Collection to unmarshal.
      * @param ctx Context.
@@ -603,9 +609,17 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, ldr));
+            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.messageLogger();
     }
 
     /** {@inheritDoc} */

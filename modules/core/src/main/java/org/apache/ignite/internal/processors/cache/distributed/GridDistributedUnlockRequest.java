@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -94,6 +95,11 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc} */

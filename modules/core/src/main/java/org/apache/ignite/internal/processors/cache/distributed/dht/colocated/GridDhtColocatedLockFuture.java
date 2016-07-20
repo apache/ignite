@@ -21,8 +21,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,8 +52,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -65,7 +69,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -85,6 +91,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /** Logger. */
     private static IgniteLogger log;
+
+    /** Logger. */
+    private static IgniteLogger msgLog;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -192,8 +201,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         futId = IgniteUuid.randomUuid();
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
+        }
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -397,10 +408,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Found mini-future for left node [nodeId=" + nodeId + ", mini=" + f + ", fut=" +
-                            this + ']');
-
                     f.onResult(newTopologyException(null, nodeId));
 
                     found = true;
@@ -421,33 +428,51 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      */
     void onResult(UUID nodeId, GridNearLockResponse res) {
         if (!isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
-                    this + ']');
-
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null) {
                 assert mini.node().id().equals(nodeId);
 
-                if (log.isDebugEnabled())
-                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
-
                 mini.onResult(res);
-
-                if (log.isDebugEnabled())
-                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                        ", res=" + res + ']');
 
                 return;
             }
 
-            U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+            U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
+                ", inTx=" + inTx() +
+                ", node=" + nodeId +
+                ", res=" + res +
                 ", fut=" + this + ']');
         }
-        else if (log.isDebugEnabled())
-            log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
-                ", fut=" + this + ']');
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
+                    ", inTx=" + inTx() +
+                    ", node=" + nodeId + ']');
+            }
+        }
+    }
+
+    /**
+     * @return Keys for which locks requested from remote nodes but response isn't received.
+     */
+    public Set<KeyCacheObject> requestedKeys() {
+        Set<KeyCacheObject> requestedKeys = null;
+
+        for (IgniteInternalFuture<Boolean> miniFut : futures()) {
+            if (isMini(miniFut) && !miniFut.isDone()) {
+                if (requestedKeys == null)
+                    requestedKeys = new HashSet<>();
+
+                MiniFuture mini = (MiniFuture)miniFut;
+
+                requestedKeys.addAll(mini.keys);
+
+                return requestedKeys;
+            }
+        }
+
+        return requestedKeys;
     }
 
     /**
@@ -501,6 +526,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     @Override public boolean onDone(Boolean success, Throwable err) {
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
+
+        // Local GridDhtLockFuture
+        if (inTx() && this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+            return false;
 
         if (isDone())
             return false;
@@ -1027,10 +1056,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             if (txSync == null || txSync.isDone()) {
                 try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
                     cctx.io().send(node, req, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
+                            ", inTx=" + inTx() +
+                            ", node=" + node.id() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException ex) {
                     assert fut != null;
@@ -1042,10 +1074,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 txSync.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         try {
-                            if (log.isDebugEnabled())
-                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
                             cctx.io().send(node, req, cctx.ioPolicy());
+
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
+                                    ", inTx=" + inTx() +
+                                    ", node=" + node.id() + ']');
+                            }
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             assert fut != null;
@@ -1053,6 +1088,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             fut.onResult(ex);
                         }
                         catch (IgniteCheckedException e) {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
+                                    ", inTx=" + inTx() +
+                                    ", node=" + node.id() +
+                                    ", err=" + e + ']');
+                            }
+
                             onError(e);
                         }
                     }
@@ -1288,7 +1330,36 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            onComplete(false, true);
+            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
+                Set<IgniteTxKey> keys = new HashSet<>();
+
+                for (IgniteTxEntry txEntry : tx.allEntries()) {
+                    if (!txEntry.locked())
+                        keys.add(txEntry.txKey());
+                }
+
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                        try {
+                            TxDeadlock deadlock = fut.get();
+
+                            if (deadlock != null)
+                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = e;
+
+                            U.warn(log, "Failed to detect deadlock.", e);
+                        }
+
+                        onComplete(false, true);
+                    }
+                });
+            }
+            else
+                onComplete(false, true);
         }
 
         /** {@inheritDoc} */
@@ -1310,11 +1381,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         /** Node ID. */
         @GridToStringExclude
-        private ClusterNode node;
+        private final ClusterNode node;
 
         /** Keys. */
         @GridToStringInclude
-        private Collection<KeyCacheObject> keys;
+        private final Collection<KeyCacheObject> keys;
 
         /** Mappings to proceed. */
         @GridToStringExclude
@@ -1360,6 +1431,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
          * @param e Node left exception.
          */
         void onResult(ClusterTopologyCheckedException e) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
+                    ", inTx=" + inTx() +
+                    ", nodeId=" + node.id() + ']');
+            }
+
             if (isDone())
                 return;
 
@@ -1369,9 +1446,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 rcvRes = true;
             }
-
-            if (log.isDebugEnabled())
-                log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 
             if (tx != null)
                 tx.removeMapping(node.id());
@@ -1394,6 +1468,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             if (res.error() != null) {
+                if (inTx() && res.error() instanceof IgniteTxTimeoutCheckedException &&
+                    cctx.tm().deadlockDetectionEnabled())
+                    return;
+
                 if (log.isDebugEnabled())
                     log.debug("Finishing mini future with an error due to error in response [miniFut=" + this +
                         ", res=" + res + ']');

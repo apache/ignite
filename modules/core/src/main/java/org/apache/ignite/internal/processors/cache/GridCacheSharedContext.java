@@ -24,8 +24,10 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,9 +51,12 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
 /**
  * Shared context.
@@ -94,6 +99,30 @@ public class GridCacheSharedContext<K, V> {
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
+    /** Local store count. */
+    private final AtomicInteger locStoreCnt;
+
+    /** Indicating whether local store keeps primary only. */
+    private final boolean locStorePrimaryOnly = IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY);
+
+    /** */
+    private final IgniteLogger msgLog;
+
+    /** */
+    private final IgniteLogger atomicMsgLog;
+
+    /** */
+    private final IgniteLogger txPrepareMsgLog;
+
+    /** */
+    private final IgniteLogger txFinishMsgLog;
+
+    /** */
+    private final IgniteLogger txLockMsgLog;
+
+    /** */
+    private final IgniteLogger txRecoveryMsgLog;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -125,6 +154,57 @@ public class GridCacheSharedContext<K, V> {
         txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new ConcurrentHashMap<>();
+
+        locStoreCnt = new AtomicInteger();
+
+        msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
+        atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
+        txPrepareMsgLog = kernalCtx.log(CU.TX_MSG_PREPARE_LOG_CATEGORY);
+        txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
+        txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
+        txRecoveryMsgLog = kernalCtx.log(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger() {
+        return msgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger atomicMessageLogger() {
+        return atomicMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txPrepareMessageLogger() {
+        return txPrepareMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txFinishMessageLogger() {
+        return txFinishMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txLockMessageLogger() {
+        return txLockMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txRecoveryMessageLogger() {
+        return txRecoveryMsgLog;
     }
 
     /**
@@ -242,6 +322,11 @@ public class GridCacheSharedContext<K, V> {
                 ", conflictingCacheName=" + existing.name() + ']');
         }
 
+        CacheStoreManager mgr = cacheCtx.store();
+
+        if (mgr.configured() && mgr.isLocal())
+            locStoreCnt.incrementAndGet();
+
         ctxMap.put(cacheCtx.cacheId(), cacheCtx);
     }
 
@@ -252,6 +337,11 @@ public class GridCacheSharedContext<K, V> {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
+
+        CacheStoreManager mgr = cacheCtx.store();
+
+        if (mgr.configured() && mgr.isLocal())
+            locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
         ioMgr.removeHandlers(cacheId);
@@ -464,11 +554,23 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Count of caches with configured local stores.
+     */
+    public int getLocalStoreCount() {
+        return locStoreCnt.get();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return Node or {@code null}.
      */
-    public ClusterNode node(UUID nodeId) {
+    @Nullable public ClusterNode node(UUID nodeId) {
         return kernalCtx.discovery().node(nodeId);
+    }
+
+    /** Indicating whether local store keeps primary only. */
+    public boolean localStorePrimaryOnly() {
+        return locStorePrimaryOnly;
     }
 
     /**

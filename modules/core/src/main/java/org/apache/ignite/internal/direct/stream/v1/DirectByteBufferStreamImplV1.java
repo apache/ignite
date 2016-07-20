@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -518,6 +519,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             if (buf.hasRemaining()) {
                 try {
                     writer.beforeInnerMessageWrite();
+
+                    writer.setCurrentWriteClass(msg.getClass());
 
                     lastFinished = msg.writeTo(buf, writer);
                 }
@@ -1345,6 +1348,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 throw new UnsupportedOperationException();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DirectByteBufferStreamImplV1.class, this);
     }
 
     /**

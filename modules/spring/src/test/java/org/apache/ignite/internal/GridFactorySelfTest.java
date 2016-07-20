@@ -469,7 +469,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                                 String msg = e.getMessage();
 
                                 if (msg != null &&
-                                    (msg.contains("Default grid instance has already been started.") ||
+                                    (msg.contains("Default Ignite instance has already been started.") ||
                                     msg.contains("Ignite instance with this name has already been started:")))
                                     info("Caught expected exception: " + msg);
                                 else
@@ -895,6 +895,31 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     assert Ignition.localIgnite().name().equals(LEFT);
                 }
             });
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatingStart() throws Exception {
+        try {
+            IgniteConfiguration c = getConfiguration("1");
+
+            startGrid("1", c);
+
+            assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
+
+            try {
+                startGrid("2", c);
+
+                fail("Should not be able to start grid using same configuration instance.");
+            }
+            catch (Exception e) {
+                info("Caught expected exception: " + e);
+            }
         }
         finally {
             stopAllGrids();

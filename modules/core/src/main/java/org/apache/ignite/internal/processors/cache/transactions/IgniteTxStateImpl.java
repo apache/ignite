@@ -47,8 +47,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
     private GridLongList activeCacheIds = new GridLongList();
-    /** Per-transaction read map. */
 
+    /** Per-transaction read map. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
