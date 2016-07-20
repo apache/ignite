@@ -1675,6 +1675,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (F.eq(e.getKey().get1(), ccfg.getName()))
                     it.remove();
             }
+
+            for (TableDescriptor desc : rmv.tbls.values()) {
+                desc.tbl.close();
+                if (desc.luceneIdx != null)
+                    U.closeQuiet(desc.luceneIdx);
+            }
         }
     }
 
