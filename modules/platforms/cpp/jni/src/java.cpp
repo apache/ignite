@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-#include <cstring>
+#include <cstring>   // needed only on linux
 #include <string>
 #include <exception>
+#include <vector>
+#include <algorithm>
+#include <stdexcept>
 
 #include "ignite/jni/utils.h"
 #include "ignite/common/concurrent.h"
@@ -210,7 +213,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);            
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_REGISTER_CLASS = JniMethod("registerClass", "(ILjava/lang/String;)Z", false);
@@ -365,15 +368,18 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
 
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJ)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJLorg/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinityFunctionTarget;)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_PARTITION = JniMethod("affinityFunctionPartition", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS = JniMethod("affinityFunctionAssignPartitions", "(JJJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE = JniMethod("affinityFunctionRemoveNode", "(JJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY = JniMethod("affinityFunctionDestroy", "(JJ)V", true);
 
+            JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
+            JniMethod M_PLATFORM_UTILS_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
             JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
@@ -438,8 +444,10 @@ namespace ignite
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
+            gcc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
+            std::vector<ConsoleWriteHandler> consoleWriteHandlers;
 
             /* HELPER METHODS. */
 
@@ -546,14 +554,19 @@ namespace ignite
                 c_Throwable = FindClass(env, C_THROWABLE);
                 m_Throwable_getMessage = FindMethod(env, c_Throwable, M_THROWABLE_GET_MESSAGE);
                 m_Throwable_printStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_PRINT_STACK_TRACE);
+
+                c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
+                m_PlatformUtils_getFullStackTrace = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_Class);
                 DeleteClass(env, c_Throwable);
+                DeleteClass(env, c_PlatformUtils);
             }
 
-            bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen) {
+            bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, 
+				int* errMsgLen, char** stackTrace, int* stackTraceLen) {
                 if (env && env->ExceptionCheck()) {
                     if (m_Class_getName && m_Throwable_getMessage) {
                         jthrowable err = env->ExceptionOccurred();
@@ -568,6 +581,13 @@ namespace ignite
                         jstring msg = static_cast<jstring>(env->CallObjectMethod(err, m_Throwable_getMessage));
                         *errMsg = StringToChars(env, msg, errMsgLen);
 
+                        jstring trace = NULL;
+
+                        if (c_PlatformUtils && m_PlatformUtils_getFullStackTrace) {
+                            trace = static_cast<jstring>(env->CallStaticObjectMethod(c_PlatformUtils, m_PlatformUtils_getFullStackTrace, err));
+                            *stackTrace = StringToChars(env, trace, stackTraceLen);
+                        }
+
                         if (errCls)
                             env->DeleteLocalRef(errCls);
 
@@ -576,6 +596,9 @@ namespace ignite
 
                         if (msg)
                             env->DeleteLocalRef(msg);
+
+                        if (trace)
+                            env->DeleteLocalRef(trace);
 
                         return true;
                     }
@@ -832,7 +855,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[59];
+					JNINativeMethod methods[60];
 
                     int idx = 0;
 
@@ -914,6 +937,7 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS, reinterpret_cast<void*>(JniAffinityFunctionAssignPartitions));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE, reinterpret_cast<void*>(JniAffinityFunctionRemoveNode));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY, reinterpret_cast<void*>(JniAffinityFunctionDestroy));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE, reinterpret_cast<void*>(JniConsoleWrite));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -985,9 +1009,11 @@ namespace ignite
                 int errClsNameLen = 0;
                 std::string errMsg;
                 int errMsgLen = 0;
+                std::string stackTrace;
+                int stackTraceLen = 0;
 
                 try {
-                    if (!JVM.GetJvm()) 
+                    if (!JVM.GetJvm())
                     {
                         // 1. Create JVM itself.
                         jint res = CreateJvm(opts, optsLen, &jvm, &env);
@@ -1022,9 +1048,11 @@ namespace ignite
                 {
                     char* errClsNameChars = NULL;
                     char* errMsgChars = NULL;
+                    char* stackTraceChars = NULL;
 
                     // Read error info if possible.
-                    javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen);
+                    javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen, 
+						&stackTraceChars, &stackTraceLen);
 
                     if (errClsNameChars) {
                         errClsName = errClsNameChars;
@@ -1037,6 +1065,13 @@ namespace ignite
                         errMsg = errMsgChars;
 
                         delete[] errMsgChars;
+                    }
+
+                    if (stackTraceChars)
+                    {
+                        stackTrace = stackTraceChars;
+
+                        delete[] stackTraceChars;
                     }
 
                     // Destroy mmebers.
@@ -1063,7 +1098,7 @@ namespace ignite
 
                     if (hnds.error)
                         hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_INIT, errClsName.c_str(), errClsNameLen,
-                            errMsg.c_str(), errMsgLen, NULL, 0);
+                            errMsg.c_str(), errMsgLen, stackTrace.c_str(), stackTraceLen, NULL, 0);
                 }
 
                 return ctx;
@@ -2535,6 +2570,35 @@ namespace ignite
                 }
             }
 
+            void JniContext::SetConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
+                CONSOLE_LOCK.Enter();
+
+                consoleWriteHandlers.push_back(consoleHandler);
+
+                CONSOLE_LOCK.Leave();
+            }
+
+            int JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
+                CONSOLE_LOCK.Enter();
+
+                int oldSize = static_cast<int>(consoleWriteHandlers.size());
+
+                consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(),
+                    consoleHandler), consoleWriteHandlers.end());
+
+                int removedCnt = oldSize - static_cast<int>(consoleWriteHandlers.size());
+
+                CONSOLE_LOCK.Leave();
+
+                return removedCnt;
+            }
+
             void JniContext::ThrowToJava(char* msg) {
                 JNIEnv* env = Attach();
 
@@ -2557,7 +2621,7 @@ namespace ignite
                     AttachHelper::OnThreadAttach();
                 else {
                     if (hnds.error)
-                        hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_ATTACH, NULL, 0, NULL, 0, NULL, 0);
+                        hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_ATTACH, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
                 }
 
                 return env;
@@ -2582,6 +2646,7 @@ namespace ignite
 
                     jstring clsName = static_cast<jstring>(env->CallObjectMethod(cls, jvm->GetJavaMembers().m_Class_getName));
                     jstring msg = static_cast<jstring>(env->CallObjectMethod(err, jvm->GetJavaMembers().m_Throwable_getMessage));
+                    jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(jvm->GetJavaMembers().c_PlatformUtils, jvm->GetJavaMembers().m_PlatformUtils_getFullStackTrace, err));
 
                     env->DeleteLocalRef(cls);
 
@@ -2590,6 +2655,9 @@ namespace ignite
 
                     int msgLen;
                     std::string msg0 = JavaStringToCString(env, msg, &msgLen);
+
+                    int traceLen;
+                    std::string trace0 = JavaStringToCString(env, trace, &traceLen);
 
                     if (errInfo)
                     {
@@ -2609,16 +2677,16 @@ namespace ignite
                         int errBytesLen = env->GetArrayLength(errData);
 
                         if (hnds.error)
-                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
-                                errBytesNative, errBytesLen);
+                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), 
+								msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
 
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
                     else
                     {
                         if (hnds.error)
-                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
-                                NULL, 0);
+                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), 
+								msgLen, trace0.c_str(), traceLen, NULL, 0);
                     }
 
                     env->DeleteLocalRef(err);
@@ -2872,7 +2940,7 @@ namespace ignite
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
             }
-            
+
             JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr) {
                 IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnClientDisconnectedHandler, onClientDisconnected);
             }
@@ -2880,15 +2948,16 @@ namespace ignite
             JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
                 IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
-            
-            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr);
+
+            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jobject baseFunc) {
+                void* baseFuncRef = baseFunc ? env->NewGlobalRef(baseFunc) : nullptr;
+                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr, baseFuncRef);
             }
 
             JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
                 IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionPartitionHandler, affinityFunctionPartition, ptr, memPtr);
             }
-            
+
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionAssignPartitionsHandler, affinityFunctionAssignPartitions, ptr, inMemPtr, outMemPtr);
             }
@@ -2899,6 +2968,23 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
                 IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionDestroyHandler, affinityFunctionDestroy, ptr);
+            }
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
+                CONSOLE_LOCK.Enter();
+
+                if (consoleWriteHandlers.size() > 0) {
+                    ConsoleWriteHandler consoleWrite = consoleWriteHandlers.at(0);
+
+                    const char* strChars = env->GetStringUTFChars(str, nullptr);
+                    const int strCharsLen = env->GetStringUTFLength(str);
+
+                    consoleWrite(strChars, strCharsLen, isErr);
+
+                    env->ReleaseStringUTFChars(str, strChars);
+                }
+
+                CONSOLE_LOCK.Leave();
             }
         }
     }

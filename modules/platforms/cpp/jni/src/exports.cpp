@@ -567,6 +567,14 @@ extern "C" {
         return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
     }
 
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::SetConsoleHandler(consoleHandler);
+    }
+
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::RemoveConsoleHandler(consoleHandler);
+    }
+
     void IGNITE_CALL IgniteReleaseChars(char* chars) {
         delete[] chars;
     }

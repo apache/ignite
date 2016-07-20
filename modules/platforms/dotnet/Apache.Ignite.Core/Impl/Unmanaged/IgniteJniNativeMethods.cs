@@ -437,6 +437,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableIsCancelled(void* ctx, void* target);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteSetConsoleHandler")]
+        public static extern void SetConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
+        public static extern int RemoveConsoleHandler(void* consoleHandler);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReleaseChars")]
         public static extern void ReleaseChars(sbyte* chars);
     }

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './communication.jade!';
+import templateUrl from './communication.jade';
 
 export default ['igniteConfigurationClustersCommunication', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

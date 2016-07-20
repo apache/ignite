@@ -421,7 +421,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         long timeInterval,
         boolean autoUnsubscribe,
         boolean loc,
-        final boolean keepBinary) throws IgniteCheckedException
+        final boolean keepBinary,
+        final boolean includeExpired) throws IgniteCheckedException
     {
         IgniteClosure<Boolean, CacheContinuousQueryHandler> clsr;
 
@@ -438,7 +439,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                             rmtFilterFactory,
                             true,
                             false,
-                            true,
+                            !includeExpired,
                             false,
                             null);
                     else {
@@ -456,7 +457,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                             (CacheEntryEventSerializableFilter)fltr,
                             true,
                             false,
-                            true,
+                            !includeExpired,
                             false);
                     }
 
@@ -473,7 +474,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         rmtFilter,
                         true,
                         false,
-                        true,
+                        !includeExpired,
                         false);
                 }
             };
@@ -642,7 +643,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         hnd.localCache(cctx.isLocal());
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
-            F.nodeForNodeId(cctx.localNodeId()) : F.<ClusterNode>alwaysTrue();
+            F.nodeForNodeId(cctx.localNodeId()) : cctx.config().getNodeFilter();
+
+        assert pred != null : cctx.config();
 
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,

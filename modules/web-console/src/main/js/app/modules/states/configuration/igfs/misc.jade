@@ -32,7 +32,7 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
     .col-xs-8.col-sm-8.col-md-8
         .fieldSep /
         .input-tip
-            input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder='Path' on-escape='tableReset()')
+            input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder='Path' ignite-on-escape='tableReset()')
     .col-xs-4.col-sm-4.col-md-4
         -var arg = keyModel + ', ' + valModel
         -var btnVisible = 'tablePairSaveVisible(tblPathModes, ' + index + ')'
@@ -40,7 +40,7 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
         -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
 
 form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
@@ -75,10 +75,10 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +checkbox('Colocate metadata', model + '.colocateMetadata', 'colocateMetadata', 'Whether to co-locate metadata on a single node')
                 .settings-row
-                    +checkbox('Relaxed consistency ', model + '.relaxedConsistency', 'relaxedConsistency',
-                        'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks. It is recommended to set\
-                        this flag to <b>false</b>b> if your application has conflicting operations, or you do not how exactly users will\
-                        use your system.')
+                    +checkbox('Relaxed consistency', model + '.relaxedConsistency', 'relaxedConsistency',
+                        'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks<br/>\
+                        It is recommended to set this flag to <b>false</b> if your application has conflicting\
+                        operations, or you do not know how exactly users will use your system')
                 .settings-row
                     ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
                         ignite-form-field-label

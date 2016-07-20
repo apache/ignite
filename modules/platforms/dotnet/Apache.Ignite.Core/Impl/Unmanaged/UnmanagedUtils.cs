@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
@@ -48,6 +49,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (ptr == IntPtr.Zero)
                 throw new IgniteException(string.Format("Failed to load {0}: {1}", 
                     IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
+
+            JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+        }
+
+        /// <summary>
+        /// Handles the DomainUnload event of the current AppDomain.
+        /// </summary>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            // Clean the handler to avoid JVM crash.
+            var removedCnt = JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            Debug.Assert(removedCnt == 1);
         }
 
         /// <summary>

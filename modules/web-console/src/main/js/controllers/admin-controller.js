@@ -16,11 +16,9 @@
  */
 
 // Controller for Admin screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('adminController', [
-    '$rootScope', '$scope', '$http', '$q', '$common', '$confirm', '$state', 'User', 'IgniteCountries',
-    ($rootScope, $scope, $http, $q, $common, $confirm, $state, User, Countries) => {
+export default ['adminController', [
+    '$rootScope', '$scope', '$http', '$q', '$state', 'IgniteMessages', 'IgniteConfirm', 'User', 'IgniteCountries',
+    ($rootScope, $scope, $http, $q, $state, Messages, Confirm, User, Countries) => {
         $scope.users = null;
 
         const _reloadUsers = () => {
@@ -35,7 +33,7 @@ consoleModule.controller('adminController', [
                             (user.company || '') + ' ' + (user.countryCode || '');
                     });
                 })
-                .catch((err) => $common.showError(err));
+                .catch(Messages.showError);
         };
 
         _reloadUsers();
@@ -48,11 +46,11 @@ consoleModule.controller('adminController', [
 
                     $state.go('base.configuration.clusters');
                 })
-                .catch((errMsg) => $common.showError($common.errorMessage(errMsg)));
+                .catch(Messages.showError);
         };
 
         $scope.removeUser = (user) => {
-            $confirm.confirm('Are you sure you want to remove user: "' + user.userName + '"?')
+            Confirm.confirm('Are you sure you want to remove user: "' + user.userName + '"?')
                 .then(() => {
                     $http.post('/api/v1/admin/remove', {userId: user._id})
                         .success(() => {
@@ -61,13 +59,13 @@ consoleModule.controller('adminController', [
                             if (i >= 0)
                                 $scope.users.splice(i, 1);
 
-                            $common.showInfo('User has been removed: "' + user.userName + '"');
+                            Messages.showInfo('User has been removed: "' + user.userName + '"');
                         })
-                        .error((errMsg, status) => {
+                        .error((err, status) => {
                             if (status === 503)
-                                $common.showInfo(errMsg);
+                                Messages.showInfo(err);
                             else
-                                $common.showError('Failed to remove user: "' + $common.errorMessage(errMsg) + '"');
+                                Messages.showError(Messages.errorMessage('Failed to remove user: ', err));
                         });
                 });
         };
@@ -82,11 +80,12 @@ consoleModule.controller('adminController', [
                 .success(() => {
                     user.admin = !user.admin;
 
-                    $common.showInfo('Admin right was successfully toggled for user: "' + user.userName + '"');
-                }).error((err) => {
-                    $common.showError('Failed to toggle admin right for user: "' + $common.errorMessage(err) + '"');
+                    Messages.showInfo('Admin right was successfully toggled for user: "' + user.userName + '"');
+                })
+                .error((err) => {
+                    Messages.showError(Messages.errorMessage('Failed to toggle admin right for user: ', err));
                 })
                 .finally(() => user.adminChanging = false);
         };
-    }]
-);
+    }
+]];

@@ -20,37 +20,34 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
-    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Base class for predefined affinity functions.
     /// </summary>
+    [Serializable]
     public abstract class AffinityFunctionBase : IAffinityFunction
     {
-        /** */
-        private const byte TypeCodeNull = 0;
-
-        /** */
-        private const byte TypeCodeFair = 1;
-
-        /** */
-        private const byte TypeCodeRendezvous = 2;
-
-        /** */
-        private const byte TypeCodeUser = 3;
-
         /// <summary> The default value for <see cref="Partitions"/> property. </summary>
         public const int DefaultPartitions = 1024;
+
+        /** */
+        private int _partitions = DefaultPartitions;
+
+        /** */
+        private IAffinityFunction _baseFunction;
+
 
         /// <summary>
         /// Gets or sets the total number of partitions.
         /// </summary>
         [DefaultValue(DefaultPartitions)]
-        public int Partitions { get; set; }
+        public virtual int Partitions
+        {
+            get { return _partitions; }
+            set { _partitions = value; }
+        }
 
         /// <summary>
         /// Gets partition number for a given key starting from 0. Partitioned caches
@@ -67,9 +64,11 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <returns>
         /// Partition number for a given key.
         /// </returns>
-        public int GetPartition(object key)
+        public virtual int GetPartition(object key)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            return _baseFunction.GetPartition(key);
         }
 
         /// <summary>
@@ -77,9 +76,11 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// disconnected node from affinity mapping.
         /// </summary>
         /// <param name="nodeId">The node identifier.</param>
-        public void RemoveNode(Guid nodeId)
+        public virtual void RemoveNode(Guid nodeId)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            _baseFunction.RemoveNode(nodeId);
         }
 
         /// <summary>
@@ -97,107 +98,42 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// A collection of partitions, where each partition is a collection of nodes,
         /// where first node is a primary node, and other nodes are backup nodes.
         /// </returns>
-        public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+        public virtual IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            return _baseFunction.AssignPartitions(context);
         }
 
         /// <summary>
         /// Gets or sets a value indicating whether to exclude same-host-neighbors from being backups of each other.
         /// </summary>
-        public bool ExcludeNeighbors { get; set; }
+        public virtual bool ExcludeNeighbors { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionBase"/> class.
         /// </summary>
         internal AffinityFunctionBase()
         {
-            Partitions = DefaultPartitions;
+            // No-op.
         }
 
         /// <summary>
-        /// Reads the instance.
+        /// Sets the base function.
         /// </summary>
-        internal static IAffinityFunction Read(IBinaryRawReader reader)
+        /// <param name="baseFunc">The base function.</param>
+        internal void SetBaseFunction(IAffinityFunction baseFunc)
         {
-            AffinityFunctionBase fun;
-
-            var typeCode = reader.ReadByte();
-            switch (typeCode)
-            {
-                case TypeCodeNull:
-                    return null;
-                case TypeCodeFair:
-                    fun = new FairAffinityFunction();
-                    break;
-                case TypeCodeRendezvous:
-                    fun = new RendezvousAffinityFunction();
-                    break;
-                case TypeCodeUser:
-                    var f = reader.ReadObject<IAffinityFunction>();
-                    reader.ReadInt(); // skip partition count
-
-                    return f;
-                default:
-                    throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
-            }
-
-            fun.Partitions = reader.ReadInt();
-            fun.ExcludeNeighbors = reader.ReadBoolean();
-
-            return fun;
-        }
-
-        /// <summary>
-        /// Writes the instance.
-        /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
-        {
-            if (fun == null)
-            {
-                writer.WriteByte(TypeCodeNull);
-                return;
-            }
-
-            var p = fun as AffinityFunctionBase;
-
-            if (p != null)
-            {
-                ValidateAffinityFunctionType(p.GetType());
-                writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
-                writer.WriteInt(p.Partitions);
-                writer.WriteBoolean(p.ExcludeNeighbors);
-            }
-            else
-            {
-                writer.WriteByte(TypeCodeUser);
-
-                if (!fun.GetType().IsSerializable)
-                    throw new IgniteException("AffinityFunction should be serializable.");
-
-                writer.WriteObject(fun);
-                writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
-            }
-        }
-
-        /// <summary>
-        /// Validates the type of the affinity function.
-        /// </summary>
-        private static void ValidateAffinityFunctionType(Type funcType)
-        {
-            if (funcType == typeof(FairAffinityFunction) || funcType == typeof(RendezvousAffinityFunction))
-                return;
-
-            throw new IgniteException(string.Format("User-defined AffinityFunction can not inherit from {0}: {1}",
-                typeof(AffinityFunctionBase), funcType));
+            _baseFunction = baseFunc;
         }
 
         /// <summary>
         /// Gets the direct usage error.
         /// </summary>
-        private Exception GetDirectUsageError()
+        private void ThrowIfUninitialized()
         {
-            return new IgniteException(GetType() + " can not be used directly.");
+            if (_baseFunction == null)
+                throw new IgniteException(GetType() + " has not yet been initialized.");
         }
     }
 }

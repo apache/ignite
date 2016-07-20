@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -198,7 +199,7 @@ namespace Apache.Ignite.Core.Impl
                 if (errCode == 0)
                     return;
 
-                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]", 
+                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
                     dllPath.Key, dllPath.Value, FormatWin32Error(errCode)));
 
                 if (dllPath.Value == configJvmDllPath)
@@ -477,6 +478,26 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Writes the node collection to a stream.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="nodes">The nodes.</param>
+        public static void WriteNodes(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
+        {
+            Debug.Assert(writer != null);
+
+            if (nodes != null)
+            {
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                    writer.WriteGuid(node.Id);
+            }
+            else
+                writer.WriteInt(-1);
         }
     }
 }

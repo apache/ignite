@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -33,28 +34,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// </summary>
     public class AffinityFunctionSpringTest : IgniteTestBase
     {
-        /** */
-        private IIgnite _ignite;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
-        public AffinityFunctionSpringTest() : base(3, "config\\cache\\affinity\\affinity-function.xml")
+        public AffinityFunctionSpringTest() : base(6,
+            "config\\cache\\affinity\\affinity-function.xml",
+            "config\\cache\\affinity\\affinity-function2.xml")
         {
             // No-op.
-        }
-
-        /** <inheritdoc /> */
-        public override void TestSetUp()
-        {
-            base.TestSetUp();
-
-            // Start another node without spring config
-            if (Ignition.TryGetIgnite("grid2") == null)
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"};
-                _ignite = Ignition.Start(cfg);
-            }
         }
 
         /// <summary>
@@ -63,8 +50,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestStaticCache()
         {
-            ValidateAffinityFunction(Grid.GetCache<int, int>("cache1"));
-            ValidateAffinityFunction(_ignite.GetCache<int, int>("cache1"));
+            ValidateAffinityFunction(Grid.GetCache<long, int>("cache1"));
+            ValidateAffinityFunction(Grid2.GetCache<long, int>("cache1"));
+            ValidateAffinityFunction(Grid.GetCache<long, int>("cache2"));
+            ValidateAffinityFunction(Grid2.GetCache<long, int>("cache2"));
         }
 
         /// <summary>
@@ -73,29 +62,39 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestDynamicCache()
         {
-            ValidateAffinityFunction(Grid.CreateCache<int, int>("dyn-cache-1"));
-            ValidateAffinityFunction(_ignite.GetCache<int, int>("dyn-cache-1"));
+            ValidateAffinityFunction(Grid.CreateCache<long, int>("dyn-cache-1"));
+            ValidateAffinityFunction(Grid2.GetCache<long, int>("dyn-cache-1"));
 
-            ValidateAffinityFunction(_ignite.CreateCache<int, int>("dyn-cache-2"));
-            ValidateAffinityFunction(Grid.GetCache<int, int>("dyn-cache-2"));
+            ValidateAffinityFunction(Grid2.CreateCache<long, int>("dyn-cache-2"));
+            ValidateAffinityFunction(Grid.GetCache<long, int>("dyn-cache-2"));
+
+            ValidateAffinityFunction(Grid.CreateCache<long, int>("dyn-cache2-1"));
+            ValidateAffinityFunction(Grid2.GetCache<long, int>("dyn-cache2-1"));
+
+            ValidateAffinityFunction(Grid2.CreateCache<long, int>("dyn-cache2-2"));
+            ValidateAffinityFunction(Grid.GetCache<long, int>("dyn-cache2-2"));
         }
 
         /// <summary>
         /// Validates the affinity function.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        private static void ValidateAffinityFunction(ICache<int, int> cache)
+        private static void ValidateAffinityFunction(ICache<long, int> cache)
         {
-            Assert.IsNull(cache.GetConfiguration().AffinityFunction);
-
             var aff = cache.Ignite.GetAffinity(cache.Name);
+
             Assert.AreEqual(5, aff.Partitions);
-            Assert.AreEqual(4, aff.GetPartition(2));
-            Assert.AreEqual(3, aff.GetPartition(4));
+
+            // Predefined map
+            Assert.AreEqual(2, aff.GetPartition(1L));
+            Assert.AreEqual(1, aff.GetPartition(2L));
+
+            // Other keys
+            Assert.AreEqual(1, aff.GetPartition(13L));
+            Assert.AreEqual(3, aff.GetPartition(4L));
         }
 
-        [Serializable]
-        private class TestFunc : IAffinityFunction
+        private class TestFunc : IAffinityFunction   // [Serializable] is not necessary
         {
             [InstanceResource]
             private readonly IIgnite _ignite = null;
@@ -115,9 +114,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 Assert.AreEqual(1, Property1);
                 Assert.AreEqual("1", Property2);
 
-                return (int) key * 2 % 5;
+                var longKey = (long)key;
+                int res;
+
+                if (TestFairFunc.PredefinedParts.TryGetValue(longKey, out res))
+                    return res;
+
+                return (int)(longKey * 2 % 5);
             }
 
+            // ReSharper disable once UnusedParameter.Local
             public void RemoveNode(Guid nodeId)
             {
                 // No-op.
@@ -126,6 +132,52 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
+            }
+        }
+
+        private class TestFairFunc : FairAffinityFunction   // [Serializable] is not necessary
+        {
+            public static readonly Dictionary<long, int> PredefinedParts = new Dictionary<long, int>
+            {
+                {1, 2},
+                {2, 1}
+            };
+
+            [InstanceResource]
+            private readonly IIgnite _ignite = null;
+
+            private int Property1 { get; set; }
+
+            private string Property2 { get; set; }
+
+            public override int GetPartition(object key)
+            {
+                Assert.IsNotNull(_ignite);
+                Assert.AreEqual(1, Property1);
+                Assert.AreEqual("1", Property2);
+
+                Assert.IsInstanceOf<long>(key);
+
+                var basePart = base.GetPartition(key);
+                Assert.Greater(basePart, -1);
+                Assert.Less(basePart, Partitions);
+
+                var longKey = (long) key;
+                int res;
+
+                if (PredefinedParts.TryGetValue(longKey, out res))
+                    return res;
+
+                return (int) (longKey * 2 % 5);
+            }
+
+            public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+            {
+                var baseRes = base.AssignPartitions(context).ToList();  // test base call
+
+                Assert.AreEqual(Partitions, baseRes.Count);
+
+                return baseRes;
             }
         }
     }
