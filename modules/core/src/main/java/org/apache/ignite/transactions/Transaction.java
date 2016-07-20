@@ -38,7 +38,10 @@ import org.apache.ignite.lang.IgniteUuid;
  *  will be provided for read operations. With this isolation level values are always read
  *  from cache global memory or persistent store every time a value is accessed. In other words,
  *  if the same key is accessed more than once within the same transaction, it may have different
- *  value every time since global cache memory may be updated concurrently by other threads.
+ *  value every time since global cache memory may be updated concurrently by other threads. However note that if an
+ *  update happens inside of a transaction then the new value belonging to a key will be stored in the local
+ *  transactional map and all subsequent reads using the key will return this new value avoiding requests to global
+ *  cache memory.
  * </li>
  * <li>
  *  {@link TransactionIsolation#REPEATABLE_READ} isolation level means that if a value was read once
