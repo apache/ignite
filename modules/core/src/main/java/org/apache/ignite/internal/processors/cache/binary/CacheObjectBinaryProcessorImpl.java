@@ -775,6 +775,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return super.toCacheKeyObject(ctx, obj, userObj, partition);
 
         if (obj instanceof KeyCacheObject) {
+            if (obj instanceof BinaryObjectImpl) {
+                // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
+                BinaryObjectImpl bObj = (BinaryObjectImpl)obj;
+                obj = new BinaryObjectImpl(bObj.context(), bObj.array(), bObj.start());
+            }
+
             ((KeyCacheObject)obj).partition(partition);
 
             return (KeyCacheObject)obj;
