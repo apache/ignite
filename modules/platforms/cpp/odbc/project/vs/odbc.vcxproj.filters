@@ -127,6 +127,9 @@
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp">
       <Filter>Code\system\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -240,6 +243,9 @@
       <Filter>Code\system\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h">
       <Filter>Code\system\ui</Filter>
     </ClInclude>
   </ItemGroup>

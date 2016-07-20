@@ -126,6 +126,9 @@ namespace ignite
 
                     /** Window parent. */
                     Window* parent;
+
+                private:
+                    IGNITE_NO_COPY_ASSIGNMENT(Window)
                 };
             }
         }

@@ -18,8 +18,6 @@
 #ifndef _IGNITE_ODBC_SYSTEM_UI_CUSTOM_WINDOW
 #define _IGNITE_ODBC_SYSTEM_UI_CUSTOM_WINDOW
 
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/system/ui/window.h"
 
 namespace ignite
@@ -74,7 +72,65 @@ namespace ignite
                      */
                     virtual void OnCreate() = 0;
 
+                    /**
+                     * Create child group box window.
+                     *
+                     * @param posX Position by X coordinate.
+                     * @param posY Position by Y coordinate.
+                     * @param sizeX Size by X coordinate.
+                     * @param sizeY Size by Y coordinate.
+                     * @param title Title.
+                     * @param id ID to be assigned to the created window.
+                     * @return Auto pointer containing new window.
+                     */
+                    std::auto_ptr<Window> CreateGroupBox(int posX, int posY,
+                        int sizeX, int sizeY, const char* title, int id);
+
+                    /**
+                     * Create child label window.
+                     *
+                     * @param posX Position by X coordinate.
+                     * @param posY Position by Y coordinate.
+                     * @param sizeX Size by X coordinate.
+                     * @param sizeY Size by Y coordinate.
+                     * @param title Title.
+                     * @param id ID to be assigned to the created window.
+                     * @return Auto pointer containing new window.
+                     */
+                    std::auto_ptr<Window> CreateLabel(int posX, int posY,
+                        int sizeX, int sizeY, const char* title, int id);
+
+                    /**
+                     * Create child Edit window.
+                     *
+                     * @param posX Position by X coordinate.
+                     * @param posY Position by Y coordinate.
+                     * @param sizeX Size by X coordinate.
+                     * @param sizeY Size by Y coordinate.
+                     * @param title Title.
+                     * @param id ID to be assigned to the created window.
+                     * @return Auto pointer containing new window.
+                     */
+                    std::auto_ptr<Window> CreateEdit(int posX, int posY,
+                        int sizeX, int sizeY, const char* title, int id, int style = 0);
+
+                    /**
+                     * Create child button window.
+                     *
+                     * @param posX Position by X coordinate.
+                     * @param posY Position by Y coordinate.
+                     * @param sizeX Size by X coordinate.
+                     * @param sizeY Size by Y coordinate.
+                     * @param title Title.
+                     * @param id ID to be assigned to the created window.
+                     * @return Auto pointer containing new window.
+                     */
+                    std::auto_ptr<Window> CreateButton(int posX, int posY,
+                        int sizeX, int sizeY, const char* title, int id);
+
                 private:
+                    IGNITE_NO_COPY_ASSIGNMENT(CustomWindow)
+
                     /**
                      * Static callback.
                      *

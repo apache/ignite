@@ -183,7 +183,7 @@ namespace ignite
                  * @param len String length.
                  * @param params Parsing result.
                  */
-                void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args) const;
+                static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
 
                 /** Data Source Name. */
                 std::string dsn;

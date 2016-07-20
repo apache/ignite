@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/system/ui/custom_window.h"
 
 namespace ignite
@@ -103,6 +101,47 @@ namespace ignite
                 CustomWindow::~CustomWindow()
                 {
                     UnregisterClass(className.c_str(), GetHInstance());
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateGroupBox(int posX, int posY,
+                    int sizeX, int sizeY, const char* title, int id)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Button", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE | BS_GROUPBOX, posX, posY, sizeX, sizeY, id);
+
+                    return child;
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateLabel(int posX, int posY,
+                    int sizeX, int sizeY, const char* title, int id)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Static", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE, posX, posY, sizeX, sizeY, id);
+
+                    return child;
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateEdit(int posX, int posY,
+                    int sizeX, int sizeY, const char* title, int id, int style)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Edit", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | style,
+                        posX, posY, sizeX, sizeY, id);
+
+                    return child;
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateButton(int posX, int posY,
+                    int sizeX, int sizeY, const char* title, int id)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Button", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE, posX, posY, sizeX, sizeY, id);
+
+                    return child;
                 }
             }
         }

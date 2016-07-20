@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\os\win\src\dsn_config.cpp" />
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
     <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\app\parameter.cpp" />
@@ -222,6 +223,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h" />

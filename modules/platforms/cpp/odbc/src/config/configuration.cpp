@@ -154,7 +154,7 @@ namespace ignite
                 return connect_string_buffer.str();
             }
 
-            void Configuration::FillFromConfigAttributes(const char * attributes)
+            void Configuration::FillFromConfigAttributes(const char* attributes)
             {
                 ArgumentMap config_attributes;
 
@@ -180,28 +180,28 @@ namespace ignite
                 if (it != config_attributes.end())
                     driver = it->second;
                 else
-                    driver.clear();
+                    driver = dflt::driver;
 
                 it = config_attributes.find(attrkey::host);
                 if (it != config_attributes.end())
                     host = it->second;
                 else
-                    host.clear();
+                    host = dflt::host;
 
                 it = config_attributes.find(attrkey::port);
                 if (it != config_attributes.end())
                     port = atoi(it->second.c_str());
                 else
-                    port = 0;
+                    port = dflt::port;
 
                 it = config_attributes.find(attrkey::cache);
                 if (it != config_attributes.end())
                     cache = it->second;
                 else
-                    cache.clear();
+                    cache = dflt::cache;
             }
 
-            void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args) const
+            void Configuration::ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args)
             {
                 std::string connect_str(str, len);
                 args.clear();

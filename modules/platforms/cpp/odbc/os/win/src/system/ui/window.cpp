@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/system/ui/window.h"
 
 namespace ignite
