@@ -136,6 +136,6 @@ IgniteProcessorGetCacheNames @133
 IgniteProjectionForServers @134
 IgniteSetConsoleHandler @135
 IgniteRemoveConsoleHandler @136
-IgniteProcessorRegisterClass @135
-IgniteProcessorGetClass @136
-IgniteReleaseChars @137
+IgniteProcessorRegisterClass @137
+IgniteProcessorGetClass @138
+IgniteReleaseChars @139
