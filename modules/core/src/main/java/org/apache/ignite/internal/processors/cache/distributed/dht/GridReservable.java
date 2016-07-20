@@ -27,6 +27,7 @@ public interface GridReservable {
      * Reserves.
      *
      * @return {@code true} If reserved successfully.
+     * @throws IgniteCheckedException If failed.
      */
     public boolean reserve() throws IgniteCheckedException;
 

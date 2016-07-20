@@ -959,8 +959,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
-        long endTime = req.getCreateTime() + req.getTimeout();
-
         PartitionsReservation partsReservation = null;
         if (req.getCacheIds() != null) {
             assert req.getPartition() >= 0 : req;
@@ -979,6 +977,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         try {
+            long endTime = req.getCreateTime() + req.getTimeout();
+
             // Account for overflow.
             if (endTime < 0)
                 endTime = Long.MAX_VALUE;
@@ -1311,23 +1311,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param endTime Job end time.
      */
     private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime) {
-        sendResponse(node, req, ex, endTime, false);
-    }
-
-    /**
-     * Handles errors that happened prior to job creation.
-     *
-     * @param node Sender node.
-     * @param req Job execution request.
-     * @param ex Exception that happened.
-     * @param endTime Job end time.
-     * @param retry Retry response flag.
-     */
-    private void sendResponse(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime,
-        boolean retry) {
-        assert ex != null || retry : "Normal response is handled by JobWorker. Retry flag or exception must be set. " +
-            " [retry=" + retry + ", err=" + ex + ']';
-
         UUID locNodeId = ctx.localNodeId();
 
         ClusterNode sndNode = ctx.discovery().node(node.id());
@@ -1370,7 +1353,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 loc ? null : marsh.marshal(null),
                 null,
                 false,
-                retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
+                null);
 
             if (req.isSessionFullSupport()) {
                 // Send response to designated job topic.
@@ -1579,7 +1562,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
 
                         partititons[i] = part;
-                        log.info("+++ Reserve #" + cacheIds[i] + " " + partititons[i]);
 
                         // Double check that we are still in owning state and partition contents are not cleared.
                         if (part.state() != OWNING) {
@@ -1611,7 +1593,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     break;
 
                 partititons[i].release();
-                log.info("+++ Release #" + cacheIds[i] + " " + partititons[i]);
                 partititons[i] = null;
             }
         }

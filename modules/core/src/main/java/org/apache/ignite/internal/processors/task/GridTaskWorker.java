@@ -192,10 +192,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final boolean noFailover;
 
     /** */
-    private final int affPartId;
+    private final Object affKey;
 
     /** */
-    private final Object affKey;
+    private final int affPartId;
 
     /** */
     private final Collection<String> affCaches;
@@ -203,14 +203,15 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** */
     private final int[] affCacheIds;
 
-    /** */
-    private final UUID subjId;
 
     /** */
     private AffinityTopologyVersion mapTopVer;
 
     /** */
     private int retryAttemptCnt = 0;
+
+    /** */
+    private final UUID subjId;
 
     /** Continuous mapper. */
     private final ComputeTaskContinuousMapper mapper = new ComputeTaskContinuousMapper() {
@@ -982,6 +983,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @param waitms Waitms.
      * @param jRes Job result.
+     * @param resp Job responce.
      */
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
         ctx.timeout().schedule(new Runnable() {
@@ -998,11 +1000,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 return;
                             }
 
-                            jRes.setNode(newNode);
-                            jRes.resetResponse();
+                            synchronized (mux) {
+                                jRes.setNode(newNode);
+                                jRes.resetResponse();
 
-                            if (!resCache) {
-                                synchronized (mux) {
+                                if (!resCache) {
                                     // Store result back in map before sending.
                                     jobRes.put(resp.getJobId(), jRes);
                                 }

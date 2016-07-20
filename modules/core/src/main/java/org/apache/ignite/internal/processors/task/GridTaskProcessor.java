@@ -59,7 +59,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CachePeekModes;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -459,7 +458,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task session ID.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
-     * // TODO IGNITE-2310: move mapTopVer to AffinityTask.
      * @return Task future.
      */
     @SuppressWarnings("unchecked")

@@ -213,6 +213,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.internal = internal;
         this.holdLsnr = holdLsnr;
         this.partsReservation = partsReservation;
+        this.reqTopVer = reqTopVer;
 
         if (job != null)
             this.job = job;
@@ -225,8 +226,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
-
-        this.reqTopVer = reqTopVer;
     }
 
     /**
