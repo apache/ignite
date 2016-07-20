@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.BackupFuture;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -114,6 +115,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId, Collection<String> cacheNames) {
         return null;
+    }
+
+    public void submitBackupFuture(long backupId, BackupFuture backupFuture) {
+        // No-op.
     }
 
     /**

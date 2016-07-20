@@ -74,6 +74,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.BackupFuture;
 import org.apache.ignite.internal.pagemem.BackupMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
@@ -1891,10 +1892,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     public IgniteInternalFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
-        BackupMessage msg = new BackupMessage(System.currentTimeMillis(), cacheNames);
-        GridCompoundFuture fut = new GridCompoundFuture();
+        BackupFuture fut = new BackupFuture();
 
-        msg.future(fut);
+        long backupId = System.currentTimeMillis();
+
+        ctx.cache().context().database().submitBackupFuture(backupId, fut);
+
+        BackupMessage msg = new BackupMessage(backupId, cacheNames);
 
         ctx.discovery().sendCustomEvent(msg);
 
