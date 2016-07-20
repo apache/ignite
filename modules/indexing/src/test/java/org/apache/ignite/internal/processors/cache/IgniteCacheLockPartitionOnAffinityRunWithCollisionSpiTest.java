@@ -174,7 +174,6 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                log.info("+++ Job started " + jobNum);
                 Thread.sleep(500);
             }
             catch (InterruptedException e) {
