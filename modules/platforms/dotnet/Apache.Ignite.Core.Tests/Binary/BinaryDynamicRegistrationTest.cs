@@ -19,8 +19,10 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -163,14 +165,32 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// but marshaller cache contains different entries for different platforms for the same id.
         /// </summary>
         [Test]
-        public void TestJavaType()
+        public void TestJavaInterop()
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
+                var cacheCfg = new CacheConfiguration(null, new QueryEntity(typeof(PlatformComputeBinarizable))
+                {
+                    Fields = new[] {new QueryField("Field", typeof(int))}
+                });
+
+                var cache = ignite.CreateCache<int, object>(cacheCfg);
+
+                // Force dynamic registration for .NET
+                cache.Put(1, new PlatformComputeBinarizable {Field = 7});
+
+                // Run Java code that will also perform dynamic registration
                 var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
                     ComputeApiTest.EchoTypeBinarizable);
 
+                // Check that objects are compatible
                 Assert.AreEqual(1, fromJava.Field);
+
+                // Check that Java can read what .NET has put
+                var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
+
+                Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
             }
         }
 
