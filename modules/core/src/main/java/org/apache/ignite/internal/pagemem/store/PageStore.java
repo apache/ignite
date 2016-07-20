@@ -59,6 +59,14 @@ public interface PageStore {
     public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
+     * Gets page offset within the store file.
+     *
+     * @param pageId Page ID.
+     * @return Page offset.
+     */
+    public long pageOffset(long pageId);
+
+    /**
      * Sync method used to ensure that the given pages are guaranteed to be written to the store.
      *
      * @throws IgniteCheckedException If sync failed (IO error occurred).

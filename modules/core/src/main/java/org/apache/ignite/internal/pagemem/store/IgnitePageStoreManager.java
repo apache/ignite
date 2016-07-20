@@ -87,6 +87,16 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     public void write(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
+     * Gets page offset within the page store file.
+     *
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @return Page offset.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long pageOffset(int cacheId, long pageId) throws IgniteCheckedException;
+
+    /**
      * Makes sure that all previous writes to the store has been written to disk.
      *
      * @param cacheId Cache ID to sync.
@@ -107,6 +117,15 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      */
     public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
+    /**
+     * Gets total number of allocated pages for the given space.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param flags Flags.
+     * @return Number of allocated pages.
+     * @throws IgniteCheckedException If failed.
+     */
     public int pages(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
