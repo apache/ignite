@@ -63,7 +63,6 @@
     <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
-    <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheNearTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />

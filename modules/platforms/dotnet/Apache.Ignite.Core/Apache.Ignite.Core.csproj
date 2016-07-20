@@ -175,10 +175,7 @@
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
-    <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
-    <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
-    <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
