@@ -336,7 +336,13 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoNextExecutionTime() throws Exception {
-        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(() -> 1, "{55} 53 3/5 * * *");
+        Callable<Integer> run = new Callable<Integer>() {
+            @Override public Integer call() {
+                return 1;
+            }
+        };
+
+        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
 
         try {
             future.get();
