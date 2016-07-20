@@ -792,10 +792,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
             // Future must be created before any exception can be thrown.
             if (optimistic()) {
-                if (serializable())
-                    fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
-                else
-                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this);
+                fut = serializable() ?
+                    new GridNearOptimisticSerializableTxPrepareFuture(cctx, this) :
+                    new GridNearOptimisticTxPrepareFuture(cctx, this);
             }
             else
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);

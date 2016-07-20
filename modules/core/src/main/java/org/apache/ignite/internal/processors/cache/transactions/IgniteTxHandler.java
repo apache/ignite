@@ -652,6 +652,7 @@ public class IgniteTxHandler {
         assert nodeId != null;
         assert req != null;
 
+        // 'baseVersion' message field is re-used for version to be added in completed versions.
         if (!req.commit() && req.baseVersion() != null)
             ctx.tm().addRolledbackTx(null, req.baseVersion());
 

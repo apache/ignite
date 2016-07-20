@@ -118,9 +118,9 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         while (!doTestDeadlock()) {}
     }
 
-        /**
-         * @throws Exception If failed.
-         */
+    /**
+     * @throws Exception If failed.
+     */
     private boolean doTestDeadlock() throws Exception {
         TestCommunicationSpi.init(2);
 

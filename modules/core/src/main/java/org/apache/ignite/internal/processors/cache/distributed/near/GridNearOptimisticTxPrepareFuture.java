@@ -206,22 +206,20 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
         synchronized (futs) {
-            if (!futs.isEmpty()) {
-                for (int i = 0; i < futs.size(); i++) {
-                    IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
 
-                    if (isMini(fut) && !fut.isDone()) {
-                        MiniFuture miniFut = (MiniFuture)fut;
+                if (isMini(fut) && !fut.isDone()) {
+                    MiniFuture miniFut = (MiniFuture)fut;
 
-                        Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
+                    Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
 
-                        Set<IgniteTxKey> keys = U.newHashSet(entries.size());
+                    Set<IgniteTxKey> keys = U.newHashSet(entries.size());
 
-                        for (IgniteTxEntry entry : entries)
-                            keys.add(entry.txKey());
+                    for (IgniteTxEntry entry : entries)
+                        keys.add(entry.txKey());
 
-                        return keys;
-                    }
+                    return keys;
                 }
             }
         }

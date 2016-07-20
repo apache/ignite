@@ -191,18 +191,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** */
     private boolean invoke;
 
-    /** Timeout. */
-    private long timeout;
-
-    /** Timed out flag. */
-    private boolean timedOut;
-
     /** Timeout object. */
-    private GridTimeoutObject timeoutObj;
+    private final PrepareTimeoutObject timeoutObj;
 
     /**
      * @param cctx Context.
      * @param tx Transaction.
+     * @param timeout Timeout.
      * @param nearMiniId Near mini future id.
      * @param dhtVerMap DHT versions map.
      * @param last {@code True} if this is last prepare operation for node.
@@ -241,7 +236,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         assert dhtMap != null;
         assert nearMap != null;
 
-        this.timeout = timeout;
+        timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
     }
 
     /** {@inheritDoc} */
@@ -986,11 +981,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         readyLocks();
 
-        if (timeout > 0) {
-            timeoutObj = new PrepareTimeoutObject();
-
+        if (timeoutObj != null)
             cctx.time().addTimeoutObject(timeoutObj);
-        }
 
         mapIfLocked();
     }
@@ -1164,6 +1156,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             if (last) {
                 assert tx.transactionNodes() != null;
 
+                final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
+
                 // Create mini futures.
                 for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
                     assert !dhtMapping.empty();
@@ -1181,16 +1175,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
-                    MiniFuture fut;
+                    if (tx.remainingTime() == -1)
+                        return;
 
-                    synchronized (futs) {
-                        if (timedOut)
-                            return;
+                    MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
-                        fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
-
-                        add(fut); // Append new future.
-                    }
+                    add(fut); // Append new future.
 
                     assert txNodes != null;
 
@@ -1300,16 +1290,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
                         assert nearMapping.writes() != null;
 
-                        MiniFuture fut;
+                        if (tx.remainingTime() == -1)
+                            return;
 
-                        synchronized (futs) {
-                            if (timedOut)
-                                return;
+                        MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
-                            fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
-
-                            add(fut); // Append new future.
-                        }
+                        add(fut);
 
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                             futId,
@@ -1746,18 +1732,21 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      *
      */
     private class PrepareTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final long timeout;
+
         /**
-         * Default constructor.
+         * @param timeout Timeout.
          */
-        PrepareTimeoutObject() {
+        PrepareTimeoutObject(long timeout) {
             super(timeout);
+
+            this.timeout = timeout;
         }
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             synchronized (futs) {
-                timedOut = true;
-
                 futs.clear();
 
                 lockKeys.clear();

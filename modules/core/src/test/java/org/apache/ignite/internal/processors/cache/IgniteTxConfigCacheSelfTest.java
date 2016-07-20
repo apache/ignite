@@ -111,7 +111,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Success if user tx was timed out.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testUserTxTimeout() throws Exception {
         final Ignite ignite = grid(0);
@@ -125,7 +125,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Success if system caches weren't timed out.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testSystemCacheTx() throws Exception {
         final Ignite ignite = grid(0);
@@ -207,7 +207,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * Success if explicit tx doesn't fail.
      *
      * @param cache Cache instance.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkStartTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
         try (final IgniteInternalTx tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
@@ -229,7 +229,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * Success if implicit tx fails.
      *
      * @param cache Cache instance.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkImplicitTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
         cache.invoke("key", new EntryProcessor<Object, Object, Object>() {

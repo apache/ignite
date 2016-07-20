@@ -425,8 +425,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         long timeout = tx.remainingTime();
 
         if (timeout == -1) {
-            IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                "was rolled back: " + this);
+            IgniteCheckedException err = tx.timeoutException();
 
             fut.onResult(err);
 

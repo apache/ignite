@@ -178,6 +178,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param syncMode Write sync mode.
      * @param near Near.
+     * @return Created cache.
      */
     @SuppressWarnings("unchecked")
     private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
@@ -189,7 +190,19 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         ccfg.setNearConfiguration(near ? new NearCacheConfiguration() : null);
         ccfg.setWriteSynchronizationMode(syncMode);
 
-        return ignite(0).getOrCreateCache(ccfg);
+        IgniteCache cache = ignite(0).createCache(ccfg);
+
+        if (near) {
+            for (int i = 0; i < NODES_CNT; i++) {
+                Ignite client = ignite(i + NODES_CNT);
+
+                assertTrue(client.configuration().isClientMode());
+
+                client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
+        }
+
+        return cache;
     }
 
     /**
