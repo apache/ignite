@@ -92,7 +92,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            return InternalEstablish(config.GetHost(), config.GetPort(), config.GetCache());
+            return InternalEstablish(config.GetHost(), config.GetTcpPort(), config.GetCache());
         }
 
         void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)

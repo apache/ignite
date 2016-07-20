@@ -85,7 +85,7 @@ namespace ignite
                  *
                  * @return Server port.
                  */
-                uint16_t GetPort() const
+                uint16_t GetTcpPort() const
                 {
                     return port;
                 }
@@ -95,7 +95,7 @@ namespace ignite
                  *
                  * @param port Server port.
                  */
-                void SetPort(uint16_t port)
+                void SetTcpPort(uint16_t port)
                 {
                     this->port = port;
                 }

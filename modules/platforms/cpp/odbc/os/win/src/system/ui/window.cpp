@@ -107,6 +107,23 @@ namespace ignite
 
                     handle = NULL;
                 }
+
+                void Window::GetText(std::string& text) const
+                {
+                    int len = GetWindowTextLength(handle);
+
+                    if (len <= 0)
+                    {
+                        text.clear();
+
+                        return;
+                    }
+
+                    text.resize(len);
+
+                    if (!GetWindowText(handle, &text[0], len))
+                        text.clear();
+                }
             }
         }
     }

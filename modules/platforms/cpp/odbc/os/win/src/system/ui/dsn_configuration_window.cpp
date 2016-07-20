@@ -39,7 +39,8 @@ namespace ignite
                     cacheEdit(),
                     okButton(),
                     cancelButton(),
-                    config(config)
+                    config(config),
+                    accepted(false)
                 {
                     // No-op.
                 }
@@ -96,7 +97,7 @@ namespace ignite
                     rowPos += interval + rowSize;
 
                     std::stringstream buf;
-                    buf << config.GetPort();
+                    buf << config.GetTcpPort();
                     std::string strPort = buf.str();
 
                     val = strPort.c_str();
@@ -134,6 +135,23 @@ namespace ignite
                             switch (LOWORD(wParam))
                             {
                                 case ID_OK_BUTTON:
+                                {
+                                    try
+                                    {
+                                        RetrieveParameters(config);
+
+                                        accepted = true;
+
+                                        DestroyWindow(GetHandle());
+                                    }
+                                    catch (IgniteError& err)
+                                    {
+                                        MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+                                    }
+
+                                    break;
+                                }
+
                                 case ID_CANCEL_BUTTON:
                                 {
                                     DestroyWindow(GetHandle());
@@ -142,7 +160,7 @@ namespace ignite
                                 }
 
                                 default:
-                                    break;
+                                    return false;
                             }
 
                             break;
@@ -152,7 +170,7 @@ namespace ignite
                         {
                             LOG_MSG("WM_DESTROY\n");
 
-                            PostQuitMessage(0);
+                            PostQuitMessage(accepted ? RESULT_OK : RESULT_CANCEL);
 
                             break;
                         }
@@ -162,6 +180,42 @@ namespace ignite
                     }
 
                     return true;
+                }
+
+                void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
+                {
+                    std::string dsn;
+                    std::string server;
+                    std::string port;
+                    std::string cache;
+
+                    LOG_MSG("%d\n", __LINE__);
+                    nameEdit->GetText(dsn);
+                    LOG_MSG("%d\n", __LINE__);
+                    serverEdit->GetText(server);
+                    LOG_MSG("%d\n", __LINE__);
+                    portEdit->GetText(port);
+                    LOG_MSG("%d\n", __LINE__);
+                    cacheEdit->GetText(cache);
+                    LOG_MSG("%d\n", __LINE__);
+
+                    if (dsn.empty())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
+
+                    std::stringstream converter;
+
+                    int numPort;
+
+                    converter << port;
+                    converter >> numPort;
+
+                    if (port.size() > (sizeof("65535") - 1) || numPort <= 0 || numPort >= INT16_MAX)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Port value should be in range from 1 to 65534.");
+
+                    cfg.SetDsn(dsn);
+                    cfg.SetHost(server);
+                    cfg.SetTcpPort(numPort);
+                    cfg.SetCache(cache);
                 }
             }
         }

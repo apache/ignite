@@ -276,7 +276,7 @@ namespace ignite
 
         config.FillFromConnectString(connectStr);
 
-        connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
+        connection->Establish(config.GetHost(), config.GetTcpPort(), config.GetCache());
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 

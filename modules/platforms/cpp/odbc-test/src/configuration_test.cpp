@@ -42,7 +42,7 @@ void CheckConnectionConfig(const Configuration& cfg)
 {
     BOOST_REQUIRE(cfg.GetDriver() == testDriverName);
     BOOST_REQUIRE(cfg.GetHost() == testServerHost);
-    BOOST_REQUIRE(cfg.GetPort() == testServerPort);
+    BOOST_REQUIRE(cfg.GetTcpPort() == testServerPort);
     BOOST_REQUIRE(cfg.GetCache() == testCacheName);
     BOOST_REQUIRE(cfg.GetDsn().empty());
 
@@ -64,7 +64,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_REQUIRE(cfg.GetDsn() == testDsn);
     BOOST_REQUIRE(cfg.GetHost().empty());
     BOOST_REQUIRE(cfg.GetCache().empty());
-    BOOST_REQUIRE(cfg.GetPort() == 0);
+    BOOST_REQUIRE(cfg.GetTcpPort() == 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)

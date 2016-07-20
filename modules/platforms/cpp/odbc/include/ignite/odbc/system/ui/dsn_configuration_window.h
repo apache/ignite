@@ -83,6 +83,14 @@ namespace ignite
                 private:
                     IGNITE_NO_COPY_ASSIGNMENT(DsnConfigurationWindow)
 
+                    /**
+                     * Retrieves current values from the children and stores
+                     * them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveParameters(config::Configuration& cfg) const;
+
                     /** Window width. */
                     int width;
 
@@ -124,6 +132,9 @@ namespace ignite
 
                     /** Configuration. */
                     config::Configuration& config;
+
+                    /** Flag indicating whether OK option was selected. */
+                    bool accepted;
                 };
             }
         }

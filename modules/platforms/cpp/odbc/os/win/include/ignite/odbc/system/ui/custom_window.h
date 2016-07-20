@@ -29,10 +29,21 @@ namespace ignite
             namespace ui
             {
                 /**
+                 * Application execution result.
+                 */
+                enum Result
+                {
+                    RESULT_OK,
+                    RESULT_CANCEL
+                };
+
+                /**
                  * Process UI messages in current thread.
                  * Blocks until quit message has been received.
+                 *
+                 * @return Application execution result.
                  */
-                void ProcessMessages();
+                Result ProcessMessages();
 
                 /**
                  * Window class.

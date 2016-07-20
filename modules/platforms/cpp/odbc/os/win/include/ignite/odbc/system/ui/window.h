@@ -101,6 +101,13 @@ namespace ignite
                         return handle;
                     }
 
+                    /**
+                     * Get window text.
+                     *
+                     * @param text Text.
+                     */
+                    void GetText(std::string& text) const;
+
                 protected:
                     /**
                      * Set window handle.

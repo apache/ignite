@@ -24,14 +24,14 @@
 
 using ignite::odbc::config::Configuration;
 
-void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)
+bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
 {
     using namespace ignite::odbc::system::ui;
 
     if (!hwndParent)
-        return;
+        return false;
 
-    LOG_MSG("Port: %d\n", config.GetPort());
+    LOG_MSG("Port: %d\n", config.GetTcpPort());
 
     try
     {
@@ -44,7 +44,7 @@ void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)
         window.Show();
         window.Update();
 
-        ProcessMessages();
+        return ProcessMessages() == RESULT_OK;
     }
     catch (const ignite::IgniteError& err)
     {
@@ -54,14 +54,8 @@ void DisplayAddDsnWindow(HWND hwndParent, Configuration& config)
 
         MessageBox(NULL, buf.str().c_str(), "Error!", MB_ICONEXCLAMATION | MB_OK);
     }
-}
 
-void DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
-{
-    if (!hwndParent)
-        return;
-
-    //
+    return false;
 }
 
 BOOL INSTAPI ConfigDSN(HWND     hwndParent,
@@ -78,7 +72,7 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
     config.FillFromConfigAttributes(attributes);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
-        return SQL_FALSE;
+        return FALSE;
 
     LOG_MSG("Driver: %s\n", driver);
     LOG_MSG("Attributes: %s\n", attributes);
@@ -91,9 +85,12 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
         {
             LOG_MSG("ODBC_ADD_DSN\n");
 
-            DisplayAddDsnWindow(hwndParent, config);
+            bool success = DisplayConfigureDsnWindow(hwndParent, config);
 
-            return SQL_FALSE;// SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
+            if (success)
+                SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
+
+            return success ? TRUE : FALSE;
         }
 
         case ODBC_CONFIG_DSN:
@@ -111,10 +108,10 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
 
         default:
         {
-            return SQL_FALSE;
+            return FALSE;
         }
     }
 
-    return SQL_TRUE;
+    return TRUE;
 }
 
