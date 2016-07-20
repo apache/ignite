@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
 
         /** Console write pointer. */
-        private static readonly void* ConsoleWritePtr = 
+        private static readonly void* ConsoleWritePtr =
             Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
 
         /** Unmanaged context. */
@@ -634,7 +635,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
+        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr,
             byte keepBinary)
         {
             SafeCall(() =>
@@ -945,7 +946,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 // Ignite does not guarantee that Cancel is called after Execute exits
                 // So missing handle is a valid situation
                 if (svc == null)
-                    return;   
+                    return;
 
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -1142,7 +1143,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
-                        
+
                     var func = reader.ReadObjectEx<IAffinityFunction>();
 
                     ResourceProcessor.Inject(func, _ignite);

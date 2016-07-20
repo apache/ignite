@@ -105,7 +105,7 @@ namespace ignite
             typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
-            
+
             typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
 
             /**
@@ -185,7 +185,7 @@ namespace ignite
 
                 OnClientDisconnectedHandler onClientDisconnected;
                 OnClientReconnectedHandler onClientReconnected;
-                
+
                 AffinityFunctionInitHandler affinityFunctionInit;
                 AffinityFunctionPartitionHandler affinityFunctionPartition;
                 AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
@@ -550,7 +550,7 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-                
+
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -761,7 +761,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
-            
+
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
         }
     }

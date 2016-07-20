@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Affinity.Fair
 {
     using System;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
 
     /// <summary>
     /// Fair affinity function which tries to ensure that all nodes get equal number of partitions with 
