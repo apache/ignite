@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -714,6 +715,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         else {
             writer.writeObjectDetached(ex.getClass().getName());
             writer.writeObjectDetached(ex.getMessage());
+            writer.writeObjectDetached(X.getFullStackTrace(ex));
         }
     }
 
