@@ -16,20 +16,48 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
-public class BackupFuture extends GridFutureAdapter<Void> {
+public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo {
+
+    private final long backupId;
+
+    private final UUID node;
+
+    private final Collection<String> cacheNames;
 
     private volatile boolean initialized;
 
     private final Collection<UUID> requiredAcks = new GridConcurrentHashSet<>();
 
     private final Collection<UUID> receivedAcks = new GridConcurrentHashSet<>();
+
+    public BackupFuture(long backupId, UUID node, Collection<String> cacheNames) {
+        this.backupId = backupId;
+        this.node = node;
+        this.cacheNames = cacheNames;
+    }
+
+    @Override public long backupId() {
+        return backupId;
+    }
+
+    @Override public UUID initiatorNode() {
+        return node;
+    }
+
+    @Override public Collection<String> cacheNames() {
+        return cacheNames;
+    }
+
+    @Override public boolean initiator() {
+        return true;
+    }
 
     public void init(Collection<UUID> requiredAcks) {
         assert !initialized;

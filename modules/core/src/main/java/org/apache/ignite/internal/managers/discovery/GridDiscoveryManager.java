@@ -41,7 +41,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -74,8 +73,8 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.pagemem.BackupFuture;
-import org.apache.ignite.internal.pagemem.BackupMessage;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
+import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple5;
@@ -1892,11 +1890,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     public IgniteInternalFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
-        BackupFuture fut = new BackupFuture();
-
         long backupId = System.currentTimeMillis();
 
-        ctx.cache().context().database().submitBackupFuture(backupId, fut);
+        BackupFuture fut = new BackupFuture(backupId, ctx.localNodeId(), cacheNames);
+
+        ctx.cache().context().database().submitBackupFuture(fut);
 
         BackupMessage msg = new BackupMessage(backupId, cacheNames);
 

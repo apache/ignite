@@ -16,10 +16,9 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.backup;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;

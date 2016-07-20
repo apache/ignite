@@ -16,13 +16,10 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
