@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include <cstring>   // needed only on linux
 #include <string>
 #include <exception>
 #include <vector>
