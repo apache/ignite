@@ -101,6 +101,11 @@ public class PageNoStoreImpl implements Page {
     }
 
     /** {@inheritDoc} */
+    @Override public void forceFullPageWalRecord(boolean force) {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         pageMem.releasePage(this);
     }

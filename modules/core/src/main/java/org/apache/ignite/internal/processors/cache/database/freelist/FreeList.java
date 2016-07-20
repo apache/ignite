@@ -98,20 +98,27 @@ public class FreeList {
                         row.version(), fctx.lastIdx, entrySize));
                 }
                 else {
-                    final byte[] frData = new byte[written.writtenBytes() - fctx.written];
+                    if (written.lastFragment()) {
+                        // Write entry tail in WAL.
+                        final byte[] frData = new byte[written.writtenBytes() - fctx.written];
 
-                    buf.position(written.dataOffset());
+                        buf.position(written.dataOffset());
 
-                    buf.get(frData);
+                        buf.get(frData);
 
-                    wal.log(new DataPageInsertFragmentRecord(
-                        cctx.cacheId(),
-                        pageId,
-                        fctx.written,
-                        fctx.lastLink,
-                        frData));
+                        wal.log(new DataPageInsertFragmentRecord(
+                            cctx.cacheId(),
+                            pageId,
+                            fctx.written,
+                            fctx.lastLink,
+                            frData));
 
-                    buf.position(0);
+                        buf.position(0);
+                    }
+                    else
+                        // Just mark page to store in WAL, because all fragments
+                        // except last one fill page fully.
+                        page.forceFullPageWalRecord(true);
                 }
             }
 

@@ -818,7 +818,7 @@ public class DataPageIO extends PageIO {
 
         final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
 
-        return new FragmentWritten(written, idx, dataOff + KV_LEN_SIZE + LINK_SIZE);
+        return new FragmentWritten(written, idx, dataOff + KV_LEN_SIZE + LINK_SIZE, lastChunk);
     }
 
     /**
@@ -836,6 +836,8 @@ public class DataPageIO extends PageIO {
         int written,
         final long lastLink
     ) {
+        final boolean lastChunk = written == 0;
+
         final int toWrite = dataBuf.remaining() + ITEM_SIZE + KV_LEN_SIZE + LINK_SIZE;
 
         int directCnt = getDirectCount(buf);
@@ -865,7 +867,7 @@ public class DataPageIO extends PageIO {
 
         final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
 
-        return new FragmentWritten(written, idx, dataOff);
+        return new FragmentWritten(written, idx, dataOff, lastChunk);
     }
 
     /**
@@ -1160,15 +1162,20 @@ public class DataPageIO extends PageIO {
         /** Data offset that points to fragment actual data without overhead. */
         private final int dataOff;
 
+        /** Last fragment flag. */
+        private final boolean lastFragment;
+
         /**
          * @param writtenBytes Total written entry bytes from the entry end.
          * @param idx Last fragment index.
          * @param dataOff Data offset that points to fragment actual data without overhead.
+         * @param lastFragment Last fragment flag.
          */
-        public FragmentWritten(final int writtenBytes, final int idx, final int dataOff) {
+        public FragmentWritten(final int writtenBytes, final int idx, final int dataOff, final boolean lastFragment) {
             this.writtenBytes = writtenBytes;
             this.idx = idx;
             this.dataOff = dataOff;
+            this.lastFragment = lastFragment;
         }
 
         /**
@@ -1190,6 +1197,13 @@ public class DataPageIO extends PageIO {
          */
         public int dataOffset() {
             return dataOff;
+        }
+
+        /**
+         * @return {@code True} if it was a last fragment written.
+         */
+        public boolean lastFragment() {
+            return lastFragment;
         }
     }
 }
