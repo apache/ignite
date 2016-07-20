@@ -30,6 +30,7 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
@@ -225,6 +226,21 @@ public class GridSqlQueryParser {
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
 
     /** */
+    private static final Getter<Merge, Table> MERGE_TABLE = getter(Merge.class, "table");
+
+    /** */
+    private static final Getter<Merge, Column[]> MERGE_COLUMNS = getter(Merge.class, "columns");
+
+    /** */
+    private static final Getter<Merge, Column[]> MERGE_KEYS = getter(Merge.class, "keys");
+
+    /** */
+    private static final Getter<Merge, List<Expression[]>> MERGE_ROWS = getter(Merge.class, "list");
+
+    /** */
+    private static final Getter<Merge, Query> MERGE_QUERY = getter(Merge.class, "query");
+
+    /** */
     private static final Getter<Insert, Table> INSERT_TABLE = getter(Insert.class, "table");
 
     /** */
@@ -409,6 +425,59 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param merge Merge.
+     * @see <a href="http://h2database.com/html/grammar.html#merge">H2 merge spec</a>
+     */
+    public GridSqlMerge parse(Merge merge) {
+        GridSqlMerge res = (GridSqlMerge) h2ObjToGridObj.get(merge);
+
+        if (res != null)
+            return res;
+
+        res = new GridSqlMerge();
+        h2ObjToGridObj.put(merge, res);
+
+        Table srcTbl = MERGE_TABLE.get(merge);
+        GridSqlElement tbl = parseTable(srcTbl, merge.getSQL());
+
+        res.into(tbl);
+
+        Column[] srcCols = MERGE_COLUMNS.get(merge);
+
+        GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
+        for (int i = 0; i < srcCols.length; i++)
+            cols[i] = new GridSqlColumn(tbl, srcCols[i].getName(), srcCols[i].getSQL());
+        res.columns(cols);
+
+        Column[] srcKeys = MERGE_KEYS.get(merge);
+
+        GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
+        for (int i = 0; i < srcKeys.length; i++)
+            keys[i] = new GridSqlColumn(tbl, srcKeys[i].getName(), srcKeys[i].getSQL());
+        res.keys(keys);
+
+        List<Expression[]> srcRows = MERGE_ROWS.get(merge);
+        if (!srcRows.isEmpty()) {
+            List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
+            for (Expression[] srcRow : srcRows) {
+                GridSqlElement[] row = new GridSqlElement[srcRow.length];
+
+                for (int i = 0; i < srcRow.length; i++)
+                    row[i] = parseExpression(srcRow[i], false);
+
+                rows.add(row);
+            }
+            res.rows(rows);
+        }
+        else {
+            res.rows(Collections.emptyList());
+            res.query(parse(MERGE_QUERY.get(merge)));
+        }
+
+        return res;
+    }
+
+    /**
      * @param insert Insert.
      * @see <a href="http://h2database.com/html/grammar.html#insert">H2 insert spec</a>
      */
@@ -540,6 +609,9 @@ public class GridSqlQueryParser {
 
         if (qry instanceof SelectUnion)
             return parse((SelectUnion)qry);
+
+        if (qry instanceof Merge)
+            return parse((Merge)qry);
 
         if (qry instanceof Insert)
             return parse((Insert)qry);
