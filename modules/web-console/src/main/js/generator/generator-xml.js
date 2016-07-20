@@ -1062,10 +1062,9 @@ $generatorXml.cacheGeneral = function(cache, res) {
     $generatorXml.property(res, cache, 'cacheMode');
     $generatorXml.property(res, cache, 'atomicityMode');
 
-    if (cache.cacheMode === 'PARTITIONED')
-        $generatorXml.property(res, cache, 'backups');
+    if (cache.cacheMode === 'PARTITIONED' && $generatorXml.property(res, cache, 'backups'))
+        $generatorXml.property(res, cache, 'readFromBackup');
 
-    $generatorXml.property(res, cache, 'readFromBackup');
     $generatorXml.property(res, cache, 'copyOnRead');
 
     if (cache.cacheMode === 'PARTITIONED' && cache.atomicityMode === 'TRANSACTIONAL')

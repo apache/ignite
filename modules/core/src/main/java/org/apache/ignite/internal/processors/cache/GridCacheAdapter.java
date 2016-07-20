@@ -5581,6 +5581,52 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * Internal callable for partition size calculation.
+     */
+    @GridInternal
+    private static class PartitionSizeLongJob extends TopologyVersionAwareJob {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Partition. */
+        private final int partition;
+
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /**
+         * @param cacheName Cache name.
+         * @param topVer Affinity topology version.
+         * @param peekModes Cache peek modes.
+         * @param partition partition.
+         */
+        private PartitionSizeLongJob(String cacheName, AffinityTopologyVersion topVer, CachePeekMode[] peekModes, int partition) {
+            super(cacheName, topVer);
+
+            this.peekModes = peekModes;
+            this.partition = partition;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
+            if (cache == null)
+                return 0;
+
+            try {
+                return cache.localSizeLong(partition, peekModes);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(PartitionSizeLongJob.class, this);
+        }
+    }
+
+    /**
      * Internal callable for global size calculation.
      */
     @GridInternal
@@ -5659,52 +5705,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(SizeLongJob.class, this);
-        }
-    }
-
-    /**
-     * Internal callable for partition size calculation.
-     */
-    @GridInternal
-    private static class PartitionSizeLongJob extends TopologyVersionAwareJob {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Partition. */
-        private final int partition;
-
-        /** Peek modes. */
-        private final CachePeekMode[] peekModes;
-
-        /**
-         * @param cacheName Cache name.
-         * @param topVer Affinity topology version.
-         * @param peekModes Cache peek modes.
-         * @param partition partition.
-         */
-        private PartitionSizeLongJob(String cacheName, AffinityTopologyVersion topVer, CachePeekMode[] peekModes, int partition) {
-            super(cacheName, topVer);
-
-            this.peekModes = peekModes;
-            this.partition = partition;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
-            if (cache == null)
-                return 0;
-
-            try {
-                return cache.localSizeLong(partition, peekModes);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(PartitionSizeLongJob.class, this);
         }
     }
 

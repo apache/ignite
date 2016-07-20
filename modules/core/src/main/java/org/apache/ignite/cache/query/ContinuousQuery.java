@@ -21,6 +21,7 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -141,6 +142,9 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** Automatic unsubscription flag. */
     private boolean autoUnsubscribe = DFLT_AUTO_UNSUBSCRIBE;
+
+    /** Whether to notify about {@link EventType#EXPIRED} events. */
+    private boolean includeExpired;
 
     /**
      * Creates new continuous query.
@@ -324,6 +328,38 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return this;
     }
 
+    /**
+     * Gets automatic unsubscription flag value.
+     *
+     * @return Automatic unsubscription flag.
+     */
+    public boolean isAutoUnsubscribe() {
+        return autoUnsubscribe;
+    }
+
+    /**
+     * Sets the flag value defining whether to notify about {@link EventType#EXPIRED} events.
+     * If {@code true}, then the remote listener will get notifications about entries
+     * expired in cache. Otherwise, only {@link EventType#CREATED}, {@link EventType#UPDATED}
+     * and {@link EventType#REMOVED} events will be fired in the remote listener.
+     * <p>
+     * This flag is {@code false} by default, so {@link EventType#EXPIRED} events are disabled.
+     *
+     * @param includeExpired Whether to notify about {@link EventType#EXPIRED} events.
+     */
+    public void setIncludeExpired(boolean includeExpired) {
+        this.includeExpired = includeExpired;
+    }
+
+    /**
+     * Gets the flag value defining whether to notify about {@link EventType#EXPIRED} events.
+     *
+     * @return Whether to notify about {@link EventType#EXPIRED} events.
+     */
+    public boolean isIncludeExpired() {
+        return includeExpired;
+    }
+
     /** {@inheritDoc} */
     @Override public ContinuousQuery<K, V> setPageSize(int pageSize) {
         return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
@@ -332,14 +368,5 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** {@inheritDoc} */
     @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
         return (ContinuousQuery<K, V>)super.setLocal(loc);
-    }
-
-    /**
-     * Gets automatic unsubscription flag value.
-     *
-     * @return Automatic unsubscription flag.
-     */
-    public boolean isAutoUnsubscribe() {
-        return autoUnsubscribe;
     }
 }

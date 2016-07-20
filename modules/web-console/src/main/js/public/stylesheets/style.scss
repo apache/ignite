@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-@import "font-awesome-custom";
-@import "bootstrap-custom";
-
+@import "./font-awesome-custom";
+@import "./bootstrap-custom";
 @import "./variables";
 
 @import "./../../app/directives/information/information.scss";
@@ -26,14 +25,14 @@
     font-family: 'Roboto Slab';
     font-style: normal;
     font-weight: 400;
-    src: local('Roboto Slab Regular'), local('RobotoSlab-Regular'), url(//fonts.gstatic.com/s/robotoslab/v6/y7lebkjgREBJK96VQi37ZiwlidHJgAgmTjOEEzwu1L8.ttf) format('truetype');
+    src: local('Roboto Slab Regular'), local('RobotoSlab-Regular'), url(https://fonts.gstatic.com/s/robotoslab/v6/y7lebkjgREBJK96VQi37ZiwlidHJgAgmTjOEEzwu1L8.ttf) format('truetype');
 }
 
 @font-face {
     font-family: 'Roboto Slab';
     font-style: normal;
     font-weight: 700;
-    src: local('Roboto Slab Bold'), local('RobotoSlab-Bold'), url(//fonts.gstatic.com/s/robotoslab/v6/dazS1PrQQuCxC3iOAJFEJTdGNerWpg2Hn6A-BxWgZ_I.ttf) format('truetype');
+    src: local('Roboto Slab Bold'), local('RobotoSlab-Bold'), url(https://fonts.gstatic.com/s/robotoslab/v6/dazS1PrQQuCxC3iOAJFEJTdGNerWpg2Hn6A-BxWgZ_I.ttf) format('truetype');
 }
 
 hr {
@@ -1927,6 +1926,7 @@ treecontrol.tree-classic {
 
     .ui-grid-cell .ui-grid-cell-contents {
         text-align: center;
+        white-space: pre;
 
         > i.fa {
             cursor: default;
