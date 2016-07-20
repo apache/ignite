@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -27,17 +26,17 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class BackupFinishedMessage implements Message {
 
-    private IgniteUuid backupEvtId;
+    private long backupId;
 
     public BackupFinishedMessage() {
     }
 
-    public BackupFinishedMessage(IgniteUuid backupEvtId) {
-        this.backupEvtId = backupEvtId;
+    public BackupFinishedMessage(long backupId) {
+        this.backupId = backupId;
     }
 
-    public IgniteUuid backupEvtId() {
-        return backupEvtId;
+    public long backupId() {
+        return backupId;
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -52,7 +51,7 @@ public class BackupFinishedMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("backupEvtId", backupEvtId))
+                if (!writer.writeLong("backupId", backupId))
                     return false;
 
                 writer.incrementState();
@@ -70,7 +69,7 @@ public class BackupFinishedMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                backupEvtId = reader.readIgniteUuid("backupEvtId");
+                backupId = reader.readLong("backupId");
 
                 if (!reader.isLastRead())
                     return false;

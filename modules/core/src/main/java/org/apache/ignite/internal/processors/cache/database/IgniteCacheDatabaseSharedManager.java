@@ -111,7 +111,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForBackup(IgniteUuid backupId, UUID backupNodeId) {
+    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId) {
         return null;
     }
 

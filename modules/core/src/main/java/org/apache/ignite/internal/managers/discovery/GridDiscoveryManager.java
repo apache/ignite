@@ -1891,7 +1891,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     public IgniteInternalFuture startBackup() throws IgniteCheckedException {
-        BackupMessage msg = new BackupMessage();
+        BackupMessage msg = new BackupMessage(System.currentTimeMillis());
         GridCompoundFuture fut = new GridCompoundFuture();
 
         msg.future(fut);

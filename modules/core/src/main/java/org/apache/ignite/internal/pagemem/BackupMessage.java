@@ -34,8 +34,18 @@ public class BackupMessage implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
+    private long backupId;
+
+    public BackupMessage(long backupId) {
+        this.backupId = backupId;
+    }
+
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    public long backupId() {
+        return backupId;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
