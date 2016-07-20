@@ -126,18 +126,6 @@ namespace ignite
 
                     /** Window parent. */
                     Window* parent;
-
-                    /** Window x position. */
-                    int posX;
-
-                    /** Window y position. */
-                    int posY;
-
-                    /** Window width. */
-                    int width;
-
-                    /** Window height. */
-                    int height;
                 };
             }
         }

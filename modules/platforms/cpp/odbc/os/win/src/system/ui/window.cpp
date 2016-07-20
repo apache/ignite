@@ -42,11 +42,7 @@ namespace ignite
                     title(title),
                     handle(NULL),
                     created(false),
-                    parent(parent),
-                    posX(0),
-                    posY(0),
-                    width(0),
-                    height(0)
+                    parent(parent)
                 {
                     // No-op.
                 }
@@ -56,11 +52,7 @@ namespace ignite
                     title(),
                     handle(handle),
                     created(false),
-                    parent(0),
-                    posX(0),
-                    posY(0),
-                    width(0),
-                    height(0)
+                    parent(0)
                 {
                     // No-op.
                 }
@@ -75,11 +67,6 @@ namespace ignite
                 {
                     if (handle)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Window already created");
-
-                    this->posX = posX;
-                    this->posY = posY;
-                    this->width = width;
-                    this->height = height;
 
                     handle = CreateWindow(
                         className.c_str(),
