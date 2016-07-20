@@ -470,7 +470,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     cctx.tm().removeTxReturn(tx.xidVersion(), null);
                 else {
                     try {
-                        if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                        if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0 &&
+                            !cctx.kernalContext().isStopping())
                             cctx.io().send(backup, ackReq, tx.ioPolicy());
                     }
                     catch (IgniteCheckedException e) {

@@ -223,7 +223,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     Collection<GridCacheVersion> txs = nodesToTxs.remove(nodeId);
 
                     if (txs != null)
-                        completedVersHashMap.keySet().removeAll(txs);
+                        for (GridCacheVersion tx : txs)
+                            removeTxReturn(tx, /*nodesToTxs already cleared.*/ null);
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
