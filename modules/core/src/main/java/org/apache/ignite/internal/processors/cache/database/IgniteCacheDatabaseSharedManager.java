@@ -28,9 +28,11 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.UUID;
 
 /**
  *
@@ -102,7 +104,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForCheckpoint(boolean backup) {
+    @Nullable public IgniteInternalFuture wakeupForCheckpoint() {
+        return null;
+    }
+
+    /**
+     *
+     */
+    @Nullable public IgniteInternalFuture wakeupForBackup(IgniteUuid backupId, UUID backupNodeId) {
         return null;
     }
 
@@ -165,4 +174,5 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
-    }}
+    }
+}

@@ -18,13 +18,18 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 public class BackupMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    private transient GridCompoundFuture future;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
@@ -39,5 +44,13 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     @Override public boolean isMutable() {
         return false;
+    }
+
+    public GridCompoundFuture future() {
+        return future;
+    }
+
+    public void future(GridCompoundFuture future) {
+        this.future = future;
     }
 }
