@@ -187,9 +187,6 @@ namespace ignite
             const char* C_CLASS = "java/lang/Class";
             JniMethod M_CLASS_GET_NAME = JniMethod("getName", "()Ljava/lang/String;", false);
 
-            const char* C_X = "org/apache/ignite/internal/util/typedef/X";
-            JniMethod M_X_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
-
             const char* C_IGNITE_EXCEPTION = "org/apache/ignite/IgniteException";
 
             const char* C_PLATFORM_NO_CALLBACK_EXCEPTION = "org/apache/ignite/internal/processors/platform/PlatformNoCallbackException";
@@ -379,6 +376,7 @@ namespace ignite
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
+            JniMethod M_PLATFORM_UTILS_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
             JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
@@ -554,14 +552,14 @@ namespace ignite
                 m_Throwable_getMessage = FindMethod(env, c_Throwable, M_THROWABLE_GET_MESSAGE);
                 m_Throwable_printStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_PRINT_STACK_TRACE);
 
-                c_X = FindClass(env, C_X);
-                m_X_getFullStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
+                c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
+                m_PlatformUtils_getFullStackTrace = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_Class);
                 DeleteClass(env, c_Throwable);
-                DeleteClass(env, c_X);
+                DeleteClass(env, c_PlatformUtils);
             }
 
             bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, 
@@ -582,8 +580,8 @@ namespace ignite
 
                         jstring trace = NULL;
 
-                        if (c_X && m_X_getFullStackTrace) {
-                            trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));
+                        if (c_PlatformUtils && m_PlatformUtils_getFullStackTrace) {
+                            trace = static_cast<jstring>(env->CallStaticObjectMethod(c_PlatformUtils, m_PlatformUtils_getFullStackTrace, err));
                             *stackTrace = StringToChars(env, trace, stackTraceLen);
                         }
 
@@ -2613,7 +2611,7 @@ namespace ignite
 
                     jstring clsName = static_cast<jstring>(env->CallObjectMethod(cls, jvm->GetJavaMembers().m_Class_getName));
                     jstring msg = static_cast<jstring>(env->CallObjectMethod(err, jvm->GetJavaMembers().m_Throwable_getMessage));
-                    jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(jvm->GetJavaMembers().c_X, jvm->GetJavaMembers().m_X_getFullStackTrace, err));
+                    jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(jvm->GetJavaMembers().c_PlatformUtils, jvm->GetJavaMembers().m_PlatformUtils_getFullStackTrace, err));
 
                     env->DeleteLocalRef(cls);
 

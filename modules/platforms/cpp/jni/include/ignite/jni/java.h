@@ -204,8 +204,8 @@ namespace ignite
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
 				
-				jclass c_X;
-				jmethodID m_X_getFullStackTrace;
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
