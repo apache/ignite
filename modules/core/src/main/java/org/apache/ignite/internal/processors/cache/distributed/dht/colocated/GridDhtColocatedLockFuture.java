@@ -457,20 +457,25 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
     public Set<IgniteTxKey> requestedKeys() {
-        for (IgniteInternalFuture<Boolean> miniFut : futures()) {
-            if (isMini(miniFut) && !miniFut.isDone()) {
-                MiniFuture mini = (MiniFuture)miniFut;
+        synchronized (futs) {
+            if (timeoutObj != null && timeoutObj.requestedKeys != null)
+                return timeoutObj.requestedKeys;
 
-                Set<IgniteTxKey> requestedKeys = U.newHashSet(mini.keys.size());
+            for (IgniteInternalFuture<Boolean> miniFut : futures()) {
+                if (isMini(miniFut) && !miniFut.isDone()) {
+                    MiniFuture mini = (MiniFuture)miniFut;
 
-                for (KeyCacheObject key : mini.keys)
-                    requestedKeys.add(new IgniteTxKey(key, cctx.cacheId()));
+                    Set<IgniteTxKey> requestedKeys = U.newHashSet(mini.keys.size());
 
-                return requestedKeys;
+                    for (KeyCacheObject key : mini.keys)
+                        requestedKeys.add(new IgniteTxKey(key, cctx.cacheId()));
+
+                    return requestedKeys;
+                }
             }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -1323,6 +1328,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             super(timeout);
         }
 
+        /** Requested keys. */
+        private Set<IgniteTxKey> requestedKeys;
+
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
@@ -1330,6 +1338,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
                 synchronized (futs) {
+                    requestedKeys = requestedKeys();
+
                     futs.clear(); // Stop response processing.
                 }
 

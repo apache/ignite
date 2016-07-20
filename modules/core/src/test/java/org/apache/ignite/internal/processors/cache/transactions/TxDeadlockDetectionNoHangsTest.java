@@ -99,6 +99,11 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
             getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
+
     /**
      * @throws Exception If failed.
      */

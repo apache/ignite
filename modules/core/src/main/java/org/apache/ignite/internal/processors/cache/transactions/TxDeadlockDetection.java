@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -502,9 +503,9 @@ public class TxDeadlockDetection {
 
             if (res != null && set) {
                 if (res.classError() != null) {
-                    IgniteLogger log = cctx.logger(TxDeadlockDetection.class);
+                    IgniteLogger log = cctx.kernalContext().log(this.getClass());
 
-                    log.warning("Failed to finish deadlock detection due to an error: " + nodeId);
+                    U.warn(log, "Failed to finish deadlock detection due to an error: " + nodeId);
 
                     onDone();
                 }
@@ -564,6 +565,10 @@ public class TxDeadlockDetection {
             /** {@inheritDoc} */
             @Override public void onTimeout() {
                 timedOut = true;
+
+                IgniteLogger log = cctx.kernalContext().log(this.getClass());
+
+                U.warn(log, "Deadlock detection was timed out [timeout=" + DEADLOCK_TIMEOUT + ", fut=" + this + ']');
 
                 onDone();
             }
