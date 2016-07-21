@@ -1208,7 +1208,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (tx != null)
                 tx.removeMapping(node.id());
 
-            onDone(true);
+            onDone(false);
         }
 
         /**
