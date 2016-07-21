@@ -1178,10 +1178,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         try {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
-            String affCache = F.first(affCaches);
 
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affPartId,
-                affKey, affCache, mapTopVer);
+                affKey, F.first(affCaches), mapTopVer);
 
             if (node == null) {
                 String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +

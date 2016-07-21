@@ -118,7 +118,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** The partition should be renting. The partition will not be reserved by affinity job when the flag is true. */
+    /** Used as an intermediate state before RENTING. The partition will not be reserved
+     *  by affinity job when the flag is true. */
     private volatile boolean shouldBeRenting = false;
 
     /**

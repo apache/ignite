@@ -1376,6 +1376,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return affCacheNames;
         }
 
+        /** {@inheritDoc} */
         @Nullable @Override public AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
@@ -1463,6 +1464,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return affCacheNames;
         }
 
+        /** {@inheritDoc} */
         @Nullable @Override public AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
