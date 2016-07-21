@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './logger.jade!';
+import templateUrl from './logger.jade';
 
 export default ['igniteConfigurationClustersLogger', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

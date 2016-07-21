@@ -16,7 +16,7 @@
  */
 
 // Confirm popup service.
-export default ['$confirm', ['$modal', '$rootScope', '$q', '$animate', ($modal, $root, $q, $animate) => {
+export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($root, $q, $modal, $animate) => {
     const scope = $root.$new();
 
     const modal = $modal({templateUrl: '/templates/confirm.html', scope, placement: 'center', show: false});

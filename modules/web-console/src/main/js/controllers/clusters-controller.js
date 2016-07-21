@@ -16,12 +16,10 @@
  */
 
 // Controller for Clusters screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', '$table',
-    function($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo, $table) {
-        $unsavedChangesGuard.install($scope);
+export default ['clustersController', [
+    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable) {
+        UnsavedChangesGuard.install($scope);
 
         const emptyCluster = {empty: true};
 
@@ -45,24 +43,24 @@ consoleModule.controller('clustersController', [
             'collision.JobStealing.stealingAttributes': {id: 'CAttribute', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', dupObjName: 'name', group: 'collision'}
         };
 
-        const showPopoverMessage = $common.showPopoverMessage;
+        const showPopoverMessage = LegacyUtils.showPopoverMessage;
 
         $scope.tablePairValid = function(item, field, index) {
             const pairField = pairFields[field.model];
 
-            const pairValue = $table.tablePairValue(field, index);
+            const pairValue = LegacyTable.tablePairValue(field, index);
 
             if (pairField) {
                 const model = _.get(item, field.model);
 
-                if ($common.isDefined(model)) {
+                if (LegacyUtils.isDefined(model)) {
                     const idx = _.findIndex(model, (pair) => {
                         return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                     });
 
                     // Found duplicate by key.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.ui, pairField.group, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Attribute with such ' + pairField.dupObjName + ' already exists!');
+                        return showPopoverMessage($scope.ui, pairField.group, LegacyTable.tableFieldId(index, pairField.idPrefix + pairField.id), 'Attribute with such ' + pairField.dupObjName + ' already exists!');
                 }
             }
 
@@ -70,19 +68,19 @@ consoleModule.controller('clustersController', [
         };
 
         $scope.tableSave = function(field, index, stopEdit) {
-            if ($table.tablePairSaveVisible(field, index))
-                return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+            if (LegacyTable.tablePairSaveVisible(field, index))
+                return LegacyTable.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
             return true;
         };
 
         $scope.tableReset = (trySave) => {
-            const field = $table.tableField();
+            const field = LegacyTable.tableField();
 
-            if (trySave && $common.isDefined(field) && !$scope.tableSave(field, $table.tableEditedRowIndex(), true))
+            if (trySave && LegacyUtils.isDefined(field) && !$scope.tableSave(field, LegacyTable.tableEditedRowIndex(), true))
                 return false;
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             return true;
         };
@@ -90,32 +88,32 @@ consoleModule.controller('clustersController', [
         $scope.tableNewItem = function(field) {
             if ($scope.tableReset(true)) {
                 if (field.type === 'failoverSpi') {
-                    if ($common.isDefined($scope.backupItem.failoverSpi))
+                    if (LegacyUtils.isDefined($scope.backupItem.failoverSpi))
                         $scope.backupItem.failoverSpi.push({});
                     else
                         $scope.backupItem.failoverSpi = {};
                 }
                 else
-                    $table.tableNewItem(field);
+                    LegacyTable.tableNewItem(field);
             }
         };
 
-        $scope.tableNewItemActive = $table.tableNewItemActive;
+        $scope.tableNewItemActive = LegacyTable.tableNewItemActive;
 
         $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index, $scope.tableSave);
+                LegacyTable.tableStartEdit(item, field, index, $scope.tableSave);
         };
 
-        $scope.tableEditing = $table.tableEditing;
+        $scope.tableEditing = LegacyTable.tableEditing;
 
         $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableRemove(item, field, index);
+                LegacyTable.tableRemove(item, field, index);
         };
 
-        $scope.tablePairSave = $table.tablePairSave;
-        $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
+        $scope.tablePairSave = LegacyTable.tablePairSave;
+        $scope.tablePairSaveVisible = LegacyTable.tablePairSaveVisible;
 
         $scope.attributesTbl = {
             type: 'attributes',
@@ -144,13 +142,13 @@ consoleModule.controller('clustersController', [
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyCluster;
 
-        $scope.ui = $common.formUI();
+        $scope.ui = LegacyUtils.formUI();
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 
-        $scope.hidePopover = $common.hidePopover;
-        $scope.saveBtnTipText = $common.saveBtnTipText;
-        $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.hidePopover = LegacyUtils.hidePopover;
+        $scope.saveBtnTipText = LegacyUtils.saveBtnTipText;
+        $scope.widthIsSufficient = LegacyUtils.widthIsSufficient;
 
         $scope.contentVisible = function() {
             const item = $scope.backupItem;
@@ -161,7 +159,7 @@ consoleModule.controller('clustersController', [
         $scope.toggleExpanded = function() {
             $scope.ui.expanded = !$scope.ui.expanded;
 
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
         };
 
         $scope.discoveries = [
@@ -193,7 +191,7 @@ consoleModule.controller('clustersController', [
                 $scope.selectItem($scope.clusters[0]);
         }
 
-        $loading.start('loadingClustersScreen');
+        Loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/configuration/clusters/list')
@@ -237,14 +235,14 @@ consoleModule.controller('clustersController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -256,13 +254,11 @@ consoleModule.controller('clustersController', [
                     DemoInfo.show();
                 }
             })
-            .catch(function(errMsg) {
-                $common.showError(errMsg);
-            })
+            .catch(Messages.showError)
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingClustersScreen');
+                Loading.finish('loadingClustersScreen');
             });
 
         $scope.selectItem = function(item, backup) {
@@ -288,13 +284,13 @@ consoleModule.controller('clustersController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
-                if ($common.getQueryVariable('new'))
+                if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.clusters');
             }
 
-            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
+            LegacyUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
         $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
@@ -316,7 +312,7 @@ consoleModule.controller('clustersController', [
 
         // Add new cluster.
         $scope.createItem = function(linkId) {
-            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'clusterName'));
+            $timeout(() => LegacyUtils.ensureActivePanel($scope.ui, 'general', 'clusterName'));
 
             $scope.selectItem(null, prepareNewItem(linkId));
         };
@@ -333,14 +329,14 @@ consoleModule.controller('clustersController', [
         function checkCacheDatasources(item) {
             const caches = clusterCaches(item);
 
-            const checkRes = $common.checkCachesDataSources(caches);
+            const checkRes = LegacyUtils.checkCachesDataSources(caches);
 
             if (!checkRes.checked) {
                 return showPopoverMessage($scope.ui, 'general', 'caches',
                     'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
-                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
+                    '" and different databases: "' + LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
             return true;
@@ -349,7 +345,7 @@ consoleModule.controller('clustersController', [
         function checkCacheSQLSchemas(item) {
             const caches = clusterCaches(item);
 
-            const checkRes = $common.checkCacheSQLSchemas(caches);
+            const checkRes = LegacyUtils.checkCacheSQLSchemas(caches);
 
             if (!checkRes.checked) {
                 return showPopoverMessage($scope.ui, 'general', 'caches',
@@ -363,12 +359,12 @@ consoleModule.controller('clustersController', [
         function checkBinaryConfiguration(item) {
             const b = item.binaryConfiguration;
 
-            if ($common.isDefined(b)) {
+            if (LegacyUtils.isDefined(b)) {
                 if (!_.isEmpty(b.typeConfigurations)) {
                     for (let typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
                         const type = b.typeConfigurations[typeIx];
 
-                        if ($common.isEmptyString(type.typeName))
+                        if (LegacyUtils.isEmptyString(type.typeName))
                             return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified!');
 
                         if (_.find(b.typeConfigurations, (t, ix) => ix < typeIx && t.typeName === type.typeName))
@@ -383,12 +379,12 @@ consoleModule.controller('clustersController', [
         function checkCommunicationConfiguration(item) {
             const c = item.communication;
 
-            if ($common.isDefined(c)) {
-                if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
-                    if ($common.isDefined(c.messageQueueLimit) && c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
+            if (LegacyUtils.isDefined(c)) {
+                if (LegacyUtils.isDefined(c.unacknowledgedMessagesBufferSize)) {
+                    if (LegacyUtils.isDefined(c.messageQueueLimit) && c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
                         return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit!');
 
-                    if ($common.isDefined(c.ackSendThreshold) && c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
+                    if (LegacyUtils.isDefined(c.ackSendThreshold) && c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
                         return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold!');
                 }
 
@@ -421,7 +417,7 @@ consoleModule.controller('clustersController', [
 
                 const sparsity = swap.maximumSparsity;
 
-                if ($common.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
+                if (LegacyUtils.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
                     return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1!');
 
                 const readStripesNumber = swap.readStripesNumber;
@@ -436,16 +432,16 @@ consoleModule.controller('clustersController', [
         function checkSslConfiguration(item) {
             const r = item.connector;
 
-            if ($common.isDefined(r)) {
-                if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
+            if (LegacyUtils.isDefined(r)) {
+                if (r.sslEnabled && LegacyUtils.isEmptyString(r.sslFactory))
                     return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty!');
             }
 
             if (item.sslEnabled) {
-                if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
+                if (!LegacyUtils.isDefined(item.sslContextFactory) || LegacyUtils.isEmptyString(item.sslContextFactory.keyStoreFilePath))
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty!');
 
-                if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && _.isEmpty(item.sslContextFactory.trustManagers))
+                if (LegacyUtils.isEmptyString(item.sslContextFactory.trustStoreFilePath) && _.isEmpty(item.sslContextFactory.trustManagers))
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured!');
             }
 
@@ -461,12 +457,12 @@ consoleModule.controller('clustersController', [
 
         // Check cluster logical consistency.
         function validate(item) {
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
 
-            if ($common.isEmptyString(item.name))
+            if (LegacyUtils.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Cluster name should not be empty!');
 
-            if (!$common.checkFieldValidators($scope.ui))
+            if (!LegacyUtils.checkFieldValidators($scope.ui))
                 return false;
 
             if (!checkCacheSQLSchemas(item))
@@ -529,16 +525,16 @@ consoleModule.controller('clustersController', [
 
                     $scope.selectItem(item);
 
-                    $common.showInfo('Cluster "' + item.name + '" saved.');
+                    Messages.showInfo('Cluster "' + item.name + '" saved.');
                 })
-                .error((err) => $common.showError(err));
+                .error(Messages.showError);
         }
 
         // Save cluster.
         $scope.saveItem = function() {
             const item = $scope.backupItem;
 
-            const swapSpi = $common.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
+            const swapSpi = LegacyUtils.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
 
             if (swapSpi)
                 angular.extend(item, swapSpi);
@@ -554,7 +550,7 @@ consoleModule.controller('clustersController', [
         // Clone cluster with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
+                Clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -569,13 +565,13 @@ consoleModule.controller('clustersController', [
         $scope.removeItem = function() {
             const selectedItem = $scope.selectedItem;
 
-            $confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
+            Confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
                 .then(function() {
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/clusters/remove', {_id})
                         .success(function() {
-                            $common.showInfo('Cluster has been removed: ' + selectedItem.name);
+                            Messages.showInfo('Cluster has been removed: ' + selectedItem.name);
 
                             const clusters = $scope.clusters;
 
@@ -595,19 +591,17 @@ consoleModule.controller('clustersController', [
                                 _.forEach($scope.igfss, (igfs) => _.remove(igfs.igfs.clusters, (id) => id === _id));
                             }
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         // Remove all clusters from db.
         $scope.removeAllItems = function() {
-            $confirm.confirm('Are you sure you want to remove all clusters?')
+            Confirm.confirm('Are you sure you want to remove all clusters?')
                 .then(function() {
                     $http.post('/api/v1/configuration/clusters/remove/all')
-                        .success(function() {
-                            $common.showInfo('All clusters have been removed');
+                        .success(() => {
+                            Messages.showInfo('All clusters have been removed');
 
                             $scope.clusters = [];
 
@@ -617,18 +611,16 @@ consoleModule.controller('clustersController', [
                             $scope.backupItem = emptyCluster;
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         $scope.resetAll = function() {
-            $confirm.confirm('Are you sure you want to undo all changes for current cluster?')
+            Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });
         };
-    }]
-);
+    }
+]];

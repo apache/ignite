@@ -15,32 +15,16 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import cache from 'gulp-cached';
-import eslint from 'gulp-eslint';
-import sequence from 'gulp-sequence';
+// Sign in controller.
+// TODO IGNITE-1936 Refactor this controller.
+export default ['auth', [
+    '$scope', 'IgniteFocus', 'IgniteCountries', 'Auth',
+    ($scope, Focus, Countries, Auth) => {
+        $scope.auth = Auth.auth;
+        $scope.forgotPassword = Auth.forgotPassword;
+        $scope.action = 'signin';
+        $scope.countries = Countries.getAll();
 
-const paths = [
-    './app/**/*.js',
-    './controllers/**/*.js',
-    './generator/**/*.js',
-    './ignite_modules_temp/**/*.js',
-    './gulpfile.babel.js/**/*.js',
-    './gulpfile.babel.js/*.js'
-];
-
-gulp.task('eslint:node', () =>
-	gulp.src('./serve/**/*.js')
-        .pipe(cache('eslint:node'))
-		.pipe(eslint({envs: ['node']}))
-		.pipe(eslint.format())
-);
-
-gulp.task('eslint:browser', () =>
-	gulp.src(paths)
-        .pipe(cache('eslint:browser'))
-		.pipe(eslint({envs: ['browser']}))
-		.pipe(eslint.format())
-);
-
-gulp.task('eslint', (cb) => sequence('eslint:browser', 'eslint:node', cb));
+        Focus.move('user_email');
+    }
+]];

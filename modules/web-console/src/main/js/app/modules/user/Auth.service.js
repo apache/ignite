@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 'gettingStarted', 'User', 'IgniteAgentMonitor',
-    ($http, $root, $state, $window, $common, gettingStarted, User, agentMonitor) => {
+export default ['Auth', ['$http', '$rootScope', '$state', '$window', 'IgniteLegacyUtils', 'IgniteMessages', 'gettingStarted', 'User', 'IgniteAgentMonitor',
+    ($http, $root, $state, $window, LegacyUtils, Messages, gettingStarted, User, agentMonitor) => {
         let _auth = false;
 
         try {
@@ -44,7 +44,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
             forgotPassword(userInfo) {
                 return $http.post('/api/v1/password/forgot', userInfo)
                     .success(() => $state.go('password.send'))
-                    .error((err) => $common.showPopoverMessage(null, null, 'forgot_email', $common.errorMessage(err)));
+                    .error((err) => LegacyUtils.showPopoverMessage(null, null, 'forgot_email', Messages.errorMessage(null, err)));
             },
             auth(action, userInfo) {
                 return $http.post('/api/v1/' + action, userInfo)
@@ -61,7 +61,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
                             agentMonitor.init();
                         });
                     })
-                    .error((err) => $common.showPopoverMessage(null, null, action + '_email', $common.errorMessage(err)));
+                    .error((err) => LegacyUtils.showPopoverMessage(null, null, action + '_email', Messages.errorMessage(null, err)));
             },
             logout() {
                 return $http.post('/api/v1/logout')
@@ -70,7 +70,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
 
                         $window.open($state.href('signin'), '_self');
                     })
-                    .catch((err) => $common.showError(err));
+                    .catch(Messages.showError);
             }
         };
     }]];

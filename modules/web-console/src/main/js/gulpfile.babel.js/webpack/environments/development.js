@@ -15,33 +15,50 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import connect from 'gulp-connect';
-import proxy from 'http-proxy-middleware';
+import webpack from 'webpack';
+import {destDir, rootDir} from '../../paths';
 
-import { destDir } from '../paths';
+export default () => {
+    const plugins = [
+        new webpack.HotModuleReplacementPlugin()
+    ];
 
-// Task run static server to local development.
-gulp.task('connect', () => {
-    connect.server({
-        port: 8090,
-        root: [destDir],
-        middleware() {
-            return [
-                proxy('/socket.io', {
+    return {
+        context: rootDir,
+        debug: true,
+        devtool: 'source-map',
+        watch: true,
+        devServer: {
+            historyApiFallback: true,
+            publicPath: '/',
+            contentBase: destDir,
+            info: true,
+            hot: true,
+            inline: true,
+            proxy: {
+                '/socket.io': {
                     target: 'http://localhost:3000',
                     changeOrigin: true,
                     ws: true
-                }),
-                proxy('/api/v1/', {
+                },
+                '/api/v1/*': {
                     target: 'http://localhost:3000',
                     changeOrigin: true,
-                    pathRewrite: {
-                        '^/api/v1/': '/' // remove path
+                    rewrite: (req) => {
+                        req.url = req.url.replace(/^\/api\/v1/, '');
+
+                        return req;
                     }
-                })
-            ];
+                }
+            },
+            watchOptions: {
+                aggregateTimeout: 1000,
+                poll: 1000
+            },
+            stats: {colors: true},
+            port: 9000
         },
-        fallback: `${destDir}/index.html`
-    });
-});
+        stats: {colors: true},
+        plugins
+    };
+};

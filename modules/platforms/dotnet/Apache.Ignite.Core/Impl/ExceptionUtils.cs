@@ -113,10 +113,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="ignite">The ignite.</param>
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
+        /// <param name="stackTrace">Native stack trace.</param>
         /// <param name="reader">Error data reader.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(IIgnite ignite, string clsName, string msg, BinaryReader reader = null)
+        public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace, BinaryReader reader = null)
         {
+            Exception innerException = string.IsNullOrEmpty(stackTrace) ? null : new JavaException(stackTrace);
+
             ExceptionFactoryDelegate ctor;
 
             if (Exs.TryGetValue(clsName, out ctor))
@@ -126,23 +129,24 @@ namespace Apache.Ignite.Core.Impl
                 ExceptionFactoryDelegate innerCtor;
 
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
-                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, null));
+                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, innerException));
 
-                return ctor(ignite, msg, null);
+                return ctor(ignite, msg, innerException);
             }
 
             if (ClsNoClsDefFoundErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
-                    "variable?): " + msg);
+                    "variable?): " + msg, innerException);
 
             if (ClsNoSuchMthdErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
-                    "variable?): " + msg);
+                    "variable?): " + msg, innerException);
 
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
-                return ProcessCachePartialUpdateException(ignite, msg, reader);
+                return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
 
-            return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
+            return new IgniteException(string.Format("Java exception occurred [class={0}, message={1}]", clsName, msg),
+                innerException);
         }
 
         /// <summary>
@@ -150,10 +154,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="ignite">The ignite.</param>
         /// <param name="msg">Message.</param>
+        /// <param name="stackTrace">Stack trace.</param>
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, BinaryReader reader)
+        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace, 
+            BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
@@ -183,7 +189,7 @@ namespace Apache.Ignite.Core.Impl
             string innerErrCls = reader.ReadString();
             string innerErrMsg = reader.ReadString();
 
-            Exception innerErr = GetException(ignite, innerErrCls, innerErrMsg);
+            Exception innerErr = GetException(ignite, innerErrCls, innerErrMsg, stackTrace);
 
             return new CachePartialUpdateException(msg, innerErr);
         }
@@ -193,14 +199,15 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="clsName">Class name.</param>
         /// <param name="msg">Message.</param>
+        /// <param name="stackTrace">Stack trace.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetJvmInitializeException(string clsName, string msg)
+        public static Exception GetJvmInitializeException(string clsName, string msg, string stackTrace)
         {
             if (clsName != null)
-                return new IgniteException("Failed to initialize JVM.", GetException(null, clsName, msg));
+                return new IgniteException("Failed to initialize JVM.", GetException(null, clsName, msg, stackTrace));
 
             if (msg != null)
-                return new IgniteException("Failed to initialize JVM: " + msg);
+                return new IgniteException("Failed to initialize JVM: " + msg + "\n" + stackTrace);
 
             return new IgniteException("Failed to initialize JVM.");
         }

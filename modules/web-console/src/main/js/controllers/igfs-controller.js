@@ -16,12 +16,10 @@
  */
 
 // Controller for IGFS screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', '$table',
-    function($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, $table) {
-        $unsavedChangesGuard.install($scope);
+export default ['igfsController', [
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable) {
+        UnsavedChangesGuard.install($scope);
 
         const emptyIgfs = {empty: true};
 
@@ -35,69 +33,68 @@ consoleModule.controller('igfsController', [
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyIgfs;
 
-        $scope.ui = $common.formUI();
+        $scope.ui = LegacyUtils.formUI();
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 
-        $scope.compactJavaName = $common.compactJavaName;
-        $scope.widthIsSufficient = $common.widthIsSufficient;
-        $scope.saveBtnTipText = $common.saveBtnTipText;
+        $scope.compactJavaName = LegacyUtils.compactJavaName;
+        $scope.widthIsSufficient = LegacyUtils.widthIsSufficient;
+        $scope.saveBtnTipText = LegacyUtils.saveBtnTipText;
 
-        const showPopoverMessage = $common.showPopoverMessage;
+        const showPopoverMessage = LegacyUtils.showPopoverMessage;
 
-        // TODO LEGACY start
         $scope.tableSave = function(field, index, stopEdit) {
-            if (field.type === 'pathModes' && $table.tablePairSaveVisible(field, index))
-                return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+            if (field.type === 'pathModes' && LegacyTable.tablePairSaveVisible(field, index))
+                return LegacyTable.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
             return true;
         };
 
         $scope.tableReset = (trySave) => {
-            const field = $table.tableField();
+            const field = LegacyTable.tableField();
 
-            if (trySave && $common.isDefined(field) && !$scope.tableSave(field, $table.tableEditedRowIndex(), true))
+            if (trySave && LegacyUtils.isDefined(field) && !$scope.tableSave(field, LegacyTable.tableEditedRowIndex(), true))
                 return false;
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             return true;
         };
 
         $scope.tableNewItem = function(field) {
             if ($scope.tableReset(true))
-                $table.tableNewItem(field);
+                LegacyTable.tableNewItem(field);
         };
 
-        $scope.tableNewItemActive = $table.tableNewItemActive;
+        $scope.tableNewItemActive = LegacyTable.tableNewItemActive;
 
         $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index, $scope.tableSave);
+                LegacyTable.tableStartEdit(item, field, index, $scope.tableSave);
         };
 
-        $scope.tableEditing = $table.tableEditing;
-        $scope.tablePairSave = $table.tablePairSave;
-        $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
+        $scope.tableEditing = LegacyTable.tableEditing;
+        $scope.tablePairSave = LegacyTable.tablePairSave;
+        $scope.tablePairSaveVisible = LegacyTable.tablePairSaveVisible;
 
         $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableRemove(item, field, index);
+                LegacyTable.tableRemove(item, field, index);
         };
 
         $scope.tablePairValid = function(item, field, index) {
-            const pairValue = $table.tablePairValue(field, index);
+            const pairValue = LegacyTable.tablePairValue(field, index);
 
             const model = item[field.model];
 
-            if ($common.isDefined(model)) {
+            if (LegacyUtils.isDefined(model)) {
                 const idx = _.findIndex(model, function(pair) {
                     return pair.path === pairValue.key;
                 });
 
                 // Found duplicate.
                 if (idx >= 0 && idx !== index)
-                    return showPopoverMessage($scope.ui, 'misc', $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
+                    return showPopoverMessage($scope.ui, 'misc', LegacyTable.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
             }
 
             return true;
@@ -113,8 +110,7 @@ consoleModule.controller('igfsController', [
             save: $scope.tableSave
         };
 
-        $scope.igfsModes = $common.mkOptions(['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']);
-        // TODO LEGACY start - end
+        $scope.igfsModes = LegacyUtils.mkOptions(['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']);
 
         $scope.contentVisible = function() {
             const item = $scope.backupItem;
@@ -125,7 +121,7 @@ consoleModule.controller('igfsController', [
         $scope.toggleExpanded = function() {
             $scope.ui.expanded = !$scope.ui.expanded;
 
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
         };
 
         $scope.igfss = [];
@@ -136,7 +132,7 @@ consoleModule.controller('igfsController', [
                 $scope.selectItem($scope.igfss[0]);
         }
 
-        $loading.start('loadingIgfsScreen');
+        Loading.start('loadingIgfsScreen');
 
         // When landing on the page, get IGFSs and show them.
         $http.post('/api/v1/configuration/igfs/list')
@@ -184,31 +180,29 @@ consoleModule.controller('igfsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
                 }, true);
             })
-            .catch(function(errMsg) {
-                $common.showError(errMsg);
-            })
+            .catch(Messages.showError)
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingIgfsScreen');
+                Loading.finish('loadingIgfsScreen');
             });
 
         $scope.selectItem = function(item, backup) {
             function selectItem() {
-                $table.tableReset(); // TODO LEGACY
+                LegacyTable.tableReset();
 
                 $scope.selectedItem = item;
 
@@ -231,13 +225,13 @@ consoleModule.controller('igfsController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
-                if ($common.getQueryVariable('new'))
+                if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.igfs');
             }
 
-            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
+            LegacyUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
         $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
@@ -256,8 +250,8 @@ consoleModule.controller('igfsController', [
 
         // Add new IGFS.
         $scope.createItem = function(linkId) {
-            if ($scope.tableReset(true)) { // TODO LEGACY
-                $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'igfsName'));
+            if ($scope.tableReset(true)) {
+                $timeout(() => LegacyUtils.ensureActivePanel($scope.ui, 'general', 'igfsName'));
 
                 $scope.selectItem(null, prepareNewItem(linkId));
             }
@@ -265,12 +259,12 @@ consoleModule.controller('igfsController', [
 
         // Check IGFS logical consistency.
         function validate(item) {
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
 
-            if ($common.isEmptyString(item.name))
+            if (LegacyUtils.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'igfsName', 'IGFS name should not be empty!');
 
-            if (!$common.checkFieldValidators($scope.ui))
+            if (!LegacyUtils.checkFieldValidators($scope.ui))
                 return false;
 
             if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY'))
@@ -305,16 +299,14 @@ consoleModule.controller('igfsController', [
 
                     $scope.selectItem(item);
 
-                    $common.showInfo('IGFS "' + item.name + '" saved.');
+                    Messages.showInfo('IGFS "' + item.name + '" saved.');
                 })
-                .error(function(errMsg) {
-                    $common.showError(errMsg);
-                });
+                .error(Messages.showError);
         }
 
         // Save IGFS.
         $scope.saveItem = function() {
-            if ($scope.tableReset(true)) { // TODO LEGACY
+            if ($scope.tableReset(true)) {
                 const item = $scope.backupItem;
 
                 if (validate(item))
@@ -330,8 +322,8 @@ consoleModule.controller('igfsController', [
 
         // Clone IGFS with new name.
         $scope.cloneItem = function() {
-            if ($scope.tableReset(true) && validate($scope.backupItem)) { // TODO LEGACY
-                $clone.confirm($scope.backupItem.name, _igfsNames()).then(function(newName) {
+            if ($scope.tableReset(true) && validate($scope.backupItem)) {
+                Clone.confirm($scope.backupItem.name, _igfsNames()).then(function(newName) {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -345,17 +337,17 @@ consoleModule.controller('igfsController', [
 
         // Remove IGFS from db.
         $scope.removeItem = function() {
-            $table.tableReset(); // TODO LEGACY
+            LegacyTable.tableReset();
 
             const selectedItem = $scope.selectedItem;
 
-            $confirm.confirm('Are you sure you want to remove IGFS: "' + selectedItem.name + '"?')
+            Confirm.confirm('Are you sure you want to remove IGFS: "' + selectedItem.name + '"?')
                 .then(function() {
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/igfs/remove', {_id})
                         .success(function() {
-                            $common.showInfo('IGFS has been removed: ' + selectedItem.name);
+                            Messages.showInfo('IGFS has been removed: ' + selectedItem.name);
 
                             const igfss = $scope.igfss;
 
@@ -374,40 +366,36 @@ consoleModule.controller('igfsController', [
                                 }
                             }
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         // Remove all IGFS from db.
         $scope.removeAllItems = function() {
-            $table.tableReset(); // TODO LEGACY
+            LegacyTable.tableReset();
 
-            $confirm.confirm('Are you sure you want to remove all IGFS?')
+            Confirm.confirm('Are you sure you want to remove all IGFS?')
                 .then(function() {
                     $http.post('/api/v1/configuration/igfs/remove/all')
                         .success(function() {
-                            $common.showInfo('All IGFS have been removed');
+                            Messages.showInfo('All IGFS have been removed');
 
                             $scope.igfss = [];
                             $scope.backupItem = emptyIgfs;
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         $scope.resetAll = function() {
-            $table.tableReset(); // TODO LEGACY
+            LegacyTable.tableReset();
 
-            $confirm.confirm('Are you sure you want to undo all changes for current IGFS?')
+            Confirm.confirm('Are you sure you want to undo all changes for current IGFS?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });
         };
-    }]
-);
+    }
+]];
