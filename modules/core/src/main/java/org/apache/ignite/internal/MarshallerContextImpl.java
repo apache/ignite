@@ -378,6 +378,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     private static class TypeIdKey implements Externalizable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private byte prefix;
 
         /** */
