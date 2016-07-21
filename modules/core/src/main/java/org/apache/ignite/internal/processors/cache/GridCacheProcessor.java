@@ -1260,7 +1260,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
-        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManagerImpl();
+        IgniteCacheOffheapManager offheapMgr = sharedCtx.database().persistenceEnabled()
+            ? new GridCacheOffheapManager()
+            : new IgniteCacheOffheapManagerImpl();
 
         storeMgr.initialize(cfgStore, sesHolders);
 

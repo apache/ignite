@@ -97,76 +97,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         if (cctx.affinityNode()) {
             int cacheId = cctx.cacheId();
 
-            long[] rootIds = null;
-
-            long metastoreRoot = 0;
-
-            boolean initNew = false;
-
-            if (!cctx.shared().database().persistenceEnabled()) {
-                try (Page metaPage = pageMem.metaPage(cacheId)) {
-                    metastoreRoot = metaPage.id();
-
-                    rootIds = allocateMetas(pageMem, cacheId, true);
-
-                    initNew = true;
-                }
-            }
-            else {
-                try (Page meta = pageMem.metaPage(cacheId)) {
-                    boolean initialized = false;
-
-                    final ByteBuffer buf = meta.getForWrite();
-
-                    try {
-                        final int pagesNum = buf.getInt();
-
-                        if (pagesNum > 0) {
-                            initialized = true;
-
-                            assert pagesNum > 2 : "Must be at least 2 pages for reuse list";
-
-                            metastoreRoot = buf.getLong();
-
-                            rootIds = new long[pagesNum - 1];
-
-                            for (int i = 0; i < rootIds.length; i++) {
-                                assert buf.remaining() >= 8 : "Meta page is corrupted";
-
-                                rootIds[i] = buf.getLong();
-                            }
-
-                        }
-
-                        if (!initialized) {
-                            metastoreRoot = pageMem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX);
-
-                            rootIds = allocateMetas(pageMem, cacheId, true);
-
-                            buf.rewind();
-
-                            buf.putInt(rootIds.length + 1);
-                            buf.putLong(metastoreRoot);
-
-                            for (final long rootId : rootIds)
-                                buf.putLong(rootId);
-
-                            initNew = true;
-                        }
-                    }
-                    finally {
-                        meta.releaseWrite(!initialized);
-                    }
-                }
-            }
+            final Metas metas = getOrAllocateMetas(pageMem, cacheId);
 
             cctx.shared().database().checkpointReadLock();
 
             try {
-                reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), rootIds, initNew);
+                reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
                 freeList = new FreeList(cctx, reuseList);
 
-                metaStore = new MetadataStorage(pageMem, cctx.shared().wal(), cacheId, reuseList, metastoreRoot, initNew);
+                metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
+                    cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());
 
                 if (cctx.affinityNode() && cctx.isLocal()) {
                     assert cctx.cache() instanceof GridLocalCache : cctx.cache();
@@ -177,6 +117,25 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             finally {
                 cctx.shared().database().checkpointReadUnlock();
             }
+        }
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param cacheId Cache ID.
+     * @return Allocated pages.
+     * @throws IgniteCheckedException
+     */
+    protected Metas getOrAllocateMetas(
+        final PageMemory pageMem,
+        final int cacheId
+    ) throws IgniteCheckedException {
+        try (Page metaPage = pageMem.metaPage(cacheId)) {
+            final long metastoreRoot = metaPage.id();
+
+            final long[] rootIds = allocateMetas(pageMem, cacheId, true);
+
+            return new Metas(rootIds, metastoreRoot, true);
         }
     }
 
@@ -1225,6 +1184,52 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public int getHash(ByteBuffer buf, int idx) {
             return buf.getInt(offset(idx) + 8);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class Metas {
+        /** Meta root IDs. */
+        private final long[] rootIds;
+
+        /** Indicates whether pages were newly allocated. */
+        private final boolean initNew;
+
+        /** Metastore root page. */
+        private final long metastoreRoot;
+
+        /**
+         * @param rootIds Meta root IDs.
+         * @param metastoreRoot Indicates whether pages were newly allocated.
+         * @param initNew Metastore root page.
+         */
+        public Metas(final long[] rootIds, final long metastoreRoot, final boolean initNew) {
+            this.rootIds = rootIds;
+            this.initNew = initNew;
+            this.metastoreRoot = metastoreRoot;
+        }
+
+        /**
+         * @return Meta root IDs.
+         */
+        public long[] rootIds() {
+            return rootIds;
+        }
+
+        /**
+         * @return Indicates whether pages were newly allocated.
+         */
+        public boolean isInitNew() {
+            return initNew;
+        }
+
+        /**
+         * @return Metastore root page.
+         */
+        public long metastoreRoot() {
+            return metastoreRoot;
         }
     }
 }
