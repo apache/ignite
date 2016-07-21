@@ -84,6 +84,9 @@ public class PlatformUtils {
     /** Platform: .Net. */
     public static final String PLATFORM_DOTNET = "dotnet";
 
+    /** Marshaller system cache key prefix for .NET. */
+    public static final byte MARSH_CACHE_PREFIX_DOTNET = 1;
+
     /** Operation: prepare .Net platform. */
     public static final int OP_PREPARE_DOT_NET = 1;
 

@@ -42,6 +42,11 @@ public interface PlatformConfigurationEx {
     public String platform();
 
     /**
+     * @return Marshaller cache key prefix. Null when marshaller context is not needed.
+     */
+    public Byte marshallerCacheKeyPrefix();
+
+    /**
      * @return Warnings to be displayed on grid start.
      */
     public Collection<String> warnings();

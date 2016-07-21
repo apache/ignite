@@ -124,7 +124,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
 
-        platformMarshCtx = new MarshallerContextImpl(null, CU.MARSH_CACHE_NAME_PLATFORM, CU.MARSH_CACHE_PREFIX_DOTNET);
+        Byte prefix = interopCfg.marshallerCacheKeyPrefix();
+
+        platformMarshCtx = prefix != null
+            ? new MarshallerContextImpl(null, CU.MARSH_CACHE_NAME_PLATFORM, prefix)
+            : null;
     }
 
     /** {@inheritDoc} */

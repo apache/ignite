@@ -125,9 +125,6 @@ public class GridCacheUtils {
     /** Marshaller system cache name for platforms. */
     public static final String MARSH_CACHE_NAME_PLATFORM = "ignite-marshaller-sys-cache-platform";
 
-    /** Marshaller system cache key prefix for .NET. */
-    public static final byte MARSH_CACHE_PREFIX_DOTNET = 1;
-
     /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
 
