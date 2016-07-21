@@ -400,7 +400,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             IgniteEx ignite;
 
             @Override public void run() {
-                checkPartitionsReservations(ignite, orgId, 1);
+                try {
+                    checkPartitionsReservations(ignite, orgId, 1);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    fail("Unexpected exception");
+                }
             }
         }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
 
@@ -411,7 +417,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             IgniteEx ignite;
 
             @Override public Object call() {
-                checkPartitionsReservations(ignite, orgId, 1);
+                try {
+                    checkPartitionsReservations(ignite, orgId, 1);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    fail("Unexpected exception");
+                }
                 return null;
             }
         }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -431,7 +443,14 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 IgniteEx ignite;
 
                 @Override public void run() {
-                    checkPartitionsReservations(ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations(ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+
+                    }
                     throw new RuntimeException("Test job throws exception");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -448,7 +467,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 IgniteEx ignite;
 
                 @Override public Object call() {
-                    checkPartitionsReservations(ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations(ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
                     throw new RuntimeException("Test job throws exception");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -472,7 +497,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 IgniteEx ignite;
 
                 @Override public void run() {
-                    checkPartitionsReservations(ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations(ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
                     throw new Error("Test job throws error");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -489,7 +520,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 IgniteEx ignite;
 
                 @Override public Object call() {
-                    checkPartitionsReservations(ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations(ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
                     throw new Error("Test job throws error");
                 }
             }, Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
@@ -529,7 +566,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 private Ignite ignite;
 
                 @Override public void run() {
-                    checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
 
                     try {
                         Thread.sleep(1000);
@@ -561,7 +604,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 private Ignite ignite;
 
                 @Override public Object call() {
-                    checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
 
                     try {
                         Thread.sleep(1000);
@@ -604,7 +653,13 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 }
 
                 @Override public void run() {
-                    checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    try {
+                        checkPartitionsReservations((IgniteEx)ignite, orgId, 1);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        fail("Unexpected exception");
+                    }
 
                     try {
                         Thread.sleep(1000);

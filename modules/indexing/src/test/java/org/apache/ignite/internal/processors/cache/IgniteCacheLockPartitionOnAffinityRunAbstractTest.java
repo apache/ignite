@@ -244,9 +244,10 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
      * @param ignite Ignite.
      * @param orgId Org id.
      * @param expReservations Expected reservations.
+     * @throws Exception If failed.
      */
     protected static void checkPartitionsReservations(final IgniteEx ignite, int orgId,
-        final int expReservations) throws IgniteInterruptedCheckedException {
+        final int expReservations) throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         final GridDhtLocalPartition pPers = ignite.context().cache()
