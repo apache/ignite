@@ -25,6 +25,11 @@ namespace ignite
     namespace odbc
     {
         /**
+         * Extract last setup error and throw it like IgniteError.
+         */
+        void ThrowLastSetupError();
+
+        /**
          * Add new string to the DSN file.
          *
          * @param dsn DSN name.
@@ -42,23 +47,6 @@ namespace ignite
          * @return Value.
          */
         std::string ReadDsnString(const char* dsn, const char* key, const char* dflt);
-
-        /**
-         * Register DSN with specified configuration.
-         *
-         * @param config Configuration.
-         * @param driver Driver.
-         * @return True on success and false on fail.
-         */
-        bool RegisterDsn(const config::Configuration& config, LPCSTR driver);
-
-        /**
-         * Unregister specified DSN.
-         *
-         * @param dsn DSN name.
-         * @return True on success and false on fail.
-         */
-        bool UnregisterDsn(const char* dsn);
 
         /**
          * Read DSN to fill the configuration.

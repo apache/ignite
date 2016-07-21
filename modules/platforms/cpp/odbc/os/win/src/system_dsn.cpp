@@ -24,6 +24,13 @@
 
 using ignite::odbc::config::Configuration;
 
+/**
+ * Display configuration window for user to configure DSN.
+ *
+ * @param hwndParent Parent window handle.
+ * @param config Output configuration.
+ * @return True on success and false on fail.
+ */
 bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
 {
     using namespace ignite::odbc::system::ui;
@@ -53,6 +60,66 @@ bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
         std::string message = buf.str();
 
         MessageBox(NULL, message.c_str(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+
+        SQLPostInstallerError(err.GetCode(), err.GetText());
+    }
+
+    return false;
+}
+
+/**
+ * Register DSN with specified configuration.
+ *
+ * @param config Configuration.
+ * @param driver Driver.
+ * @return True on success and false on fail.
+ */
+bool RegisterDsn(const Configuration& config, LPCSTR driver)
+{
+    using namespace ignite::odbc::config;
+    using ignite::common::LexicalCast;
+
+    const char* dsn = config.GetDsn().c_str();
+
+    try
+    {
+        if (!SQLWriteDSNToIni(dsn, driver))
+            ignite::odbc::ThrowLastSetupError();
+
+        ignite::odbc::WriteDsnString(dsn, attrkey::host.c_str(), config.GetHost().c_str());
+        ignite::odbc::WriteDsnString(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
+        ignite::odbc::WriteDsnString(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
+
+        return true;
+    }
+    catch (ignite::IgniteError& err)
+    {
+        MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+
+        SQLPostInstallerError(err.GetCode(), err.GetText());
+    }
+
+    return false;
+}
+
+/**
+ * Unregister specified DSN.
+ *
+ * @param dsn DSN name.
+ * @return True on success and false on fail.
+ */
+bool UnregisterDsn(const char* dsn)
+{
+    try
+    {
+        if (!SQLRemoveDSNFromIni(dsn))
+            ignite::odbc::ThrowLastSetupError();
+
+        return true;
+    }
+    catch (ignite::IgniteError& err)
+    {
+        MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
 
         SQLPostInstallerError(err.GetCode(), err.GetText());
     }

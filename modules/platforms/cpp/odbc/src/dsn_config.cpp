@@ -29,9 +29,6 @@ namespace ignite
 {
     namespace odbc
     {
-        /**
-         * Extract last setup error and throw it like IgniteError.
-         */
         void ThrowLastSetupError()
         {
             DWORD code;
@@ -61,53 +58,6 @@ namespace ignite
             SQLGetPrivateProfileString(dsn, key, dflt, buf, sizeof(buf), CONFIG_FILE);
 
             return std::string(buf);
-        }
-
-        bool RegisterDsn(const Configuration& config, LPCSTR driver)
-        {
-            using namespace config;
-            using common::LexicalCast;
-
-            const char* dsn = config.GetDsn().c_str();
-
-            try
-            {
-                if (!SQLWriteDSNToIni(dsn, driver))
-                    ThrowLastSetupError();
-
-                WriteDsnString(dsn, attrkey::host.c_str(), config.GetHost().c_str());
-                WriteDsnString(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
-                WriteDsnString(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
-
-                return true;
-            }
-            catch (IgniteError& err)
-            {
-                MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
-
-                SQLPostInstallerError(err.GetCode(), err.GetText());
-            }
-
-            return false;
-        }
-
-        bool UnregisterDsn(const char* dsn)
-        {
-            try
-            {
-                if (!SQLRemoveDSNFromIni(dsn))
-                    ThrowLastSetupError();
-
-                return true;
-            }
-            catch (IgniteError& err)
-            {
-                MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
-
-                SQLPostInstallerError(err.GetCode(), err.GetText());
-            }
-
-            return false;
         }
 
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
