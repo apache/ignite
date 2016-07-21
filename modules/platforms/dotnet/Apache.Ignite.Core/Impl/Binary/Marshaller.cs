@@ -396,8 +396,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryTypeDescriptor desc;
 
-            return _idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new BinarySurrogateTypeDescriptor(_cfg, typeId) : null;
+            if (_idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc))
+                return desc;
+
+            if (!userType)
+                return null;
+
+            var meta = GetBinaryType(typeId);
+
+            if (meta != BinaryType.Empty)
+                return new BinaryFullTypeDescriptor(meta);
+
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId);
         }
 
         /// <summary>

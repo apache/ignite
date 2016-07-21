@@ -104,6 +104,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryFullTypeDescriptor"/> class.
+        /// </summary>
+        /// <param name="meta">The meta.</param>
+        public BinaryFullTypeDescriptor(IBinaryType meta)
+        {
+            _typeId = meta.TypeId;
+            _typeName = meta.TypeName;
+            _userType = true;
+            _affKeyFieldName = meta.AffinityKeyFieldName;
+            _isEnum = meta.IsEnum;
+        }
+
+        /// <summary>
         /// Type.
         /// </summary>
         public Type Type
