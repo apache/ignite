@@ -34,6 +34,9 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -71,7 +74,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -1090,6 +1092,50 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 grid(i).events().stopLocalListen(lsnr, EVT_CACHE_QUERY_OBJECT_READ);
                 grid(i).events().stopLocalListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpired() throws Exception {
+        IgniteCache<Object, Object> cache = grid(0).cache(null).
+            withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
+
+        final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        final CountDownLatch latch = new CountDownLatch(2);
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setIncludeExpired(true);
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                for (CacheEntryEvent<?, ?> e : evts) {
+                    if (e.getEventType() == EventType.EXPIRED) {
+                        assertNull(e.getValue());
+
+                        map.put(e.getKey(), e.getOldValue());
+
+                        latch.countDown();
+                    }
+                }
+            }
+        });
+
+        try (QueryCursor<Cache.Entry<Object, Object>> ignored = cache.query(qry)) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+
+            // Wait for expiration.
+            Thread.sleep(2000);
+
+            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
+
+            assertEquals(2, map.size());
+
+            assertEquals(1, (int)map.get(1));
+            assertEquals(2, (int)map.get(2));
         }
     }
 

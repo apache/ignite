@@ -95,5 +95,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal void* extensionCbInLongOutLong;
         internal void* extensionCbInLongLongOutLong;
+
+        internal void* affinityFunctionInit;
+        internal void* affinityFunctionPartition;
+        internal void* affinityFunctionAssignPartitions;
+        internal void* affinityFunctionRemoveNode;
+        internal void* affinityFunctionDestroy;
     }
 }
