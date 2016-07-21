@@ -30,7 +30,13 @@ namespace ignite
                     HINSTANCE hInstance = GetModuleHandle(TARGET_MODULE_FULL_NAME);
 
                     if (hInstance == NULL)
-                        throw IgniteError(GetLastError(), "Can not get hInstance for the module.");
+                    {
+                        std::stringstream buf;
+
+                        buf << "Can not get hInstance for the module, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
 
                     return hInstance;
                 }
@@ -64,7 +70,13 @@ namespace ignite
                 void Window::Create(DWORD style, int posX, int posY, int width, int height, int id)
                 {
                     if (handle)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Window already created");
+                    {
+                        std::stringstream buf;
+
+                        buf << "Window already created, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
 
                     handle = CreateWindow(
                         className.c_str(),
@@ -81,7 +93,13 @@ namespace ignite
                     );
 
                     if (!handle)
-                        throw IgniteError(GetLastError(), "Can not create window");
+                    {
+                        std::stringstream buf;
+
+                        buf << "Can not create window, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
 
                     created = true;
 

@@ -67,7 +67,13 @@ namespace ignite
                         desiredRect.right - desiredRect.left, desiredRect.bottom - desiredRect.top, 0);
 
                     if (!handle)
-                        throw IgniteError(GetLastError(), "Can not create window");
+                    {
+                        std::stringstream buf;
+
+                        buf << "Can not create window, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
                 }
 
                 void DsnConfigurationWindow::OnCreate()

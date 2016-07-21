@@ -97,7 +97,13 @@ namespace ignite
 
 
                     if (!RegisterClass(&wcx))
-                        throw IgniteError(GetLastError(), "Can not register window class");
+                    {
+                        std::stringstream buf;
+
+                        buf << "Can not register window class, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
                 }
 
                 CustomWindow::~CustomWindow()
