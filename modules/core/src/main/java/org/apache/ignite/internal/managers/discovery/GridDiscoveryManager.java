@@ -1889,7 +1889,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    public IgniteInternalFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
+    public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
         long backupId = System.currentTimeMillis();
 
         BackupFuture fut = new BackupFuture(backupId, ctx.localNodeId(), cacheNames);

@@ -49,6 +49,8 @@ public interface PageStore {
      */
     public void read(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
+    public void readHeader(ByteBuffer buf) throws IgniteCheckedException;
+
     /**
      * Writes a page.
      *

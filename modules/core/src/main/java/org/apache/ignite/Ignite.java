@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -548,5 +549,5 @@ public interface Ignite extends AutoCloseable {
      */
     public <K> Affinity<K> affinity(String cacheName);
 
-    public void makeBackup(Collection<String> cacheNames);
+    @Nullable public BackupFuture makeBackupAsync(Collection<String> cacheNames);
 }

@@ -97,6 +97,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -2932,9 +2933,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void makeBackup(Collection<String> cacheNames) {
+    @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         try {
-            ctx.discovery().startBackup(cacheNames).get();
+            return ctx.discovery().startBackup(cacheNames);
 
             // TODO: Create future for backup + completion messages, wait until all nodes finish backup.
 

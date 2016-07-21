@@ -75,6 +75,8 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      */
     public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
+    public void readHeader(int cacheId, int partId, byte flag, ByteBuffer buf) throws IgniteCheckedException;
+
     /**
      * Writes the page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
