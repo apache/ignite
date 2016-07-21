@@ -1467,6 +1467,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache2 = grid2.GetCache<int, object>("cache").WithKeepBinary<int, IBinaryObject>();
                 var obj = cache2[1];
 
+                Assert.AreEqual(3, obj.GetField<byte>("FByte"));
+
                 cache2[2] = obj.ToBuilder().Build();
 
                 Assert.AreEqual(3, cache1[2].FByte);
