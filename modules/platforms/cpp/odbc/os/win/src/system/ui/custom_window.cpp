@@ -25,15 +25,18 @@ namespace ignite
         {
             namespace ui
             {
-                Result ProcessMessages()
+                Result ProcessMessages(Window& window)
                 {
                     MSG msg;
 
                     while (GetMessage(&msg, NULL, 0, 0) > 0)
                     {
-                        TranslateMessage(&msg);
+                        if (!IsDialogMessage(window.GetHandle(), &msg))
+                        {
+                            TranslateMessage(&msg);
 
-                        DispatchMessage(&msg);
+                            DispatchMessage(&msg);
+                        }
                     }
 
                     return static_cast<Result>(msg.wParam);
@@ -136,7 +139,7 @@ namespace ignite
                 {
                     std::auto_ptr<Window> child(new Window(this, "Edit", title));
 
-                    child->Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | style,
+                    child->Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP | style,
                         posX, posY, sizeX, sizeY, id);
 
                     return child;
@@ -147,7 +150,7 @@ namespace ignite
                 {
                     std::auto_ptr<Window> child(new Window(this, "Button", title));
 
-                    child->Create(WS_CHILD | WS_VISIBLE, posX, posY, sizeX, sizeY, id);
+                    child->Create(WS_CHILD | WS_VISIBLE | WS_TABSTOP, posX, posY, sizeX, sizeY, id);
 
                     return child;
                 }

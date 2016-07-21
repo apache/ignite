@@ -146,7 +146,7 @@ namespace ignite
 
                                         accepted = true;
 
-                                        DestroyWindow(GetHandle());
+                                        PostMessage(GetHandle(), WM_CLOSE, 0, 0);
                                     }
                                     catch (IgniteError& err)
                                     {
@@ -156,9 +156,10 @@ namespace ignite
                                     break;
                                 }
 
+                                case IDCANCEL:
                                 case ID_CANCEL_BUTTON:
                                 {
-                                    DestroyWindow(GetHandle());
+                                    PostMessage(GetHandle(), WM_CLOSE, 0, 0);
 
                                     break;
                                 }

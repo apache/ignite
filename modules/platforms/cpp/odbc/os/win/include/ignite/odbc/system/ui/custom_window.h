@@ -41,9 +41,10 @@ namespace ignite
                  * Process UI messages in current thread.
                  * Blocks until quit message has been received.
                  *
+                 * @param window Main window.
                  * @return Application execution result.
                  */
-                Result ProcessMessages();
+                Result ProcessMessages(Window& window);
 
                 /**
                  * Window class.

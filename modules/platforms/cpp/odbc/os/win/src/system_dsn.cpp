@@ -49,7 +49,7 @@ bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
         window.Show();
         window.Update();
 
-        return ProcessMessages() == RESULT_OK;
+        return ProcessMessages(window) == RESULT_OK;
     }
     catch (const ignite::IgniteError& err)
     {
