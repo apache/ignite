@@ -1459,8 +1459,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestRemoteBinaryMode()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration("grid2"))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                GridName = "grid2",
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = GetCompactFooter()
@@ -1482,7 +1483,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(3, cache1[2].FByte);
             }
         }
-
     }
 
     /// <summary>
