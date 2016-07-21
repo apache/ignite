@@ -28,6 +28,7 @@
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc.h"
 
 namespace ignite
@@ -255,10 +256,10 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
-        using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
-        using ignite::utility::SqlStringToString;
-        using ignite::utility::CopyStringToBuffer;
+        using odbc::Connection;
+        using odbc::diagnostic::DiagnosticRecordStorage;
+        using utility::SqlStringToString;
+        using utility::CopyStringToBuffer;
 
         UNREFERENCED_PARAMETER(windowHandle);
 
@@ -272,9 +273,14 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        ignite::odbc::config::Configuration config;
+        odbc::config::Configuration config;
 
         config.FillFromConnectString(connectStr);
+
+        std::string dsn = config.GetDsn();
+
+        if (!dsn.empty())
+            odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
         connection->Establish(config.GetHost(), config.GetTcpPort(), config.GetCache());
 
