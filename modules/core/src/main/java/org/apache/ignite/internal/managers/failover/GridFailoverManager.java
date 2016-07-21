@@ -72,7 +72,13 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
         @Nullable Object affKey,
         @Nullable String affCacheName,
         @Nullable AffinityTopologyVersion topVer) {
-        return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes, jobRes,
-            ctx.loadBalancing(), affPartId, affKey, affCacheName, topVer), top);
+        return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes,
+            jobRes,
+            ctx.loadBalancing(),
+            affPartId,
+            affKey,
+            affCacheName,
+            topVer),
+            top);
     }
 }

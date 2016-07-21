@@ -225,7 +225,7 @@ public class GridJobExecuteResponse implements Message {
      *          on the affinity node.
      */
     public AffinityTopologyVersion getRetryTopologyVersion() {
-        return (retry != null) ? retry : AffinityTopologyVersion.NONE;
+        return retry != null ? retry : AffinityTopologyVersion.NONE;
     }
 
     /** {@inheritDoc} */

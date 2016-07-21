@@ -203,12 +203,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** */
     private final int[] affCacheIds;
 
-
     /** */
     private AffinityTopologyVersion mapTopVer;
 
     /** */
-    private int retryAttemptCnt = 0;
+    private int retryAttemptCnt;
 
     /** */
     private final UUID subjId;

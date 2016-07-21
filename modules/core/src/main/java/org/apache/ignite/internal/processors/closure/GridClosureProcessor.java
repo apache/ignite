@@ -444,13 +444,15 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
-     * @param <R> Type.
      * @return Grid future for collection of closure results.
      * @throws IgniteCheckedException If failed.
      */
-    public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames, int partId,
-        @Nullable Object affKey, Callable<R> job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert partId >= 0;
+    public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames,
+        int partId,
+        @Nullable Object affKey,
+        Callable<R> job,
+        @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert partId >= 0 : partId;
 
         busyLock.readLock();
 
@@ -484,9 +486,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      * @throws IgniteCheckedException If failed.
      */
-    public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames, int partId,
-        @Nullable Object affKey, Runnable job, @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert partId >= 0;
+    public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames,
+        int partId,
+        @Nullable Object affKey,
+        Runnable job,
+        @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert partId >= 0 : partId;
 
         busyLock.readLock();
 
@@ -1422,7 +1427,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param affKey Affinity key.
          * @param topVer Affinity topology version.
          */
-        private T5(ClusterNode node, Callable<R> job, Collection<String> affCacheNames, int partId, Object affKey,
+        private T5(ClusterNode node,
+            Callable<R> job,
+            Collection<String> affCacheNames,
+            int partId,
+            Object affKey,
             AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 

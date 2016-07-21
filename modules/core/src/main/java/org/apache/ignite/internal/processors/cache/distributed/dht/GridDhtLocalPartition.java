@@ -118,9 +118,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Used as an intermediate state before RENTING. The partition will not be reserved
-     *  by affinity job when the flag is true. */
-    private volatile boolean shouldBeRenting = false;
+    /** Set if failed to move partition to RENTING state due to reservations, to be checked when
+     * reservation is released. */
+    private volatile boolean shouldBeRenting;
 
     /**
      * @param cctx Context.
@@ -255,13 +255,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         GridDhtPartitionState state = state();
 
         return state == MOVING || state == OWNING || state == RENTING;
-    }
-
-    /**
-     * @return {@code true} If the partition should be renting.
-     */
-    public boolean shouldBeRenting() {
-        return shouldBeRenting;
     }
 
     /**
@@ -426,12 +419,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (state.compareAndSet(s, s, reservations, --reservations)) {
                 tryEvict();
 
+                if (reservations == 0 && shouldBeRenting)
+                    rent(true);
+
                 break;
             }
         }
-
-        if (state.getStamp() == 0 && shouldBeRenting)
-            rent(true);
     }
 
     /**
@@ -468,29 +461,23 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        while (true) {
-            GridDhtPartitionState s = state.getReference();
+        GridDhtPartitionState s = state.getReference();
 
-            if (s == RENTING || s == EVICTED)
-                return rent;
+        if (s == RENTING || s == EVICTED)
+            return rent;
 
-            // Don't change the state of the partition in case one is reserved.
-            if (state.compareAndSet(s, RENTING, 0, 0)) {
-                shouldBeRenting = false;
-                if (log.isDebugEnabled())
-                    log.debug("Moved partition to RENTING state: " + this);
+        shouldBeRenting = true;
 
-                // Evict asynchronously, as the 'rent' method may be called
-                // from within write locks on local partition.
-                tryEvictAsync(updateSeq);
-                break;
-            } else {
-                // Set the flag to prevent partition reservation by affinity jobs.
-                shouldBeRenting = true;
-                GridFutureAdapter f = new GridFutureAdapter();
-                f.onDone();
-                return f;
-            }
+        // Don't change the state of the partition in case one is reserved.
+        if (state.compareAndSet(s, RENTING, 0, 0)) {
+            shouldBeRenting = false;
+
+            if (log.isDebugEnabled())
+                log.debug("Moved partition to RENTING state: " + this);
+
+            // Evict asynchronously, as the 'rent' method may be called
+            // from within write locks on local partition.
+            tryEvictAsync(updateSeq);
         }
 
         return rent;

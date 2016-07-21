@@ -960,6 +960,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
         PartitionsReservation partsReservation = null;
+
         if (req.getCacheIds() != null) {
             assert req.getPartition() >= 0 : req;
             assert !F.isEmpty(req.getCacheIds()) : req;
@@ -1523,12 +1524,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean reserve() throws IgniteCheckedException {
-            if (false)
-                return true;
             boolean reserved = false;
+
             try {
                 for (int i = 0; i < cacheIds.length; ++i) {
                     GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds[i]);
+
                     if (cctx == null) // Cache was not found, probably was not deployed yet.
                         return reserved;
 
@@ -1555,7 +1556,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                         GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                        if (part == null || part.state() != OWNING || part.shouldBeRenting() || !part.reserve()) {
+                        if (part == null || part.state() != OWNING || !part.reserve()) {
                             checkPartMapping = true;
 
                             return reserved;
@@ -1577,12 +1578,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');
                     }
                 }
+
                 reserved = true;
             }
             finally {
                 if (!reserved)
                     release();
             }
+
             return true;
         }
 

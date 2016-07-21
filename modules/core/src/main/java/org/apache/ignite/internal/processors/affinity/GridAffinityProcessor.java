@@ -544,8 +544,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param <K> Key type.
      * @return Partition number.
      */
-    private <K> int partition(AffinityInfo aff, K key)
-    {
+    private <K> int partition(AffinityInfo aff, K key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(aff.cacheObjCtx, false);
 
