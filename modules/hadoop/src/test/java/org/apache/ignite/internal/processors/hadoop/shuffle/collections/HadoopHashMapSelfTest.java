@@ -36,59 +36,13 @@ import org.apache.ignite.internal.util.typedef.X;
  *
  */
 public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
-
-    public void testAllocation() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-826");
-
-        final GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
-        long size = 3L * 1024 * 1024 * 1024;
-
-        final long chunk = 16;// * 1024;
-
-        final int page = 4 * 1024;
-
-        final int writes = chunk < page ? 1 : (int)(chunk / page);
-
-        final long cnt = size / chunk;
-
-        assert cnt < Integer.MAX_VALUE;
-
-        final int threads = 4;
-
-        long start = System.currentTimeMillis();
-
-        multithreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                int cnt0 = (int)(cnt / threads);
-
-                for (int i = 0; i < cnt0; i++) {
-                    long ptr = mem.allocate(chunk);
-
-                    for (int j = 0; j < writes; j++)
-                        mem.writeInt(ptr + j * page, 100500);
-                }
-
-                return null;
-            }
-        }, threads);
-
-        X.println("End: " + (System.currentTimeMillis() - start) + " mem: " + mem.allocatedSize() + " cnt: " + cnt);
-
-        Thread.sleep(30000);
-    }
-
-
-    /** */
+    /**
+     * Test simple map.
+     *
+     * @throws Exception If failed.
+     */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
-//        mem.listen(new GridOffHeapEventListener() {
-//            @Override public void onEvent(GridOffHeapEvent evt) {
-//                if (evt == GridOffHeapEvent.ALLOCATE)
-//                    U.dumpStack();
-//            }
-//        });
 
         Random rnd = new Random();
 
