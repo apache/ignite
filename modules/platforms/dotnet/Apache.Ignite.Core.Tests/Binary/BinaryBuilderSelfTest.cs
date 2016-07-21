@@ -1471,16 +1471,20 @@ namespace Apache.Ignite.Core.Tests.Binary
             using (var grid2 = Ignition.Start(cfg))
             {
                 var cache1 = _grid.GetOrCreateCache<int, Primitives>("cache");
-                cache1[1] = new Primitives {FByte = 3};
-
                 var cache2 = grid2.GetCache<int, object>("cache").WithKeepBinary<int, IBinaryObject>();
+
+                // Exchange data
+                cache1[1] = new Primitives {FByte = 3};
                 var obj = cache2[1];
 
+                // Rebuild with no changes
                 Assert.AreEqual(3, obj.GetField<byte>("FByte"));
-
                 cache2[2] = obj.ToBuilder().Build();
-
                 Assert.AreEqual(3, cache1[2].FByte);
+
+                // Modify and rebuild
+                cache2[3] = obj.ToBuilder().SetShortField("FShort", 15).Build();
+                Assert.AreEqual(15, cache1[3].FShort);
             }
         }
     }
