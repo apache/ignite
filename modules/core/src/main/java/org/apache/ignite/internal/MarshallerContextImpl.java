@@ -18,11 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
+import java.io.Externalizable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
@@ -54,6 +57,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
     /** */
+    private static final String fileExt = ".classname";
+
+    /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** */
@@ -63,13 +69,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final String cacheName;
 
     /** */
-    private final String fileExt;
+    private final Byte keyPrefix;
 
     /** */
     private IgniteLogger log;
 
     /** */
-    private volatile GridCacheAdapter<Integer, String> cache;
+    private volatile GridCacheAdapter<Object, String> cache;
 
     /** Non-volatile on purpose. */
     private int failedCnt;
@@ -82,7 +88,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
-        this(plugins, CU.MARSH_CACHE_NAME, ".classname");
+        this(plugins, CU.MARSH_CACHE_NAME, null);
     }
 
     /**
@@ -90,16 +96,16 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param cacheName Cache name.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName, String fileExt)
+    public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName, Byte keyPrefix)
         throws IgniteCheckedException {
         super(plugins);
 
-        assert cacheName != null;
         assert fileExt != null;
 
         workDir = U.resolveWorkDirectory("marshaller", false);
+
         this.cacheName = cacheName;
-        this.fileExt = fileExt;
+        this.keyPrefix = keyPrefix;
     }
 
     /**
@@ -128,7 +134,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         log = ctx.log(MarshallerContextImpl.class);
 
         cache = ctx.cache().internalCache(cacheName);
-        final GridCacheContext<Integer, String> cacheCtx = cache.context();
+        final GridCacheContext<Object, String> cacheCtx = cache.context();
 
         if (cacheCtx.affinityNode()) {
             cacheCtx.continuousQueries().executeInternalQuery(
@@ -169,15 +175,17 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
-        GridCacheAdapter<Integer, String> cache0 = cache;
+        GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null)
             return false;
 
         String old;
 
+        Object key = getKey(id);
+
         try {
-            old = cache0.tryGetAndPut(id, clsName);
+            old = cache0.tryGetAndPut(key, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
@@ -202,7 +210,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /** {@inheritDoc} */
     @Override public String className(int id) throws IgniteCheckedException {
-        GridCacheAdapter<Integer, String> cache0 = cache;
+        GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null) {
             U.awaitQuiet(latch);
@@ -213,10 +221,12 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = cache0.getTopologySafe(id);
+        Object key = getKey(id);
+
+        String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            String fileName = id + fileExt;
+            String fileName = key + fileExt;
 
             Lock lock = fileLock(fileName);
 
@@ -280,8 +290,21 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /**
+     * Gets the cache key for a type id.
+     *
+     * @param id Id.
+     * @return Cache key depending on keyPrefix.
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+    private Object getKey(int id) {
+        if (keyPrefix != null)
+            return new TypeIdKey(keyPrefix, id);
+
+        return id;
+    }
+
+    /**
+     */
+    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Object, String> {
         /** */
         private final IgniteLogger log;
 
@@ -303,9 +326,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Object, ? extends String>> evts)
             throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts) {
+            for (CacheEntryEvent<? extends Object, ? extends String> evt : evts) {
                 assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
                     "Received cache entry update for system marshaller cache: " + evt;
 
@@ -343,6 +366,72 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Composite type key.
+     *
+     * Each platform can have a different type name for a given type id.
+     * Composite key allows sharing a single marshaller cache between multiple platforms.
+     */
+    private static class TypeIdKey implements Externalizable {
+        /** */
+        private byte prefix;
+
+        /** */
+        private int id;
+
+        /**
+         * Default ctor for serialization.
+         */
+        public TypeIdKey() {
+            // No-op.
+        }
+
+        /**
+         * Ctor.
+         *
+         * @param prefix Prefix.
+         * @param id Id.
+         */
+        private TypeIdKey(byte prefix, int id) {
+            this.prefix = prefix;
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeByte(prefix);
+            out.writeInt(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            prefix = in.readByte();
+            id = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TypeIdKey key = (TypeIdKey)o;
+
+            return prefix == key.prefix && id == key.id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * (int)prefix + id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return prefix + "_" + id;
         }
     }
 }
