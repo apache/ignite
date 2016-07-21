@@ -24,38 +24,139 @@
 
 using ignite::odbc::config::Configuration;
 
-bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
+#define BUFFER_SIZE 1024
+#define CONFIG_FILE "ODBC.INI"
+
+namespace odbc
 {
-    using namespace ignite::odbc::system::ui;
 
-    if (!hwndParent)
-        return false;
-
-    LOG_MSG("Port: %d\n", config.GetTcpPort());
-
-    try
+    void ThrowLastError()
     {
-        Window parent(hwndParent);
+        DWORD code;
+        char msg[BUFFER_SIZE];
 
-        DsnConfigurationWindow window(&parent, config);
+        SQLInstallerError(1, &code, msg, sizeof(msg), NULL);
 
-        window.Create();
-
-        window.Show();
-        window.Update();
-
-        return ProcessMessages() == RESULT_OK;
-    }
-    catch (const ignite::IgniteError& err)
-    {
         std::stringstream buf;
 
-        buf << "Message: " << err.GetText() << ", Code: " << err.GetCode();
+        buf << "Message: \"" << msg << "\", Code: " << code;
 
-        MessageBox(NULL, buf.str().c_str(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+        throw ignite::IgniteError(ignite::IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
     }
 
-    return false;
+    void AddStringToDsn(const char* dsn, const char* key, const char* value)
+    {
+        if (!SQLWritePrivateProfileString(dsn, key, value, CONFIG_FILE))
+            ThrowLastError();
+    }
+
+    std::string GetDsnString(const char* dsn, const char* key, const char* dflt)
+    {
+        char buf[BUFFER_SIZE];
+
+        memset(buf, 0, sizeof(buf));
+
+        SQLGetPrivateProfileString(dsn, key, dflt, buf, sizeof(buf), CONFIG_FILE);
+
+        return std::string(buf);
+    }
+
+    bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
+    {
+        using namespace ignite::odbc::system::ui;
+
+        if (!hwndParent)
+            return false;
+
+        try
+        {
+            Window parent(hwndParent);
+
+            DsnConfigurationWindow window(&parent, config);
+
+            window.Create();
+
+            window.Show();
+            window.Update();
+
+            return ProcessMessages() == RESULT_OK;
+        }
+        catch (const ignite::IgniteError& err)
+        {
+            std::stringstream buf;
+
+            buf << "Message: " << err.GetText() << ", Code: " << err.GetCode();
+
+            std::string message = buf.str();
+
+            MessageBox(NULL, message.c_str(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+
+            SQLPostInstallerError(err.GetCode(), err.GetText());
+        }
+
+        return false;
+    }
+
+    bool RegisterDsn(const Configuration& config, LPCSTR driver)
+    {
+        using namespace ignite::odbc::config;
+        using ignite::common::LexicalCast;
+
+        const char* dsn = config.GetDsn().c_str();
+
+        try
+        {
+            if (!SQLWriteDSNToIni(dsn, driver))
+                ThrowLastError();
+
+            AddStringToDsn(dsn, attrkey::host.c_str(), config.GetHost().c_str());
+            AddStringToDsn(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
+            AddStringToDsn(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
+
+            return true;
+        }
+        catch (ignite::IgniteError& err)
+        {
+            MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+
+            SQLPostInstallerError(err.GetCode(), err.GetText());
+        }
+
+        return false;
+    }
+
+    bool UnregisterDsn(const char* dsn)
+    {
+        try
+        {
+            if (!SQLRemoveDSNFromIni(dsn))
+                ThrowLastError();
+
+            return true;
+        }
+        catch (ignite::IgniteError& err)
+        {
+            MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+
+            SQLPostInstallerError(err.GetCode(), err.GetText());
+        }
+
+        return false;
+    }
+
+    void ReadDsnConfiguration(const char* dsn, Configuration& config)
+    {
+        using namespace ignite::odbc::config;
+        using ignite::common::LexicalCast;
+
+        std::string host = GetDsnString(dsn, attrkey::host.c_str(), config.GetHost().c_str());
+        std::string port = GetDsnString(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
+        std::string cache = GetDsnString(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
+
+        config.SetHost(host);
+        config.SetTcpPort(LexicalCast<uint16_t>(port));
+        config.SetCache(cache);
+    }
 }
 
 BOOL INSTAPI ConfigDSN(HWND     hwndParent,
@@ -85,17 +186,34 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
         {
             LOG_MSG("ODBC_ADD_DSN\n");
 
-            bool success = DisplayConfigureDsnWindow(hwndParent, config);
+            if (!odbc::DisplayConfigureDsnWindow(hwndParent, config))
+                return FALSE;
 
-            if (success)
-                SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
+            if (!odbc::RegisterDsn(config, driver))
+                return FALSE;
 
-            return success ? TRUE : FALSE;
+            break;
         }
 
         case ODBC_CONFIG_DSN:
         {
             LOG_MSG("ODBC_CONFIG_DSN\n");
+
+            std::string dsn = config.GetDsn();
+
+            Configuration loaded(config);
+
+            odbc::ReadDsnConfiguration(dsn.c_str(), loaded);
+
+            if (!odbc::DisplayConfigureDsnWindow(hwndParent, loaded))
+                return FALSE;
+
+            if (!odbc::RegisterDsn(loaded, driver))
+                return FALSE;
+
+            if (loaded.GetDsn() != dsn && !odbc::UnregisterDsn(dsn.c_str()))
+                return FALSE;
+
             break;
         }
 
@@ -103,15 +221,15 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
         {
             LOG_MSG("ODBC_REMOVE_DSN\n");
 
-            return SQLRemoveDSNFromIni(config.GetDsn().c_str());
+            if (!odbc::UnregisterDsn(config.GetDsn().c_str()))
+                return FALSE;
+
+            break;
         }
 
         default:
-        {
             return FALSE;
-        }
     }
 
     return TRUE;
 }
-

@@ -189,25 +189,20 @@ namespace ignite
                     std::string port;
                     std::string cache;
 
-                    LOG_MSG("%d\n", __LINE__);
                     nameEdit->GetText(dsn);
-                    LOG_MSG("%d\n", __LINE__);
                     serverEdit->GetText(server);
-                    LOG_MSG("%d\n", __LINE__);
                     portEdit->GetText(port);
-                    LOG_MSG("%d\n", __LINE__);
                     cacheEdit->GetText(cache);
-                    LOG_MSG("%d\n", __LINE__);
+
+                    LOG_MSG("%s\n", dsn.c_str());
+                    LOG_MSG("%s\n", server.c_str());
+                    LOG_MSG("%s\n", port.c_str());
+                    LOG_MSG("%s\n", cache.c_str());
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
 
-                    std::stringstream converter;
-
-                    int numPort;
-
-                    converter << port;
-                    converter >> numPort;
+                    int32_t numPort = common::LexicalCast<int32_t>(port);
 
                     if (port.size() > (sizeof("65535") - 1) || numPort <= 0 || numPort >= INT16_MAX)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Port value should be in range from 1 to 65534.");

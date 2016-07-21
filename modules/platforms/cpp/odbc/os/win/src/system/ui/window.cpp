@@ -119,10 +119,12 @@ namespace ignite
                         return;
                     }
 
-                    text.resize(len);
+                    text.resize(len + 1);
 
-                    if (!GetWindowText(handle, &text[0], len))
+                    if (!GetWindowText(handle, &text[0], len + 1))
                         text.clear();
+
+                    text.resize(len);
                 }
             }
         }

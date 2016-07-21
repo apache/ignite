@@ -31,44 +31,6 @@ namespace ignite
     {
         namespace config
         {
-            /** Default values for configuration. */
-            namespace dflt
-            {
-                /** Default value for DSN attribute. */
-                const std::string dsn = "Default Apache Ignite DSN";
-
-                /** Default value for Driver attribute. */
-                const std::string driver = "Apache Ignite";
-
-                /** Default value for host attribute. */
-                const std::string host = "localhost";
-
-                /** Default value for port attribute. */
-                const uint16_t port = 10800;
-
-                /** Default value for cache attribute. */
-                const std::string cache = "";
-            }
-
-            /** Connection attribute keywords. */
-            namespace attrkey
-            {
-                /** Connection attribute keyword for DSN attribute. */
-                const std::string dsn = "dsn";
-            
-                /** Connection attribute keyword for Driver attribute. */
-                const std::string driver = "driver";
-
-                /** Connection attribute keyword for server host attribute. */
-                const std::string host = "server";
-
-                /** Connection attribute keyword for server port attribute. */
-                const std::string port = "port";
-
-                /** Connection attribute keyword for cache attribute. */
-                const std::string cache = "cache";
-            }
-
             Configuration::Configuration() :
                 dsn(dflt::dsn), driver(dflt::driver),
                 host(dflt::host), port(dflt::port),
