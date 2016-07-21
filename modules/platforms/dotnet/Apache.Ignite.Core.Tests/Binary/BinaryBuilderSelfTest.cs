@@ -1459,7 +1459,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestRemoteBinaryMode()
         {
-            using (var grid2 = Ignition.Start(TestUtils.GetTestConfiguration("grid2")))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration("grid2"))
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = GetCompactFooter()
+                }
+            };
+
+            using (var grid2 = Ignition.Start(cfg))
             {
                 var cache1 = _grid.GetOrCreateCache<int, Primitives>("cache");
                 cache1[1] = new Primitives {FByte = 3};
