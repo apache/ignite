@@ -1115,6 +1115,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             synchronized (futs) {
                 timedOut = true;
 
+                // Stop locks and responses processing.
                 pendingLocks.clear();
 
                 futs.clear();

@@ -500,21 +500,28 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             if (timeoutObj != null && timeoutObj.requestedKeys != null)
                 return timeoutObj.requestedKeys;
 
-            for (IgniteInternalFuture<Boolean> miniFut : futures()) {
-                if (isMini(miniFut) && !miniFut.isDone()) {
-                    MiniFuture mini = (MiniFuture)miniFut;
-
-                    Set<IgniteTxKey> requestedKeys = U.newHashSet(mini.keys.size());
-
-                    for (KeyCacheObject key : mini.keys)
-                        requestedKeys.add(new IgniteTxKey(key, cctx.cacheId()));
-
-                    return requestedKeys;
-                }
-            }
-
-            return null;
+            return requestedKeys0();
         }
+    }
+
+    /**
+     * @return Keys for which locks requested from remote nodes but response isn't received.
+     */
+    private Set<IgniteTxKey> requestedKeys0() {
+        for (IgniteInternalFuture<Boolean> miniFut : futures()) {
+            if (isMini(miniFut) && !miniFut.isDone()) {
+                MiniFuture mini = (MiniFuture)miniFut;
+
+                Set<IgniteTxKey> requestedKeys = U.newHashSet(mini.keys.size());
+
+                for (KeyCacheObject key : mini.keys)
+                    requestedKeys.add(new IgniteTxKey(key, cctx.cacheId()));
+
+                return requestedKeys;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1415,7 +1422,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         }
 
         /** Requested keys. */
-        private volatile Set<IgniteTxKey> requestedKeys;
+        private Set<IgniteTxKey> requestedKeys;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
@@ -1427,7 +1434,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
                 synchronized (futs) {
-                    requestedKeys = requestedKeys();
+                    requestedKeys = requestedKeys0();
 
                     futs.clear(); // Stop response processing.
                 }
