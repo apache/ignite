@@ -222,6 +222,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         long timeout = tx.remainingTime();
 
+        if (timeout == -1)
+            onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();
 
