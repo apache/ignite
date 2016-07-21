@@ -157,7 +157,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Hold/unhold listener to notify job processor. */
     private final GridJobHoldListener holdLsnr;
 
-    /** Reserved parts. */
+    /** Partitions to reservations. */
     private final GridReservable partsReservation;
 
     /** Request topology version. */
