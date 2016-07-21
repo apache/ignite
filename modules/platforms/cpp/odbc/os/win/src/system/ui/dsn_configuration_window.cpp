@@ -136,8 +136,6 @@ namespace ignite
                     {
                         case WM_COMMAND:
                         {
-                            LOG_MSG("WM_COMMAND\n");
-
                             switch (LOWORD(wParam))
                             {
                                 case ID_OK_BUTTON:
@@ -174,8 +172,6 @@ namespace ignite
 
                         case WM_DESTROY:
                         {
-                            LOG_MSG("WM_DESTROY\n");
-
                             PostQuitMessage(accepted ? RESULT_OK : RESULT_CANCEL);
 
                             break;
@@ -200,10 +196,11 @@ namespace ignite
                     portEdit->GetText(port);
                     cacheEdit->GetText(cache);
 
-                    LOG_MSG("%s\n", dsn.c_str());
-                    LOG_MSG("%s\n", server.c_str());
-                    LOG_MSG("%s\n", port.c_str());
-                    LOG_MSG("%s\n", cache.c_str());
+                    LOG_MSG("Retriving arguments:\n");
+                    LOG_MSG("DSN:    %s\n", dsn.c_str());
+                    LOG_MSG("Server: %s\n", server.c_str());
+                    LOG_MSG("Port:   %s\n", port.c_str());
+                    LOG_MSG("Cache:  %s\n", cache.c_str());
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
