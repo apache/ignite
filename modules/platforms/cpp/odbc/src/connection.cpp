@@ -76,25 +76,6 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& server)
-        {
-            IGNITE_ODBC_API_CALL(InternalEstablish(server));
-        }
-
-        SqlResult Connection::InternalEstablish(const std::string& server)
-        {
-            config::Configuration config;
-
-            if (server != config.GetDsn())
-            {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown server.");
-
-                return SQL_RESULT_ERROR;
-            }
-
-            return InternalEstablish(config.GetHost(), config.GetTcpPort(), config.GetCache());
-        }
-
         void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
         {
             IGNITE_ODBC_API_CALL(InternalEstablish(host, port, cache));

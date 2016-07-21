@@ -322,9 +322,13 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
-        std::string server = SqlStringToString(serverName, serverNameLen);
+        odbc::config::Configuration config;
 
-        connection->Establish(server);
+        std::string dsn = SqlStringToString(serverName, serverNameLen);
+
+        odbc::ReadDsnConfiguration(dsn.c_str(), config);
+
+        connection->Establish(config.GetHost(), config.GetTcpPort(), config.GetCache());
 
         return connection->GetDiagnosticRecords().GetReturnCode();
     }
