@@ -6656,6 +6656,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeTask extends ComputeTaskAdapter<Object, Integer> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6721,6 +6722,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
