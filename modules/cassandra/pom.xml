@@ -164,7 +164,7 @@
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra-all.version}</version>
-            <scope>provided</scope>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-over-slf4j</artifactId>

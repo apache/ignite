@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -43,7 +44,7 @@ namespace Apache.Ignite.Core.Impl
     {
         /** */
         [NonSerialized]
-        private readonly IIgnite _ignite;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Grid.</param>
-        public IgniteProxy(IIgnite ignite)
+        public IgniteProxy(Ignite ignite)
         {
             _ignite = ignite;
         }
@@ -187,6 +188,12 @@ namespace Apache.Ignite.Core.Impl
         public IClusterGroup ForDotNet()
         {
             return _ignite.GetCluster().ForDotNet();
+        }
+
+        /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _ignite.GetCluster().ForServers();
         }
 
         /** <inheritdoc /> */
@@ -379,6 +386,34 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public event EventHandler Stopping
+        {
+            add { _ignite.Stopping += value; }
+            remove { _ignite.Stopping -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopped
+        {
+            add { _ignite.Stopped += value; }
+            remove { _ignite.Stopped -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler ClientDisconnected
+        {
+            add { _ignite.ClientDisconnected += value; }
+            remove { _ignite.ClientDisconnected -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler<ClientReconnectEventArgs> ClientReconnected
+        {
+            add { _ignite.ClientReconnected += value; }
+            remove { _ignite.ClientReconnected -= value; }
+        }
+
+        /** <inheritdoc /> */
         public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
         {
             return _ignite.GetAtomicSequence(name, initialValue, create);
@@ -399,7 +434,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Target grid.
         /// </summary>
-        internal IIgnite Target
+        internal Ignite Target
         {
             get
             {
@@ -410,7 +445,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IBinaryType GetBinaryType(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).GetBinaryType(typeId);
+            return _ignite.GetBinaryType(typeId);
         }
     }
 }

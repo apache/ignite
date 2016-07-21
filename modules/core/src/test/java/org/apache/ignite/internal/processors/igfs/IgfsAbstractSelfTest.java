@@ -1094,6 +1094,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         createFile(igfs.asSecondary(), FILE, true, chunk);
 
         checkFileContent(igfs, FILE, chunk);
+
+        // Read again when the whole file is in memory.
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
@@ -2905,11 +2908,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected static void checkExist(IgfsImpl igfs, IgfsPath... paths) throws IgniteCheckedException {
-        for (IgfsPath path : paths) {
-            assert igfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + igfs.name() +
-                ", path=" + path + ']';
+        for (IgfsPath path : paths)
             assert igfs.exists(path) : "Path doesn't exist [igfs=" + igfs.name() + ", path=" + path + ']';
-        }
     }
 
     /**
@@ -2958,11 +2958,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkNotExist(IgfsImpl igfs, IgfsPath... paths) throws Exception {
-        for (IgfsPath path : paths) {
-            assert igfs.context().meta().fileId(path) == null : "Path exists [igfs=" + igfs.name() + ", path=" +
-                path + ']';
+        for (IgfsPath path : paths)
             assert !igfs.exists(path) : "Path exists [igfs=" + igfs.name() + ", path=" + path + ']';
-        }
     }
 
     /**
@@ -2974,10 +2971,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected void checkNotExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws Exception {
         IgfsEx ex = uni.unwrap(IgfsEx.class);
+
         for (IgfsPath path : paths) {
             if (ex != null)
-                assert ex.context().meta().fileId(path) == null : "Path exists [igfs=" + ex.name() + ", path=" +
-                    path + ']';
+                assert !ex.exists(path) : "Path exists [igfs=" + ex.name() + ", path=" + path + ']';
 
             assert !uni.exists(path.toString()) : "Path exists [igfs=" + uni.name() + ", path=" + path + ']';
         }
@@ -2993,10 +2990,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath file,
+    protected void checkFile(@Nullable IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath file,
         @Nullable byte[]... chunks) throws Exception {
-        checkExist(igfs, file);
-        checkFileContent(igfs, file, chunks);
+        if (igfs != null) {
+            checkExist(igfs, file);
+            checkFileContent(igfs, file, chunks);
+        }
 
         if (dual) {
             checkExist(igfsSecondary, file);
@@ -3022,16 +3021,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 is = igfs.open(file);
 
                 int chunkIdx = 0;
+                int pos = 0;
 
                 for (byte[] chunk : chunks) {
                     byte[] buf = new byte[chunk.length];
 
-                    is.readFully(0, buf);
+                    is.readFully(pos, buf);
 
                     assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + igfs.name() + ", chunkIdx=" + chunkIdx +
                         ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
 
                     chunkIdx++;
+                    pos += chunk.length;
                 }
 
                 is.close();

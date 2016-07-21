@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +59,7 @@ import java.util.Map;
  * method in .NET during node startup. Refer to its documentation for
  * details.
  */
-public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore {
+public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore, LifecycleAware {
     /** Load cache operation code. */
     private static final byte OP_LOAD_CACHE = (byte)0;
 
@@ -309,6 +311,18 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        assert platformCtx != null;
+
+        platformCtx.gateway().cacheStoreDestroy(ptr);
+    }
+
     /**
      * Initialize the store.
      *
@@ -391,17 +405,6 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             return platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer(), cb);
         }
-    }
-
-    /**
-     * Destroys interop-aware component.
-     *
-     * @param ctx Context.
-     */
-    public void destroy(GridKernalContext ctx) {
-        assert ctx != null;
-
-        platformCtx.gateway().cacheStoreDestroy(ptr);
     }
 
     /**

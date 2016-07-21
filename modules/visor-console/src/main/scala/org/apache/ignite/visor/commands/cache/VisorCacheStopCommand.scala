@@ -76,7 +76,7 @@ class VisorCacheStopCommand {
      *
      * @param argLst Command arguments.
      */
-    def scan(argLst: ArgList, node: Option[ClusterNode]) {
+    def stop(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {

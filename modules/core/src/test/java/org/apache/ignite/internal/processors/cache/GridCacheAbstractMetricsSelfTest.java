@@ -906,7 +906,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // Avoid reloading from store.
-        map.remove(key);
+        storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")

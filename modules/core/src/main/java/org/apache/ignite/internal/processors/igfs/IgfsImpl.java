@@ -32,10 +32,9 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInvalidPathException;
 import org.apache.ignite.igfs.IgfsMetrics;
@@ -51,9 +50,7 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
@@ -69,8 +66,6 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallab
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -100,28 +95,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_READ;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_WRITE;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
 import static org.apache.ignite.events.EventType.EVT_IGFS_META_UPDATED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
-import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
  * Cache-based IGFS implementation.
@@ -129,6 +118,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 public final class IgfsImpl implements IgfsEx {
     /** Default permissions for file system entry. */
     private static final String PERMISSION_DFLT_VAL = "0777";
+
+    /** Index generator for async format threads. */
+    private static final AtomicInteger FORMAT_THREAD_IDX_GEN = new AtomicInteger();
 
     /** Default directory metadata. */
     static final Map<String, String> DFLT_DIR_META = F.asMap(IgfsUtils.PROP_PERMISSION, PERMISSION_DFLT_VAL);
@@ -169,23 +161,11 @@ public final class IgfsImpl implements IgfsEx {
     /** Writers map. */
     private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
 
-    /** Delete futures. */
-    private final ConcurrentHashMap8<IgniteUuid, GridFutureAdapter<Object>> delFuts = new ConcurrentHashMap8<>();
-
-    /** Delete message listener. */
-    private final GridMessageListener delMsgLsnr = new FormatMessageListener();
-
-    /** Format discovery listener. */
-    private final GridLocalEventListener delDiscoLsnr = new FormatDiscoveryListener();
-
     /** Local metrics holder. */
     private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
 
     /** Client log directory. */
     private volatile String logDir;
-
-    /** Message topic. */
-    private Object topic;
 
     /** Eviction policy (if set). */
     private IgfsPerBlockLruEvictionPolicy evictPlc;
@@ -292,11 +272,6 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        topic = F.isEmpty(name()) ? TOPIC_IGFS : TOPIC_IGFS.topic(name());
-
-        igfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
-        igfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
             new LinkedBlockingQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
     }
@@ -331,9 +306,6 @@ public final class IgfsImpl implements IgfsEx {
                 log.error("Failed to close secondary file system.", e);
             }
         }
-
-        igfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
-        igfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);
 
         // Restore interrupted flag.
         if (interrupted)
@@ -749,38 +721,21 @@ public final class IgfsImpl implements IgfsEx {
                 if (IgfsPath.SLASH.equals(path.toString()))
                     return false;
 
-                IgfsMode mode = resolveMode(path);
-
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                boolean res = false;
+                boolean dual = childrenModes.contains(DUAL_SYNC) ||childrenModes.contains(DUAL_ASYNC);
 
-                FileDescriptor desc = getFileDescriptor(path);
-
-                if (childrenModes.contains(PRIMARY)) {
-                    if (desc != null) {
-                        IgniteUuid deletedId = meta.softDelete(path, recursive);
-
-                        res = deletedId != null;
-                    }
-                    else if (mode == PRIMARY)
-                        checkConflictWithPrimary(path);
-                }
-
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-                    assert secondaryFs != null;
-
+                if (dual)
                     await(path);
 
-                    res |= meta.deleteDual(secondaryFs, path, recursive);
-                }
+                IgfsDeleteResult res = meta.softDelete(path, recursive, dual ? secondaryFs : null);
 
                 // Record event if needed.
-                if (res && desc != null)
+                if (res.success() && res.info() != null)
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path,
-                            desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
+                        res.info().isFile() ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
 
-                return res;
+                return res.success();
             }
         });
     }
@@ -1063,28 +1018,10 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
+                // Resolve mode.
                 final IgfsMode mode = resolveMode(path);
 
-                IgfsFileWorkerBatch batch;
-
-                if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
-
-                    await(path);
-
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
-
-                    batch = newBatch(path, desc.out());
-
-                    IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(),
-                        bufferSize(bufSize), mode, batch);
-
-                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
-
-                    return os;
-                }
-
+                // Prepare properties.
                 final Map<String, String> dirProps, fileProps;
 
                 if (props == null) {
@@ -1095,19 +1032,37 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
-                IgfsEntryInfo res = meta.create(
+                // Prepare context for DUAL mode.
+                IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
+
+                if (mode != PRIMARY)
+                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate,
+                        fileProps, (short)replication, groupBlockSize(), bufSize);
+
+                // Await for async ops completion if in DUAL mode.
+                if (mode != PRIMARY)
+                    await(path);
+
+                // Perform create.
+                IgfsCreateResult res = meta.create(
                     path,
                     dirProps,
                     overwrite,
                     cfg.getBlockSize(),
                     affKey,
-                    evictExclude(path, true),
-                    fileProps
+                    evictExclude(path, mode == PRIMARY),
+                    fileProps,
+                    secondaryCtx
                 );
 
                 assert res != null;
 
-                return new IgfsEventAwareOutputStream(path, res, bufferSize(bufSize), mode, null);
+                // Create secondary file system batch.
+                OutputStream secondaryStream = res.secondaryOutputStream();
+
+                IgfsFileWorkerBatch batch = secondaryStream != null ? newBatch(path, secondaryStream) : null;
+
+                return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
             }
         });
     }
@@ -1138,11 +1093,11 @@ public final class IgfsImpl implements IgfsEx {
 
                     await(path);
 
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize, create);
+                    IgfsCreateResult desc = meta.appendDual(secondaryFs, path, bufSize, create);
 
-                    batch = newBatch(path, desc.out());
+                    batch = newBatch(path, desc.secondaryOutputStream());
 
-                    return new IgfsEventAwareOutputStream(path, desc.info(), bufferSize(bufSize), mode, batch);
+                    return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
 
                 final List<IgniteUuid> ids = meta.idsForPath(path);
@@ -1183,7 +1138,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 assert res != null;
 
-                return new IgfsEventAwareOutputStream(path, res, bufferSize(bufSize), mode, null);
+                return new IgfsOutputStreamImpl(igfsCtx, path, res, bufferSize(bufSize), mode, null);
             }
         });
     }
@@ -1381,7 +1336,25 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public void format() {
         try {
-            formatAsync().get();
+            IgniteUuid id = meta.format();
+
+            // If ID is null, then file system is already empty.
+            if (id == null)
+                return;
+
+            while (true) {
+                if (enterBusy()) {
+                    try {
+                        if (!meta.exists(id))
+                            return;
+                    }
+                    finally {
+                        busyLock.leaveBusy();
+                    }
+                }
+
+                U.sleep(10);
+            }
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
@@ -1394,69 +1367,16 @@ public final class IgfsImpl implements IgfsEx {
      * @return Future.
      */
     IgniteInternalFuture<?> formatAsync() {
-        try {
-            IgniteUuid id = meta.format();
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-            if (id == null)
-                return new GridFinishedFuture<Object>();
-            else {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+        Thread t = new Thread(new FormatRunnable(fut), "igfs-format-" + cfg.getName() + "-" +
+            FORMAT_THREAD_IDX_GEN.incrementAndGet());
 
-                GridFutureAdapter<Object> oldFut = delFuts.putIfAbsent(id, fut);
+        t.setDaemon(true);
 
-                if (oldFut != null)
-                    return oldFut;
-                else {
-                    if (!meta.exists(id)) {
-                        // Safety in case response message was received before we put future into collection.
-                        fut.onDone();
+        t.start();
 
-                        delFuts.remove(id, fut);
-                    }
-
-                    return fut;
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<Object>(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
-        Collection<IgniteUuid> ids = meta.pendingDeletes();
-
-        if (!ids.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("Constructing delete future for trash entries: " + ids);
-
-            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>();
-
-            for (IgniteUuid id : ids) {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
-
-                IgniteInternalFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
-
-                if (oldFut != null)
-                    resFut.add(oldFut);
-                else {
-                    if (meta.exists(id))
-                        resFut.add(fut);
-                    else {
-                        fut.onDone();
-
-                        delFuts.remove(id, fut);
-                    }
-                }
-            }
-
-            resFut.markInitialized();
-
-            return resFut;
-        }
-        else
-            return new GridFinishedFuture<>();
+        return fut;
     }
 
     /**
@@ -1480,24 +1400,6 @@ public final class IgfsImpl implements IgfsEx {
         IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
 
         return new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile());
-    }
-
-    /**
-     * Check whether IGFS with the same name exists among provided attributes.
-     *
-     * @param attrs Attributes.
-     * @return {@code True} in case IGFS with the same name exists among provided attributes
-     */
-    private boolean sameIgfs(IgfsAttributes[] attrs) {
-        if (attrs != null) {
-            String igfsName = name();
-
-            for (IgfsAttributes attr : attrs) {
-                if (F.eq(igfsName, attr.igfsName()))
-                    return true;
-            }
-        }
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -1759,43 +1661,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * IGFS output stream extension that fires events.
-     */
-    private class IgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
-        /** Close guard. */
-        private final AtomicBoolean closeGuard = new AtomicBoolean(false);
-
-        /**
-         * Constructs file output stream.
-         *
-         * @param path Path to stored file.
-         * @param fileInfo File info.
-         * @param bufSize The size of the buffer to be used.
-         * @param mode IGFS mode.
-         * @param batch Optional secondary file system batch.
-         */
-        IgfsEventAwareOutputStream(IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
-            @Nullable IgfsFileWorkerBatch batch) {
-            super(igfsCtx, path, fileInfo, bufSize, mode, batch, metrics);
-
-            metrics.incrementFilesOpenedForWrite();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-        @Override protected void onClose() throws IOException {
-            if (closeGuard.compareAndSet(false, true)) {
-                super.onClose();
-
-                metrics.decrementFilesOpenedForWrite();
-
-                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_WRITE, bytes()));
-            }
-        }
-    }
-
-    /**
      * IGFS input stream extension that fires events.
      */
     private class IgfsEventAwareInputStream extends IgfsInputStreamImpl {
@@ -1905,81 +1770,6 @@ public final class IgfsImpl implements IgfsEx {
         }
     }
 
-    /**
-     * Format message listener required for format action completion.
-     */
-    private class FormatMessageListener implements GridMessageListener {
-        /** {@inheritDoc} */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        @Override public void onMessage(UUID nodeId, Object msg) {
-            if (msg instanceof IgfsDeleteMessage) {
-                ClusterNode node = igfsCtx.kernalContext().discovery().node(nodeId);
-
-                if (node != null) {
-                    if (sameIgfs((IgfsAttributes[]) node.attribute(ATTR_IGFS))) {
-                        IgfsDeleteMessage msg0 = (IgfsDeleteMessage)msg;
-
-                        try {
-                            msg0.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to unmarshal message (will ignore): " + msg0, e);
-
-                            return;
-                        }
-
-                        assert msg0.id() != null;
-
-                        GridFutureAdapter<?> fut = delFuts.remove(msg0.id());
-
-                        if (fut != null) {
-                            if (msg0.error() == null)
-                                fut.onDone();
-                            else
-                                fut.onDone(msg0.error());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Discovery listener required for format actions completion.
-     */
-    private class FormatDiscoveryListener implements GridLocalEventListener {
-        /** {@inheritDoc} */
-        @Override public void onEvent(Event evt) {
-            assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
-
-            DiscoveryEvent evt0 = (DiscoveryEvent)evt;
-
-            if (evt0.eventNode() != null) {
-                if (sameIgfs((IgfsAttributes[]) evt0.eventNode().attribute(ATTR_IGFS))) {
-                    Collection<IgniteUuid> rmv = new HashSet<>();
-
-                    for (Map.Entry<IgniteUuid, GridFutureAdapter<Object>> fut : delFuts.entrySet()) {
-                        IgniteUuid id = fut.getKey();
-
-                        try {
-                            if (!meta.exists(id)) {
-                                fut.getValue().onDone();
-
-                                rmv.add(id);
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to check file existence: " + id, e);
-                        }
-                    }
-
-                    for (IgniteUuid id : rmv)
-                        delFuts.remove(id);
-                }
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteUuid nextAffinityKey() {
         return safeOp(new Callable<IgniteUuid>() {
@@ -2077,6 +1867,41 @@ public final class IgfsImpl implements IgfsEx {
             t.setDaemon(true);
 
             return t;
+        }
+    }
+
+    /**
+     * Format runnable.
+     */
+    private class FormatRunnable implements Runnable {
+        /** Target future. */
+        private final GridFutureAdapter<?> fut;
+
+        /**
+         * Constructor.
+         *
+         * @param fut Future.
+         */
+        public FormatRunnable(GridFutureAdapter<?> fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgfsException err = null;
+
+            try {
+                format();
+            }
+            catch (Throwable err0) {
+                err = IgfsUtils.toIgfsException(err0);
+            }
+            finally {
+                if (err == null)
+                    fut.onDone();
+                else
+                    fut.onDone(err);
+            }
         }
     }
 }
