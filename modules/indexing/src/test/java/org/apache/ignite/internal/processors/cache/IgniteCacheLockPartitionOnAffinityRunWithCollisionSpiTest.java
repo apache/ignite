@@ -38,6 +38,7 @@ import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,19 +86,10 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
      * @throws Exception If failed.
      */
     public void _testJobFinishing() throws Exception {
-        fail("Affinity run / call doesn't receive response where many job rejections happen.");
+//        fail("Affinity run / call doesn't receive response where many job rejections happen.");
         final AtomicInteger jobNum = new AtomicInteger(0);
 
-        // Workaround for initial update job metadata.
-        try {
-            grid(0).compute().affinityRun(new TestRun(0),
-                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), 0);
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        // Run restart threads: start re-balancing
-        beginNodesRestart();
+        cancelAllJobs = true;
 
         IgniteInternalFuture<Long> affFut = null;
         try {
@@ -121,7 +113,6 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                         catch (Exception e) {
                             log.info("+++ Job failed " + n + " " + e.toString());
                             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
-                            // The test checks only correct partition release in case CollisionSpi is used.
                         }
                     }
 
@@ -133,17 +124,11 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                 affFut.get();
 
             stopRestartThread.set(true);
-            nodeRestartFut.get();
+
+            cancelAllJobs = false;
 
             // Should not be timed out.
             awaitPartitionMapExchange();
-
-            // All partition must be released in spite of any exceptions during the job executions.
-            for (int orgId : orgIds) {
-                ClusterNode n = grid(0).context().affinity()
-                    .mapKeyToNode(Organization.class.getSimpleName(), orgId);
-                checkPartitionsReservations((IgniteEx)grid(n), orgId, 0);
-            }
         }
     }
 
@@ -173,14 +158,9 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                Thread.sleep(500);
-            }
-            catch (InterruptedException e) {
-                // No-op.
-            }
+            // No-op.
         }
-    };
+    }
 
     /** */
     @SuppressWarnings({"PublicInnerClass"})

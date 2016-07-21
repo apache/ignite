@@ -18,6 +18,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -245,20 +246,25 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
      * @param expReservations Expected reservations.
      */
     protected static void checkPartitionsReservations(final IgniteEx ignite, int orgId,
-        int expReservations) {
+        final int expReservations) throws IgniteInterruptedCheckedException {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
-        GridDhtLocalPartition pPers = ignite.context().cache()
+        final GridDhtLocalPartition pPers = ignite.context().cache()
             .internalCache(Person.class.getSimpleName()).context().topology()
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
         assertNotNull(pPers);
 
-        GridDhtLocalPartition pOrgs = ignite.context().cache()
+        final GridDhtLocalPartition pOrgs = ignite.context().cache()
             .internalCache(Organization.class.getSimpleName()).context().topology()
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
         assertNotNull(pOrgs);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return expReservations == pOrgs.reservations() && expReservations == pPers.reservations();
+            }
+        }, 1000L);
         assertEquals("Unexpected reservations count", expReservations, pOrgs.reservations());
         assertEquals("Unexpected reservations count", expReservations, pPers.reservations());
     }

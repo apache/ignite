@@ -198,7 +198,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final int affPartId;
 
     /** */
-    private final Collection<String> affCaches;
+    private final String affCacheName;
 
     /** */
     private final int[] affCacheIds;
@@ -323,23 +323,24 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         if (task instanceof AffinityTask) {
             AffinityTask affTask = (AffinityTask)task;
 
+            assert affTask.affinityCacheNames() != null : affTask;
+            assert affTask.partition() >= 0 : affTask;
+
             affPartId = affTask.partition();
-            affCaches = affTask.affinityCacheNames();
+            affCacheName = F.first(affTask.affinityCacheNames());
             affKey = affTask.affinityKey();
             mapTopVer = affTask.topologyVersion();
 
-            assert affCaches != null;
-
-            affCacheIds = new int[affCaches.size()];
+            affCacheIds = new int[affTask.affinityCacheNames().size()];
             int i = 0;
-            for (String cacheName : affCaches) {
+            for (String cacheName : affTask.affinityCacheNames()) {
                 affCacheIds[i] = ctx.cache().cache(cacheName).cache().context().cacheId();
                 ++i;
             }
         }
         else {
             affPartId = -1;
-            affCaches = null;
+            affCacheName = null;
             affKey = null;
             mapTopVer = null;
             affCacheIds = null;
@@ -498,7 +499,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             // Nodes are ignored by affinity tasks.
             final List<ClusterNode> shuffledNodes =
-                affCaches == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
+                affCacheIds == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
 
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -861,7 +862,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     if (res.retry()) {
                         // Retry is used only with affinity call / run.
-                        assert affCaches != null;
+                        assert affCacheIds != null;
                         retry = true;
 
                         mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.discovery().topologyVersionEx());
@@ -900,7 +901,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             }
 
                             case FAILOVER: {
-                                if (affCaches != null) {
+                                if (affCacheIds != null) {
                                     mapTopVer = ctx.discovery().topologyVersionEx();
 
                                     affFut = ctx.cache().context().exchange().affinityReadyFuture(mapTopVer);
@@ -990,24 +991,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 ctx.closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
                         try {
-                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(F.first(affCaches), affPartId,
+                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
                                 mapTopVer);
 
-                            if (newNode == null) {
-                                finishTask(null, U.emptyTopologyException());
-
+                            if(!checkTargetNode(resp, jRes, newNode))
                                 return;
-                            }
-
-                            synchronized (mux) {
-                                jRes.setNode(newNode);
-                                jRes.resetResponse();
-
-                                if (!resCache) {
-                                    // Store result back in map before sending.
-                                    jobRes.put(resp.getJobId(), jRes);
-                                }
-                            }
 
                             sendRequest(jRes);
                         }
@@ -1179,37 +1167,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affPartId,
-                affKey, F.first(affCaches), mapTopVer);
+                affKey, affCacheName, mapTopVer);
 
-            if (node == null) {
-                String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
-                    jobRes.getJob() + ", node=" + jobRes.getNode() + ']';
-
-                if (log.isDebugEnabled())
-                    log.debug(msg);
-
-                Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
-
-                finishTask(null, e);
-
-                return false;
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Resolved job failover [newNode=" + node + ", oldNode=" + jobRes.getNode() +
-                    ", job=" + jobRes.getJob() + ", resMsg=" + res + ']');
-
-            jobRes.setNode(node);
-            jobRes.resetResponse();
-
-            if (!resCache) {
-                synchronized (mux) {
-                    // Store result back in map before sending.
-                    this.jobRes.put(res.getJobId(), jobRes);
-                }
-            }
-
-            return true;
+            return checkTargetNode(res, jobRes, node);
         }
         // Catch Throwable to protect against bad user code.
         catch (Throwable e) {
@@ -1225,6 +1185,44 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             return false;
         }
+    }
+
+    /**
+     * @param res Execution response.
+     * @param jobRes Job result.
+     * @param node New target node.
+     * @return {@code True} if new target node is not null.
+     */
+    private boolean checkTargetNode(GridJobExecuteResponse res, GridJobResultImpl jobRes, ClusterNode node) {
+        if (node == null) {
+            String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
+                jobRes.getJob() + ", node=" + jobRes.getNode() + ']';
+
+            if (log.isDebugEnabled())
+                log.debug(msg);
+
+            Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
+
+            finishTask(null, e);
+
+            return false;
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Resolved job failover [newNode=" + node + ", oldNode=" + jobRes.getNode() +
+                ", job=" + jobRes.getJob() + ", resMsg=" + res + ']');
+
+        synchronized (mux) {
+            jobRes.setNode(node);
+            jobRes.resetResponse();
+
+            if (!resCache) {
+                    // Store result back in map before sending.
+                    this.jobRes.put(res.getJobId(), jobRes);
+            }
+        }
+
+        return true;
     }
 
     /**
