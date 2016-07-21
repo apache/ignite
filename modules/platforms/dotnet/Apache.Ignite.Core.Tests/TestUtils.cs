@@ -324,14 +324,15 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration()
+        public static IgniteConfiguration GetTestConfiguration(string gridName = null)
         {
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(),
-                JvmClasspath = CreateTestClasspath()
+                JvmClasspath = CreateTestClasspath(),
+                GridName = gridName
             };
         }
     }

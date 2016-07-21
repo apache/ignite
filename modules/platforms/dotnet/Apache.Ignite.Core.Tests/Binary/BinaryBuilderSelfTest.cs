@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -53,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             TestUtils.KillProcesses();
 
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration
                 {
@@ -90,10 +88,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     DefaultIdMapper = new IdMapper(),
                     DefaultNameMapper = new NameMapper(),
                     CompactFooter = GetCompactFooter()
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                DiscoverySpi = TestUtils.GetStaticDiscovery()
+                }
             };
 
             _grid = (Ignite) Ignition.Start(cfg);
@@ -1456,6 +1451,26 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestCompactFooterSetting()
         {
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
+        }
+
+        /// <summary>
+        /// Tests the binary mode on remote node.
+        /// </summary>
+        [Test]
+        public void TestRemoteBinaryMode()
+        {
+            using (var grid2 = Ignition.Start(TestUtils.GetTestConfiguration("grid2")))
+            {
+                var cache1 = _grid.GetOrCreateCache<int, Primitives>("cache");
+                cache1[1] = new Primitives {FByte = 3};
+
+                var cache2 = grid2.GetCache<int, object>("cache").WithKeepBinary<int, IBinaryObject>();
+                var obj = cache2[1];
+
+                cache2[2] = obj.ToBuilder().Build();
+
+                Assert.AreEqual(3, cache1[2].FByte);
+            }
         }
 
     }
