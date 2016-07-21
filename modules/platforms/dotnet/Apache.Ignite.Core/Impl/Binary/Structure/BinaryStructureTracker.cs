@@ -110,6 +110,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                     var meta = metaHnd.OnObjectWriteFinished();
 
+                    // TODO: A new schema may be added, but no new fields. 
+                    // In this case, we should still call SaveMetadata!
                     if (meta != null)
                         writer.SaveMetadata(_desc, meta);
                 }
