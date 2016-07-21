@@ -118,9 +118,6 @@
     <ClCompile Include="..\..\src\entry_points.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\dsn_config.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp">
       <Filter>Code\system\ui</Filter>
     </ClCompile>
@@ -129,6 +126,12 @@
     </ClCompile>
     <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp">
       <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsn_config.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -247,6 +250,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h">
       <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

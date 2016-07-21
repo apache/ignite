@@ -153,7 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\dsn_config.cpp" />
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp" />
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
@@ -169,6 +169,7 @@
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp" />
+    <ClCompile Include="..\..\src\dsn_config.cpp" />
     <ClCompile Include="..\..\src\entry_points.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h" />
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
