@@ -1483,7 +1483,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(3, cache1[2].FByte);
 
                 // Modify and rebuild
-                cache2[3] = obj.ToBuilder().SetShortField("FShort", 15).Build();
+                cache2[3] = obj.ToBuilder().SetField("FShort", (short) 15).Build();
                 Assert.AreEqual(15, cache1[3].FShort);
             }
         }
