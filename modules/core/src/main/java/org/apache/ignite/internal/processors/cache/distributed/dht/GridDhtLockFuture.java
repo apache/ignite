@@ -657,7 +657,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone() || (inTx() && timedOut))
+        if (isDone() || (inTx() && tx.remainingTime() == -1))
             return false; // Check other futures.
 
         if (log.isDebugEnabled())
@@ -669,8 +669,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     return false;
             }
 
-            if (checkLocks())
-                map(entries());
+            if (!checkLocks())
+                return false;
+
+            map(entries());
 
             return true;
         }
@@ -862,6 +864,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) + ", dhtLockFut=" + this + ']');
 
+            long timeout = inTx() ? tx.remainingTime() : this.timeout;
+
             // Create mini futures.
             for (Map.Entry<ClusterNode, List<GridDhtCacheEntry>> mapped : dhtMap.entrySet()) {
                 ClusterNode n = mapped.getKey();
@@ -872,6 +876,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
                 if (cnt > 0) {
                     assert !n.id().equals(cctx.localNodeId());
+
+                    if (tx.remainingTime() == -1)
+                        return;
 
                     MiniFuture fut = new MiniFuture(n, dhtMapping);
 
