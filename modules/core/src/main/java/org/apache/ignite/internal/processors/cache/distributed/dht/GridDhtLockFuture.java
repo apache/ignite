@@ -242,12 +242,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
         }
-
-        if (timeout > 0) {
-            timeoutObj = new LockTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
-        }
     }
 
     /** {@inheritDoc} */
@@ -663,7 +657,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone() || (inTx() && tx.remainingTime() == -1))
+        if (isDone() || (inTx() && timedOut))
             return false; // Check other futures.
 
         if (log.isDebugEnabled())
@@ -796,6 +790,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         }
 
         readyLocks();
+
+        if (timeout > 0) {
+            timeoutObj = new LockTimeoutObject();
+
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
     }
 
     /**
