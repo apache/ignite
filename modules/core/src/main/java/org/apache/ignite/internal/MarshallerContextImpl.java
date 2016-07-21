@@ -94,6 +94,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /**
      * @param plugins Plugins.
      * @param cacheName Cache name.
+     * @param keyPrefix Composite key prefix.
      * @throws IgniteCheckedException In case of error.
      */
     public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName, Byte keyPrefix)

@@ -2166,7 +2166,7 @@ public class IgnitionEx {
          * @return Marshaller system cache configuration for .NET.
          */
         private static CacheConfiguration marshallerSystemCacheDotNet() {
-            return marshallerSystemCache().setName(CU.MARSH_CACHE_NAME_DOTNET);
+            return marshallerSystemCache().setName(CU.MARSH_CACHE_NAME_PLATFORM);
         }
 
         /**

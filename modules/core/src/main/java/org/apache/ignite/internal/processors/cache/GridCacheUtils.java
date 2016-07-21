@@ -122,8 +122,11 @@ public class GridCacheUtils {
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
-    /** .NET Marshaller system cache name. */
-    public static final String MARSH_CACHE_NAME_DOTNET = "ignite-marshaller-sys-cache-dotnet";
+    /** Marshaller system cache name for platforms. */
+    public static final String MARSH_CACHE_NAME_PLATFORM = "ignite-marshaller-sys-cache-platform";
+
+    /** Marshaller system cache key prefix for .NET. */
+    public static final byte MARSH_CACHE_PREFIX_DOTNET = 1;
 
     /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
@@ -1222,7 +1225,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is marshaller system cache.
      */
     public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName) || MARSH_CACHE_NAME_DOTNET.equals(cacheName);
+        return MARSH_CACHE_NAME.equals(cacheName) || MARSH_CACHE_NAME_PLATFORM.equals(cacheName);
     }
 
     /**
@@ -1230,7 +1233,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is marshaller system cache for .NET.
      */
     public static boolean isMarshallerCacheDotNet(String cacheName) {
-        return MARSH_CACHE_NAME_DOTNET.equals(cacheName);
+        return MARSH_CACHE_NAME_PLATFORM.equals(cacheName);
     }
 
     /**
