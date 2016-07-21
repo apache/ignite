@@ -54,7 +54,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         int partId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        FullPageId metaPageId,
+        long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);

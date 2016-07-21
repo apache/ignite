@@ -42,9 +42,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     protected PageMemory pageMem;
 
-    /** */
-    protected MetadataStorage meta;
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
@@ -56,8 +53,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             pageMem = initMemory(dbCfg);
 
             pageMem.start();
-
-            meta = new MetadataStorage(pageMem, cctx.wal());
         }
     }
 
@@ -79,13 +74,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public PageMemory pageMemory() {
         return pageMem;
-    }
-
-    /**
-     * @return Metadata storage.
-     */
-    public MetadataStorage meta() {
-        return meta;
     }
 
     /**
