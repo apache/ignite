@@ -99,6 +99,10 @@ public class FullPageId {
         return pageId;
     }
 
+    public long effectivePageId() {
+        return effectivePageId;
+    }
+
     /**
      * @return Cache ID.
      */
