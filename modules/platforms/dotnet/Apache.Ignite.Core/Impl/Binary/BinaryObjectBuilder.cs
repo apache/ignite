@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetCharField(string fieldName, char val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (char), val, BinaryUtils.TypeChar,
-                (w, o) => w.WriteChar((char) o)));
+                (w, o) => w.WriteCharField((char) o)));
         }
  
         /** <inheritDoc /> */
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetFloatField(string fieldName, float val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (float), val, BinaryUtils.TypeFloat,
-                (w, o) => w.WriteFloat((float) o)));
+                (w, o) => w.WriteFloatField((float) o)));
         }
  
         /** <inheritDoc /> */
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetShortField(string fieldName, short val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (short), val, BinaryUtils.TypeShort,
-                (w, o) => w.WriteShort((short) o)));
+                (w, o) => w.WriteShortField((short) o)));
         }
  
         /** <inheritDoc /> */

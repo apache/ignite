@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary writer implementation.
@@ -142,7 +143,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteByte(string fieldName, byte val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeBool);
+            WriteByteField(val);
+        }
 
+        /// <summary>
+        /// Write byte field value.
+        /// </summary>
+        /// <param name="val">Byte value.</param>
+        internal void WriteByteField(byte val)
+        {
             _stream.WriteByte(BinaryUtils.TypeByte);
             _stream.WriteByte(val);
         }
@@ -197,7 +206,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteShort(string fieldName, short val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeShort);
+            WriteShortField(val);
+        }
 
+        /// <summary>
+        /// Write short field value.
+        /// </summary>
+        /// <param name="val">Short value.</param>
+        internal void WriteShortField(short val)
+        {
             _stream.WriteByte(BinaryUtils.TypeShort);
             _stream.WriteShort(val);
         }
@@ -252,7 +269,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteChar(string fieldName, char val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeChar);
+            WriteCharField(val);
+        }
 
+        /// <summary>
+        /// Write char field value.
+        /// </summary>
+        /// <param name="val">Char value.</param>
+        internal void WriteCharField(char val)
+        {
             _stream.WriteByte(BinaryUtils.TypeChar);
             _stream.WriteChar(val);
         }
@@ -417,7 +442,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteFloat(string fieldName, float val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeFloat);
+            WriteFloatField(val);
+        }
 
+        /// <summary>
+        /// Writes the float field.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        internal void WriteFloatField(float val)
+        {
             _stream.WriteByte(BinaryUtils.TypeFloat);
             _stream.WriteFloat(val);
         }
@@ -1230,60 +1263,49 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _stream.WriteBool((bool)(object)val);
             }
             else if (type == typeof(byte))
-            {
-                _stream.WriteByte(BinaryUtils.TypeByte);
-                _stream.WriteByte((byte)(object)val);
-            }
+                WriteByteField(TypeCaster<byte>.Cast(val));
             else if (type == typeof(short))
-            {
-                _stream.WriteByte(BinaryUtils.TypeShort);
-                _stream.WriteShort((short)(object)val);
-            }
-            else if (type == typeof (char))
-            {
-                _stream.WriteByte(BinaryUtils.TypeChar);
-                _stream.WriteChar((char)(object)val);
-            }
+                WriteShortField(TypeCaster<short>.Cast(val));
+            else if (type == typeof(char))
+                WriteCharField(TypeCaster<char>.Cast(val));
             else if (type == typeof(float))
-            {
-                _stream.WriteByte(BinaryUtils.TypeFloat);
-                _stream.WriteFloat((float)(object)val);
-            }
+                WriteFloatField(TypeCaster<float>.Cast(val));
             else if (type == typeof(double))
             {
                 _stream.WriteByte(BinaryUtils.TypeDouble);
-                _stream.WriteDouble((double)(object)val);
+                _stream.WriteDouble((double) (object) val);
             }
             else if (type == typeof(sbyte))
             {
-                sbyte val0 = (sbyte)(object)val;
+                sbyte val0 = (sbyte) (object) val;
 
                 _stream.WriteByte(BinaryUtils.TypeByte);
-                _stream.WriteByte(*(byte*)&val0);
+                _stream.WriteByte(*(byte*) &val0);
             }
             else if (type == typeof(ushort))
             {
-                ushort val0 = (ushort)(object)val;
+                ushort val0 = (ushort) (object) val;
 
                 _stream.WriteByte(BinaryUtils.TypeShort);
-                _stream.WriteShort(*(short*)&val0);
+                _stream.WriteShort(*(short*) &val0);
             }
             else if (type == typeof(uint))
             {
-                uint val0 = (uint)(object)val;
+                uint val0 = (uint) (object) val;
 
                 _stream.WriteByte(BinaryUtils.TypeInt);
-                _stream.WriteInt(*(int*)&val0);
+                _stream.WriteInt(*(int*) &val0);
             }
             else if (type == typeof(ulong))
             {
-                ulong val0 = (ulong)(object)val;
+                ulong val0 = (ulong) (object) val;
 
                 _stream.WriteByte(BinaryUtils.TypeLong);
-                _stream.WriteLong(*(long*)&val0);
+                _stream.WriteLong(*(long*) &val0);
             }
             else
-                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
+                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val +
+                                                ']');
         }
 
         /// <summary>
