@@ -15,37 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
+package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteException;
 
 /**
- * This enumeration defines different types of closure
- * processing by the closure processor.
+ * Internal exception.
  */
-public enum GridClosurePolicy {
-    /** Public execution pool. */
-    PUBLIC_POOL,
-
-    /** P2P execution pool. */
-    P2P_POOL,
-
-    /** System execution pool. */
-    SYSTEM_POOL,
-
-    /** IGFS pool. */
-    IGFS_POOL;
-
-    /** Enum values. */
-    private static final GridClosurePolicy[] VALS = values();
-
+public class GridH2RetryException extends IgniteException {
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @param msg Message.
      */
-    @Nullable public static GridClosurePolicy fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public GridH2RetryException(String msg) {
+        super(msg);
     }
 }

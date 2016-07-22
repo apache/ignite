@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+package org.apache.ignite.yardstick.cache;
 
 /**
- * Reduce fields queries tests for replicated cache.
+ *
  */
-public class GridCacheReduceFieldsQueryReplicatedSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
+public class IgniteSqlQueryDistributedJoinBroadcastBenchmark extends IgniteSqlQueryDistributedJoinBenchmark {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    @Override protected boolean broadcastJoin() {
+        return true;
     }
 }

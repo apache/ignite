@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
- * Reduce fields queries tests for partitioned cache.
+ * Message which needs to be marshalled and unmarshalled before sending or processing it.
  */
-public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFieldsQueryPartitionedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+public interface GridCacheQueryMarshallable {
+    /**
+     * @param m Marshaller.
+     */
+    public void marshall(Marshaller m);
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
+    /**
+     * @param m Marshaller.
+     * @param ctx Context.
+     */
+    public void unmarshall(Marshaller m, GridKernalContext ctx);
 }
