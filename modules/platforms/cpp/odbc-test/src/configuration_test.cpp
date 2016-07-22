@@ -62,9 +62,9 @@ void CheckDsnConfig(const Configuration& cfg)
 {
     BOOST_REQUIRE(cfg.GetDriver() == testDriverName);
     BOOST_REQUIRE(cfg.GetDsn() == testDsn);
-    BOOST_REQUIRE(cfg.GetHost().empty());
-    BOOST_REQUIRE(cfg.GetCache().empty());
-    BOOST_REQUIRE(cfg.GetTcpPort() == 0);
+    BOOST_REQUIRE(cfg.GetHost() == dflt::host);
+    BOOST_REQUIRE(cfg.GetCache() == dflt::cache);
+    BOOST_REQUIRE(cfg.GetTcpPort() == dflt::port);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)

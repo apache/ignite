@@ -44,7 +44,7 @@ namespace ignite
                 const std::string driver = "Apache Ignite";
 
                 /** Default value for host attribute. */
-                const std::string host = "localhost";
+                const std::string host = "";
 
                 /** Default value for port attribute. */
                 const uint16_t port = 10800;
