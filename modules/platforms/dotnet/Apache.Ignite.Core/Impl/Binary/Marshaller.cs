@@ -50,8 +50,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc =
-            new Dictionary<long, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc =
+            new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
         private volatile IDictionary<int, BinaryTypeHolder> _metas =
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode, BinaryObjectBuilder builder)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReader(this, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -252,8 +252,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
-            return new BinaryReader(this, _idToDesc, stream,
-                keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return new BinaryReader(this, stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -264,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Reader.</returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, null);
+            return new BinaryReader(this, stream, mode, null);
         }
         
         /// <summary>
@@ -396,7 +395,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryTypeDescriptor desc;
 
-            if (_idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc))
+            var typeKey = BinaryUtils.TypeKey(userType, typeId);
+
+            if (_idToDesc.TryGetValue(typeKey, out desc))
                 return desc;
 
             if (!userType)
@@ -405,7 +406,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             var meta = GetBinaryType(typeId);
 
             if (meta != BinaryType.Empty)
-                return new BinaryFullTypeDescriptor(meta);
+            {
+                desc = new BinaryFullTypeDescriptor(meta);
+
+                _idToDesc.GetOrAdd(typeKey, _ => desc);
+
+                return desc;
+            }
 
             return new BinarySurrogateTypeDescriptor(_cfg, typeId);
         }
@@ -544,7 +551,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType)
                 _typeNameToDesc[typeName] = descriptor;
 
-            _idToDesc[typeKey] = descriptor;            
+            _idToDesc.GetOrAdd(typeKey, _ => descriptor);
         }
 
         /// <summary>
