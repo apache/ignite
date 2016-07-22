@@ -26,6 +26,10 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.yardstick.cache.IgniteSqlQueryBenchmark;
+import org.apache.ignite.yardstick.cache.IgniteSqlQueryDistributedJoinBenchmark;
+import org.yardstickframework.BenchmarkDriverStartUp;
+import org.yardstickframework.BenchmarkServerStartUp;
 
 /**
  * Utils.
@@ -71,5 +75,46 @@ public class IgniteBenchmarkUtils {
                 // Safe to retry right away.
             }
         }
+    }
+
+//    /**
+//     * Starts driver for quick benchmarks testing.
+//     *
+//     * @param args Command line arguments.
+//     * @throws Exception If failed.
+//     */
+//    public static void main(String[] args) throws Exception {
+//        String[] args0 = {
+//            "-t", "1",
+//            "-w", "5",
+//            "-d", "5",
+//            "-dn", IgniteSqlQueryDistributedJoinBenchmark.class.getSimpleName(),
+//            "-r", "100",
+//            "-sn", "IgniteNode",
+//            "-bcj",
+//            "-cfg", "modules/yardstick/config/ignite-localhost-config.xml"};
+//
+//        BenchmarkDriverStartUp.main(args0);
+//    }
+
+    /**
+     * Starts driver for quick benchmarks testing.
+     *
+     * @param args Command line arguments.
+     * @throws Exception If failed.
+     */
+    public static void main(String[] args) throws Exception {
+        String[] args0 = {
+            "-t", "15",
+            "-w", "30",
+            "-d", "60",
+            "-cl",
+            "-pr", "ThroughputLatencyProbe",
+            "-dn", IgniteSqlQueryBenchmark.class.getSimpleName(),
+            "-r", "100000",
+            "-sn", "IgniteNode",
+            "-cfg", "modules/yardstick/config/ignite-localhost-config.xml"};
+
+        BenchmarkDriverStartUp.main(args0);
     }
 }

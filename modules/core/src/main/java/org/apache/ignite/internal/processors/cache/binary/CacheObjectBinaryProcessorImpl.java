@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
@@ -150,9 +149,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** Metadata updates collected before metadata cache is initialized. */
     private final Map<Integer, BinaryMetadata> metaBuf = new ConcurrentHashMap<>();
 
-    /** */
-    private UUID metaCacheQryId;
-
     /**
      * @param ctx Kernal context.
      */
@@ -256,6 +252,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        if (clientNode && !ctx.isDaemon()) {
+            ctx.continuous().registerStaticRoutine(
+                CU.UTILITY_CACHE_NAME,
+                new MetaDataEntryListener(),
+                new MetaDataEntryFilter(),
+                null);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
         IgniteCacheProxy<Object, Object> proxy = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
@@ -271,13 +278,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         if (clientNode) {
             assert !metaDataCache.context().affinityNode();
-
-            metaCacheQryId = metaDataCache.context().continuousQueries().executeInternalQuery(
-                new MetaDataEntryListener(),
-                new MetaDataEntryFilter(),
-                false,
-                true,
-                false);
 
             while (true) {
                 ClusterNode oldestSrvNode =
@@ -357,14 +357,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel);
-
-        if (metaCacheQryId != null)
-            metaDataCache.context().continuousQueries().cancelInternalQuery(metaCacheQryId);
     }
 
     /**
@@ -524,6 +516,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        if (binaryCtx == null)
+            return null;
+
+        return binaryCtx.affinityKeyFieldName(typeId(keyType));
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
@@ -674,7 +674,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public Object affinityKey(BinaryObject po) {
         try {
-            BinaryType meta = po.type();
+            BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
@@ -783,6 +783,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return super.toCacheKeyObject(ctx, obj, userObj, partition);
 
         if (obj instanceof KeyCacheObject) {
+            if (obj instanceof BinaryObjectImpl) {
+                // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
+                BinaryObjectImpl bObj = (BinaryObjectImpl)obj;
+                obj = new BinaryObjectImpl(bObj.context(), bObj.array(), bObj.start());
+            }
+
             ((KeyCacheObject)obj).partition(partition);
 
             return (KeyCacheObject)obj;

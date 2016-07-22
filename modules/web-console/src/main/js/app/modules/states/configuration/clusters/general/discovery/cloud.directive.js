@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './cloud.jade!';
+import templateUrl from './cloud.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryCloud', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

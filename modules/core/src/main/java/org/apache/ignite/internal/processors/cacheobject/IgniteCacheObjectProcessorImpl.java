@@ -83,6 +83,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
         return noOpBinary;
     }
@@ -233,6 +238,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         assert obj != null;
 
         return IMMUTABLE_CLS.contains(obj.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

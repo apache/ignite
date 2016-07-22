@@ -54,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
-public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest{
+public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int PRIMARY = 0;
 

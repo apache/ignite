@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
@@ -35,9 +34,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
-
-        /** Type descriptors. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _descs;
 
         /** Parent builder. */
         private readonly BinaryObjectBuilder _builder;
@@ -73,19 +69,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="descs">Descriptors.</param>
         /// <param name="stream">Input stream.</param>
         /// <param name="mode">The mode.</param>
         /// <param name="builder">Builder.</param>
         public BinaryReader
             (Marshaller marsh,
-            IDictionary<long, IBinaryTypeDescriptor> descs, 
             IBinaryStream stream, 
             BinaryMode mode,
             BinaryObjectBuilder builder)
         {
             _marsh = marsh;
-            _descs = descs;
             _mode = mode;
             _builder = builder;
 
@@ -697,15 +690,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    IBinaryTypeDescriptor desc;
-
-                    if (!_descs.TryGetValue(BinaryUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
-                        throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
+                    var desc = _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);
 
                     // Instantiate object. 
                     if (desc.Type == null)
+                    {
+                        if (desc is BinarySurrogateTypeDescriptor)
+                            throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
+
                         throw new BinaryObjectException("No matching type found for object [typeId=" +
-                                                    desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                                                        desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                    }
 
                     // Preserve old frame.
                     var oldHdr = _curHdr;
@@ -725,29 +720,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Read object.
                     Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
 
-                    object obj;
-
-                    var sysSerializer = desc.Serializer as IBinarySystemTypeSerializer;
-
-                    if (sysSerializer != null)
-                        obj = sysSerializer.ReadInstance(this);
-                    else
-                    {
-                        try
-                        {
-                            obj = FormatterServices.GetUninitializedObject(desc.Type);
-
-                            // Save handle.
-                            AddHandle(pos, obj);
-                        }
-                        catch (Exception e)
-                        {
-                            throw new BinaryObjectException("Failed to create type instance: " +
-                                                        desc.Type.AssemblyQualifiedName, e);
-                        }
-
-                        desc.Serializer.ReadBinary(obj, this);
-                    }
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
                     _curStruct.UpdateReaderStructure();
 
@@ -759,18 +732,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curSchema = oldSchema;
                     _curSchemaMap = oldSchemaMap;
 
-                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    if (wrappedSerializable != null) 
-                        return (T) wrappedSerializable.Item;
-
-                    var wrappedDateTime = obj as DateTimeHolder;
-
-                    if (wrappedDateTime != null)
-                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
-                    
-                    return (T) obj;
+                    return obj;
                 }
             }
             finally

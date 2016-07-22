@@ -694,8 +694,8 @@ public class WebSessionFilter implements Filter {
      * @return New session.
      */
     private WebSessionV2 createSessionV2(final HttpSession ses, final String sesId) throws IOException {
-        if (log.isDebugEnabled())
-            log.debug("Session created: " + sesId);
+        assert ses != null;
+        assert sesId != null;
 
         WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller);
 
@@ -731,6 +731,9 @@ public class WebSessionFilter implements Filter {
         final HttpSession ses = httpReq.getSession(true);
 
         final String sesId = transformSessionId(ses.getId());
+
+        if (log.isDebugEnabled())
+            log.debug("Session created: " + sesId);
 
         return createSessionV2(ses, sesId);
     }
@@ -962,12 +965,14 @@ public class WebSessionFilter implements Filter {
 
             return newId;
         }
+
         /** {@inheritDoc} */
         @Override public void login(String username, String password) throws ServletException{
-            final HttpServletRequest req = (HttpServletRequest) getRequest();
+            HttpServletRequest req = (HttpServletRequest)getRequest();
 
             req.login(username, password);
-            final String newId = req.getSession(false).getId();
+
+            String newId = req.getSession(false).getId();
 
             this.ses.setId(newId);
 
@@ -976,7 +981,6 @@ public class WebSessionFilter implements Filter {
             this.ses.filter(WebSessionFilter.this);
             this.ses.resetUpdates();
         }
-
     }
 
     /**
@@ -1040,11 +1044,13 @@ public class WebSessionFilter implements Filter {
 
             return newId;
         }
+
         /** {@inheritDoc} */
         @Override public void login(String username, String password) throws ServletException{
-            final HttpServletRequest req = (HttpServletRequest) getRequest();
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
 
             req.login(username, password);
+
             final String newId = req.getSession(false).getId();
 
             if (!F.eq(newId, ses.getId())) {

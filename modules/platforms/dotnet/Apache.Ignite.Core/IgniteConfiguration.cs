@@ -398,6 +398,8 @@
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
+            JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
 
         /// <summary>

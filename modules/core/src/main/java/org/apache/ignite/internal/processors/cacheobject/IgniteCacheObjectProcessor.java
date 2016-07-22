@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -33,6 +34,12 @@ import org.jetbrains.annotations.Nullable;
  * Cache objects processor.
  */
 public interface IgniteCacheObjectProcessor extends GridProcessor {
+    /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
+
     /**
      * @see GridComponent#onKernalStart()
      * @throws IgniteCheckedException If failed.
@@ -180,4 +187,10 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Ignite binary interface.
      */
     public IgniteBinary binary();
+
+    /**
+     * @param keyType Key type name.
+     * @return Affinity filed name or {@code null}.
+     */
+    public String affinityField(String keyType);
 }
