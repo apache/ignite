@@ -1489,6 +1489,16 @@ namespace Apache.Ignite.Core.Tests.Binary
                 // Modify and rebuild
                 cache2[4] = obj.ToBuilder().SetField("FShort", (short) 15).Build();
                 Assert.AreEqual(15, cache1[4].FShort);
+
+                // New binary type without a class
+                cache2[5] = grid2.GetBinary().GetBuilder("myNewType").SetField("foo", "bar").Build();
+
+                var cache1Bin = cache1.WithKeepBinary<int, IBinaryObject>();
+                var newObj = cache1Bin[5];
+                Assert.AreEqual("bar", newObj.GetField<string>("foo"));
+
+                cache1Bin[6] = newObj.ToBuilder().SetField("foo2", 3).Build();
+                Assert.AreEqual(3, cache2[6].GetField<int>("foo2"));
             }
         }
     }
