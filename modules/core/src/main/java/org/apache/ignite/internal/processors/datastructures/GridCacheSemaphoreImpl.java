@@ -553,10 +553,12 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     @Override public void stop() {
-        sync.setBroken(true);
+        if (null != sync) {
+            sync.setBroken(true);
 
-        // Try to notify any waiting threads.
-        sync.releaseShared(0);
+            // Try to notify any waiting threads.
+            sync.releaseShared(0);
+        }
     }
 
     /** {@inheritDoc} */
