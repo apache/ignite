@@ -414,18 +414,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryTypeDescriptor desc;
 
-            if (_idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc))
+            var typeKey = BinaryUtils.TypeKey(userType, typeId);
+
+            if (_idToDesc.TryGetValue(typeKey, out desc))
                 return desc;
 
             if (!userType)
                 return null;
 
+            // Check marshaller cache for dynamically registered type
             var type = _ctx == null ? null : _ctx.GetType(typeId);
 
-            if (type == null)
-                return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
+            if (type != null)
+                return AddUserType(type, typeId, BinaryUtils.GetTypeName(type), true);
 
-            return AddUserType(type, typeId, BinaryUtils.GetTypeName(type), true);
+            // Check metadata cache for type information (this works for binary mode)
+            var meta = GetBinaryType(typeId);
+
+            if (meta != BinaryType.Empty)
+            {
+                desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false,
+                    meta.AffinityKeyFieldName, meta.IsEnum);
+
+                _idToDesc.GetOrAdd(typeKey, _ => desc);
+
+                return desc;
+            }
+
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
         }
 
         /// <summary>
