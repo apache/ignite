@@ -405,11 +405,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// 
+        /// Gets descriptor for a type id.
         /// </summary>
-        /// <param name="userType"></param>
-        /// <param name="typeId"></param>
-        /// <returns></returns>
+        /// <param name="userType">User type flag.</param>
+        /// <param name="typeId">Type id.</param>
+        /// <returns>Descriptor.</returns>
         public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId)
         {
             IBinaryTypeDescriptor desc;
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType)
                 _typeNameToDesc.GetOrAdd(typeName, x => descriptor);
 
-            _idToDesc.GetOrAdd(typeKey, x => descriptor);
+            _idToDesc.GetOrAdd(typeKey, _ => descriptor);
         }
 
         /// <summary>

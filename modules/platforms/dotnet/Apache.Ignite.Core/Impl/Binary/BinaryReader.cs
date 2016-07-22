@@ -681,8 +681,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // Instantiate object. 
                     if (desc.Type == null)
+                    {
+                        if (desc is BinarySurrogateTypeDescriptor)
+                            throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
+
                         throw new BinaryObjectException("No matching type found for object [typeId=" +
-                                                    desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                                                        desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                    }
 
                     // Preserve old frame.
                     var oldFrame = _frame;

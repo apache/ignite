@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -52,12 +54,18 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -783,5 +791,80 @@ public class IgfsUtils {
                     return true;
 
         return false;
+    }
+
+    /**
+     * Check whether mode is dual.
+     *
+     * @param mode Mode.
+     * @return {@code True} if dual.
+     */
+    public static boolean isDualMode(IgfsMode mode) {
+        return mode == DUAL_SYNC || mode == DUAL_ASYNC;
+    }
+
+    /**
+     * Answers if directory of this mode can contain a subdirectory of the given mode.
+     *
+     * @param parent Parent mode.
+     * @param child Child mode.
+     * @return {@code true} if directory of this mode can contain a directory of the given mode.
+     */
+    public static boolean canContain(IgfsMode parent, IgfsMode child) {
+        return isDualMode(parent) || parent == child;
+    }
+
+    /**
+     * Checks, filters and sorts the modes.
+     *
+     * @param dfltMode The root mode. Must always be not null.
+     * @param modes The subdirectory modes.
+     * @return Descending list of filtered and checked modes.
+     * @throws IgniteCheckedException On error or
+     */
+    public static ArrayList<T2<IgfsPath, IgfsMode>> preparePathModes(final IgfsMode dfltMode,
+        @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+        if (modes == null)
+            return null;
+
+        // Sort by depth, shallow first.
+        Collections.sort(modes, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
+            @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {
+                return o1.getKey().depth() - o2.getKey().depth();
+            }
+        });
+
+        ArrayList<T2<IgfsPath, IgfsMode>> resModes = new ArrayList<>(modes.size() + 1);
+
+        resModes.add(new T2<>(new IgfsPath("/"), dfltMode));
+
+        for (T2<IgfsPath, IgfsMode> mode : modes) {
+            assert mode.getKey() != null;
+
+            for (T2<IgfsPath, IgfsMode> resMode : resModes) {
+                if (mode.getKey().isSubDirectoryOf(resMode.getKey())) {
+                    assert resMode.getValue() != null;
+
+                    if (resMode.getValue() == mode.getValue())
+                        // No reason to add a sub-path of the same mode, ignore this pair.
+                        break;
+
+                    if (!canContain(resMode.getValue(), mode.getValue()))
+                        throw new IgniteCheckedException("Subdirectory " + mode.getKey() + " mode "
+                            + mode.getValue() + " is not compatible with upper level "
+                            + resMode.getKey() + " directory mode " + resMode.getValue() + ".");
+
+                    // Add to the 1st position (deep first).
+                    resModes.add(0, mode);
+
+                    break;
+                }
+            }
+        }
+
+        // Remove root, because this class contract is that root mode is not contained in the list.
+        resModes.remove(resModes.size() - 1);
+
+        return resModes;
     }
 }
