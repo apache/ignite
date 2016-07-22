@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -334,7 +335,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             affCacheIds = new int[affTask.affinityCacheNames().size()];
             int i = 0;
             for (String cacheName : affTask.affinityCacheNames()) {
-                affCacheIds[i] = ctx.cache().cache(cacheName).cache().context().cacheId();
+                affCacheIds[i] = CU.cacheId(cacheName);
                 ++i;
             }
         }
