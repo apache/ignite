@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL statement executing data modifying operations (INSERT, UPDATE, DELETE).
+ * SQL statement executing data modifying operations (INSERT, UPDATE, DELETE, MERGE).
  *
  * @see IgniteCache#query(Query)
  * @see Statement#executeUpdate(String)
