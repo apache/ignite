@@ -407,7 +407,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (meta != BinaryType.Empty)
             {
-                desc = new BinaryFullTypeDescriptor(meta);
+                desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false, 
+                    meta.AffinityKeyFieldName, meta.IsEnum);
 
                 _idToDesc.GetOrAdd(typeKey, _ => desc);
 
