@@ -430,7 +430,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
                 updateLimitSql = " LIMIT (" + StringUtils.unEnclose(limit.getSQL()) + ')';
         }
 
-        GridSqlQuery gQry = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement gQry = new GridSqlQueryParser().parse(prepared);
 
         String res = gQry.getSQL();
 

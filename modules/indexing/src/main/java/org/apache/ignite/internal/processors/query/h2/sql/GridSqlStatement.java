@@ -17,42 +17,48 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StatementBuilder;
-import org.h2.util.StringUtils;
-
-/** */
-public class GridSqlDelete extends GridSqlStatement {
+/**
+ * SQL statement to query or update grid caches.
+ */
+public abstract class GridSqlStatement {
     /** */
-    private GridSqlElement from;
-
+    protected GridSqlElement limit;
     /** */
-    private GridSqlElement where;
+    private boolean explain;
 
-    /** */
-    public GridSqlDelete from(GridSqlElement from) {
-        this.from = from;
+    /**
+     * @return Generate sql.
+     */
+    public abstract String getSQL();
+
+    /**
+     * @param explain Explain.
+     * @return {@code this}.
+     */
+    public GridSqlStatement explain(boolean explain) {
+        this.explain = explain;
+
         return this;
     }
 
-    /** */
-    public GridSqlDelete where(GridSqlElement where) {
-        this.where = where;
-        return this;
+    /**
+     * @return {@code true} If explain.
+     */
+    public boolean explain() {
+        return explain;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
-        buff.append("DELETE")
-            .append("\nFROM ")
-            .append(from.getSQL());
+    /**
+     * @param limit Limit.
+     */
+    public void limit(GridSqlElement limit) {
+        this.limit = limit;
+    }
 
-        if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
-
-        if (limit != null)
-            buff.append("\nLIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
-
-        return buff.toString();
+    /**
+     * @return Limit.
+     */
+    public GridSqlElement limit() {
+        return limit;
     }
 }

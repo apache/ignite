@@ -25,6 +25,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
@@ -293,7 +294,7 @@ public class GridSqlQueryParser {
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
+    public static GridSqlStatement parse(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
         Getter<Command, Prepared> p = prepared;
@@ -603,12 +604,9 @@ public class GridSqlQueryParser {
     /**
      * @param qry Select.
      */
-    public GridSqlQuery parse(Prepared qry) {
-        if (qry instanceof Select)
-            return parse((Select)qry);
-
-        if (qry instanceof SelectUnion)
-            return parse((SelectUnion)qry);
+    public GridSqlStatement parse(Prepared qry) {
+        if (qry instanceof Query)
+            return parse((Query)qry);
 
         if (qry instanceof Merge)
             return parse((Merge)qry);
@@ -624,6 +622,20 @@ public class GridSqlQueryParser {
 
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
+
+        throw new UnsupportedOperationException("Unknown statement type: " + qry);
+    }
+
+    /**
+     * @param qry Query.
+     * @return Grid SQL query.
+     */
+    GridSqlQuery parse(Query qry) {
+        if (qry instanceof Select)
+            return parse((Select)qry);
+
+        if (qry instanceof SelectUnion)
+            return parse((SelectUnion)qry);
 
         throw new UnsupportedOperationException("Unknown query type: " + qry);
     }

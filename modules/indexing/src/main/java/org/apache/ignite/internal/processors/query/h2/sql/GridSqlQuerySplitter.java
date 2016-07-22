@@ -144,12 +144,30 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
+        GridSqlStatement gridStmt = GridSqlQueryParser.parse(stmt);
+
+        if (gridStmt instanceof GridSqlQuery)
+            return splitSelect((GridSqlQuery)gridStmt, params, collocated, igniteH2Indexing);
+
+        throw new UnsupportedOperationException("Query not supported [cls=" + gridStmt.getClass().getName() + "]");
+    }
+
+    /**
+     * @param qry Grid SQL query (must be either {@link GridSqlSelect} or {@link GridSqlUnion}).
+     * @param params Parameters.
+     * @param collocated Collocated query.
+     * @param igniteH2Indexing Indexing implementation.
+     * @return Two step query.
+     */
+    private static GridCacheTwoStepQuery splitSelect(GridSqlQuery qry, Object[] params, boolean collocated,
+        IgniteH2Indexing igniteH2Indexing) {
+
         Set<String> schemas = new HashSet<>();
 
         // Map query will be direct reference to the original query AST.
         // Thus all the modifications will be performed on the original AST, so we should be careful when
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
-        final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), schemas));
+        final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(qry, schemas));
 
         final boolean explain = mapQry.explain();
 

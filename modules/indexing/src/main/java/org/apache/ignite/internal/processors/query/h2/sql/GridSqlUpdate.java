@@ -26,7 +26,7 @@ import org.h2.util.StringUtils;
 import org.h2.value.ValueString;
 
 /** */
-public class GridSqlUpdate extends GridSqlQuery {
+public class GridSqlUpdate extends GridSqlStatement {
     /** */
     private GridSqlElement target;
 
@@ -83,15 +83,5 @@ public class GridSqlUpdate extends GridSqlQuery {
             buff.append("\nLIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
 
         return buff.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int visibleColumns() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridSqlElement column(int col) {
-        return null;
     }
 }

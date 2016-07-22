@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.List;
-import org.h2.table.Column;
 import org.h2.util.StatementBuilder;
 
 /** */
-public class GridSqlMerge extends GridSqlQuery {
+public class GridSqlMerge extends GridSqlStatement {
     /** */
     private GridSqlElement into;
 
@@ -84,16 +83,6 @@ public class GridSqlMerge extends GridSqlQuery {
                 .append(qry.getSQL());
 
         return buff.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int visibleColumns() {
-        return cols.length;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridSqlElement column(int col) {
-        return cols[col];
     }
 
     /** */

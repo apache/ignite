@@ -21,7 +21,7 @@ import java.util.List;
 import org.h2.util.StatementBuilder;
 
 /** */
-public class GridSqlInsert extends GridSqlQuery {
+public class GridSqlInsert extends GridSqlStatement {
     /** */
     private GridSqlElement into;
 
@@ -88,16 +88,6 @@ public class GridSqlInsert extends GridSqlQuery {
                 .append(qry.getSQL());
 
         return buff.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int visibleColumns() {
-        return cols.length;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridSqlElement column(int col) {
-        return cols[col];
     }
 
     /** */
