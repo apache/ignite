@@ -285,8 +285,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
-                
-                _marsh.StartMarshal(outStream).WriteString("unused");  // fake Java exception details
+
+                var writer = _marsh.StartMarshal(outStream);
+                writer.WriteString("unused");  // fake Java exception details
+                writer.WriteString("unused");  // fake Java exception details
 
                 outStream.SynchronizeOutput();
 

@@ -821,6 +821,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
 
+        ctx.service().onUtilityCacheStarted();
+
         // Wait for caches in SYNC preload mode.
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration cfg = desc.cacheConfiguration();

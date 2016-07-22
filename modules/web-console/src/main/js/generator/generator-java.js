@@ -1319,10 +1319,9 @@ $generatorJava.cacheGeneral = function(cache, varName, res) {
     $generatorJava.enumProperty(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
     $generatorJava.enumProperty(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
-    if (cache.cacheMode === 'PARTITIONED')
-        $generatorJava.property(res, varName, cache, 'backups');
+    if (cache.cacheMode === 'PARTITIONED' && $generatorJava.property(res, varName, cache, 'backups'))
+        $generatorJava.property(res, varName, cache, 'readFromBackup');
 
-    $generatorJava.property(res, varName, cache, 'readFromBackup');
     $generatorJava.property(res, varName, cache, 'copyOnRead');
 
     if (cache.cacheMode === 'PARTITIONED' && cache.atomicityMode === 'TRANSACTIONAL')
@@ -1805,6 +1804,8 @@ $generatorJava.domainModelQueryIndexes = function(res, domain) {
 
                 $generatorJava.property(res, 'index', index, 'name');
                 $generatorJava.enumProperty(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
+
+                res.needEmptyLine = true;
 
                 if (fields && fields.length > 0) {
                     $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');

@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream, 
+        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream,
             HandleRegistry handleRegistry)
         {
             IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>

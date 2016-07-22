@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -53,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             TestUtils.KillProcesses();
 
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration
                 {
@@ -90,10 +88,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     DefaultIdMapper = new IdMapper(),
                     DefaultNameMapper = new NameMapper(),
                     CompactFooter = GetCompactFooter()
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                DiscoverySpi = TestUtils.GetStaticDiscovery()
+                }
             };
 
             _grid = (Ignite) Ignition.Start(cfg);
@@ -1458,6 +1453,54 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
         }
 
+        /// <summary>
+        /// Tests the binary mode on remote node.
+        /// </summary>
+        [Test]
+        public void TestRemoteBinaryMode()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                GridName = "grid2",
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = GetCompactFooter()
+                }
+            };
+
+            using (var grid2 = Ignition.Start(cfg))
+            {
+                var cache1 = _grid.GetOrCreateCache<int, Primitives>("cache");
+                var cache2 = grid2.GetCache<int, object>("cache").WithKeepBinary<int, IBinaryObject>();
+
+                // Exchange data
+                cache1[1] = new Primitives {FByte = 3};
+                var obj = cache2[1];
+
+                // Rebuild with no changes
+                cache2[2] = obj.ToBuilder().Build();
+                Assert.AreEqual(3, cache1[2].FByte);
+
+                // Rebuild with read
+                Assert.AreEqual(3, obj.GetField<byte>("FByte"));
+                cache2[3] = obj.ToBuilder().Build();
+                Assert.AreEqual(3, cache1[3].FByte);
+
+                // Modify and rebuild
+                cache2[4] = obj.ToBuilder().SetField("FShort", (short) 15).Build();
+                Assert.AreEqual(15, cache1[4].FShort);
+
+                // New binary type without a class
+                cache2[5] = grid2.GetBinary().GetBuilder("myNewType").SetField("foo", "bar").Build();
+
+                var cache1Bin = cache1.WithKeepBinary<int, IBinaryObject>();
+                var newObj = cache1Bin[5];
+                Assert.AreEqual("bar", newObj.GetField<string>("foo"));
+
+                cache1Bin[6] = newObj.ToBuilder().SetField("foo2", 3).Build();
+                Assert.AreEqual(3, cache2[6].GetField<int>("foo2"));
+            }
+        }
     }
 
     /// <summary>

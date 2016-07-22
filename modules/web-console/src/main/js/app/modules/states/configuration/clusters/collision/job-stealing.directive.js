@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './job-stealing.jade!';
+import templateUrl from './job-stealing.jade';
 
 export default ['igniteConfigurationClustersCollisionJobStealing', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
