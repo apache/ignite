@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,9 @@ public class BackupMessage implements DiscoveryCustomMessage {
     private long backupId;
 
     private Collection<String> cacheNames;
+
+    /** Future which indicates that exchange for this backup had started. */
+    private transient volatile GridFutureAdapter future;
 
     public BackupMessage(long backupId, Collection<String> cacheNames) {
         this.backupId = backupId;
@@ -49,6 +53,14 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     public Collection<String> cacheNames() {
         return cacheNames;
+    }
+
+    public GridFutureAdapter future() {
+        return future;
+    }
+
+    public void future(GridFutureAdapter future) {
+        this.future = future;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {

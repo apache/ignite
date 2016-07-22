@@ -1892,15 +1892,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
         long backupId = System.currentTimeMillis();
 
-        BackupFuture fut = new BackupFuture(backupId, ctx.localNodeId(), cacheNames);
+        BackupFuture backupFut = new BackupFuture(backupId, ctx.localNodeId(), cacheNames);
 
-        ctx.cache().context().database().submitBackupFuture(fut);
+        ctx.cache().context().database().submitBackupFuture(backupFut);
 
         BackupMessage msg = new BackupMessage(backupId, cacheNames);
 
+        GridFutureAdapter fut = new GridFutureAdapter();
+
+        msg.future(fut);
+
         ctx.discovery().sendCustomEvent(msg);
 
-        return fut;
+        fut.get();
+
+        return backupFut;
     }
 
     /**
