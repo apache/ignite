@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -70,7 +71,9 @@ import org.jsr166.ConcurrentHashMap8;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -93,6 +96,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
+import static javafx.scene.input.KeyCode.T;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
@@ -1551,6 +1555,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             d.addProperty(prop, false);
         }
 
+        if (qryEntity.getKeyProp() != null)
+            d.keyProperty = buildClassProperty(d.keyClass(), d.valueClass(), qryEntity.getKeyProp(), d.keyClass(),
+                Collections.<String, String>emptyMap(), coCtx);
+
         processIndexes(qryEntity, d);
     }
 
@@ -1943,6 +1951,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            Object x = unwrap(this.key ? key : val);
+
+            if (parent != null)
+                x = parent.value(key, val);
+
+            if (x == null)
+                return;
+
+            try {
+                if (field) {
+                    Field field = (Field)member;
+
+                    field.set(x, propVal);
+                }
+                else
+                    throw new UnsupportedOperationException("Value setter methods are not yet supported");
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
         /**
          * Unwraps cache object, if needed.
          *
@@ -2072,6 +2104,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return fieldValue(obj0);
         }
 
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            throw new UnsupportedOperationException("Individual properties can't be set for binary objects");
+        }
+
         /**
          * Get binary field for the property.
          *
@@ -2154,6 +2191,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Class<?> valCls;
 
         /** */
+        private Factory<?> valuesFactory;
+
+        /** */
+        private GridQueryProperty keyProperty;
+
+        /** */
         private boolean valTextIdx;
 
         /** SPI can decide not to register this type. */
@@ -2198,6 +2241,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public GridQueryProperty cacheKeyProperty() {
+            return keyProperty;
+        }
+
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
@@ -2208,6 +2256,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
 
             return (T)prop.value(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal)
+            throws IgniteCheckedException {
+            assert field != null;
+
+            GridQueryProperty prop = props.get(field);
+
+            if (prop == null)
+                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
+
+            prop.setValue(key, val, propVal);
         }
 
         /** {@inheritDoc} */
@@ -2277,12 +2339,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param valCls Value class.
          */
         void valueClass(Class<?> valCls) {
+            A.notNull(valCls, "Value class must not be null");
             this.valCls = valCls;
+            valuesFactory = supplierForClass(valCls);
         }
 
         /** {@inheritDoc} */
         @Override public Class<?> keyClass() {
             return keyCls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object newValue() {
+            A.notNull(valuesFactory, "Values factory not set, looks like valueClass(Class) call has been missed");
+            return valuesFactory.create();
         }
 
         /**
@@ -2522,5 +2592,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private enum IndexType {
         ASC, DESC, TEXT
+    }
+
+    /**
+     * Create supplier of value instances based on default ctor.
+     * @param cls
+     * @param <T>
+     * @return
+     * @throws IgniteException if ctor w/o params could not be found.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> Factory<T> supplierForClass(Class<T> cls) {
+        final Constructor<T> ctor;
+
+        try {
+            ctor = cls.getDeclaredConstructor();
+        }
+        catch (NoSuchMethodException e) {
+            throw new IgniteException("Ctor w/o params not found [cls=" + cls.getName() + "]", e);
+        }
+
+        if (ctor == null)
+            throw new IgniteException("Ctor w/o params not found [cls=" + cls.getName() + "]");
+
+        ctor.setAccessible(true);
+
+        return new Factory<T>() {
+            /** {@inheritDoc} */
+            @Override public T create() {
+                try {
+                    return ctor.newInstance();
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Failed to instantiate value", e);
+                }
+            }
+        };
     }
 }

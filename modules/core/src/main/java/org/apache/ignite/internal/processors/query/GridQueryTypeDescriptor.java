@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.
@@ -49,11 +50,18 @@ public interface GridQueryTypeDescriptor {
      */
     public <T> T value(String field, Object key, Object val) throws IgniteCheckedException;
 
+    public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException;
+
     /**
      * @param name Property name.
      * @return Property.
      */
     public GridQueryProperty property(String name);
+
+    /**
+     * @return Key property used to generate cache keys on SQL INSERT and MERGE operations. May be null.
+     */
+    @Nullable public GridQueryProperty cacheKeyProperty();
 
     /**
      * Gets indexes for this type.
@@ -75,6 +83,8 @@ public interface GridQueryTypeDescriptor {
      * @return Key class.
      */
     public Class<?> keyClass();
+
+    public Object newValue();
 
     /**
      * Returns {@code true} if string representation of value should be indexed as text.

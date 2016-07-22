@@ -93,7 +93,7 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @param qry Query.
      */
-    public int update(GridCacheContext<?, ?> cctx, SqlUpdate qry);
+    public int update(GridCacheContext<?, ?> cctx, SqlUpdate qry) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).

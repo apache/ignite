@@ -93,7 +93,15 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -105,6 +113,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -183,7 +192,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;" +
-        "RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0";
+        "RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0;DATABASE_TO_UPPER=false";
 
     /** */
     private static final int PREPARED_STMT_CACHE_SIZE = 256;
@@ -898,6 +907,134 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Executes sql query.
+     *
+     * @param cctx
+     * @param conn Connection,.
+     * @param desc
+     * @param sql Sql query.
+     * @param params Parameters.   @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, Connection conn, TableDescriptor desc, String sql,
+                                      Object[] params)
+        throws IgniteCheckedException {
+        PreparedStatement stmt;
+
+        try {
+            stmt = prepareStatement(conn, sql, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+        }
+
+        switch (commandType(stmt)) {
+            case CommandInterface.MERGE:
+                break;
+            default:
+                throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
+        }
+
+        A.ensure(stmt instanceof JdbcPreparedStatement, "H2 JDBC prepared statement expected");
+
+        GridSqlStatement gridStmt = GridSqlQueryParser.parse((JdbcPreparedStatement)stmt);
+
+        A.ensure(!(gridStmt instanceof GridSqlQuery), "Non query grid SQL statement expected");
+
+        if (gridStmt instanceof GridSqlMerge)
+            return doMerge(cctx, (GridSqlMerge)gridStmt, desc, params);
+
+        throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
+            gridStmt.getClass() + ']');
+    }
+
+
+    /**
+     * @param cctx
+     * @param gridStmt
+     * @param desc
+     * @param params
+     * @return
+     * @throws IgniteCheckedException
+     */
+    @SuppressWarnings("unchecked")
+    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, TableDescriptor desc, Object[] params)
+        throws IgniteCheckedException {
+        A.ensure(!F.isEmpty(gridStmt.rows()) && gridStmt.query() == null, "SQL MERGE from SELECT is not supported");
+
+        GridSqlColumn[] cols = gridStmt.columns();
+
+        int keyColIdx = -1;
+        for (int i = 0; i < cols.length; i++)
+            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                keyColIdx = i;
+                break;
+            }
+
+        if (gridStmt.rows().size() == 1) {
+            IgniteBiTuple t = rowToKeyValue(desc, cols, gridStmt.rows().get(0), params, keyColIdx);
+            cctx.cache().put(t.getKey(), t.getValue());
+        }
+        else {
+            Map<Object, Object> rows = new LinkedHashMap<>(gridStmt.rows().size());
+            for (GridSqlElement[] row : gridStmt.rows()) {
+                IgniteBiTuple t = rowToKeyValue(desc, cols, row, params, keyColIdx);
+                rows.put(t.getKey(), t.getValue());
+            }
+            cctx.cache().putAll(rows);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Convert bunch of {@link GridSqlElement}s into key-value pair to be inserted to cache.
+     * @param desc Table descriptor.
+     * @param cols Query cols.
+     * @param row Row to process.
+     * @param params Params to fill {@link GridSqlParameter}s.
+     * @param keyColIdx Index of <tt>_key</tt> column if it's present in query.
+     * @return Key-value pair.
+     * @throws IgniteCheckedException if failed.
+     */
+    private static IgniteBiTuple<?, ?> rowToKeyValue(TableDescriptor desc, GridSqlColumn[] cols, GridSqlElement[] row,
+        Object[] params, int keyColIdx) throws IgniteCheckedException {
+        A.ensure(keyColIdx != -1 || desc.type().cacheKeyProperty() != null, "Key for new values must be provided " +
+            "either via column list and literals, or with @QueryCacheKey annotated member of value class [valCls=" +
+            desc.type().valueClass().getName() + ']');
+
+        for (GridSqlElement rowEl : row)
+            A.ensure(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
+                "SQL INSERT and MERGE statements support literal values only");
+
+        Object val = desc.type().newValue();
+
+        for (int i = 0; i < cols.length; i++)
+            if (i != keyColIdx)
+                desc.type().setValue(cols[i].columnName(), null, val, getLiteralValue(row[i], params));
+
+        //noinspection ConstantConditions
+        Object key = keyColIdx != -1 ? getLiteralValue(row[keyColIdx], params) :
+            desc.type().cacheKeyProperty().value(null, val);
+
+        return new IgniteBiTuple<>(key, val);
+    }
+
+    /**
+     * @param element SQL element.
+     * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
+     * @return literal object value.
+     */
+    private static Object getLiteralValue(GridSqlElement element, Object[] params) {
+        if (element instanceof GridSqlConst)
+            return GridH2Utils.getObjectFromValue(((GridSqlConst)element).value());
+        else if (element instanceof GridSqlParameter)
+            return params[((GridSqlParameter)element).index()];
+        else
+            throw new IllegalArgumentException("Unexpected SQL literal type [cls=" + element.getClass().getName() + ']');
+    }
+
+    /**
      * Executes query.
      *
      * @param space Space.
@@ -1118,8 +1255,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public int update(GridCacheContext<?,?> cctx, SqlUpdate qry) {
-        throw new UnsupportedOperationException();
+    @Override public int update(GridCacheContext<?,?> cctx, SqlUpdate qry) throws IgniteCheckedException {
+
+        String space = cctx.name();
+
+        Connection conn = connectionForSpace(space);
+
+        TableDescriptor d = tableDescriptor(qry.getType(), space);
+
+        return executeSqlUpdateQuery(cctx, conn, d, qry.getSql(), qry.getArgs());
     }
 
     /**

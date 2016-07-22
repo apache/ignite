@@ -34,6 +34,16 @@ public abstract class GridQueryProperty {
     public abstract Object value(Object key, Object val) throws IgniteCheckedException;
 
     /**
+     * Sets this property value for the given object.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param propVal Property value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException;
+
+    /**
      * @return Property name.
      */
     public abstract String name();

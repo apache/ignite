@@ -548,6 +548,10 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     return TypeDesc.this.value(name, key, val);
                 }
 
+                @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+                    throw new UnsupportedOperationException();
+                }
+
                 @Override public String name() {
                     return name;
                 }
@@ -557,6 +561,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     return Object.class;
                 }
             };
+        }
+
+        @Nullable
+        @Override
+        public GridQueryProperty cacheKeyProperty() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -574,6 +584,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return null;
         }
 
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException {
+            assert !F.isEmpty(field);
+
+            assert key instanceof Integer;
+
+            Map<String, Object> m = (Map<String, Object>)val;
+
+            m.put(field, propVal);
+        }
+
         /** */
         @Override public Map<String, GridQueryIndexDescriptor> indexes() {
             return textIdx == null ? Collections.<String, GridQueryIndexDescriptor>emptyMap() :
@@ -588,6 +610,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public Class<?> keyClass() {
             return Integer.class;
+        }
+
+        /** */
+        @Override public Object newValue() {
+            throw new UnsupportedOperationException();
         }
 
         /** */

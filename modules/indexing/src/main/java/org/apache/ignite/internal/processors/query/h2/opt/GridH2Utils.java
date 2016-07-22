@@ -17,10 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.lang.reflect.Array;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.UUID;
+import org.h2.util.Utils;
+import org.h2.value.DataType;
+import org.h2.value.Value;
+import org.h2.value.ValueArray;
 import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueUuid;
+
+import static javafx.scene.input.KeyCode.T;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessage;
 
 /**
  *
@@ -129,5 +141,123 @@ public class GridH2Utils {
         }
 
         return year;
+    }
+
+    public static Object getObjectFromValue(Value value) {
+        switch (value.getType()) {
+            case Value.NULL:
+                return null;
+
+            case Value.BOOLEAN:
+                return value.getBoolean();
+
+            case Value.BYTE:
+                return value.getByte();
+
+            case Value.SHORT:
+                return value.getShort();
+
+            case Value.INT:
+                return value.getInt();
+
+            case Value.LONG:
+                return value.getLong();
+
+            case Value.DECIMAL:
+                return value.getBigDecimal();
+
+            case Value.DOUBLE:
+                return value.getDouble();
+
+            case Value.FLOAT:
+                return value.getFloat();
+
+            case Value.DATE:
+                return value.getDate();
+
+            case Value.TIME:
+                return value.getTime();
+
+            case Value.TIMESTAMP:
+                return value.getTimestamp();
+
+            case Value.BYTES:
+                return value.getBytes();
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                return value.getString();
+
+            case Value.ARRAY: {
+                ValueArray arr = (ValueArray)value;
+
+                Class<?> arrType = arr.getComponentType();
+
+                int size = arr.getList().length;
+
+                Object res = Array.newInstance(arrType, size);
+
+                if (!arrType.isPrimitive()) {
+                    for (int i = 0; i < size; i++)
+                        Array.set(res, i, getObjectFromValue(arr.getList()[i]));
+
+                    return res;
+                }
+
+                switch (DataType.getTypeFromClass(arrType)) {
+                    case Value.INT:
+                        for (int i = 0; i < size; i++)
+                            Array.setInt(res, i, arr.getList()[i].getInt());
+                        break;
+
+                    case Value.BYTE:
+                        for (int i = 0; i < size; i++)
+                            Array.setByte(res, i, arr.getList()[i].getByte());
+                        break;
+
+                    case Value.SHORT:
+                        for (int i = 0; i < size; i++)
+                            Array.setShort(res, i, arr.getList()[i].getShort());
+                        break;
+
+                    case Value.LONG:
+                        for (int i = 0; i < size; i++)
+                            Array.setLong(res, i, arr.getList()[i].getLong());
+                        break;
+
+                    case Value.DOUBLE:
+                        for (int i = 0; i < size; i++)
+                            Array.setDouble(res, i, arr.getList()[i].getDouble());
+                        break;
+
+                    case Value.FLOAT:
+                        for (int i = 0; i < size; i++)
+                            Array.setFloat(res, i, arr.getList()[i].getFloat());
+                        break;
+
+                    case Value.BOOLEAN:
+                        for (int i = 0; i < size; i++)
+                            Array.setBoolean(res, i, arr.getList()[i].getBoolean());
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unexpected primitive array type [cls=" + arrType.getName() + ']');
+                }
+
+                return res;
+            }
+
+            case Value.JAVA_OBJECT:
+                return Utils.deserialize(value.getBytesNoCopy(), null);
+
+            case Value.UUID: {
+                ValueUuid uuid = (ValueUuid)value;
+                return new UUID(uuid.getHigh(), uuid.getLow());
+            }
+
+            default:
+                throw new IllegalArgumentException("Unsupported H2 type: " + value.getType());
+        }
     }
 }

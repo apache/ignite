@@ -65,6 +65,7 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+import org.h2.util.IntArray;
 import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
