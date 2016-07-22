@@ -46,8 +46,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cache.query.Update;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -289,10 +292,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cursor.
      * @see ScanQuery
      * @see SqlQuery
+     * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
      */
     public <R> QueryCursor<R> query(Query<R> qry);
+
+    /**
+     * Updates cache. Accepts any subclass of {@link Update} interface.
+     *
+     * @param qry Update.
+     * @param <T> Type of values affected.
+     * @return Number of affected entries.
+     * @see SqlUpdate
+     */
+    public <T> int update(Update<T> qry);
 
     /**
      * Allows for iteration over local cache entries.

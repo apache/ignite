@@ -31,6 +31,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -840,6 +841,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qry Update query.
+     * @return Number of entries affected.
+     */
+    public int update(final GridCacheContext<?, ?> cctx, final SqlUpdate qry) {
+        throw new UnsupportedOperationException();
     }
 
     /**
