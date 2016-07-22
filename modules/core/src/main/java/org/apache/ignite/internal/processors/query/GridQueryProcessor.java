@@ -848,8 +848,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Update query.
      * @return Number of entries affected.
      */
-    public int update(final GridCacheContext<?, ?> cctx, final SqlUpdate qry) {
-        throw new UnsupportedOperationException();
+    public int update(final GridCacheContext<?, ?> cctx, final SqlUpdate qry) throws IgniteCheckedException {
+        checkEnabled();
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return executeUpdate(cctx, new IgniteOutClosureX<Integer>() {
+                /** {@inheritDoc} */
+                @Override public Integer applyx() throws IgniteCheckedException {
+                    return idx.update(cctx, qry);
+                }
+            }, false);
+        } finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -1784,6 +1798,42 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 err = fut.error();
             }
+
+            return res;
+        }
+        catch (GridClosureException e) {
+            err = e.unwrap();
+
+            throw (IgniteCheckedException)err;
+        }
+        catch (Exception e) {
+            err = e;
+
+            throw new IgniteCheckedException(e);
+        }
+        finally {
+            cctx.queries().onExecuted(err != null);
+
+            if (complete && err == null)
+                onCompleted(cctx, res, null, startTime, U.currentTimeMillis() - startTime, log);
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param clo Closure.
+     * @param complete Complete.
+     */
+    public int executeUpdate(GridCacheContext<?, ?> cctx, IgniteOutClosureX<Integer> clo, boolean complete)
+        throws IgniteCheckedException {
+        final long startTime = U.currentTimeMillis();
+
+        Throwable err = null;
+
+        Integer res = null;
+
+        try {
+            res = clo.apply();
 
             return res;
         }

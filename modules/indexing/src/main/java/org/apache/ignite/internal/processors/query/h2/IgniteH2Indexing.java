@@ -60,6 +60,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1114,6 +1115,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int update(GridCacheContext<?,?> cctx, SqlUpdate qry) {
+        throw new UnsupportedOperationException();
     }
 
     /**

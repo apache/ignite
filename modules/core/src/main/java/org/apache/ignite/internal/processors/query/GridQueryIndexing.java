@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -85,6 +86,14 @@ public interface GridQueryIndexing {
      * @return Cursor.
      */
     public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry);
+
+    /**
+     * Performs data modifying operation on cache (INSERT, UPDATE, DELETE, MERGE).
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     */
+    public int update(GridCacheContext<?, ?> cctx, SqlUpdate qry);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
