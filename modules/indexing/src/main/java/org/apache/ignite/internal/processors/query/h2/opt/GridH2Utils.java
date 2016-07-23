@@ -3,21 +3,15 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.lang.reflect.Array;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.UUID;
 import org.h2.util.JdbcUtils;
-import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-
-import static javafx.scene.input.KeyCode.T;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessage;
 
 /**
  *
