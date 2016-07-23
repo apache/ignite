@@ -27,8 +27,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Query;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
@@ -149,33 +151,37 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins If distributed joins enabled.
      * @return Two step query.
      */
-    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, boolean collocated, IgniteH2Indexing igniteH2Indexing) {
+    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, boolean collocatedGrpBy,
+        boolean distributedJoins) {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
         final Prepared prepared = prepared(stmt);
 
-        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
+        if (prepared instanceof Query)
+            return splitSelect((Query)prepared, params, collocatedGrpBy, distributedJoins);
 
-        if (gridStmt instanceof GridSqlQuery)
-            return splitSelect((GridSqlQuery)gridStmt, params, collocated, igniteH2Indexing);
-
-        throw new UnsupportedOperationException("Query not supported [cls=" + gridStmt.getClass().getName() + "]");
+        throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
     }
 
     /**
-     * @param qry Grid SQL query (must be either {@link GridSqlSelect} or {@link GridSqlUnion}).
+     * @param prepared Prepared SQL SELECT or UNION statement.
      * @param params Parameters.
-     * @param collocated Collocated query.
-     * @param igniteH2Indexing Indexing implementation.
+     * @param collocatedGrpBy Collocated query.
+     * @param distributedJoins If distributed joins enabled.
      * @return Two step query.
      */
     private static GridCacheTwoStepQuery splitSelect(
-        GridSqlQuery qry,
+        Query prepared,
         Object[] params,
         final boolean collocatedGrpBy,
         final boolean distributedJoins
     ) {
+        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
+        A.ensure(gridStmt instanceof GridSqlQuery, "SQL query expected");
+
+        GridSqlQuery qry = (GridSqlQuery)gridStmt;
+
         Set<String> tbls = new HashSet<>();
         Set<String> schemas = new HashSet<>();
 

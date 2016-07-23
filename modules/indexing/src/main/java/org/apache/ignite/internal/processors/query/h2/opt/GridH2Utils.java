@@ -8,6 +8,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.UUID;
+import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -233,7 +234,7 @@ public class GridH2Utils {
             }
 
             case Value.JAVA_OBJECT:
-                return Utils.deserialize(value.getBytesNoCopy(), null);
+                return JdbcUtils.deserialize(value.getBytesNoCopy(), null);
 
             case Value.UUID: {
                 ValueUuid uuid = (ValueUuid)value;

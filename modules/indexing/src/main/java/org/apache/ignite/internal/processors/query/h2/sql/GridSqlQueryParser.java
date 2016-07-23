@@ -317,7 +317,8 @@ public class GridSqlQueryParser {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
-            res = parseTable(filter.getTable(), filter.getSelect() != null ? filter.getSelect().getSQL() : null);
+            res = parseTable(filter.getTable(), filter.getIndex(),
+                filter.getSelect() != null ? filter.getSelect().getSQL() : null);
 
             String alias = ALIAS.get(filter);
 
@@ -334,7 +335,7 @@ public class GridSqlQueryParser {
     /**
      * @param tbl Table.
      */
-    private GridSqlElement parseTable(Table tbl, String sql) {
+    private GridSqlElement parseTable(Table tbl, @Nullable Index idx, String sql) {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(tbl);
 
         if (res == null) {
@@ -342,8 +343,6 @@ public class GridSqlQueryParser {
                 res = new GridSqlTable(tbl);
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView) tbl);
-
-                Index idx = filter.getIndex();
 
                 Query idxQry = idx instanceof ViewIndex ? ((ViewIndex)idx).getQuery() : null;
 
@@ -444,7 +443,7 @@ public class GridSqlQueryParser {
         h2ObjToGridObj.put(merge, res);
 
         Table srcTbl = MERGE_TABLE.get(merge);
-        GridSqlElement tbl = parseTable(srcTbl, merge.getSQL());
+        GridSqlElement tbl = parseTable(srcTbl, null, merge.getSQL());
 
         res.into(tbl);
 
@@ -452,14 +451,14 @@ public class GridSqlQueryParser {
 
         GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
         for (int i = 0; i < srcCols.length; i++)
-            cols[i] = new GridSqlColumn(tbl, srcCols[i].getName(), srcCols[i].getSQL());
+            cols[i] = new GridSqlColumn(srcCols[i], tbl, srcCols[i].getName(), srcCols[i].getSQL());
         res.columns(cols);
 
         Column[] srcKeys = MERGE_KEYS.get(merge);
 
         GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
         for (int i = 0; i < srcKeys.length; i++)
-            keys[i] = new GridSqlColumn(tbl, srcKeys[i].getName(), srcKeys[i].getSQL());
+            keys[i] = new GridSqlColumn(srcKeys[i], tbl, srcKeys[i].getName(), srcKeys[i].getSQL());
         res.keys(keys);
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
@@ -477,7 +476,7 @@ public class GridSqlQueryParser {
         }
         else {
             res.rows(Collections.emptyList());
-            res.query(parse(MERGE_QUERY.get(merge)));
+            res.query(parse(MERGE_QUERY.get(merge), null));
         }
 
         return res;
@@ -497,7 +496,7 @@ public class GridSqlQueryParser {
         h2ObjToGridObj.put(insert, res);
 
         Table srcTbl = INSERT_TABLE.get(insert);
-        GridSqlElement tbl = parseTable(srcTbl, insert.getSQL());
+        GridSqlElement tbl = parseTable(srcTbl, null, insert.getSQL());
 
         res.into(tbl).
             direct(INSERT_DIRECT.get(insert)).
@@ -506,7 +505,7 @@ public class GridSqlQueryParser {
         Column[] srcCols = INSERT_COLUMNS.get(insert);
         GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
         for (int i = 0; i < srcCols.length; i++)
-            cols[i] = new GridSqlColumn(tbl, srcCols[i].getName(), srcCols[i].getSQL());
+            cols[i] = new GridSqlColumn(srcCols[i], tbl, srcCols[i].getName(), srcCols[i].getSQL());
         res.columns(cols);
 
         List<Expression[]> srcRows = INSERT_ROWS.get(insert);
@@ -524,7 +523,7 @@ public class GridSqlQueryParser {
         }
         else {
             res.rows(Collections.emptyList());
-            res.query(parse(INSERT_QUERY.get(insert)));
+            res.query(parse(INSERT_QUERY.get(insert), null));
         }
 
         return res;
@@ -572,7 +571,7 @@ public class GridSqlQueryParser {
         HashMap<GridSqlColumn, GridSqlElement> set = new HashMap<>(srcSet.size());
 
         for (Column c : srcCols) {
-            GridSqlColumn col = new GridSqlColumn(tbl, c.getName(), c.getSQL());
+            GridSqlColumn col = new GridSqlColumn(c, tbl, c.getName(), c.getSQL());
             cols.add(col);
             set.put(col, parseExpression(srcSet.get(c), false));
         }
@@ -624,14 +623,14 @@ public class GridSqlQueryParser {
      * @param qry Prepared.
      * @return Query.
      */
-    public GridSqlQuery parse(Prepared qry) {
+    public GridSqlStatement parse(Prepared qry) {
         return parse(qry, null);
     }
 
     /**
      * @param qry Select.
      */
-    public GridSqlQuery parse(Prepared qry, @Nullable Query idxQry) {
+    public GridSqlStatement parse(Prepared qry, @Nullable Query idxQry) {
         assert qry != null;
 
         if (qry instanceof Query)
@@ -680,8 +679,8 @@ public class GridSqlQueryParser {
 
         res = new GridSqlUnion();
 
-        res.right(parse(union.getRight()));
-        res.left(parse(union.getLeft()));
+        res.right(parse(union.getRight(), null));
+        res.left(parse(union.getLeft(), null));
 
         res.unionType(union.getUnionType());
 
@@ -797,7 +796,7 @@ public class GridSqlQueryParser {
 
             assert0(qry instanceof Select, expression);
 
-            return new GridSqlSubquery(parse((Select)qry));
+            return new GridSqlSubquery(parse(qry, null));
         }
 
         if (expression instanceof ConditionIn) {
@@ -841,7 +840,7 @@ public class GridSqlQueryParser {
 
             assert0(qry instanceof Select, qry);
 
-            res.addChild(new GridSqlSubquery(parse((Select)qry)));
+            res.addChild(new GridSqlSubquery(parse(qry, null)));
 
             return res;
         }

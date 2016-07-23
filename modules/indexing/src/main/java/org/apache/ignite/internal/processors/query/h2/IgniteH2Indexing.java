@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -976,7 +977,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         A.ensure(stmt instanceof JdbcPreparedStatement, "H2 JDBC prepared statement expected");
 
-        GridSqlStatement gridStmt = GridSqlQueryParser.parse((JdbcPreparedStatement)stmt);
+        GridSqlStatement gridStmt = new GridSqlQueryParser()
+            .parse(GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt));
 
         A.ensure(!(gridStmt instanceof GridSqlQuery), "Non query grid SQL statement expected");
 
@@ -1385,17 +1387,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         TableDescriptor d = tableDescriptor(qry.getType(), space);
 
         return executeSqlUpdateQuery(cctx, conn, d, qry.getSql(), qry.getArgs());
-    }
-
-    /**
-     * Sets filters for current thread. Must be set to not null value
-     * before executeQuery and reset to null after in finally block since it signals
-     * to table that it should return content without expired values.
-     *
-     * @param filters Filters.
-     */
-    public void setFilters(@Nullable IndexingQueryFilter filters) {
-        GridH2IndexBase.setFiltersForThread(filters);
     }
 
     /**
