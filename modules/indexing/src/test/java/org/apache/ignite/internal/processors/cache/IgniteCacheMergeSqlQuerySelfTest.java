@@ -56,6 +56,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
+
+        ignite(0).createCache(cacheConfig("P", true, String.class, Person.class));
     }
 
     /** {@inheritDoc} */
@@ -82,8 +84,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     public void testMerge() {
-        IgniteCache<String, Person> p = ignite(0).createCache(cacheConfig("P", true,
-            String.class, Person.class));
+        IgniteCache<String, Person> p = ignite(0).cache("P");
 
         p.update(new SqlUpdate<>(Person.class,
             "merge into Person (id, name) values (?, ?), (2, 'Alex')").setArgs(1, "Sergi"));
@@ -97,6 +98,26 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
         p2.name = "Alex";
 
         assertEquals(p2, p.get("Person##2##Alex"));
+    }
+
+    /**
+     *
+     */
+    public void testMergeWithExplicitKey() {
+        IgniteCache<String, Person> p = ignite(0).cache("P");
+
+        p.update(new SqlUpdate<>(Person.class,
+            "merge into Person (_key, id, name) values ('s', ?, ?), ('a', 2, 'Alex')").setArgs(1, "Sergi"));
+
+        Person p1 = new Person(1);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get("s"));
+
+        Person p2 = new Person(2);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get("a"));
     }
 
     /**
