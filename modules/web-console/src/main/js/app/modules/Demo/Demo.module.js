@@ -17,7 +17,7 @@
 
 import angular from 'angular';
 
-import DEMO_INFO from 'app/data/demo-info.json!';
+import DEMO_INFO from 'app/data/demo-info.json';
 
 angular
 .module('ignite-console.demo', [
@@ -39,17 +39,16 @@ angular
         })
         .state('demo.reset', {
             url: '/demo/reset',
-            controller: ['$state', '$http', '$common', ($state, $http, $common) => {
+            controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
                     .then(() => $state.go('base.configuration.clusters'))
-                    .catch((errMsg) => {
+                    .catch((err) => {
                         $state.go('base.configuration.clusters');
 
-                        $common.showError(errMsg);
+                        Messages.showError(err);
                     });
             }],
-            metaTags: {
-            }
+            metaTags: {}
         });
 }])
 .provider('Demo', ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider', function($state, $http, socketFactory) {
@@ -82,14 +81,14 @@ angular
         }
     };
 }])
-.controller('demoController', ['$scope', '$state', '$window', '$confirm', ($scope, $state, $window, $confirm) => {
+.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', ($scope, $state, $window, Confirm) => {
     const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
 
     $scope.startDemo = () => {
         if (!$scope.user.demoCreated)
             return _openTab('demo.reset');
 
-        $confirm.confirm('Would you like to continue with previous demo session?', true, false)
+        Confirm.confirm('Would you like to continue with previous demo session?', true, false)
             .then((resume) => {
                 if (resume)
                     return _openTab('demo.resume');

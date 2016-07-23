@@ -49,6 +49,11 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void init() {
+        // No-op.
+    }
+
     /**
      * Get configuration transformer closure.
      *

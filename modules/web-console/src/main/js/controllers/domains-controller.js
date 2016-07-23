@@ -16,12 +16,10 @@
  */
 
 // Controller for Domain model screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'IgniteAgentMonitor', '$table',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
-        $unsavedChangesGuard.install($scope);
+export default ['domainsController', [
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable) {
+        UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
 
@@ -32,7 +30,7 @@ consoleModule.controller('domainsController', [
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyDomain;
 
-        $scope.ui = $common.formUI();
+        $scope.ui = LegacyUtils.formUI();
         $scope.ui.activePanels = [0, 1];
         $scope.ui.topPanels = [0, 1, 2];
 
@@ -68,14 +66,14 @@ consoleModule.controller('domainsController', [
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.getModel = $common.getModel;
-        $scope.javaBuiltInClasses = $common.javaBuiltInClasses;
-        $scope.compactJavaName = $common.compactJavaName;
-        $scope.widthIsSufficient = $common.widthIsSufficient;
-        $scope.saveBtnTipText = $common.saveBtnTipText;
+        $scope.getModel = LegacyUtils.getModel;
+        $scope.javaBuiltInClasses = LegacyUtils.javaBuiltInClasses;
+        $scope.compactJavaName = LegacyUtils.compactJavaName;
+        $scope.widthIsSufficient = LegacyUtils.widthIsSufficient;
+        $scope.saveBtnTipText = LegacyUtils.saveBtnTipText;
 
         $scope.tableSave = function(field, index, stopEdit) {
-            if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
+            if (LegacyTable.tableEditing({model: 'table-index-fields'}, LegacyTable.tableEditedRowIndex())) {
                 if ($scope.tableIndexItemSaveVisible(field, index))
                     return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
             }
@@ -83,8 +81,8 @@ consoleModule.controller('domainsController', [
                 switch (field.type) {
                     case 'fields':
                     case 'aliases':
-                        if ($table.tablePairSaveVisible(field, index))
-                            return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+                        if (LegacyTable.tablePairSaveVisible(field, index))
+                            return LegacyTable.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
                         break;
 
@@ -108,37 +106,37 @@ consoleModule.controller('domainsController', [
         };
 
         $scope.tableReset = (trySave) => {
-            const field = $table.tableField();
+            const field = LegacyTable.tableField();
 
-            if (trySave && $common.isDefined(field) && !$scope.tableSave(field, $table.tableEditedRowIndex(), true))
+            if (trySave && LegacyUtils.isDefined(field) && !$scope.tableSave(field, LegacyTable.tableEditedRowIndex(), true))
                 return false;
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             return true;
         };
 
         $scope.tableNewItem = function(field) {
             if ($scope.tableReset(true))
-                $table.tableNewItem(field);
+                LegacyTable.tableNewItem(field);
         };
 
-        $scope.tableNewItemActive = $table.tableNewItemActive;
+        $scope.tableNewItemActive = LegacyTable.tableNewItemActive;
 
         $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index, $scope.tableSave);
+                LegacyTable.tableStartEdit(item, field, index, $scope.tableSave);
         };
 
-        $scope.tableEditing = $table.tableEditing;
+        $scope.tableEditing = LegacyTable.tableEditing;
 
         $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableRemove(item, field, index);
+                LegacyTable.tableRemove(item, field, index);
         };
 
-        $scope.tablePairSave = $table.tablePairSave;
-        $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
+        $scope.tablePairSave = LegacyTable.tablePairSave;
+        $scope.tablePairSaveVisible = LegacyTable.tablePairSaveVisible;
 
         $scope.queryFieldsTbl = {
             type: 'fields',
@@ -160,7 +158,7 @@ consoleModule.controller('domainsController', [
             save: $scope.tableSave
         };
 
-        $scope.queryMetadataVariants = $common.mkOptions(['Annotations', 'Configuration']);
+        $scope.queryMetadataVariants = LegacyUtils.mkOptions(['Annotations', 'Configuration']);
 
         const INFO_CONNECT_TO_DB = 'Configure connection to database';
         const INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
@@ -175,11 +173,11 @@ consoleModule.controller('domainsController', [
             'It may be a result of import tables from database without primary keys<br/>' +
             'Key field for such key types should be configured manually';
 
-        $scope.hidePopover = $common.hidePopover;
+        $scope.hidePopover = LegacyUtils.hidePopover;
 
-        const showPopoverMessage = $common.showPopoverMessage;
+        const showPopoverMessage = LegacyUtils.showPopoverMessage;
 
-        $scope.indexType = $common.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
+        $scope.indexType = LegacyUtils.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
 
         const _dbPresets = [
             {
@@ -269,8 +267,8 @@ consoleModule.controller('domainsController', [
 
                 localStorage.dbPresets = JSON.stringify(_dbPresets);
             }
-            catch (errMsg) {
-                $common.showError(errMsg);
+            catch (err) {
+                Messages.showError(err);
             }
         }
 
@@ -304,9 +302,9 @@ consoleModule.controller('domainsController', [
 
         $scope.ui.showValid = true;
 
-        $scope.supportedJdbcTypes = $common.mkOptions($common.SUPPORTED_JDBC_TYPES);
+        $scope.supportedJdbcTypes = LegacyUtils.mkOptions(LegacyUtils.SUPPORTED_JDBC_TYPES);
 
-        $scope.supportedJavaTypes = $common.mkOptions($common.javaBuiltInTypes);
+        $scope.supportedJavaTypes = LegacyUtils.mkOptions(LegacyUtils.javaBuiltInTypes);
 
         $scope.sortDirections = [
             {value: true, label: 'ASC'},
@@ -319,7 +317,7 @@ consoleModule.controller('domainsController', [
             const item = $scope.backupItem;
 
             if (item && item.keyType)
-                return $common.isJavaBuiltInClass(item.keyType);
+                return LegacyUtils.isJavaBuiltInClass(item.keyType);
 
             return false;
         };
@@ -331,7 +329,7 @@ consoleModule.controller('domainsController', [
         };
 
         $scope.selectSchema = function() {
-            if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedSchemas))
+            if (LegacyUtils.isDefined($scope.importDomain) && LegacyUtils.isDefined($scope.importDomain.displayedSchemas))
                 $scope.importDomain.allSchemasSelected = $scope.importDomain.displayedSchemas.length > 0 && _.every($scope.importDomain.displayedSchemas, 'use', true);
         };
 
@@ -344,7 +342,7 @@ consoleModule.controller('domainsController', [
         };
 
         $scope.selectTable = function() {
-            if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedTables))
+            if (LegacyUtils.isDefined($scope.importDomain) && LegacyUtils.isDefined($scope.importDomain.displayedTables))
                 $scope.importDomain.allTablesSelected = $scope.importDomain.displayedTables.length > 0 && _.every($scope.importDomain.displayedTables, 'use', true);
         };
 
@@ -378,9 +376,9 @@ consoleModule.controller('domainsController', [
          * Show import domain models modal.
          */
         $scope.showImportDomainModal = function() {
-            $table.tableReset();
+            LegacyTable.tableReset();
 
-            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
+            LegacyUtils.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
                 if ($scope.ui.inputForm.$dirty)
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
@@ -412,7 +410,7 @@ consoleModule.controller('domainsController', [
                         }
 
                         // Get available JDBC drivers via agent.
-                        $loading.start('importDomainFromDb');
+                        Loading.start('importDomainFromDb');
 
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
@@ -436,12 +434,12 @@ consoleModule.controller('domainsController', [
 
                                     $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                                    $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
+                                    LegacyUtils.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
                                         importDomainModal.$promise.then(() => {
                                             $scope.importDomain.action = 'connect';
                                             $scope.importDomain.tables = [];
 
-                                            $focus('jdbcUrl');
+                                            Focus.move('jdbcUrl');
                                         });
                                     });
                                 }
@@ -453,7 +451,7 @@ consoleModule.controller('domainsController', [
                             .finally(function() {
                                 $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
-                                $loading.finish('importDomainFromDb');
+                                Loading.finish('importDomainFromDb');
                             });
                     });
             });
@@ -466,7 +464,7 @@ consoleModule.controller('domainsController', [
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
-                    $loading.start('importDomainFromDb');
+                    Loading.start('importDomainFromDb');
 
                     if ($root.IgniteDemoMode)
                         return IgniteAgentMonitor.schemas($scope.demoConnection);
@@ -489,12 +487,8 @@ consoleModule.controller('domainsController', [
 
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                 })
-                .catch(function(errMsg) {
-                    $common.showError(errMsg);
-                })
-                .finally(function() {
-                    $loading.finish('importDomainFromDb');
-                });
+                .catch(Messages.showError)
+                .finally(() => Loading.finish('importDomainFromDb'));
         }
 
         const DFLT_PARTITIONED_CACHE = {
@@ -594,7 +588,7 @@ consoleModule.controller('domainsController', [
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_TABLES;
-                    $loading.start('importDomainFromDb');
+                    Loading.start('importDomainFromDb');
 
                     $scope.importDomain.allTablesSelected = false;
 
@@ -621,7 +615,7 @@ consoleModule.controller('domainsController', [
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.tbl;
                         tbl.edit = false;
-                        tbl.use = $common.isDefined(_.find(tbl.cols, function(col) {
+                        tbl.use = LegacyUtils.isDefined(_.find(tbl.cols, function(col) {
                             return col.key;
                         }));
                     });
@@ -630,12 +624,8 @@ consoleModule.controller('domainsController', [
                     $scope.importDomain.tables = tables;
                     $scope.importDomain.info = INFO_SELECT_TABLES;
                 })
-                .catch(function(errMsg) {
-                    $common.showError(errMsg);
-                })
-                .finally(function() {
-                    $loading.finish('importDomainFromDb');
-                });
+                .catch(Messages.showError)
+                .finally(() => Loading.finish('importDomainFromDb'));
         }
 
         $scope.applyDefaults = function() {
@@ -678,13 +668,13 @@ consoleModule.controller('domainsController', [
             $scope.importDomain.button = 'Save';
             $scope.importDomain.info = INFO_SELECT_OPTIONS;
 
-            $focus('domainPackageName');
+            Focus.move('domainPackageName');
         }
 
         function _saveBatch(batch) {
             if (batch && batch.length > 0) {
                 $scope.importDomain.loadingOptions = SAVING_DOMAINS;
-                $loading.start('importDomainFromDb');
+                Loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
                     .success(function(savedBatch) {
@@ -717,17 +707,15 @@ consoleModule.controller('domainsController', [
 
                         $scope.selectItem(lastItem);
 
-                        $common.showInfo('Domain models imported from database.');
+                        Messages.showInfo('Domain models imported from database.');
 
                         $scope.ui.activePanels = [0, 1, 2];
 
                         $scope.ui.showValid = true;
                     })
-                    .error(function(errMsg) {
-                        $common.showError(errMsg);
-                    })
-                    .finally(function() {
-                        $loading.finish('importDomainFromDb');
+                    .error(Messages.showError)
+                    .finally(() => {
+                        Loading.finish('importDomainFromDb');
 
                         importDomainModal.hide();
                     });
@@ -737,10 +725,10 @@ consoleModule.controller('domainsController', [
         }
 
         function _saveDomainModel() {
-            if ($common.isEmptyString($scope.ui.packageName))
-                return $common.showPopoverMessage(null, null, 'domainPackageName', 'Package could not be empty');
+            if (LegacyUtils.isEmptyString($scope.ui.packageName))
+                return LegacyUtils.showPopoverMessage(null, null, 'domainPackageName', 'Package could not be empty');
 
-            if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'domainPackageName', true))
+            if (!LegacyUtils.isValidJavaClass('Package', $scope.ui.packageName, false, 'domainPackageName', true))
                 return false;
 
             const batch = [];
@@ -787,7 +775,7 @@ consoleModule.controller('domainsController', [
 
                     _.forEach(table.cols, function(col) {
                         const colName = col.name;
-                        const jdbcType = $common.findJdbcType(col.type);
+                        const jdbcType = LegacyUtils.findJdbcType(col.type);
                         const nullable = col.nullable;
 
                         qryFields.push(queryField(colName, jdbcType));
@@ -835,7 +823,7 @@ consoleModule.controller('domainsController', [
                         caches: []
                     };
 
-                    if ($common.isDefined(domainFound)) {
+                    if (LegacyUtils.isDefined(domainFound)) {
                         newDomain._id = domainFound._id;
                         newDomain.caches = domainFound.caches;
                         newDomain.confirm = true;
@@ -894,7 +882,11 @@ consoleModule.controller('domainsController', [
                         if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
                             const dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
-                            newCache.cacheStoreFactory = {kind: 'CacheJdbcPojoStoreFactory', CacheJdbcPojoStoreFactory: {dataSourceBean: 'ds' + dialect, dialect}};
+                            newCache.cacheStoreFactory = {
+                                kind: 'CacheJdbcPojoStoreFactory',
+                                CacheJdbcPojoStoreFactory: {dataSourceBean: 'ds' + dialect, dialect},
+                                CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
+                            };
                         }
 
                         if (!newCache.readThrough && !newCache.writeThrough) {
@@ -910,7 +902,7 @@ consoleModule.controller('domainsController', [
                         if (!_.includes(checkedCaches, cacheId)) {
                             const cache = _.find($scope.caches, {value: cacheId}).cache;
 
-                            const change = $common.autoCacheStoreConfiguration(cache, [newDomain]);
+                            const change = LegacyUtils.autoCacheStoreConfiguration(cache, [newDomain]);
 
                             if (change)
                                 newDomain.cacheStoreChanges = [{cacheId, change}];
@@ -941,9 +933,9 @@ consoleModule.controller('domainsController', [
 
             function checkOverwrite() {
                 if (itemsToConfirm.length > 0) {
-                    $confirmBatch.confirm(overwriteMessage, itemsToConfirm)
+                    ConfirmBatch.confirm(overwriteMessage, itemsToConfirm)
                         .then(() => _saveBatch(_.filter(batch, (item) => !item.skip)))
-                        .catch(() => $common.showError('Importing of domain models interrupted by user.'));
+                        .catch(() => Messages.showError('Importing of domain models interrupted by user.'));
                 }
                 else
                     _saveBatch(batch);
@@ -952,7 +944,7 @@ consoleModule.controller('domainsController', [
             if (containKey)
                 checkOverwrite();
             else {
-                $confirm.confirm('Some tables have no primary key.<br/>' +
+                Confirm.confirm('Some tables have no primary key.<br/>' +
                         'You will need to configure key type and key fields for such tables after import complete.')
                     .then(() => checkOverwrite());
             }
@@ -1067,7 +1059,7 @@ consoleModule.controller('domainsController', [
         $scope.importCommon = {};
 
         // When landing on the page, get domain models and show them.
-        $loading.start('loadingDomainModelsScreen');
+        Loading.start('loadingDomainModelsScreen');
 
         $http.post('/api/v1/configuration/domains/list')
             .success(function(data) {
@@ -1120,26 +1112,25 @@ consoleModule.controller('domainsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
                 }, true);
             })
-            .catch(function(errMsg) {
-                $common.showError(errMsg);
-            })
-            .finally(function() {
+            .catch(Messages.showError)
+            .finally(() => {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingDomainModelsScreen');
+
+                Loading.finish('loadingDomainModelsScreen');
             });
 
         const clearFormDefaults = (ngFormCtrl) => {
@@ -1155,7 +1146,7 @@ consoleModule.controller('domainsController', [
             function selectItem() {
                 clearFormDefaults($scope.ui.inputForm);
 
-                $table.tableReset();
+                LegacyTable.tableReset();
 
                 $scope.selectedItem = item;
 
@@ -1178,27 +1169,27 @@ consoleModule.controller('domainsController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
-                if ($common.isDefined($scope.backupItem) && !$common.isDefined($scope.backupItem.queryMetadata))
+                if (LegacyUtils.isDefined($scope.backupItem) && !LegacyUtils.isDefined($scope.backupItem.queryMetadata))
                     $scope.backupItem.queryMetadata = 'Configuration';
 
-                if ($common.isDefined($scope.selectedItem) && !$common.isDefined($scope.selectedItem.queryMetadata))
+                if (LegacyUtils.isDefined($scope.selectedItem) && !LegacyUtils.isDefined($scope.selectedItem.queryMetadata))
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
-                if ($common.getQueryVariable('new'))
+                if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.domains');
             }
 
-            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, selectItem);
+            LegacyUtils.confirmUnsavedChanges($scope.ui.inputForm.$dirty, selectItem);
         };
 
         // Add new domain model.
         $scope.createItem = function(cacheId) {
             if ($scope.tableReset(true)) {
                 $timeout(() => {
-                    $common.ensureActivePanel($scope.ui, 'query');
-                    $common.ensureActivePanel($scope.ui, 'general', 'keyType');
+                    LegacyUtils.ensureActivePanel($scope.ui, 'query');
+                    LegacyUtils.ensureActivePanel($scope.ui, 'general', 'keyType');
                 });
 
                 $scope.selectItem(null, prepareNewItem(cacheId));
@@ -1206,7 +1197,7 @@ consoleModule.controller('domainsController', [
         };
 
         function checkQueryConfiguration(item) {
-            if (item.queryMetadata === 'Configuration' && $common.domainForQueryConfigured(item)) {
+            if (item.queryMetadata === 'Configuration' && LegacyUtils.domainForQueryConfigured(item)) {
                 if (_.isEmpty(item.fields))
                     return showPopoverMessage($scope.ui, 'query', 'queryFields', 'Query fields should not be empty');
 
@@ -1225,17 +1216,17 @@ consoleModule.controller('domainsController', [
         }
 
         function checkStoreConfiguration(item) {
-            if ($common.domainForStoreConfigured(item)) {
-                if ($common.isEmptyString(item.databaseSchema))
+            if (LegacyUtils.domainForStoreConfigured(item)) {
+                if (LegacyUtils.isEmptyString(item.databaseSchema))
                     return showPopoverMessage($scope.ui, 'store', 'databaseSchema', 'Database schema should not be empty');
 
-                if ($common.isEmptyString(item.databaseTable))
+                if (LegacyUtils.isEmptyString(item.databaseTable))
                     return showPopoverMessage($scope.ui, 'store', 'databaseTable', 'Database table should not be empty');
 
                 if (_.isEmpty(item.keyFields))
                     return showPopoverMessage($scope.ui, 'store', 'keyFields', 'Key fields are not specified');
 
-                if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
+                if (LegacyUtils.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
                     return showPopoverMessage($scope.ui, 'store', 'keyFields', 'Only one field should be specified in case when key type is a Java built-in type');
 
                 if (_.isEmpty(item.valueFields))
@@ -1247,7 +1238,7 @@ consoleModule.controller('domainsController', [
 
         // Check domain model logical consistency.
         function validate(item) {
-            if (!$common.checkFieldValidators($scope.ui))
+            if (!LegacyUtils.checkFieldValidators($scope.ui))
                 return false;
 
             if (!checkQueryConfiguration(item))
@@ -1256,7 +1247,7 @@ consoleModule.controller('domainsController', [
             if (!checkStoreConfiguration(item))
                 return false;
 
-            if (!$common.domainForStoreConfigured(item) && !$common.domainForQueryConfigured(item) && item.queryMetadata === 'Configuration')
+            if (!LegacyUtils.domainForStoreConfigured(item) && !LegacyUtils.domainForQueryConfigured(item) && item.queryMetadata === 'Configuration')
                 return showPopoverMessage($scope.ui, 'query', 'query-title', 'SQL query domain model should be configured');
 
             return true;
@@ -1272,8 +1263,8 @@ consoleModule.controller('domainsController', [
 
         // Save domain models into database.
         function save(item) {
-            const qry = $common.domainForQueryConfigured(item);
-            const str = $common.domainForStoreConfigured(item);
+            const qry = LegacyUtils.domainForQueryConfigured(item);
+            const str = LegacyUtils.domainForStoreConfigured(item);
 
             item.kind = 'query';
 
@@ -1306,13 +1297,11 @@ consoleModule.controller('domainsController', [
 
                     $scope.selectItem(savedMeta);
 
-                    $common.showInfo('Domain model "' + item.valueType + '" saved.');
+                    Messages.showInfo('Domain model "' + item.valueType + '" saved.');
 
                     _checkShowValidPresentation();
                 })
-                .error(function(errMsg) {
-                    $common.showError(errMsg);
-                });
+                .error(Messages.showError);
         }
 
         // Save domain model.
@@ -1325,7 +1314,7 @@ consoleModule.controller('domainsController', [
                 _.forEach(item.caches, function(cacheId) {
                     const cache = _.find($scope.caches, {value: cacheId}).cache;
 
-                    const change = $common.autoCacheStoreConfiguration(cache, [item]);
+                    const change = LegacyUtils.autoCacheStoreConfiguration(cache, [item]);
 
                     if (change)
                         item.cacheStoreChanges.push({cacheId, change});
@@ -1343,13 +1332,13 @@ consoleModule.controller('domainsController', [
         }
 
         function _newNameIsValidJavaClass(newName) {
-            return $common.isValidJavaClass('New name for value type', newName, false, 'copy-new-name');
+            return LegacyUtils.isValidJavaClass('New name for value type', newName, false, 'copy-new-name');
         }
 
         // Save domain model with new name.
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
+                Clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -1362,17 +1351,17 @@ consoleModule.controller('domainsController', [
 
         // Remove domain model from db.
         $scope.removeItem = function() {
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             const selectedItem = $scope.selectedItem;
 
-            $confirm.confirm('Are you sure you want to remove domain model: "' + selectedItem.valueType + '"?')
+            Confirm.confirm('Are you sure you want to remove domain model: "' + selectedItem.valueType + '"?')
                 .then(function() {
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/domains/remove', {_id})
                         .success(function() {
-                            $common.showInfo('Domain model has been removed: ' + selectedItem.valueType);
+                            Messages.showInfo('Domain model has been removed: ' + selectedItem.valueType);
 
                             const domains = $scope.domains;
 
@@ -1395,21 +1384,19 @@ consoleModule.controller('domainsController', [
 
                             _checkShowValidPresentation();
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         // Remove all domain models from db.
         $scope.removeAllItems = function() {
-            $table.tableReset();
+            LegacyTable.tableReset();
 
-            $confirm.confirm('Are you sure you want to remove all domain models?')
+            Confirm.confirm('Are you sure you want to remove all domain models?')
                 .then(function() {
                     $http.post('/api/v1/configuration/domains/remove/all')
                         .success(function() {
-                            $common.showInfo('All domain models have been removed');
+                            Messages.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
 
@@ -1419,9 +1406,7 @@ consoleModule.controller('domainsController', [
                             $scope.backupItem = emptyDomain;
                             $scope.ui.showValid = true;
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
@@ -1432,7 +1417,7 @@ consoleModule.controller('domainsController', [
 
             let idx = -1;
 
-            if ($common.isDefined($scope.selectedItem)) {
+            if (LegacyUtils.isDefined($scope.selectedItem)) {
                 idx = _.findIndex(validFilter($scope.domains, $scope.ui.showValid, true), function(domain) {
                     return domain._id === $scope.selectedItem._id;
                 });
@@ -1458,23 +1443,23 @@ consoleModule.controller('domainsController', [
         $scope.tablePairValid = function(item, field, index) {
             const pairField = pairFields[field.model];
 
-            const pairValue = $table.tablePairValue(field, index);
+            const pairValue = LegacyTable.tablePairValue(field, index);
 
             if (pairField) {
                 const model = item[field.model];
 
-                if ($common.isDefined(model)) {
+                if (LegacyUtils.isDefined(model)) {
                     const idx = _.findIndex(model, function(pair) {
                         return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                     });
 
                     // Found duplicate by key.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                        return showPopoverMessage($scope.ui, 'query', LegacyTable.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                 }
 
-                if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query'))
-                    return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
+                if (pairField.classValidation && !LegacyUtils.isValidJavaClass(pairField.msg, pairValue.value, true, LegacyTable.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query'))
+                    return LegacyTable.tableFocusInvalidField(index, 'Value' + pairField.id);
             }
 
             return true;
@@ -1497,10 +1482,10 @@ consoleModule.controller('domainsController', [
         $scope.tableDbFieldSaveVisible = function(field, index) {
             const dbFieldValue = tableDbFieldValue(field, index);
 
-            return $common.isDefined(dbFieldValue.databaseFieldType) &&
-                $common.isDefined(dbFieldValue.javaFieldType) &&
-                !$common.isEmptyString(dbFieldValue.databaseFieldName) &&
-                !$common.isEmptyString(dbFieldValue.javaFieldName);
+            return LegacyUtils.isDefined(dbFieldValue.databaseFieldType) &&
+                LegacyUtils.isDefined(dbFieldValue.javaFieldType) &&
+                !LegacyUtils.isEmptyString(dbFieldValue.databaseFieldName) &&
+                !LegacyUtils.isEmptyString(dbFieldValue.javaFieldName);
         };
 
         const dbFieldTables = {
@@ -1518,17 +1503,17 @@ consoleModule.controller('domainsController', [
 
                 let model = item[field.model];
 
-                if (!$common.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaFieldName, $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id)))
+                if (!LegacyUtils.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaFieldName, LegacyTable.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id)))
                     return false;
 
-                if ($common.isDefined(model)) {
+                if (LegacyUtils.isDefined(model)) {
                     let idx = _.findIndex(model, function(dbMeta) {
                         return dbMeta.databaseFieldName === dbFieldValue.databaseFieldName;
                     });
 
                     // Found duplicate.
                     if (idx >= 0 && index !== idx)
-                        return showPopoverMessage($scope.ui, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
+                        return showPopoverMessage($scope.ui, 'store', LegacyTable.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
 
                     idx = _.findIndex(model, function(dbMeta) {
                         return dbMeta.javaFieldName === dbFieldValue.javaFieldName;
@@ -1536,7 +1521,7 @@ consoleModule.controller('domainsController', [
 
                     // Found duplicate.
                     if (idx >= 0 && index !== idx)
-                        return showPopoverMessage($scope.ui, 'store', $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
+                        return showPopoverMessage($scope.ui, 'store', LegacyTable.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
 
                     if (index < 0)
                         model.push(dbFieldValue);
@@ -1557,11 +1542,11 @@ consoleModule.controller('domainsController', [
 
                 if (!stopEdit) {
                     if (index < 0)
-                        $table.tableNewItem(field);
+                        LegacyTable.tableNewItem(field);
                     else if (index < model.length - 1)
-                        $table.tableStartEdit(item, field, index + 1);
+                        LegacyTable.tableStartEdit(item, field, index + 1);
                     else
-                        $table.tableNewItem(field);
+                        LegacyTable.tableNewItem(field);
                 }
 
                 return true;
@@ -1579,7 +1564,7 @@ consoleModule.controller('domainsController', [
         }
 
         $scope.tableIndexSaveVisible = function(field, index) {
-            return !$common.isEmptyString(tableIndexName(field, index)) && $common.isDefined(tableIndexType(field, index));
+            return !LegacyUtils.isEmptyString(tableIndexName(field, index)) && LegacyUtils.isDefined(tableIndexType(field, index));
         };
 
         $scope.tableIndexSave = function(field, curIdx, stopEdit) {
@@ -1590,17 +1575,17 @@ consoleModule.controller('domainsController', [
 
             const indexes = item.indexes;
 
-            if ($common.isDefined(indexes)) {
+            if (LegacyUtils.isDefined(indexes)) {
                 const idx = _.findIndex(indexes, function(index) {
                     return index.name === indexName;
                 });
 
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx)
-                    return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
+                    return showPopoverMessage($scope.ui, 'query', LegacyTable.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
             }
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             if (curIdx < 0) {
                 const newIndex = {name: indexName, indexType};
@@ -1635,8 +1620,8 @@ consoleModule.controller('domainsController', [
             if ($scope.tableReset(true)) {
                 const index = $scope.backupItem.indexes[indexIdx];
 
-                $table.tableState(field, -1, 'table-index-fields');
-                $table.tableFocusInvalidField(-1, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx);
+                LegacyTable.tableState(field, -1, 'table-index-fields');
+                LegacyTable.tableFocusInvalidField(-1, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx);
 
                 field.newFieldName = null;
                 field.newDirection = true;
@@ -1651,7 +1636,7 @@ consoleModule.controller('domainsController', [
                 const index = indexes[itemIndex];
 
                 if (index)
-                    return $table.tableNewItemActive({model: 'table-index-fields'}) && field.indexIdx === itemIndex;
+                    return LegacyTable.tableNewItemActive({model: 'table-index-fields'}) && field.indexIdx === itemIndex;
             }
 
             return false;
@@ -1664,7 +1649,7 @@ consoleModule.controller('domainsController', [
                 const index = indexes[itemIndex];
 
                 if (index)
-                    return $table.tableEditing({model: 'table-index-fields'}, curIdx) && field.indexIdx === itemIndex;
+                    return LegacyTable.tableEditing({model: 'table-index-fields'}, curIdx) && field.indexIdx === itemIndex;
             }
 
             return false;
@@ -1684,7 +1669,7 @@ consoleModule.controller('domainsController', [
             if ($scope.tableReset(true)) {
                 const index = $scope.backupItem.indexes[indexIdx];
 
-                $table.tableState(field, curIdx, 'table-index-fields');
+                LegacyTable.tableState(field, curIdx, 'table-index-fields');
 
                 const indexItem = index.fields[curIdx];
 
@@ -1692,12 +1677,12 @@ consoleModule.controller('domainsController', [
                 field.curDirection = indexItem.direction;
                 field.indexIdx = indexIdx;
 
-                $focus('curFieldName' + (index.indexType === 'SORTED' ? 'S' : '') + field.indexIdx + '-' + curIdx);
+                Focus.move('curFieldName' + (index.indexType === 'SORTED' ? 'S' : '') + field.indexIdx + '-' + curIdx);
             }
         };
 
         $scope.tableIndexItemSaveVisible = function(field, index) {
-            return !$common.isEmptyString(tableIndexItemValue(field, index).name);
+            return !LegacyUtils.isEmptyString(tableIndexItemValue(field, index).name);
         };
 
         $scope.tableIndexItemSave = function(field, indexIdx, curIdx, stopEdit) {
@@ -1707,15 +1692,15 @@ consoleModule.controller('domainsController', [
 
             const fields = index.fields;
 
-            if ($common.isDefined(fields)) {
+            if (LegacyUtils.isDefined(fields)) {
                 const idx = _.findIndex(fields, (fld) => fld.name === indexItemValue.name);
 
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx)
-                    return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
+                    return showPopoverMessage($scope.ui, 'query', LegacyTable.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
             }
 
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             field.indexIdx = -1;
 
@@ -1743,19 +1728,19 @@ consoleModule.controller('domainsController', [
         };
 
         $scope.tableRemoveIndexItem = function(index, curIdx) {
-            $table.tableReset();
+            LegacyTable.tableReset();
 
             index.fields.splice(curIdx, 1);
         };
 
         $scope.resetAll = function() {
-            $table.tableReset();
+            LegacyTable.tableReset();
 
-            $confirm.confirm('Are you sure you want to undo all changes for current domain model?')
+            Confirm.confirm('Are you sure you want to undo all changes for current domain model?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });
         };
-    }]
-);
+    }
+]];

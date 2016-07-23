@@ -6703,6 +6703,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Swaps two objects in array.
+     *
+     * @param arr Array.
+     * @param a Index of the first object.
+     * @param b Index of the second object.
+     */
+    public static void swap(Object[] arr, int a, int b) {
+        Object tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+
+    /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
      * <p/>
@@ -7453,6 +7466,27 @@ public abstract class IgniteUtils {
     public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Tries to acquire a permit from provided semaphore during {@code timeout}.
+     *
+     * @param sem Semaphore.
+     * @param timeout The maximum time to wait.
+     * @param unit The unit of the {@code time} argument.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @return {@code True} if acquires a permit, {@code false} another.
+     */
+    public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
+        throws IgniteInterruptedCheckedException {
+        try {
+            return sem.tryAcquire(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

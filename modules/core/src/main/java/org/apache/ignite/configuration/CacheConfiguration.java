@@ -2299,6 +2299,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
+                if (mtd.isBridge())
+                    continue;
+
                 QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 

@@ -197,15 +197,21 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public int partition(Object key) {
         GridAffinityAssignmentCache aff0 = aff;
 
-        if (key instanceof KeyCacheObject && ((KeyCacheObject)key).partition() != -1)
-            return ((KeyCacheObject)key).partition();
-
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
+        boolean keyObj = key instanceof KeyCacheObject;
+
+        if (keyObj) {
+            int part = ((KeyCacheObject)key).partition();
+
+            if (part != -1)
+                return part;
+        }
+
         int p = affFunction.partition(affinityKey(key));
 
-        if (key instanceof KeyCacheObject)
+        if (keyObj)
             ((KeyCacheObject)key).partition(p);
 
         return p;
@@ -218,7 +224,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @return Affinity key.
      */
-    private Object affinityKey(Object key) {
+    public Object affinityKey(Object key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 

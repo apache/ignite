@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './swap.jade!';
+import templateUrl from './swap.jade';
 
 export default ['igniteConfigurationClustersSwap', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
@@ -31,8 +27,14 @@ import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Hadoop processor.
@@ -85,27 +87,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             c.start(hctx);
 
         hadoop = new HadoopImpl(this);
-    }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HadoopProcessor.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        if (hctx == null)
-            return;
-
-        List<HadoopComponent> components = hctx.components();
-
-        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
-            HadoopComponent c = it.previous();
-
-            c.stop(cancel);
-        }
+        ctx.addNodeAttribute(HadoopAttributes.NAME, new HadoopAttributes(cfg));
     }
 
     /** {@inheritDoc} */
@@ -132,6 +115,22 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             HadoopComponent c = it.previous();
 
             c.onKernalStop(cancel);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        if (hctx == null)
+            return;
+
+        List<HadoopComponent> components = hctx.components();
+
+        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
+            HadoopComponent c = it.previous();
+
+            c.stop(cancel);
         }
     }
 
@@ -192,14 +191,13 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     @Override public void validateEnvironment() throws IgniteCheckedException {
         // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
         try {
-            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
+            HadoopLocations loc = HadoopClasspathUtils.locations();
 
-            if (loc.home() != null)
-                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
+            if (!F.isEmpty(loc.home()))
+                U.quietAndInfo(log, HadoopClasspathUtils.HOME + " is set to " + loc.home());
 
-            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
-            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
-            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
+            U.quietAndInfo(log, "Resolved Hadoop classpath locations: " + loc.common() + ", " + loc.hdfs() + ", " +
+                loc.mapred());
         }
         catch (IOException ioe) {
             throw new IgniteCheckedException(ioe.getMessage(), ioe);
@@ -216,5 +214,10 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
             cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HadoopProcessor.class, this);
     }
 }

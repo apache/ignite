@@ -245,7 +245,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         try {
             assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
-                ", exchId=" + exchId + ']';
+                ", exchId=" + exchId +
+                ", fut=" + exchFut + ']';
 
             this.stopping = stopping;
 
@@ -327,11 +328,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         assert topVer.equals(exchFut.topologyVersion()) :
             "Invalid topology [topVer=" + topVer +
                 ", cache=" + cctx.name() +
-                ", futVer=" + exchFut.topologyVersion() + ']';
+                ", futVer=" + exchFut.topologyVersion() +
+                ", fut=" + exchFut + ']';
         assert cctx.affinity().affinityTopologyVersion().equals(exchFut.topologyVersion()) :
             "Invalid affinity [topVer=" + cctx.affinity().affinityTopologyVersion() +
                 ", cache=" + cctx.name() +
-                ", futVer=" + exchFut.topologyVersion() + ']';
+                ", futVer=" + exchFut.topologyVersion() +
+                ", fut=" + exchFut + ']';
 
         List<List<ClusterNode>> aff = cctx.affinity().assignments(exchFut.topologyVersion());
 

@@ -17,6 +17,20 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsIgniteMock;
+import org.apache.ignite.internal.processors.igfs.IgfsMock;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,40 +38,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.IgniteSpringBean;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
-import org.apache.ignite.igfs.IgfsBlockLocation;
-import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMetrics;
-import org.apache.ignite.igfs.IgfsOutputStream;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.IgfsPathSummary;
-import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
-import org.apache.ignite.igfs.mapreduce.IgfsTask;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsContext;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsInputStreamAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsLocalMetrics;
-import org.apache.ignite.internal.processors.igfs.IgfsPaths;
-import org.apache.ignite.internal.processors.igfs.IgfsStatus;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.GridTestNode;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -90,11 +70,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     /** */
     private static final String INVALID_HOST_3 = "invalid_host3";
 
-    /** Mocked Grid. */
-    private static final MockIgnite GRID = new MockIgnite();
-
     /** Mocked IGFS. */
     private static final IgniteFileSystem IGFS = new MockIgfs();
+
+    /** Mocked Grid. */
+    private static final IgfsIgniteMock GRID = new IgfsIgniteMock(null, IGFS);
 
     /** Planner. */
     private static final HadoopMapReducePlanner PLANNER = new IgniteHadoopMapReducePlanner();
@@ -109,15 +89,15 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     private static final ThreadLocal<HadoopMapReducePlan> PLAN = new ThreadLocal<>();
 
     /**
-     *
+     * Static initializer.
      */
     static {
-        GridTestUtils.setFieldValue(PLANNER, "ignite", GRID);
+        GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "ignite", GRID);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.setFieldValue(PLANNER, "log", log());
+        GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "log", log());
 
         BLOCK_MAP.clear();
         PROXY_MAP.clear();
@@ -445,7 +425,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         top.add(node2);
         top.add(node3);
 
-        HadoopMapReducePlan plan = PLANNER.preparePlan(new MockJob(reducers, splitList), top, null);
+        HadoopMapReducePlan plan = PLANNER.preparePlan(new HadoopPlannerMockJob(splitList, reducers), top, null);
 
         PLAN.set(plan);
 
@@ -607,80 +587,16 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     }
 
     /**
-     * Mocked job.
-     */
-    private static class MockJob implements HadoopJob {
-        /** Reducers count. */
-        private final int reducers;
-
-        /** */
-        private Collection<HadoopInputSplit> splitList;
-
-        /**
-         * Constructor.
-         *
-         * @param reducers Reducers count.
-         * @param splitList Splits.
-         */
-        private MockJob(int reducers, Collection<HadoopInputSplit> splitList) {
-            this.reducers = reducers;
-            this.splitList = splitList;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HadoopJobId id() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HadoopJobInfo info() {
-            return new HadoopDefaultJobInfo() {
-                @Override public int reducers() {
-                    return reducers;
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
-            return splitList;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initialize(boolean external, UUID nodeId) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dispose(boolean external) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cleanupStagingDirectory() {
-            // No-op.
-        }
-    }
-
-    /**
      * Mocked IGFS.
      */
-    private static class MockIgfs implements IgfsEx {
+    private static class MockIgfs extends IgfsMock {
+        /**
+         * Constructor.
+         */
+        public MockIgfs() {
+            super("igfs");
+        }
+
         /** {@inheritDoc} */
         @Override public boolean isProxy(URI path) {
             return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
@@ -692,331 +608,8 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-            long maxLen) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsContext context() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsPaths proxyPaths() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean globalSampling() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsLocalMetrics localMetrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long groupBlockSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String clientLogDirectory() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clientLogDirectory(String logDir) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean evictExclude(IgfsPath path, boolean primary) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String name() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileSystemConfiguration configuration() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgfsFile info(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsPathSummary summary(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rename(IgfsPath src, IgfsPath dest) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean delete(IgfsPath path, boolean recursive) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mkdirs(IgfsPath path) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long usedSpaceSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
-            long blockSize, @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
-            @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
-            @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsMetrics metrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resetMetrics() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long size(IgfsPath path) {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void format() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-            Collection<IgfsPath> paths, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-            Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
-            long maxRangeLen, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid nextAffinityKey() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFileSystem withAsync() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsSecondaryFileSystem asSecondary() {
-            return null;
-        }
-    }
-
-    /**
-     * Mocked Grid.
-     */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
-        /** {@inheritDoc} */
-        @Override public IgniteClusterEx cluster() {
-            return (IgniteClusterEx)super.cluster();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFileSystem igfsx(String name) {
-            assert F.eq("igfs", name);
-
-            return IGFS;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Hadoop hadoop() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean eventUserRecordable(int type) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean allEventsUserRecordable(int[] types) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isJmxRemoteEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRestartEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterNode localNode() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String latestVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridKernalContext context() {
-            return null;
         }
     }
 }
