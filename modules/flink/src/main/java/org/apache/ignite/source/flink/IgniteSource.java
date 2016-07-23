@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Apache Flink Ignite source implemented as a SourceFunction.
+ * Apache Flink Ignite source implemented as a RichParallelSourceFunction.
  */
 public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** Serial version uid. */
@@ -48,23 +48,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSource.class);
 
-    /** Event buffer default size. */
-    private static final int DFLT_EVT_BUFFER_SIZE = 100000;
-
-    /** Event buffer size. */
-    private int evtBufSize = DFLT_EVT_BUFFER_SIZE;
-
-    /**
-     * Sets Event Buffer Size.
-     *
-     * @param evtBufSize Event Buffer Size.
-     */
-    public void setEvtBufSize(int evtBufSize) {
-        this.evtBufSize = evtBufSize;
-    }
-
     /** Event buffer. */
-    private BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>(evtBufSize);
+    private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
 
     /** Default max number of events taken from the buffer at once. */
     private static final int DFLT_EVT_BATCH_SIZE = 100;
@@ -102,6 +87,9 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** Local listener. */
     private TaskLocalListener locLsnr = new TaskLocalListener();
 
+    /** User-defined filter. */
+   private static IgnitePredicate<CacheEvent> filter;
+
     /** Flag for stopped state. */
     private static volatile boolean stopped = true;
 
@@ -124,14 +112,28 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /**
      * Starts Ignite source.
+     * @param filterCls User defined filter class name.
      * @param cacheEvents Converts comma-delimited cache events strings to Ignite internal representation.
      *
      * @throws IgniteException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start(String cacheEvents) throws Exception {
+    public void start(String filterCls, String cacheEvents) throws Exception {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
+
+        if (filterCls != null && !filterCls.isEmpty()) {
+            try {
+                Class<? extends IgnitePredicate<CacheEvent>> clazz =
+                        (Class<? extends IgnitePredicate<CacheEvent>>)Class.forName(filterCls);
+
+                filter = clazz.newInstance();
+            }
+            catch (Exception e) {
+                log.error("Failed to instantiate the provided filter! " +
+                        "User-enabled filtering is ignored!", e);
+            }
+        }
 
         Ignite ignite = IgniteSource.IgniteContext.getIgnite();
 
@@ -284,8 +286,9 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
         @Override public boolean apply(CacheEvent evt) {
             Affinity<Object> affinity = ignite.affinity(cacheName);
 
-                // Process this event. Ignored on backups.
-            return affinity.isPrimary(ignite.cluster().localNode(), evt.key());
+            // Process this event. Ignored on backups.
+            return affinity.isPrimary(ignite.cluster().localNode(), evt.key()) &&
+                !(filter != null && filter.apply(evt));
         }
     }
 
