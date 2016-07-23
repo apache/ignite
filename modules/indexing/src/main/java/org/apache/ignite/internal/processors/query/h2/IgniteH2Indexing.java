@@ -1015,6 +1015,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (gridStmt.rows().size() == 1) {
             IgniteBiTuple t = rowToKeyValue(desc, cols, gridStmt.rows().get(0), params, keyColIdx);
             cctx.cache().put(t.getKey(), t.getValue());
+            return 1;
         }
         else {
             Map<Object, Object> rows = new LinkedHashMap<>(gridStmt.rows().size());
@@ -1023,9 +1024,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 rows.put(t.getKey(), t.getValue());
             }
             cctx.cache().putAll(rows);
+            return rows.size();
         }
-
-        return 0;
     }
 
     /**
