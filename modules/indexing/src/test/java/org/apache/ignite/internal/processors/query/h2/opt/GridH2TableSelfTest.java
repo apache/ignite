@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
 import org.h2.index.Index;
@@ -95,9 +96,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
-                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, id));
-                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, x, t));
-                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, 0, 1, str));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
+                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
                 return idxs;
             }
@@ -120,7 +121,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @return New row.
      */
     private GridH2Row row(UUID id, long t, String str, long x) {
-        return new GridH2Row(ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
+        return GridH2RowFactory.create(
+            ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
             ValueTimestamp.get(new Timestamp(t)),
             ValueString.get(str),
             ValueLong.get(x));
