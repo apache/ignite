@@ -475,7 +475,7 @@ public class GridSqlQueryParser {
             res.rows(rows);
         }
         else {
-            res.rows(Collections.emptyList());
+            res.rows(Collections.<GridSqlElement[]>emptyList());
             res.query(parse(MERGE_QUERY.get(merge), null));
         }
 
@@ -522,7 +522,7 @@ public class GridSqlQueryParser {
             res.rows(rows);
         }
         else {
-            res.rows(Collections.emptyList());
+            res.rows(Collections.<GridSqlElement[]>emptyList());
             res.query(parse(INSERT_QUERY.get(insert), null));
         }
 
