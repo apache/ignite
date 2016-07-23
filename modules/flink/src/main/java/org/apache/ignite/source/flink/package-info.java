@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
  * IgniteSource -- source connector integration with Apache Flink.
  */
 package org.apache.ignite.source.flink;

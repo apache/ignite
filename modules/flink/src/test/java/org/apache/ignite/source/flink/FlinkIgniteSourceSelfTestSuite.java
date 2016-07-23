@@ -23,7 +23,6 @@ import junit.framework.TestSuite;
  * Apache Flink source tests.
  */
 public class FlinkIgniteSourceSelfTestSuite {
-
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

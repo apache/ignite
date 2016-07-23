@@ -18,7 +18,6 @@
 package org.apache.ignite.source.flink;
 
 
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -33,15 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests for {@link IgniteSource}.
  */
 public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
-
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
-
-    /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 10;
-
-    /** Streaming events for testing. */
-    private static final long DFLT_STREAMING_EVENT = 10;
 
     /** Ignite instance. */
     private Ignite ignite;
@@ -50,7 +42,9 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() { return 10_000;}
+    @Override protected long getTestTimeout() {
+        return 10_000;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -82,16 +76,21 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
-        IgniteSource igniteSource = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
+        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
 
-        igniteSource.start(10, 10, 10, "PUT");
+        igniteSrc.setEvtBatchSize(10);
 
-        DataStream<CacheEvent> stream = env.addSource(igniteSource);
+        igniteSrc.setEvtBufSize(10);
+
+        igniteSrc.start("PUT");
+
+        DataStream<CacheEvent> stream = env.addSource(igniteSrc);
 
         int cnt = 0;
 
         while (cnt < 10)  {
             cache.put(cnt, cnt);
+
             cnt++;
         }
 
@@ -100,15 +99,14 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         stream.print();
 
         stream.addSink(new SinkFunction<CacheEvent>() {
-            int sinkEventCounter = 0;
+            int sinkEvtCntr = 0;
 
-            @Override
-            public void invoke(CacheEvent cacheEvent) throws Exception {
-                sinkEventCounter++;
-                assertNotNull(cacheEvent.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvent.newValue().toString()) < 10);
-                if(sinkEventCounter == 10){
-                    igniteSource.stop();
+            @Override public void invoke(CacheEvent cacheEvt) throws Exception {
+                sinkEvtCntr++;
+                assertNotNull(cacheEvt.newValue().toString());
+                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
+                if(sinkEvtCntr == 10){
+                    igniteSrc.stop();
                 }
             }
         });
@@ -116,8 +114,11 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         try {
             env.execute();
         }
+        catch (Exception e){
+            log.error(">>> Unable to process stream due to exception.", e);
+        }
         finally {
-            igniteSource.stop();
+            igniteSrc.stop();
         }
     }
 }

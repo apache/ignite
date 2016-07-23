@@ -16,8 +16,17 @@
  */
 
 package org.apache.ignite.source.flink;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
-import org.apache.ignite.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
@@ -28,41 +37,70 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Apache Flink Ignite source implemented as a SourceFunction.
  */
 public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
-
+    /** Serial version uid. */
     private static final long serialVersionUID = 1L;
 
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSource.class);
 
+    /** Event buffer default size. */
+    private static final int DFLT_EVT_BUFFER_SIZE = 100000;
+
     /** Event buffer size. */
-    private static int evtBufSize = 100000;
+    private int evtBufSize = DFLT_EVT_BUFFER_SIZE;
+
+    /**
+     * Sets Event Buffer Size.
+     *
+     * @param evtBufSize Event Buffer Size.
+     */
+    public void setEvtBufSize(int evtBufSize) {
+        this.evtBufSize = evtBufSize;
+    }
 
     /** Event buffer. */
-    private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>(evtBufSize);
+    private BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>(evtBufSize);
+
+    /** Default max number of events taken from the buffer at once. */
+    private static final int DFLT_EVT_BATCH_SIZE = 100;
 
     /** Max number of events taken from the buffer at once. */
-    private static int evtBatchSize = 100;
+    private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
+
+    /**
+     * Sets Event Batch Size.
+     *
+     * @param evtBatchSize Event Batch Size.
+     */
+    public void setEvtBatchSize(int evtBatchSize) {
+        this.evtBatchSize = evtBatchSize;
+    }
+
+    /** Default number of milliseconds timeout for event buffer queue operation. */
+    private static final int DFLT_EVT_BUFFER_TIMEOUT = 10;
 
     /** Number of milliseconds timeout for event buffer queue operation. */
-    private static int evtBufferTimeout = 10;
+    private int evtBufferTimeout = DFLT_EVT_BUFFER_TIMEOUT;
+
+    /**
+     * Sets Event Buffer timeout.
+     *
+     * @param evtBufferTimeout Event Buffer timeout.
+     */
+    public void setEvtBufferTimeout(int evtBufferTimeout) {
+        this.evtBufferTimeout = evtBufferTimeout;
+    }
 
     /** Remote Listener id. */
     private static UUID rmtLsnrId;
 
     /** Local listener. */
-    private static TaskLocalListener locLsnr = new TaskLocalListener();
-
-    /** User-defined filter. */
-    private static IgnitePredicate<CacheEvent> filter;
+    private TaskLocalListener locLsnr = new TaskLocalListener();
 
     /** Flag for stopped state. */
     private static volatile boolean stopped = true;
@@ -72,24 +110,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /** Cache name. */
     private static String cacheName;
-
-    /**
-     * Gets the cache name.
-     *
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
-    }
-
-    /**
-     * Gets Ignite configuration file.
-     *
-     * @return Configuration file.
-     */
-    public String getIgniteConfigFile() {
-        return igniteCfgFile;
-    }
 
     /**
      * Default IgniteSource constructor.
@@ -104,28 +124,24 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /**
      * Starts Ignite source.
-     * @param evtBufSize Event buffer size for the Blocking Queue.
-     * @param evtBatchSize Event batch size to publish events.
      * @param cacheEvents Converts comma-delimited cache events strings to Ignite internal representation.
      *
      * @throws IgniteException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start(int evtBufSize, int evtBatchSize, int evtBufferTimeout, String cacheEvents) throws Exception {
+    public void start(String cacheEvents) throws Exception {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
-        this.evtBufSize = evtBufSize;
-        this.evtBatchSize = evtBatchSize;
-        this.evtBufferTimeout = evtBufferTimeout;
-
         Ignite ignite = IgniteSource.IgniteContext.getIgnite();
+
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName);
 
         try {
             int[] evts = cacheEvents(cacheEvents);
+
             rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                    .remoteListen(locLsnr, rmtLsnr, evts);
+                .remoteListen(locLsnr, rmtLsnr, evts);
         }
         catch (Exception e) {
             log.error("Failed to register event listener!", e);
@@ -153,7 +169,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         if (rmtLsnrId != null)
             ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                    .stopRemoteListen(rmtLsnrId);
+                 .stopRemoteListen(rmtLsnrId);
 
         rmtLsnrId = null;
 
@@ -165,8 +181,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
      *
      * @param ctx SourceContext.
      */
-    @Override
-    public void run(SourceContext<CacheEvent> ctx) {
+    @Override public void run(SourceContext<CacheEvent> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
 
         if (stopped)
@@ -190,8 +205,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
         return;
     }
 
-    @Override
-    public void cancel() {
+    /** {@inheritDoc} */
+    @Override public void cancel() {
         stopped = true;
     }
 
@@ -232,6 +247,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         /** Instance holder. */
         private static class Holder {
+            /** Ignite. */
             private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
         }
 
@@ -268,22 +284,15 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
         @Override public boolean apply(CacheEvent evt) {
             Affinity<Object> affinity = ignite.affinity(cacheName);
 
-            if (affinity.isPrimary(ignite.cluster().localNode(), evt.key())) {
                 // Process this event. Ignored on backups.
-                if (filter != null && filter.apply(evt))
-                    return false;
-
-                return true;
-            }
-
-            return false;
+            return affinity.isPrimary(ignite.cluster().localNode(), evt.key());
         }
     }
 
     /**
      * Local listener buffering cache events to be further sent to Flink.
      */
-    private static class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
+    private class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID id, CacheEvent evt) {
             try {
@@ -297,6 +306,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             return true;
         }
     }
+
     /** Cache events available for listening. */
     private enum CacheEvt {
         /** */

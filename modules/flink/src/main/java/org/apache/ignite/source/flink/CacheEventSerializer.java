@@ -31,7 +31,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  * Serializer based on {@link JdkMarshaller}.
  */
 public class CacheEventSerializer extends Serializer<CacheEvent> {
-
     /** Marshaller. */
     private static final Marshaller marsh = new JdkMarshaller();
 
@@ -44,16 +43,16 @@ public class CacheEventSerializer extends Serializer<CacheEvent> {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(Kryo kryo, Output output, CacheEvent cacheEvent) {
+    @Override public void write(Kryo kryo, Output output, CacheEvent cacheEvt) {
         try {
-            output.write(marsh.marshal(cacheEvent));
+            output.write(marsh.marshal(cacheEvt));
         } catch (IgniteCheckedException e) {
             throw new SerializationException("Failed to serialize cache event!", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEvent read(Kryo kryo, Input input, Class<CacheEvent> cacheEventClass) {
+    @Override public CacheEvent read(Kryo kryo, Input input, Class<CacheEvent> cacheEvtCls) {
         try {
             return marsh.unmarshal(input, getClass().getClassLoader());
         }
