@@ -1128,7 +1128,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 try {
                     req.login("admin", "admin");
                 } catch (Exception e) {
-                    X.printerrln("Login failed.",e.getStackTrace());
+                    X.printerrln("Login failed.", e.getStackTrace());
                 }
 
                 HttpSession session = req.getSession();
