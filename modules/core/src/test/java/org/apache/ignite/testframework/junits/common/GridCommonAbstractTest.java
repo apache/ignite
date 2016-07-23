@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -47,6 +48,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -529,7 +531,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
 
-                                Thread.sleep(200); // Busy wait.
+                                Thread.sleep(20); // Busy wait.
 
                                 continue;
                             }
@@ -1176,5 +1178,40 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 // Safe to retry right away.
             }
         }
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param key Counter.
+     * @param node Target node.
+     * @return Key.
+     */
+    protected final Integer keyForNode(Affinity<Object> aff, AtomicInteger key, ClusterNode node) {
+        for (int i = 0; i < 100_000; i++) {
+            Integer next = key.getAndIncrement();
+
+            if (aff.mapKeyToNode(next).equals(node))
+                return next;
+        }
+
+        fail("Failed to find key for node: " + node);
+
+        return null;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     * @return Query plan.
+     */
+    protected final String queryPlan(IgniteCache<?, ?> cache, SqlFieldsQuery qry) {
+        return (String)cache.query(new SqlFieldsQuery("explain " + qry.getSql())
+            .setArgs(qry.getArgs())
+            .setLocal(qry.isLocal())
+            .setCollocated(qry.isCollocated())
+            .setPageSize(qry.getPageSize())
+            .setDistributedJoins(qry.isDistributedJoins())
+            .setEnforceJoinOrder(qry.isEnforceJoinOrder()))
+            .getAll().get(0).get(0);
     }
 }

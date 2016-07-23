@@ -83,7 +83,7 @@ mixin td-ellipses-lbl(w, lbl)
                             .col-xs-8.col-sm-10.col-md-10
                                 i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')
                                 .input-tip
-                                    input.form-control(id='password' type='password' ng-model='selectedPreset.password' on-enter='importDomainNext()')
+                                    input.form-control(id='password' type='password' ng-model='selectedPreset.password' ignite-on-enter='importDomainNext()')
                         .settings-row
                             .checkbox
                                 label

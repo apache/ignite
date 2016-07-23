@@ -730,7 +730,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
      *
      */
     private static class PartitionSizeLongTask extends CacheTaskAdapter<Void, Void, Long> {
-
         /** Partition. */
         int partition;
 

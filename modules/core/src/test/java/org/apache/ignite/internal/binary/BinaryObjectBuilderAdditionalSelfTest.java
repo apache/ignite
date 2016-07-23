@@ -23,11 +23,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,6 +67,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
@@ -74,10 +79,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
-
         cacheCfg.setCacheMode(REPLICATED);
 
-        cfg.setCacheConfiguration(cacheCfg);
+        CacheConfiguration cacheCfg2 = new CacheConfiguration("partitioned");
+        cacheCfg2.setCacheMode(PARTITIONED);
+
+        cfg.setCacheConfiguration(cacheCfg, cacheCfg2);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -1356,6 +1363,33 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         List<?> resArr = (List<?>)res.foo;
 
         assertSame(((List<Object>)resArr.get(0)).get(0), resArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSameBinaryKey() throws Exception {
+        IgniteCache<BinaryObject, BinaryObject> replicatedCache =
+            jcache(0).withKeepBinary();
+
+        IgniteCache<BinaryObject, BinaryObject> partitionedCache =
+            jcache(0, "partitioned").withKeepBinary();
+
+        BinaryObjectBuilder keyBuilder = ignite(0).binary().builder("keyType")
+            .setField("F1", "V1").hashCode("V1".hashCode());
+
+        BinaryObjectBuilder valBuilder = ignite(0).binary().builder("valueType")
+            .setField("F2", "V2")
+            .setField("F3", "V3");
+
+        BinaryObject key = keyBuilder.build();
+        BinaryObject val = valBuilder.build();
+
+        replicatedCache.put(key, val);
+        partitionedCache.put(key, val);
+
+        assertNotNull(replicatedCache.get(key));
+        assertNotNull(partitionedCache.get(key));
     }
 
     /**

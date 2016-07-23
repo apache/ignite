@@ -94,7 +94,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -210,7 +209,7 @@ public final class IgfsImpl implements IgfsEx {
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        if (cfg.isInitializeDefaultPathModes()) {
+        if (cfg.isInitializeDefaultPathModes() && IgfsUtils.isDualMode(dfltMode)) {
             dfltModes.put("/ignite/primary", PRIMARY);
 
             if (secondaryFs != null) {
@@ -222,8 +221,8 @@ public final class IgfsImpl implements IgfsEx {
 
         cfgModes.putAll(dfltModes);
 
-        if (igfsCtx.configuration().getPathModes() != null) {
-            for (Map.Entry<String, IgfsMode> e : igfsCtx.configuration().getPathModes().entrySet()) {
+        if (cfg.getPathModes() != null) {
+            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet()) {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
@@ -249,7 +248,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        modeRslvr = new IgfsModeResolver(dfltMode, modes);
+        modeRslvr = new IgfsModeResolver(dfltMode, IgfsUtils.preparePathModes(dfltMode, modes));
 
         Object secondaryFsPayload = null;
 
@@ -578,6 +577,13 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgfsMode mode(IgfsPath path) {
+        A.notNull(path, "path");
+
+        return modeRslvr.resolveMode(path);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgfsPathSummary summary(final IgfsPath path) {
         A.notNull(path, "path");
 
@@ -620,7 +626,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     await(path);
 
@@ -671,8 +677,6 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(src);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
-
                 if (src.equals(dest))
                     return null; // Rename to itself is a no-op.
 
@@ -689,8 +693,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
-                if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode != PRIMARY) {
+                    assert IgfsUtils.isDualMode(mode); // PROXY mode explicit usage is forbidden.
 
                     await(src, dest);
 
@@ -721,9 +725,9 @@ public final class IgfsImpl implements IgfsEx {
                 if (IgfsPath.SLASH.equals(path.toString()))
                     return false;
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                IgfsMode mode = resolveMode(path);
 
-                boolean dual = childrenModes.contains(DUAL_SYNC) ||childrenModes.contains(DUAL_ASYNC);
+                boolean dual = IgfsUtils.isDualMode(mode);;
 
                 if (dual)
                     await(path);
@@ -767,7 +771,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (mode == PRIMARY)
                     meta.mkdirs(path, props0);
                 else {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);;
 
                     await(path);
 
@@ -794,11 +798,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
                 Collection<String> files = new HashSet<>();
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
 
                     try {
@@ -818,11 +820,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 if (fileId != null)
                     files.addAll(meta.directoryListing(fileId).keySet());
-                else if (mode == PRIMARY) {
-                    checkConflictWithPrimary(path);
-
+                else if (mode == PRIMARY)
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
-                }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
                     @Override public IgfsPath apply(String e) {
@@ -847,11 +846,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
                 Collection<IgfsFile> files = new HashSet<>();
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
 
                     try {
@@ -894,11 +891,8 @@ public final class IgfsImpl implements IgfsEx {
                         }
                     }
                 }
-                else if (mode == PRIMARY) {
-                    checkConflictWithPrimary(path);
-
+                else if (mode == PRIMARY)
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
-                }
 
                 return files;
             }
@@ -937,7 +931,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
@@ -951,11 +945,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsEntryInfo info = meta.infoForPath(path);
 
-                if (info == null) {
-                    checkConflictWithPrimary(path);
-
+                if (info == null)
                     throw new IgfsPathNotFoundException("File not found: " + path);
-                }
 
                 if (!info.isFile())
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
@@ -1089,7 +1080,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileWorkerBatch batch;
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     await(path);
 
@@ -1105,11 +1096,8 @@ public final class IgfsImpl implements IgfsEx {
                 final IgniteUuid id = ids.get(ids.size() - 1);
 
                 if (id == null) {
-                    if (!create) {
-                        checkConflictWithPrimary(path);
-
+                    if (!create)
                         throw new IgfsPathNotFoundException("File not found: " + path);
-                    }
                 }
 
                 // Prevent attempt to append to ROOT in early stage:
@@ -1160,11 +1148,8 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 FileDescriptor desc = getFileDescriptor(path);
 
-                if (desc == null) {
-                    checkConflictWithPrimary(path);
-
+                if (desc == null)
                     throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
-                }
 
                 // Cannot update times for root.
                 if (desc.parentId == null)
@@ -1175,21 +1160,6 @@ public final class IgfsImpl implements IgfsEx {
                 return null;
             }
         });
-    }
-
-    /**
-     * Checks if given path exists in secondary file system and throws exception if so.
-     *
-     * @param path Path to check.
-     * @throws IgniteCheckedException If path exists.
-     */
-    private void checkConflictWithPrimary(IgfsPath path) throws IgniteCheckedException {
-        if (secondaryFs != null) {
-            if (secondaryFs.info(path) != null) {
-                throw new IgfsInvalidPathException("Path mapped to a PRIMARY mode found in secondary file " +
-                     "system. Remove path from secondary file system or change path mapping: " + path);
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -1218,7 +1188,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null && mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
                     assert secondaryFs != null;
 
                     // Synchronize
