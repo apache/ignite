@@ -43,6 +43,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
@@ -663,6 +664,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
+            binarizeArgs(qry);
+
             final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
             if (qry instanceof ContinuousQuery)
@@ -710,6 +713,50 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         finally {
             onLeave(gate, prev);
+        }
+    }
+
+    /**
+     * Convert query arguments to BinaryObjects if binary marshaller used.
+     *
+     * @param qry Query.
+     */
+    private void binarizeArgs(final Query qry) {
+        if (ctx.binaryMarshaller()) {
+            if (qry instanceof SqlQuery) {
+                final SqlQuery sqlQry = (SqlQuery) qry;
+
+                binarizeArgs(sqlQry.getArgs());
+
+            } else if (qry instanceof SpiQuery) {
+                final SpiQuery spiQry = (SpiQuery) qry;
+
+                binarizeArgs(spiQry.getArgs());
+
+            } else if (qry instanceof SqlFieldsQuery) {
+                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
+
+                binarizeArgs(fieldsQry.getArgs());
+            }
+        }
+    }
+
+    /**
+     * Convert query arguments to BinaryObjects if binary marshaller used.
+     *
+     * @param args Arguments.
+     */
+    private void binarizeArgs(final Object[] args) {
+        if (args == null)
+            return;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] != null &&
+                !U.isPrimitiveOrWrapper(args[i].getClass())
+                && !(args[i] instanceof String)
+                && !args[i].getClass().isEnum()
+                && !(args[i] instanceof BinaryObject))
+                args[i] = ctx.kernalContext().grid().binary().toBinary(args[i]);
         }
     }
 
