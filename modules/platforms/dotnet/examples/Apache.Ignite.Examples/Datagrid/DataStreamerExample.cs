@@ -55,10 +55,28 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
-                using (IDataStreamer<int, Account> ldr = ignite.GetDataStreamer<int, Account>("accounts"))
+                Console.WriteLine();
+                Console.WriteLine(">>> Cache data streamer example started.");
+
+                // Clean up caches on all nodes before run.
+                ignite.GetOrCreateCache<int, Account>(CacheName).Clear();
+
+                Stopwatch timer = new Stopwatch();
+
+                timer.Start();
+
+                using (var ldr = ignite.GetDataStreamer<int, Account>(CacheName))
                 {
-                    for (int i = 0; i < 500000; i++)
+                    ldr.PerNodeBufferSize = 1024;
+
+                    for (int i = 0; i < EntryCount; i++)
+                    {
                         ldr.AddData(i, new Account(i, i));
+
+                        // Print out progress while loading cache.
+                        if (i > 0 && i % 10000 == 0)
+                            Console.WriteLine("Loaded " + i + " accounts.");
+                    }
                 }
 
                 timer.Stop();
