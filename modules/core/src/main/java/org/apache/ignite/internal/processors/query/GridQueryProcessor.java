@@ -2547,7 +2547,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteException if ctor w/o params could not be found.
      */
     @SuppressWarnings("unchecked")
-    private static <T> Factory<T> supplierForClass(Class<T> cls) {
+    private static <T> Factory<T> supplierForClass(final Class<T> cls) {
         Constructor<T> ctor;
 
         if (!cls.isPrimitive())
@@ -2573,7 +2573,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         ctor.setAccessible(true);
 
-        Constructor<T> finalCtor = ctor;
+        final Constructor<T> finalCtor = ctor;
 
         Factory<T> res = new Factory<T>() {
             /** {@inheritDoc} */
@@ -2599,7 +2599,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Primitive values factory.
      */
     private static <T> Factory<T> createDefaultPrimitiveValueFactoryFor(Class<T> type) {
-        T v = X.defaultPrimitiveValue(type);
+        final T v = X.defaultPrimitiveValue(type);
         return new Factory<T>() {
             /** {@inheritDoc} */
             @Override public T create() {
