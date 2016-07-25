@@ -426,54 +426,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check text query.
         /// </summary>
         [Test]
-        public void TestTextQuery()
-        {
-            CheckTextQuery(MaxItemCnt, false, false);
-        }
-
-        /// <summary>
-        /// Check SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestTextQueryBinary()
-        {
-            CheckTextQuery(MaxItemCnt, false, true);
-        }
-
-        /// <summary>
-        /// Check local SQL query.
-        /// </summary>
-        [Test]
-        public void TestTextQueryLocal()
-        {
-            CheckTextQuery(MaxItemCnt, true, false);
-        }
-
-        /// <summary>
-        /// Check local SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestTextQueryLocalBinary()
-        {
-            CheckTextQuery(MaxItemCnt, true, true);
-        }
-
-        /// <summary>
-        /// Check text query.
-        /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckTextQuery(int cnt, bool loc, bool keepBinary)
+        public void CheckTextQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
-            var exp = PopulateCache(cache, loc, cnt, x => x.ToString().StartsWith("1"));
+            var exp = PopulateCache(cache, loc, MaxItemCnt, x => x.ToString().StartsWith("1"));
 
             // 2. Validate results.
-            TextQuery qry = loc ? new TextQuery(typeof(QueryPerson), "1*", true) :
-                new TextQuery(typeof(QueryPerson), "1*");
+            var qry = new TextQuery(typeof(QueryPerson), "1*", loc);
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
