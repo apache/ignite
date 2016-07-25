@@ -51,14 +51,14 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCalla
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -1155,16 +1155,20 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Wheter operation must be re-tries because we have suspicious links which may broke secondary file system
+     * Whether operation must be re-tried because we have suspicious links which may broke secondary file system
      * consistency.
      *
      * @param pathIds Path IDs.
      * @param lockInfos Lock infos.
      * @return Whether to re-try.
      */
-    private boolean isRetryForSecondary(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos) {
+    private static boolean isRetryForSecondary(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos) {
         // We need to ensure that the last locked info is not linked with expected child.
         // Otherwise there was some concurrent file system update and we have to re-try.
+        // That is, the following situation lead to re-try:
+        // 1) We queried path /A/B/C
+        // 2) Returned IDs are ROOT_ID, A_ID, B_ID, null
+        // 3) But B's info contains C as child. It mean's that
         if (!pathIds.allExists()) {
             // Find the last locked index
             IgfsEntryInfo lastLockedInfo = null;
@@ -2754,59 +2758,82 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Updates last access and last modification times.
+     * Update times.
      *
-     * @param parentId File parent ID.
-     * @param fileId File ID to update.
-     * @param fileName File name to update. Must match file ID.
-     * @param accessTime Access time to set. If {@code -1}, will not be updated.
-     * @param modificationTime Modification time to set. If {@code -1}, will not be updated.
-     * @throws IgniteCheckedException If update failed.
+     * @param path Path.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
+     * @param secondaryFs Secondary file system.
+     * @throws IgniteCheckedException If failed.
      */
-    public void updateTimes(IgniteUuid parentId, IgniteUuid fileId, String fileName, long accessTime,
-        long modificationTime) throws IgniteCheckedException {
-        if (busyLock.enterBusy()) {
-            try {
-                validTxState(false);
+    public void updateTimes(IgfsPath path, long accessTime, long modificationTime,
+        IgfsSecondaryFileSystemV2 secondaryFs) throws IgniteCheckedException {
+        while (true) {
+            if (busyLock.enterBusy()) {
+                try {
+                    validTxState(false);
 
-                // Start pessimistic transaction.
-                try (IgniteInternalTx tx = startTx()) {
-                    Map<IgniteUuid, IgfsEntryInfo> infoMap = lockIds(fileId, parentId);
+                    // Prepare path IDs.
+                    IgfsPathIds pathIds = pathIds(path);
 
-                    IgfsEntryInfo fileInfo = infoMap.get(fileId);
+                    // Prepare lock IDs.
+                    Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    if (fileInfo == null)
-                        throw fsException(new IgfsPathNotFoundException("Failed to update times " +
-                            "(path was not found): " + fileName));
+                    pathIds.addExistingIds(lockIds, relaxed);
 
-                    IgfsEntryInfo parentInfo = infoMap.get(parentId);
+                    // Start TX.
+                    try (IgniteInternalTx tx = startTx()) {
+                        Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                    if (parentInfo == null)
-                        throw fsException(new IgfsPathNotFoundException("Failed to update times " +
-                            "(parent was not found): " + fileName));
+                        if (secondaryFs != null && isRetryForSecondary(pathIds, lockInfos))
+                            continue;
 
-                    // Validate listing.
-                    if (!parentInfo.hasChild(fileName, fileId))
-                        throw fsException(new IgfsConcurrentModificationException("Failed to update times " +
-                            "(file concurrently modified): " + fileName));
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
+                            // Directory structure changed concurrently. So we re-try.
+                            continue;
 
-                    assert parentInfo.isDirectory();
+                        if (pathIds.allExists()) {
+                            // All files are in place. Update both primary and secondary file systems.
+                            if (secondaryFs != null)
+                                secondaryFs.setTimes(path, accessTime, modificationTime);
 
-                    id2InfoPrj.invoke(fileId, new IgfsMetaUpdateTimesProcessor(
-                        accessTime == -1 ? fileInfo.accessTime() : accessTime,
-                        modificationTime == -1 ? fileInfo.modificationTime() : modificationTime)
-                    );
+                            IgniteUuid targetId = pathIds.lastExistingId();
+                            IgfsEntryInfo targetInfo = lockInfos.get(targetId);
 
-                    tx.commit();
+                            id2InfoPrj.invoke(targetId, new IgfsMetaUpdateTimesProcessor(
+                                accessTime == -1 ? targetInfo.accessTime() : accessTime,
+                                modificationTime == -1 ? targetInfo.modificationTime() : modificationTime)
+                            );
+
+                            tx.commit();
+
+                            return;
+                        }
+                        else {
+                            // Propagate call to the secondary FS, as we might haven't cache this part yet.
+                            if (secondaryFs != null) {
+                                secondaryFs.setTimes(path, accessTime, modificationTime);
+
+                                return;
+                            }
+                            else
+                                throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
+                        }
+                    }
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException("setTimes failed due to unexpected exception: " + path, e);
+                }
+                finally {
+                    busyLock.leaveBusy();
                 }
             }
-            finally {
-                busyLock.leaveBusy();
-            }
+            else
+                throw new IllegalStateException("Failed to update times because Grid is stopping: " + path);
         }
-        else
-            throw new IllegalStateException("Failed to update times because Grid is stopping [parentId=" + parentId +
-                ", fileId=" + fileId + ", fileName=" + fileName + ']');
     }
 
     /**

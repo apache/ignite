@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq.Impl;
 
     /// <summary>
@@ -92,7 +93,43 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, bool local, string tableName)
         {
-            return new CacheQueryable<TKey, TValue>(cache, local, tableName);
+            return cache.AsCacheQueryable(local, tableName, SqlFieldsQuery.DfltPageSize, false, false);
+        }
+
+        /// <summary>
+        /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
+        /// <para />
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
+        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
+        /// depending on requested result.
+        /// <para />
+        /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="cache">The cache.</param>
+        /// <param name="local">Local flag. When set query will be executed only on local node, so only local
+        /// entries will be returned as query result.</param>
+        /// <param name="tableName">Name of the table.
+        /// <para />
+        /// Table name is equal to short class name of a cache value.
+        /// When a cache has only one type of values, or only one <see cref="QueryEntity" /> defined,
+        /// table name will be inferred and can be omitted.</param>
+        /// <param name="pageSize">Query cursor page size. 
+        /// Defaults to <see cref="SqlFieldsQuery.DfltPageSize"/>.</param>
+        /// <param name="enableDistributedJoins">Distributed joins option, see
+        /// <see cref="SqlFieldsQuery.EnableDistributedJoins" />.</param>
+        /// <param name="enforceJoinOrder">Enforce join order flag,
+        /// see <see cref="SqlFieldsQuery.EnforceJoinOrder" />.</param>
+        /// <returns>
+        ///   <see cref="IQueryable{T}" /> instance over this cache.
+        /// </returns>
+        public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
+            this ICache<TKey, TValue> cache, bool local, string tableName, int pageSize,
+            bool enableDistributedJoins, bool enforceJoinOrder)
+        {
+            return new CacheQueryable<TKey, TValue>(cache, local, tableName, pageSize, enableDistributedJoins,
+                enforceJoinOrder);
         }
     }
 }
