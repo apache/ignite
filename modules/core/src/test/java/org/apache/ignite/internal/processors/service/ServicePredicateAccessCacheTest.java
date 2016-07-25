@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
@@ -32,8 +35,8 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -114,23 +117,31 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                info("Start deploy service.");
+        // TODO Maybe illegal workaround!
+        final ExecutorService ex = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ignite0.name()));
 
-                ignite0.services(grp).deployNodeSingleton("testService", new TestService());
+        try {
+            final Future<Void> fut = ex.submit(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    info("Start deploy service.");
 
-                info("Service deployed.");
+                    ignite0.services(grp).deployNodeSingleton("testService", new TestService());
 
-                return null;
-            }
-        }, "deploy-thread");
+                    info("Service deployed.");
 
-        latch.await();
+                    return null;
+                }
+            });
 
-        startGrid(1);
+            latch.await();
 
-        fut.get();
+            startGrid(1);
+
+            fut.get();
+        }
+        finally {
+            ex.shutdown();
+        }
     }
 
     /**
