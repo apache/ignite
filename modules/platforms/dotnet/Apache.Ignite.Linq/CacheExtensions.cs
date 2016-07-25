@@ -115,7 +115,8 @@ namespace Apache.Ignite.Linq
         /// Table name is equal to short class name of a cache value.
         /// When a cache has only one type of values, or only one <see cref="QueryEntity" /> defined,
         /// table name will be inferred and can be omitted.</param>
-        /// <param name="pageSize">Query cursor page size.</param>
+        /// <param name="pageSize">Query cursor page size. 
+        /// Defaults to <see cref="SqlFieldsQuery.DfltPageSize"/>.</param>
         /// <param name="enableDistributedJoins">Distributed joins option, see
         /// <see cref="SqlFieldsQuery.EnableDistributedJoins" />.</param>
         /// <param name="enforceJoinOrder">Enforce join order flag,
