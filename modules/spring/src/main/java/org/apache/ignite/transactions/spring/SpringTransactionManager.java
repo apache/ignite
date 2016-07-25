@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -232,8 +231,8 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     /** Spring context */
     private ApplicationContext springCtx;
 
-    /** Saving spring application context for further usage */
-    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) {
         this.springCtx = ctx;
     }
 

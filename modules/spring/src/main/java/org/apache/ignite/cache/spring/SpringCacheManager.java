@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.jsr166.ConcurrentHashMap8;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
@@ -162,8 +161,8 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     /** Spring context */
     private ApplicationContext springCtx;
 
-    /** Saving spring application context for further usage */
-    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) {
         this.springCtx = ctx;
     }
 
