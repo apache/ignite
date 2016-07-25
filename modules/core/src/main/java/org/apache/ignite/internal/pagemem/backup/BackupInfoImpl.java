@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 public class BackupInfoImpl implements BackupInfo {
 
@@ -28,6 +29,8 @@ public class BackupInfoImpl implements BackupInfo {
     private final UUID initiatorNode;
 
     private final Collection<String> cacheNames;
+
+    private final GridFutureAdapter initFut = new GridFutureAdapter();
 
     public BackupInfoImpl(long backupId, UUID initiatorNode, Collection<String> cacheNames) {
         this.backupId = backupId;
@@ -49,5 +52,9 @@ public class BackupInfoImpl implements BackupInfo {
 
     @Override public boolean initiator() {
         return false;
+    }
+
+    @Override public GridFutureAdapter initFut() {
+        return initFut;
     }
 }

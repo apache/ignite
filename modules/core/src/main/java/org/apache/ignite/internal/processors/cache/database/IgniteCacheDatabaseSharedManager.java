@@ -108,6 +108,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     public void submitBackupFuture(BackupFuture backupFuture) {
+        backupFuture.initFut().onDone(new IgniteCheckedException("Backup is not supported"));
+        backupFuture.onDone(new IgniteCheckedException("Backup is not supported"));
         // No-op.
     }
 
@@ -115,12 +117,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param discoEvt Before exchange for the given discovery event.
      */
     @Nullable public IgniteInternalFuture beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
-        if (discoEvt instanceof DiscoveryCustomEvent && ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof BackupMessage) {
-            GridFutureAdapter fut = ((BackupMessage)((DiscoveryCustomEvent)discoEvt).customMessage()).future();
-
-            fut.onDone(new IgniteCheckedException("Backup is not supported"));
-        }
-
         return null;
     }
 

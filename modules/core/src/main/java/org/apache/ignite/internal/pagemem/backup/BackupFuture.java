@@ -31,6 +31,8 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
 
     private final Collection<String> cacheNames;
 
+    private final GridFutureAdapter initFut = new GridFutureAdapter();
+
     private volatile boolean initialized;
 
     private final Collection<UUID> requiredAcks = new GridConcurrentHashSet<>();
@@ -57,6 +59,10 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
 
     @Override public boolean initiator() {
         return true;
+    }
+
+    @Override public GridFutureAdapter initFut() {
+        return initFut;
     }
 
     public void init(Collection<UUID> requiredAcks) {

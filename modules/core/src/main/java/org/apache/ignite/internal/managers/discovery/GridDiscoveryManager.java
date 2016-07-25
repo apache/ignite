@@ -1898,13 +1898,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         BackupMessage msg = new BackupMessage(backupId, cacheNames);
 
-        GridFutureAdapter fut = new GridFutureAdapter();
-
-        msg.future(fut);
-
         ctx.discovery().sendCustomEvent(msg);
 
-        fut.get();
+        backupFut.initFut().get();
 
         return backupFut;
     }

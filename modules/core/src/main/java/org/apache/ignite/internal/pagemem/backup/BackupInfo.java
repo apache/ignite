@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 public interface BackupInfo {
 
@@ -30,5 +31,7 @@ public interface BackupInfo {
     public Collection<String> cacheNames();
 
     public boolean initiator();
+
+    public GridFutureAdapter initFut();
 
 }

@@ -35,9 +35,6 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     private Collection<String> cacheNames;
 
-    /** Future which indicates that exchange for this backup had started. */
-    private transient volatile GridFutureAdapter future;
-
     public BackupMessage(long backupId, Collection<String> cacheNames) {
         this.backupId = backupId;
         this.cacheNames = cacheNames;
@@ -53,14 +50,6 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     public Collection<String> cacheNames() {
         return cacheNames;
-    }
-
-    public GridFutureAdapter future() {
-        return future;
-    }
-
-    public void future(GridFutureAdapter future) {
-        this.future = future;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
