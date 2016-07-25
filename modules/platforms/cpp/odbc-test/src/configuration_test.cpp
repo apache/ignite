@@ -24,6 +24,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/odbc/config/configuration.h>
+#include <ignite/common/utils.h>
 
 using namespace ignite::odbc::config;
 
@@ -34,6 +35,8 @@ namespace
     const uint16_t testServerPort = 4242;
     const std::string testCacheName = "TestCache";
     const std::string testDsn = "Ignite DSN";
+
+    const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
 
 void CheckConnectionConfig(const Configuration& cfg)
@@ -41,15 +44,15 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
     BOOST_CHECK_EQUAL(cfg.GetPort(), testServerPort);
+    BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
     BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
 
     std::stringstream constructor;
 
-    constructor << "cache=" << testCacheName << ";" 
-                << "driver={" << testDriverName << "};"
-                << "port=" << testServerPort << ";"
-                << "server=" << testServerHost << ";";
+    constructor << "address=" << testAddress << ';'
+                << "cache=" << testCacheName << ';'
+                << "driver={" << testDriverName << "};";
 
     const std::string& expectedStr = constructor.str();
 
@@ -60,9 +63,10 @@ void CheckDsnConfig(const Configuration& cfg)
 {
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), testDsn);
-    BOOST_CHECK_EQUAL(cfg.GetHost(), Configuration::DefaultValue::host);
     BOOST_CHECK_EQUAL(cfg.GetCache(), Configuration::DefaultValue::cache);
-    BOOST_CHECK_EQUAL(cfg.GetPort(), ignite::common::LexicalCast<uint16_t>(Configuration::DefaultValue::port));
+    BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
+    BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
+    BOOST_CHECK_EQUAL(cfg.GetPort(), Configuration::DefaultValue::port);
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -70,8 +74,8 @@ BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
 BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
 {
     BOOST_CHECK_NE(testDriverName, Configuration::DefaultValue::driver);
-    BOOST_CHECK_NE(testServerHost, Configuration::DefaultValue::host);
-    BOOST_CHECK_NE(ignite::common::LexicalCast<std::string>(testServerPort), Configuration::DefaultValue::port);
+    BOOST_CHECK_NE(testAddress, Configuration::DefaultValue::address);
+    BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
     BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
 }
@@ -83,8 +87,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
     std::stringstream constructor;
 
     constructor << "DRIVER={" << testDriverName << "};"
-                << "SERVER=" << testServerHost <<";"
-                << "PORT=" << testServerPort << ";"
+                << "ADDRESS=" << testAddress << ';'
                 << "CACHE=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
@@ -101,8 +104,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "server=" << testServerHost << ";"
-                << "port=" << testServerPort << ";"
+                << "address=" << testAddress << ';'
                 << "cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
@@ -119,8 +121,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "server=" << testServerHost << ";"
-                << "port=" << testServerPort << ";"
+                << "address=" << testAddress << ';'
                 << "cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
@@ -137,8 +138,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
     std::stringstream constructor;
 
     constructor << "Driver={" << testDriverName << "};"
-                << "Server=" << testServerHost << ";"
-                << "Port=" << testServerPort << ";"
+                << "Address=" << testAddress << ';'
                 << "Cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
@@ -155,8 +155,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
     std::stringstream constructor;
 
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
-                << " SERVER =" << testServerHost << " ; \n"
-                << "PORT= " << testServerPort << "; "
+                << " ADDRESS =" << testAddress << "; "
                 << "CACHE = \n\r" << testCacheName;
 
     const std::string& connectStr = constructor.str();

@@ -40,6 +40,22 @@ namespace ignite
                 /** Map containing connect arguments. */
                 typedef std::map<std::string, std::string> ArgumentMap;
 
+                /** Connection attribute keywords. */
+                struct Key
+                {
+                    /** Connection attribute keyword for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Connection attribute keyword for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Connection attribute keyword for address attribute. */
+                    static const std::string address;
+
+                    /** Connection attribute keyword for cache attribute. */
+                    static const std::string cache;
+                };
+
                 /** Default values for configuration. */
                 struct DefaultValue
                 {
@@ -50,32 +66,25 @@ namespace ignite
                     static const std::string driver;
 
                     /** Default value for host attribute. */
-                    static const std::string host;
+                    static const std::string address;
 
                     /** Default value for port attribute. */
-                    static const std::string port;
+                    static const uint16_t port;
 
                     /** Default value for cache attribute. */
                     static const std::string cache;
                 };
 
-                /** Connection attribute keywords. */
-                struct Key
+                /**
+                 * Connection end point structure.
+                 */
+                struct EndPoint
                 {
-                    /** Connection attribute keyword for DSN attribute. */
-                    static const std::string dsn;
+                    /** Remote host. */
+                    std::string host;
 
-                    /** Connection attribute keyword for Driver attribute. */
-                    static const std::string driver;
-
-                    /** Connection attribute keyword for server host attribute. */
-                    static const std::string host;
-
-                    /** Connection attribute keyword for server port attribute. */
-                    static const std::string port;
-
-                    /** Connection attribute keyword for cache attribute. */
-                    static const std::string cache;
+                    /** TCP port. */
+                    uint16_t port;
                 };
 
                 /**
@@ -125,7 +134,7 @@ namespace ignite
                  */
                 uint16_t GetPort() const
                 {
-                    return common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                    return endPoint.port;
                 }
 
                 /**
@@ -155,7 +164,7 @@ namespace ignite
                  */
                 const std::string& GetHost() const
                 {
-                    return GetStringValue(Key::host, DefaultValue::host);
+                    return endPoint.host;
                 }
 
                 /**
@@ -166,6 +175,16 @@ namespace ignite
                 const std::string& GetCache() const
                 {
                     return GetStringValue(Key::cache, DefaultValue::cache);
+                }
+
+                /**
+                 * Get address.
+                 *
+                 * @return Address.
+                 */
+                const std::string& GetAddress() const
+                {
+                    return GetStringValue(Key::address, DefaultValue::address);
                 }
 
                 /**
@@ -187,8 +206,20 @@ namespace ignite
                  */
                 static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
 
+                /**
+                 * Parse address and extract connection end-point.
+                 *
+                 * @throw IgniteException if address can not be parsed.
+                 * @param address Address string to parse.
+                 * @param res Result is placed here.
+                 */
+                static void ParseAddress(const std::string& address, EndPoint& res);
+
                 /** Arguments. */
                 ArgumentMap arguments;
+
+                /** Connection end-point. */
+                EndPoint endPoint;
             };
         }
 

@@ -31,22 +31,21 @@ namespace ignite
     {
         namespace config
         {
-            const std::string Configuration::DefaultValue::dsn    = "Apache Ignite DSN";
-            const std::string Configuration::DefaultValue::driver = "Apache Ignite";
-            const std::string Configuration::DefaultValue::host   = "localhost";
-            const std::string Configuration::DefaultValue::port   = "10800";
-            const std::string Configuration::DefaultValue::cache  = "";
-
-            const std::string Configuration::Key::dsn    = "dsn";
+            const std::string Configuration::Key::dsn = "dsn";
             const std::string Configuration::Key::driver = "driver";
-            const std::string Configuration::Key::host   = "server";
-            const std::string Configuration::Key::port   = "port";
-            const std::string Configuration::Key::cache  = "cache";
+            const std::string Configuration::Key::address = "address";
+            const std::string Configuration::Key::cache = "cache";
+
+            const std::string Configuration::DefaultValue::dsn     = "Apache Ignite DSN";
+            const std::string Configuration::DefaultValue::driver  = "Apache Ignite";
+            const std::string Configuration::DefaultValue::address = "";
+            const uint16_t Configuration::DefaultValue::port       = 10800;
+            const std::string Configuration::DefaultValue::cache   = "";
 
             Configuration::Configuration() :
                 arguments()
             {
-                // No-op.
+                ParseAddress(DefaultValue::address, endPoint);
             }
 
             Configuration::~Configuration()
@@ -69,6 +68,9 @@ namespace ignite
                     --len;
 
                 ParseAttributeList(str, len, ';', arguments);
+
+                // Parsing address.
+                ParseAddress(GetAddress(), endPoint);
             }
 
             void Configuration::FillFromConnectString(const std::string& str)
@@ -111,6 +113,19 @@ namespace ignite
                 ++len;
 
                 ParseAttributeList(attributes, len, '\0', arguments);
+
+                // Parsing address.
+                ParseAddress(GetAddress(), endPoint);
+            }
+
+            const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                    return it->second;
+
+                return dflt;
             }
 
             void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)
@@ -157,14 +172,49 @@ namespace ignite
                 }
             }
 
-            const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
+            void Configuration::ParseAddress(const std::string& address, EndPoint& res)
             {
-                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+                ptrdiff_t colonNum = std::count(address.begin(), address.end(), ':');
 
-                if (it != arguments.end())
-                    return it->second;
+                if (colonNum == 0)
+                {
+                    res.host = address;
+                    res.port = DefaultValue::port;
+                }
+                else if (colonNum == 1)
+                {
+                    size_t pos = address.find(':');
 
-                return dflt;
+                    if (pos == address.size())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: no port after colon");
+
+                    res.host = address.substr(0, pos);
+
+                    std::string port = address.substr(pos + 1);
+
+                    if (!std::all_of(port.begin(), port.end(), isdigit))
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: port can only contain digits");
+
+                    int32_t intPort = common::LexicalCast<int32_t>(port);
+
+                    if (port.size() > sizeof("65535") - 1 || intPort > UINT16_MAX)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: Port value is too large,"
+                            " valid value should be in range from 1 to 65535");
+                    }
+
+                    if (intPort == 0)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: Port value can not be zero");
+
+                    res.port = static_cast<uint16_t>(intPort);
+                }
+                else
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
+                        "Invalid address format: too many colons");
             }
         }
     }
