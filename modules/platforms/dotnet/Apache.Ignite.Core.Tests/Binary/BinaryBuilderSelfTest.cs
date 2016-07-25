@@ -605,6 +605,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<long>("fLong", 4)
                 .SetField<float>("fFloat", 5)
                 .SetField<double>("fDouble", 6)
+                .SetField("fDecimal", 7.7m)
+                .SetField("fString", "8")
                 .SetHashCode(100)
                 .Build();
 
@@ -667,7 +669,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(Primitives).Name, meta.TypeName);
 
-            Assert.AreEqual(8, meta.Fields.Count);
+            Assert.AreEqual(10, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameByte, meta.GetFieldTypeName("fByte"));
             Assert.AreEqual(BinaryTypeNames.TypeNameBool, meta.GetFieldTypeName("fBool"));
@@ -677,6 +679,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameLong, meta.GetFieldTypeName("fLong"));
             Assert.AreEqual(BinaryTypeNames.TypeNameFloat, meta.GetFieldTypeName("fFloat"));
             Assert.AreEqual(BinaryTypeNames.TypeNameDouble, meta.GetFieldTypeName("fDouble"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameDecimal, meta.GetFieldTypeName("fDecimal"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameString, meta.GetFieldTypeName("fString"));
 
             Assert.AreEqual(1, binObj.GetField<byte>("fByte"));
             Assert.AreEqual(true, binObj.GetField<bool>("fBool"));
@@ -686,6 +690,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(4, binObj.GetField<long>("fLong"));
             Assert.AreEqual(5, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(6, binObj.GetField<double>("fDouble"));
+            Assert.AreEqual(7.7m, binObj.GetField<decimal>("fDecimal"));
+            Assert.AreEqual("8", binObj.GetField<string>("fString"));
 
             Primitives obj = binObj.Deserialize<Primitives>();
 
@@ -697,6 +703,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(4, obj.FLong);
             Assert.AreEqual(5, obj.FFloat);
             Assert.AreEqual(6, obj.FDouble);
+            Assert.AreEqual(7.7m, obj.FDecimal);
+            Assert.AreEqual("8", obj.FString);
         }
 
         /// <summary>
@@ -1616,6 +1624,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long FLong;
         public float FFloat;
         public double FDouble;
+        public double FDecimal;
+        public string FString;
     }
 
     /// <summary>
@@ -1631,6 +1641,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long[] FLong;
         public float[] FFloat;
         public double[] FDouble;
+        public decimal[] FDecimal;
+        public string[] FString;
     }
 
     /// <summary>
