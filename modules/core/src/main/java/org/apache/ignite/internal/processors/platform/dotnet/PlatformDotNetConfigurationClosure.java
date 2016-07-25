@@ -152,6 +152,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             // If user provided IGNITE_HOME - set it as a system property.
             U.setIgniteHome(ggHome);
 
+        // Set work directory for temporary marshaller
         try {
             U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
         }
@@ -161,6 +162,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
+
+        // Now we have actual work directory from .NET - nullify temporary directory so that the new one takes effect.
+        U.nullifyWorkDirectory();
     }
 
     /**
