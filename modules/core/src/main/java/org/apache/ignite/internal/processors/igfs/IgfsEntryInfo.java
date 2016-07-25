@@ -153,6 +153,9 @@ public abstract class IgfsEntryInfo implements Externalizable {
     public IgfsEntryInfo accessModificationTime(long accessTime, long modificationTime) {
         IgfsEntryInfo res = copy();
 
+        System.out.println("set: a=" + res.accessTime + " -> " + accessTime);
+        System.out.println("set: m=" + res.modificationTime + " -> " + modificationTime);
+
         res.accessTime = accessTime;
         res.modificationTime = modificationTime;
 

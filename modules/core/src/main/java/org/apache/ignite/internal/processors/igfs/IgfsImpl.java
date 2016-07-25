@@ -853,8 +853,7 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(impl);
                         }
 
-                        // TODO: make sure this is right.
-                        return files; // ***************
+                        return files;
                     }
                     catch (Exception e) {
                         U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
@@ -1031,16 +1030,8 @@ public final class IgfsImpl implements IgfsEx {
                     await(path);
 
                 // Perform create.
-                IgfsCreateResult res = meta.create(
-                    path,
-                    dirProps,
-                    overwrite,
-                    cfg.getBlockSize(),
-                    affKey,
-                    evictExclude(path, mode == PRIMARY),
-                    fileProps,
-                    secondaryCtx
-                );
+                IgfsCreateResult res = meta.create(path, dirProps, overwrite, cfg.getBlockSize(), affKey,
+                    evictExclude(path, mode == PRIMARY), fileProps, secondaryCtx);
 
                 assert res != null;
 
@@ -1144,15 +1135,10 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-//<<<<<<<
                 boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
                 meta.updateTimes(path, accessTime, modificationTime,
                     useSecondary ? (IgfsSecondaryFileSystemV2)secondaryFs : null);
-//=======
-//                if (desc == null)
-//                    throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
-//>>>>>>>
 
                 return null;
             }
@@ -1172,15 +1158,6 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         if (meta.isClient())
-//<<<<<<<
-//=======
-//        });
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
-//        return affinity(path, start, len, 0L);
-//>>>>>>>
             return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
@@ -1529,7 +1506,6 @@ public final class IgfsImpl implements IgfsEx {
 
             case DUAL_SYNC:
             case DUAL_ASYNC:
-                // ***************************
                 try {
                     IgfsFile status = secondaryFs.info(path);
 
@@ -1541,10 +1517,6 @@ public final class IgfsImpl implements IgfsEx {
 
                     throw e;
                 }
-
-                // TODO: need that? May be we need to delete info from meta cache if it is not found is 2nd fs?
-//                if (info == null)
-//                    info = meta.infoForPath(path);
 
                 break;
 
