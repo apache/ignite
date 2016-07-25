@@ -852,6 +852,9 @@ public final class IgfsImpl implements IgfsEx {
 
                             files.add(impl);
                         }
+
+                        // TODO: make sure this is right.
+                        return files; // ***************
                     }
                     catch (Exception e) {
                         U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
@@ -1141,10 +1144,15 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
+//<<<<<<<
                 boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
                 meta.updateTimes(path, accessTime, modificationTime,
                     useSecondary ? (IgfsSecondaryFileSystemV2)secondaryFs : null);
+//=======
+//                if (desc == null)
+//                    throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
+//>>>>>>>
 
                 return null;
             }
@@ -1164,6 +1172,15 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         if (meta.isClient())
+//<<<<<<<
+//=======
+//        });
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) {
+//        return affinity(path, start, len, 0L);
+//>>>>>>>
             return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
@@ -1512,21 +1529,22 @@ public final class IgfsImpl implements IgfsEx {
 
             case DUAL_SYNC:
             case DUAL_ASYNC:
-                info = meta.infoForPath(path);
+                // ***************************
+                try {
+                    IgfsFile status = secondaryFs.info(path);
 
-                if (info == null) {
-                    try {
-                        IgfsFile status = secondaryFs.info(path);
-
-                        if (status != null)
-                            return new IgfsFileImpl(status, data.groupBlockSize());
-                    }
-                    catch (Exception e) {
-                        U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
-
-                        throw e;
-                    }
+                    if (status != null)
+                        return new IgfsFileImpl(status, data.groupBlockSize());
                 }
+                catch (Exception e) {
+                    U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
+
+                    throw e;
+                }
+
+                // TODO: need that? May be we need to delete info from meta cache if it is not found is 2nd fs?
+//                if (info == null)
+//                    info = meta.infoForPath(path);
 
                 break;
 

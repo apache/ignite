@@ -28,6 +28,7 @@ import java.util.Map;
 
 /**
  * Context for secondary file system create request.
+ * Note that it is never used for dual mode append operation.
  */
 public class IgfsSecondaryFileSystemCreateContext {
     /** File system. */
@@ -68,6 +69,8 @@ public class IgfsSecondaryFileSystemCreateContext {
      */
     public IgfsSecondaryFileSystemCreateContext(IgfsSecondaryFileSystem fs, IgfsPath path, boolean overwrite,
         boolean simpleCreate, @Nullable Map<String, String> props, short replication, long blockSize, int bufSize) {
+        assert fs != null;
+
         this.fs = fs;
         this.path = path;
         this.overwrite = overwrite;
@@ -97,12 +100,13 @@ public class IgfsSecondaryFileSystemCreateContext {
         return fs.info(path);
     }
 
-    /**
-     * @return Secondary file system.
-     */
-    public IgfsSecondaryFileSystem fileSystem() {
-        return fs;
-    }
+    // TODO: Note used?
+//    /**
+//     * @return Secondary file system.
+//     */
+//    public IgfsSecondaryFileSystem fileSystem() {
+//        return fs;
+//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
