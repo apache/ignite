@@ -622,6 +622,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetLongField("fLong", 4)
                 .SetFloatField("fFloat", 5)
                 .SetDoubleField("fDouble", 6)
+                .SetDecimalField("fDecimal", 7.7m)
+                .SetStringField("fString", "8")
                 .SetHashCode(100)
                 .Build();
 
@@ -637,6 +639,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<long>("fLong", 10)
                 .SetField<float>("fFloat", 11)
                 .SetField<double>("fDouble", 12)
+                .SetField("fDecimal", 13.13m)
+                .SetField("fString", "14")
                 .SetHashCode(200)
                 .Build();
 
@@ -652,6 +656,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetLongField("fLong", 10)
                 .SetFloatField("fFloat", 11)
                 .SetDoubleField("fDouble", 12)
+                .SetDecimalField("fDecimal", 13.13m)
+                .SetStringField("fString", "14")
                 .SetHashCode(200)
                 .Build();
 
@@ -722,6 +728,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(10, binObj.GetField<long>("fLong"));
             Assert.AreEqual(11, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(12, binObj.GetField<double>("fDouble"));
+            Assert.AreEqual(13.13m, binObj.GetField<decimal>("fDecimal"));
+            Assert.AreEqual("14", binObj.GetField<string>("fString"));
 
             var obj = binObj.Deserialize<Primitives>();
 
@@ -733,6 +741,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(10, obj.FLong);
             Assert.AreEqual(11, obj.FFloat);
             Assert.AreEqual(12, obj.FDouble);
+            Assert.AreEqual(13.13m, obj.FDecimal);
+            Assert.AreEqual("14", obj.FString);
         }
 
         /// <summary>
