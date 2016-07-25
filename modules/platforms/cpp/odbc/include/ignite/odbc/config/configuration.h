@@ -23,6 +23,7 @@
 #include <map>
 
 #include <ignite/common/common.h>
+#include <ignite/common/utils.h>
 
 namespace ignite
 {
@@ -36,6 +37,47 @@ namespace ignite
             class Configuration
             {
             public:
+                /** Map containing connect arguments. */
+                typedef std::map<std::string, std::string> ArgumentMap;
+
+                /** Default values for configuration. */
+                struct DefaultValue
+                {
+                    /** Default value for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Default value for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Default value for host attribute. */
+                    static const std::string host;
+
+                    /** Default value for port attribute. */
+                    static const std::string port;
+
+                    /** Default value for cache attribute. */
+                    static const std::string cache;
+                };
+
+                /** Connection attribute keywords. */
+                struct Key
+                {
+                    /** Connection attribute keyword for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Connection attribute keyword for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Connection attribute keyword for server host attribute. */
+                    static const std::string host;
+
+                    /** Connection attribute keyword for server port attribute. */
+                    static const std::string port;
+
+                    /** Connection attribute keyword for cache attribute. */
+                    static const std::string cache;
+                };
+
                 /**
                  * Default constructor.
                  */
@@ -83,7 +125,7 @@ namespace ignite
                  */
                 uint16_t GetPort() const
                 {
-                    return port;
+                    return common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
                 }
 
                 /**
@@ -93,7 +135,7 @@ namespace ignite
                  */
                 const std::string& GetDsn() const
                 {
-                    return dsn;
+                    return GetStringValue(Key::dsn, DefaultValue::dsn);
                 }
 
                 /**
@@ -103,7 +145,7 @@ namespace ignite
                  */
                 const std::string& GetDriver() const
                 {
-                    return driver;
+                    return GetStringValue(Key::driver, DefaultValue::driver);
                 }
 
                 /**
@@ -113,7 +155,7 @@ namespace ignite
                  */
                 const std::string& GetHost() const
                 {
-                    return host;
+                    return GetStringValue(Key::host, DefaultValue::host);
                 }
 
                 /**
@@ -123,15 +165,19 @@ namespace ignite
                  */
                 const std::string& GetCache() const
                 {
-                    return cache;
+                    return GetStringValue(Key::cache, DefaultValue::cache);
                 }
 
+                /**
+                 * Get string value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                const std::string& GetStringValue(const std::string& key, const std::string& dflt) const;
+
             private:
-                IGNITE_NO_COPY_ASSIGNMENT(Configuration);
-
-                /** Map containing connect arguments. */
-                typedef std::map<std::string, std::string> ArgumentMap;
-
                 /**
                  * Parse connect string into key-value storage.
                  *
@@ -139,22 +185,10 @@ namespace ignite
                  * @param len String length.
                  * @param params Parsing result.
                  */
-                void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args) const;
+                static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
 
-                /** Data Source Name. */
-                std::string dsn;
-
-                /** Driver name. */
-                std::string driver;
-
-                /** Server hostname. */
-                std::string host;
-
-                /** Port of the server. */
-                uint16_t port;
-
-                /** Cache name. */
-                std::string cache;
+                /** Arguments. */
+                ArgumentMap arguments;
             };
         }
 
