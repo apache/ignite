@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetBooleanField(string fieldName, bool val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (bool), val, BinaryUtils.TypeBool, 
-                (w, o) => w.WriteBoolean((bool) o)));
+                (w, o) => w.WriteBooleanField((bool) o)));
         }
  
         /** <inheritDoc /> */
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetByteField(string fieldName, byte val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (byte), val, BinaryUtils.TypeByte,
-                (w, o) => w.WriteByte((byte) o)));
+                (w, o) => w.WriteByteField((byte) o)));
         }
  
         /** <inheritDoc /> */
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetDoubleField(string fieldName, double val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (double), val, BinaryUtils.TypeDouble,
-                (w, o) => w.WriteDouble((double) o)));
+                (w, o) => w.WriteDoubleField((double) o)));
         }
  
         /** <inheritDoc /> */
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetIntField(string fieldName, int val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (int), val, BinaryUtils.TypeInt,
-                (w, o) => w.WriteInt((int) o)));
+                (w, o) => w.WriteIntField((int) o)));
         }
  
         /** <inheritDoc /> */
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetLongField(string fieldName, long val)
         {
             return SetField0(fieldName, new BinaryBuilderField(typeof (long), val, BinaryUtils.TypeLong,
-                (w, o) => w.WriteLong((long) o)));
+                (w, o) => w.WriteLongField((long) o)));
         }
  
         /** <inheritDoc /> */
