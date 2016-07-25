@@ -132,7 +132,12 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", qryData.QueryText,
                 string.Join(", ", qryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray());
+            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray())
+            {
+                EnableDistributedJoins = _enableDistributedJoins,
+                PageSize = _pageSize,
+                EnforceJoinOrder = _enforceJoinOrder
+            };
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
