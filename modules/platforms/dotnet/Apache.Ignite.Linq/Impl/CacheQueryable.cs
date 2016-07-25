@@ -32,10 +32,15 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="cache">The cache.</param>
         /// <param name="local">Local flag.</param>
         /// <param name="tableName">Name of the table.</param>
-        public CacheQueryable(ICache<TKey, TValue> cache, bool local, string tableName)
+        /// <param name="pageSize">Size of the page.</param>
+        /// <param name="enableDistributedJoins">Distributed joins flag.</param>
+        /// <param name="enforceJoinOrder">Enforce join order flag.</param>
+        public CacheQueryable(ICache<TKey, TValue> cache, bool local, string tableName, int pageSize,
+            bool enableDistributedJoins,
+            bool enforceJoinOrder)
             : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
-                new CacheFieldsQueryExecutor((ICacheInternal) cache, local),
-                cache.Ignite, cache.GetConfiguration(), tableName, typeof(TValue)))
+                new CacheFieldsQueryExecutor((ICacheInternal) cache, local, pageSize, enableDistributedJoins,
+                    enforceJoinOrder), cache.Ignite, cache.GetConfiguration(), tableName, typeof(TValue)))
         {
             // No-op.
         }
