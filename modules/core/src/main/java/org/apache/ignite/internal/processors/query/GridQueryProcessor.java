@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -149,6 +150,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private final GridQueryIndexing idx;
+
+    private final static Map<Class<?>, Factory<?>> PRIMITIVE_FACTORIES;
+
+    static {
+        Map<Class<?>, Factory<?>> res = new HashMap<>();
+        for (Class<?> cls : new Class[] {byte.class, boolean.class, short.class, int.class, long.class, char.class,
+            float.class, double.class})
+            res.put(cls, createDefaultPrimitiveValueFactoryFor(cls));
+        PRIMITIVE_FACTORIES = Collections.unmodifiableMap(res);
+    }
 
     /**
      * @param ctx Kernal context.
@@ -2077,6 +2088,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @GridToStringExclude
         private final Map<String, GridQueryProperty> props = new HashMap<>();
 
+        /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
+        private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
+
         /** */
         @GridToStringInclude
         private final Map<String, IndexDescriptor> indexes = new HashMap<>();
@@ -2153,7 +2167,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            GridQueryProperty prop = props.get(field);
+            GridQueryProperty prop = getProperty(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2167,7 +2181,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throws IgniteCheckedException {
             assert field != null;
 
-            GridQueryProperty prop = props.get(field);
+            GridQueryProperty prop = getProperty(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2280,7 +2294,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
 
+            if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
+                throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
+
             fields.put(name, prop.type());
+        }
+
+        /**
+         * @param field Property name.
+         * @return Property with given field name.
+         */
+        private GridQueryProperty getProperty(String field) {
+            GridQueryProperty res = props.get(field);
+
+            if (res == null)
+                res = uppercaseProps.get(field.toUpperCase());
+
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -2510,7 +2540,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Create supplier of value instances based on default ctor.
+     * Create supplier of value instances based on default ctor or default value if given type is primitive.
      * @param cls
      * @param <T>
      * @return
@@ -2518,29 +2548,62 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private static <T> Factory<T> supplierForClass(Class<T> cls) {
-        final Constructor<T> ctor;
+        Constructor<T> ctor;
 
-        try {
-            ctor = cls.getDeclaredConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw new IgniteException("Ctor w/o params not found [cls=" + cls.getName() + "]", e);
-        }
+        if (!cls.isPrimitive())
+            try {
+                ctor = cls.getDeclaredConstructor();
+            }
+            catch (NoSuchMethodException ignored) {
+                ctor = null;
+            }
+        else
+            return (Factory<T>)PRIMITIVE_FACTORIES.get(cls);
 
+        // We don't throw an exception in case of ctor's absence right away
+        // because that matters only for SQL INSERT/MERGE operations.
         if (ctor == null)
-            throw new IgniteException("Ctor w/o params not found [cls=" + cls.getName() + "]");
+            return new Factory<T>() {
+                /** {@inheritDoc} */
+                @Override public T create() {
+                    throw new IgniteException("Ctor w/o params not found for non primitive value class " +
+                        "[cls=" + cls.getName() + "]");
+                }
+            };
 
         ctor.setAccessible(true);
 
-        return new Factory<T>() {
+        Constructor<T> finalCtor = ctor;
+
+        Factory<T> res = new Factory<T>() {
             /** {@inheritDoc} */
             @Override public T create() {
                 try {
-                    return ctor.newInstance();
+                    return finalCtor.newInstance();
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to instantiate value", e);
                 }
+            }
+        };
+
+        // Let's just try it to know about bad types early.
+        res.create();
+
+        return res;
+    }
+
+    /**
+     * @param type Primitive type.
+     * @param <T> Type of values the factory will return.
+     * @return Primitive values factory.
+     */
+    private static <T> Factory<T> createDefaultPrimitiveValueFactoryFor(Class<T> type) {
+        T v = X.defaultPrimitiveValue(type);
+        return new Factory<T>() {
+            /** {@inheritDoc} */
+            @Override public T create() {
+                return v;
             }
         };
     }

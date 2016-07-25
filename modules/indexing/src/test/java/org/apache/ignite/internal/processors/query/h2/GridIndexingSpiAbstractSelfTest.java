@@ -570,9 +570,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             };
         }
 
-        @Nullable
-        @Override
-        public GridQueryProperty cacheKeyProperty() {
+        /** {@inheritDoc} */
+        @Nullable @Override public GridQueryProperty cacheKeyProperty() {
             return null;
         }
 

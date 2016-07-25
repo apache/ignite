@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Explain;
 import org.h2.command.dml.Query;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
@@ -158,8 +159,8 @@ public class GridSqlQuerySplitter {
 
         final Prepared prepared = prepared(stmt);
 
-        if (prepared instanceof Query)
-            return splitSelect((Query)prepared, params, collocatedGrpBy, distributedJoins);
+        if (prepared instanceof Query || prepared instanceof Explain)
+            return splitSelect(GridSqlQueryParser.query(prepared), params, collocatedGrpBy, distributedJoins);
 
         throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
     }
