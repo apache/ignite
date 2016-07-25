@@ -354,7 +354,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL query.
         /// </summary>
         [Test]
-        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary, 
+            [Values(true, false)] bool distrJoin)
         {
             var cache = Cache();
 
@@ -362,7 +363,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var exp = PopulateCache(cache, loc, MaxItemCnt, x => x < 50);
 
             // 2. Validate results.
-            var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc);
+            var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
+            {
+                EnableDistributedJoins = distrJoin
+            };
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -475,60 +479,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check scan query.
-        /// </summary>
-        [Test]
-        public void TestScanQuery()
-        {
-            CheckScanQuery<QueryPerson>(MaxItemCnt, false, false);
-        }
-
-        /// <summary>
-        /// Check scan query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestScanQueryBinary()
-        {
-            CheckScanQuery<BinaryObject>(MaxItemCnt, false, true);
-        }
-
-        /// <summary>
-        /// Check local scan query.
-        /// </summary>
-        [Test]
-        public void TestScanQueryLocal()
-        {
-            CheckScanQuery<QueryPerson>(MaxItemCnt, true, false);
-        }
-
-        /// <summary>
-        /// Check local scan query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestScanQueryLocalBinary()
-        {
-            CheckScanQuery<BinaryObject>(MaxItemCnt, true, true);
-        }
-
-        /// <summary>
-        /// Check scan query with partitions.
-        /// </summary>
-        [Test]
-        public void TestScanQueryPartitions([Values(true, false)]  bool loc)
-        {
-            CheckScanQueryPartitions<QueryPerson>(MaxItemCnt, loc, false);
-        }
-
-        /// <summary>
-        /// Check scan query with partitions in binary mode.
-        /// </summary>
-        [Test]
-        public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
-        {
-            CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
-        }
-
-        /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
         [Test]
@@ -554,12 +504,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query.
         /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckScanQuery<TV>(int cnt, bool loc, bool keepBinary)
+        [Test]
+        public void CheckScanQuery<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
+            var cnt = MaxItemCnt;
 
             // No predicate
             var exp = PopulateCache(cache, loc, cnt, x => true);
@@ -592,15 +541,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks scan query with partitions.
         /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckScanQueryPartitions<TV>(int cnt, bool loc, bool keepBinary)
+        [Test]
+        public void CheckScanQueryPartitions<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             StopGrids();
             StartGrids();
 
             var cache = Cache();
+            var cnt = MaxItemCnt;
 
             var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
