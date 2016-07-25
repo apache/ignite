@@ -987,6 +987,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             query = (ICacheQueryable) distrQuery;
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
+            // Easy check that EnableDistributedJoins is propagated to Java: it throws an error on replicated cache
             var ex = Assert.Throws<IgniteException>(() => Assert.AreEqual(0, distrQuery.ToArray().Length));
             Assert.AreEqual("Queries using distributed JOINs have to be run on partitioned cache, not on replicated.",
                 ex.Message);
