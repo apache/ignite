@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -953,7 +954,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(true).Where(x => x.Key > 10);
+            var query = (ICacheQueryable) cache.AsCacheQueryable(true, null, 999, true, true).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -963,6 +964,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
+            Assert.AreEqual(999, fq.PageSize);
+            Assert.IsTrue(fq.EnableDistributedJoins);
+            Assert.IsTrue(fq.EnforceJoinOrder);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -973,6 +977,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
+            Assert.AreEqual(SqlFieldsQuery.DfltPageSize, fq.PageSize);
+            Assert.IsFalse(fq.EnableDistributedJoins);
+            Assert.IsFalse(fq.EnforceJoinOrder);
         }
 
         /// <summary>
