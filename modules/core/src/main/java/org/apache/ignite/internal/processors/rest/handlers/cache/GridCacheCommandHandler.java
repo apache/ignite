@@ -31,6 +31,11 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -100,8 +106,6 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_S
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Command handler for API requests.
@@ -195,7 +199,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static IgniteInternalFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
         final IgniteInternalCache<Object, Object> cache,
-        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
+        final Object key, GridRestCacheRequest req,
+        final boolean prepend) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -206,23 +211,38 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Object curVal = cache.get(key);
+            @Override
+            public Object call() throws Exception {
+                EntryProcessorResult<Boolean> res = cache.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
+                    @Override
+                    public Boolean process(MutableEntry<Object, Object> entry,
+                        Object... objects) throws EntryProcessorException {
+                        try {
+                            Object curVal = entry.getValue();
 
-                    if (curVal == null)
-                        return false;
+                            if (curVal == null)
+                                return false;
 
-                    // Modify current value with appendix one.
-                    Object newVal = appendOrPrepend(curVal, val, !prepend);
+                            // Modify current value with appendix one.
+                            Object newVal = appendOrPrepend(curVal, val, !prepend);
 
-                    // Put new value asynchronously.
-                    cache.put(key, newVal);
+                            // Put new value asynchronously.
+                            entry.setValue(newVal);
 
-                    tx.commit();
+                            return true;
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new EntryProcessorException(e);
+                        }
+                    }
+                });
+
+                try {
+                    return res.get();
                 }
-
-                return true;
+                catch (EntryProcessorException e) {
+                    throw new IgniteCheckedException(e.getCause());
+                }
             }
         }, false);
     }
@@ -236,7 +256,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Resulting value.
      * @throws IgniteCheckedException In case of grid exceptions.
      */
-    private static Object appendOrPrepend(Object origVal, Object appendVal, boolean appendPlc) throws IgniteCheckedException {
+    private static Object appendOrPrepend(Object origVal, Object appendVal,
+        boolean appendPlc) throws IgniteCheckedException {
         // Strings.
         if (appendVal instanceof String && origVal instanceof String)
             return appendPlc ? origVal + (String)appendVal : (String)appendVal + origVal;
@@ -313,7 +334,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    private static IgniteInternalCache<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
+    private static IgniteInternalCache<Object, Object> cache(Ignite ignite,
+        String cacheName) throws IgniteCheckedException {
         IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
@@ -383,7 +405,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_METADATA: {
-                    fut = ctx.task().execute(MetadataTask.class, cacheName);
+                    fut = ctx.task().execute(MetadataTask.class, null);
 
                     break;
                 }
@@ -630,11 +652,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Executes command on flagged cache projection. Checks {@code destId} to find
-     * if command could be performed locally or routed to a remote node.
+     * Executes command on flagged cache projection. Checks {@code destId} to find if command could be performed locally
+     * or routed to a remote node.
      *
-     * @param destId Target node Id for the operation.
-     *      If {@code null} - operation could be executed anywhere.
+     * @param destId Target node Id for the operation. If {@code null} - operation could be executed anywhere.
      * @param clientId Client ID.
      * @param cacheName Cache name.
      * @param skipStore Skip store.
@@ -655,7 +676,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            IgniteInternalCache<?,?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
 
             return op.apply((IgniteInternalCache<Object, Object>)prj, ctx).
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
@@ -672,11 +693,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Executes command on cache. Checks {@code destId} to find
-     * if command could be performed locally or routed to a remote node.
+     * Executes command on cache. Checks {@code destId} to find if command could be performed locally or routed to a
+     * remote node.
      *
-     * @param destId Target node Id for the operation.
-     *      If {@code null} - operation could be executed anywhere.
+     * @param destId Target node Id for the operation. If {@code null} - operation could be executed anywhere.
      * @param clientId Client ID.
      * @param cacheName Cache name.
      * @param key Key to set affinity mapping in the response.
@@ -719,7 +739,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return If replicated cache with given name is locally available.
      */
     private boolean replicatedCacheAvailable(String cacheName) {
-        GridCacheAdapter<Object,Object> cache = ctx.cache().internalCache(cacheName);
+        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
         return cache != null && cache.configuration().getCacheMode() == CacheMode.REPLICATED;
     }
@@ -904,7 +924,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     @GridInternal
-    private static class MetadataTask extends ComputeTaskAdapter<String, GridRestResponse> {
+    private static class MetadataTask extends ComputeTaskAdapter<Void, GridRestResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -912,13 +932,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @IgniteInstanceResource
         private IgniteEx ignite;
 
-        /** */
-        private String cacheName;
-
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String cacheName) throws IgniteException {
-            this.cacheName = cacheName;
+            @Nullable Void arg) throws IgniteException {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
@@ -961,12 +977,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             }
 
             Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
-
-            // Metadata for current cache must be first in list.
-            GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
-
-            if (cacheMeta != null)
-                metas.add(cacheMeta);
 
             metas.addAll(map.values());
 
@@ -1059,7 +1069,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** Key. */
         protected final Object key;
 
-        /** Value.*/
+        /** Value. */
         protected final Object val;
 
         /**
@@ -1506,7 +1516,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-            return c.sizeAsync(new CachePeekMode[]{CachePeekMode.PRIMARY});
+            return c.sizeAsync(new CachePeekMode[] {CachePeekMode.PRIMARY});
         }
     }
 }

@@ -313,18 +313,17 @@ namespace Apache.Ignite.Core.Impl.Services
                 {
                     bool hasVal = r.ReadBool();
 
-                    if (hasVal)
-                    {
-                        var count = r.ReadInt();
+                    if (!hasVal)
+                        return new T[0];
+
+                    var count = r.ReadInt();
                         
-                        var res = new List<T>(count);
+                    var res = new List<T>(count);
 
-                        for (var i = 0; i < count; i++)
-                            res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                    for (var i = 0; i < count; i++)
+                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
 
-                        return res;
-                    }
-                    return null;
+                    return res;
                 });
         }
 

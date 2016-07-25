@@ -89,7 +89,8 @@ public class PlatformCallbackGateway {
      * @param objPtr Object pointer.
      */
     public void cacheStoreDestroy(long objPtr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // no need to destroy stores on grid stop
 
         try {
             PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
@@ -1036,6 +1037,16 @@ public class PlatformCallbackGateway {
         finally {
             leave();
         }
+    }
+
+    /**
+     * Redirects the console output to platform.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    public static void consoleWrite(String str, boolean isErr) {
+        PlatformCallbackUtils.consoleWrite(str, isErr);
     }
 
     /**

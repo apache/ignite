@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * Reduce fields queries tests for local cache.
+ * Executes SQL big query test using distributed joins mode.
  */
-public class GridCacheReduceFieldsQueryLocalSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
+public class H2CompareBigQueryDistributedJoinsTest extends H2CompareBigQueryTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected boolean distributedJoins() {
+        return true;
     }
 }

@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Resource;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -250,7 +251,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Prepare callback invoked from Java.
         /// </summary>
-        /// <param name="inStream">Intput stream with data.</param>
+        /// <param name="inStream">Input stream with data.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
         internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream, 
@@ -265,6 +266,8 @@ namespace Apache.Ignite.Core
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
 
                 PrepareAffinityFunctions(reader, outStream);
+
+                outStream.SynchronizeOutput();
             }
             catch (Exception e)
             {
@@ -275,7 +278,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Preapare configuration.
+        /// Prepare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Response stream.</param>
@@ -309,10 +312,13 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(BinaryReader reader, PlatformMemoryStream outStream, 
+        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream,
             HandleRegistry handleRegistry)
         {
-            IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>();
+            IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>
+            {
+                new LifecycleBeanHolder(new InternalLifecycleBean())   // add internal bean for events
+            };
 
             // 1. Read beans defined in Java.
             int cnt = reader.ReadInt();
@@ -320,7 +326,7 @@ namespace Apache.Ignite.Core
             for (int i = 0; i < cnt; i++)
                 beans.Add(new LifecycleBeanHolder(CreateObject<ILifecycleBean>(reader)));
 
-            // 2. Append beans definied in local configuration.
+            // 2. Append beans defined in local configuration.
             ICollection<ILifecycleBean> nativeBeans = _startup.Configuration.LifecycleBeans;
 
             if (nativeBeans != null)
@@ -334,8 +340,6 @@ namespace Apache.Ignite.Core
 
             foreach (LifecycleBeanHolder bean in beans)
                 outStream.WriteLong(handleRegistry.AllocateCritical(bean));
-
-            outStream.SynchronizeOutput();
 
             // 4. Set beans to STARTUP object.
             _startup.LifecycleBeans = beans;
@@ -364,11 +368,8 @@ namespace Apache.Ignite.Core
         /// <returns>Resulting object.</returns>
         private static T CreateObject<T>(IBinaryRawReader reader)
         {
-            var res =  IgniteUtils.CreateInstance<T>(reader.ReadString());
-
-            IgniteUtils.SetProperties(res, reader.ReadDictionaryAsGeneric<string, object>());
-
-            return res;
+            return IgniteUtils.CreateInstance<T>(reader.ReadString(),
+                reader.ReadDictionaryAsGeneric<string, object>());
         }
 
         /// <summary>
@@ -704,6 +705,23 @@ namespace Apache.Ignite.Core
             /// Gets or sets the ignite.
             /// </summary>
             internal Ignite Ignite { get; set; }
+        }
+
+        /// <summary>
+        /// Internal bean for event notification.
+        /// </summary>
+        private class InternalLifecycleBean : ILifecycleBean
+        {
+            /** */
+            #pragma warning disable 649   // unused field
+            [InstanceResource] private readonly IIgnite _ignite;
+
+            /** <inheritdoc /> */
+            public void OnLifecycleEvent(LifecycleEventType evt)
+            {
+                if (evt == LifecycleEventType.BeforeNodeStop && _ignite != null)
+                    ((IgniteProxy) _ignite).Target.BeforeNodeStop();
+            }
         }
     }
 }

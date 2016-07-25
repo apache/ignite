@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -46,6 +47,15 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinarySelfTest { 
         /** */
         private Marshaller _marsh;
+
+        /** */
+        public static readonly string[] SpecialStrings =
+        {
+            new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF}),
+            "ascii0123456789",
+            "的的abcdкириллица",
+            new string(new[] {(char) 0xD801, (char) 0xDC37})
+        };
 
         /// <summary>
         /// 
@@ -449,6 +459,21 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal((string) null)), null);
         }
 
+        /// <summary>
+        /// Tests special characters.
+        /// </summary>
+        [Test]
+        public void TestWriteSpecialString()
+        {
+            if (BinaryUtils.UseStringSerializationVer2)
+            {
+                foreach (var test in SpecialStrings)
+                {
+                    Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test);
+                }
+            }
+        }
+
         /**
          * <summary>Check write of string array.</summary>
          */
@@ -756,7 +781,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             });
 
-            PrimitiveFieldType obj = new PrimitiveFieldType();
+            // Use utc date fields because reflective serializer writes [QuerySqlField] fields as timestamp
+            var obj = new PrimitiveFieldType
+            {
+                PDate = DateTime.UtcNow,
+                PnDate = DateTime.UtcNow
+            };
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -908,23 +938,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private void CheckPrimitiveFields(Marshaller marsh, PrimitiveFieldType obj)
         {
-            obj.PBool = true;
-            obj.PByte = 2;
-            obj.PSbyte = 3;
-            obj.PShort = 4;
-            obj.PUshort = 5;
-            obj.PInt = 6;
-            obj.PUint = 7;
-            obj.PLong = 8;
-            obj.PUlong = 9;
-            obj.PChar = 'a';
-            obj.PFloat = 10;
-            obj.PDouble = 11;
-            obj.PString = "abc";
-            obj.PGuid = Guid.NewGuid();
-            obj.PnGuid = Guid.NewGuid();
-            obj.IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
-            
             CheckPrimitiveFieldsSerialization(marsh, obj);
         }
 
@@ -1820,36 +1833,81 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Serializable]
         public class PrimitiveFieldType 
         {
+            public PrimitiveFieldType()
+            {
+                PBool = true;
+                PByte = 2;
+                PSbyte = 3;
+                PShort = 4;
+                PUshort = 5;
+                PInt = 6;
+                PUint = 7;
+                PLong = 8;
+                PUlong = 9;
+                PChar = 'a';
+                PFloat = 10;
+                PDouble = 11;
+                PString = "abc";
+                PGuid = Guid.NewGuid();
+                PnGuid = Guid.NewGuid();
+                PDate = DateTime.Now;
+                PnDate = DateTime.Now;
+                IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
+            }
+
+            // Mark all fields with QuerySqlField because reflective serializer takes it into account
+            [QuerySqlField]
             public bool PBool { get; set; }
 
+            [QuerySqlField]
             public sbyte PSbyte { get; set; }
 
+            [QuerySqlField]
             public byte PByte { get; set; }
 
+            [QuerySqlField]
             public short PShort { get; set; }
 
+            [QuerySqlField]
             public ushort PUshort { get; set; }
 
+            [QuerySqlField]
             public char PChar { get; set; }
 
+            [QuerySqlField]
             public int PInt { get; set; }
 
+            [QuerySqlField]
             public uint PUint { get; set; }
 
+            [QuerySqlField]
             public long PLong { get; set; }
 
+            [QuerySqlField]
             public ulong PUlong { get; set; }
 
+            [QuerySqlField]
             public float PFloat { get; set; }
 
+            [QuerySqlField]
             public double PDouble { get; set; }
 
+            [QuerySqlField]
             public string PString { get; set; }
 
+            [QuerySqlField]
             public Guid PGuid { get; set; }
 
+            [QuerySqlField]
             public Guid? PnGuid { get; set; }
 
+            [QuerySqlField]
+            public DateTime PDate { get; set; }
+
+            [QuerySqlField]
+            public DateTime? PnDate { get; set; }
+
+            [QuerySqlField]
             public IgniteGuid IgniteGuid { get; set; }
 
             /** <inheritdoc /> */
@@ -1858,28 +1916,28 @@ namespace Apache.Ignite.Core.Tests.Binary
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is PrimitiveFieldType)
-                {
-                    PrimitiveFieldType that = (PrimitiveFieldType)obj;
+                var that = obj as PrimitiveFieldType;
+                if (that == null)
+                    return false;
 
-                    return PBool == that.PBool &&
-                        PByte == that.PByte &&
-                        PSbyte == that.PSbyte &&
-                        PShort == that.PShort &&
-                        PUshort == that.PUshort &&
-                        PInt == that.PInt &&
-                        PUint == that.PUint &&
-                        PLong == that.PLong &&
-                        PUlong == that.PUlong &&
-                        PChar == that.PChar &&
-                        PFloat == that.PFloat &&
-                        PDouble == that.PDouble &&
-                        (string.Equals(PString, that.PString)) &&
-                        PGuid.Equals(that.PGuid) &&
-                        IgniteGuid.Equals(that.IgniteGuid) &&
-                        (PnGuid == null && that.PnGuid == null || PnGuid != null && PnGuid.Equals(that.PnGuid));
-                }
-                return false;
+                return PBool == that.PBool &&
+                       PByte == that.PByte &&
+                       PSbyte == that.PSbyte &&
+                       PShort == that.PShort &&
+                       PUshort == that.PUshort &&
+                       PInt == that.PInt &&
+                       PUint == that.PUint &&
+                       PLong == that.PLong &&
+                       PUlong == that.PUlong &&
+                       PChar == that.PChar &&
+                       PFloat == that.PFloat &&
+                       PDouble == that.PDouble &&
+                       PString == that.PString &&
+                       PGuid == that.PGuid &&
+                       PnGuid == that.PnGuid &&
+                       IgniteGuid == that.IgniteGuid &&
+                       PDate == that.PDate &&
+                       PnDate == that.PnDate;
             }
 
             /** <inheritdoc /> */
@@ -1916,6 +1974,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteGuid("guid", PGuid);
                 writer.WriteGuid("nguid", PnGuid);
 
+                writer.WriteObject("date", PDate);
+                writer.WriteObject("ndate", PnDate);
+
                 writer.WriteObject("iguid", IgniteGuid);
             }
 
@@ -1944,6 +2005,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadObject<Guid>("guid");
                 PnGuid = reader.ReadGuid("nguid");
+
+                PDate = reader.ReadObject<DateTime>("date");
+                PnDate = reader.ReadObject<DateTime?>("ndate");
 
                 IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
@@ -1978,6 +2042,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 rawWriter.WriteGuid(PGuid);
                 rawWriter.WriteGuid(PnGuid);
 
+                rawWriter.WriteObject(PDate);
+                rawWriter.WriteObject(PnDate);
+
                 rawWriter.WriteObject(IgniteGuid);
             }
 
@@ -2008,6 +2075,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 PString = rawReader.ReadString();
                 PGuid = rawReader.ReadGuid().Value;
                 PnGuid = rawReader.ReadGuid();
+
+                PDate = rawReader.ReadObject<DateTime>();
+                PnDate = rawReader.ReadObject<DateTime?>();
 
                 IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
@@ -2042,6 +2112,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteGuid("guid", obj0.PGuid);
                 writer.WriteGuid("nguid", obj0.PnGuid);
 
+                writer.WriteObject("date", obj0.PDate);
+                writer.WriteObject("ndate", obj0.PnDate);
+
                 writer.WriteObject("iguid", obj0.IgniteGuid);
             }
 
@@ -2072,6 +2145,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 obj0.PString = reader.ReadString("string");
                 obj0.PGuid = reader.ReadObject<Guid>("guid");
                 obj0.PnGuid = reader.ReadGuid("nguid");
+
+                obj0.PDate = reader.ReadObject<DateTime>("date");
+                obj0.PnDate = reader.ReadObject<DateTime?>("ndate");
 
                 obj0.IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
@@ -2108,6 +2184,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 rawWriter.WriteGuid(obj0.PGuid);
                 rawWriter.WriteGuid(obj0.PnGuid);
 
+                rawWriter.WriteObject(obj0.PDate);
+                rawWriter.WriteObject(obj0.PnDate);
+
                 rawWriter.WriteObject(obj0.IgniteGuid);
             }
 
@@ -2139,6 +2218,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 obj0.PString = rawReader.ReadString();
                 obj0.PGuid = rawReader.ReadGuid().Value;
                 obj0.PnGuid = rawReader.ReadGuid();
+
+                obj0.PDate = rawReader.ReadObject<DateTime>();
+                obj0.PnDate = rawReader.ReadObject<DateTime?>();
 
                 obj0.IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }

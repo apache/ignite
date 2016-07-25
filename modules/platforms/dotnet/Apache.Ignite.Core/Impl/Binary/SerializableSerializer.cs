@@ -15,23 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+namespace Apache.Ignite.Core.Impl.Binary
+{
+    using System;
+    using Apache.Ignite.Core.Impl.Common;
 
-import org.apache.ignite.cache.CacheMode;
+    /// <summary>
+    /// Serializable serializer.
+    /// </summary>
+    internal class SerializableSerializer : IBinarySerializerInternal
+    {
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
+        {
+            TypeCaster<SerializableObjectHolder>.Cast(obj).WriteBinary(writer);
+        }
 
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
+        {
+            var holder = new SerializableObjectHolder(reader);
 
-/**
- * Reduce fields queries tests for replicated cache.
- */
-public class GridCacheReduceFieldsQueryReplicatedSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+            return TypeCaster<T>.Cast(holder.Item);
+        }
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+        /** <inheritdoc /> */
+        public bool SupportsHandles
+        {
+            get { return false; }
+        }
     }
 }

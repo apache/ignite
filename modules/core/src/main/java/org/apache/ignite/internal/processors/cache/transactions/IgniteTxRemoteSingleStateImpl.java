@@ -21,9 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +35,17 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     /** */
     private IgniteTxEntry entry;
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        if (entry == null)
+            return;
+
+        GridCacheContext ctx = cctx.cacheContext(entry.cacheId());
+
+        if (ctx != null)
+            CU.unwindEvicts(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {

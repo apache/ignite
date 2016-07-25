@@ -23,20 +23,15 @@ import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
-import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
@@ -187,6 +182,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
+                // Write .NET beans
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
                 writer.writeInt(beans.size());
@@ -226,6 +222,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
 
+        // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
 
@@ -263,57 +260,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         if (!affFuncs.isEmpty()) {
             for (PlatformDotNetAffinityFunction aff : affFuncs)
-                aff.init(readAffinityFunction(in));
+                aff.init(PlatformConfigurationUtils.readAffinityFunction(in));
         }
-    }
-
-    /**
-     * Reads the affinity function.
-     *
-     * @param in Stream.
-     * @return Affinity function.
-     */
-    private static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
-        byte plcTyp = in.readByte();
-
-        if (plcTyp == 0)
-            return null;
-
-        int partitions = in.readInt();
-        boolean exclNeighbours = in.readBoolean();
-        byte overrideFlags = in.readByte();
-        Object userFunc = in.readObjectDetached();
-
-        AffinityFunction baseFunc = null;
-
-        switch (plcTyp) {
-            case 1: {
-                FairAffinityFunction f = new FairAffinityFunction();
-
-                f.setPartitions(partitions);
-                f.setExcludeNeighbors(exclNeighbours);
-
-                baseFunc = f;
-
-                break;
-            }
-
-            case 2: {
-                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
-
-                f.setPartitions(partitions);
-                f.setExcludeNeighbors(exclNeighbours);
-
-                baseFunc = f;
-
-                break;
-            }
-
-            default:
-                assert plcTyp == 3 : "Unknown affinity function policy type: " + plcTyp;
-        }
-
-        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
     }
 
     /**

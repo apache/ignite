@@ -545,6 +545,14 @@ public class PlatformCallbackUtils {
     static native void affinityFunctionDestroy(long envPtr, long ptr);
 
     /**
+     * Redirects the console output.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    static native void consoleWrite(String str, boolean isErr);
+
+    /**
      * Private constructor.
      */
     private PlatformCallbackUtils() {

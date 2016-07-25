@@ -33,7 +33,7 @@
                             <xs:element name="typeConfigurations" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="binaryTypeConfiguration">
+                                        <xs:element name="binaryTypeConfiguration" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:all>
                                                     <xs:element name="nameMapper" minOccurs="0">
@@ -186,6 +186,13 @@
                                                 <xs:attribute name="batchSize" type="xs:int" />
                                                 <xs:attribute name="maxSize" type="xs:int" />
                                                 <xs:attribute name="maxMemorySize" type="xs:int" />
+                                                <xs:attribute name="type" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="affinityFunction" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:attribute name="partitions" type="xs:int" />
+                                                <xs:attribute name="excludeNeighbors" type="xs:boolean" />
                                                 <xs:attribute name="type" type="xs:string" use="required" />
                                             </xs:complexType>
                                         </xs:element>

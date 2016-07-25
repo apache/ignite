@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+namespace Apache.Ignite.Core.Impl.Binary
+{
+    using System;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+    /// <summary>
+    /// Internal generic serializer interface.
+    /// </summary>
+    internal interface IBinarySerializerInternal
+    {
+        /// <summary>
+        /// Write binary object.
+        /// </summary>
+        void WriteBinary<T>(T obj, BinaryWriter writer);
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+        /// <summary>
+        /// Read binary object.
+        /// </summary>
+        T ReadBinary<T>(BinaryReader reader, Type type, int pos);
 
-/**
- * Reduce fields queries tests for partitioned cache.
- */
-public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFieldsQueryPartitionedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        /// <summary>
+        /// Gets a value indicating whether this serializer supports handles.
+        /// </summary>
+        bool SupportsHandles { get; }
     }
 }
