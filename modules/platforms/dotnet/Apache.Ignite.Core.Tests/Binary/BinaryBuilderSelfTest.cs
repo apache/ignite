@@ -1634,7 +1634,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long FLong;
         public float FFloat;
         public double FDouble;
-        public double FDecimal;
+        public decimal FDecimal;
         public string FString;
     }
 
