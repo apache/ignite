@@ -352,50 +352,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL query.
         /// </summary>
         [Test]
-        public void TestSqlQuery()
-        {
-            CheckSqlQuery(MaxItemCnt, false, false);
-        }
-
-        /// <summary>
-        /// Check SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryBinary()
-        {
-            CheckSqlQuery(MaxItemCnt, false, true);
-        }
-
-        /// <summary>
-        /// Check local SQL query.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryLocal()
-        {
-            CheckSqlQuery(MaxItemCnt, true, false);
-        }
-
-        /// <summary>
-        /// Check local SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryLocalBinary()
-        {
-            CheckSqlQuery(MaxItemCnt, true, true);
-        }
-
-        /// <summary>
-        /// Check SQL query.
-        /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckSqlQuery(int cnt, bool loc, bool keepBinary)
+        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
-            var exp = PopulateCache(cache, loc, cnt, x => x < 50);
+            var exp = PopulateCache(cache, loc, MaxItemCnt, x => x < 50);
 
             // 2. Validate results.
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc);
