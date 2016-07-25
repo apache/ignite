@@ -314,8 +314,7 @@ void CheckGetNextFail(Cursor& cur)
  *
  * @param cur Cursor.
  */
-template<typename Cursor>
-void CheckGetAllFail(Cursor& cur)
+void CheckGetAllFail(QueryCursor<int, QueryPerson>& cur)
 {
     try 
     {
@@ -361,8 +360,7 @@ void CheckEmpty(QueryFieldsCursor& cur)
  *
  * @param cur Cursor.
  */
-template<typename Cursor>
-void CheckEmptyGetAll(Cursor& cur)
+void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
 
@@ -382,8 +380,7 @@ void CheckEmptyGetAll(Cursor& cur)
  * @param name1 Name.
  * @param age1 Age.
  */
-template<typename Cursor>
-void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
+void CheckSingle(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
     BOOST_REQUIRE(cur.HasNext());
 
@@ -404,6 +401,30 @@ void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
 }
 
 /**
+ * Check single result through iteration.
+ *
+ * @param cur Cursor.
+ * @param key Key.
+ * @param name Name.
+ * @param age Age.
+ */
+void CheckSingle(QueryFieldsCursor& cur, int key, const std::string& name, int age)
+{
+    BOOST_REQUIRE(cur.HasNext());
+
+    QueryFieldsRow row = cur.GetNext();
+
+    BOOST_REQUIRE_EQUAL(row.GetNext<int32_t>(), key);
+    BOOST_REQUIRE_EQUAL(row.GetNext<std::string>(), name);
+    BOOST_REQUIRE_EQUAL(row.GetNext<int32_t>(), age);
+
+    BOOST_REQUIRE(!row.HasNext());
+    BOOST_REQUIRE(!cur.HasNext());
+
+    CheckGetNextFail(cur);
+}
+
+/**
  * Check single result through GetAll().
  *
  * @param cur Cursor.
@@ -411,8 +432,7 @@ void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
  * @param name1 Name.
  * @param age1 Age.
  */
-template<typename Cursor>
-void CheckSingleGetAll(Cursor& cur, int key, const std::string& name, int age)
+void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
 
@@ -444,8 +464,7 @@ void CheckSingleGetAll(Cursor& cur, int key, const std::string& name, int age)
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-template<typename Cursor>
-void CheckMultiple(Cursor& cur, int key1, const std::string& name1, 
+void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
     int age1, int key2, const std::string& name2, int age2)
 {
     for (int i = 0; i < 2; i++)
@@ -489,8 +508,7 @@ void CheckMultiple(Cursor& cur, int key1, const std::string& name1,
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-template<typename Cursor>
-void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
+void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
     int age1, int key2, const std::string& name2, int age2)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
@@ -550,8 +568,23 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    // Test simple distributed joins query.
+    BOOST_CHECK(!qry.IsDistributedJoins());
+    qry.SetDistributedJoins(true);
+    BOOST_CHECK(qry.IsDistributedJoins());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAll(cursor, 1, "A1", 10);
+
+    qry.SetDistributedJoins(false);
+
     // Test simple local query.
+    BOOST_CHECK(!qry.IsLocal());
     qry.SetLocal(true);
+    BOOST_CHECK(qry.IsLocal());
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -708,6 +741,65 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
     // Ensure that all keys were read.
     BOOST_REQUIRE(keys.size() == entryCnt);
+}
+
+/**
+ * Basic test for SQL fields query.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
+{
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with no results.
+    SqlFieldsQuery qry("select _key, name, age from QueryPerson where age < 20");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    // Test simple distributed joins query.
+    BOOST_CHECK(!qry.IsDistributedJoins());
+    BOOST_CHECK(!qry.IsEnforceJoinOrder());
+
+    qry.SetDistributedJoins(true);
+
+    BOOST_CHECK(qry.IsDistributedJoins());
+    BOOST_CHECK(!qry.IsEnforceJoinOrder());
+
+    qry.SetEnforceJoinOrder(true);
+
+    BOOST_CHECK(qry.IsDistributedJoins());
+    BOOST_CHECK(qry.IsEnforceJoinOrder());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+    
+    qry.SetDistributedJoins(false);
+    qry.SetEnforceJoinOrder(false);
+
+    // Test simple local query.
+    BOOST_CHECK(!qry.IsLocal());
+
+    qry.SetLocal(true);
+
+    BOOST_CHECK(qry.IsLocal());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    // Test query with arguments.
+    qry.SetSql("select _key, name, age from QueryPerson where age < ? AND name = ?");
+    qry.AddArgument<int>(20);
+    qry.AddArgument<std::string>("A1");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
 }
 
 /**
