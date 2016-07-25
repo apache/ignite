@@ -138,8 +138,8 @@ extern "C" {
         return ctx->ProcessorGetCacheNames(static_cast<jobject>(obj), memPtr);
     }
 
-    bool IGNITE_CALL IgniteProcessorRegisterClass(gcj::JniContext* ctx, void* obj, int id, char* name) {
-        return ctx->ProcessorRegisterClass(static_cast<jobject>(obj), id, name);
+    bool IGNITE_CALL IgniteProcessorRegisterType(gcj::JniContext* ctx, void* obj, int id, char* name) {
+        return ctx->ProcessorRegisterType(static_cast<jobject>(obj), id, name);
     }
 
     char* IGNITE_CALL IgniteProcessorGetClass(gcj::JniContext* ctx, void* obj, int id, int* resLen) {

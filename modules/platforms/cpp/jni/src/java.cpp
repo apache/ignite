@@ -216,7 +216,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_REGISTER_CLASS = JniMethod("registerClass", "(ILjava/lang/String;)Z", false);
+            JniMethod M_PLATFORM_PROCESSOR_REGISTER_TYPE = JniMethod("registerType", "(ILjava/lang/String;)Z", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_CLASS = JniMethod("getClass", "(I)Ljava/lang/String;", false);
 
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
@@ -718,7 +718,7 @@ namespace ignite
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
 				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
 				m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
-				m_PlatformProcessor_registerClass = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_REGISTER_CLASS);
+				m_PlatformProcessor_registerType = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_REGISTER_TYPE);
 				m_PlatformProcessor_getClass = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CLASS);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
@@ -1530,13 +1530,13 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            bool JniContext::ProcessorRegisterClass(jobject obj, int id, char* name)
+            bool JniContext::ProcessorRegisterType(jobject obj, int id, char* name)
             {
                 JNIEnv* env = Attach();
 
                 jstring name0 = env->NewStringUTF(name);
 
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformProcessor_registerClass, id, name0);
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformProcessor_registerType, id, name0);
 
                 env->DeleteLocalRef(name0);
 

@@ -372,12 +372,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
         }
 
-        internal static bool ProcessorRegisterClass(IUnmanagedTarget target, int id, string name)
+        internal static bool ProcessorRegisterType(IUnmanagedTarget target, int id, string name)
         {
             var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
             try
             {
-                return JNI.ProcessorRegisterClass(target.Context, target.Target, id, name0);
+                return JNI.ProcessorRegisterType(target.Context, target.Target, id, name0);
             }
             finally
             {

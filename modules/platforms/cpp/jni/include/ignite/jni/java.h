@@ -333,7 +333,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_atomicLong;
                 jmethodID m_PlatformProcessor_getIgniteConfiguration;
                 jmethodID m_PlatformProcessor_getCacheNames;
-                jmethodID m_PlatformProcessor_registerClass;
+                jmethodID m_PlatformProcessor_registerType;
                 jmethodID m_PlatformProcessor_getClass;
                 jmethodID m_PlatformProcessor_atomicSequence;
                 jmethodID m_PlatformProcessor_atomicReference;
@@ -556,7 +556,7 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-				bool ProcessorRegisterClass(jobject obj, int id, char* name);
+				bool ProcessorRegisterType(jobject obj, int id, char* name);
 				char* ProcessorGetClass(jobject obj, int id, int* resLen);
 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);

@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
             Debug.Assert(id != BinaryUtils.TypeUnregistered);
 
-            return UnmanagedUtils.ProcessorRegisterClass(_ignite.InteropProcessor, id, type.AssemblyQualifiedName);
+            return UnmanagedUtils.ProcessorRegisterType(_ignite.InteropProcessor, id, type.AssemblyQualifiedName);
         }
 
         /// <summary>

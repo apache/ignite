@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
         public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorRegisterClass")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorRegisterType")]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool ProcessorRegisterClass(void* ctx, void* obj, int id, sbyte* name);
+        public static extern bool ProcessorRegisterType(void* ctx, void* obj, int id, sbyte* name);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetClass")]
         public static extern sbyte* ProcessorGetClass(void* ctx, void* obj, int id, int* resLen);
