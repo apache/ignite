@@ -37,12 +37,14 @@ public class TxDeadlockDetectionTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
 
+/*
         suite.addTestSuite(DepthFirstSearchTest.class);
         suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
         suite.addTestSuite(TxOptimisticDeadlockDetectionCrossCacheTest.class);
         suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
         suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
         suite.addTestSuite(TxDeadlockDetectionTest.class);
+*/
         suite.addTestSuite(TxDeadlockDetectionNoHangsTest.class);
 
         return suite;

@@ -32,6 +32,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -238,6 +239,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             ", clientTx=" + clientTx + ", transformer=" + transformer.getClass().getName() + ']');
 
         TestCommunicationSpi.init(txCnt);
+
+        TestCommunicationSpi.log = log;
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -526,6 +529,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         /** Tx ids. */
         private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
 
+         static volatile IgniteLogger log;
+
         /**
          * @param txCnt Tx count.
          */
@@ -548,6 +553,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
+                    log.info("!!! req " + txId + "\n" + TX_IDS);
+
                     if (TX_IDS.contains(txId)) {
                         while (TX_IDS.size() < TX_CNT) {
                             try {
@@ -563,6 +570,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg0;
 
                     GridCacheVersion txId = res.version();
+
+                    log.info("!!! res " + txId + "\n" + TX_IDS);
 
                     TX_IDS.add(txId);
                 }

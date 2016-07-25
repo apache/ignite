@@ -480,7 +480,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             long timeout = tx.remainingTime();
 
             if (timeout != -1) {
-                GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
+                final GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                     futId,
                     tx.topologyVersion(),
                     tx,
@@ -530,8 +530,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     IgniteInternalFuture<GridNearTxPrepareResponse> prepFut =
                         cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
+                    log.info("!!! loc req " + req.writes());
+
                     prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                         @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                            log.info("!!! loc res " + req.writes());
+
                             try {
                                 fut.onResult(prepFut.get());
                             }
