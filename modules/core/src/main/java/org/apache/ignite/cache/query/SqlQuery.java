@@ -154,6 +154,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Specify if distributed joins are enabled for this query.
      *
+     * When disabled, join results will only contain colocated data (joins work locally).
+     * When enabled, joins work as expected, no matter how the data is distributed.
+     *
      * @param distributedJoins Distributed joins enabled.
      * @return {@code this} For chaining.
      */
