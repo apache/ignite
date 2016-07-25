@@ -17,9 +17,11 @@
 
 package org.apache.ignite.spring;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.TestInjectionLifecycleBean;
 import org.apache.ignite.cache.spring.SpringCacheManager;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.beans.factory.BeanFactory;
@@ -34,8 +36,29 @@ public class SpringCacheManagerContextInjectionTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testBeanInjection() throws Exception {
-        BeanFactory factory = new AnnotationConfigApplicationContext(TestConfiguration.class);
+    public void testBeanInjectionUsingConfigPath() throws Exception {
+        new AnnotationConfigApplicationContext(TestPathConfiguration.class);
+
+        Ignite grid = IgnitionEx.grid("springInjectionTest");
+
+        IgniteConfiguration cfg = grid.configuration();
+
+        LifecycleBean[] beans = cfg.getLifecycleBeans();
+
+        assertEquals(2, beans.length);
+
+        TestInjectionLifecycleBean bean1 = (TestInjectionLifecycleBean)beans[0];
+        TestInjectionLifecycleBean bean2 = (TestInjectionLifecycleBean)beans[1];
+
+        bean1.checkState();
+        bean2.checkState();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBeanInjectionUsingConfiguration() throws Exception {
+        BeanFactory factory = new AnnotationConfigApplicationContext(TestCfgConfiguration.class);
 
         TestInjectionLifecycleBean bean1 = (TestInjectionLifecycleBean)factory.getBean("bean1");
         TestInjectionLifecycleBean bean2 = (TestInjectionLifecycleBean)factory.getBean("bean2");
@@ -54,7 +77,22 @@ public class SpringCacheManagerContextInjectionTest extends GridCommonAbstractTe
     /** */
     @SuppressWarnings("WeakerAccess")
     @Configuration
-    static class TestConfiguration {
+    static class TestPathConfiguration {
+        /** */
+        @Bean(name = "mgr")
+        public SpringCacheManager springCacheManager() {
+            SpringCacheManager mgr = new SpringCacheManager();
+
+            mgr.setConfigurationPath("org/apache/ignite/spring-injection-test.xml");
+
+            return mgr;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("WeakerAccess")
+    @Configuration
+    static class TestCfgConfiguration {
         /** */
         @Bean(name = "mgr")
         public SpringCacheManager springCacheManager() {

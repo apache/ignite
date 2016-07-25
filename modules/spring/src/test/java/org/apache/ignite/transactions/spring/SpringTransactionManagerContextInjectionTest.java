@@ -17,8 +17,10 @@
 
 package org.apache.ignite.transactions.spring;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.TestInjectionLifecycleBean;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.beans.factory.BeanFactory;
@@ -33,8 +35,29 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    public void testBeanInjection() throws Exception {
-        BeanFactory factory = new AnnotationConfigApplicationContext(TestConfiguration.class);
+    public void testBeanInjectionUsingConfigPath() throws Exception {
+        BeanFactory factory = new AnnotationConfigApplicationContext(TestPathConfiguration.class);
+
+        Ignite grid = IgnitionEx.grid("springInjectionTest");
+
+        IgniteConfiguration cfg = grid.configuration();
+
+        LifecycleBean[] beans = cfg.getLifecycleBeans();
+
+        assertEquals(2, beans.length);
+
+        TestInjectionLifecycleBean bean1 = (TestInjectionLifecycleBean)beans[0];
+        TestInjectionLifecycleBean bean2 = (TestInjectionLifecycleBean)beans[1];
+
+        bean1.checkState();
+        bean2.checkState();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBeanInjectionUsingConfig() throws Exception {
+        BeanFactory factory = new AnnotationConfigApplicationContext(TestCfgConfiguration.class);
 
         TestInjectionLifecycleBean bean1 = (TestInjectionLifecycleBean)factory.getBean("bean1");
         TestInjectionLifecycleBean bean2 = (TestInjectionLifecycleBean)factory.getBean("bean2");
@@ -53,7 +76,22 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
     /** */
     @SuppressWarnings("WeakerAccess")
     @Configuration
-    static class TestConfiguration {
+    static class TestPathConfiguration {
+        /** */
+        @Bean(name = "mgr")
+        public SpringTransactionManager springTransactionManager() {
+            SpringTransactionManager mgr = new SpringTransactionManager();
+
+            mgr.setConfigurationPath("org/apache/ignite/spring-injection-test.xml");
+
+            return mgr;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("WeakerAccess")
+    @Configuration
+    static class TestCfgConfiguration {
         /** */
         @Bean(name = "mgr")
         public SpringTransactionManager springTransactionManager() {
@@ -61,7 +99,7 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
 
             cfg.setLocalHost("127.0.0.1");
 
-            cfg.setGridName("stmt");
+            cfg.setGridName("stmcit");
 
             cfg.setLifecycleBeans(bean1(), bean2());
 
