@@ -66,7 +66,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     public static final IgniteProductVersion FINISH_NEAR_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.4.0");
 
     /** */
-    public static final IgniteProductVersion ACK_DHT_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.5.30");
+    public static final IgniteProductVersion ACK_DHT_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.5.31");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -226,7 +226,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         assert f.node().id().equals(nodeId);
 
                         if (res.returnValue() != null)
-                            tx.implicitSingleResult(res.returnValue(), true);
+                            tx.implicitSingleResult(res.returnValue());
 
                         f.onResult(res);
                     }
@@ -526,11 +526,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     if (committed) {
                         GridCacheReturn retVal = cctx.tm().getCommittedTxReturn(tx.xidVersion());
 
-                        if (retVal != null) {
-                            tx.implicitSingleResult(retVal, true);
+                        assert retVal != null;
 
-                            cctx.tm().removeTxReturn(tx.xidVersion(), null);
-                        }
+                        tx.implicitSingleResult(retVal);
+
+                        cctx.tm().removeTxReturn(tx.xidVersion(), null);
 
                         mini.onDone(tx);
                     }

@@ -118,13 +118,6 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /**
-     * @return Local result flag
-     */
-    public boolean isLoc() {
-        return loc;
-    }
-
-    /**
      * @return Value.
      */
     @SuppressWarnings("unchecked")

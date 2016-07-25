@@ -343,18 +343,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param ret Result.
      */
     public void implicitSingleResult(GridCacheReturn ret) {
-       implicitSingleResult(ret, false);
-    }
-
-    /**
-     * @param ret Result.
-     * @param override Override flag.
-     */
-    public void implicitSingleResult(GridCacheReturn ret, boolean override) {
-        if (!ret.invokeResult() || override)
-            implicitRes = ret;
-        else
+        if (ret.invokeResult())
             implicitRes.mergeEntryProcessResults(ret);
+        else
+            implicitRes = ret;
     }
 
     /**

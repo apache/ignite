@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -101,9 +100,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Preload keys. */
     private BitSet preloadKeys;
 
-    /** Cache return value. */
-    private GridCacheReturn retVal;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -136,8 +132,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean onePhaseCommit,
         UUID subjId,
         int taskNameHash,
-        boolean addDepInfo,
-        GridCacheReturn retVal) {
+        boolean addDepInfo) {
         super(tx, null, dhtWrites, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
@@ -151,7 +146,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.last = last;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.retVal = retVal;
 
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
@@ -191,13 +185,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public int taskNameHash() {
         return taskNameHash;
-    }
-
-    /**
-     * @return GridCacheReturn.
-     */
-    public GridCacheReturn getReturnValue() {
-        return retVal;
     }
 
     /**
@@ -311,14 +298,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         if (nearWrites != null)
             marshalTx(nearWrites, ctx);
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.prepareMarshal(cctx);
-        }
     }
 
     /** {@inheritDoc} */
@@ -341,14 +320,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 owned.put(key, valIter.next());
             }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.finishUnmarshal(cctx, ldr);
         }
 
         unmarshalTx(nearWrites, true, ctx, ldr);
@@ -435,24 +406,18 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeMessage("retVal", retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 34:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 35:
+            case 34:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 36:
+            case 35:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -555,14 +520,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 33:
-                retVal = reader.readMessage("retVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 34:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -570,7 +527,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 35:
+            case 34:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -578,7 +535,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 36:
+            case 35:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -598,6 +555,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 37;
+        return 36;
     }
 }

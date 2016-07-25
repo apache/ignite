@@ -908,7 +908,6 @@ public class IgniteTxHandler {
 
                 if (dhtTx != null) {
                     dhtTx.onePhaseCommit(true);
-                    dhtTx.setReturnValue(req.getReturnValue());
 
                     finish(dhtTx, req);
                 }

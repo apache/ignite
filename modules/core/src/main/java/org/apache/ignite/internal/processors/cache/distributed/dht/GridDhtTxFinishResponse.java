@@ -118,7 +118,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         if (checkCommittedErr != null)
             checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
 
-        if (retVal != null && !retVal.isLoc() && retVal.cacheId() != 0) {
+        if (retVal != null && retVal.cacheId() != 0) {
             GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
 
             assert cctx != null : retVal.cacheId();

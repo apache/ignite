@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -449,6 +450,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
+
+                    if (!near() && !local() && onePhaseCommit())
+                        cctx.tm().addCommittedTxReturn(this,
+                            new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true));
 
                     AffinityTopologyVersion topVer = topologyVersion();
 

@@ -79,7 +79,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @return Keys count for the test.
      */
     protected int keysCount() {
-        return 10_000;
+        return 2_000;
     }
 
     /**
@@ -251,10 +251,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             @Override public Object call() throws Exception {
                 while (!finished.get()) {
                     stopGrid(3);
-
-                    U.sleep(300);
-
                     startGrid(3);
+
+                    awaitPartitionMapExchange();
                 }
 
                 return null;
