@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Queries tests.
     /// </summary>
-    public class CacheQueriesTest
+    public sealed class CacheQueriesTest
     {
         /** Grid count. */
         private const int GridCnt = 2;
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void StartGrids()
+        public void StartGrids()
         {
             TestUtils.JvmDebug = true;
             TestUtils.KillProcesses();
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids()
+        public void StopGrids()
         {
             for (int i = 0; i < GridCnt; i++)
                 Ignition.Stop("grid-" + i, true);
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         [SetUp]
-        public virtual void BeforeTest()
+        public void BeforeTest()
         {
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         [TearDown]
-        public virtual void AfterTest()
+        public void AfterTest()
         {
             var cache = Cache();
 
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="idx"></param>
         /// <returns></returns>
-        public IIgnite GetIgnite(int idx)
+        private IIgnite GetIgnite(int idx)
         {
             return Ignition.GetIgnite("grid-" + idx);
         }
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="idx"></param>
         /// <returns></returns>
-        public ICache<int, QueryPerson> Cache(int idx)
+        private ICache<int, QueryPerson> Cache(int idx)
         {
             return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
         }
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         /// <returns></returns>
-        public ICache<int, QueryPerson> Cache()
+        private ICache<int, QueryPerson> Cache()
         {
             return Cache(0);
         }
@@ -270,6 +270,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test SQL query arguments passing.
         /// </summary>
+        [Test]
         public void TestSqlQueryArguments()
         {
             Cache().Put(1, new QueryPerson("Ivanov", 30));
@@ -289,6 +290,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test SQL fields query arguments passing.
         /// </summary>
+        [Test]
         public void TestSqlFieldsQueryArguments()
         {
             Cache().Put(1, new QueryPerson("Ivanov", 30));
@@ -799,14 +801,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class QueryPerson
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public QueryPerson()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
