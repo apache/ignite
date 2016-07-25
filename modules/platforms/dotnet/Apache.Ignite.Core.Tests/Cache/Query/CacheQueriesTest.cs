@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check text query.
         /// </summary>
         [Test]
-        public void CheckTextQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        public void TestTextQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
 
@@ -466,7 +466,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check scan query.
         /// </summary>
         [Test]
-        public void CheckScanQuery<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        public void TestScanQuery<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
             var cnt = MaxItemCnt;
@@ -503,7 +503,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Checks scan query with partitions.
         /// </summary>
         [Test]
-        public void CheckScanQueryPartitions<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        public void TestScanQueryPartitions<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             StopGrids();
             StartGrids();
