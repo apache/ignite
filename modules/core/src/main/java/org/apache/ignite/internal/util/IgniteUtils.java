@@ -1373,17 +1373,19 @@ public abstract class IgniteUtils {
      * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
-    @Nullable
-    public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt, boolean includePrimitiveTypes) {
+    @Nullable public static Class<?> classForName(
+        @Nullable String cls,
+        @Nullable Class<?> dflt,
+        boolean includePrimitiveTypes
+    ) {
         Class<?> clazz;
         if (cls == null)
             clazz = dflt;
-        else if (includePrimitiveTypes && primitiveMap.containsKey(cls))
-            clazz = primitiveMap.get(cls);
-        else {
+        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
             try {
                 clazz = Class.forName(cls);
-            } catch (ClassNotFoundException ignore) {
+            }
+            catch (ClassNotFoundException ignore) {
                 clazz = dflt;
             }
         }
