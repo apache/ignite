@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -543,6 +544,39 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
             
+        }
+
+        /// <summary>
+        /// Tests the distributed joins flag.
+        /// </summary>
+        [Test]
+        public void TestDistributedJoins()
+        {
+            // Easy check that EnableDistributedJoins is propagated to Java: it throws an error on replicated cache
+            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("replicatedCache")
+                {
+                    CacheMode = CacheMode.Replicated,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(QueryPerson))
+                        {
+                            Fields = new[] {new QueryField("age", typeof(int))}
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("Test", 150);
+
+            // Distributed joins disabled: query works
+            var qry = new SqlQuery(typeof(QueryPerson), "age < 50");
+            Assert.AreEqual(0, cache.Query(qry).GetAll().Count);
+
+            // Distributed joins enabled: query fails
+            qry.EnableDistributedJoins = true;
+            var ex = Assert.Throws<IgniteException>(() => Assert.AreEqual(0, cache.Query(qry).GetAll().Count));
+            Assert.AreEqual("Queries using distributed JOINs have to be run on partitioned cache, not on replicated.",
+                ex.Message);
         }
 
         /// <summary>
