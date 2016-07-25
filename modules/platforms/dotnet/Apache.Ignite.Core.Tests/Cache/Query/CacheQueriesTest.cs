@@ -407,35 +407,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL fields query.
         /// </summary>
         [Test]
-        public void TestSqlFieldsQuery()
+        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
+            [Values(true, false)] bool enforceJoinOrder)
         {
-            CheckSqlFieldsQuery(MaxItemCnt, false);
-        }
+            int cnt = MaxItemCnt;
 
-        /// <summary>
-        /// Check local SQL fields query.
-        /// </summary>
-        [Test]
-        public void TestSqlFieldsQueryLocal()
-        {
-            CheckSqlFieldsQuery(MaxItemCnt, true);
-        }
-
-        /// <summary>
-        /// Check SQL fields query.
-        /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        private void CheckSqlFieldsQuery(int cnt, bool loc)
-        {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
             var exp = PopulateCache(cache, loc, cnt, x => x < 50);
 
-            // 2. Vlaidate results.
-            SqlFieldsQuery qry = loc ? new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", true) :
-                new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50");
+            // 2. Validate results.
+            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
+            {
+                EnableDistributedJoins = distrJoin,
+                EnforceJoinOrder = enforceJoinOrder
+            };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
             {
