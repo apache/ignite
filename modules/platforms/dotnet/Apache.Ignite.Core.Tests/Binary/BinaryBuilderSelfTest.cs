@@ -606,7 +606,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<float>("fFloat", 5)
                 .SetField<double>("fDouble", 6)
                 .SetField("fDecimal", 7.7m)
-                .SetField("fString", "8")
                 .SetHashCode(100)
                 .Build();
 
@@ -623,7 +622,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetFloatField("fFloat", 5)
                 .SetDoubleField("fDouble", 6)
                 .SetDecimalField("fDecimal", 7.7m)
-                .SetStringField("fString", "8")
                 .SetHashCode(100)
                 .Build();
 
@@ -640,7 +638,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<float>("fFloat", 11)
                 .SetField<double>("fDouble", 12)
                 .SetField("fDecimal", 13.13m)
-                .SetField("fString", "14")
                 .SetHashCode(200)
                 .Build();
 
@@ -657,7 +654,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetFloatField("fFloat", 11)
                 .SetDoubleField("fDouble", 12)
                 .SetDecimalField("fDecimal", 13.13m)
-                .SetStringField("fString", "14")
                 .SetHashCode(200)
                 .Build();
 
@@ -675,7 +671,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(Primitives).Name, meta.TypeName);
 
-            Assert.AreEqual(10, meta.Fields.Count);
+            Assert.AreEqual(9, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameByte, meta.GetFieldTypeName("fByte"));
             Assert.AreEqual(BinaryTypeNames.TypeNameBool, meta.GetFieldTypeName("fBool"));
@@ -686,7 +682,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameFloat, meta.GetFieldTypeName("fFloat"));
             Assert.AreEqual(BinaryTypeNames.TypeNameDouble, meta.GetFieldTypeName("fDouble"));
             Assert.AreEqual(BinaryTypeNames.TypeNameDecimal, meta.GetFieldTypeName("fDecimal"));
-            Assert.AreEqual(BinaryTypeNames.TypeNameString, meta.GetFieldTypeName("fString"));
 
             Assert.AreEqual(1, binObj.GetField<byte>("fByte"));
             Assert.AreEqual(true, binObj.GetField<bool>("fBool"));
@@ -697,7 +692,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(5, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(6, binObj.GetField<double>("fDouble"));
             Assert.AreEqual(7.7m, binObj.GetField<decimal>("fDecimal"));
-            Assert.AreEqual("8", binObj.GetField<string>("fString"));
 
             Primitives obj = binObj.Deserialize<Primitives>();
 
@@ -710,7 +704,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(5, obj.FFloat);
             Assert.AreEqual(6, obj.FDouble);
             Assert.AreEqual(7.7m, obj.FDecimal);
-            Assert.AreEqual("8", obj.FString);
         }
 
         /// <summary>
@@ -729,7 +722,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(11, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(12, binObj.GetField<double>("fDouble"));
             Assert.AreEqual(13.13m, binObj.GetField<decimal>("fDecimal"));
-            Assert.AreEqual("14", binObj.GetField<string>("fString"));
 
             var obj = binObj.Deserialize<Primitives>();
 
@@ -742,7 +734,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(11, obj.FFloat);
             Assert.AreEqual(12, obj.FDouble);
             Assert.AreEqual(13.13m, obj.FDecimal);
-            Assert.AreEqual("14", obj.FString);
         }
 
         /// <summary>
@@ -761,6 +752,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField("fLong", new long[] { 4 })
                 .SetField("fFloat", new float[] { 5 })
                 .SetField("fDouble", new double[] { 6 })
+                .SetField("fDecimal", new decimal?[] { 7.7m })
                 .SetHashCode(100)
                 .Build();
 
@@ -768,16 +760,17 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Specific setters.
             binObj = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
-                            .SetByteArrayField("fByte", new byte[] { 1 })
-                            .SetBooleanArrayField("fBool", new[] { true })
-                            .SetShortArrayField("fShort", new short[] { 2 })
-                            .SetCharArrayField("fChar", new[] { 'a' })
-                            .SetIntArrayField("fInt", new[] { 3 })
-                            .SetLongArrayField("fLong", new long[] { 4 })
-                            .SetFloatArrayField("fFloat", new float[] { 5 })
-                            .SetDoubleArrayField("fDouble", new double[] { 6 })
-                            .SetHashCode(100)
-                            .Build();
+                .SetByteArrayField("fByte", new byte[] {1})
+                .SetBooleanArrayField("fBool", new[] {true})
+                .SetShortArrayField("fShort", new short[] {2})
+                .SetCharArrayField("fChar", new[] {'a'})
+                .SetIntArrayField("fInt", new[] {3})
+                .SetLongArrayField("fLong", new long[] {4})
+                .SetFloatArrayField("fFloat", new float[] {5})
+                .SetDoubleArrayField("fDouble", new double[] {6})
+                .SetDecimalArrayField("fDecimal", new decimal?[] {7.7m})
+                .SetHashCode(100)
+                .Build();
             
             // Overwrite with generic setter.
             binObj = _grid.GetBinary().GetBuilder(binObj)
@@ -789,6 +782,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField("fLong", new long[] { 10 })
                 .SetField("fFloat", new float[] { 11 })
                 .SetField("fDouble", new double[] { 12 })
+                .SetField("fDecimal", new decimal?[] { 13.13m })
                 .SetHashCode(200)
                 .Build();
 
@@ -804,6 +798,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetLongArrayField("fLong", new long[] { 10 })
                 .SetFloatArrayField("fFloat", new float[] { 11 })
                 .SetDoubleArrayField("fDouble", new double[] { 12 })
+                .SetDecimalArrayField("fDecimal", new decimal?[] { 13.13m })
                 .SetHashCode(200)
                 .Build();
 
@@ -821,7 +816,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(PrimitiveArrays).Name, meta.TypeName);
 
-            Assert.AreEqual(8, meta.Fields.Count);
+            Assert.AreEqual(9, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayByte, meta.GetFieldTypeName("fByte"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayBool, meta.GetFieldTypeName("fBool"));
@@ -831,6 +826,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayLong, meta.GetFieldTypeName("fLong"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayFloat, meta.GetFieldTypeName("fFloat"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayDouble, meta.GetFieldTypeName("fDouble"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameArrayDecimal, meta.GetFieldTypeName("fDecimal"));
 
             Assert.AreEqual(new byte[] { 1 }, binObj.GetField<byte[]>("fByte"));
             Assert.AreEqual(new[] { true }, binObj.GetField<bool[]>("fBool"));
@@ -840,6 +836,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 4 }, binObj.GetField<long[]>("fLong"));
             Assert.AreEqual(new float[] { 5 }, binObj.GetField<float[]>("fFloat"));
             Assert.AreEqual(new double[] { 6 }, binObj.GetField<double[]>("fDouble"));
+            Assert.AreEqual(new decimal?[] { 7.7m }, binObj.GetField<decimal?[]>("fDecimal"));
 
             PrimitiveArrays obj = binObj.Deserialize<PrimitiveArrays>();
 
@@ -851,6 +848,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 4 }, obj.FLong);
             Assert.AreEqual(new float[] { 5 }, obj.FFloat);
             Assert.AreEqual(new double[] { 6 }, obj.FDouble);
+            Assert.AreEqual(new decimal?[] { 7.7m }, obj.FDecimal);
         }
 
         /// <summary>
@@ -868,6 +866,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 10 }, binObj.GetField<long[]>("fLong"));
             Assert.AreEqual(new float[] { 11 }, binObj.GetField<float[]>("fFloat"));
             Assert.AreEqual(new double[] { 12 }, binObj.GetField<double[]>("fDouble"));
+            Assert.AreEqual(new decimal?[] { 13.13m }, binObj.GetField<decimal?[]>("fDecimal"));
 
             var obj = binObj.Deserialize<PrimitiveArrays>();
 
@@ -879,6 +878,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 10 }, obj.FLong);
             Assert.AreEqual(new float[] { 11 }, obj.FFloat);
             Assert.AreEqual(new double[] { 12 }, obj.FDouble);
+            Assert.AreEqual(new decimal?[] { 13.13m }, obj.FDecimal);
         }
 
         /// <summary>
@@ -1635,7 +1635,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         public float FFloat;
         public double FDouble;
         public decimal FDecimal;
-        public string FString;
     }
 
     /// <summary>
@@ -1651,8 +1650,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long[] FLong;
         public float[] FFloat;
         public double[] FDouble;
-        public decimal[] FDecimal;
-        public string[] FString;
+        public decimal?[] FDecimal;
     }
 
     /// <summary>
