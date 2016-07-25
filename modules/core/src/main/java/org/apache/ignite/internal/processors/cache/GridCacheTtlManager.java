@@ -44,6 +44,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Cleanup worker thread. */
     private CleanupWorker cleanupWorker;
 
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Next expire time. */
+    private volatile long nextExpireTime;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
@@ -80,7 +86,15 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         assert Thread.holdsLock(entry);
         assert cleanupWorker != null;
 
-        pendingEntries.add(new EntryWrapper(entry));
+        EntryWrapper e = new EntryWrapper(entry);
+
+        pendingEntries.add(e);
+
+        if (e.expireTime < nextExpireTime) {
+            synchronized (mux) {
+                mux.notifyAll();
+            }
+        }
     }
 
     /**
@@ -170,14 +184,17 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                 EntryWrapper first = pendingEntries.firstx();
 
-                if (first != null) {
-                    long waitTime = first.expireTime - U.currentTimeMillis();
+                long curTime = U.currentTimeMillis();
 
-                    if (waitTime > 0)
-                        U.sleep(waitTime);
+                long waitTime = first != null ? first.expireTime - curTime : 500;
+
+                if (waitTime > 0) {
+                    synchronized (mux) {
+                        nextExpireTime = first != null ? first.expireTime : curTime + 500;
+
+                        mux.wait(waitTime);
+                    }
                 }
-                else
-                    U.sleep(500);
             }
         }
     }
