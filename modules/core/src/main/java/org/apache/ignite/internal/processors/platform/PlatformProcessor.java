@@ -269,13 +269,13 @@ public interface PlatformProcessor extends GridProcessor {
     public MarshallerContextImpl platformMarshallerContext();
 
     /**
-     * Registers platform class name with provided type ID.
+     * Registers platform type name with provided type ID.
      *
      * @param id Type ID.
-     * @param name Class name.
+     * @param name Type name.
      * @return Whether class was registered.
      */
-    public boolean registerClass(int id, String name) throws IgniteCheckedException;
+    public boolean registerType(int id, String name) throws IgniteCheckedException;
 
     /**
      * Gets platform class name for provided type ID.

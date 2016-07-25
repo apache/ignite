@@ -158,7 +158,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClass(int id, String name) {
+    @Override public boolean registerType(int id, String name) {
         return false;
     }
 

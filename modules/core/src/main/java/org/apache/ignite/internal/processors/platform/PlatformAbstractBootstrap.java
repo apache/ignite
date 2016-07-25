@@ -40,6 +40,7 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
         IgniteConfiguration cfg0 = closure(envPtr).apply(cfg);
 
         // Reset work dir that was set by a temporary marshaller
+        // So that use setting takes effect
         U.nullifyWorkDirectory();
 
         try {
