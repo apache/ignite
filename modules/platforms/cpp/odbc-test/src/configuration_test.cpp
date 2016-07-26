@@ -170,91 +170,24 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
 {
     Configuration cfg;
 
-    std::stringstream constructor;
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:0" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
-    
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:fdsf" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
-    
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:123:1" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:12322221" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:12322a" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
-    constructor.str("");
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:0;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:00000;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:fdsf;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:123:1;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322221;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322a;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:;"), ignite::IgniteError);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
 {
     Configuration cfg;
 
-    std::stringstream constructor;
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:1" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
-    constructor.str("");
-    
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:31242" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
-    constructor.str("");
-    
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:55555" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
-    constructor.str("");
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com:110" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
-    constructor.str("");
-
-    constructor << "Driver={" << testDriverName << "};"
-                << "Address=" << "example.com" << ";"
-                << "Cache=" << testCacheName;
-
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
-    constructor.str("");
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:1;"));
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:31242;"));
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:55555;"));
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:110;"));
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com;"));
 }
 
 BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
