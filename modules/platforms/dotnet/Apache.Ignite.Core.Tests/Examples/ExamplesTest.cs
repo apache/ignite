@@ -37,7 +37,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource("TestCases")]
         public void TestLocalNode(Example example)
         {
-            example.Run();
+            using (TestAppConfig.Change(PathUtil.ExamplesAppConfigPath))
+            {
+                example.Run();
+            }
         }
 
         /// <summary>
@@ -112,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
             Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, 
-                PathUtil.SpringConfigUrlDevPrefix);
+                PathUtil.DevPrefix);
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
         }
