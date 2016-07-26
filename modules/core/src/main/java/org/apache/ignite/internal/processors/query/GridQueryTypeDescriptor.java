@@ -84,8 +84,6 @@ public interface GridQueryTypeDescriptor {
      */
     public Class<?> keyClass();
 
-    public Object newValue();
-
     /**
      * Returns {@code true} if string representation of value should be indexed as text.
      *

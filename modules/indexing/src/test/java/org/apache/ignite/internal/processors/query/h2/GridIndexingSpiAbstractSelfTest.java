@@ -619,11 +619,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** */
-        @Override public Object newValue() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** */
         @Override public boolean valueTextIndex() {
             return textIdx == null;
         }

@@ -151,16 +151,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
-    private final static Map<Class<?>, Factory<?>> PRIMITIVE_FACTORIES;
-
-    static {
-        Map<Class<?>, Factory<?>> res = new HashMap<>();
-        for (Class<?> cls : new Class[] {byte.class, boolean.class, short.class, int.class, long.class, char.class,
-            float.class, double.class})
-            res.put(cls, createDefaultPrimitiveValueFactoryFor(cls));
-        PRIMITIVE_FACTORIES = Collections.unmodifiableMap(res);
-    }
-
     /**
      * @param ctx Kernal context.
      */
@@ -2105,9 +2095,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Class<?> valCls;
 
         /** */
-        private Factory<?> valuesFactory;
-
-        /** */
         private GridQueryProperty keyProperty;
 
         /** */
@@ -2258,18 +2245,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         void valueClass(Class<?> valCls) {
             A.notNull(valCls, "Value class must not be null");
             this.valCls = valCls;
-            valuesFactory = supplierForClass(valCls);
         }
 
         /** {@inheritDoc} */
         @Override public Class<?> keyClass() {
             return keyCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object newValue() {
-            A.notNull(valuesFactory, "Values factory not set, looks like valueClass(Class) call has been missed");
-            return valuesFactory.create();
         }
 
         /**
@@ -2537,74 +2517,5 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private enum IndexType {
         ASC, DESC, TEXT
-    }
-
-    /**
-     * Create supplier of value instances based on default ctor or default value if given type is primitive.
-     * @param cls
-     * @param <T>
-     * @return
-     * @throws IgniteException if ctor w/o params could not be found.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> Factory<T> supplierForClass(final Class<T> cls) {
-        Constructor<T> ctor;
-
-        if (!cls.isPrimitive())
-            try {
-                ctor = cls.getDeclaredConstructor();
-            }
-            catch (NoSuchMethodException ignored) {
-                ctor = null;
-            }
-        else
-            return (Factory<T>)PRIMITIVE_FACTORIES.get(cls);
-
-        // We don't throw an exception in case of ctor's absence right away
-        // because that matters only for SQL INSERT/MERGE operations.
-        if (ctor == null)
-            return new Factory<T>() {
-                /** {@inheritDoc} */
-                @Override public T create() {
-                    throw new IgniteException("Ctor w/o params not found for non primitive value class " +
-                        "[cls=" + cls.getName() + "]");
-                }
-            };
-
-        ctor.setAccessible(true);
-
-        final Constructor<T> finalCtor = ctor;
-
-        Factory<T> res = new Factory<T>() {
-            /** {@inheritDoc} */
-            @Override public T create() {
-                try {
-                    return finalCtor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to instantiate value", e);
-                }
-            }
-        };
-
-        // Let's just try it to know about bad types early.
-        res.create();
-
-        return res;
-    }
-
-    /**
-     * @param type Primitive type.
-     * @param <T> Type of values the factory will return.
-     * @return Primitive values factory.
-     */
-    private static <T> Factory<T> createDefaultPrimitiveValueFactoryFor(Class<T> type) {
-        final T v = X.defaultPrimitiveValue(type);
-        return new Factory<T>() {
-            /** {@inheritDoc} */
-            @Override public T create() {
-                return v;
-            }
-        };
     }
 }
