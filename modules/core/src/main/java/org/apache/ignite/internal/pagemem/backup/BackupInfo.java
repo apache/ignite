@@ -22,16 +22,38 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
+/**
+ * Info of ongoing backup.
+ */
 public interface BackupInfo {
 
+    /**
+     * Backup ID.
+     * @return Backup ID.
+     */
     public long backupId();
 
+    /**
+     * Backup initiator node ID.
+     * @return Initiator node ID.
+     */
     public UUID initiatorNode();
 
+    /**
+     * Cache names.
+     * @return Cache names.
+     */
     public Collection<String> cacheNames();
 
+    /**
+     * @return {@Code True} if local node is initiator.
+     */
     public boolean initiator();
 
+    /**
+     * Initialization future.
+     * @return Initialization future.
+     */
     public GridFutureAdapter initFut();
 
 }

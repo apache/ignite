@@ -22,34 +22,50 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
+/**
+ *
+ */
 public class BackupInfoImpl implements BackupInfo {
 
+    /** */
     private final long backupId;
 
+    /** */
     private final UUID initiatorNode;
 
+    /** */
     private final Collection<String> cacheNames;
 
+    /** */
     private final GridFutureAdapter initFut = new GridFutureAdapter();
 
+    /**
+     * @param backupId Backup ID.
+     * @param initiatorNode Initiator node ID.
+     * @param cacheNames Cache names.
+     */
     public BackupInfoImpl(long backupId, UUID initiatorNode, Collection<String> cacheNames) {
         this.backupId = backupId;
         this.initiatorNode = initiatorNode;
         this.cacheNames = cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Override public long backupId() {
         return backupId;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID initiatorNode() {
         return initiatorNode;
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() {
         return cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean initiator() {
         return false;
     }

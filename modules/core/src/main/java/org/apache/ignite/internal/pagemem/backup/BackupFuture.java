@@ -23,48 +23,72 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
+/**
+ * Backup future.
+ */
 public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo {
 
+    /** */
     private final long backupId;
 
+    /** */
     private final UUID node;
 
+    /** */
     private final Collection<String> cacheNames;
 
+    /** */
     private final GridFutureAdapter initFut = new GridFutureAdapter();
 
+    /** */
     private volatile boolean initialized;
 
+    /** */
     private final Collection<UUID> requiredAcks = new GridConcurrentHashSet<>();
 
+    /** */
     private final Collection<UUID> receivedAcks = new GridConcurrentHashSet<>();
 
+    /**
+     * @param backupId Backup ID.
+     * @param node Local node ID.
+     * @param cacheNames Cache names.
+     */
     public BackupFuture(long backupId, UUID node, Collection<String> cacheNames) {
         this.backupId = backupId;
         this.node = node;
         this.cacheNames = cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Override public long backupId() {
         return backupId;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID initiatorNode() {
         return node;
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() {
         return cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean initiator() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public GridFutureAdapter initFut() {
         return initFut;
     }
 
+    /**
+     * Marks future as initialized.
+     * @param requiredAcks Acks that are required for completion.
+     */
     public void init(Collection<UUID> requiredAcks) {
         assert !initialized;
 
@@ -75,12 +99,18 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
         checkCompleted();
     }
 
+    /**
+     * @param nodeId Ack sender.
+     */
     public void onAckReceived(UUID nodeId) {
         receivedAcks.add(nodeId);
 
         checkCompleted();
     }
 
+    /**
+     * Complete future if all requirements are fulfilled.
+     */
     private void checkCompleted() {
         if (initialized && receivedAcks.containsAll(requiredAcks))
             onDone();
