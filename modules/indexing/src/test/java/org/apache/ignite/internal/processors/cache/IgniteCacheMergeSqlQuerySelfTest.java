@@ -58,7 +58,9 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        ignite(0).createCache(cacheConfig("P", true, String.class, Person.class));
+        ignite(0).createCache(cacheConfig("S2P", true, String.class, PersonWithKey.class));
+        ignite(0).createCache(cacheConfig("I2P", true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig("K2P", true, Key.class, Person.class));
     }
 
     /** {@inheritDoc} */
@@ -84,18 +86,18 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testMerge() {
-        IgniteCache<String, Person> p = ignite(0).cache("P");
+    public void testMergeWithAutoKey() {
+        IgniteCache<String, PersonWithKey> p = ignite(0).cache("S2P");
 
-        p.update(new SqlUpdate<>(Person.class,
-            "merge into Person (id, name) values (?, ?), (2, 'Alex')").setArgs(1, "Sergi"));
+        p.update(new SqlUpdate<>(PersonWithKey.class,
+            "merge into PersonWithKey (id, name) values (?, ?), (2, 'Alex')").setArgs(1, "Sergi"));
 
-        Person p1 = new Person(1);
+        PersonWithKey p1 = new PersonWithKey(1);
         p1.name = "Sergi";
 
         assertEquals(p1, p.get("Person##1##Sergi"));
 
-        Person p2 = new Person(2);
+        PersonWithKey p2 = new PersonWithKey(2);
         p2.name = "Alex";
 
         assertEquals(p2, p.get("Person##2##Alex"));
@@ -105,26 +107,96 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     public void testMergeWithExplicitKey() {
-        IgniteCache<String, Person> p = ignite(0).cache("P");
+        IgniteCache<String, PersonWithKey> p = ignite(0).cache("S2P");
 
-        p.update(new SqlUpdate<>(Person.class,
-            "merge into Person (_key, id, name) values ('s', ?, ?), ('a', 2, 'Alex')").setArgs(1, "Sergi"));
+        p.update(new SqlUpdate<>(PersonWithKey.class,
+            "merge into PersonWithKey (_key, id, name) values ('s', ?, ?), ('a', 2, 'Alex')").setArgs(1, "Sergi"));
 
-        Person p1 = new Person(1);
+        PersonWithKey p1 = new PersonWithKey(1);
         p1.name = "Sergi";
 
-        assertEquals(p1, p.get("s"));
+        assertEquals(p1, p.get("Person##1##Sergi"));
 
-        Person p2 = new Person(2);
+        PersonWithKey p2 = new PersonWithKey(2);
         p2.name = "Alex";
 
-        assertEquals(p2, p.get("a"));
+        assertEquals(p2, p.get("Person##2##Alex"));
     }
 
     /**
      *
      */
-    private final static class Person {
+    public void testMergeWithExplicitPrimitiveKey() {
+        IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
+
+        p.update(new SqlUpdate<>(Person.class,
+            "merge into Person (_key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
+
+        Person p1 = new Person(1);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get(1));
+
+        Person p2 = new Person(2);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get(2));
+    }
+
+    /**
+     *
+     */
+    public void testMergeWithDynamicKeyInstantiation() {
+        IgniteCache<Key, Person> p = ignite(0).cache("K2P");
+
+        p.update(new SqlUpdate<>(Person.class,
+            "merge into Person (key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
+
+        Person p1 = new Person(1);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get(new Key(1)));
+
+        Person p2 = new Person(2);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get(new Key(2)));
+    }
+
+    /**
+     *
+     */
+    private final static class Key {
+        /** */
+        public Key(int key) {
+            this.key = key;
+        }
+
+        /** */
+        @QuerySqlField
+        public final int key;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Key key1 = (Key) o;
+
+            return key == key1.key;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return key;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Person {
         /** */
         @SuppressWarnings("unused")
         private Person() {
@@ -138,16 +210,11 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
 
         /** */
         @QuerySqlField
-        private int id;
+        protected int id;
 
         /** */
         @QuerySqlField
-        private String name;
-
-        @QueryCacheKey
-        public String key() {
-            return "Person##" + id + "##" + name;
-        }
+        protected String name;
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
@@ -166,6 +233,53 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
             int result = id;
             result = 31 * result + (name != null ? name.hashCode() : 0);
             return result;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PersonWithKey {
+        /** */
+        @SuppressWarnings("unused")
+        private PersonWithKey() {
+            // No-op.
+        }
+
+        /** */
+        public PersonWithKey(int id) {
+            this.id = id;
+        }
+
+        /** */
+        @QuerySqlField
+        protected int id;
+
+        /** */
+        @QuerySqlField
+        protected String name;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PersonWithKey person = (PersonWithKey) o;
+
+            if (id != person.id) return false;
+            return name != null ? name.equals(person.name) : person.name == null;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = id;
+            result = 31 * result + (name != null ? name.hashCode() : 0);
+            return result;
+        }
+        @QueryCacheKey
+        public String key() {
+            return "Person##" + id + "##" + name;
         }
     }
 }

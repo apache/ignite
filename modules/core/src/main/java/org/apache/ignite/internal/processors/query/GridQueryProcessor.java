@@ -1574,8 +1574,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
 
         if (res == null)
-            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
-                "key class '" + keyCls + "' and value class '" + valCls + "'. " +
+            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' of type '" +
+                resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
                 "Make sure that one of these classes contains respective getter method or field.");
 
         return res;

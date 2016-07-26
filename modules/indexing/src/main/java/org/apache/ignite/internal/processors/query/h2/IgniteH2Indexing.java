@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -1039,23 +1040,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static IgniteBiTuple<?, ?> rowToKeyValue(TableDescriptor desc, GridSqlColumn[] cols, GridSqlElement[] row,
         Object[] params, int keyColIdx) throws IgniteCheckedException {
-        A.ensure(keyColIdx != -1 || desc.type().cacheKeyProperty() != null, "Key for new values must be provided " +
-            "either via column list and literals, or with @QueryCacheKey annotated member of value class [valCls=" +
-            desc.type().valueClass().getName() + ']');
-
         for (GridSqlElement rowEl : row)
             A.ensure(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
                 "SQL INSERT and MERGE statements support literal values only");
 
-        Object val = desc.type().newValue();
+        Object key = null;
+        Object val;
+
+        try {
+            if (keyColIdx == -1 && desc.type().cacheKeyProperty() == null)
+                key = GridUnsafe.allocateInstance(desc.type().keyClass());
+
+            val = GridUnsafe.allocateInstance(desc.type().valueClass());
+        }
+        catch (InstantiationException e) {
+            throw new IgniteCheckedException("Failed to allocate key or value fpr SQL statement", e);
+        }
 
         for (int i = 0; i < cols.length; i++)
             if (i != keyColIdx)
-                desc.type().setValue(cols[i].columnName(), null, val, getLiteralValue(row[i], params));
+                desc.type().setValue(cols[i].columnName(), key, val, getLiteralValue(row[i], params));
 
-        //noinspection ConstantConditions
-        Object key = keyColIdx != -1 ? getLiteralValue(row[keyColIdx], params) :
-            desc.type().cacheKeyProperty().value(null, val);
+        if (key == null) {
+            //noinspection ConstantConditions
+            key = keyColIdx != -1 ? getLiteralValue(row[keyColIdx], params) :
+                desc.type().cacheKeyProperty().value(null, val);
+        }
 
         return new IgniteBiTuple<>(key, val);
     }
