@@ -30,8 +30,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -188,6 +191,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.readLock().unlock();
         }
 
+        final long longOpDumpTimeout =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+
+        int dumpCnt = 0;
+
         GridDhtLocalPartition part;
 
         for (int i = 0; i < locPartsCopy.length; i++) {
@@ -203,7 +211,33 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     log.debug("Waiting for renting partition: " + part);
 
                 // Wait for partition to empty out.
-                part.rent(true).get();
+                if (longOpDumpTimeout > 0) {
+                    while (true) {
+                        try {
+                            part.rent(true).get(longOpDumpTimeout);
+
+                            break;
+                        }
+                        catch (IgniteFutureTimeoutCheckedException e) {
+                            if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                                U.warn(log, "Failed to wait for partition eviction [" +
+                                    "topVer=" + topVer +
+                                    ", cache=" + cctx.name() +
+                                    ", part=" + part.id() +
+                                    ", partState=" + part.state() +
+                                    ", size=" + part.size() +
+                                    ", reservations=" + part.reservations() +
+                                    ", grpReservations=" + part.groupReserved() +
+                                    ", node=" + cctx.localNodeId() + "]");
+
+                                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                    U.dumpThreads(log);
+                            }
+                        }
+                    }
+                }
+                else
+                    part.rent(true).get();
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for renting partition: " + part);
