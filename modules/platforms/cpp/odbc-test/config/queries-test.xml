@@ -31,7 +31,9 @@
 
         <!-- Enabling ODBC. -->
         <property name="odbcConfiguration">
-            <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
+            <bean class="org.apache.ignite.configuration.OdbcConfiguration">
+				<property name="endpointAddress" value="127.0.0.1:11110"/>
+			</bean>
         </property>
 
         <property name="cacheConfiguration">
