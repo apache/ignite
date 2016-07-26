@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include <cstddef>
 #include <cstring>
 
 #include <string>
@@ -104,9 +105,9 @@ namespace ignite
                         continue;
 
                     if (value.find(' ') == std::string::npos)
-                        connect_string_buffer << it->first << '=' << it->second << ';';
+                        connect_string_buffer << key << '=' << value << ';';
                     else
-                        connect_string_buffer << it->first << "={" << it->second << "};";
+                        connect_string_buffer << key << "={" << value << "};";
                 }
 
                 return connect_string_buffer.str();
