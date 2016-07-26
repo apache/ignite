@@ -196,6 +196,7 @@ class GridDhtPartitionSupplier {
         if (log.isDebugEnabled())
             log.debug("Demand request accepted [current=" + cutTop + ", demanded=" + demTop +
                 ", from=" + id + ", idx=" + idx + "]");
+
         GridDhtPartitionSupplyMessageV2 s = new GridDhtPartitionSupplyMessageV2(
             d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
 

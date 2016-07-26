@@ -75,6 +75,15 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      */
     public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
+    /**
+     * Reads a header of apage store.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param flag Allocation flags.
+     * @param buf Buffer to write to.
+     * @throws IgniteCheckedException If failed.
+     */
     public void readHeader(int cacheId, int partId, byte flag, ByteBuffer buf) throws IgniteCheckedException;
 
     /**

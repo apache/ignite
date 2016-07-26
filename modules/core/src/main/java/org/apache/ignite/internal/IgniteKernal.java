@@ -2936,9 +2936,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         try {
             return ctx.discovery().startBackup(cacheNames);
-
-            // TODO: Create future for backup + completion messages, wait until all nodes finish backup.
-
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }

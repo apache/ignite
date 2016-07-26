@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  * Backup future.
  */
 public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo {
-
     /** */
     private final long backupId;
 

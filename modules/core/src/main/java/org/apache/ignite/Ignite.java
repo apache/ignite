@@ -316,8 +316,7 @@ public interface Ignite extends AutoCloseable {
      * @param nearCfg Near configuration.
      * @return {@code IgniteCache} instance.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
-        NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
 
     /**
      * Stops dynamically started cache.

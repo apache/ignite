@@ -23,21 +23,34 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ * Message indicating that backup has been finished on a single node.
+ */
 public class BackupFinishedMessage implements Message {
-
+    /** */
     private long backupId;
 
+    /**
+     *
+     */
     public BackupFinishedMessage() {
     }
 
+    /**
+     * @param backupId Backup ID.
+     */
     public BackupFinishedMessage(long backupId) {
         this.backupId = backupId;
     }
 
+    /**
+     * @return Backup ID.
+     */
     public long backupId() {
         return backupId;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -60,6 +73,7 @@ public class BackupFinishedMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -80,14 +94,17 @@ public class BackupFinishedMessage implements Message {
         return reader.afterMessageRead(BackupFinishedMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return -27;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op
     }

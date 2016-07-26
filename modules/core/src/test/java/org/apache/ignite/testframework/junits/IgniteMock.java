@@ -400,7 +400,6 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         return null;
-        // no-op
     }
 
     /**

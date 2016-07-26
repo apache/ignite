@@ -99,6 +99,9 @@ public class FullPageId {
         return pageId;
     }
 
+    /**
+     * @return Effective page ID.
+     */
     public long effectivePageId() {
         return effectivePageId;
     }

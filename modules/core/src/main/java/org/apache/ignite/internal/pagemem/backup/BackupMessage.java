@@ -20,10 +20,12 @@ package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Message indicating that a backup has been started.
+ */
 public class BackupMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -31,31 +33,46 @@ public class BackupMessage implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private long backupId;
 
+    /** */
     private Collection<String> cacheNames;
 
+    /**
+     * @param backupId Backup ID.
+     * @param cacheNames Cache names.
+     */
     public BackupMessage(long backupId, Collection<String> cacheNames) {
         this.backupId = backupId;
         this.cacheNames = cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
     }
 
+    /**
+     * @return Backup ID.
+     */
     public long backupId() {
         return backupId;
     }
 
+    /**
+     * @return Cache names.
+     */
     public Collection<String> cacheNames() {
         return cacheNames;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
     }

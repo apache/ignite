@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  * Info of ongoing backup.
  */
 public interface BackupInfo {
-
     /**
      * Backup ID.
      * @return Backup ID.

@@ -96,6 +96,7 @@ public enum GridTopic {
     /** */
     TOPIC_TX,
 
+    /** */
     TOPIC_BACKUP;
 
     /** Enum values. */
