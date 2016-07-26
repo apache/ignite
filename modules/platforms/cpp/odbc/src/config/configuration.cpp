@@ -185,7 +185,7 @@ namespace ignite
                 {
                     size_t pos = address.find(':');
 
-                    if (pos == address.size())
+                    if (pos == address.size() - 1)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Invalid address format: no port after colon");
 

@@ -24,6 +24,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/odbc/config/configuration.h>
+#include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
 
 using namespace ignite::odbc::config;
@@ -163,6 +164,97 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
     cfg.FillFromConnectString(connectStr);
 
     CheckConnectionConfig(cfg);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
+{
+    Configuration cfg;
+
+    std::stringstream constructor;
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:0" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+    
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:fdsf" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+    
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:123:1" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:12322221" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:12322a" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString(constructor.str()), ignite::IgniteError);
+    constructor.str("");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
+{
+    Configuration cfg;
+
+    std::stringstream constructor;
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:1" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
+    constructor.str("");
+    
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:31242" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
+    constructor.str("");
+    
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:55555" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
+    constructor.str("");
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com:110" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
+    constructor.str("");
+
+    constructor << "Driver={" << testDriverName << "};"
+                << "Address=" << "example.com" << ";"
+                << "Cache=" << testCacheName;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(constructor.str()));
+    constructor.str("");
 }
 
 BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
