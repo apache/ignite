@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     [Category(TestUtils.CategoryIntensive)]
     public class ExamplesTest
     {
+        /** */
+        private IDisposable _changedConfig;
+
         /// <summary>
         /// Tests the example in a single node mode.
         /// </summary>
@@ -37,10 +40,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource("TestCases")]
         public void TestLocalNode(Example example)
         {
-            using (TestAppConfig.Change(PathUtil.ExamplesAppConfigPath))
-            {
-                example.Run();
-            }
+            example.Run();
         }
 
         /// <summary>
@@ -118,6 +118,17 @@ namespace Apache.Ignite.Core.Tests.Examples
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
+
+            _changedConfig = TestAppConfig.Change(PathUtil.ExamplesAppConfigPath);
+        }
+
+        /// <summary>
+        /// Fixture teardown.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _changedConfig.Dispose();
         }
 
         /// <summary>
