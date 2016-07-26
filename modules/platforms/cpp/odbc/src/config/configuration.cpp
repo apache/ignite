@@ -31,16 +31,20 @@ namespace ignite
     {
         namespace config
         {
-            const std::string Configuration::Key::dsn = "dsn";
-            const std::string Configuration::Key::driver = "driver";
+            const std::string Configuration::Key::dsn     = "dsn";
+            const std::string Configuration::Key::driver  = "driver";
+            const std::string Configuration::Key::cache   = "cache";
             const std::string Configuration::Key::address = "address";
-            const std::string Configuration::Key::cache = "cache";
+            const std::string Configuration::Key::server  = "server";
+            const std::string Configuration::Key::port    = "port";
 
             const std::string Configuration::DefaultValue::dsn     = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver  = "Apache Ignite";
-            const std::string Configuration::DefaultValue::address = "";
-            const uint16_t Configuration::DefaultValue::port       = 10800;
             const std::string Configuration::DefaultValue::cache   = "";
+            const std::string Configuration::DefaultValue::address = "";
+            const std::string Configuration::DefaultValue::server  = "";
+            const std::string Configuration::DefaultValue::port    = "10800";
+            const uint16_t Configuration::DefaultValue::uintPort = common::LexicalCast<uint16_t>(port);
 
             Configuration::Configuration() :
                 arguments()
@@ -69,8 +73,17 @@ namespace ignite
 
                 ParseAttributeList(str, len, ';', arguments);
 
-                // Parsing address.
-                ParseAddress(GetAddress(), endPoint);
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+                if (it != arguments.end())
+                {
+                    // Parsing address.
+                    ParseAddress(it->second, endPoint);
+                }
+                else
+                {
+                    endPoint.host = GetStringValue(Key::server, DefaultValue::server);
+                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                }
             }
 
             void Configuration::FillFromConnectString(const std::string& str)
@@ -114,8 +127,17 @@ namespace ignite
 
                 ParseAttributeList(attributes, len, '\0', arguments);
 
-                // Parsing address.
-                ParseAddress(GetAddress(), endPoint);
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+                if (it != arguments.end())
+                {
+                    // Parsing address.
+                    ParseAddress(it->second, endPoint);
+                }
+                else
+                {
+                    endPoint.host = GetStringValue(Key::server, DefaultValue::server);
+                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                }
             }
 
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
@@ -179,7 +201,7 @@ namespace ignite
                 if (colonNum == 0)
                 {
                     res.host = address;
-                    res.port = DefaultValue::port;
+                    res.port = DefaultValue::uintPort;
                 }
                 else if (colonNum == 1)
                 {

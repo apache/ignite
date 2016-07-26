@@ -49,11 +49,17 @@ namespace ignite
                     /** Connection attribute keyword for Driver attribute. */
                     static const std::string driver;
 
+                    /** Connection attribute keyword for cache attribute. */
+                    static const std::string cache;
+
                     /** Connection attribute keyword for address attribute. */
                     static const std::string address;
 
-                    /** Connection attribute keyword for cache attribute. */
-                    static const std::string cache;
+                    /** Connection attribute keyword for server attribute. */
+                    static const std::string server;
+
+                    /** Connection attribute keyword for port attribute. */
+                    static const std::string port;
                 };
 
                 /** Default values for configuration. */
@@ -65,14 +71,20 @@ namespace ignite
                     /** Default value for Driver attribute. */
                     static const std::string driver;
 
-                    /** Default value for host attribute. */
-                    static const std::string address;
-
-                    /** Default value for port attribute. */
-                    static const uint16_t port;
-
                     /** Default value for cache attribute. */
                     static const std::string cache;
+
+                    /** Default value for address attribute. */
+                    static const std::string address;
+
+                    /** Default value for server attribute. */
+                    static const std::string server;
+
+                    /** Default value for port attribute. */
+                    static const std::string port;
+
+                    /** Default value for port attribute. Uint16 value. */
+                    static const uint16_t uintPort;
                 };
 
                 /**
