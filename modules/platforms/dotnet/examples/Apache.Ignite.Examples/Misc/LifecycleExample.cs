@@ -16,12 +16,16 @@
  */
 
 using System;
+using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Lifecycle;
 using Apache.Ignite.Core.Resource;
 
 namespace Apache.Ignite.Examples.Misc
 {
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation
     /// to be able to hook into Apache lifecycle. Example bean will output occurred lifecycle 
@@ -44,17 +48,32 @@ namespace Apache.Ignite.Examples.Misc
             Console.WriteLine();
             Console.WriteLine(">>> Lifecycle example started.");
 
-            // Lifecycle bean is configured in app.config
-            using (Ignition.StartFromApplicationConfiguration())
+            // Create new configuration.
+            var lifecycleExampleBean = new LifecycleExampleBean();
+
+            var cfg = new IgniteConfiguration
+            {
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] {"127.0.0.1:47500"}
+                    }
+                },
+                LifecycleBeans = new List<ILifecycleBean> {lifecycleExampleBean}
+            };
+
+            // Provide lifecycle bean to configuration.
+            using (Ignition.Start(cfg))
             {
                 // Make sure that lifecycle bean was notified about Ignite startup.
                 Console.WriteLine();
-                Console.WriteLine(">>> Started (should be true): " + LifecycleExampleBean.Started);
+                Console.WriteLine(">>> Started (should be true): " + lifecycleExampleBean.Started);
             }
 
             // Make sure that lifecycle bean was notified about Ignite stop.
             Console.WriteLine();
-            Console.WriteLine(">>> Started (should be false): " + LifecycleExampleBean.Started);
+            Console.WriteLine(">>> Started (should be false): " + lifecycleExampleBean.Started);
 
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
@@ -88,7 +107,7 @@ namespace Apache.Ignite.Examples.Misc
             /// <summary>
             /// Started flag.
             /// </summary>
-            public static bool Started
+            public bool Started
             {
                 get;
                 private set;
