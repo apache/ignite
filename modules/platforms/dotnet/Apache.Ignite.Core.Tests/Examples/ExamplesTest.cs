@@ -68,24 +68,12 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static void TestRemoteNodes(Example example, bool clientMode)
         {
             // Exclude LifecycleExample
-            if (string.IsNullOrEmpty(example.SpringConfigUrl))
+            if (string.IsNullOrEmpty(example.ConfigPath))
             {
                 Assert.AreEqual("LifecycleExample", example.Name);
 
                 return;
             }
-
-            // First node to start in current process defines JVM options.
-            var gridConfig = new IgniteConfiguration
-            {
-                SpringConfigUrl = example.SpringConfigUrl,
-                JvmOptions =
-                    new[]
-                    {
-                        "-Xms512m", "-Xmx1024m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
-                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-                    }
-            };
 
             // Try with multiple standalone nodes
             for (var i = 0; i < 2; i++)
@@ -94,9 +82,10 @@ namespace Apache.Ignite.Core.Tests.Examples
                 // Stop it after topology check so we don't interfere with example
                 Ignition.ClientMode = false;
 
-                using (var ignite = Ignition.Start(gridConfig))
+                using (var ignite = Ignition.StartFromApplicationConfiguration(
+                    "igniteConfiguration", example.ConfigPath))
                 {
-                    var args = new List<string> {"-springConfigUrl=" + example.SpringConfigUrl};
+                    var args = new List<string> { "-configFileName=" + example.ConfigPath};
 
                     if (example.NeedsTestDll)
                         args.Add(" -assembly=" + typeof(AverageSalaryJob).Assembly.Location);
