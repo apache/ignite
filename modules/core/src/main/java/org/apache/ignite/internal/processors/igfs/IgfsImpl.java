@@ -1030,8 +1030,16 @@ public final class IgfsImpl implements IgfsEx {
                     await(path);
 
                 // Perform create.
-                IgfsCreateResult res = meta.create(path, dirProps, overwrite, cfg.getBlockSize(), affKey,
-                    evictExclude(path, mode == PRIMARY), fileProps, secondaryCtx);
+                IgfsCreateResult res = meta.create(
+                    path,
+                    dirProps,
+                    overwrite,
+                    cfg.getBlockSize(),
+                    affKey,
+                    evictExclude(path, mode == PRIMARY),
+                    fileProps,
+                    secondaryCtx
+                );
 
                 assert res != null;
 
