@@ -2963,7 +2963,7 @@ public class IgfsMetaManager extends IgfsManager {
      */
     IgfsCreateResult create(
         final IgfsPath path,
-        Map<String, String> dirProps,
+        final Map<String, String> dirProps,
         final boolean overwrite,
         final int blockSize,
         final @Nullable IgniteUuid affKey,
@@ -3241,6 +3241,8 @@ public class IgfsMetaManager extends IgfsManager {
         // Second step: create middle directories.
         long curTime = System.currentTimeMillis();
 
+        Map<String,String> middleDirProps = null;
+
         while (curIdx < pathIds.count() - 1) {
             lastCreatedPath = new IgfsPath(lastCreatedPath, curPart);
 
@@ -3270,7 +3272,11 @@ public class IgfsMetaManager extends IgfsManager {
             else {
                 accessTime = curTime;
                 modificationTime = curTime;
-                props = dirProps;
+
+                if (middleDirProps == null)
+                    middleDirProps = IgfsUtils.addWriteExecuteDirPermissions(dirProps);
+
+                props = middleDirProps;
             }
 
             procMap.put(curId, new IgfsMetaDirectoryCreateProcessor(accessTime, modificationTime, props,

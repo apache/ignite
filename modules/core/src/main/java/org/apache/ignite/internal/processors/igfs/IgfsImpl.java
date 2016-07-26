@@ -116,7 +116,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  */
 public final class IgfsImpl implements IgfsEx {
     /** Default permissions for file system entry. */
-    private static final String PERMISSION_DFLT_VAL = "0777";
+    static final String PERMISSION_DFLT_VAL = "0777";
 
     /** Index generator for async format threads. */
     private static final AtomicInteger FORMAT_THREAD_IDX_GEN = new AtomicInteger();
@@ -1005,16 +1005,8 @@ public final class IgfsImpl implements IgfsEx {
                 // Resolve mode.
                 final IgfsMode mode = resolveMode(path);
 
-                // Prepare properties.
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
+                final Map<String, String> dirProps = DFLT_DIR_META;
+                final Map<String, String> fileProps = props == null ? null : new HashMap<>(props);
 
                 // Prepare context for DUAL mode.
                 IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
@@ -1097,19 +1089,11 @@ public final class IgfsImpl implements IgfsEx {
                 if (ids.size() == 1)
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
+                Map<String, String> fileProps = props == null ? null : new HashMap<>(props);
 
                 IgfsEntryInfo res = meta.append(
                     path,
-                    dirProps,
+                    DFLT_DIR_META,
                     create,
                     cfg.getBlockSize(),
                     null/*affKey*/,

@@ -867,4 +867,42 @@ public class IgfsUtils {
 
         return resModes;
     }
+
+    /**
+     * Adds write and execute (like "chmod u+wx") permission to the given property map.
+     *
+     * @param leafDirProps The original properties.
+     * @return Modified properties with fixed permission.
+     */
+    public static Map<String, String> addWriteExecuteDirPermissions(Map<String, String> leafDirProps) {
+        String perm = leafDirProps.get(PROP_PERMISSION);
+
+        if (perm == null || perm.length() < 3)
+            perm = IgfsImpl.PERMISSION_DFLT_VAL; // Directory default.
+        else {
+            String ownerDigit = perm.substring(perm.length() - 3, perm.length() - 2);
+
+            assert ownerDigit.length() == 1;
+
+            int owner3Bits = Integer.parseInt(ownerDigit);
+
+            assert owner3Bits >= 0 && owner3Bits <= 7;
+
+            owner3Bits |= 3; // add write & execute permission.
+
+            char[] permArr = perm.toCharArray();
+
+            char fixedOwnerCh = Integer.toString(owner3Bits).charAt(0);
+
+            permArr[perm.length() - 3] = fixedOwnerCh;
+
+            perm = new String(permArr);
+        }
+
+        Map<String,String> map2 = new HashMap<>(leafDirProps);
+
+        map2.put(PROP_PERMISSION, perm);
+
+        return map2;
+    }
 }

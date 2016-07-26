@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -418,5 +419,25 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         }, IgfsException.class, null);
 
         assertTrue("Unexpected cause: " + err, err instanceof IgfsException);
+    }
+
+    /**
+     * Checks permission correction method.
+     */
+    public void testAddWriteExecuteDirPermissions() {
+        Map<String,String> prop = new HashMap<>();
+
+        prop.put(IgfsUtils.PROP_PERMISSION, "0455");
+        prop.put("foo", "bar");
+
+        Map<String,String> m = IgfsUtils.addWriteExecuteDirPermissions(prop);
+
+        assertEquals("0755", m.get(IgfsUtils.PROP_PERMISSION));
+        assertEquals("bar", m.get("foo")); // Check another property is present.
+
+        // Test empty map:
+        m = IgfsUtils.addWriteExecuteDirPermissions(Collections.<String, String>emptyMap());
+
+        assertEquals("0777", m.get(IgfsUtils.PROP_PERMISSION));
     }
 }
