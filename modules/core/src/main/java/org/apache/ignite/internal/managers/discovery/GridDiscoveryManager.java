@@ -1889,14 +1889,33 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /**
+     * Starts backup process.
+     * @param cacheNames Cache names. {@code Null} to save all caches.
+     * @return Backup future.
+     * @throws IgniteCheckedException If failed.
+     */
     public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
         long backupId = System.currentTimeMillis();
 
-        BackupFuture backupFut = new BackupFuture(backupId, ctx.localNodeId(), cacheNames);
+        Collection<String> actualCacheNames = new HashSet<>();
+
+        if (cacheNames == null)
+            for (String cacheName : ctx.cache().cacheNames())
+                actualCacheNames.add(cacheName);
+        else {
+            actualCacheNames.addAll(cacheNames);
+            actualCacheNames.add(CU.ATOMICS_CACHE_NAME);
+            actualCacheNames.add(CU.MARSH_CACHE_NAME);
+            actualCacheNames.add(CU.SYS_CACHE_HADOOP_MR);
+            actualCacheNames.add(CU.UTILITY_CACHE_NAME);
+        }
+
+        BackupFuture backupFut = new BackupFuture(backupId, ctx.localNodeId(), actualCacheNames);
 
         ctx.cache().context().database().submitBackupFuture(backupFut);
 
-        BackupMessage msg = new BackupMessage(backupId, cacheNames);
+        BackupMessage msg = new BackupMessage(backupId, actualCacheNames);
 
         ctx.discovery().sendCustomEvent(msg);
 

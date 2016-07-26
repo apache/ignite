@@ -46,7 +46,7 @@ public interface BackupInfo {
     public Collection<String> cacheNames();
 
     /**
-     * @return {@Code True} if local node is initiator.
+     * @return {@code True} if local node is initiator.
      */
     public boolean initiator();
 
