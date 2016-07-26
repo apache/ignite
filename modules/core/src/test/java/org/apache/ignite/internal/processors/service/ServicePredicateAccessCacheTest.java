@@ -24,10 +24,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
@@ -35,6 +37,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
 
@@ -108,7 +111,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
 
                 System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
 
-                boolean ret = ignite0.cache("testCache").containsKey(node.id().toString());
+                boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
 
                 System.out.println("After contains key [ret=" + ret +
                     ", thread=" + Thread.currentThread().getName() + ']');
@@ -117,31 +120,23 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
             }
         });
 
-        // TODO Maybe illegal workaround!
-        final ExecutorService ex = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ignite0.name()));
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                info("Start deploy service.");
 
-        try {
-            final Future<Void> fut = ex.submit(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    info("Start deploy service.");
+                ignite0.services(grp).deployNodeSingleton("testService", new TestService());
 
-                    ignite0.services(grp).deployNodeSingleton("testService", new TestService());
+                info("Service deployed.");
 
-                    info("Service deployed.");
+                return null;
+            }
+        }, "deploy-thread");
 
-                    return null;
-                }
-            });
+        latch.await();
 
-            latch.await();
+        startGrid(1);
 
-            startGrid(1);
-
-            fut.get();
-        }
-        finally {
-            ex.shutdown();
-        }
+        fut.get();
     }
 
     /**
