@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Lifecycle;
 using Apache.Ignite.Core.Resource;
@@ -45,26 +44,17 @@ namespace Apache.Ignite.Examples.Misc
             Console.WriteLine();
             Console.WriteLine(">>> Lifecycle example started.");
 
-            // Create new configuration.
-            var lifecycleExampleBean = new LifecycleExampleBean();
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
-            };
-
-            // Provide lifecycle bean to configuration.
-            using (Ignition.Start(cfg))
+            // Lifecycle bean is configured in app.config
+            using (Ignition.StartFromApplicationConfiguration())
             {
                 // Make sure that lifecycle bean was notified about Ignite startup.
                 Console.WriteLine();
-                Console.WriteLine(">>> Started (should be true): " + lifecycleExampleBean.Started);
+                Console.WriteLine(">>> Started (should be true): " + LifecycleExampleBean.Started);
             }
 
             // Make sure that lifecycle bean was notified about Ignite stop.
             Console.WriteLine();
-            Console.WriteLine(">>> Started (should be false): " + lifecycleExampleBean.Started);
+            Console.WriteLine(">>> Started (should be false): " + LifecycleExampleBean.Started);
 
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
@@ -98,7 +88,7 @@ namespace Apache.Ignite.Examples.Misc
             /// <summary>
             /// Started flag.
             /// </summary>
-            public bool Started
+            public static bool Started
             {
                 get;
                 private set;
