@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
@@ -123,8 +124,16 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @param p The path.
      * @return The owner.
      */
-    private static String getOwner(IgfsEx i, IgfsPath p) {
-        return i.info(p).property(IgfsUtils.PROP_USER_NAME);
+    private static String getOwner(final IgfsEx i, final IgfsPath p) {
+        return IgfsUserContext.doAs(USER, new IgniteOutClosure<String>() {
+            @Override public String apply() {
+                IgfsFile f = i.info(p);
+
+                assert f != null;
+
+                return f.property(IgfsUtils.PROP_USER_NAME);
+            }
+        });
     }
 
     /**
@@ -160,8 +169,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @param useNewCombiner flag to use new combiner API.
      * @param useNewReducer flag to use new reducer API.
      */
-    protected final void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
-        throws Exception {
+    protected final void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner,
+        boolean useNewReducer) throws Exception {
         igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
         JobConf jobConf = new JobConf();
@@ -210,13 +219,10 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         String actual = readAndSortFile(outFile, job.getConfiguration());
 
         assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
-                useNewReducer,
-            "blue\t" + blue + "\n" +
+                useNewReducer, "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
-                "yellow\t" + yellow + "\n",
-            actual
-        );
+                "yellow\t" + yellow + "\n", actual);
     }
 
     /**
@@ -239,7 +245,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(cntrs, null);
 
-        Map<String, SortedMap<Integer,Long>> tasks = new TreeMap<>();
+        Map<String, SortedMap<Integer, Long>> tasks = new TreeMap<>();
 
         Map<String, Integer> phaseOrders = new HashMap<>();
         phaseOrders.put("submit", 0);
@@ -269,7 +275,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
             }
 
             if (!taskId.equals(prevTaskId))
-                tasks.put(taskId, new TreeMap<Integer,Long>());
+                tasks.put(taskId, new TreeMap<Integer, Long>());
 
             Integer pos = phaseOrders.get(taskPhase);
 
@@ -282,7 +288,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
             apiEvtCnt++;
         }
 
-        for (Map.Entry<String ,SortedMap<Integer,Long>> task : tasks.entrySet()) {
+        for (Map.Entry<String, SortedMap<Integer, Long>> task : tasks.entrySet()) {
             Map<Integer, Long> order = task.getValue();
 
             long prev = 0;
@@ -344,7 +350,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @throws Exception If failed.
      */
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs,
+        @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");

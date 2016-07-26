@@ -117,11 +117,8 @@ public class IgfsMetaManager extends IgfsManager {
     /** Used for access and modification time for meta cache in dual modes. */
     private static final long UNKNOWN_TIME = -1L;
 
-    /** TODO: null? */
-    private static final Map<String, String> UNKNOWN_PROPERTIES = Collections.emptyMap();
-
-    // TODO: unknown listing
-    private static final Map<String, String> UNKNOWN_LISTING = Collections.emptyMap();
+    /** Unknown file properties. */
+    private static final Map<String, String> UNKNOWN_PROPERTIES = null;
 
     /** IGFS configuration. */
     private FileSystemConfiguration cfg;
@@ -2234,7 +2231,6 @@ public class IgfsMetaManager extends IgfsManager {
 
                         IgfsEntryInfo parentPathInfo = infos.get(parentPath);
 
-                        // TODO: remove this call:
                         synchronize(fs, parentPath, parentPathInfo, path, true, null);
 
                         if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
@@ -3061,20 +3057,6 @@ public class IgfsMetaManager extends IgfsManager {
                             if (secondaryCtx != null) {
                                 secondaryOut = secondaryCtx.create();
 
-//                                // NB: this call is unavoidable since we should know the file length:
-//                                IgfsFile secondaryFile = secondaryCtx.info();
-//
-//                                if (secondaryFile == null)
-//                                    throw fsException("Failed to open output stream to the file created in " +
-//                                        "the secondary file system because it no longer exists: " + path);
-//                                else if (secondaryFile.isDirectory())
-//                                    throw fsException("Failed to open output stream to the file created in " +
-//                                        "the secondary file system because the path points to a directory: " + path);
-
-//                                newAccessTime = secondaryFile.accessTime();
-//                                newModificationTime = secondaryFile.modificationTime();
-//                                newProps = secondaryFile.properties();
-
                                 newAccessTime = UNKNOWN_TIME;
                                 newModificationTime = UNKNOWN_TIME;
                                 newProps = UNKNOWN_PROPERTIES;
@@ -3268,16 +3250,6 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-                // TODO: ***************************
-                //IgfsFile secondaryInfo = secondaryCtx.fileSystem().info(lastCreatedPath);
-//
-//                if (secondaryInfo == null)
-//                    throw new IgfsException("Failed to perform operation because secondary file system path was " +
-//                        "modified concurrently: " + lastCreatedPath);
-//                else if (secondaryInfo.isFile())
-//                    throw new IgfsException("Failed to perform operation because secondary file system entity is " +
-//                        "not directory: " + lastCreatedPath);
-
                 accessTime = UNKNOWN_TIME;
                 modificationTime = UNKNOWN_TIME;
                 props = UNKNOWN_PROPERTIES;
@@ -3308,19 +3280,6 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-//                IgfsFile secondaryInfo = secondaryCtx.fileSystem().info(pathIds.path());
-//
-//                if (secondaryInfo == null)
-//                    throw new IgfsException("Failed to perform operation because secondary file system path was " +
-//                        "modified concurrnetly: " + pathIds.path());
-//                else if (secondaryInfo.isFile())
-//                    throw new IgfsException("Failed to perform operation because secondary file system entity is " +
-//                        "not directory: " + lastCreatedPath);
-//
-//                accessTime = secondaryInfo.accessTime();
-//                modificationTime = secondaryInfo.modificationTime();
-//                props = secondaryInfo.properties();
-
                 accessTime = UNKNOWN_TIME;
                 modificationTime = UNKNOWN_TIME;
                 props = UNKNOWN_PROPERTIES;
@@ -3341,18 +3300,9 @@ public class IgfsMetaManager extends IgfsManager {
             int newBlockSize;
 
             if (secondaryCtx != null) {
-//                IgfsFile secondaryFile = secondaryCtx.info();
-//
-//                if (secondaryFile == null)
-//                    throw fsException("Failed to open output stream to the file created in " +
-//                        "the secondary file system because it no longer exists: " + pathIds.path());
-//                else if (secondaryFile.isDirectory())
-//                    throw fsException("Failed to open output stream to the file created in " +
-//                        "the secondary file system because the path points to a directory: " + pathIds.path());
-
-                newAccessTime = UNKNOWN_TIME; //secondaryFile.accessTime();
-                newModificationTime = UNKNOWN_TIME; //secondaryFile.modificationTime();
-                newProps = UNKNOWN_PROPERTIES; //secondaryFile.properties();
+                newAccessTime = UNKNOWN_TIME;
+                newModificationTime = UNKNOWN_TIME;
+                newProps = UNKNOWN_PROPERTIES;
             }
             else {
                 newAccessTime = curTime;

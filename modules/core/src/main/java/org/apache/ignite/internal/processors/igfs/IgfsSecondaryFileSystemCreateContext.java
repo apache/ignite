@@ -100,13 +100,12 @@ public class IgfsSecondaryFileSystemCreateContext {
         return fs.info(path);
     }
 
-    // TODO: Note used?
-//    /**
-//     * @return Secondary file system.
-//     */
-//    public IgfsSecondaryFileSystem fileSystem() {
-//        return fs;
-//    }
+    /**
+     * @return Secondary file system.
+     */
+    public IgfsSecondaryFileSystem fileSystem() {
+        return fs;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
