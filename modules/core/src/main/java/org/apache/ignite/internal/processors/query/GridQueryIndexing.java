@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -56,17 +58,6 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void stop() throws IgniteCheckedException;
-
-    /**
-     * Runs two step query.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param keepCacheObjects If {@code true}, cache objects representation will be preserved.
-     * @return Cursor.
-     */
-    public Iterable<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry,
-        boolean keepCacheObjects);
 
     /**
      * Parses SQL query into two step query and executes it.

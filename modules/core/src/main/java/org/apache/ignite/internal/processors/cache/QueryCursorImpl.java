@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query cursor implementation.
@@ -41,11 +45,28 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** */
     private List<GridQueryFieldMetadata> fieldsMeta;
 
+    /** */
+    private final AtomicReference<GridAbsClosure> mapQrysCancel;
+
+    /** */
+    private final AtomicReference<GridAbsClosure> rdcQryCancel;
+
+    /**
+     * @param iterExec Query executor.
+     * @param rdcQryCancel Used to hold cancellation closure.
+     */
+    public QueryCursorImpl(Iterable<T> iterExec,
+        @Nullable AtomicReference<GridAbsClosure> mapQrysCancel, @Nullable AtomicReference<GridAbsClosure> rdcQryCancel) {
+        this.iterExec = iterExec;
+        this.mapQrysCancel = mapQrysCancel;
+        this.rdcQryCancel = rdcQryCancel;
+    }
+
     /**
      * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this.iterExec = iterExec;
+        this(iterExec, null, null);
     }
 
     /** {@inheritDoc} */
@@ -105,6 +126,27 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 catch (Exception e) {
                     throw new IgniteException(e);
                 }
+            }
+        } else {
+            GridAbsClosure clo;
+            if (mapQrysCancel != null) {
+                // Make sure we use correct closure.
+                while(true) {
+                    clo = mapQrysCancel.get();
+
+                    if (mapQrysCancel.compareAndSet(clo, F.noop()))
+                        break;
+                }
+
+                if (clo != null)
+                    clo.apply();
+            }
+
+            if (rdcQryCancel != null) {
+                clo = rdcQryCancel.get();
+
+                if (clo != null && rdcQryCancel.compareAndSet(clo, F.noop()))
+                    clo.apply();
             }
         }
     }

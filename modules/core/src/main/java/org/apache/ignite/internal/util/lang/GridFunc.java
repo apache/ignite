@@ -3444,7 +3444,6 @@ public class GridFunc {
      *
      * @return Absolute (no-arg) closure that does nothing.
      */
-    @Deprecated
     public static GridAbsClosure noop() {
         return NOOP;
     }

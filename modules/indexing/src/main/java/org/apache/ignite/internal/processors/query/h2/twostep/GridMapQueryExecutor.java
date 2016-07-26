@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -451,11 +453,18 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
+                AtomicReference<GridAbsClosure> cancel = new AtomicReference<>();
+
+                if (!qr.cancels.compareAndSet(i, null, cancel))
+                    throw new IllegalStateException();
+
                 ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
                     h2.connectionForSpace(req.space()),
                     qry.query(),
                     F.asList(qry.parameters()),
-                    true);
+                    true,
+                    req.timeout(),
+                    cancel);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -637,6 +646,9 @@ public class GridMapQueryExecutor {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
+        private final AtomicReferenceArray<AtomicReference<GridAbsClosure>> cancels;
+
+        /** */
         private final GridCacheContext<?,?> cctx;
 
         /** */
@@ -652,6 +664,7 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
 
             results = new AtomicReferenceArray<>(qrys);
+            cancels = new AtomicReferenceArray<>(qrys);
         }
 
         /**
@@ -698,6 +711,15 @@ public class GridMapQueryExecutor {
 
                 if (res != null)
                     res.close();
+
+                AtomicReference<GridAbsClosure> cancel = cancels.get(i);
+
+                if (cancel != null) {
+                    GridAbsClosure clo = cancel.get();
+
+                    if (clo != null && cancel.compareAndSet(clo, F.noop()))
+                        clo.apply();
+                }
             }
         }
     }
