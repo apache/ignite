@@ -148,6 +148,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     @GridToStringExclude
     protected GridCacheSharedContext<?, ?> cctx;
 
+    /** Need return value. */
+    protected boolean needRetVal;
+
     /**
      * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
      * assigned to this transaction at the end of write phase.
@@ -698,6 +701,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
+    }
+
+    /**
+     * @return Flag indicating whether transaction needs return value.
+     */
+    public boolean needReturnValue() {
+        return needRetVal;
+    }
+
+    /**
+     * @param needRetVal Need return value flag.
+     */
+    public void needReturnValue(boolean needRetVal) {
+        this.needRetVal = needRetVal;
     }
 
     /**
@@ -1476,7 +1493,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors())) {
-            if (!near() && !local() && onePhaseCommit()) {
+            if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
                 GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
 
                 ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
@@ -1549,7 +1566,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     err = e;
                 }
 
-                if (!near() && !local() && onePhaseCommit()) {
+                if (!near() && !local() && onePhaseCommit() & needReturnValue()) {
                     GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
 
                     assert ret != null;

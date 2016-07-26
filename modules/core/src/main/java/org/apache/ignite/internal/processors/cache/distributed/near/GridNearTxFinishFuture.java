@@ -447,6 +447,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (mappings.empty())
             return;
 
+        if (!tx.needReturnValue() || !tx.implicit())
+            return; // GridCacheReturn was not saved at backup.
+
         GridDistributedTxMapping mapping = mappings.singleMapping();
 
         if (mapping != null) {

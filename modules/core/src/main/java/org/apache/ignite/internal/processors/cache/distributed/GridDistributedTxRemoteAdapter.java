@@ -451,7 +451,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
-                    if (!near() && !local() && onePhaseCommit())
+                    if (!near() && !local() && onePhaseCommit() && needReturnValue())
                         cctx.tm().addCommittedTxReturn(this,
                             new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true));
 
