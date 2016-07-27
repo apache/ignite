@@ -874,7 +874,8 @@ public final class IgfsImpl implements IgfsEx {
                     if (info != null) {
                         if (info.isFile())
                             // If this is a file, return its description.
-                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info, data.groupBlockSize()));
+                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
+                                data.groupBlockSize()));
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
@@ -932,8 +933,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(), cfg
-                        .getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -949,8 +950,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info, cfg
-                    .getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
+                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -1024,16 +1025,24 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
 
                 if (mode != PRIMARY)
-                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite,
-                        simpleCreate, fileProps, (short)replication, groupBlockSize(), bufSize);
+                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate,
+                        fileProps, (short)replication, groupBlockSize(), bufSize);
 
                 // Await for async ops completion if in DUAL mode.
                 if (mode != PRIMARY)
                     await(path);
 
                 // Perform create.
-                IgfsCreateResult res = meta.create(path, dirProps, overwrite, cfg.getBlockSize(), affKey,
-                    evictExclude(path, mode == PRIMARY), fileProps, secondaryCtx);
+                IgfsCreateResult res = meta.create(
+                    path,
+                    dirProps,
+                    overwrite,
+                    cfg.getBlockSize(),
+                    affKey,
+                    evictExclude(path, mode == PRIMARY),
+                    fileProps,
+                    secondaryCtx
+                );
 
                 assert res != null;
 
