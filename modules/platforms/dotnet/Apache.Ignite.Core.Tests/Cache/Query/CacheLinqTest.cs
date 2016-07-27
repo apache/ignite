@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -1020,6 +1019,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var nonQueryableCache = Ignition.GetIgnite().GetOrCreateCache<Role, Person>("nonQueryable");
 
             Assert.Throws<CacheException>(() => nonQueryableCache.AsCacheQueryable());
+        }
+
+        /// <summary>
+        /// Tests the distributed joins.
+        /// </summary>
+        [Test]
+        public void TestDistributedJoins()
+        {
+            var ignite = Ignition.GetIgnite();
+
+            // Create and populate partitioned caches
+            var personCache = ignite.CreateCache<int, Person>(new CacheConfiguration("partitioned_persons",
+                new QueryEntity(typeof(int), typeof(Person))));
+
+            personCache.PutAll(GetSecondPersonCache().ToDictionary(x => x.Key, x => x.Value));
+
+            var roleCache = ignite.CreateCache<int, Role>(new CacheConfiguration("partitioned_roles",
+                    new QueryEntity(typeof(int), typeof(Role))));
+
+            roleCache.PutAll(GetRoleCache().ToDictionary(x => x.Key.Foo, x => x.Value));
+
+            // Test non-distributed join: returns partial results
+            var persons = personCache.AsCacheQueryable();
+            var roles = roleCache.AsCacheQueryable();
+
+            var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.Greater(res.Length, 0);
+            Assert.Less(res.Length, RoleCount);
+
+            // Test distributed join: returns complete results
+            persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+            roles = roleCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+
+            res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
         }
 
         /// <summary>
