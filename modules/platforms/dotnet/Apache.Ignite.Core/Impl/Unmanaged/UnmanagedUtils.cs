@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #region NATIVE METHODS: PROCESSOR
 
         internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
-            bool clientMode)
+            bool clientMode, string workDir)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -85,13 +85,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
                 sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
+                sbyte* workDir0 = IgniteUtils.StringToUtf8Unmanaged(workDir);
 
                 try
                 {
                     // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
                     // Release current reference immediately.
                     void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
-                        mem.SynchronizeOutput());
+                        mem.SynchronizeOutput(), workDir0);
 
                     JNI.Release(res);
                 }
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     Marshal.FreeHGlobal(new IntPtr(cfgPath0));
                     Marshal.FreeHGlobal(new IntPtr(gridName0));
+                    Marshal.FreeHGlobal(new IntPtr(workDir0));
                 }
             }
         }

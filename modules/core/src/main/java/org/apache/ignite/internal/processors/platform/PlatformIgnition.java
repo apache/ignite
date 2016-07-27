@@ -52,9 +52,11 @@ public class PlatformIgnition {
      * @return Ignite instance.
      */
     public static synchronized PlatformProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
-        int factoryId, long envPtr, long dataPtr) {
+        int factoryId, long envPtr, long dataPtr, @Nullable String workDir) throws IgniteCheckedException {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
+
+        U.setWorkDirectory(workDir, null);
 
         ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 

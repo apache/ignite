@@ -514,8 +514,8 @@ namespace ignite
                 static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
                 static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
+                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, char* workDir);
+                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, char* workDir, JniErrorInfo* errInfo);
                 jobject IgnitionInstance(char* name);
                 jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
                 long long IgnitionEnvironmentPointer(char* name);

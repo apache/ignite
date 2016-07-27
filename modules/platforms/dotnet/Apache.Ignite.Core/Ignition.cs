@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode, cfg.WorkDirectory);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;

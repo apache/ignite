@@ -380,7 +380,7 @@ namespace ignite
             JniMethod M_PLATFORM_UTILS_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
-            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
+            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJLjava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
             JniMethod M_PLATFORM_IGNITION_INSTANCE = JniMethod("instance", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
@@ -1136,16 +1136,17 @@ namespace ignite
                 }
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
-                return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, char* workDir) {
+                return IgnitionStart(cfgPath, name, factoryId, dataPtr, workDir, NULL);
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, char* workDir, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
                 jstring cfgPath0 = env->NewStringUTF(cfgPath);
                 jstring name0 = env->NewStringUTF(name);
+                jstring workDir0 = env->NewStringUTF(workDir);
 
                 jobject interop = env->CallStaticObjectMethod(
                     jvm->GetMembers().c_PlatformIgnition,
@@ -1154,7 +1155,8 @@ namespace ignite
                     name0,
                     factoryId,
                     reinterpret_cast<long long>(&hnds),
-                    dataPtr
+                    dataPtr,
+                    workDir0
                 );
 
                 ExceptionCheck(env, errInfo);

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStart")]
         public static extern void* IgnitionStart(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, 
-            long dataPtr);
+            long dataPtr, sbyte* workDir);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStop")]
         [return: MarshalAs(UnmanagedType.U1)]

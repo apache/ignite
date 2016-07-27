@@ -26,8 +26,8 @@ extern "C" {
         return gcj::JniContext::Reallocate(memPtr, cap);
     }
 
-    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr) {
-        return ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
+    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr, char* workDir) {
+        return ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr, workDir);
     }
 
 	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
