@@ -181,18 +181,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private boolean waitForRent() throws IgniteCheckedException {
         boolean changed = false;
 
-        GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[locParts.length];
-
-        lock.readLock().lock();
-
-        try {
-            for (int i = 0; i < locParts.length; i++)
-                locPartsCopy[i] = locParts[i];
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-
         final long longOpDumpTimeout =
             IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
 
@@ -200,8 +188,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         GridDhtLocalPartition part;
 
-        for (int i = 0; i < locPartsCopy.length(); i++) {
-            part = locPartsCopy.get(i);
+        for (int i = 0; i < locParts.length(); i++) {
+            part = locParts.get(i);
 
             if (part == null)
                 continue;
