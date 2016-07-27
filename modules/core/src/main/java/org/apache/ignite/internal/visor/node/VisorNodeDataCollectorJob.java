@@ -21,8 +21,9 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -156,6 +157,18 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
+     * @param cacheName Cache name to check.
+     * @return {@code true} if cache on local node is not a data cache or near cache disabled.
+     */
+    private boolean proxyCache(String cacheName) {
+        GridDiscoveryManager discovery = ignite.context().discovery();
+
+        ClusterNode locNode = ignite.localNode();
+
+        return !(discovery.cacheAffinityNode(locNode, cacheName) || discovery.cacheNearNode(locNode, cacheName));
+    }
+
+    /**
      * Collect caches.
      *
      * @param res Job result.
@@ -165,9 +178,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgniteConfiguration cfg = ignite.configuration();
 
-            GridCacheProcessor cacheProc = ignite.context().cache();
+            for (String cacheName : ignite.context().cache().cacheNames()) {
+                if (proxyCache(cacheName))
+                    continue;
 
-            for (String cacheName : cacheProc.cacheNames()) {
                 if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
@@ -204,6 +218,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             for (IgniteFileSystem igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
+
+                FileSystemConfiguration igfsCfg = igfs.configuration();
+
+                if (proxyCache(igfsCfg.getDataCacheName()) || proxyCache(igfsCfg.getMetaCacheName()))
+                    continue;
 
                 try {
                     Collection<IpcServerEndpoint> endPoints = igfsProc.endpoints(igfs.name());
