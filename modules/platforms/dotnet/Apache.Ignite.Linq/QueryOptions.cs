@@ -46,7 +46,7 @@ namespace Apache.Ignite.Linq
         public bool Local { get; set; }
 
         /// <summary>
-        /// Optional page size. If set to <c>0</c>, then <c>CacheQueryConfiguration.pageSize</c> is used.
+        /// Page size, defaults to <see cref="DefaultPageSize"/>.
         /// </summary>
         [DefaultValue(DefaultPageSize)]
         public int PageSize { get; set; }
