@@ -168,10 +168,36 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
+            }
+        }
 
-                // Check that work directory is actually used
-                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
-                Assert.IsTrue(Directory.Exists(marshDir), "Work directory is not actually used: " + cfg.WorkDirectory);
+        /// <summary>
+        /// Tests the work directory.
+        /// </summary>
+        [Test]
+        public void TestWorkDirectory()
+        {
+            const string envVar = "TestWorkDirectory";
+
+            if (Environment.GetEnvironmentVariable(envVar) != null)
+            {
+                // Env var is set - we are in a new process
+
+                var cfg = new IgniteConfiguration(GetCustomConfig());
+
+                using (Ignition.Start(cfg))
+                {
+                    // Check that work directory is actually used
+                    var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+                    Assert.IsTrue(Directory.Exists(marshDir),
+                        "Work directory is not actually used: " + cfg.WorkDirectory);
+                }
+            }
+            else
+            {
+                // Env var is not set - run test in a new process to work around static workDir in Java.
+                Environment.SetEnvironmentVariable(envVar, "true");
+                TestUtils.RunTestInNewProcess(GetType().FullName, "TestWorkDirectory");
             }
         }
 
@@ -434,7 +460,7 @@ namespace Apache.Ignite.Core.Tests
                 NetworkTimeout = TimeSpan.FromMinutes(10),
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = TestUtils.GetTempFolder(),
-                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmOptions = TestUtils.TestJavaOptions(false),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
                 IsDaemon = true,
