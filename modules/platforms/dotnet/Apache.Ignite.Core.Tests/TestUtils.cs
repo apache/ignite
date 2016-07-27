@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -368,5 +369,29 @@ namespace Apache.Ignite.Core.Tests
             throw new InvalidOperationException();
         }
 
+        /// <summary>
+        /// Runs the test in new process.
+        /// </summary>
+        public static void RunTestInNewProcess(string fixtureName, string testName)
+        {
+            var procStart = new ProcessStartInfo
+            {
+                FileName = typeof(TestUtils).Assembly.Location,
+                Arguments = fixtureName + " " + testName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(procStart);
+
+            Assert.IsNotNull(proc);
+
+            Console.WriteLine(proc.StandardOutput.ReadToEnd());
+            Console.WriteLine(proc.StandardError.ReadToEnd());
+            Assert.IsTrue(proc.WaitForExit(15000));
+            Assert.AreEqual(0, proc.ExitCode);
+        }
     }
 }
