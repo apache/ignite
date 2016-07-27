@@ -955,7 +955,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(true, null, 999, false, true).Where(x => x.Key > 10);
+            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            {
+                Local = true,
+                PageSize = 999,
+                EnforceJoinOrder = true
+            }).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -983,14 +988,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsFalse(fq.EnforceJoinOrder);
 
             // Check distributed joins flag propagation
-            var distrQuery = cache.AsCacheQueryable(true, null, 999, true, true).Where(x => x.Key > 10);
+            var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
+                .Where(x => x.Key > 10);
             query = (ICacheQueryable) distrQuery;
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
-
-            // Easy check that EnableDistributedJoins is propagated to Java: it throws an error on replicated cache
-            var ex = Assert.Throws<IgniteException>(() => Assert.AreEqual(0, distrQuery.ToArray().Length));
-            Assert.AreEqual("Queries using distributed JOINs have to be run on partitioned cache, not on replicated.",
-                ex.Message);
         }
 
         /// <summary>
