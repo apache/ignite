@@ -943,7 +943,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         Object[] args = readQueryArgs(reader);
 
-        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc);
+        boolean distrJoins = reader.readBoolean();
+
+        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins);
     }
 
     /**
@@ -956,7 +958,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         Object[] args = readQueryArgs(reader);
 
-        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc);
+        boolean distrJoins = reader.readBoolean();
+        boolean enforceJoinOrder = reader.readBoolean();
+
+        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc)
+            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder);
     }
 
     /**

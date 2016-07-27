@@ -157,10 +157,48 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration(string sectionName, string configPath)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+            IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
+
+            var fileMap = GetConfigMap(configPath);
+            var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+
+            var section = config.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} with name '{1}' in file '{2}'",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration file map.
+        /// </summary>
+        private static ExeConfigurationFileMap GetConfigMap(string fileName)
+        {
+            var fullFileName = Path.GetFullPath(fileName);
+
+            if (!File.Exists(fullFileName))
+                throw new ConfigurationErrorsException("Specified config file does not exist: " + fileName);
+
+            return new ExeConfigurationFileMap { ExeConfigFilename = fullFileName };
+        }
+
+        /// <summary>
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public unsafe static IIgnite Start(IgniteConfiguration cfg)
+        public static unsafe IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 

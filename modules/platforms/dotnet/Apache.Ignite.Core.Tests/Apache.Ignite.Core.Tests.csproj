@@ -291,6 +291,9 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="app.config" />
     <Content Include="Config\ignite-dotnet-cfg.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

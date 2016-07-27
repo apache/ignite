@@ -735,8 +735,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.close(stmt, log);
         }
 
-        if (tbl.luceneIdx != null)
-            U.closeQuiet(tbl.luceneIdx);
+        tbl.onDrop();
 
         tbl.schema.tbls.remove(tbl.name());
     }
@@ -1816,12 +1815,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
-        for (Schema schema : schemas.values()) {
-            for (TableDescriptor desc : schema.tbls.values()) {
-                if (desc.luceneIdx != null)
-                    U.closeQuiet(desc.luceneIdx);
-            }
-        }
+        for (Schema schema : schemas.values())
+            schema.onDrop();
 
         for (Connection c : conns)
             U.close(c, log);
@@ -2436,6 +2431,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
+         *
+         */
+        void onDrop() {
+            dataTables.remove(tbl.identifier(), tbl);
+
+            tbl.destroy();
+
+            U.closeQuiet(luceneIdx);
+        }
+
+        /**
          * @param tbl Table.
          * @param idxName Index name.
          * @param cols Columns.
@@ -2668,13 +2674,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * Called after the schema was dropped.
          */
         public void onDrop() {
-            for (TableDescriptor tblDesc : tbls.values()) {
-                GridH2Table tbl = tblDesc.tbl;
-
-                dataTables.remove(tbl.identifier(), tbl);
-
-                tbl.destroy();
-            }
+            for (TableDescriptor tblDesc : tbls.values())
+                tblDesc.onDrop();
         }
     }
 

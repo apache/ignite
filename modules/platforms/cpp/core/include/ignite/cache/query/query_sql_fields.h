@@ -200,6 +200,9 @@ namespace ignite
 
                     for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
+
+                    writer.WriteBool(false);  // distributed joins
+                    writer.WriteBool(false);  // enforce join order
                 }
 
             private:

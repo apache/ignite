@@ -1687,11 +1687,59 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testDistributedJoinsQuery() throws Exception {
+        String qry = "select * from Person, \"organization\".Organization " +
+            "where \"organization\".Organization.id = Person.orgId " +
+            "and \"organization\".Organization.name = ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("distributedJoins", "true");
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry, CHARSET));
+        params.put("arg1", "o1");
+
+        String ret = content(params);
+
+        JsonNode items = jsonResponse(ret).get("items");
+
+        assertEquals(2, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSqlFieldsQuery() throws Exception {
         String qry = "select concat(firstName, ' ', lastName) from Person";
 
         Map<String, String> params = new HashMap<>();
         params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry, CHARSET));
+
+        String ret = content(params);
+
+        JsonNode items = jsonResponse(ret).get("items");
+
+        assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributedJoinsSqlFieldsQuery() throws Exception {
+        String qry = "select * from \"person\".Person p, \"organization\".Organization o where o.id = p.orgId";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("distributedJoins", "true");
         params.put("pageSize", "10");
         params.put("cacheName", "person");
         params.put("qry", URLEncoder.encode(qry, CHARSET));
@@ -1831,6 +1879,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     private void initCache() {
+        CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
+
+        orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);
+
+        IgniteCache<Integer, Organization> orgCache = ignite(0).getOrCreateCache(orgCacheCfg);
+
+        orgCache.clear();
+
+        Organization o1 = new Organization(1, "o1");
+        Organization o2 = new Organization(2, "o2");
+
+        orgCache.put(1, o1);
+        orgCache.put(2, o2);
+
         CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
 
         personCacheCfg.setIndexedTypes(Integer.class, Person.class);
@@ -1839,10 +1901,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         personCache.clear();
 
-        Person p1 = new Person("John", "Doe", 2000);
-        Person p2 = new Person("Jane", "Doe", 1000);
-        Person p3 = new Person("John", "Smith", 1000);
-        Person p4 = new Person("Jane", "Smith", 2000);
+        Person p1 = new Person(1, "John", "Doe", 2000);
+        Person p2 = new Person(1, "Jane", "Doe", 1000);
+        Person p3 = new Person(2, "John", "Smith", 1000);
+        Person p4 = new Person(2, "Jane", "Smith", 2000);
 
         personCache.put(p1.getId(), p1);
         personCache.put(p2.getId(), p2);
@@ -1856,6 +1918,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(2, personCache.query(qry).getAll().size());
     }
 
+
+    /**
+     * Organization class.
+     */
+    public static class Organization implements Serializable {
+        /** Organization ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /** First name (not-indexed). */
+        @QuerySqlField(index = true)
+        private String name;
+
+        /**
+         * @param id Id.
+         * @param name Name.
+         */
+        Organization(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+    }
+
     /**
      * Person class.
      */
@@ -1866,6 +1965,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         /** Person ID (indexed). */
         @QuerySqlField(index = true)
         private Integer id;
+
+        /** Organization id. */
+        @QuerySqlField(index = true)
+        private Integer orgId;
 
         /** First name (not-indexed). */
         @QuerySqlField
@@ -1884,12 +1987,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param lastName Last name.
          * @param salary Salary.
          */
-        Person(String firstName, String lastName, double salary) {
+        Person(Integer orgId, String firstName, String lastName, double salary) {
             id = PERSON_ID++;
 
+            this.orgId = orgId;
             this.firstName = firstName;
             this.lastName = lastName;
             this.salary = salary;
+        }
+
+        /**
+         * @return Organization ID.
+         */
+        public Integer getOrganizationId() {
+            return orgId;
         }
 
         /**

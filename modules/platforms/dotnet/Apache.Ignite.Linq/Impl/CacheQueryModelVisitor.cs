@@ -418,8 +418,7 @@ namespace Apache.Ignite.Linq.Impl
 
                 VisitQueryModel(subQuery.QueryModel, true);
 
-                var queryable = ExpressionWalker.GetCacheQueryable(subQuery.QueryModel.MainFromClause);
-                var alias = _aliases.GetTableAlias(queryable);
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
@@ -437,7 +436,8 @@ namespace Apache.Ignite.Linq.Impl
 
                 var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
                 var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetTableAlias(tableName));
+                var alias = _aliases.GetTableAlias(joinClause);
+                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);

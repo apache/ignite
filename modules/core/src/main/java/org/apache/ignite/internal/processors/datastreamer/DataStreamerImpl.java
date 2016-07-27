@@ -519,12 +519,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
                 for (Map.Entry<K, V> entry : entries)
-                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey(), true));
+                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, null, entry.getKey(), true));
             }
 
             Collection<? extends DataStreamerEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, DataStreamerEntry>() {
                 @Override public DataStreamerEntry apply(Entry<K, V> e) {
-                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), true);
+                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, e.getKey(), true);
                     CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), true);
 
                     return new DataStreamerEntry(key, val);
@@ -619,7 +619,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         else
             checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, true);
+        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
         return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));

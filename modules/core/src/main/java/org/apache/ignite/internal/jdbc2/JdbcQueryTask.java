@@ -92,6 +92,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Collocated query flag. */
     private final boolean collocatedQry;
 
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
+
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -102,9 +105,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param uuid UUID.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
+     * @param distributedJoins Distributed joins flag.
      */
     public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
-        boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry) {
+        boolean loc, Object[] args, int fetchSize, UUID uuid,
+        boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
@@ -114,6 +119,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         this.loc = loc;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
+        this.distributedJoins = distributedJoins;
     }
 
     /** {@inheritDoc} */
@@ -147,6 +153,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
+            qry.setDistributedJoins(distributedJoins);
 
             QueryCursor<List<?>> qryCursor = cache.query(qry);
 
