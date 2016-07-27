@@ -30,17 +30,12 @@ namespace Apache.Ignite.Linq.Impl
         /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}" /> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        /// <param name="local">Local flag.</param>
-        /// <param name="tableName">Name of the table.</param>
-        /// <param name="pageSize">Size of the page.</param>
-        /// <param name="enableDistributedJoins">Distributed joins flag.</param>
-        /// <param name="enforceJoinOrder">Enforce join order flag.</param>
-        public CacheQueryable(ICache<TKey, TValue> cache, bool local, string tableName, int pageSize,
-            bool enableDistributedJoins,
-            bool enforceJoinOrder)
+        /// <param name="queryOptions">The query options.</param>
+        public CacheQueryable(ICache<TKey, TValue> cache, QueryOptions queryOptions)
             : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
-                new CacheFieldsQueryExecutor((ICacheInternal) cache, local, pageSize, enableDistributedJoins,
-                    enforceJoinOrder), cache.Ignite, cache.GetConfiguration(), tableName, typeof(TValue)))
+                new CacheFieldsQueryExecutor((ICacheInternal) cache, queryOptions.Local, queryOptions.PageSize,
+                    queryOptions.EnableDistributedJoins, queryOptions.EnforceJoinOrder), 
+                cache.Ignite, cache.GetConfiguration(), queryOptions.TableName, typeof(TValue)))
         {
             // No-op.
         }

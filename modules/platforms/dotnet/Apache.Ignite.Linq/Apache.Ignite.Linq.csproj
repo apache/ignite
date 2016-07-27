@@ -71,6 +71,7 @@
     <Compile Include="Impl\ExpressionWalker.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QueryOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Linq.nuspec" />
