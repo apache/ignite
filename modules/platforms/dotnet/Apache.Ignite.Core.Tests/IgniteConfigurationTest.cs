@@ -168,6 +168,10 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
+
+                // Check that work directory is actually used
+                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+                Assert.IsTrue(Directory.Exists(marshDir), "Work directory is not actually used: " + cfg.WorkDirectory);
             }
         }
 
@@ -429,7 +433,7 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryCount = 54,
                 NetworkTimeout = TimeSpan.FromMinutes(10),
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
-                WorkDirectory = Path.GetTempPath(),
+                WorkDirectory = TestUtils.GetTempFolder(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",

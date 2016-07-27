@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -337,5 +337,36 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = CreateTestClasspath()
             };
         }
+
+        /// <summary>
+        /// Gets the temporary folder.
+        /// </summary>
+        public static string GetTempFolder()
+        {
+            const string prefix = "ig-test-";
+            var temp = Path.GetTempPath();
+
+            for (int i = 0; i < int.MaxValue; i++)
+            {
+                {
+                    try
+                    {
+                        var path = Path.Combine(temp, prefix + i);
+
+                        if (Directory.Exists(path))
+                            Directory.Delete(path, true);
+
+                        return Directory.CreateDirectory(path).FullName;
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore
+                    }
+                }
+            }
+
+            throw new InvalidOperationException();
+        }
+
     }
 }

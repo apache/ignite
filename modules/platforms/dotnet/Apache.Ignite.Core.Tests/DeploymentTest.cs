@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestCustomDeployment()
         {
             // Create temp folder
-            var folder = GetTempFolder();
+            var folder = TestUtils.GetTempFolder();
 
             // Copy jars
             var home = IgniteHome.Resolve(null);
@@ -125,36 +125,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(exePath, remoteProcPath);
             }
-        }
-
-        /// <summary>
-        /// Gets the temporary folder.
-        /// </summary>
-        private static string GetTempFolder()
-        {
-            const string prefix = "ig-test-";
-            var temp = Path.GetTempPath();
-
-            for (int i = 0; i < int.MaxValue; i++)
-            {
-                {
-                    try
-                    {
-                        var path = Path.Combine(temp, prefix + i);
-
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
-
-                        return Directory.CreateDirectory(path).FullName;
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore
-                    }
-                }
-            }
-
-            throw new InvalidOperationException();
         }
 
         /// <summary>
