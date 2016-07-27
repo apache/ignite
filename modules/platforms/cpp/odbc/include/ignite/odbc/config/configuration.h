@@ -60,6 +60,12 @@ namespace ignite
 
                     /** Connection attribute keyword for port attribute. */
                     static const std::string port;
+
+                    /** Connection attribute keyword for distributed joins attribute. */
+                    static const std::string distributedJoins;
+
+                    /** Connection attribute keyword for enforce join order attribute. */
+                    static const std::string enforceJoinOrder;
                 };
 
                 /** Default values for configuration. */
@@ -81,10 +87,13 @@ namespace ignite
                     static const std::string server;
 
                     /** Default value for port attribute. */
-                    static const std::string port;
+                    static const uint16_t port;
 
-                    /** Default value for port attribute. Uint16 value. */
-                    static const uint16_t uintPort;
+                    /** Default value for distributed joins attribute. */
+                    static const bool distributedJoins;
+
+                    /** Default value for enforce join order attribute. */
+                    static const bool enforceJoinOrder;
                 };
 
                 /**
@@ -200,6 +209,26 @@ namespace ignite
                 }
 
                 /**
+                 * Check distributed joins flag.
+                 *
+                 * @return True if distributed joins are enabled.
+                 */
+                bool IsDistributedJoins() const
+                {
+                    return GetBoolValue(Key::distributedJoins, DefaultValue::distributedJoins);
+                }
+
+                /**
+                 * Check enforce join order flag.
+                 *
+                 * @return True if enforcing of join order is enabled.
+                 */
+                bool IsEnforceJoinOrder() const
+                {
+                    return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
+                }
+
+                /**
                  * Get string value from the config.
                  *
                  * @param key Configuration key.
@@ -207,6 +236,24 @@ namespace ignite
                  * @return Found or default value.
                  */
                 const std::string& GetStringValue(const std::string& key, const std::string& dflt) const;
+
+                /**
+                 * Get int value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                int64_t GetIntValue(const std::string& key, int64_t dflt) const;
+
+                /**
+                 * Get bool value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                bool GetBoolValue(const std::string& key, bool dflt) const;
 
             private:
                 /**

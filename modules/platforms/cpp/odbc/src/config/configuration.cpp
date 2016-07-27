@@ -32,20 +32,25 @@ namespace ignite
     {
         namespace config
         {
-            const std::string Configuration::Key::dsn     = "dsn";
-            const std::string Configuration::Key::driver  = "driver";
-            const std::string Configuration::Key::cache   = "cache";
-            const std::string Configuration::Key::address = "address";
-            const std::string Configuration::Key::server  = "server";
-            const std::string Configuration::Key::port    = "port";
+            const std::string Configuration::Key::dsn               = "dsn";
+            const std::string Configuration::Key::driver            = "driver";
+            const std::string Configuration::Key::cache             = "cache";
+            const std::string Configuration::Key::address           = "address";
+            const std::string Configuration::Key::server            = "server";
+            const std::string Configuration::Key::port              = "port";
+            const std::string Configuration::Key::distributedJoins  = "distributed_joins";
+            const std::string Configuration::Key::enforceJoinOrder  = "enforce_join_order";
 
             const std::string Configuration::DefaultValue::dsn     = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver  = "Apache Ignite";
             const std::string Configuration::DefaultValue::cache   = "";
             const std::string Configuration::DefaultValue::address = "";
             const std::string Configuration::DefaultValue::server  = "";
-            const std::string Configuration::DefaultValue::port    = "10800";
-            const uint16_t Configuration::DefaultValue::uintPort = common::LexicalCast<uint16_t>(port);
+
+            const uint16_t Configuration::DefaultValue::port = 10800;
+
+            const bool Configuration::DefaultValue::distributedJoins = false;
+            const bool Configuration::DefaultValue::enforceJoinOrder = false;
 
             Configuration::Configuration() :
                 arguments()
@@ -83,7 +88,7 @@ namespace ignite
                 else
                 {
                     endPoint.host = GetStringValue(Key::server, DefaultValue::server);
-                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                    endPoint.port = static_cast<uint16_t>(GetIntValue(Key::port, DefaultValue::port));
                 }
             }
 
@@ -137,7 +142,7 @@ namespace ignite
                 else
                 {
                     endPoint.host = GetStringValue(Key::server, DefaultValue::server);
-                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                    endPoint.port = static_cast<uint16_t>(GetIntValue(Key::port, DefaultValue::port));
                 }
             }
 
@@ -147,6 +152,42 @@ namespace ignite
 
                 if (it != arguments.end())
                     return it->second;
+
+                return dflt;
+            }
+
+            int64_t Configuration::GetIntValue(const std::string& key, int64_t dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                {
+                    const std::string& val = it->second;
+
+                    if (!std::all_of(val.begin(), val.end(), isdigit))
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid argument value: Integer value is expected.", "key", key);
+
+                    return common::LexicalCast<int64_t>(val);
+                }
+
+                return dflt;
+            }
+
+            bool Configuration::GetBoolValue(const std::string& key, bool dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                {
+                    std::string lowercaseVal = common::ToLower(it->second);
+
+                    if (lowercaseVal != "true" && lowercaseVal != "false")
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid argument value: Boolean value is expected (true or false).", "key", key);
+
+                    return lowercaseVal == "true";
+                }
 
                 return dflt;
             }
@@ -202,7 +243,7 @@ namespace ignite
                 if (colonNum == 0)
                 {
                     res.host = address;
-                    res.port = DefaultValue::uintPort;
+                    res.port = DefaultValue::port;
                 }
                 else if (colonNum == 1)
                 {

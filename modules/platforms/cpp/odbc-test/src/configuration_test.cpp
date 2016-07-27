@@ -67,7 +67,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetCache(), Configuration::DefaultValue::cache);
     BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
-    BOOST_CHECK_EQUAL(cfg.GetPort(), Configuration::DefaultValue::uintPort);
+    BOOST_CHECK_EQUAL(cfg.GetPort(), Configuration::DefaultValue::port);
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
 {
     BOOST_CHECK_NE(testDriverName, Configuration::DefaultValue::driver);
     BOOST_CHECK_NE(testAddress, Configuration::DefaultValue::address);
-    BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::uintPort);
+    BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
     BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
 }
