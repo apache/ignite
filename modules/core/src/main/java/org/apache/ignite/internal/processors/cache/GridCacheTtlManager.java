@@ -22,6 +22,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.waitstrategy.ConditionWaitStrategy;
+import org.apache.ignite.internal.processors.cache.waitstrategy.ParkingWaitStrategy;
+import org.apache.ignite.internal.processors.cache.waitstrategy.SleepWaitStrategy;
+import org.apache.ignite.internal.processors.cache.waitstrategy.WaitStrategy;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -41,14 +45,28 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private final GridConcurrentSkipListSetEx pendingEntries = new GridConcurrentSkipListSetEx();
 
-    /** Cleanup worker thread. */
+    private final WaitStrategy waitStgy;
+
+    {
+        String prop = System.getProperty("ignite.ttl.manager.wait.policy");
+        switch (prop) {
+            case "slp":
+                waitStgy = new SleepWaitStrategy();
+                break;
+            case "prk":
+                waitStgy = new ParkingWaitStrategy();
+                break;
+            default:
+                waitStgy = new ConditionWaitStrategy();
+                break;
+        }
+    }
+
+    /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
 
-    /** Mutex. */
-    private final Object mux = new Object();
-
-    /** Next expire time. */
-    private volatile long nextExpireTime;
+    /** Cleanup worker thread. */
+    private Thread cleanupWorkerThread;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -67,8 +85,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (cleanupWorker != null)
-            new IgniteThread(cleanupWorker).start();
+        if (cleanupWorker != null) {
+            cleanupWorkerThread = new IgniteThread(cleanupWorker);
+            cleanupWorkerThread.start();
+        }
     }
 
     /** {@inheritDoc} */
@@ -90,11 +110,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         pendingEntries.add(e);
 
-        if (e.expireTime < nextExpireTime) {
-            synchronized (mux) {
-                mux.notifyAll();
-            }
-        }
+        waitStgy.notify0(e.expireTime, cleanupWorkerThread);
     }
 
     /**
@@ -179,22 +195,18 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                expire();
+            cleanupWorkerThread = runner();
+            try {
+                while (!isCancelled()) {
+                    expire();
 
-                EntryWrapper first = pendingEntries.firstx();
+                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
 
-                long curTime = U.currentTimeMillis();
-
-                long waitTime = first != null ? first.expireTime - curTime : 500;
-
-                if (waitTime > 0) {
-                    synchronized (mux) {
-                        nextExpireTime = first != null ? first.expireTime : curTime + 500;
-
-                        mux.wait(waitTime);
-                    }
+                    waitStgy.waitFor(first == null ? -1 : first.expireTime);
                 }
+            }
+            finally {
+                cleanupWorkerThread = null;
             }
         }
     }
