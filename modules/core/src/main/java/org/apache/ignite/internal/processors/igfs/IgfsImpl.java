@@ -248,7 +248,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        modeRslvr = new IgfsModeResolver(dfltMode, IgfsUtils.preparePathModes(dfltMode, modes));
+        modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
         Object secondaryFsPayload = null;
 
@@ -809,12 +809,14 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
-                IgniteUuid fileId = meta.fileId(path);
+                if (!IgfsUtils.isDualMode(mode) || modeRslvr.hasPrimaryChild(path)) {
+                    IgniteUuid fileId = meta.fileId(path);
 
-                if (fileId != null)
-                    files.addAll(meta.directoryListing(fileId).keySet());
-                else if (mode == PRIMARY)
-                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                    if (fileId != null)
+                        files.addAll(meta.directoryListing(fileId).keySet());
+                    else if (mode == PRIMARY)
+                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
                     @Override public IgfsPath apply(String e) {
@@ -853,7 +855,8 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(impl);
                         }
 
-                        return files;
+                        if (!modeRslvr.hasPrimaryChild(path))
+                            return files;
                     }
                     catch (Exception e) {
                         U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
@@ -871,8 +874,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (info != null) {
                         if (info.isFile())
                             // If this is a file, return its description.
-                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
-                                data.groupBlockSize()));
+                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info, data.groupBlockSize()));
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
@@ -930,8 +932,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(), cfg
+                        .getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -947,8 +949,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
-                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info, cfg
+                    .getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -1022,24 +1024,16 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
 
                 if (mode != PRIMARY)
-                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate,
-                        fileProps, (short)replication, groupBlockSize(), bufSize);
+                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite,
+                        simpleCreate, fileProps, (short)replication, groupBlockSize(), bufSize);
 
                 // Await for async ops completion if in DUAL mode.
                 if (mode != PRIMARY)
                     await(path);
 
                 // Perform create.
-                IgfsCreateResult res = meta.create(
-                    path,
-                    dirProps,
-                    overwrite,
-                    cfg.getBlockSize(),
-                    affKey,
-                    evictExclude(path, mode == PRIMARY),
-                    fileProps,
-                    secondaryCtx
-                );
+                IgfsCreateResult res = meta.create(path, dirProps, overwrite, cfg.getBlockSize(), affKey,
+                    evictExclude(path, mode == PRIMARY), fileProps, secondaryCtx);
 
                 assert res != null;
 
@@ -1338,29 +1332,6 @@ public final class IgfsImpl implements IgfsEx {
         t.start();
 
         return fut;
-    }
-
-    /**
-     * Get file descriptor for specified path.
-     *
-     * @param path Path to file.
-     * @return Detailed file descriptor or {@code null}, if file does not exist.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
-        assert path != null;
-
-        List<IgniteUuid> ids = meta.idsForPath(path);
-
-        IgfsEntryInfo fileInfo = meta.info(ids.get(ids.size() - 1));
-
-        if (fileInfo == null)
-            return null; // File does not exist.
-
-        // Resolve parent ID for removed file.
-        IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
-
-        return new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile());
     }
 
     /** {@inheritDoc} */
