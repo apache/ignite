@@ -537,6 +537,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the join of a table to itself.
+        /// </summary>
+        [Test]
+        public void TestSelfJoin()
+        {
+            // Different queryables
+            var p1 = GetPersonCache().AsCacheQueryable();
+            var p2 = GetPersonCache().AsCacheQueryable();
+
+            var qry = p1.Join(p2, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
+
+            // Same queryables
+            var qry2 = p1.Join(p1, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry2.ToArray().Distinct().Count());
+        }
+
+        /// <summary>
         /// Tests the group by.
         /// </summary>
         [Test]
