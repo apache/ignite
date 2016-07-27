@@ -128,6 +128,7 @@ namespace Apache.Ignite.Linq
             this ICache<TKey, TValue> cache, bool local, string tableName, int pageSize,
             bool enableDistributedJoins, bool enforceJoinOrder)
         {
+            // TODO: QueryOptions class of some sort?
             return new CacheQueryable<TKey, TValue>(cache, local, tableName, pageSize, enableDistributedJoins,
                 enforceJoinOrder);
         }
