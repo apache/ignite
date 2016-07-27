@@ -1807,20 +1807,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return toCacheKeyObject(obj, false);
-    }
-
-    /**
-     * @param obj Object.
-     * @return Cache key object.
-     */
-    public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        if (includePartition)
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
-        else
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);
     }
 
     /**
@@ -1841,7 +1830,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
         Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, false);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, false);
     }
 
     /**
@@ -1989,21 +1978,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
-        return cacheKeysView(keys, false);
-    }
-
-    /**
-     * @param keys Keys.
-     * @param includePartition Include partition.
-     * @return Read-only collection of KeyCacheObject instances.
-     */
-    public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys, final boolean includePartition) {
         return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
             @Override public KeyCacheObject apply(Object key) {
                 if (key == null)
                     throw new NullPointerException("Null key.");
 
-                return toCacheKeyObject(key, includePartition);
+                return toCacheKeyObject(key);
             }
         });
     }
