@@ -41,7 +41,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.cache.query.Update;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -169,11 +168,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
-        throw new UnsupportedOperationException("Method should be supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> int update(Update<T> qry) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

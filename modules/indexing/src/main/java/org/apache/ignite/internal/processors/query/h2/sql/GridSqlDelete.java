@@ -35,6 +35,11 @@ public class GridSqlDelete extends GridSqlStatement {
     }
 
     /** */
+    public GridSqlElement from() {
+        return from;
+    }
+
+    /** */
     public GridSqlDelete where(GridSqlElement where) {
         this.where = where;
         return this;

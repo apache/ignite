@@ -29,9 +29,14 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.h2.command.Command;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
+import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
 import org.h2.command.dml.Query;
+import org.h2.command.dml.Update;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
@@ -162,6 +167,10 @@ public class GridSqlQuerySplitter {
         if (prepared instanceof Query || prepared instanceof Explain)
             return splitSelect(GridSqlQueryParser.query(prepared), params, collocatedGrpBy, distributedJoins);
 
+        if (prepared instanceof Merge || prepared instanceof Update || prepared instanceof Insert ||
+            prepared instanceof Delete)
+            return splitUpdate(prepared, params, distributedJoins);
+
         throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
     }
 
@@ -203,6 +212,58 @@ public class GridSqlQuerySplitter {
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries
         // will be collocated as well.
+        res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
+
+        return res;
+    }
+
+    /**
+     * @param prepared Prepared SQL INSERT, MERGE, UPDATE, or DELETE statement.
+     * @param params Parameters.
+     * @param distributedJoins If distributed joins enabled.    @return Two step query.
+     */
+    private static GridCacheTwoStepQuery splitUpdate(
+        Prepared prepared,
+        Object[] params,
+        final boolean distributedJoins
+    ) {
+        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
+
+        A.ensure(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
+            gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete, "SQL update operation expected");
+
+        Set<String> tbls = new HashSet<>();
+        Set<String> schemas = new HashSet<>();
+
+        GridSqlElement target = null;
+
+        if (gridStmt instanceof GridSqlInsert)
+            target = ((GridSqlInsert)gridStmt).into();
+
+        if (gridStmt instanceof GridSqlMerge)
+            target = ((GridSqlMerge)gridStmt).into();
+
+        if (gridStmt instanceof GridSqlUpdate)
+            target = ((GridSqlUpdate)gridStmt).target();
+
+        if (gridStmt instanceof GridSqlDelete)
+            target = ((GridSqlDelete)gridStmt).from();
+
+        A.notNull(target, "Failed to retrieve target for SQL update operation");
+
+        collectAllTablesInFrom(target, schemas, tbls);
+
+        // Build resulting two step query.
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(schemas, tbls);
+
+        GridCacheSqlQuery rdc = new GridCacheSqlQuery(gridStmt.getSQL(), params);
+
+        res.reduceQuery(rdc);
+
+        // We do not have to look at each map query separately here, because if
+        // the whole initial query is collocated, then all the map sub-queries
+        // will be collocated as well.
+        // Statement left for clarity - currently update operations don't really care much about joins.
         res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
 
         return res;

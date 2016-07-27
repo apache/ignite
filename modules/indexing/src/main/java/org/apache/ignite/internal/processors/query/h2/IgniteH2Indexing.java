@@ -48,6 +48,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -60,7 +61,6 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -336,6 +336,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentMap<String, String> dataTablesToTypes = new ConcurrentHashMap8<>();
 
     /** Statement cache. */
     private final ConcurrentHashMap<Thread, StatementCache> stmtCache = new ConcurrentHashMap<>();
@@ -811,6 +814,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws SQLException If failed.
      */
     private static List<GridQueryFieldMetadata> meta(ResultSetMetaData rsMeta) throws SQLException {
+        if (rsMeta == null)
+            return Collections.emptyList();
+
         List<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
 
         for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
@@ -951,14 +957,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx
      * @param conn Connection,.
-     * @param desc
+     * @param schemas
+     * @param tbls
      * @param sql Sql query.
      * @param params Parameters.   @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, Connection conn, TableDescriptor desc, String sql,
-                                      Object[] params)
-        throws IgniteCheckedException {
+    public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, JdbcConnection conn, Set<String> schemas,
+        Set<String> tbls, String sql, Object[] params) throws IgniteCheckedException {
         PreparedStatement stmt;
 
         try {
@@ -981,6 +987,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .parse(GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt));
 
         A.ensure(!(gridStmt instanceof GridSqlQuery), "Non query grid SQL statement expected");
+
+        A.ensure(schemas.size() == 1, "SQL update operations don't support more than one schema");
+        A.ensure(tbls.size() == 1, "SQL update operations don't support more than one table");
+
+        String schema = schemas.iterator().next();
+        String tbl = tbls.iterator().next();
+        String type = dataTablesToTypes.get(tbl);
+
+        A.ensure(type != null, "Failed to resolve table to value type [tbl=" + tbl + ']');
+
+        TableDescriptor desc = tableDescriptor(type, space(schema));
 
         if (gridStmt instanceof GridSqlMerge)
             return doMerge(cctx, (GridSqlMerge)gridStmt, desc, params);
@@ -1386,18 +1403,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return cursor;
     }
 
-    /** {@inheritDoc} */
-    @Override public int update(GridCacheContext<?,?> cctx, SqlUpdate qry) throws IgniteCheckedException {
-
-        String space = cctx.name();
-
-        Connection conn = connectionForSpace(space);
-
-        TableDescriptor d = tableDescriptor(qry.getType(), space);
-
-        return executeSqlUpdateQuery(cctx, conn, d, qry.getSql(), qry.getArgs());
-    }
-
     /**
      * Prepares statement for query.
      *
@@ -1605,6 +1610,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
 
         if (dataTables.putIfAbsent(res.identifier(), res) != null)
+            throw new IllegalStateException("Table already exists: " + res.identifier());
+
+        if (dataTablesToTypes.putIfAbsent(res.identifier(), tbl.type().valueClass().getSimpleName()) != null)
             throw new IllegalStateException("Table already exists: " + res.identifier());
     }
 

@@ -46,6 +46,11 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** */
+    public GridSqlElement target() {
+        return target;
+    }
+
+    /** */
     public GridSqlUpdate cols(ArrayList<GridSqlColumn> cols) {
         this.cols = cols;
         return this;

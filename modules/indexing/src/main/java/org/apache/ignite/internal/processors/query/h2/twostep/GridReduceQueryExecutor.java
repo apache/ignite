@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.GridSerializableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,10 +85,12 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.result.ResultInterface;
@@ -676,13 +680,29 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(space,
-                                r.conn,
-                                rdc.query(),
-                                F.asList(rdc.parameters()),
-                                false);
+                            boolean isQry;
+                            try (JdbcPreparedStatement ps = (JdbcPreparedStatement)r.conn.prepareStatement(rdc.query())) {
+                                Prepared c = GridSqlQueryParser.prepared(ps);
+                                isQry = c.isQuery();
+                            }
+                            catch (SQLException e) {
+                                throw new CacheException("Failed to parse reduce query", e);
+                            }
 
-                            resIter = new Iter(res);
+                            if (isQry) {
+                                ResultSet res = h2.executeSqlQueryWithTimer(space,
+                                    r.conn,
+                                    rdc.query(),
+                                    F.asList(rdc.parameters()),
+                                    false);
+
+                                resIter = new Iter(res);
+                            }
+                            else {
+                                int res = h2.executeSqlUpdateQuery(cctx, r.conn, qry.schemas(), qry.tables(), rdc.query(), rdc.parameters());
+
+                                return new UpdateResIter(res);
+                            }
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -1350,6 +1370,39 @@ public class GridReduceQueryExecutor {
         /** {@inheritDoc} */
         @Override public Message apply(ClusterNode n, Message msg) {
             return copy(msg, n, partsMap);
+        }
+    }
+
+    private static class UpdateResIter implements GridSerializableIterator<List<?>> {
+        /** */
+        private final int res;
+
+        /** */
+        private boolean used;
+
+        /** */
+        private UpdateResIter(int res) {
+            this.res = res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<?> next() {
+            if (!used) {
+                used = true;
+                return Collections.singletonList(res);
+            }
+
+            throw new NoSuchElementException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 }

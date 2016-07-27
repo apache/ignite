@@ -32,7 +32,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -768,29 +767,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException(e);
         }
         finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param qry Update query.
-     * @return Number of entries affected.
-     */
-    public int update(final GridCacheContext<?, ?> cctx, final SqlUpdate qry) throws IgniteCheckedException {
-        checkEnabled();
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            return executeUpdate(cctx, new IgniteOutClosureX<Integer>() {
-                /** {@inheritDoc} */
-                @Override public Integer applyx() throws IgniteCheckedException {
-                    return idx.update(cctx, qry);
-                }
-            }, false);
-        } finally {
             busyLock.leaveBusy();
         }
     }

@@ -56,9 +56,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.SqlUpdate;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.cache.query.Update;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
@@ -713,55 +711,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> int update(Update<T> qry) {
-        A.notNull(qry, "qry");
-
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            ctx.checkSecurity(SecurityPermission.CACHE_READ);
-            ctx.checkSecurity(SecurityPermission.CACHE_PUT);
-
-            validate(qry);
-
-            if (qry instanceof SqlUpdate) {
-                final SqlUpdate p = (SqlUpdate) qry;
-
-                return ctx.kernalContext().query().update(ctx, p);
-            }
-
-            throw new CacheException("Unexpected update query class [cls=" + qry.getClass().getName() + ']');
-        }
-        catch (Exception e) {
-            if (e instanceof CacheException)
-                throw (CacheException)e;
-
-            throw new CacheException(e);
-        }
-        finally {
-            onLeave(gate, prev);
-        }
-    }
-
-    /**
-     * Checks update query.
-     *
-     * @param qry Query
-     * @throws CacheException If query indexing disabled for sql query.
-     */
-    private void validate(Update qry) {
-        if (!GridQueryProcessor.isEnabled(ctx.config()))
-            throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
-                ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
-
-        if (!ctx.kernalContext().query().moduleEnabled())
-            throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                "of all Ignite nodes.");
     }
 
     /**
