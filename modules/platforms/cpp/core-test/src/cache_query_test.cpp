@@ -380,8 +380,6 @@ int CountRecords(Cursor& cur)
         cur.GetNext();
     }
 
-    std::cout << number << std::endl;
-
     return number;
 }
 
@@ -766,15 +764,19 @@ BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
     QueryCursor<int, QueryPerson> cursor = cache1.Query(qry);
 
     // Ensure that data is not collocated, so not full result set is returned.
-    BOOST_CHECK_GT(CountRecords(cursor), 0);
-    BOOST_CHECK_LT(CountRecords(cursor), entryCnt);
+    int recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_GT(recordsNum, 0);
+    BOOST_CHECK_LT(recordsNum, entryCnt);
 
     qry.SetDistributedJoins(true);
 
     cursor = cache1.Query(qry);
 
     // Check that full result set is returned.
-    BOOST_CHECK_EQUAL(CountRecords(cursor), entryCnt);
+    recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_EQUAL(recordsNum, entryCnt);
 }
 
 /**
@@ -1011,15 +1013,19 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
     QueryFieldsCursor cursor = cache1.Query(qry);
 
     // Ensure that data is not collocated, so not full result set is returned.
-    BOOST_CHECK_GT(CountRecords(cursor), 0);
-    BOOST_CHECK_LT(CountRecords(cursor), entryCnt);
+    int recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_GT(recordsNum, 0);
+    BOOST_CHECK_LT(recordsNum, entryCnt);
 
     qry.SetDistributedJoins(true);
 
     cursor = cache1.Query(qry);
 
     // Check that full result set is returned.
-    BOOST_CHECK_EQUAL(CountRecords(cursor), entryCnt);
+    recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_EQUAL(recordsNum, entryCnt);
 }
 
 /**
