@@ -20,7 +20,6 @@ namespace Apache.Ignite.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq.Impl;
 
     /// <summary>
