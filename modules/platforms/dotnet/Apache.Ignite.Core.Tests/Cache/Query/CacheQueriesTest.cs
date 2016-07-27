@@ -552,31 +552,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestDistributedJoins()
         {
-            // Easy check that EnableDistributedJoins is propagated to Java: it throws an error on replicated cache
             var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>(
                 new CacheConfiguration("replicatedCache")
                 {
-                    CacheMode = CacheMode.Replicated,
                     QueryEntities = new[]
                     {
-                        new QueryEntity(typeof(QueryPerson))
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
                         {
                             Fields = new[] {new QueryField("age", typeof(int))}
                         }
                     }
                 });
 
-            cache[1] = new QueryPerson("Test", 150);
+            const int count = 100;
 
-            // Distributed joins disabled: query works
-            var qry = new SqlQuery(typeof(QueryPerson), "age < 50");
-            Assert.AreEqual(0, cache.Query(qry).GetAll().Count);
+            cache.PutAll(Enumerable.Range(0, count).ToDictionary(x => x, x => new QueryPerson("Name" + x, x)));
 
-            // Distributed joins enabled: query fails
-            qry.EnableDistributedJoins = true;
-            var ex = Assert.Throws<IgniteException>(() => Assert.AreEqual(0, cache.Query(qry).GetAll().Count));
-            Assert.AreEqual("Queries using distributed JOINs have to be run on partitioned cache, not on replicated.",
-                ex.Message);
+            // Test non-distributed join: returns partial results
+            var sql = "select T0.Age from QueryPerson as T0 " +
+                      "inner join QueryPerson as T1 on ((? - T1.Age - 1) = T0._key)";
+
+            var res = cache.QueryFields(new SqlFieldsQuery(sql, count)).GetAll().Distinct().Count();
+
+            Assert.Greater(res, 0);
+            Assert.Less(res, count);
+
+            // Test distributed join: returns complete results
+            res = cache.QueryFields(new SqlFieldsQuery(sql, count) {EnableDistributedJoins = true})
+                .GetAll().Distinct().Count();
+
+            Assert.AreEqual(count, res);
         }
 
         /// <summary>
