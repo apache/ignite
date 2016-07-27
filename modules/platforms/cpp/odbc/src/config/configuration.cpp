@@ -216,7 +216,7 @@ namespace ignite
 
                     std::string port = address.substr(pos + 1);
 
-                    if (!std::all_of(port.begin(), port.end(), isdigit))
+                    if (!common::AllOf(port.begin(), port.end(), isdigit))
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Invalid address format: port can only contain digits");
 
