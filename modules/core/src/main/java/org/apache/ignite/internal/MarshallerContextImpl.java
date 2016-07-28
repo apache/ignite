@@ -212,7 +212,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            clsName = MarshallerWorkDirectory.getClassNameFromFile(key, workDir, fileExt);
+            clsName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir, fileExt);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
             registerClassName(id, clsName);
@@ -265,7 +265,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     "Received cache entry update for system marshaller cache: " + evt;
 
                 if (evt.getOldValue() == null)
-                    MarshallerWorkDirectory.writeClassNameToFile(evt.getKey(), evt.getValue(), fileExt, log, workDir);
+                    MarshallerWorkDirectory.writeTypeNameToFile(evt.getKey(), evt.getValue(), fileExt, log, workDir);
             }
         }
     }
