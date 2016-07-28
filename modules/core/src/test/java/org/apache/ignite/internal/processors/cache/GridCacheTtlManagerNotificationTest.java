@@ -20,31 +20,22 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.expiry.TouchedExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * TTL manager self test.
@@ -79,7 +70,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
+    public void testThatNotificationWorkAsExpected() throws Exception {
         final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
@@ -98,44 +89,12 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
         cache.withExpiryPolicy(plc1).put(key + 1, 1);
 
+        Thread.sleep(1_000); //Cleaner should see entry
+
         ExpiryPolicy plc2 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000));
 
         cache.withExpiryPolicy(plc2).put(key + 2, 1);
 
-        assertNotNull(queue.poll(5, SECONDS));
-    }
-
-    /**
-     * @param mode Cache mode.
-     * @throws Exception If failed.
-     */
-    private void checkTtl(CacheMode mode) throws Exception {
-        cacheMode = mode;
-
-        final IgniteKernal g = (IgniteKernal)startGrid(0);
-
-        try {
-            final String key = "key";
-
-            g.cache(null).withExpiryPolicy(
-                    new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
-
-            assertEquals(1, g.cache(null).get(key));
-
-            U.sleep(1100);
-
-            GridTestUtils.retryAssert(log, 10, 100, new CAX() {
-                @Override public void applyx() {
-                    // Check that no more entries left in the map.
-                    assertNull(g.cache(null).get(key));
-
-                    if (!g.internalCache().context().deferredDelete())
-                        assertNull(g.internalCache().map().getEntry(g.internalCache().context().toCacheKeyObject(key)));
-                }
-            });
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertNotNull(queue.poll(5, SECONDS)); //we should receive event about second entry expiration
     }
 }

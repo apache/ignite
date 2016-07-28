@@ -54,6 +54,9 @@ import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+/**
+ *
+ */
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode({/*Mode.AverageTime,*/ Mode.Throughput})
 @Warmup(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -61,36 +64,43 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Fork(1)
 @State(Scope.Benchmark)
 public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
-
-    public static class RandomExpiryPolicy implements ExpiryPolicy {
+    /** */
+    private static class RandomExpiryPolicy implements ExpiryPolicy {
+        /** rate duration will decrease with */
         private final double rate;
 
-        AtomicLong duration = new AtomicLong(1_000_000_000);
+        /** current duration. */
+        private final AtomicLong duration = new AtomicLong(1_000_000_000);
 
-        public RandomExpiryPolicy(double rate) {
+        /** */
+        RandomExpiryPolicy(double rate) {
             this.rate = rate;
         }
 
+        /** {@inheritDoc} */
         @Override public Duration getExpiryForCreation() {
-            boolean generateEvent = ThreadLocalRandom8.current().nextDouble() < rate;
-            return generateEvent ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
+            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
 
+        /** {@inheritDoc} */
         @Override public Duration getExpiryForAccess() {
-            boolean generateEvent = ThreadLocalRandom8.current().nextDouble() < rate;
-            return generateEvent ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
+            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
 
+        /** {@inheritDoc} */
         @Override public Duration getExpiryForUpdate() {
-            boolean generateEvent = ThreadLocalRandom8.current().nextDouble() < rate;
-            return generateEvent ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
+            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
     }
 
-    public static Factory<ExpiryPolicy> getRandomFactory(final double rate) {
+    /** @param rate duration will decrease with */
+    private static Factory<ExpiryPolicy> getExpiryPolicyFactoryWithDecreasingRate(final double rate) {
         return new Factory<ExpiryPolicy>() {
             @Override public ExpiryPolicy create() {
                 return new RandomExpiryPolicy(rate);
@@ -98,7 +108,8 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
         };
     }
 
-    public static final ExpiryPolicy DECREASING_EXPIRY_POLICY = new ExpiryPolicy() {
+    /** Decreasing expiry policy. */
+    private static final ExpiryPolicy DECREASING_EXPIRY_POLICY = new ExpiryPolicy() {
         AtomicLong duration = new AtomicLong(1_000_000_000);
 
         @Override public Duration getExpiryForCreation() {
@@ -114,7 +125,8 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
         }
     };
 
-    public static final ExpiryPolicy INCREASING_EXPIRY_POLICY = new ExpiryPolicy() {
+    /** Increasing expiry policy. */
+    private static final ExpiryPolicy INCREASING_EXPIRY_POLICY = new ExpiryPolicy() {
         AtomicLong duration = new AtomicLong(1_000_000);
 
         @Override public Duration getExpiryForCreation() {
@@ -130,19 +142,21 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
         }
     };
 
-    static Factory<ExpiryPolicy> DEC = new Factory<ExpiryPolicy>() {
+    /** Decreasing policy factory. */
+    private final static Factory<ExpiryPolicy> DECREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return DECREASING_EXPIRY_POLICY;
         }
     };
 
-
-    static Factory<ExpiryPolicy> INC = new Factory<ExpiryPolicy>() {
+    /** Increasing policy factory. */
+    private final static Factory<ExpiryPolicy> INCREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return INCREASING_EXPIRY_POLICY;
         }
     };
 
+    /** {@inheritDoc} */
     @Setup (Level.Iteration)
     @Override public void setup() throws Exception {
         Ignition.stopAll(true);
@@ -158,15 +172,15 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
         switch (prop) {
             case "inc":
-                cfg.setExpiryPolicyFactory(INC);
+                cfg.setExpiryPolicyFactory(INCREASING_POLICY_FACTORY);
                 break;
             case "dec":
-                cfg.setExpiryPolicyFactory(DEC);
+                cfg.setExpiryPolicyFactory(DECREASING_POLICY_FACTORY);
                 break;
             default:
                 assert prop.charAt(0) == 'r';
                 double rate = Double.parseDouble(prop.trim().substring(1)) / 100;
-                cfg.setExpiryPolicyFactory(getRandomFactory(rate));
+                cfg.setExpiryPolicyFactory(getExpiryPolicyFactoryWithDecreasingRate(rate));
                 break;
         }
 
@@ -184,6 +198,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
         System.out.println("Cache populated.");
     }
 
+    /** {@inheritDoc} */
     @TearDown
     public void tearDown() throws Exception {
         Ignition.stopAll(true);
@@ -201,33 +216,31 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
         cache.put(key, new IntValue(key));
     }
 
+    /**
+     * Benchmark runner
+     */
     public static void main(String[] args) throws RunnerException {
-        List<String> args0 = Arrays.asList("inc", "dec", "r25", "r50", "r75");
-        List<String> waitPolicy = Arrays.asList("slp", "wat", "prk");
+        List<String> policies = Arrays.asList("inc", "dec", "r25", "r50", "r75");
         int[] threads = {2, 4, 8, 16, 32};
 
         List<RunResult> results = new ArrayList<>();
 
-        for (String policy : waitPolicy) {
-            for (String s : args0) {
-                for (int thread : threads) {
-                    ChainedOptionsBuilder builder = new OptionsBuilder()
-                        .jvmArgs()
-                        .timeUnit(TimeUnit.MILLISECONDS)
-                        .measurementIterations(10)
-                        .measurementTime(TimeValue.seconds(30))
-                        .warmupTime(TimeValue.seconds(10))
-                        .warmupIterations(5)
-                        .jvmArgs("-Dignite.ttl.manager.wait.policy=" + policy,
-                            "-Dbench.exp.policy=" + s)
-                        .forks(1)
-                        .threads(thread)
-//                    .mode(Mode.AverageTime)
-                        .mode(Mode.Throughput)
-                        .include(JmhWaitStategyBenchmark.class.getSimpleName());
+        for (String policy : policies) {
+            for (int thread : threads) {
+                ChainedOptionsBuilder builder = new OptionsBuilder()
+                    .jvmArgs()
+                    .timeUnit(TimeUnit.MILLISECONDS)
+                    .measurementIterations(10)
+                    .measurementTime(TimeValue.seconds(20))
+                    .warmupIterations(5)
+                    .warmupTime(TimeValue.seconds(10))
+                    .jvmArgs("-Dbench.exp.policy=" + policy)
+                    .forks(1)
+                    .threads(thread)
+                    .mode(Mode.Throughput)
+                    .include(JmhWaitStategyBenchmark.class.getSimpleName());
 
-                    results.addAll(new Runner(builder.build()).run());
-                }
+                results.addAll(new Runner(builder.build()).run());
             }
         }
 

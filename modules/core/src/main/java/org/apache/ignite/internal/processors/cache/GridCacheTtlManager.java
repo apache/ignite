@@ -22,10 +22,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.waitstrategy.ConditionWaitStrategy;
-import org.apache.ignite.internal.processors.cache.waitstrategy.ParkingWaitStrategy;
-import org.apache.ignite.internal.processors.cache.waitstrategy.SleepWaitStrategy;
-import org.apache.ignite.internal.processors.cache.waitstrategy.WaitStrategy;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -45,32 +41,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private final GridConcurrentSkipListSetEx pendingEntries = new GridConcurrentSkipListSetEx();
 
-    private final WaitStrategy waitStgy;
-
-    {
-        String prop = System.getProperty("ignite.ttl.manager.wait.policy");
-        if (prop == null)
-            waitStgy = new ConditionWaitStrategy();
-        else
-
-        switch (prop) {
-            case "slp":
-                waitStgy = new SleepWaitStrategy();
-                break;
-            case "prk":
-                waitStgy = new ParkingWaitStrategy();
-                break;
-            default:
-                waitStgy = new ConditionWaitStrategy();
-                break;
-        }
-    }
-
     /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
 
-    /** Cleanup worker thread. */
-    private Thread cleanupWorkerThread;
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Next expire time. */
+    private volatile long nextExpireTime;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -89,10 +67,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (cleanupWorker != null) {
-            cleanupWorkerThread = new IgniteThread(cleanupWorker);
-            cleanupWorkerThread.start();
-        }
+        if (cleanupWorker != null)
+            new IgniteThread(cleanupWorker).start();
     }
 
     /** {@inheritDoc} */
@@ -114,7 +90,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         pendingEntries.add(e);
 
-        waitStgy.notify0(e.expireTime, cleanupWorkerThread);
+        if (e.expireTime < nextExpireTime) {
+            synchronized (mux) {
+                mux.notifyAll();
+            }
+        }
     }
 
     /**
@@ -193,24 +173,42 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /**
          * Creates cleanup worker.
          */
-        protected CleanupWorker() {
+        CleanupWorker() {
             super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            cleanupWorkerThread = runner();
-            try {
-                while (!isCancelled()) {
-                    expire();
+            while (!isCancelled()) {
+                expire();
 
-                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
+                synchronized (mux) {
+                    long waitTime;
+                    while (true) {
+                        long curTime = U.currentTimeMillis();
 
-                    waitStgy.waitFor(first == null ? -1 : first.expireTime);
+                        GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
+
+                        if (first == null) {
+                            waitTime = 500;
+                            nextExpireTime = curTime + 500;
+                        }
+                        else {
+                            long expireTime = first.expireTime;
+
+                            waitTime = expireTime - curTime;
+                            nextExpireTime = expireTime;
+                        }
+
+                        if (pendingEntries.firstx() == first)
+                            break;
+                    }
+
+                    if (waitTime < 0)
+                        continue;
+
+                    mux.wait(waitTime);
                 }
-            }
-            finally {
-                cleanupWorkerThread = null;
             }
         }
     }
