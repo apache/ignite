@@ -55,6 +55,8 @@ namespace Apache.Ignite.Examples.Events
                 // Local listen example
                 Console.WriteLine(">>> Listening for a local event...");
 
+                ignite.GetEvents().EnableLocal(EventType.TaskExecutionAll);
+
                 var listener = new LocalListener();
                 ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
