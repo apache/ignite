@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateException()
         {
             // Primitive type
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionBinarizable()
         {
             // User type
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsync()
         {
             // Primitive type
@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncBinarizable()
         {
             TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));

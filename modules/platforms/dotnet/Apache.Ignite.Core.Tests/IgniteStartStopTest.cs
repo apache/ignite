@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Ignite start/stop tests.
     /// </summary>
-    //[Category(TestUtils.CategoryIntensive)]
+    [Category(TestUtils.CategoryIntensive)]
     public class IgniteStartStopTest
     {
         /// <summary>

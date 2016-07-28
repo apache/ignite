@@ -1649,7 +1649,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
             var cache = Cache();
@@ -1673,7 +1673,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
             var cache = Cache();
@@ -1696,7 +1696,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
             var cache = Cache<CacheTestKey, BinarizablePerson>();
@@ -2417,7 +2417,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test thraed-locals leak.
         /// </summary>
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestThreadLocalLeak()
         {
             var cache = Cache<string, string>();
@@ -2481,7 +2481,7 @@ namespace Apache.Ignite.Core.Tests.Cache
          * futures pinning works.
          */
         [Test]
-        //[Category(TestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
             var cache = Cache();
