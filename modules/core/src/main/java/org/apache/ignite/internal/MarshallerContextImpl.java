@@ -181,12 +181,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         if (cache0 == null)
             return false;
 
-        String old;
-
         Object key = getKey(id);
 
         try {
-            old = cache0.tryGetAndPut(key, clsName);
+            String old = cache0.tryGetAndPut(key, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
@@ -196,7 +194,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
             return true;
         }
-        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException ignored) {
             if (++failedCnt > 10) {
                 if (log.isQuiet())
                     U.quiet(false, "Failed to register marshalled class for more than 10 times in a row " +
@@ -262,7 +260,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     return reader.readLine();
                 }
             }
-            catch (IOException e) {
+            catch (IOException ignored) {
                 throw new IgniteCheckedException("Class definition was not found " +
                     "at marshaller cache and local file. " +
                     "[id=" + key + ", file=" + file.getAbsolutePath() + ']');
@@ -338,9 +336,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Object, ? extends String>> evts)
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ? extends String>> evts)
             throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends Object, ? extends String> evt : evts) {
+            for (CacheEntryEvent<?, ? extends String> evt : evts) {
                 assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
                     "Received cache entry update for system marshaller cache: " + evt;
 
