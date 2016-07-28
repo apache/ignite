@@ -62,7 +62,8 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
         final ByteBuffer buf) throws IgniteCheckedException {
         final DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-        io.writeFragmentData(ByteBuffer.wrap(fragmentData), buf, written, lastLink);
+        io.addRowFragment(null, ByteBuffer.wrap(fragmentData), buf,
+            cctx.cacheObjectContext(), written, 0, 0, 0, lastLink);
     }
 
     /** {@inheritDoc} */

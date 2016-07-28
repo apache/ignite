@@ -73,10 +73,9 @@ public class FreeList {
             DataPageIO.FragmentWritten written = null;
 
             if (fragmented) {
-                written = io.writeRowFragment(
-                    fctx.row.key(),
-                    fctx.row.value(),
-                    fctx.row.version(),
+                written = io.addRowFragment(
+                    fctx.row,
+                    null,
                     buf,
                     cctx.cacheObjectContext(),
                     fctx.written,
@@ -86,7 +85,7 @@ public class FreeList {
                     fctx.lastLink);
             }
             else
-                fctx.lastIdx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
+                fctx.lastIdx = io.addRow(cctx.cacheObjectContext(), buf, row, entrySize);
 
             assert fctx.lastIdx >= 0 : fctx.lastIdx;
 
@@ -350,7 +349,7 @@ public class FreeList {
     /**
      *
      */
-    public static class FragmentContext {
+    private static class FragmentContext {
         /** Totally written data (with overhead) */
         private int written;
 
