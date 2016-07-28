@@ -57,9 +57,10 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        ignite(0).createCache(cacheConfig("S2P", true, String.class, Person.class));
-        ignite(0).createCache(cacheConfig("I2P", true, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("K2P", true, Key.class, Person.class));
+        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class));
+        ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
+        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
     }
 
     /** {@inheritDoc} */
@@ -70,15 +71,17 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
+     * @param escapeSql whether identifiers should be quoted - see {@link CacheConfiguration#setSqlEscapeAll}
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
+            .setSqlEscapeAll(escapeSql)
             .setIndexedTypes(idxTypes);
     }
 
@@ -151,6 +154,28 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testFieldsCaseSensitivity() {
+        IgniteCache<Key2, Person> p = ignite(0).cache("K22P");
+
+        QueryCursor c = p.query(new SqlFieldsQuery("merge into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
+            "(2, 3, 'Alex')").setArgs(4, "Sergi"));
+
+        c.iterator();
+
+        Person p1 = new Person(4);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get(new Key2(1)));
+
+        Person p2 = new Person(3);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get(new Key2(2)));
+    }
+
+    /**
+     *
+     */
     private final static class Key {
         /** */
         public Key(int key) {
@@ -175,6 +200,36 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return key;
+        }
+    }
+
+    /**
+     *
+     */
+    private final static class Key2 {
+        /** */
+        public Key2(int Id) {
+            this.Id = Id;
+        }
+
+        /** */
+        @QuerySqlField
+        public final int Id;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Key2 key1 = (Key2) o;
+
+            return Id == key1.Id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Id;
         }
     }
 
