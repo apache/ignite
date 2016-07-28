@@ -14,8 +14,9 @@ public class JdbcPutBenchmark extends JdbcAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int newKey = nextRandom(args.range());
+        int newVal = nextRandom(args.range());
 
-        try (PreparedStatement stmt = createUpsertStatement(conn.get(), newKey)) {
+        try (PreparedStatement stmt = createUpsertStatement(conn.get(), newKey, newVal)) {
             return stmt.executeUpdate() > 0;
         }
     }
@@ -35,27 +36,37 @@ public class JdbcPutBenchmark extends JdbcAbstractBenchmark {
      * @return upsert statement with params set
      * @throws SQLException if failed
      */
-    static PreparedStatement createUpsertStatement(Connection conn, int newKey) throws SQLException {
+    static PreparedStatement createUpsertStatement(Connection conn, int newKey, int newVal) throws SQLException {
         PreparedStatement stmt;
         switch (conn.getMetaData().getDatabaseProductName()) {
             case "H2":
                 stmt = conn.prepareStatement("merge into SAMPLE(id, val) values(?, ?)");
+
                 break;
+
             case "MySQL":
                 stmt = conn.prepareStatement("insert into SAMPLE(id, val) values(?, ?) on duplicate key update val = ?");
-                stmt.setInt(3, newKey);
+
+                stmt.setInt(3, newVal);
+
                 break;
+
             case "PostgreSQL":
                 stmt = conn.prepareStatement("insert into SAMPLE(id, val) values(?, ?) on conflict(id) do " +
                     "update set val = ?");
-                stmt.setInt(3, newKey);
+
+                stmt.setInt(3, newVal);
+
                 break;
+
             default:
                 throw new IgniteException("Unexpected database type [databaseProductName=" +
                     conn.getMetaData().getDatabaseProductName() + ']');
         }
+
         stmt.setInt(1, newKey);
-        stmt.setInt(2, newKey);
+        stmt.setInt(2, newVal);
+
         return stmt;
     }
 }
