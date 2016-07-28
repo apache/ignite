@@ -33,10 +33,10 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(CacheLinqTest), "TestExcept");
+            //TestOne(typeof(CacheLinqTest), "TestExcept");
 
-            TestAll(typeof (AffinityFunctionSpringTest));
-            //TestAllInAssembly();
+            //TestAll(typeof (MessagingTest));
+            TestAllInAssembly();
         }
 
         private static void TestOne(Type testClass, string method)
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAllInAssembly()
         {
-            string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location };
+            string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location, "/include:LONG_TEST" };
 
             int returnCode = Runner.Main(args);
 
