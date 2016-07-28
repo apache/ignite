@@ -17,45 +17,32 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
-import java.io.Externalizable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.locks.Lock;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
-import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
-    /** */
-    private static final GridStripedLock fileLock = new GridStripedLock(32);
-
     /** */
     private static final String fileExt = ".classname";
 
@@ -225,78 +212,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            clsName = getClassNameFromFile(key);
+            clsName = MarshallerWorkDirectory.getClassNameFromFile(key, workDir, fileExt);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
             registerClassName(id, clsName);
         }
 
         return clsName;
-    }
-
-    /**
-     * Gets the class name from a file in the marshaller work directory.
-     *
-     * @param key Key.
-     * @return Class name.
-     * @throws IgniteCheckedException When the file is not found.
-     */
-    private String getClassNameFromFile(Object key) throws IgniteCheckedException {
-        String fileName = key + fileExt;
-
-        Lock lock = fileLock(fileName);
-
-        lock.lock();
-
-        try {
-            File file = new File(workDir, fileName);
-
-            try (FileInputStream in = new FileInputStream(file)) {
-                FileLock fileLock = fileLock(in.getChannel(), true);
-
-                assert fileLock != null : fileName;
-
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                    return reader.readLine();
-                }
-            }
-            catch (IOException ignored) {
-                throw new IgniteCheckedException("Class definition was not found " +
-                    "at marshaller cache and local file. " +
-                    "[id=" + key + ", file=" + file.getAbsolutePath() + ']');
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @param fileName File name.
-     * @return Lock instance.
-     */
-    private static Lock fileLock(String fileName) {
-        return fileLock.getLock(fileName.hashCode());
-    }
-
-    /**
-     * @param ch File channel.
-     * @param shared Shared.
-     */
-    private static FileLock fileLock(
-        FileChannel ch,
-        boolean shared
-    ) throws IOException, IgniteInterruptedCheckedException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        while (true) {
-            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
-
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
-                return fileLock;
-        }
     }
 
     /**
@@ -342,39 +264,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
                     "Received cache entry update for system marshaller cache: " + evt;
 
-                if (evt.getOldValue() == null) {
-                    String fileName = evt.getKey() + fileExt;
-
-                    Lock lock = fileLock(fileName);
-
-                    lock.lock();
-
-                    try {
-                        File file = new File(workDir, fileName);
-
-                        try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = fileLock(out.getChannel(), false);
-
-                            assert fileLock != null : fileName;
-
-                            try (Writer writer = new OutputStreamWriter(out)) {
-                                writer.write(evt.getValue());
-
-                                writer.flush();
-                            }
-                        }
-                        catch (IOException e) {
-                            U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
-                                ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
-                        }
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
+                if (evt.getOldValue() == null)
+                    MarshallerWorkDirectory.writeClassNameToFile(evt.getKey(), evt.getValue(), fileExt, log, workDir);
             }
         }
     }
