@@ -91,7 +91,7 @@ void CheckConnectionConfig(const Configuration& cfg)
 
     const std::string& expectedStr = constructor.str();
 
-    BOOST_CHECK_EQUAL(cfg.ToConnectString(), expectedStr);
+    BOOST_CHECK_EQUAL(ignite::common::ToLower(cfg.ToConnectString()), ignite::common::ToLower(expectedStr));
 }
 
 void CheckDsnConfig(const Configuration& cfg)
