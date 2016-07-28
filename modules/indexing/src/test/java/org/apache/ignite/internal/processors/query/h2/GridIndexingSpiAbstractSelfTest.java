@@ -571,11 +571,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridQueryProperty cacheKeyProperty() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteSpiException {
             assert !F.isEmpty(field);

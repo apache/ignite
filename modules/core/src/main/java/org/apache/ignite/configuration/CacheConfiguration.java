@@ -58,7 +58,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.query.annotations.QueryCacheKey;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -2149,8 +2148,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
-        entity.setKeyProp(desc.keyProp != null ? desc.keyProp.fullName() : null);
-
         QueryIndex txtIdx = null;
 
         Collection<QueryIndex> idxs = new ArrayList<>();
@@ -2286,15 +2283,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
         }
 
-        ClassProperty keyProp = null;
-
         for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-            ClassProperty clsKeyProp = null;
-
             for (Field field : c.getDeclaredFields()) {
                 QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
-                QueryCacheKey keyAnn = field.getAnnotation(QueryCacheKey.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     ClassProperty prop = new ClassProperty(field);
@@ -2305,16 +2297,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     type.addProperty(prop, true);
                 }
-
-                if (keyAnn != null) {
-                    if (clsKeyProp != null)
-                        throw new IgniteException("Class has more than one @QueryCacheKey member [cls=" +
-                            c.getName() + ']');
-
-                    clsKeyProp = new ClassProperty(field);
-
-                    clsKeyProp.parent(parent);
-                }
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
@@ -2323,7 +2305,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
-                QueryCacheKey keyAnn = mtd.getAnnotation(QueryCacheKey.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
@@ -2338,23 +2319,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     type.addProperty(prop, true);
                 }
-
-                if (keyAnn != null) {
-                    if (clsKeyProp != null)
-                        throw new IgniteException("Class has more than one @QueryCacheKey member [cls=" +
-                            c.getName() + ']');
-
-                    clsKeyProp = new ClassProperty(mtd);
-
-                    clsKeyProp.parent(parent);
-                }
             }
-
-            if (keyProp == null)
-                keyProp = clsKeyProp;
         }
-
-        type.keyProp = keyProp;
     }
 
     /**
@@ -2445,9 +2411,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         private Class<?> valCls;
-
-        /** */
-        private ClassProperty keyProp;
 
         /** */
         private boolean valTextIdx;

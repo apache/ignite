@@ -42,9 +42,6 @@ public class QueryEntity implements Serializable {
     /** Fields available for query. A map from field name to type name. */
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-    /** Field or method providing cache key for objects inserted via SQL INSERT or MERGE. */
-    private String keyProp;
-
     /** Aliases. */
     private Map<String, String> aliases = new HashMap<>();
 
@@ -183,21 +180,6 @@ public class QueryEntity implements Serializable {
 
         if (alias != null)
             aliases.put(fullName, alias);
-    }
-
-    /**
-     * @return Full name for cache key property (field or method).
-     */
-    public String getKeyProp() {
-        return keyProp;
-    }
-
-    /**
-     * Sets name for cache key property (field or method).
-     * @param keyProp property name.
-     */
-    public void setKeyProp(String keyProp) {
-        this.keyProp = keyProp;
     }
 
     /**

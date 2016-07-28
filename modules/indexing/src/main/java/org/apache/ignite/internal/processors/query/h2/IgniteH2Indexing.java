@@ -1065,8 +1065,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object val;
 
         try {
-            if (keyColIdx == -1 && desc.type().cacheKeyProperty() == null)
+            if (keyColIdx == -1)
                 key = GridUnsafe.allocateInstance(desc.type().keyClass());
+            else
+                key = getLiteralValue(row[keyColIdx], params);
 
             val = GridUnsafe.allocateInstance(desc.type().valueClass());
         }
@@ -1077,12 +1079,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (int i = 0; i < cols.length; i++)
             if (i != keyColIdx)
                 desc.type().setValue(cols[i].columnName(), key, val, getLiteralValue(row[i], params));
-
-        if (key == null) {
-            //noinspection ConstantConditions
-            key = keyColIdx != -1 ? getLiteralValue(row[keyColIdx], params) :
-                desc.type().cacheKeyProperty().value(null, val);
-        }
 
         return new IgniteBiTuple<>(key, val);
     }

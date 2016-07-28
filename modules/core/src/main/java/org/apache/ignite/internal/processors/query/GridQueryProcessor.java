@@ -1427,10 +1427,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             d.addProperty(prop, false);
         }
 
-        if (qryEntity.getKeyProp() != null)
-            d.keyProperty = buildClassProperty(d.keyClass(), d.valueClass(), qryEntity.getKeyProp(), d.keyClass(),
-                Collections.<String, String>emptyMap(), coCtx);
-
         processIndexes(qryEntity, d);
     }
 
@@ -2071,9 +2067,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Class<?> valCls;
 
         /** */
-        private GridQueryProperty keyProperty;
-
-        /** */
         private boolean valTextIdx;
 
         /** */
@@ -2118,11 +2111,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(String name) {
             return props.get(name);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridQueryProperty cacheKeyProperty() {
-            return keyProperty;
         }
 
         /** {@inheritDoc} */

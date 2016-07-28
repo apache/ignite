@@ -59,11 +59,6 @@ public interface GridQueryTypeDescriptor {
     public GridQueryProperty property(String name);
 
     /**
-     * @return Key property used to generate cache keys on SQL INSERT and MERGE operations. May be null.
-     */
-    @Nullable public GridQueryProperty cacheKeyProperty();
-
-    /**
      * Gets indexes for this type.
      *
      * @return Indexes for this type.
