@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -30,7 +30,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,7 +115,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param discoEvt Before exchange for the given discovery event.
      */
-    @Nullable public IgniteInternalFuture beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
+    public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @param backupMsg Backup message.
+     * @param initiator Initiator node.
+     * @return Backup init future or {@code null} if backup is not available.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public IgniteInternalFuture startBackup(BackupMessage backupMsg, ClusterNode initiator)
+        throws IgniteCheckedException {
         return null;
     }
 

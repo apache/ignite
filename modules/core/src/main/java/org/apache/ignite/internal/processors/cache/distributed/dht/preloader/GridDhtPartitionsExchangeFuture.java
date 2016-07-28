@@ -189,8 +189,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
-    private IgniteInternalFuture checkpointFuture;
-
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -446,13 +444,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Collection<DynamicCacheDescriptor> receivedCaches;
 
+            BackupMessage backupMsg = null;
+
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMsg instanceof BackupMessage)
-                    exchange = onServerNodeEvent(crdNode);
+                else if (customMsg instanceof BackupMessage) {
+                    if (CU.clientNode(discoEvt.eventNode()))
+                        exchange = onClientNodeEvent(crdNode);
+                    else
+                        exchange = onServerNodeEvent(crdNode);
+
+                    backupMsg = (BackupMessage)customMsg;
+                }
                 else {
                     assert affChangeMsg != null : this;
 
@@ -476,6 +482,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             updateTopologies(crdNode);
 
             cctx.database().checkpointReadLock();
+
+            IgniteInternalFuture backupInitFut = null;
+
+            if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
+                backupInitFut = cctx.database().startBackup(backupMsg, discoEvt.eventNode());
+            }
 
             try {
                 switch (exchange) {
@@ -509,8 +521,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cctx.database().checkpointReadUnlock();
             }
 
-            if (checkpointFuture != null)
-                checkpointFuture.get();
+            if (backupInitFut != null)
+                backupInitFut.get();
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -631,7 +643,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert !discoEvt.eventNode().isLocal() : discoEvt;
         }
         else
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+            assert discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
         cctx.affinity().onClientEvent(this, crd);
 
@@ -745,7 +757,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
-        checkpointFuture = cctx.database().beforeExchange(discoEvt);
+        cctx.database().beforeExchange(discoEvt);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
