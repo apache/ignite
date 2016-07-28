@@ -85,18 +85,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestStore()
         {
-            // Make sure work dir is empty
-            var workDir = Path.GetFullPath("ignite_work");
+            // Make sure marshaller dir is empty
+            var marshDir = Path.Combine(GetWorkDir(), "marshaller");
 
-            if (Directory.Exists(workDir))
-                Directory.Delete(workDir, true);
-
-            Directory.CreateDirectory(workDir);
+            if (Directory.Exists(marshDir))
+                Directory.Delete(marshDir, true);
 
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
-                WorkDirectory = workDir,
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration
@@ -122,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // Delete directory and check that store no longer works
-            Directory.Delete(workDir, true);
+            Directory.Delete(marshDir, true);
 
             using (var ignite = Ignition.Start(cfg))
             {
@@ -226,6 +223,20 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Test compute
             var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
             Assert.AreEqual(ignite1.GetCluster().GetNodes().Count, res.Count);
+        }
+
+        /// <summary>
+        /// Gets the work dir.
+        /// </summary>
+        private static string GetWorkDir()
+        {
+            var dir = typeof(BinaryDynamicRegistrationTest).Assembly.Location;
+
+            // Java resolves the work dir to the project folder
+            while (!File.Exists(Path.Combine(dir, "Apache.Ignite.Core.Tests.csproj")))
+                dir = Directory.GetParent(dir).FullName;
+
+            return Path.Combine(dir, "work");
         }
 
         private interface ITest
