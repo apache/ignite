@@ -1373,6 +1373,9 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /**
+     * Trivial iterator to return number of items affected by modifying query operation.
+     */
     private static class UpdateResIter implements GridSerializableIterator<List<?>> {
         /** */
         private final int res;
@@ -1387,7 +1390,7 @@ public class GridReduceQueryExecutor {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return false;
+            return !used;
         }
 
         /** {@inheritDoc} */
