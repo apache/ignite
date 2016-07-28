@@ -54,5 +54,4 @@ public interface BackupInfo {
      * @return Initialization future.
      */
     public GridFutureAdapter initFut();
-
 }
