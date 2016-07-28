@@ -41,6 +41,11 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
         public const int DefaultAddressRequestAttempts = 2;
 
         /// <summary>
+        /// Default multicast group.
+        /// </summary>
+        public const string DefaultMulticastGroup = "228.1.2.4";
+
+        /// <summary>
         /// Default response timeout.
         /// </summary>
         public static readonly TimeSpan DefaultResponseTimeout = TimeSpan.FromMilliseconds(500);
@@ -53,6 +58,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
             MulticastPort = DefaultMulticastPort;
             AddressRequestAttempts = DefaultAddressRequestAttempts;
             ResponseTimeout = DefaultResponseTimeout;
+            MulticastGroup = DefaultMulticastGroup;
         }
 
         /// <summary>
@@ -66,6 +72,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
         /// <summary>
         /// Gets or sets the IP address of the multicast group.
         /// </summary>
+        [DefaultValue(DefaultMulticastGroup)]
         public string MulticastGroup { get; set; }
 
         /// <summary>
