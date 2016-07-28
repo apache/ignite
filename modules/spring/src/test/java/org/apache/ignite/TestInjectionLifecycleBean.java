@@ -15,37 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite;
 
-/**
- *
- */
-public interface KeyCacheObject extends CacheObject {
-    /**
-     * @return Key hash code.
-     */
-    public int hashCode();
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.springframework.context.ApplicationContext;
 
-    /**
-     * @return {@code True} if internal cache key.
-     */
-    public boolean internal();
+import static org.junit.Assert.assertNotNull;
 
-    /**
-     * @return Partition ID for this key or -1 if it is unknown.
-     */
-    public int partition();
+/** Lifecycle bean for testing. */
+public class TestInjectionLifecycleBean implements LifecycleBean {
+    /** */
+    @SpringApplicationContextResource
+    private ApplicationContext appCtx;
 
-    /**
-     * Sets partition ID for this key.
-     *
-     * @param part Partition ID.
-     */
-    public void partition(int part);
+    /** Checks that context was injected. */
+    public void checkState() {
+        assertNotNull(appCtx);
+    }
 
-    /**
-     * @param part Partition ID.
-     * @return Copy of this object with given partition set.
-     */
-    public KeyCacheObject copy(int part);
+    /** {@inheritDoc} */
+    @Override public void onLifecycleEvent(LifecycleEventType evt) {
+        checkState();
+    }
 }
