@@ -25,6 +25,7 @@
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
+#include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
@@ -74,18 +75,16 @@ namespace ignite
             /**
              * Establish connection to ODBC server.
              *
-             * @param server Server (DSN).
+             * @param connectStr Connection string.
              */
-            void Establish(const std::string& server);
+            void Establish(const std::string& connectStr);
 
             /**
              * Establish connection to ODBC server.
              *
-             * @param host Host.
-             * @param port Port.
-             * @param cache Cache name to connect to.
+             * @param cfg Configuration.
              */
-            void Establish(const std::string& host, uint16_t port, const std::string& cache);
+            void Establish(const config::Configuration cfg);
 
             /**
              * Release established connection.
@@ -124,6 +123,13 @@ namespace ignite
             const std::string& GetCache() const;
 
             /**
+             * Get configuration.
+             *
+             * @return Connection configuration.
+             */
+            const config::Configuration& GetConfiguration() const;
+
+            /**
              * Create diagnostic record associated with the Connection instance.
              *
              * @param sqlState SQL state.
@@ -132,8 +138,8 @@ namespace ignite
              * @param columnNum Associated column number.
              * @return DiagnosticRecord associated with the instance.
              */
-            diagnostic::DiagnosticRecord CreateStatusRecord(SqlState sqlState,
-                const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0) const;
+            static diagnostic::DiagnosticRecord CreateStatusRecord(SqlState sqlState,
+                const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0);
 
             /**
              * Synchronously send request message and receive response.
@@ -172,21 +178,19 @@ namespace ignite
              * Establish connection to ODBC server.
              * Internal call.
              *
-             * @param server Server (DNS).
+             * @param connectStr Connection string.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const std::string& server);
+            SqlResult InternalEstablish(const std::string& connectStr);
 
             /**
              * Establish connection to ODBC server.
              * Internal call.
              *
-             * @param host Host.
-             * @param port Port.
-             * @param cache Cache name to connect to.
+             * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const std::string& host, uint16_t port, const std::string& cache);
+            SqlResult InternalEstablish(const config::Configuration cfg);
 
             /**
              * Release established connection.
@@ -269,11 +273,11 @@ namespace ignite
             /** State flag. */
             bool connected;
 
-            /** Cache name. */
-            std::string cache;
-
             /** Message parser. */
             Parser parser;
+
+            /** Configuration. */
+            config::Configuration config;
         };
     }
 }

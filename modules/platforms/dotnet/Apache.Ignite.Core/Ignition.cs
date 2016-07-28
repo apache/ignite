@@ -52,9 +52,6 @@ namespace Apache.Ignite.Core
     public static class Ignition
     {
         /** */
-        internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
-
-        /** */
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
@@ -216,10 +213,6 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfg.GridName;
 
-                var cfgPath = cfg.SpringConfigUrl == null 
-                    ? null 
-                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
-
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
@@ -228,7 +221,7 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;

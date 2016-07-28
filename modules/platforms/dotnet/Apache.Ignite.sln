@@ -27,7 +27,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Apache.Ignite.sln.DotSettings = Apache.Ignite.sln.DotSettings
 		Apache.Ignite.sln.TeamCity.DotSettings = Apache.Ignite.sln.TeamCity.DotSettings
 		DEVNOTES.txt = DEVNOTES.txt
-		examples\Config\examples-config.xml = examples\Config\examples-config.xml
 		README.txt = README.txt
 	EndProjectSection
 EndProject
