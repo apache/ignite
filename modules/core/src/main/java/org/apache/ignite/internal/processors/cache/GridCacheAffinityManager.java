@@ -226,7 +226,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @return Affinity key.
      */
-    private Object affinityKey(Object key) {
+    public Object affinityKey(Object key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 

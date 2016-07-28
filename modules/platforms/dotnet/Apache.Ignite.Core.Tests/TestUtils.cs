@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable S2360 // Optional parameters should not be used
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -94,11 +95,11 @@ namespace Apache.Ignite.Core.Tests
         ///
         /// </summary>
         /// <returns></returns>
-        public static IList<string> TestJavaOptions()
+        public static IList<string> TestJavaOptions(bool? jvmDebug = null)
         {
             IList<string> ops = new List<string>(TestJvmOpts);
 
-            if (JvmDebug)
+            if (jvmDebug ?? JvmDebug)
             {
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
@@ -272,10 +273,12 @@ namespace Apache.Ignite.Core.Tests
         {
             var handleRegistry = ((Ignite)grid).HandleRegistry;
 
+            expectedCount++;  // Skip default lifecycle bean
+
             if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems();
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleBeanHolder)).ToList();
 
             if (items.Any())
                 Assert.Fail("HandleRegistry is not empty in grid '{0}':\n '{1}'", grid.Name,
@@ -309,7 +312,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static IDiscoverySpi GetStaticDiscovery()
+        public static TcpDiscoverySpi GetStaticDiscovery()
         {
             return new TcpDiscoverySpi
             {
@@ -324,13 +327,13 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration()
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null)
         {
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = TestJavaOptions(),
+                JvmOptions = TestJavaOptions(jvmDebug),
                 JvmClasspath = CreateTestClasspath()
             };
         }

@@ -53,6 +53,7 @@ ignite_tests_SOURCES = \
     src/concurrent_test.cpp \
     src/ignition_test.cpp \
     src/interop_memory_test.cpp \
+    src/interop_test.cpp \
     src/handle_registry_test.cpp \
 	src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \

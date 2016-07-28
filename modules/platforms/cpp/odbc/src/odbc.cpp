@@ -42,7 +42,16 @@ namespace ignite
 
         ignite::odbc::config::Configuration config;
 
-        config.FillFromConfigAttributes(attributes);
+        try
+        {
+            config.FillFromConfigAttributes(attributes);
+        }
+        catch (IgniteError& e)
+        {
+            SQLPostInstallerError(e.GetCode(), e.GetText());
+
+            return SQL_FALSE;
+        }
 
         if (!SQLValidDSN(config.GetDsn().c_str()))
             return SQL_FALSE;
@@ -323,18 +332,14 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        ignite::odbc::config::Configuration config;
-
-        config.FillFromConnectString(connectStr);
-
-        connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
+        connection->Establish(connectStr);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
-        std::string outConnectStr = config.ToConnectString();
+        std::string outConnectStr = connection->GetConfiguration().ToConnectString();
 
         size_t reslen = CopyStringToBuffer(outConnectStr,
             reinterpret_cast<char*>(outConnectionString),
@@ -357,7 +362,7 @@ namespace ignite
                          SQLSMALLINT    authLen)
     {
         using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
+        using ignite::odbc::config::Configuration;
         using ignite::utility::SqlStringToString;
 
         LOG_MSG("SQLConnect called\n");
@@ -367,9 +372,11 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
-        std::string server = SqlStringToString(serverName, serverNameLen);
+        //std::string server = SqlStringToString(serverName, serverNameLen);
 
-        connection->Establish(server);
+        Configuration config;
+
+        connection->Establish(config);
 
         return connection->GetDiagnosticRecords().GetReturnCode();
     }

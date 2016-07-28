@@ -46,17 +46,33 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly bool _local;
 
+        /** */
+        private readonly int _pageSize;
+
+        /** */
+        private readonly bool _enableDistributedJoins;
+
+        /** */
+        private readonly bool _enforceJoinOrder;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="cache">The executor function.</param>
         /// <param name="local">Local flag.</param>
-        public CacheFieldsQueryExecutor(ICacheInternal cache, bool local)
+        /// <param name="pageSize">Size of the page.</param>
+        /// <param name="enableDistributedJoins">Distributed joins flag.</param>
+        /// <param name="enforceJoinOrder">Enforce join order flag.</param>
+        public CacheFieldsQueryExecutor(ICacheInternal cache, bool local, int pageSize, bool enableDistributedJoins, 
+            bool enforceJoinOrder)
         {
             Debug.Assert(cache != null);
 
             _cache = cache;
             _local = local;
+            _pageSize = pageSize;
+            _enableDistributedJoins = enableDistributedJoins;
+            _enforceJoinOrder = enforceJoinOrder;
         }
 
         /// <summary>
@@ -65,6 +81,30 @@ namespace Apache.Ignite.Linq.Impl
         public bool Local
         {
             get { return _local; }
+        }
+
+        /// <summary>
+        /// Gets the size of the page.
+        /// </summary>
+        public int PageSize
+        {
+            get { return _pageSize; }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether distributed joins are enabled.
+        /// </summary>
+        public bool EnableDistributedJoins
+        {
+            get { return _enableDistributedJoins; }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether join order should be enforced.
+        /// </summary>
+        public bool EnforceJoinOrder
+        {
+            get { return _enforceJoinOrder; }
         }
 
         /** <inheritdoc /> */
@@ -92,7 +132,12 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", qryData.QueryText,
                 string.Join(", ", qryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray());
+            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray())
+            {
+                EnableDistributedJoins = _enableDistributedJoins,
+                PageSize = _pageSize,
+                EnforceJoinOrder = _enforceJoinOrder
+            };
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
@@ -132,11 +177,21 @@ namespace Apache.Ignite.Linq.Impl
 
             // Check if user param order is already correct
             if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args)
+                {
+                    EnableDistributedJoins = _enableDistributedJoins,
+                    PageSize = _pageSize,
+                    EnforceJoinOrder = _enforceJoinOrder
+                }, selector);
 
             // Return delegate with reorder
             return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local,
-                args.Select((x, i) => args[indices[i]]).ToArray()), selector);
+                args.Select((x, i) => args[indices[i]]).ToArray())
+            {
+                EnableDistributedJoins = _enableDistributedJoins,
+                PageSize = _pageSize,
+                EnforceJoinOrder = _enforceJoinOrder
+            }, selector);
         }
 
         /** <inheritdoc /> */

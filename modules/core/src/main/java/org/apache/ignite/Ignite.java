@@ -85,7 +85,7 @@ public interface Ignite extends AutoCloseable {
     public IgniteLogger log();
 
     /**
-     * Gets the configuration of this grid instance.
+     * Gets the configuration of this Ignite instance.
      * <p>
      * <b>NOTE:</b>
      * <br>
@@ -95,7 +95,7 @@ public interface Ignite extends AutoCloseable {
      * via this method to check its configuration properties or call other non-SPI
      * methods.
      *
-     * @return Grid configuration instance.
+     * @return Ignite configuration instance.
      */
     public IgniteConfiguration configuration();
 

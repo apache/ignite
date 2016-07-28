@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     [Category(TestUtils.CategoryIntensive)]
     public class ExamplesTest
     {
+        /** */
+        private IDisposable _changedConfig;
+
         /// <summary>
         /// Tests the example in a single node mode.
         /// </summary>
@@ -68,24 +71,14 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static void TestRemoteNodes(Example example, bool clientMode)
         {
             // Exclude LifecycleExample
-            if (string.IsNullOrEmpty(example.SpringConfigUrl))
+            if (string.IsNullOrEmpty(example.ConfigPath))
             {
                 Assert.AreEqual("LifecycleExample", example.Name);
 
                 return;
             }
 
-            // First node to start in current process defines JVM options.
-            var gridConfig = new IgniteConfiguration
-            {
-                SpringConfigUrl = example.SpringConfigUrl,
-                JvmOptions =
-                    new[]
-                    {
-                        "-Xms512m", "-Xmx1024m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
-                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-                    }
-            };
+            var configPath = Path.Combine(PathUtil.IgniteHome, PathUtil.DevPrefix, example.ConfigPath);
 
             // Try with multiple standalone nodes
             for (var i = 0; i < 2; i++)
@@ -94,9 +87,10 @@ namespace Apache.Ignite.Core.Tests.Examples
                 // Stop it after topology check so we don't interfere with example
                 Ignition.ClientMode = false;
 
-                using (var ignite = Ignition.Start(gridConfig))
+                using (var ignite = Ignition.StartFromApplicationConfiguration(
+                    "igniteConfiguration", configPath))
                 {
-                    var args = new List<string> {"-springConfigUrl=" + example.SpringConfigUrl};
+                    var args = new List<string> { "-configFileName=" + configPath};
 
                     if (example.NeedsTestDll)
                         args.Add(" -assembly=" + typeof(AverageSalaryJob).Assembly.Location);
@@ -122,10 +116,19 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void FixtureSetUp()
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
-            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, 
-                PathUtil.SpringConfigUrlDevPrefix);
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
+
+            _changedConfig = TestAppConfig.Change(PathUtil.ExamplesAppConfigPath);
+        }
+
+        /// <summary>
+        /// Fixture teardown.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _changedConfig.Dispose();
         }
 
         /// <summary>
@@ -139,17 +142,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, null);
-        }
-
-        /// <summary>
         /// Gets the test cases.
         /// </summary>
+        // ReSharper disable once MemberCanBePrivate.Global
+        // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCases
         {
             get { return Example.GetExamples(); }

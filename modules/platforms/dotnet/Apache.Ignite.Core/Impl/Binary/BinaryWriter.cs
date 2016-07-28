@@ -1166,7 +1166,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var pos = _stream.Position;
 
                 // Dealing with handles.
-                if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
+                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
                     return;
 
                 // Skip header length as not everything is known now

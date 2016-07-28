@@ -21,7 +21,6 @@
 #include <jni.h>
 
 #include "ignite/common/common.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -93,7 +92,7 @@ namespace ignite
 
             typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
-            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
@@ -106,6 +105,8 @@ namespace ignite
             typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
+
+            typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
 
             /**
              * JNI handlers holder.
@@ -202,6 +203,9 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
+				
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -216,7 +220,8 @@ namespace ignite
                 /**
                  * Write error information.
                  */
-                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen);
+                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen, 
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -260,6 +265,7 @@ namespace ignite
                 jmethodID m_PlatformClusterGroup_forRandom;
                 jmethodID m_PlatformClusterGroup_forOldest;
                 jmethodID m_PlatformClusterGroup_forYoungest;
+                jmethodID m_PlatformClusterGroup_forServers;
                 jmethodID m_PlatformClusterGroup_resetMetrics;
 
                 jclass c_PlatformCompute;
@@ -505,6 +511,8 @@ namespace ignite
                 static int Reallocate(long long memPtr, int cap);
                 static void Detach();
                 static void Release(jobject obj);
+                static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
+                static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
@@ -606,6 +614,7 @@ namespace ignite
                 jobject ProjectionForRandom(jobject obj);
                 jobject ProjectionForOldest(jobject obj);
                 jobject ProjectionForYoungest(jobject obj);
+                jobject ProjectionForServers(jobject obj);
                 void ProjectionResetMetrics(jobject obj);
                 jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
 
@@ -756,6 +765,8 @@ namespace ignite
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
         }
     }
 }
