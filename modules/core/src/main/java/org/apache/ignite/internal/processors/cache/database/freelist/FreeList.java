@@ -167,7 +167,7 @@ public class FreeList {
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            assert DataPageIO.check(itemId): itemId;
+            assert DataPageIO.checkIndex(itemId): itemId;
 
             final int dataOff = io.getDataOffset(buf, itemId);
 

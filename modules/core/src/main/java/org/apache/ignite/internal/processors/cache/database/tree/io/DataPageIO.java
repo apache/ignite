@@ -209,7 +209,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Direct count.
      */
     private void setDirectCount(ByteBuffer buf, int cnt) {
-        assert check(cnt): cnt;
+        assert checkCounter(cnt): cnt;
 
         buf.put(DIRECT_CNT_OFF, (byte)cnt);
     }
@@ -227,7 +227,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Indirect count.
      */
     private void setIndirectCount(ByteBuffer buf, int cnt) {
-        assert check(cnt): cnt;
+        assert checkCounter(cnt): cnt;
 
         buf.put(INDIRECT_CNT_OFF, (byte)cnt);
     }
@@ -236,8 +236,16 @@ public class DataPageIO extends PageIO {
      * @param idx Index.
      * @return {@code true} If the index is valid.
      */
-    public static boolean check(int idx) {
-        return idx >= 0 && idx < 256;
+    public static boolean checkIndex(int idx) {
+        return idx >= 0 && idx < 0xFF;
+    }
+
+    /**
+     * @param cnt Counter value.
+     * @return {@code true} If the counter fits 1 byte.
+     */
+    public static boolean checkCounter(int cnt) {
+        return cnt >= 0 && cnt <= 0xFF;
     }
 
     /**
@@ -365,7 +373,7 @@ public class DataPageIO extends PageIO {
      * @return Data entry offset in bytes.
      */
     public int getDataOffset(ByteBuffer buf, int itemId) {
-        assert check(itemId): itemId;
+        assert checkIndex(itemId): itemId;
 
         int directCnt = getDirectCount(buf);
 
@@ -460,7 +468,7 @@ public class DataPageIO extends PageIO {
      * @return Offset in buffer.
      */
     private static int itemOffset(int idx) {
-        assert check(idx): idx;
+        assert checkIndex(idx): idx;
 
         return ITEMS_OFF + idx * ITEM_SIZE;
     }
@@ -505,8 +513,8 @@ public class DataPageIO extends PageIO {
      * @return Indirect item.
      */
     private static short indirectItem(int itemId, int directItemIdx) {
-        assert check(itemId): itemId;
-        assert check(directItemIdx): directItemIdx;
+        assert checkIndex(itemId): itemId;
+        assert checkIndex(directItemIdx): directItemIdx;
 
         return (short)((itemId << 8) | directItemIdx);
     }
@@ -570,7 +578,7 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void removeRow(ByteBuffer buf, int itemId) throws IgniteCheckedException {
-        assert check(itemId) : itemId;
+        assert checkIndex(itemId) : itemId;
 
         // Record original counts to calculate delta in free space in the end of remove.
         final int directCnt = getDirectCount(buf);
@@ -741,7 +749,7 @@ public class DataPageIO extends PageIO {
 
         int itemId = insertItem(buf, dataOff, directCnt, indirectCnt);
 
-        assert check(itemId): itemId;
+        assert checkIndex(itemId): itemId;
         assert getIndirectCount(buf) <= getDirectCount(buf);
 
         // Update free space. If number of indirect items changed, then we were able to reuse an item slot.
@@ -975,7 +983,7 @@ public class DataPageIO extends PageIO {
      * @return New first entry offset.
      */
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
-        assert check(directCnt): directCnt;
+        assert checkCounter(directCnt): directCnt;
 
         int[] offs = new int[directCnt];
 
