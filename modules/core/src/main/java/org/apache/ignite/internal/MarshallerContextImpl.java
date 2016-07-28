@@ -96,7 +96,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        // TODO: Refactor MarchCacheListener to hold some state
+        // TODO: Refactor MarchCacheListener to hold some state?
+        // Actually onContinuousProcessorStarted is not always called so we can't do that
         lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
