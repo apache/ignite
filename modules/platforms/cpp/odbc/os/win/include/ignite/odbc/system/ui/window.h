@@ -108,6 +108,20 @@ namespace ignite
                      */
                     void GetText(std::string& text) const;
 
+                    /**
+                     * Get ComboBox state.
+                     *
+                     * @param True if checked.
+                     */
+                    bool IsChecked() const;
+
+                    /**
+                     * Set ComboBox state.
+                     *
+                     * @param state True if checked.
+                     */
+                    void SetChecked(bool state);
+
                 protected:
                     /**
                      * Set window handle.

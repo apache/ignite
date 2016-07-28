@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <Windowsx.h>
+
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 
 namespace ignite
@@ -27,8 +29,8 @@ namespace ignite
             {
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
-                    width(320),
-                    height(200),
+                    width(340),
+                    height(220),
                     nameLabel(),
                     nameEdit(),
                     serverLabel(),
@@ -90,6 +92,8 @@ namespace ignite
                     int rowSize = 20;
                     int rowPos = margin + 2 * interval;
 
+                    int comboBoxSize = (editSizeX - interval) / 2;
+
                     const char* val = config.GetDsn().c_str();
                     nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ID_NAME_LABEL);
                     nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_NAME_EDIT);
@@ -115,6 +119,14 @@ namespace ignite
                     val = config.GetCache().c_str();
                     cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache:", ID_CACHE_LABEL);
                     cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_CACHE_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    distributedJoinsComboBox = CreateComboBox(editPosX, rowPos, comboBoxSize, rowSize,
+                        "Distributed Joins", ID_DISTRIBUTED_JOINS_COMBO_BOX, config.IsDistributedJoins());
+
+                    enforceJoinOrderComboBox = CreateComboBox(editPosX + comboBoxSize + interval, rowPos, comboBoxSize,
+                        rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_COMBO_BOX, config.IsEnforceJoinOrder());
 
                     rowPos += interval * 2 + rowSize;
                     rowSize = 25;
@@ -164,6 +176,20 @@ namespace ignite
                                     break;
                                 }
 
+                                case ID_DISTRIBUTED_JOINS_COMBO_BOX:
+                                {
+                                    distributedJoinsComboBox->SetChecked(!distributedJoinsComboBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ID_ENFORCE_JOIN_ORDER_COMBO_BOX:
+                                {
+                                    enforceJoinOrderComboBox->SetChecked(!enforceJoinOrderComboBox->IsChecked());
+
+                                    break;
+                                }
+
                                 default:
                                     return false;
                             }
@@ -192,16 +218,24 @@ namespace ignite
                     std::string port;
                     std::string cache;
 
+                    bool distributedJoins;
+                    bool enforceJoinOrder;
+
                     nameEdit->GetText(dsn);
                     serverEdit->GetText(server);
                     portEdit->GetText(port);
                     cacheEdit->GetText(cache);
 
+                    distributedJoins = distributedJoinsComboBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderComboBox->IsChecked();
+
                     LOG_MSG("Retriving arguments:\n");
-                    LOG_MSG("DSN:    %s\n", dsn.c_str());
-                    LOG_MSG("Server: %s\n", server.c_str());
-                    LOG_MSG("Port:   %s\n", port.c_str());
-                    LOG_MSG("Cache:  %s\n", cache.c_str());
+                    LOG_MSG("DSN:                %s\n", dsn.c_str());
+                    LOG_MSG("Server:             %s\n", server.c_str());
+                    LOG_MSG("Port:               %s\n", port.c_str());
+                    LOG_MSG("Cache:              %s\n", cache.c_str());
+                    LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
+                    LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -215,6 +249,8 @@ namespace ignite
                     cfg.SetHost(server);
                     cfg.SetTcpPort(numPort);
                     cfg.SetCache(cache);
+                    cfg.SetDistributedJoins(distributedJoins);
+                    cfg.SetEnforceJoinOrder(enforceJoinOrder);
                 }
             }
         }

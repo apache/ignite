@@ -48,6 +48,8 @@ namespace ignite
                         ID_PORT_LABEL,
                         ID_CACHE_EDIT,
                         ID_CACHE_LABEL,
+                        ID_DISTRIBUTED_JOINS_COMBO_BOX,
+                        ID_ENFORCE_JOIN_ORDER_COMBO_BOX,
                         ID_OK_BUTTON,
                         ID_CANCEL_BUTTON
                     };
@@ -123,6 +125,12 @@ namespace ignite
 
                     /** DSN cache edit field. */
                     std::auto_ptr<Window> cacheEdit;
+
+                    /** Distributed joins ComboBox. */
+                    std::auto_ptr<Window> distributedJoinsComboBox;
+
+                    /** Enforce join order ComboBox. */
+                    std::auto_ptr<Window> enforceJoinOrderComboBox;
 
                     /** Ok button. */
                     std::auto_ptr<Window> okButton;

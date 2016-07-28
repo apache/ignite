@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <Windowsx.h>
+
 #include "ignite/odbc/system/ui/window.h"
 
 namespace ignite
@@ -143,6 +145,16 @@ namespace ignite
                         text.clear();
 
                     text.resize(len);
+                }
+
+                bool Window::IsChecked() const
+                {
+                    return Button_GetCheck(handle) == BST_CHECKED;
+                }
+
+                void Window::SetChecked(bool state)
+                {
+                    Button_SetCheck(handle, state ? BST_CHECKED : BST_UNCHECKED);
                 }
             }
         }

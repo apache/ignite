@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <Windowsx.h>
+
 #include "ignite/odbc/system/ui/custom_window.h"
 
 namespace ignite
@@ -151,6 +153,18 @@ namespace ignite
                     std::auto_ptr<Window> child(new Window(this, "Button", title));
 
                     child->Create(WS_CHILD | WS_VISIBLE | WS_TABSTOP, posX, posY, sizeX, sizeY, id);
+
+                    return child;
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateComboBox(int posX, int posY,
+                    int sizeX, int sizeY, const char* title, int id, bool state)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Button", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE | BS_CHECKBOX, posX, posY, sizeX, sizeY, id);
+
+                    child->SetChecked(state);
 
                     return child;
                 }
