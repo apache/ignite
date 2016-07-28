@@ -204,7 +204,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                             break;
                     }
 
-                    if (waitTime < 0)
+                    if (waitTime <= 0)
                         continue;
 
                     mux.wait(waitTime);
