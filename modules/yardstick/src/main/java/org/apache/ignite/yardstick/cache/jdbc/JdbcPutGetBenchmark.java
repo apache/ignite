@@ -12,16 +12,22 @@ public class JdbcPutGetBenchmark extends JdbcAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int newKey = nextRandom(args.range);
-        try (PreparedStatement stmt = createUpsertStatement(conn.get(), newKey)) {
+        int newVal = nextRandom(args.range);
+
+        try (PreparedStatement stmt = createUpsertStatement(conn.get(), newKey, newVal)) {
             if (stmt.executeUpdate() <= 0)
                 return false;
         }
+
         try (PreparedStatement stmt = conn.get().prepareStatement("select id, val from SAMPLE where id = ?")) {
             stmt.setInt(1, newKey);
+
             ResultSet rs = stmt.executeQuery();
+
             if (rs.next()) {
                 rs.getInt(1);
                 rs.getInt(2);
+
                 return true;
             }
             else
@@ -33,6 +39,7 @@ public class JdbcPutGetBenchmark extends JdbcAbstractBenchmark {
     @Override public void tearDown() throws Exception {
         if (!args.createTempDatabase())
             clearTable("SAMPLE");
+
         super.tearDown();
     }
 }
