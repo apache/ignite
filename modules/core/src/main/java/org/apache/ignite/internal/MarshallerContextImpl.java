@@ -227,39 +227,50 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            String fileName = key + fileExt;
-
-            Lock lock = fileLock(fileName);
-
-            lock.lock();
-
-            try {
-                File file = new File(workDir, fileName);
-
-                try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = fileLock(in.getChannel(), true);
-
-                    assert fileLock != null : fileName;
-
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                        clsName = reader.readLine();
-                    }
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Class definition was not found " +
-                        "at marshaller cache and local file. " +
-                        "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
-                }
-            }
-            finally {
-                lock.unlock();
-            }
+            clsName = getClassNameFromFile(key);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
             registerClassName(id, clsName);
         }
 
         return clsName;
+    }
+
+    /**
+     * Gets the class name from a file in the marshaller work directory.
+     *
+     * @param key Key.
+     * @return Class name.
+     * @throws IgniteCheckedException When the file is not found.
+     */
+    private String getClassNameFromFile(Object key) throws IgniteCheckedException {
+        String fileName = key + fileExt;
+
+        Lock lock = fileLock(fileName);
+
+        lock.lock();
+
+        try {
+            File file = new File(workDir, fileName);
+
+            try (FileInputStream in = new FileInputStream(file)) {
+                FileLock fileLock = fileLock(in.getChannel(), true);
+
+                assert fileLock != null : fileName;
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                    return reader.readLine();
+                }
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Class definition was not found " +
+                    "at marshaller cache and local file. " +
+                    "[id=" + key + ", file=" + file.getAbsolutePath() + ']');
+            }
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
