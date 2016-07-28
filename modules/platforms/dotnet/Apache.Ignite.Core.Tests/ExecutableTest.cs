@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture set-up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
             TestUtils.KillProcesses();
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture tear-down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
             Ignition.StopAll(true);
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test data pass through configuration file.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestConfig()
         {
             IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test assemblies passing through command-line. 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAssemblyCmd()
         {
             GenerateDll("test-1.dll");
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test JVM options passing through command-line. 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJvmOptsCmd()
         {
             var proc = new IgniteProcess(
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test JVM memory options passing through command-line: raw java options.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJvmMemoryOptsCmdRaw()
         {
             var proc = new IgniteProcess(
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test JVM memory options passing through command-line: custom options.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJvmMemoryOptsCmdCustom()
         {
             var proc = new IgniteProcess(
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test JVM memory options passing from application configuration.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJvmMemoryOptsAppConfig(
             [Values("config\\Apache.Ignite.exe.config.test", "config\\Apache.Ignite.exe.config.test2")] string config)
         {
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test JVM memory options passing through command-line: custom options + raw options.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJvmMemoryOptsCmdCombined()
         {
             var proc = new IgniteProcess(
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the .NET XML configuration specified in app.config.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestXmlConfigurationAppConfig()
         {
             IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test3");
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the .NET XML configuration specified in command line.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestXmlConfigurationCmd()
         {
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),

@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void FixtureTearDown()
         {
             StopGrids();

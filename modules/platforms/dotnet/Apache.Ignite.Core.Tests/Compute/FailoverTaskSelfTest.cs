@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for GridComputeJobFailoverException.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClosureFailoverException()
         {
             for (int i = 0; i < 20; i++)
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for GridComputeJobFailoverException with serializable job.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskAdapterFailoverExceptionSerializable()
         {
             TestTaskAdapterFailoverException(true);
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for GridComputeJobFailoverException with binary job.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskAdapterFailoverExceptionBinarizable()
         {
             TestTaskAdapterFailoverException(false);

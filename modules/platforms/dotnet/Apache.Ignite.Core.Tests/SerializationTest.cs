@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Set up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void SetUp()
         {
             var cfg = new IgniteConfiguration
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tear down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TearDown()
         {
             Ignition.StopAll(true);
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test complex file serialization.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSerializableXmlDoc()
         {
             var grid = Ignition.GetIgnite(GridName);
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSerializationBinder()
         {
             const int count = 50;

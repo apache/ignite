@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests lifecycle of the AtomicSequence.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateClose()
         {
             Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests modification methods.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestModify()
         {
             var atomics = Enumerable.Range(1, 10)
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests multithreaded scenario.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultithreaded()
         {
             const int atomicCnt = 10;

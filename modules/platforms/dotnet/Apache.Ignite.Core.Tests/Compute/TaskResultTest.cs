@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultInt()
         {
             TestTask<int> task = new TestTask<int>();
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultLong()
         {
             TestTask<long> task = new TestTask<long>();
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultFloat()
         {
             TestTask<float> task = new TestTask<float>();
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultBinarizable()
         {
             TestTask<BinarizableResult> task = new TestTask<BinarizableResult>();
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultSerializable()
         {
             TestTask<SerializableResult> task = new TestTask<SerializableResult>();
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskResultLarge()
         {
             TestTask<byte[]> task = new TestTask<byte[]>();
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
         }
 
-        [Test]
+        //[Test]
         public void TestOutFuncResultPrimitive1()
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableOutFunc());
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(10, r);
         }
 
-        [Test]
+        //[Test]
         public void TestOutFuncResultPrimitive2()
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableOutFunc());
@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(10, r);
         }
 
-        [Test]
+        //[Test]
         public void TestFuncResultPrimitive1()
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableFunc(), 10);
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(11, r);
         }
 
-        [Test]
+        //[Test]
         public void TestFuncResultPrimitive2()
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableFunc(), 10);

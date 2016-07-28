@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Set up test class.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void BeforeTests()
         {
             TestUtils.KillProcesses();
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Tear down test class.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void AfterTests()
         {
             Ignition.StopAll(true);
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Tests the LoadCache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadCache()
         {
             var cache = GetCache();

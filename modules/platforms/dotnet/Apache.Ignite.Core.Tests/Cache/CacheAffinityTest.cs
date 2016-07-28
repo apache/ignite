@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void StartGrids()
         {
             TestUtils.KillProcesses();
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tear-down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void StopGrids()
         {
             for (int i = 0; i < 3; i++)
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test affinity key.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAffinity()
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test affinity with binary flag.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAffinityBinary()
         {
             IIgnite g = Ignition.GetIgnite("grid-0");

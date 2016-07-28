@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Checks config files in examples comments for existence.
         /// </summary>
-        [Test]
+        //[Test]
         public void CheckConfigFilesExist()
         {
             var paths = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)

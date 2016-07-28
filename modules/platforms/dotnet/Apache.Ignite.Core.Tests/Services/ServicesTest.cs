@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         protected IIgnite[] Grids;
 
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             StopGrids();
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeploy([Values(true, false)] bool binarizable)
         {
             var cfg = new ServiceConfiguration
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests cluster singleton deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeployClusterSingleton()
         {
             var svc = new TestIgniteServiceSerializable();
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests node singleton deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeployNodeSingleton()
         {
             var svc = new TestIgniteServiceSerializable();
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests key affinity singleton deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeployKeyAffinitySingleton()
         {
             var svc = new TestIgniteServiceBinarizable();
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests key affinity singleton deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeployKeyAffinitySingletonBinarizable()
         {
             var services = Services.WithKeepBinary();
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests multiple deployment.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDeployMultiple()
         {
             var svc = new TestIgniteServiceSerializable();
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests cancellation.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCancel()
         {
             for (var i = 0; i < 10; i++)
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests service proxy.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestGetServiceProxy([Values(true, false)] bool binarizable)
         {
             // Test proxy without a service
@@ -296,7 +296,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests the duck typing: proxy interface can be different from actual service interface, 
         /// only called method signature should be compatible.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDuckTyping([Values(true, false)] bool local)
         {
             var svc = new TestIgniteServiceBinarizable {TestProperty = 33};
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests service descriptors.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestServiceDescriptors()
         {
             Services.DeployKeyAffinitySingleton(SvcName, new TestIgniteServiceSerializable(), CacheName, 1);
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests the client binary flag.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithKeepBinaryClient()
         {
             var svc = new TestIgniteServiceBinarizable();
@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests the server binary flag.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithKeepBinaryServer()
         {
             var svc = new TestIgniteServiceBinarizable();
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests server and client binary flag.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithKeepBinaryBoth()
         {
             var svc = new TestIgniteServiceBinarizable();
@@ -431,7 +431,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests exception in Initialize.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInitException()
         {
             var svc = new TestIgniteServiceSerializable { ThrowInit = true };
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests exception in Execute.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteException()
         {
             var svc = new TestIgniteServiceSerializable { ThrowExecute = true };
@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests exception in Cancel.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCancelException()
         {
             var svc = new TestIgniteServiceSerializable { ThrowCancel = true };
@@ -479,7 +479,7 @@ namespace Apache.Ignite.Core.Tests.Services
             AssertNoService();
         }
 
-        [Test]
+        //[Test]
         public void TestMarshalExceptionOnRead()
         {
             var svc = new TestIgniteServiceBinarizableErr();
@@ -492,7 +492,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
-        [Test]
+        //[Test]
         public void TestMarshalExceptionOnWrite()
         {
             var svc = new TestIgniteServiceBinarizableErr {ThrowOnWrite = true};
@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
-        [Test]
+        //[Test]
         public void TestCallJavaService()
         {
             const string javaSvcName = "javaService";
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests the footer setting.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFooterSetting()
         {
             foreach (var grid in Grids)

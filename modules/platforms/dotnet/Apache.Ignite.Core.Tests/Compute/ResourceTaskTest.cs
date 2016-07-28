@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test Ignite injection into the task.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskInjection()
         {
             int res = Grid1.GetCompute().Execute(new InjectionTask(), 0);
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test Ignite injection into the closure.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClosureInjection()
         {
             var res = Grid1.GetCompute().Broadcast(new InjectionClosure(), 1);
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test Ignite injection into reducer.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestReducerInjection()
         {
             int res = Grid1.GetCompute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test no-result-cache attribute.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNoResultCache()
         {
             int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);

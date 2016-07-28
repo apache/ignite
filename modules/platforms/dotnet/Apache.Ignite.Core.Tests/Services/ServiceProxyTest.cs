@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests object class methods proxying.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestObjectClassMethods()
         {
             var prx = GetProxy();
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests properties proxying.
         /// </summary>
-        [Test]
+        //[Test]
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void TestProperties()
         {
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests void methods proxying.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestVoidMethods()
         {
             var prx = GetProxy();
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests object methods proxying.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestObjectMethods()
         {
             var prx = GetProxy();
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests methods that exist in proxy interface, but do not exist in the actual service.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMissingMethods()
         {
             var prx = GetProxy();
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests ambiguous methods handling (multiple methods with the same signature).
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAmbiguousMethods()
         {
             var prx = GetProxy();
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Services
                             "can't resolve ambiguity.", ex.Message);
         }
 
-        [Test]
+        //[Test]
         public void TestException()
         {
             var prx = GetProxy();
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsTrue(ex.ToString().Contains("+CustomException"));
         }
 
-        [Test]
+        //[Test]
         public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Tests.Services
             KeepBinary = true;
         }
 
-        [Test]
+        //[Test]
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
@@ -699,7 +699,7 @@ namespace Apache.Ignite.Core.Tests.Services
             SrvKeepBinary = true;
         }
 
-        [Test]
+        //[Test]
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
@@ -727,7 +727,7 @@ namespace Apache.Ignite.Core.Tests.Services
             SrvKeepBinary = true;
         }
 
-        [Test]
+        //[Test]
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();

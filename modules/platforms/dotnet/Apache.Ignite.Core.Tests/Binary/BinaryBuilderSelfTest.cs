@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Set up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void SetUp()
         {
             TestUtils.KillProcesses();
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tear down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TearDown()
         {
             if (_grid != null)
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Ensure that binary engine is able to work with type names, which are not configured.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNonConfigured()
         {
             string typeName1 = "Type1";
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test "ToBinary()" method.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestToBinary()
         {
             DateTime date = DateTime.Now.ToUniversalTime();
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test builder field remove logic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemove()
         {
             // Create empty object.
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test builder-in-builder scenario.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBuilderInBuilder()
         {
             // Test different builders assembly.
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test for decimals building.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDecimals()
         {
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(DecimalHolder))
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test for an object returning collection of builders.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBuilderCollection()
         {
             // Test collection with single element.
@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test build of an empty object.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEmptyDefined()
         {
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
@@ -550,7 +550,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test build of an empty undefined object.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEmptyUndefined()
         {
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(TypeEmpty).Build();
@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test object rebuild with no changes.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEmptyRebuild()
         {
             var binObj = (BinaryObject) _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
@@ -581,7 +581,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test hash code alteration.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestHashCodeChange()
         {
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Empty)).SetHashCode(100).Build();
@@ -592,7 +592,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test primitive fields setting.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPrimitiveFields()
         {
             // Generic SetField method.
@@ -739,7 +739,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test primitive array fields setting.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPrimitiveArrayFields()
         {
             // Generic SetField method.
@@ -884,7 +884,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test non-primitive fields and their array counterparts.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStringDateGuidEnum()
         {
             DateTime? nDate = DateTime.Now.ToUniversalTime();
@@ -1082,7 +1082,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { TestEnum.Two }, obj.FEnumArr);
         }
 
-        [Test]
+        //[Test]
         public void TestEnumMeta()
         {
             var bin = _grid.GetBinary();
@@ -1103,7 +1103,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test arrays.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCompositeArray()
         {
             // 1. Test simple array.
@@ -1266,7 +1266,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test container types other than array.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCompositeContainer()
         {
             ArrayList col = new ArrayList();
@@ -1309,7 +1309,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Ensure that raw data is not lost during build.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRawData()
         {
             var raw = new WithRaw
@@ -1336,7 +1336,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test nested objects.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNested()
         {
             // 1. Create from scratch.
@@ -1398,7 +1398,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test handle migration.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestHandleMigration()
         {
             // 1. Simple comparison of results.
@@ -1454,7 +1454,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test handle inversion.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestHandleInversion()
         {
             InversionInner inner = new InversionInner();
@@ -1488,7 +1488,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test build multiple objects.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBuildMultiple()
         {
             IBinaryObjectBuilder builder = _grid.GetBinary().GetBuilder(typeof(Primitives));
@@ -1541,7 +1541,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests type id method.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTypeId()
         {
             Assert.Throws<ArgumentException>(() => _grid.GetBinary().GetTypeId(null));
@@ -1554,7 +1554,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests type name mapper.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTypeName()
         {
             var bytes = _marsh.Marshal(new NameMapperTestType {NameMapperTestField = 17});
@@ -1570,7 +1570,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests metadata methods.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMetadata()
         {
             // Populate metadata
@@ -1601,7 +1601,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
 
-        [Test]
+        //[Test]
         public void TestBuildEnum()
         {
             var binary = _grid.GetBinary();
@@ -1625,7 +1625,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests the compact footer setting.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCompactFooterSetting()
         {
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
@@ -1634,7 +1634,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests the binary mode on remote node.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteBinaryMode()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())

@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Tests the example in a single node mode.
         /// </summary>
         /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource("TestCases")]
+        //[Test, TestCaseSource("TestCases")]
         public void TestLocalNode(Example example)
         {
             example.Run();
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Tests the example with standalone Apache.Ignite.exe nodes.
         /// </summary>
         /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource("TestCases")]
+        //[Test, TestCaseSource("TestCases")]
         public void TestRemoteNodes(Example example)
         {
             TestRemoteNodes(example, false);
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Tests the example with standalone Apache.Ignite.exe nodes while local node is in client mode.
         /// </summary>
         /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource("TestCases")]
+        //[Test, TestCaseSource("TestCases")]
         public void TestRemoteNodesClientMode(Example example)
         {
             TestRemoteNodes(example, true);
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Fixture setup.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, null);

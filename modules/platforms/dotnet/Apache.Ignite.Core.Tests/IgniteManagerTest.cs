@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests home dir resolver.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIgniteHome()
         {
             var env = Environment.GetEnvironmentVariable(IgniteHome.EnvIgniteHome);

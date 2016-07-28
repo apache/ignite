@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for single closure returning result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteSingle()
         {
             var res = Grid1.GetCompute().Call(OutFunc(false));
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for single closure returning exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteSingleException()
         {
             try
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for multiple closures execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteMultiple()
         {
             var clos = new List<IComputeFunc<object>>(MultiCloCnt);
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for multiple closures execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteMultipleReduced()
         {
             var clos = new List<IComputeFunc<object>>(MultiCloCnt);
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for multiple closures execution with exceptions thrown from some of them.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExecuteMultipleException()
         {
             var clos = new List<IComputeFunc<object>>(MultiCloCnt);
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test broadcast out-closure execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastOut()
         {
             ICollection<object> ress = Grid1.GetCompute().Broadcast(OutFunc(false));
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test broadcast out-closure execution with exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastOutException()
         {
             try
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test broadcast in-out-closure execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastInOut()
         {
             ICollection<object> ress = Grid1.GetCompute().Broadcast(Func(false), 1);
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test broadcast in-out-closure execution with exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastInOutException()
         {
             try
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply in-out-closure execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestApply()
         {
             object res = Grid1.GetCompute().Apply(Func(false), 1);
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply in-out-closure execution with exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestApplyException()
         {
             try
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply multiple in-out-closures execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestApplyMultiple()
         {
             var args = new List<object>(MultiCloCnt);
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply multiple in-out-closures execution with exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestApplyMultipleException()
         {
             ICollection<int> args = new List<int>(MultiCloCnt);
@@ -261,7 +261,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply multiple in-out-closures execution with reducer.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestApplyMultipleReducer()
         {
             var args = new List<object>(MultiCloCnt);
@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply multiple in-out-closures execution with reducer and exception thrown from closure.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAppylMultipleReducerJobException()
         {
             List<object> args = new List<object>(MultiCloCnt);
@@ -302,7 +302,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test apply multiple in-out-closures execution with reducer and exception thrown from reducer.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAppylMultipleReducerReduceException()
         {
             var args = new List<object>(MultiCloCnt);

@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests equality members.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEquality()
         {
             var entry1 = new CacheEntry<int, int>(1, 2);
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests with hash data structures.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestHashCode()
         {
             var entry1 = new CacheEntry<int, int>(1, 2);

@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the predefined XML.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPredefinedXml()
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the serialize deserialize.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSerializeDeserialize()
         {
             // Test custom
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSchemaValidation()
         {
             CheckSchemaValidation();

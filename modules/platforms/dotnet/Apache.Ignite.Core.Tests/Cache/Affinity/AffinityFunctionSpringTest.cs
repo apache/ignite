@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Tests the static cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStaticCache()
         {
             ValidateAffinityFunction(Grid.GetCache<long, int>("cache1"));
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Tests the dynamic cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDynamicCache()
         {
             ValidateAffinityFunction(Grid.CreateCache<long, int>("dyn-cache-1"));

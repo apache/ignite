@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Initialization routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void InitClient()
         {
             TestUtils.KillProcesses();
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
 
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void StopClient()
         {
             if (_grid1 != null)
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test that it is possible to get projection from grid.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestProjection()
         {
             IClusterGroup prj = _grid1.GetCluster();
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test getting cache with default (null) name.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCacheDefaultName()
         {
             var cache = _grid1.GetCache<int, int>(null);
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test non-existent cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNonExistentCache()
         {
             Assert.Catch(typeof(ArgumentException), () =>
@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test node content.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNodeContent()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test cluster metrics.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClusterMetrics()
         {
             var cluster = _grid1.GetCluster();
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test cluster metrics.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNodeMetrics()
         {
             var node = _grid1.GetCluster().GetNode();
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test cluster metrics.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestResetMetrics()
         {
             var cluster = _grid1.GetCluster();
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test node ping.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPingNode()
         {
             var cluster = _grid1.GetCluster();
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the topology version.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTopologyVersion()
         {
             var cluster = _grid1.GetCluster();
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the topology by version.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTopology()
         {
             var cluster = _grid1.GetCluster();
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test nodes in full topology.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNodes()
         {
             Assert.IsNotNull(_grid1.GetCluster().GetNode());
@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test "ForNodes" and "ForNodeIds".
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForNodes()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -467,7 +467,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test "ForNodes" and "ForNodeIds". Make sure lazy enumerables are enumerated only once.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForNodesLaziness()
         {
             var nodes = _grid1.GetCluster().GetNodes().Take(2).ToArray();
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for local node projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForLocal()
         {
             IClusterGroup prj = _grid1.GetCluster().ForLocal();
@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for remote nodes projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForRemotes()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for host nodes projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForHost()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -541,7 +541,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for oldest, youngest and random projections.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForOldestYoungestRandom()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -562,7 +562,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for attribute projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForAttribute()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -576,7 +576,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for cache/data/client projections.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForCacheNodes()
         {
             ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
@@ -606,7 +606,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for cache predicate.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestForPredicate()
         {
             IClusterGroup prj1 = _grid1.GetCluster().ForPredicate(new NotAttributePredicate("value1").Apply);
@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo with decimals.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoDecimal()
         {
             decimal val;
@@ -783,7 +783,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo task returning null.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskNull()
         {
             Assert.IsNull(_grid1.GetCompute().ExecuteJavaTask<object>(EchoTask, EchoTypeNull));
@@ -792,7 +792,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo task returning various primitives.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskPrimitives()
         {
             Assert.AreEqual(1, _grid1.GetCompute().ExecuteJavaTask<byte>(EchoTask, EchoTypeByte));
@@ -808,7 +808,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo task returning compound types.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskCompound()
         {
             int[] res1 = _grid1.GetCompute().ExecuteJavaTask<int[]>(EchoTask, EchoTypeArray);
@@ -830,7 +830,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo task returning binary object.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskBinarizable()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
@@ -841,7 +841,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test echo task returning binary object with no corresponding class definition.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskBinarizableNoClass()
         {
             ICompute compute = _grid1.GetCompute();
@@ -862,7 +862,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the echo task returning object array.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskObjectArray()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<string[]>(EchoTask, EchoTypeObjArray);
@@ -873,7 +873,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the echo task returning binary array.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskBinarizableArray()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypeBinarizableArray);
@@ -887,7 +887,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the echo task returning enum.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskEnum()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
@@ -898,7 +898,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the echo task returning enum.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskEnumArray()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
@@ -915,7 +915,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests the echo task reading enum from a binary object field.
         /// Ensures that Java can understand enums written by .NET.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEchoTaskEnumField()
         {
             var enumVal = PlatformComputeEnum.Baz;
@@ -937,7 +937,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for binary argument in Java.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBinarizableArgTask()
         {
             ICompute compute = _grid1.GetCompute();
@@ -956,7 +956,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test running broadcast task.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastTask()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
@@ -980,7 +980,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test running broadcast task in async mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastTaskAsync()
         {
             var gridCompute = _grid1.GetCompute();
@@ -1007,7 +1007,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the action broadcast.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBroadcastAction()
         {
             ComputeAction.InvokeCount = 0;
@@ -1020,7 +1020,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests single action run.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRunAction()
         {
             ComputeAction.InvokeCount = 0;
@@ -1033,7 +1033,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests single action run.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRunActionAsyncCancel()
         {
             using (var cts = new CancellationTokenSource())
@@ -1052,7 +1052,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests multiple actions run.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRunActions()
         {
             ComputeAction.InvokeCount = 0;
@@ -1067,7 +1067,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests affinity run.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAffinityRun()
         {
             const string cacheName = null;
@@ -1092,7 +1092,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests affinity call.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAffinityCall()
         {
             const string cacheName = null;
@@ -1119,7 +1119,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test "withNoFailover" feature.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithNoFailover()
         {
             var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
@@ -1134,7 +1134,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test "withTimeout" feature.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithTimeout()
         {
             var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
@@ -1149,7 +1149,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test simple dotNet task execution.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNetTaskSimple()
         {
             int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
@@ -1161,7 +1161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the exceptions.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExceptions()
         {
             Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
@@ -1174,7 +1174,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the footer setting.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFooterSetting()
         {
             Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);

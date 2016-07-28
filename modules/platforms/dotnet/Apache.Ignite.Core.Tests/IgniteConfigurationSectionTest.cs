@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the read.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRead()
         {
             var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the ignite start.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIgniteStart()
         {
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");

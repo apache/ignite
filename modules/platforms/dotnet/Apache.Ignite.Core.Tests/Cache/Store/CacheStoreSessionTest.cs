@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Set up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void BeforeTests()
         {
             //TestUtils.JVM_DEBUG = true;
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Tear down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void AfterTests()
         {
             Ignition.StopAll(true);
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Test basic session API.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSession()
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();

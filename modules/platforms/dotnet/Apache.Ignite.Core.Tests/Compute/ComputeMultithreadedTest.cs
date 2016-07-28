@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test not-marshalable error occurred during map step.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAllTaskTypeAtSameTime()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType0()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType1()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType2()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType3()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType4()
         {
             Assert.AreEqual(_actions.Count, 6);
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleTaskType5()
         {
             Assert.AreEqual(_actions.Count, 6);

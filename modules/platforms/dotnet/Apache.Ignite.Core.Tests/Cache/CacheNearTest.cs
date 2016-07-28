@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests the existing near cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExistingNearCache()
         {
             var cache = _grid.GetCache<int, string>(null);
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests the created near cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateNearCache()
         {
             const string cacheName = "dyn_cache";
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests near cache on the client node.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateNearCacheOnClientNode()
         {
             const string cacheName = "client_cache";
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests near cache on the client node.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateCacheWithNearConfigOnClientNode()
         {
             const string cacheName = "client_with_near_cache";

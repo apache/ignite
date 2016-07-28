@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             _runDbConsole = false;  // set to true to open H2 console
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             if (_runDbConsole)
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the empty query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEmptyQuery()
         {
             // There are both persons and organizations in the same cache, but query should only return specific type
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests where clause.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWhere()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the single field query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSingleFieldQuery()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the field projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFieldProjection()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the multi field query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultiFieldQuery()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the scalar query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScalarQuery()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests strings.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStrings()
         {
             var strings = GetSecondPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
@@ -294,7 +294,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests aggregates.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAggregates()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests aggregates with all clause.
         /// </summary>
-        [Test]
+        //[Test]
         [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
         {
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests conditions.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestConditions()
         {
             var persons = GetPersonCache().AsCacheQueryable();
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the same cache join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSameCacheJoin()
         {
             // Select persons in specific organization
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the multi key join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultiKeyJoin()
         {
             var organizations = GetOrgCache().AsCacheQueryable();
@@ -409,7 +409,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the cross cache join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCrossCacheJoin()
         {
             var persons = GetPersonCache().AsCacheQueryable();
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the multi cache join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultiCacheJoin()
         {
             var organizations = GetOrgCache().AsCacheQueryable();
@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the multi cache join subquery.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultiCacheJoinSubquery()
         {
             var organizations = GetOrgCache().AsCacheQueryable().Where(x => x.Key == 1001);
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the outer join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestOuterJoin()
         {
             var persons = GetPersonCache().AsCacheQueryable();
@@ -483,7 +483,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the subquery join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSubqueryJoin()
         {
             var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key >= 0);
@@ -502,7 +502,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the invalid join.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInvalidJoin()
         {
             // Join on non-IQueryable
@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the multiple from.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultipleFrom()
         {
             var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key < PersonCount);
@@ -537,7 +537,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the group by.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestGroupBy()
         {
             var persons = GetPersonCache().AsCacheQueryable();
@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the union.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestUnion()
         {
             // Direct union
@@ -608,7 +608,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests intersect.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIntersect()
         {
             // Direct intersect
@@ -629,7 +629,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests except.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExcept()
         {
             // Direct except
@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests ordering.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestOrdering()
         {
             var persons = GetPersonCache().AsCacheQueryable()
@@ -685,7 +685,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests nulls.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNulls()
         {
             var roles = GetRoleCache().AsCacheQueryable();
@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests date time.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDateTime()
         {
             var roles = GetRoleCache().AsCacheQueryable();
@@ -735,7 +735,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests numerics.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNumerics()
         {
             var cache = Ignition.GetIgnite()
@@ -823,7 +823,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests aliases.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAliases()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -838,7 +838,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the compiled query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCompiledQuery()
         {
             var cache = GetPersonCache().AsCacheQueryable();
@@ -899,7 +899,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the cache of primitive types.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPrimitiveCache()
         {
             // Create partitioned cache
@@ -923,7 +923,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the local query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalQuery()
         {
             // Create partitioned cache
@@ -946,7 +946,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the introspection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIntrospection()
         {
             var cache = GetPersonCache();
@@ -977,7 +977,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the table name inference.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTableNameInference()
         {
             // Try with multi-type cache: explicit type is required

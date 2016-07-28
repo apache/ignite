@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// <summary>
         /// Test pooled memory.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPooled()
         {
             PlatformMemoryManager mgr = new PlatformMemoryManager(256);
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// <summary>
         /// Test unpooled memory.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestUnpooled()
         {
             PlatformMemoryManager mgr = new PlatformMemoryManager(256);
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// <summary>
         /// Test pooled memory stream reallocation initiated from stream.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPooledStreamReallocate()
         {
             var mem = new PlatformMemoryManager(256).Allocate();
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// <summary>
         /// Test unpooled memory stream reallocation initiated from stream.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestUnpooledStreamReallocate()
         {
             PlatformMemoryManager mgr = new PlatformMemoryManager(256);

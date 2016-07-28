@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests lifecycle of the AtomicLong.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateClose()
         {
             // Nonexistent long returns null
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests modification methods.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestModify()
         {
             var atomics = Enumerable.Range(1, 10)
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests multithreaded scenario.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultithreaded()
         {
             const int atomicCnt = 10;

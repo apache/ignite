@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test without Java beans.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithoutBeans()
         {
             // 1. Test start events.
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test with Java beans.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithBeans()
         {
             // 1. Test .Net start events.
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test behavior when error is thrown from lifecycle beans.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestError()
         {
             ThrowErr = true;

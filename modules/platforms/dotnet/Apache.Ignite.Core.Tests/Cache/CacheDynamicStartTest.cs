@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Try getting not configured cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNoStarted()
         {
             Assert.Throws<ArgumentException>(() =>
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test TX cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTransactional()
         {
             Check(CacheTx);
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test ATOMIC cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAtomic()
         {
             Check(CacheAtomic);

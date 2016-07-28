@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void StartGrids() {
             TestUtils.KillProcesses();
 
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void StopGrids() {
             for (int i = 0; i < GridCount(); i++)
                 Ignition.Stop("grid-" + i, true);
@@ -395,7 +395,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             get { return GetIgnite(0).GetTransactions(); }
         }
 
-        [Test]
+        //[Test]
         public void TestCircularReference()
         {
             var cache = Cache().WithKeepBinary<int, object>();
@@ -415,14 +415,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNotNull(objRef);
         }
 
-        [Test]
+        //[Test]
         public void TestName()
         {
             for (int i = 0; i < GridCount(); i++ )
                 Assert.AreEqual(CacheName(), Cache(i).Name);
         }
 
-        [Test]
+        //[Test]
         public void TestIsEmpty()
         {
             for (int i = 0; i < GridCount(); i++)
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestContainsKey()
         {
             var cache = Cache();
@@ -460,7 +460,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(-1));
         }
         
-        [Test]
+        //[Test]
         public void TestContainsKeys()
         {
             var cache = Cache();
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKeys(keys.Concat(new[] {int.MaxValue})));
         }
         
-        [Test]
+        //[Test]
         public void TestPeek()
         {
             var cache = Cache();
@@ -496,7 +496,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
         }
 
-        [Test]
+        //[Test]
         public void TestGet()
         {
             var cache = Cache();
@@ -521,7 +521,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, value);
         }
 
-        [Test]
+        //[Test]
         public void TestGetAsync()
         {
             var cache = Cache().WrapAsync();
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(Cache().TryGetAsync(3).Result.Success);
         }
 
-        [Test]
+        //[Test]
         public void TestGetAll()
         {
             var cache = Cache();
@@ -557,7 +557,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, map[2]);
         }
 
-        [Test]
+        //[Test]
         public void TestGetAllAsync()
         {
             var cache = Cache().WrapAsync();
@@ -574,7 +574,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, map[2]);
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndPut()
         {
             var cache = Cache();
@@ -594,7 +594,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndReplace()
         {
             var cache = Cache();
@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(cache.Remove(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndRemove()
         {
             var cache = Cache();
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndPutAsync()
         {
             var cache = Cache().WrapAsync();
@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestPut()
         {
             var cache = Cache();
@@ -660,7 +660,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestPutxAsync()
         {
             var cache = Cache().WrapAsync();
@@ -670,7 +670,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestPutIfAbsent()
         {
             var cache = Cache();
@@ -686,7 +686,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndPutIfAbsent()
         {
             var cache = Cache();
@@ -702,7 +702,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndPutIfAbsentAsync()
         {
             var cache = Cache().WrapAsync();
@@ -722,7 +722,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestPutIfAbsentAsync()
         {
             var cache = Cache().WrapAsync();
@@ -739,7 +739,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestReplace()
         {
             var cache = Cache();
@@ -771,7 +771,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndReplaceAsync()
         {
             var cache = Cache().WrapAsync();
@@ -803,7 +803,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestReplacex()
         {
             var cache = Cache();
@@ -823,7 +823,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestReplaceAsync()
         {
             var cache = Cache().WrapAsync();
@@ -843,7 +843,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestPutAll()
         {
             var cache = Cache();
@@ -855,7 +855,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(3));
         }
 
-        [Test]
+        //[Test]
         public void TestPutAllAsync()
         {
             var cache = Cache().WrapAsync();
@@ -870,7 +870,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Expiry policy tests.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWithExpiryPolicy()
         {
             ICache<int, int> cache0 = Cache(0);
@@ -971,7 +971,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Expiry policy tests for zero and negative expiry values.
         /// </summary>
-        [Test]
+        //[Test]
         [Ignore("IGNITE-1423")]
         public void TestWithExpiryPolicyZeroNegative()
         {
@@ -1047,7 +1047,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
         }
 
-        [Test]
+        //[Test]
         public void TestEvict()
         {
             var cache = Cache();
@@ -1071,7 +1071,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, PeekInt(cache, key));
         }
 
-        [Test]
+        //[Test]
         public void TestEvictAllKeys()
         {
             var cache = Cache();
@@ -1104,7 +1104,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, PeekInt(cache, keys[2]));
         }
 
-        [Test]
+        //[Test]
         public void TestClear()
         {
             for (int i = 0; i < GridCount(); i++)
@@ -1122,7 +1122,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsTrue(Cache(i).IsEmpty());
         }
 
-        [Test]
+        //[Test]
         public void TestClearKey()
         {
             var cache = Cache();
@@ -1146,7 +1146,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestClearKeys()
         {
             var cache = Cache();
@@ -1160,7 +1160,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
-        [Test]
+        //[Test]
         public void TestLocalClearKey()
         {
             var cache = Cache();
@@ -1186,7 +1186,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Clear();
         }
 
-        [Test]
+        //[Test]
         public void TestLocalClearKeys()
         {
             var cache = Cache();
@@ -1205,7 +1205,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Clear();
         }
 
-        [Test]
+        //[Test]
         public void TestRemove()
         {
             var cache = Cache();
@@ -1232,7 +1232,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAndRemoveAsync()
         {
             var cache = Cache().WrapAsync();
@@ -1259,7 +1259,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
-        [Test]
+        //[Test]
         public void TestRemovex()
         {
             var cache = Cache();
@@ -1276,7 +1276,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAsync()
         {
             var cache = Cache().WrapAsync();
@@ -1293,7 +1293,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAll()
         {
             var cache = Cache();
@@ -1313,7 +1313,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAllAsync()
         {
             var cache = Cache().WrapAsync();
@@ -1333,7 +1333,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAllKeys()
         {
             var cache = Cache();
@@ -1356,7 +1356,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(3));
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAllKeysAsync()
         {
             var cache = Cache().WrapAsync();
@@ -1379,7 +1379,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, cache.Get(3));
         }
 
-        [Test]
+        //[Test]
         public void TestSizes()
         {
             for (int i = 0; i < GridCount(); i++)
@@ -1409,7 +1409,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestLocalSize()
         {
             var cache = Cache();
@@ -1435,7 +1435,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test enumerators.
         /// </summary>
-        [Test]
+        //[Test]
         [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
         public void TestEnumerators()
         {
@@ -1526,7 +1526,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Throws<InvalidOperationException>(() => { var entry = e.Current; });
         }
 
-        [Test]
+        //[Test]
         public void TestPromote()
         {
             var cache = Cache();
@@ -1550,7 +1550,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, PeekInt(cache, key));
         }
 
-        [Test]
+        //[Test]
         public void TestPromoteAll()
         {
             var cache = Cache();
@@ -1582,7 +1582,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(3, PeekInt(cache, keys[2]));
         }
 
-        [Test]
+        //[Test]
         public void TestPutGetBinary()
         {
             var cache = Cache<int, BinarizablePerson>();
@@ -1597,7 +1597,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, obj1.Age);
         }
 
-        [Test]
+        //[Test]
         public void TestPutGetBinaryAsync()
         {
             var cache = Cache<int, BinarizablePerson>().WrapAsync();
@@ -1612,7 +1612,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, obj1.Age);
         }
 
-        [Test]
+        //[Test]
         public void TestPutGetBinaryKey()
         {
             var cache = Cache<CacheTestKey, string>();
@@ -1626,7 +1626,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual("val-" + i, cache.Get(new CacheTestKey(i)));
         }
 
-        [Test]
+        //[Test]
         public void TestGetAsync2()
         {
             var cache = Cache();
@@ -1648,7 +1648,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
@@ -1672,7 +1672,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, 10);
         }
 
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
@@ -1695,7 +1695,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, 5);
         }
 
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
@@ -1788,7 +1788,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
-        //[Test]
+        ////[Test]
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepBinary()
         {
@@ -1889,7 +1889,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
-        [Test]
+        //[Test]
         [Ignore("IGNITE-835")]
         public void TestLock()
         {
@@ -2016,13 +2016,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             task.Wait();
         }
 
-        [Test]
+        //[Test]
         public void TestTxCommit()
         {
             TestTxCommit(false);
         }
 
-        [Test]
+        //[Test]
         public void TestTxCommitAsync()
         {
             TestTxCommit(true);
@@ -2072,7 +2072,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNull(tx);
         }
 
-        [Test]
+        //[Test]
         public void TestTxRollback()
         {
             if (!TxEnabled())
@@ -2106,7 +2106,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNull(Transactions.Tx);
         }
 
-        [Test]
+        //[Test]
         public void TestTxClose()
         {
             if (!TxEnabled())
@@ -2144,7 +2144,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNull(tx);
         }
         
-        [Test]
+        //[Test]
         public void TestTxAllModes()
         {
             TestTxAllModes(false);
@@ -2201,7 +2201,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestTxAttributes()
         {
             if (!TxEnabled())
@@ -2276,7 +2276,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(startTime3, tx.StartTime);
         }
 
-        [Test]
+        //[Test]
         public void TestTxRollbackOnly()
         {
             if (!TxEnabled())
@@ -2328,7 +2328,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNull(tx);
         }
 
-        [Test]
+        //[Test]
         public void TestTxMetrics()
         {
             if (!TxEnabled())
@@ -2368,7 +2368,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.GreaterOrEqual(DateTime.UtcNow, metrics.RollbackTime);
         }
 
-        [Test]
+        //[Test]
         public void TestTxStateAndExceptions()
         {
             if (!TxEnabled())
@@ -2416,7 +2416,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test thraed-locals leak.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestThreadLocalLeak()
         {
@@ -2480,7 +2480,7 @@ namespace Apache.Ignite.Core.Tests.Cache
          * Test tries to provoke garbage collection for .Net future before it was completed to verify
          * futures pinning works.
          */
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
@@ -2504,7 +2504,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Thread.Sleep(2000);
         }
 
-        [Test]
+        //[Test]
         public void TestPartitions()
         {
             ICacheAffinity aff = Affinity();
@@ -2513,7 +2513,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(CachePartitions(), aff.Partitions);
         }
 
-        [Test]
+        //[Test]
         public void TestKeyPartition()
         {
             ICacheAffinity aff = Affinity();
@@ -2543,7 +2543,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestIsPrimaryOrBackup()
         {
             ICacheAffinity aff = Affinity();
@@ -2595,7 +2595,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestNodePartitions()
         {
             ICacheAffinity aff = Affinity();
@@ -2645,7 +2645,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestAffinityKey()
         {
             ICacheAffinity aff = Affinity();
@@ -2655,7 +2655,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual("string", aff.GetAffinityKey<string, string>("string"));
         }
 
-        [Test]
+        //[Test]
         public void TestMapToNode()
         {
             ICacheAffinity aff = Affinity();
@@ -2681,7 +2681,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(node, partNode);
         }
 
-        [Test]
+        //[Test]
         public void TestMapToPrimaryAndBackups()
         {
             ICacheAffinity aff = Affinity();
@@ -2707,7 +2707,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(nodes, partNodes);
         }
 
-        [Test]
+        //[Test]
         public void TestMapKeysToNodes()
         {
             ICacheAffinity aff = Affinity();
@@ -2732,7 +2732,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestMapPartitionsToNodes()
         {
             ICacheAffinity aff = Affinity();
@@ -2766,19 +2766,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestKeepBinaryFlag()
         {
             TestKeepBinaryFlag(false);
         }
 
-        [Test]
+        //[Test]
         public void TestKeepBinaryFlagAsync()
         {
             TestKeepBinaryFlag(true);
         }
 
-        [Test]
+        //[Test]
         public void TestNearKeys()
         {
             if (!NearEnabled())
@@ -2803,7 +2803,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreNotEqual(0, cache.Get(nearKey));
         }
         
-        [Test]
+        //[Test]
         public void TestSerializable()
         {
             var cache = Cache<int, TestSerializableObject>();
@@ -2817,7 +2817,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(obj, resultObj);
         }
 
-        [Test]
+        //[Test]
         public void TestSerializableKeepBinary()
         {
             var cache = Cache<int, TestSerializableObject>();
@@ -2833,13 +2833,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(obj, resultObj);
         }
 
-        [Test]
+        //[Test]
         public void TestInvoke()
         {
             TestInvoke(false);
         }
 
-        [Test]
+        //[Test]
         public void TestInvokeAsync()
         {
             TestInvoke(true);
@@ -2912,13 +2912,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        [Test]
+        //[Test]
         public void TestInvokeAll()
         {
             TestInvokeAll(false);
         }
 
-        [Test]
+        //[Test]
         public void TestInvokeAllAsync()
         {
             TestInvokeAll(true);
@@ -3006,7 +3006,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test skip-store semantics.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSkipStore()
         {
             var cache = (CacheImpl<int, int>) Cache();
@@ -3030,7 +3030,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
 
-        [Test]
+        //[Test]
         public void TestCacheMetrics()
         {
             var cache = Cache();
@@ -3044,7 +3044,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(cache.GetSize(), m.Size);
         }
 
-        [Test]
+        //[Test]
         public void TestRebalance()
         {
             var cache = Cache();
@@ -3054,7 +3054,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             
         }
 
-        [Test]
+        //[Test]
         public void TestCreate()
         {
             // Create a cache with random name
@@ -3079,7 +3079,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(10, cache0.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestGetOrCreate()
         {
             // Create a cache with random name
@@ -3103,7 +3103,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(10, cache1.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestDestroy()
         {
             var cacheName = "template" + Guid.NewGuid();
@@ -3126,7 +3126,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Throws<InvalidOperationException>(() => cache.Get(1));
         }
 
-        [Test]
+        //[Test]
         public void TestCacheNames()
         {
             var cacheNames = GetIgnite(0).GetCacheNames();
@@ -3140,7 +3140,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
 
-        [Test]
+        //[Test]
         public void TestIndexer()
         {
             var cache = Cache();

@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests lifecycle of the AtomicReference.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCreateClose()
         {
             Assert.IsNull(Grid.GetAtomicReference(AtomicRefName, 10, false));
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests modification methods.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestModify()
         {
             var atomics = Enumerable.Range(1, 10)
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests primitives in the atomic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPrimitives()
         {
             TestOperations(1, 2);
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests DateTime in the atomic.
         /// </summary>
-        [Test]
+        //[Test]
         [Ignore("IGNITE-2578")]
         public void TestDateTime()
         {
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests serializable objects in the atomic.
         /// </summary>
-        [Test]
+        //[Test]
         [Ignore("IGNITE-2578")]
         public void TestSerializable()
         {
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Tests binarizable objects in the atomic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBinarizable()
         {
             TestOperations(new BinaryObj {Foo = 16}, new BinaryObj {Foo = -5});

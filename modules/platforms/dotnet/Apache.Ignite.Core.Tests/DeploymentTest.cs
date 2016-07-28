@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the custom deployment where IGNITE_HOME can't be resolved, and there is a user-defined classpath.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCustomDeployment()
         {
             // Create temp folder

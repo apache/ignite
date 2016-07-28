@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Fixture setup.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             Ignition.StopAll(true);
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the default configuration properties.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDefaultConfigurationProperties()
         {
             CheckDefaultProperties(new IgniteConfiguration());
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the default value attributes.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDefaultValueAttributes()
         {
             CheckDefaultValueAttributes(new IgniteConfiguration());
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests all configuration properties.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAllConfigurationProperties()
         {
             var cfg = new IgniteConfiguration(GetCustomConfig());
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the spring XML.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSpringXml()
         {
             // When Spring XML is used, .NET overrides Spring.
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the client mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClientMode()
         {
             using (var ignite = Ignition.Start(new IgniteConfiguration
@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the default spi.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDefaultSpi()
         {
             var cfg = new IgniteConfiguration
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the invalid timeouts.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInvalidTimeouts()
         {
             var cfg = new IgniteConfiguration
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the static ip finder.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStaticIpFinder()
         {
             TestIpFinders(new TcpDiscoveryStaticIpFinder
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the multicast ip finder.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMulticastIpFinder()
         {
             TestIpFinders(

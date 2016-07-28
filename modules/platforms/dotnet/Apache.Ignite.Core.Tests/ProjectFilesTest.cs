@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests that tools version is compatible with VS2010.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCsprojToolsVersion()
         {
             var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories);
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests that tools version is compatible with VS2010.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSlnToolsVersion()
         {
             var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories);

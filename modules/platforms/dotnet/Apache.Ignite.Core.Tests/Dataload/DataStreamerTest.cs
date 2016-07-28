@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Initialization routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void InitClient()
         {
             _grid = Ignition.Start(GetIgniteConfiguration(GridName));
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void StopGrids()
         {
             Ignition.StopAll(true);
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test data streamer property configuration. Ensures that at least no exceptions are thrown.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPropertyPropagation()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test data add/remove.
         /// </summary>
-        [Test]        
+        //[Test]        
         public void TestAddRemove()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test "tryFlush".
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTryFlush()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test buffer size adjustments.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBufferSize()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test close.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClose()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test close with cancellation.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCancel()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests that streamer gets collected when there are no references to it.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFinalizer()
         {
             var streamer = _grid.GetDataStreamer<int, int>(CacheName);
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test auto-flush feature.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAutoFlush()
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test multithreaded behavior. 
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests custom receiver.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStreamReceiver()
         {
             TestStreamReceiver(new StreamReceiverBinarizable());
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests StreamVisitor.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStreamVisitor()
         {
             TestStreamReceiver(new StreamVisitor<int, int>((c, e) => c.Put(e.Key, e.Value + 1)));
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests StreamTransformer.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStreamTransformer()
         {
             TestStreamReceiver(new StreamTransformer<int, int, int, int>(new EntryProcessorSerializable()));
@@ -434,7 +434,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests the stream receiver in keepBinary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStreamReceiverKeepBinary()
         {
             // ReSharper disable once LocalVariableHidesMember

@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             _javaHomeBackup = Environment.GetEnvironmentVariable(EnvJavaHome);
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Environment.SetEnvironmentVariable(EnvJavaHome, _javaHomeBackup);
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the detection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDetection([Values(null, "c:\\invalid111")] string javaHome)
         {
             Environment.SetEnvironmentVariable(EnvJavaHome, javaHome);

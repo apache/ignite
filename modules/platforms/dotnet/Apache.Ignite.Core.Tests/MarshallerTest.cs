@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the default marhsaller.
         /// By default, binary marshaller is used.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDefaultMarhsaller()
         {
             using (var grid = Ignition.Start("config\\marshaller-default.xml"))
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the binary marhsaller.
         /// Marshaller can be specified explicitly in config.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExplicitMarhsaller()
         {
             using (var grid = Ignition.Start("config\\marshaller-explicit.xml"))
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the invalid marshaller.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInvalidMarshaller()
         {
             Assert.Throws<IgniteException>(() => Ignition.Start("config\\marshaller-invalid.xml"));

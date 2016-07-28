@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// 
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void StartGrids()
         {
             TestUtils.JvmDebug = true;
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// 
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public virtual void StopGrids()
         {
             for (int i = 0; i < GridCnt; i++)
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test arguments validation for SQL queries.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestValidationSql()
         {
             // 1. No sql.
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test arguments validation for SQL fields queries.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestValidationSqlFields()
         {
             // 1. No sql.
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test arguments validation for TEXT queries.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestValidationText()
         {
             // 1. No text.
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Cursor tests.
         /// </summary>
-        [Test]
+        //[Test]
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void TestCursor()
         {
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test enumerator.
         /// </summary>
-        [Test]
+        //[Test]
         [SuppressMessage("ReSharper", "UnusedVariable")]
         public void TestEnumerator()
         {
@@ -351,7 +351,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check SQL query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlQuery()
         {
             CheckSqlQuery(MaxItemCnt, false, false);
@@ -360,7 +360,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check SQL query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlQueryBinary()
         {
             CheckSqlQuery(MaxItemCnt, false, true);
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local SQL query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlQueryLocal()
         {
             CheckSqlQuery(MaxItemCnt, true, false);
@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local SQL query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlQueryLocalBinary()
         {
             CheckSqlQuery(MaxItemCnt, true, true);
@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check SQL fields query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlFieldsQuery()
         {
             CheckSqlFieldsQuery(MaxItemCnt, false);
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local SQL fields query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSqlFieldsQueryLocal()
         {
             CheckSqlFieldsQuery(MaxItemCnt, true);
@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check text query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTextQuery()
         {
             CheckTextQuery(MaxItemCnt, false, false);
@@ -479,7 +479,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check SQL query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTextQueryBinary()
         {
             CheckTextQuery(MaxItemCnt, false, true);
@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local SQL query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTextQueryLocal()
         {
             CheckTextQuery(MaxItemCnt, true, false);
@@ -497,7 +497,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local SQL query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTextQueryLocalBinary()
         {
             CheckTextQuery(MaxItemCnt, true, true);
@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQuery()
         {
             CheckScanQuery<QueryPerson>(MaxItemCnt, false, false);
@@ -535,7 +535,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQueryBinary()
         {
             CheckScanQuery<BinaryObject>(MaxItemCnt, false, true);
@@ -544,7 +544,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local scan query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQueryLocal()
         {
             CheckScanQuery<QueryPerson>(MaxItemCnt, true, false);
@@ -553,7 +553,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check local scan query in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQueryLocalBinary()
         {
             CheckScanQuery<BinaryObject>(MaxItemCnt, true, true);
@@ -562,7 +562,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query with partitions.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQueryPartitions([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<QueryPerson>(MaxItemCnt, loc, false);
@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query with partitions in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
@@ -580,7 +580,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIndexingDisabledError()
         {
             var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
