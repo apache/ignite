@@ -1062,7 +1062,7 @@ public class IgniteTxHandler {
                 });
             }
             else
-                sendReply(nodeId, req, false, nearTxId);
+                sendReply(nodeId, req, true, nearTxId);
         }
         else
             sendReply(nodeId, req, true, null);
@@ -1230,18 +1230,15 @@ public class IgniteTxHandler {
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
         if (req.replyRequired()) {
-            GridCacheReturn retVal = null;
-
-            if (committed)
-                retVal = ctx.tm().getCommittedTxReturn(req.version());
-
             GridDhtTxFinishResponse res =
-                new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId(), retVal);
+                new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
 
             if (req.checkCommitted()) {
                 res.checkCommitted(true);
 
-                if (!committed) {
+                if (committed)
+                    res.returnValue(ctx.tm().getCommittedTxReturn(req.version()));
+                else {
                     ClusterTopologyCheckedException cause =
                         new ClusterTopologyCheckedException("Primary node left grid.");
 
@@ -1251,7 +1248,7 @@ public class IgniteTxHandler {
             }
 
             try {
-                if (retVal != null)
+                if (res.returnValue() != null)
                     ctx.tm().removeTxReturn(req.version(), nodeId);
 
                 ctx.io().send(nodeId, res, req.policy());

@@ -67,13 +67,12 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, GridCacheReturn retVal) {
+    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
         super(xid, futId);
 
         assert miniId != null;
 
         this.miniId = miniId;
-        this.retVal = retVal;
     }
 
     /**
@@ -142,6 +141,13 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
             retVal.finishUnmarshal(cctx, ldr);
         }
+    }
+
+    /**
+     * @param retVal Return value.
+     */
+    public void returnValue(GridCacheReturn retVal) {
+        this.retVal = retVal;
     }
 
     /**
