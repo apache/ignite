@@ -100,7 +100,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         if (ctx.clientNode()) {
             lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt);
 
