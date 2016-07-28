@@ -25,12 +25,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Data pages IO.
@@ -672,6 +671,7 @@ public class DataPageIO extends PageIO {
     /**
      * @param coctx Cache object context.
      * @param buf Buffer.
+     * @param row Cache data row.
      * @param entrySizeWithItem Entry size as returned by {@link #getEntrySize(int, int)}.
      * @return Item ID.
      * @throws IgniteCheckedException If failed.
@@ -756,32 +756,26 @@ public class DataPageIO extends PageIO {
     /**
      * Writes next entry fragment.
      *
-     * @param buf Page buffer.
-     * @param ctx Cache object context.
-     * @param written Actual written entry bytes from the end.
-     * @param totalEntrySize Total entry size with overhead.
-     * @param chunkSize Fragment size.
-     * @param chunks Number of fragments.
-     * @param lastLink Last fragment link or 0 if it is the first one (from the entry end).
-     * @return Updated written bytes value and fragment index in the page.
+     * @param fctx Fragment context.
      * @throws IgniteCheckedException If failed.
      */
-    public FragmentWritten addRowFragment(
-        final CacheDataRow row,
-        @Nullable final ByteBuffer rowBuf,
-        final ByteBuffer buf,
-        final CacheObjectContext ctx,
-        int written,
-        final int totalEntrySize,
-        final int chunkSize,
-        final int chunks,
-        final long lastLink
-    ) throws IgniteCheckedException {
-        final boolean lastChunk = written == 0;
+    public void addRowFragment(final CacheEntryFragmentContext fctx) throws IgniteCheckedException {
+        final boolean lastChunk = fctx.written() == 0;
 
         final int toWrite;
         final int len;
         final int off;
+
+        final CacheDataRow row = fctx.dataRow();
+        final ByteBuffer rowBuf = fctx.rowBuffer();
+        final ByteBuffer buf = fctx.pageBuffer();
+        final CacheObjectContext ctx = fctx.cacheObjectContext();
+
+        final int chunks = fctx.chunks();
+        final int chunkSize = fctx.chunkSize();
+        final int totalEntrySize = fctx.totalEntrySize();
+        int written = fctx.written();
+        final long lastLink = fctx.lastLink();
 
         if (rowBuf == null) {
             final int dataSize = row.key().valueBytesLength(ctx) + row.value().valueBytesLength(ctx) + VER_SIZE;
@@ -828,7 +822,10 @@ public class DataPageIO extends PageIO {
 
         final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
 
-        return new FragmentWritten(written, idx, dataOff + KV_LEN_SIZE + LINK_SIZE, lastChunk);
+        fctx.written(written);
+        fctx.lastIndex(idx);
+        fctx.pageDataOffset(dataOff + KV_LEN_SIZE + LINK_SIZE);
+        fctx.lastFragment(lastChunk);
     }
 
     /**
@@ -1099,63 +1096,5 @@ public class DataPageIO extends PageIO {
         buf.putInt(ver.nodeOrderAndDrIdRaw());
         buf.putLong(ver.globalTime());
         buf.putLong(ver.order());
-    }
-
-    /**
-     *
-     */
-    public static class FragmentWritten {
-        /** Total written entry bytes from the entry end. */
-        private final int writtenBytes;
-
-        /** Last fragment index. */
-        private final int idx;
-
-        /** Data offset that points to fragment actual data without overhead. */
-        private final int dataOff;
-
-        /** Last fragment flag. */
-        private final boolean lastFragment;
-
-        /**
-         * @param writtenBytes Total written entry bytes from the entry end.
-         * @param idx Last fragment index.
-         * @param dataOff Data offset that points to fragment actual data without overhead.
-         * @param lastFragment Last fragment flag.
-         */
-        public FragmentWritten(final int writtenBytes, final int idx, final int dataOff, final boolean lastFragment) {
-            this.writtenBytes = writtenBytes;
-            this.idx = idx;
-            this.dataOff = dataOff;
-            this.lastFragment = lastFragment;
-        }
-
-        /**
-         * @return Total written entry bytes from the entry end.
-         */
-        public int writtenBytes() {
-            return writtenBytes;
-        }
-
-        /**
-         * @return Last fragment index.
-         */
-        public int writtenIndex() {
-            return idx;
-        }
-
-        /**
-         * @return Data offset that points to fragment actual data without overhead.
-         */
-        public int dataOffset() {
-            return dataOff;
-        }
-
-        /**
-         * @return {@code True} if it was a last fragment written.
-         */
-        public boolean lastFragment() {
-            return lastFragment;
-        }
     }
 }
