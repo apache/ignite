@@ -20,6 +20,9 @@
 #include <algorithm>
 #include <iterator>
 
+#include "ignite/common/common.h"
+#include "ignite/common/utils.h"
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/config/configuration.h"
 
@@ -161,7 +164,7 @@ namespace ignite
                 {
                     const std::string& val = it->second;
 
-                    if (!std::all_of(val.begin(), val.end(), isdigit))
+                    if (!common::AllOf(val.begin(), val.end(), isdigit))
                         IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
                             "Invalid argument value: Integer value is expected.", "key", key);
 

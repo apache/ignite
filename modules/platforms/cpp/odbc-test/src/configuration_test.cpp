@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
     CheckValidAddress("Address=example.com:31242;", 31242);
     CheckValidAddress("Address=example.com:55555;", 55555);
     CheckValidAddress("Address=example.com:110;", 110);
-    CheckValidAddress("Address=example.com;", Configuration::DefaultValue::uintPort);
+    CheckValidAddress("Address=example.com;", Configuration::DefaultValue::port);
 }
 
 BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
