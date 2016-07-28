@@ -72,6 +72,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -3542,6 +3543,39 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return marshaller.unmarshal(marshaller.marshal(obj), U.resolveClassLoader(ctx.config()));
             }
         });
+    }
+
+    /**
+     * Starts backup process.
+     * @param cacheNames Cache names. {@code Null} to save all caches.
+     * @return Backup future.
+     * @throws IgniteCheckedException If failed.
+     */
+    public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
+        long backupId = System.currentTimeMillis();
+
+        Collection<String> actualCacheNames = new HashSet<>();
+
+        if (cacheNames == null)
+            for (String cacheName : caches.keySet())
+                actualCacheNames.add(cacheName);
+        else {
+            actualCacheNames.addAll(cacheNames);
+            actualCacheNames.add(CU.ATOMICS_CACHE_NAME);
+            actualCacheNames.add(CU.MARSH_CACHE_NAME);
+            actualCacheNames.add(CU.SYS_CACHE_HADOOP_MR);
+            actualCacheNames.add(CU.UTILITY_CACHE_NAME);
+        }
+
+        BackupFuture backupFut = new BackupFuture(backupId, ctx.localNodeId(), actualCacheNames);
+
+        ctx.cache().context().database().submitBackupFuture(backupFut);
+
+        BackupMessage msg = new BackupMessage(backupId, actualCacheNames);
+
+        ctx.discovery().sendCustomEvent(msg);
+
+        return backupFut;
     }
 
     /**
