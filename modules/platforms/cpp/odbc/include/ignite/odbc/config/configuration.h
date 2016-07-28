@@ -160,10 +160,7 @@ namespace ignite
                  *
                  * @param port Server port.
                  */
-                void SetTcpPort(uint16_t port)
-                {
-                    this->port = port;
-                }
+                void SetTcpPort(uint16_t port);
 
                 /**
                  * Get DSN.
@@ -182,7 +179,7 @@ namespace ignite
                  */
                 void SetDsn(const std::string& dsn)
                 {
-                    this->dsn = dsn;
+                    arguments[Key::dsn] = dsn;
                 }
 
                 /**
@@ -208,11 +205,11 @@ namespace ignite
                 /**
                  * Set server host.
                  *
-                 * @param host Server host.
+                 * @param server Server host.
                  */
-                void SetHost(const std::string& host)
+                void SetHost(const std::string& server)
                 {
-                    this->host = host;
+                    arguments[Key::server] = server;
                 }
 
                 /**
@@ -232,7 +229,7 @@ namespace ignite
                  */
                 void SetCache(const std::string& cache)
                 {
-                    this->cache = cache;
+                    arguments[Key::cache] = cache;
                 }
 
                 /**
@@ -256,6 +253,16 @@ namespace ignite
                 }
 
                 /**
+                 * Set distributed joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetDistributedJoins(bool val)
+                {
+                    SetBoolValue(Key::distributedJoins, val);
+                }
+
+                /**
                  * Check enforce join order flag.
                  *
                  * @return True if enforcing of join order is enabled.
@@ -263,6 +270,26 @@ namespace ignite
                 bool IsEnforceJoinOrder() const
                 {
                     return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
+                }
+
+                /**
+                 * Set enforce joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetEnforceJoinOrder(bool val)
+                {
+                    SetBoolValue(Key::enforceJoinOrder, val);
+                }
+
+                /**
+                 * Get argument map.
+                 *
+                 * @return Argument map.
+                 */
+                const ArgumentMap& GetMap() const
+                {
+                    return arguments;
                 }
 
                 /**
@@ -291,6 +318,14 @@ namespace ignite
                  * @return Found or default value.
                  */
                 bool GetBoolValue(const std::string& key, bool dflt) const;
+
+                /**
+                 * Set bool value to the config.
+                 *
+                 * @param key Configuration key.
+                 * @param val Value to set.
+                 */
+                void SetBoolValue(const std::string& key, bool val);
 
             private:
                 /**

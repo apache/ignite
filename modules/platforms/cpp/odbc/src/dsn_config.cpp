@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <set>
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
@@ -49,29 +51,56 @@ namespace ignite
                 ThrowLastSetupError();
         }
 
-        std::string ReadDsnString(const char* dsn, const char* key, const char* dflt)
+        std::string ReadDsnString(const char* dsn, const std::string& key, const char* dflt)
         {
             char buf[BUFFER_SIZE];
 
             memset(buf, 0, sizeof(buf));
 
-            SQLGetPrivateProfileString(dsn, key, dflt, buf, sizeof(buf), CONFIG_FILE);
+            SQLGetPrivateProfileString(dsn, key.c_str(), dflt, buf, sizeof(buf), CONFIG_FILE);
 
             return std::string(buf);
         }
 
+        int ReadDsnInt(const char* dsn, const std::string& key, int dflt)
+        {
+            char buf[BUFFER_SIZE];
+
+            memset(buf, 0, sizeof(buf));
+
+            std::string dflt0 = common::LexicalCast<std::string>(dflt);
+
+            SQLGetPrivateProfileString(dsn, key.c_str(), dflt0.c_str(), buf, sizeof(buf), CONFIG_FILE);
+
+            return common::LexicalCast<int, std::string>(buf);
+        }
+
+        bool ReadDsnBool(const char* dsn, const std::string& key, bool dflt)
+        {
+            char buf[BUFFER_SIZE];
+
+            memset(buf, 0, sizeof(buf));
+
+            std::string dflt0 = dflt ? "true" : "false";
+
+            SQLGetPrivateProfileString(dsn, key.c_str(), dflt0.c_str(), buf, sizeof(buf), CONFIG_FILE);
+
+            return std::string(buf) == "true";
+        }
+
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
-            using namespace config;
-            using common::LexicalCast;
+            std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost().c_str());
+            uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
+            std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
+            bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
+            bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
 
-            std::string host = ReadDsnString(dsn, attrkey::host.c_str(), config.GetHost().c_str());
-            std::string port = ReadDsnString(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
-            std::string cache = ReadDsnString(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
-
-            config.SetHost(host);
-            config.SetTcpPort(LexicalCast<uint16_t>(port));
+            config.SetHost(server);
+            config.SetTcpPort(port);
             config.SetCache(cache);
+            config.SetDistributedJoins(distributedJoins);
+            config.SetEnforceJoinOrder(enforceJoinOrder);
         }
     }
 }

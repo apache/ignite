@@ -79,6 +79,8 @@ bool RegisterDsn(const Configuration& config, LPCSTR driver)
     using namespace ignite::odbc::config;
     using ignite::common::LexicalCast;
 
+    typedef Configuration::ArgumentMap ArgMap;
+
     const char* dsn = config.GetDsn().c_str();
 
     try
@@ -86,9 +88,23 @@ bool RegisterDsn(const Configuration& config, LPCSTR driver)
         if (!SQLWriteDSNToIni(dsn, driver))
             ignite::odbc::ThrowLastSetupError();
 
-        ignite::odbc::WriteDsnString(dsn, attrkey::host.c_str(), config.GetHost().c_str());
-        ignite::odbc::WriteDsnString(dsn, attrkey::port.c_str(), LexicalCast<std::string>(config.GetTcpPort()).c_str());
-        ignite::odbc::WriteDsnString(dsn, attrkey::cache.c_str(), config.GetCache().c_str());
+        const ArgMap& map = config.GetMap();
+
+        std::set<std::string> ignore;
+
+        ignore.insert(Configuration::Key::dsn);
+        ignore.insert(Configuration::Key::driver);
+
+        for (ArgMap::const_iterator it = map.begin(); it != map.end(); ++it)
+        {
+            const std::string& key = it->first;
+            const std::string& value = it->second;
+
+            if (ignore.find(key) != ignore.end())
+                continue;
+
+            ignite::odbc::WriteDsnString(dsn, key.c_str(), value.c_str());
+        }
 
         return true;
     }

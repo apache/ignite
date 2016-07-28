@@ -146,6 +146,11 @@ namespace ignite
                 }
             }
 
+            void Configuration::SetTcpPort(uint16_t port)
+            {
+                arguments[Key::port] = common::LexicalCast<std::string>(port);
+            }
+
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
             {
                 ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
@@ -190,6 +195,11 @@ namespace ignite
                 }
 
                 return dflt;
+            }
+
+            void Configuration::SetBoolValue(const std::string& key, bool val)
+            {
+                arguments[key] = val ? "true" : "false";
             }
 
             void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)

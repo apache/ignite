@@ -49,7 +49,7 @@ void CheckValidAddress(const char* connectStr, uint16_t port)
 
     BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
 
-    BOOST_CHECK_EQUAL(cfg.GetPort(), port);
+    BOOST_CHECK_EQUAL(cfg.GetTcpPort(), port);
 }
 
 void CheckValidBoolValue(const std::string& connectStr, const std::string& key, bool val)
@@ -74,7 +74,7 @@ void CheckConnectionConfig(const Configuration& cfg)
 {
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
-    BOOST_CHECK_EQUAL(cfg.GetPort(), testServerPort);
+    BOOST_CHECK_EQUAL(cfg.GetTcpPort(), testServerPort);
     BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
     BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
@@ -101,7 +101,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetCache(), Configuration::DefaultValue::cache);
     BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
-    BOOST_CHECK_EQUAL(cfg.GetPort(), Configuration::DefaultValue::port);
+    BOOST_CHECK_EQUAL(cfg.GetTcpPort(), Configuration::DefaultValue::port);
     BOOST_CHECK_EQUAL(cfg.IsDistributedJoins(), false);
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), false);
 }
