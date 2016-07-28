@@ -831,8 +831,6 @@ public class IgfsUtils {
         if (modes == null)
             return null;
 
-        modes = new ArrayList<>(modes); // modes collection may be immutable.
-
         // Sort by depth, shallow first.
         Collections.sort(modes, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
             @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {

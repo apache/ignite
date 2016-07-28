@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -40,8 +41,9 @@ public class IgfsModeResolverSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        reslvr = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(new T2<>(new IgfsPath("/a/b/c/d"), PROXY), new T2<>
-            (new IgfsPath("/a/P/"), PRIMARY), new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)));
+        reslvr = new IgfsModeResolver(DUAL_SYNC, new ArrayList<>(Arrays.asList(new T2<>(
+            new IgfsPath("/a/b/c/d"), PROXY), new T2<>(new IgfsPath("/a/P/"), PRIMARY), new T2<>(new IgfsPath("/a/b/"),
+            DUAL_ASYNC))));
     }
 
     /**

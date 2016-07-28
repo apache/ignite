@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class IgfsModeResolver {
      * @param dfltMode Default IGFS mode.
      * @param modes List of configured modes. The order is significant as modes are added in order of occurrence.
      */
-    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes)
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> modes)
             throws IgniteCheckedException {
         assert dfltMode != null;
 
@@ -103,11 +103,11 @@ public class IgfsModeResolver {
     }
 
     /**
-     * @return Unmodifiable copy of properly ordered modes prefixes
+     * @return Copy of properly ordered modes prefixes
      *  or {@code null} if no modes set.
      */
-    @Nullable public List<T2<IgfsPath, IgfsMode>> modesOrdered() {
-        return modes != null ? Collections.unmodifiableList(modes) : null;
+    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> modesOrdered() {
+        return modes != null ? new ArrayList<>(modes) : null;
     }
 
     /**
