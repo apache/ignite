@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -133,50 +134,25 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         try (Page metaPage = pageMem.metaPage(cacheId)) {
             final long metastoreRoot = metaPage.id();
 
-            final long[] rootIds = allocateMetas(pageMem, cacheId, true);
+            final int segments = Runtime.getRuntime().availableProcessors() * 2;
+
+            final long[] rootIds = allocateMetas(pageMem, cacheId, segments);
 
             return new Metas(rootIds, metastoreRoot, true);
         }
     }
 
     /**
-     * @param pageSize Page size.
-     * @param persistenceEnabled If persistence disabled no need to store ReuseList roots
-     *                           in meta page.
-     * @return Number of segments for ReuseList.
-     */
-    private int segments(final int pageSize, final boolean persistenceEnabled) {
-        final int maxMetas = (pageSize - 4) / 8 - 1; // -1 is meta root page.
-
-        final int segments = Runtime.getRuntime().availableProcessors() * 2;
-
-        if (segments > maxMetas && persistenceEnabled) {
-            log.warning("Cannot allocate all required meta pages that could lead to performance degradation. " +
-                "Try to set a bigger page size. [maxMetas=" + maxMetas +
-                ", segments=" + segments + ", pageSize=" + pageSize + "]");
-
-            assert maxMetas > 1:  "Must be at least 2 pages for reuse list";
-
-            return maxMetas;
-        }
-
-        return segments;
-    }
-
-    /**
      * @param pageMem Page memory.
      * @param cacheId Cache ID.
-     * @param persistenceEnabled If persistence disabled no need to store ReuseList roots
-     *                           in meta page.
      * @return Allocated metapages.
      * @throws IgniteCheckedException
      */
     protected long[] allocateMetas(
-        final PageMemory pageMem,
+        final PageIdAllocator pageMem,
         final int cacheId,
-        final boolean persistenceEnabled) throws IgniteCheckedException {
-        final int segments = segments(pageMem.pageSize(), persistenceEnabled);
-
+        int segments
+    ) throws IgniteCheckedException {
         final long[] rootIds = new long[segments];
 
         for (int i = 0; i < segments; i++)
