@@ -114,12 +114,6 @@ public class IgfsMetaManager extends IgfsManager {
         }
     };
 
-    /** Used for access and modification time for meta cache in dual modes. */
-    private static final long UNKNOWN_TIME = -1L;
-
-    /** Unknown file properties. */
-    private static final Map<String, String> UNKNOWN_PROPERTIES = null;
-
     /** IGFS configuration. */
     private FileSystemConfiguration cfg;
 
@@ -3057,9 +3051,9 @@ public class IgfsMetaManager extends IgfsManager {
                             if (secondaryCtx != null) {
                                 secondaryOut = secondaryCtx.create();
 
-                                newAccessTime = UNKNOWN_TIME;
-                                newModificationTime = UNKNOWN_TIME;
-                                newProps = UNKNOWN_PROPERTIES;
+                                newAccessTime = 0L;
+                                newModificationTime = 0L;
+                                newProps = null;
                             }
                             else {
                                 newAccessTime = System.currentTimeMillis();
@@ -3250,9 +3244,9 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-                accessTime = UNKNOWN_TIME;
-                modificationTime = UNKNOWN_TIME;
-                props = UNKNOWN_PROPERTIES;
+                accessTime = 0L;
+                modificationTime = 0L;
+                props = null;
             }
             else {
                 accessTime = curTime;
@@ -3280,9 +3274,9 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-                accessTime = UNKNOWN_TIME;
-                modificationTime = UNKNOWN_TIME;
-                props = UNKNOWN_PROPERTIES;
+                accessTime = 0L;
+                modificationTime = 0L;
+                props = null;
             }
             else {
                 accessTime = curTime;
@@ -3300,9 +3294,9 @@ public class IgfsMetaManager extends IgfsManager {
             int newBlockSize;
 
             if (secondaryCtx != null) {
-                newAccessTime = UNKNOWN_TIME;
-                newModificationTime = UNKNOWN_TIME;
-                newProps = UNKNOWN_PROPERTIES;
+                newAccessTime = 0L;
+                newModificationTime = 0L;
+                newProps = null;
             }
             else {
                 newAccessTime = curTime;

@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
@@ -76,6 +77,7 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
         suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
         suite.addTestSuite(CacheOperationsWithExpirationTest.class);
+        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
 
         return suite;
     }
