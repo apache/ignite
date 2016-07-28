@@ -49,6 +49,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     {
         String prop = System.getProperty("ignite.ttl.manager.wait.policy");
+        if (prop == null)
+            waitStgy = new ConditionWaitStrategy();
+        else
+
         switch (prop) {
             case "slp":
                 waitStgy = new SleepWaitStrategy();
