@@ -40,16 +40,20 @@ import java.util.concurrent.locks.Lock;
  */
 public class MarshallerWorkDirectory {
     /** */
+    private static final String fileExt = ".classname";
+
+    /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
     /**
      * Gets the type name from a file in the marshaller work directory.
      *
      * @param key Key.
+     * @param workDir Work dir.
      * @return Type name.
      * @throws IgniteCheckedException When the file is not found.
      */
-    public static String getTypeNameFromFile(Object key, File workDir, String fileExt) throws IgniteCheckedException {
+    public static String getTypeNameFromFile(Object key, File workDir) throws IgniteCheckedException {
         String fileName = key + fileExt;
 
         Lock lock = fileLock(fileName);
@@ -83,12 +87,10 @@ public class MarshallerWorkDirectory {
      * Writes the type name to a file in a marshaller work dir.
      * @param key Type key.
      * @param typeName Class name.
-     * @param fileExt File extension.
      * @param log Logger.
      * @param workDir Work directory.
      */
-    public static void writeTypeNameToFile(Object key, String typeName, String fileExt, IgniteLogger log,
-        File workDir) {
+    public static void writeTypeNameToFile(Object key, String typeName, IgniteLogger log, File workDir) {
         String fileName = key + fileExt;
 
         Lock lock = fileLock(fileName);

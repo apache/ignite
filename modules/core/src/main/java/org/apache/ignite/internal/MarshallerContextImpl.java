@@ -44,9 +44,6 @@ import java.util.concurrent.CountDownLatch;
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** */
-    private static final String fileExt = ".classname";
-
-    /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** */
@@ -88,8 +85,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         throws IgniteCheckedException {
         super(plugins);
 
-        assert fileExt != null;
-
         workDir = U.resolveWorkDirectory("marshaller", false);
 
         this.cacheName = cacheName;
@@ -102,7 +97,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         if (ctx.clientNode()) {
-            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt);
+            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
 
             ctx.continuous().registerStaticRoutine(
                 cacheName,
@@ -126,7 +121,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         if (cacheCtx.affinityNode()) {
             cacheCtx.continuousQueries().executeInternalQuery(
-                    new ContinuousQueryListener(log, workDir, fileExt),
+                    new ContinuousQueryListener(log, workDir),
                     null,
                     true,
                     true,
@@ -212,7 +207,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            clsName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir, fileExt);
+            clsName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
             registerClassName(id, clsName);
@@ -243,18 +238,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         /** */
         private final File workDir;
 
-        /** */
-        private final String fileExt;
-
         /**
          * @param log Logger.
          * @param workDir Work directory.
-         * @param fileExt File extension.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir, String fileExt) {
+        private ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
-            this.fileExt = fileExt;
         }
 
         /** {@inheritDoc} */
@@ -265,7 +255,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     "Received cache entry update for system marshaller cache: " + evt;
 
                 if (evt.getOldValue() == null)
-                    MarshallerWorkDirectory.writeTypeNameToFile(evt.getKey(), evt.getValue(), fileExt, log, workDir);
+                    MarshallerWorkDirectory.writeTypeNameToFile(evt.getKey(), evt.getValue(), log, workDir);
             }
         }
     }
