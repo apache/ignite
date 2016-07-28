@@ -34,6 +34,9 @@ namespace
     /** SQL state 01004 constant. */
     const std::string STATE_01004 = "01004";
 
+    /** SQL state 01S00 constant. */
+    const std::string STATE_01S00 = "01S00";
+
     /** SQL state 01S01 constant. */
     const std::string STATE_01S01 = "01S01";
 
@@ -189,6 +192,9 @@ namespace ignite
                 {
                     case SQL_STATE_01004_DATA_TRUNCATED:
                         return STATE_01004;
+
+                    case SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
+                        return STATE_01S00;
 
                     case SQL_STATE_01S01_ERROR_IN_ROW:
                         return STATE_01S01;

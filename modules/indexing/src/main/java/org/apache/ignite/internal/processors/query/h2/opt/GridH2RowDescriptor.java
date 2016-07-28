@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -31,9 +34,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
     /**
-     * @return Owner.
+     * Gets indexing.
+     *
+     * @return indexing.
      */
-    public IgniteH2Indexing owner();
+    public IgniteH2Indexing indexing();
+
+    /**
+     * Gets type descriptor.
+     *
+     * @return Type descriptor.
+     */
+    public GridQueryTypeDescriptor type();
+
+    /**
+     * Gets cache context for this row descriptor.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<?, ?> context();
+
+    /**
+     * @return Cache configuration.
+     */
+    public CacheConfiguration configuration();
 
     /**
      * Creates new row.

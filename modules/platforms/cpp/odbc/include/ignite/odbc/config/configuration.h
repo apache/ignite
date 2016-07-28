@@ -22,62 +22,88 @@
 #include <string>
 #include <map>
 
-#include <ignite/common/common.h>
-
-#ifdef SetPort
-#undef SetPort
-#endif
-
 namespace ignite
 {
     namespace odbc
     {
         namespace config
         {
-            /** Default values for configuration. */
-            namespace dflt
-            {
-                /** Default value for DSN attribute. */
-                const std::string dsn = "Default Apache Ignite DSN";
-
-                /** Default value for Driver attribute. */
-                const std::string driver = "Apache Ignite";
-
-                /** Default value for host attribute. */
-                const std::string host = "";
-
-                /** Default value for port attribute. */
-                const uint16_t port = 10800;
-
-                /** Default value for cache attribute. */
-                const std::string cache = "";
-            }
-
-            /** Connection attribute keywords. */
-            namespace attrkey
-            {
-                /** Connection attribute keyword for DSN attribute. */
-                const std::string dsn = "dsn";
-
-                /** Connection attribute keyword for Driver attribute. */
-                const std::string driver = "driver";
-
-                /** Connection attribute keyword for server host attribute. */
-                const std::string host = "server";
-
-                /** Connection attribute keyword for server port attribute. */
-                const std::string port = "port";
-
-                /** Connection attribute keyword for cache attribute. */
-                const std::string cache = "cache";
-            }
-
             /**
              * ODBC configuration abstraction.
              */
             class Configuration
             {
             public:
+                /** Map containing connect arguments. */
+                typedef std::map<std::string, std::string> ArgumentMap;
+
+                /** Connection attribute keywords. */
+                struct Key
+                {
+                    /** Connection attribute keyword for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Connection attribute keyword for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Connection attribute keyword for cache attribute. */
+                    static const std::string cache;
+
+                    /** Connection attribute keyword for address attribute. */
+                    static const std::string address;
+
+                    /** Connection attribute keyword for server attribute. */
+                    static const std::string server;
+
+                    /** Connection attribute keyword for port attribute. */
+                    static const std::string port;
+
+                    /** Connection attribute keyword for distributed joins attribute. */
+                    static const std::string distributedJoins;
+
+                    /** Connection attribute keyword for enforce join order attribute. */
+                    static const std::string enforceJoinOrder;
+                };
+
+                /** Default values for configuration. */
+                struct DefaultValue
+                {
+                    /** Default value for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Default value for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Default value for cache attribute. */
+                    static const std::string cache;
+
+                    /** Default value for address attribute. */
+                    static const std::string address;
+
+                    /** Default value for server attribute. */
+                    static const std::string server;
+
+                    /** Default value for port attribute. */
+                    static const uint16_t port;
+
+                    /** Default value for distributed joins attribute. */
+                    static const bool distributedJoins;
+
+                    /** Default value for enforce join order attribute. */
+                    static const bool enforceJoinOrder;
+                };
+
+                /**
+                 * Connection end point structure.
+                 */
+                struct EndPoint
+                {
+                    /** Remote host. */
+                    std::string host;
+
+                    /** TCP port. */
+                    uint16_t port;
+                };
 
                 /**
                  * Default constructor.
@@ -126,7 +152,7 @@ namespace ignite
                  */
                 uint16_t GetTcpPort() const
                 {
-                    return port;
+                    return endPoint.port;
                 }
 
                 /**
@@ -146,7 +172,7 @@ namespace ignite
                  */
                 const std::string& GetDsn() const
                 {
-                    return dsn;
+                    return GetStringValue(Key::dsn, DefaultValue::dsn);
                 }
 
                 /**
@@ -166,7 +192,7 @@ namespace ignite
                  */
                 const std::string& GetDriver() const
                 {
-                    return driver;
+                    return GetStringValue(Key::driver, DefaultValue::driver);
                 }
 
                 /**
@@ -176,7 +202,7 @@ namespace ignite
                  */
                 const std::string& GetHost() const
                 {
-                    return host;
+                    return endPoint.host;
                 }
 
                 /**
@@ -196,7 +222,7 @@ namespace ignite
                  */
                 const std::string& GetCache() const
                 {
-                    return cache;
+                    return GetStringValue(Key::cache, DefaultValue::cache);
                 }
 
                 /**
@@ -209,10 +235,64 @@ namespace ignite
                     this->cache = cache;
                 }
 
-            private:
-                /** Map containing connect arguments. */
-                typedef std::map<std::string, std::string> ArgumentMap;
+                /**
+                 * Get address.
+                 *
+                 * @return Address.
+                 */
+                const std::string& GetAddress() const
+                {
+                    return GetStringValue(Key::address, DefaultValue::address);
+                }
 
+                /**
+                 * Check distributed joins flag.
+                 *
+                 * @return True if distributed joins are enabled.
+                 */
+                bool IsDistributedJoins() const
+                {
+                    return GetBoolValue(Key::distributedJoins, DefaultValue::distributedJoins);
+                }
+
+                /**
+                 * Check enforce join order flag.
+                 *
+                 * @return True if enforcing of join order is enabled.
+                 */
+                bool IsEnforceJoinOrder() const
+                {
+                    return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
+                }
+
+                /**
+                 * Get string value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                const std::string& GetStringValue(const std::string& key, const std::string& dflt) const;
+
+                /**
+                 * Get int value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                int64_t GetIntValue(const std::string& key, int64_t dflt) const;
+
+                /**
+                 * Get bool value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                bool GetBoolValue(const std::string& key, bool dflt) const;
+
+            private:
                 /**
                  * Parse connect string into key-value storage.
                  *
@@ -222,20 +302,20 @@ namespace ignite
                  */
                 static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
 
-                /** Data Source Name. */
-                std::string dsn;
+                /**
+                 * Parse address and extract connection end-point.
+                 *
+                 * @throw IgniteException if address can not be parsed.
+                 * @param address Address string to parse.
+                 * @param res Result is placed here.
+                 */
+                static void ParseAddress(const std::string& address, EndPoint& res);
 
-                /** Driver name. */
-                std::string driver;
+                /** Arguments. */
+                ArgumentMap arguments;
 
-                /** Server hostname. */
-                std::string host;
-
-                /** Port of the server. */
-                uint16_t port;
-
-                /** Cache name. */
-                std::string cache;
+                /** Connection end-point. */
+                EndPoint endPoint;
             };
         }
 

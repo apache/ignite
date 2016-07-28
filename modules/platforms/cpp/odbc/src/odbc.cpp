@@ -282,14 +282,14 @@ namespace ignite
         if (!dsn.empty())
             odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
-        connection->Establish(config.GetHost(), config.GetTcpPort(), config.GetCache());
+        connection->Establish(config);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
-        std::string outConnectStr = config.ToConnectString();
+        std::string outConnectStr = connection->GetConfiguration().ToConnectString();
 
         size_t reslen = CopyStringToBuffer(outConnectStr,
             reinterpret_cast<char*>(outConnectionString),
@@ -312,7 +312,7 @@ namespace ignite
                          SQLSMALLINT    authLen)
     {
         using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
+        using ignite::odbc::config::Configuration;
         using ignite::utility::SqlStringToString;
 
         LOG_MSG("SQLConnect called\n");
@@ -328,7 +328,7 @@ namespace ignite
 
         odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
-        connection->Establish(config.GetHost(), config.GetTcpPort(), config.GetCache());
+        connection->Establish(config);
 
         return connection->GetDiagnosticRecords().GetReturnCode();
     }

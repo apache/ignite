@@ -35,10 +35,10 @@ import java.util.Collection;
  */
 public class OdbcMessageParser {
     /** Current ODBC communication protocol version. */
-    public static final long PROTO_VER = 1;
+    public static final long PROTO_VER = 2;
 
     /** Apache Ignite version when ODBC communication protocol version has been introduced. */
-    public static final String PROTO_VER_SINCE = "1.6.0";
+    public static final String PROTO_VER_SINCE = "1.7.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
@@ -91,6 +91,15 @@ public class OdbcMessageParser {
         OdbcRequest res;
 
         switch (cmd) {
+            case OdbcRequest.CONFIGURE: {
+                boolean distributedJoins = reader.readBoolean();
+                boolean enforceJoinOrder = reader.readBoolean();
+
+                res = new OdbcConfigureRequest(distributedJoins, enforceJoinOrder);
+
+                break;
+            }
+
             case OdbcRequest.EXECUTE_SQL_QUERY: {
                 String cache = reader.readString();
                 String sql = reader.readString();
@@ -174,6 +183,11 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
+        if (res0 == null) {
+            // The most simple case. Simple accept/error response.
+            // We don't need to add anything here.
+            return writer.array();
+        }
         if (res0 instanceof OdbcHandshakeResult) {
             OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
 

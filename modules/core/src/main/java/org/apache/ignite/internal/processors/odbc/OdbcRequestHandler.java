@@ -54,6 +54,12 @@ public class OdbcRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
+    /** Distributed joins flag. */
+    private boolean distributedJoins = false;
+
+    /** Enforce join order flag. */
+    private boolean enforceJoinOrder = false;
+
     /**
      * Constructor.
      *
@@ -85,6 +91,9 @@ public class OdbcRequestHandler {
                 case HANDSHAKE:
                     return performHandshake((OdbcHandshakeRequest) req);
 
+                case CONFIGURE:
+                    return confgure((OdbcConfigureRequest) req);
+
                 case EXECUTE_SQL_QUERY:
                     return executeQuery((OdbcQueryExecuteRequest) req);
 
@@ -106,6 +115,19 @@ public class OdbcRequestHandler {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * {@link OdbcConfigureRequest} command handler.
+     *
+     * @param req Configure request.
+     * @return Response.
+     */
+    private OdbcResponse confgure(OdbcConfigureRequest req) {
+        distributedJoins = req.isDistributedJoins();
+        enforceJoinOrder = req.isEnforceJoinOrder();
+
+        return new OdbcResponse(null);
     }
 
     /**
@@ -150,6 +172,9 @@ public class OdbcRequestHandler {
             SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
 
             qry.setArgs(req.arguments());
+
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
 
             IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 

@@ -39,9 +39,13 @@ namespace ignite
 {
     namespace odbc
     {
-        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.6.0";
+        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.7.0";
 
-        Connection::Connection() : socket(), connected(false), cache(), parser()
+        Connection::Connection() :
+            socket(),
+            connected(false),
+            parser(),
+            config()
         {
             // No-op.
         }
@@ -53,8 +57,8 @@ namespace ignite
         
         const config::ConnectionInfo& Connection::GetInfo() const
         {
-            // Connection info is the same for all connections now.
-            static config::ConnectionInfo info;
+            // Connection info is constant and the same for all connections now.
+            const static config::ConnectionInfo info;
 
             return info;
         }
@@ -76,13 +80,38 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
+        void Connection::Establish(const std::string& connectStr)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(host, port, cache));
+            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr));
         }
 
-        SqlResult Connection::InternalEstablish(const std::string & host, uint16_t port, const std::string & cache)
+        SqlResult Connection::InternalEstablish(const std::string& connectStr)
         {
+            config::Configuration config;
+
+            try
+            {
+                config.FillFromConnectString(connectStr);
+            }
+            catch (IgniteError& e)
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, e.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return InternalEstablish(config);
+        }
+
+        void Connection::Establish(const config::Configuration cfg)
+        {
+            IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
+        }
+
+        SqlResult Connection::InternalEstablish(const config::Configuration cfg)
+        {
+            config = cfg;
+
             if (connected)
             {
                 AddStatusRecord(SQL_STATE_08002_ALREADY_CONNECTED, "Already connected.");
@@ -90,9 +119,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            this->cache = cache;
-
-            connected = socket.Connect(host.c_str(), port);
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetPort());
 
             if (!connected)
             {
@@ -101,7 +128,12 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            return MakeRequestHandshake();
+            SqlResult res = MakeRequestHandshake();
+
+            if (res != SQL_RESULT_SUCCESS)
+                return res;
+
+            return MakeRequestConfigure();
         }
 
         void Connection::Release()
@@ -243,11 +275,16 @@ namespace ignite
 
         const std::string& Connection::GetCache() const
         {
-            return cache;
+            return config.GetCache();
+        }
+
+        const config::Configuration& Connection::GetConfiguration() const
+        {
+            return config;
         }
 
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
-            const std::string& message, int32_t rowNum, int32_t columnNum) const
+            const std::string& message, int32_t rowNum, int32_t columnNum)
         {
             return diagnostic::DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
         }
@@ -314,6 +351,51 @@ namespace ignite
                     << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
+
+                InternalRelease();
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        SqlResult Connection::MakeRequestConfigure()
+        {
+            bool distributedJoins = false;
+            bool enforceJoinOrder = false;
+
+            try
+            {
+                distributedJoins = config.IsDistributedJoins();
+                enforceJoinOrder = config.IsEnforceJoinOrder();
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            ConfigureRequest req(distributedJoins, enforceJoinOrder);
+            Response rsp;
+
+            try
+            {
+                SyncMessage(req, rsp);
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
 
                 InternalRelease();
 

@@ -46,7 +46,9 @@ namespace ignite
 
             REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 6
+            REQUEST_TYPE_GET_TABLES_METADATA = 6,
+
+            REQUEST_TYPE_CONFIGURE = 7
         };
 
         enum ResponseStatus
@@ -67,7 +69,8 @@ namespace ignite
              *
              * @param version Protocol version.
              */
-            HandshakeRequest(int64_t version) : version(version)
+            HandshakeRequest(int64_t version) :
+                version(version)
             {
                 // No-op.
             }
@@ -94,6 +97,53 @@ namespace ignite
         private:
             /** Protocol version. */
             int64_t version;
+        };
+
+        /**
+         * Configure request.
+         */
+        class ConfigureRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param distributedJoins Distributed joins flag.
+             * @param enforceJoinOrder Enforce join order flag.
+             */
+            ConfigureRequest(bool distributedJoins, bool enforceJoinOrder) :
+                distributedJoins(distributedJoins),
+                enforceJoinOrder(enforceJoinOrder)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~ConfigureRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_CONFIGURE);
+
+                writer.WriteBool(distributedJoins);
+                writer.WriteBool(enforceJoinOrder);
+            }
+
+        private:
+            /** Distributed joins flag. */
+            bool distributedJoins;
+
+            /** Enforce join order flag. */
+            bool enforceJoinOrder;
         };
 
         /**
@@ -152,6 +202,7 @@ namespace ignite
             /** Parameters bindings. */
             const app::ParameterBindingMap& params;
         };
+
 
         /**
          * Query close request.
@@ -348,13 +399,13 @@ namespace ignite
         /**
          * Query close response.
          */
-        class QueryResponse
+        class Response
         {
         public:
             /**
              * Constructor.
              */
-            QueryResponse() : status(RESPONSE_STATUS_FAILED), error()
+            Response() : status(RESPONSE_STATUS_FAILED), error()
             {
                 // No-op.
             }
@@ -362,7 +413,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            ~QueryResponse()
+            virtual ~Response()
             {
                 // No-op.
             }
@@ -426,7 +477,7 @@ namespace ignite
         /**
          * Handshake response.
          */
-        class HandshakeResponse : public QueryResponse
+        class HandshakeResponse : public Response
         {
         public:
             /**
@@ -504,7 +555,7 @@ namespace ignite
         /**
          * Query close response.
          */
-        class QueryCloseResponse : public QueryResponse
+        class QueryCloseResponse : public Response
         {
         public:
             /**
@@ -549,7 +600,7 @@ namespace ignite
         /**
          * Query execute response.
          */
-        class QueryExecuteResponse : public QueryResponse
+        class QueryExecuteResponse : public Response
         {
         public:
             /**
@@ -608,7 +659,7 @@ namespace ignite
         /**
          * Query fetch response.
          */
-        class QueryFetchResponse : public QueryResponse
+        class QueryFetchResponse : public Response
         {
         public:
             /**
@@ -659,7 +710,7 @@ namespace ignite
         /**
          * Query get column metadata response.
          */
-        class QueryGetColumnsMetaResponse : public QueryResponse
+        class QueryGetColumnsMetaResponse : public Response
         {
         public:
             /**
@@ -704,7 +755,7 @@ namespace ignite
         /**
          * Query get table metadata response.
          */
-        class QueryGetTablesMetaResponse : public QueryResponse
+        class QueryGetTablesMetaResponse : public Response
         {
         public:
             /**
