@@ -80,47 +80,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         if (valBytes == null)
             valueBytes(ctx);
 
-        int dataLen = valBytes.length;
-
-        if (buf.remaining() < len)
-            return false;
-
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
-            buf.putInt(dataLen);
-            buf.put(cacheObjectType());
-
-            len -= headSize;
-        }
-        else if (off >= headSize)
-            off -= headSize;
-        else {
-            // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
-
-            head.order(buf.order());
-
-            head.putInt(dataLen);
-            head.put(cacheObjectType());
-
-            head.position(off);
-
-            if (len < head.capacity())
-                head.limit(head.position() + head.capacity() - len);
-
-            buf.put(head);
-
-            if (head.hasRemaining())
-                return true;
-
-            off -= headSize;
-            len -= head.capacity() - off;
-        }
-
-        buf.put(valBytes, off, len);
-
-        return true;
+        return putValue(this, buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */
@@ -183,5 +143,60 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** {@inheritDoc} */
     public String toString() {
         return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+    }
+
+    /**
+     * @param obj Cache object.
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @param valBytes Binary data.
+     * @param start Start offset in binary data.
+     * @return {@code True} if data were successfully written.
+     * @throws IgniteCheckedException
+     */
+    public static boolean putValue(final CacheObject obj, final ByteBuffer buf, int off, int len,
+        byte[] valBytes, final int start) throws IgniteCheckedException {
+        int dataLen = valBytes.length;
+
+        if (buf.remaining() < len)
+            return false;
+
+        final int headSize = 5; // 4 bytes len + 1 byte type
+
+        if (off == 0 && len >= headSize) {
+            buf.putInt(dataLen);
+            buf.put(obj.cacheObjectType());
+
+            len -= headSize;
+        }
+        else if (off >= headSize)
+            off -= headSize;
+        else {
+            // Partial header write.
+            final ByteBuffer head = ByteBuffer.allocate(headSize);
+
+            head.order(buf.order());
+
+            head.putInt(dataLen);
+            head.put(obj.cacheObjectType());
+
+            head.position(off);
+
+            if (len < head.capacity())
+                head.limit(head.position() + head.capacity() - len);
+
+            buf.put(head);
+
+            if (head.hasRemaining())
+                return true;
+
+            off -= headSize;
+            len -= head.capacity() - off;
+        }
+
+        buf.put(valBytes, start + off, len);
+
+        return true;
     }
 }
