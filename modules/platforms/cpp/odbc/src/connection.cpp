@@ -309,7 +309,22 @@ namespace ignite
 
         SqlResult Connection::MakeRequestHandshake()
         {
-            HandshakeRequest req(PROTOCOL_VERSION);
+            bool distributedJoins = false;
+            bool enforceJoinOrder = false;
+
+            try
+            {
+                distributedJoins = config.IsDistributedJoins();
+                enforceJoinOrder = config.IsEnforceJoinOrder();
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            HandshakeRequest req(PROTOCOL_VERSION, distributedJoins, enforceJoinOrder);
             HandshakeResponse rsp;
 
             try

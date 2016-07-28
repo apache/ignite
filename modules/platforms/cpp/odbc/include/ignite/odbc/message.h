@@ -67,7 +67,10 @@ namespace ignite
              *
              * @param version Protocol version.
              */
-            HandshakeRequest(int64_t version) : version(version)
+            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder) :
+                version(version),
+                distributedJoins(distributedJoins),
+                enforceJoinOrder(enforceJoinOrder)
             {
                 // No-op.
             }
@@ -89,11 +92,20 @@ namespace ignite
                 writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
 
                 writer.WriteInt64(version);
+
+                writer.WriteBool(distributedJoins);
+                writer.WriteBool(enforceJoinOrder);
             }
 
         private:
             /** Protocol version. */
             int64_t version;
+
+            /** Distributed joins flag. */
+            bool distributedJoins;
+
+            /** Enforce join order flag. */
+            bool enforceJoinOrder;
         };
 
         /**
