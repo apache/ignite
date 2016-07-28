@@ -396,15 +396,21 @@ namespace Apache.Ignite.Core.Tests
 
             senders.Wait(); // wait for senders to stop
 
-            var sharedResult = MessagingTestHelper.ReceivedMessages.Count;
+            var sharedResult = MessagingTestHelper.ReceivedMessages.ToArray();
 
             messaging.Send(NextMessage());
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             // Check that unsubscription worked properly
-            Assert.AreEqual(sharedResult, MessagingTestHelper.ReceivedMessages.Count);
-            
+            var sharedResult2 = MessagingTestHelper.ReceivedMessages.ToArray();
+
+            if (sharedResult.Length != sharedResult2.Length)
+            {
+                var extraMsgs = sharedResult2.Except(sharedResult).ToArray();
+                Assert.Fail("Unexpected messages ({0}): {1}", extraMsgs.Length, string.Join(",", extraMsgs));
+            }
+
         }
 
         /// <summary>
