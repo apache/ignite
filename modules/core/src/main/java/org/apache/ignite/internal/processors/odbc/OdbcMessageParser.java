@@ -35,10 +35,10 @@ import java.util.Collection;
  */
 public class OdbcMessageParser {
     /** Current ODBC communication protocol version. */
-    public static final long PROTO_VER = 1;
+    public static final long PROTO_VER = 2;
 
     /** Apache Ignite version when ODBC communication protocol version has been introduced. */
-    public static final String PROTO_VER_SINCE = "1.6.0";
+    public static final String PROTO_VER_SINCE = "1.7.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;

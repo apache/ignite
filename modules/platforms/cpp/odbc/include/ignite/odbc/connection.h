@@ -263,6 +263,13 @@ namespace ignite
             SqlResult MakeRequestHandshake();
 
             /**
+             * Perform configure request.
+             *
+             * @return Operation result.
+             */
+            SqlResult MakeRequestConfigure();
+
+            /**
              * Constructor.
              */
             Connection();
