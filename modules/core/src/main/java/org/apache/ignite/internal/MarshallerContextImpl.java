@@ -65,7 +65,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private int failedCnt;
 
     /** */
-    private ContinuousQueryListener lsnr;
+    private MarshallerCacheListener lsnr = new MarshallerCacheListener();
 
     /**
      * @param plugins Plugins.
@@ -96,55 +96,22 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        if (ctx.clientNode()) {
-            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
-
-            ctx.continuous().registerStaticRoutine(
-                cacheName,
-                lsnr,
-                null,
-                null);
-        }
+        // TODO: Refactor MarchCacheListener to hold some state
+        lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
     /**
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         log = ctx.log(MarshallerContextImpl.class);
 
         cache = ctx.cache().internalCache(cacheName);
-        final GridCacheContext<Object, String> cacheCtx = cache.context();
 
-        if (cacheCtx.affinityNode()) {
-            cacheCtx.continuousQueries().executeInternalQuery(
-                    new ContinuousQueryListener(log, workDir),
-                    null,
-                    true,
-                    true,
-                    false
-            );
-        }
-        else {
-            if (lsnr != null) {
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @SuppressWarnings("unchecked")
-                    @Override public void run() {
-                        try {
-                            Iterable entries = cacheCtx.continuousQueries().existingEntries(false, null);
-
-                            lsnr.onUpdated(entries);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
-                        }
-                    }
-                });
-            }
-        }
+        lsnr.onMarshallerCacheStarted(ctx, cache, log, workDir);
 
         latch.countDown();
     }
@@ -227,37 +194,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             return new TypeIdKey(keyPrefix, id);
 
         return id;
-    }
-
-    /**
-     */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Object, String> {
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private final File workDir;
-
-        /**
-         * @param log Logger.
-         * @param workDir Work directory.
-         */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
-            this.log = log;
-            this.workDir = workDir;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ? extends String>> evts)
-            throws CacheEntryListenerException {
-            for (CacheEntryEvent<?, ? extends String> evt : evts) {
-                assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
-                    "Received cache entry update for system marshaller cache: " + evt;
-
-                if (evt.getOldValue() == null)
-                    MarshallerWorkDirectory.writeTypeNameToFile(evt.getKey(), evt.getValue(), log, workDir);
-            }
-        }
     }
 
     /**
