@@ -40,6 +40,15 @@ namespace
     const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
 
+void CheckValidAddress(const char* connectStr, uint16_t port)
+{
+    Configuration cfg;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+
+    BOOST_CHECK_EQUAL(cfg.GetPort(), port);
+}
+
 void CheckConnectionConfig(const Configuration& cfg)
 {
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
@@ -183,11 +192,11 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
 {
     Configuration cfg;
 
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:1;"));
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:31242;"));
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:55555;"));
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com:110;"));
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString("Address=example.com;"));
+    CheckValidAddress("Address=example.com:1;", 1);
+    CheckValidAddress("Address=example.com:31242;", 31242);
+    CheckValidAddress("Address=example.com:55555;", 55555);
+    CheckValidAddress("Address=example.com:110;", 110);
+    CheckValidAddress("Address=example.com;", Configuration::DefaultValue::uintPort);
 }
 
 BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)

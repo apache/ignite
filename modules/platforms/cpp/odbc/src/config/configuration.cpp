@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-#include <cstddef>
-#include <cstring>
-
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -238,7 +235,7 @@ namespace ignite
 
             void Configuration::ParseAddress(const std::string& address, EndPoint& res)
             {
-                ptrdiff_t colonNum = std::count(address.begin(), address.end(), ':');
+                int64_t colonNum = std::count(address.begin(), address.end(), ':');
 
                 if (colonNum == 0)
                 {
@@ -257,7 +254,7 @@ namespace ignite
 
                     std::string port = address.substr(pos + 1);
 
-                    if (!std::all_of(port.begin(), port.end(), isdigit))
+                    if (!common::AllOf(port.begin(), port.end(), isdigit))
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Invalid address format: port can only contain digits");
 
