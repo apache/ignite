@@ -39,6 +39,9 @@ public class OdbcRequest {
     /** Get columns meta query. */
     public static final int GET_TABLES_META = 6;
 
+    /** Configure. */
+    public static final int CONFIGURE = 7;
+
     /** Command. */
     private final int cmd;
 

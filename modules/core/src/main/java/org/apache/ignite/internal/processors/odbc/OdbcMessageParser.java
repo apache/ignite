@@ -91,6 +91,15 @@ public class OdbcMessageParser {
         OdbcRequest res;
 
         switch (cmd) {
+            case OdbcRequest.CONFIGURE: {
+                boolean distributedJoins = reader.readBoolean();
+                boolean enforceJoinOrder = reader.readBoolean();
+
+                res = new OdbcConfigureRequest(distributedJoins, enforceJoinOrder);
+
+                break;
+            }
+
             case OdbcRequest.EXECUTE_SQL_QUERY: {
                 String cache = reader.readString();
                 String sql = reader.readString();
@@ -174,6 +183,11 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
+        if (res0 == null) {
+            // The most simple case. Simple accept/error response.
+            // We don't need to add anything here.
+            return writer.array();
+        }
         if (res0 instanceof OdbcHandshakeResult) {
             OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
 
