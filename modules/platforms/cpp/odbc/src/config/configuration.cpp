@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-#include <cstddef>
-#include <cstring>
-
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -197,7 +194,7 @@ namespace ignite
 
             void Configuration::ParseAddress(const std::string& address, EndPoint& res)
             {
-                ptrdiff_t colonNum = std::count(address.begin(), address.end(), ':');
+                int64_t colonNum = std::count(address.begin(), address.end(), ':');
 
                 if (colonNum == 0)
                 {
