@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test multithreaded behavior. 
         /// </summary>
         [Test]
-        [Category(TestUtils.CategoryIntensive)]
+        //[Category(TestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
             int entriesPerThread = 100000;

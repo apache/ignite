@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests class.
     /// </summary>
-    [Category(TestUtils.CategoryIntensive)]
+    //[Category(TestUtils.CategoryIntensive)]
     public class ComputeMultithreadedTest : AbstractTaskTest
     {
         /** */

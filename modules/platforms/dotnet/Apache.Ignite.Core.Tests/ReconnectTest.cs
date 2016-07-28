@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Client reconnect tests.
     /// </summary>
-    [Category(TestUtils.CategoryIntensive)]
+    //[Category(TestUtils.CategoryIntensive)]
     public class ReconnectTest
     {
         /// <summary>

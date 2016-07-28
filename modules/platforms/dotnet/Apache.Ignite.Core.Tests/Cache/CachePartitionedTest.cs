@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using NUnit.Framework;
 
-    [Category(TestUtils.CategoryIntensive)]
+    //[Category(TestUtils.CategoryIntensive)]
     public class CachePartitionedTest : CacheAbstractTest
     {
         protected override int GridCount()
