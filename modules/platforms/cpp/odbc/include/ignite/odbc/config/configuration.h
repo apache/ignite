@@ -243,6 +243,16 @@ namespace ignite
                 }
 
                 /**
+                 * Set address.
+                 *
+                 * @param address Address.
+                 */
+                void SetAddress(const std::string& address)
+                {
+                    arguments[Key::address] = address;
+                }
+
+                /**
                  * Check distributed joins flag.
                  *
                  * @return True if distributed joins are enabled.

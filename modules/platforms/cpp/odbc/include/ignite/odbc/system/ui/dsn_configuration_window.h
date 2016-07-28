@@ -42,10 +42,8 @@ namespace ignite
                         ID_CONNECTION_SETTINGS_GROUP_BOX,
                         ID_NAME_EDIT,
                         ID_NAME_LABEL,
-                        ID_SERVER_EDIT,
-                        ID_SERVER_LABEL,
-                        ID_PORT_EDIT,
-                        ID_PORT_LABEL,
+                        ID_ADDRESS_EDIT,
+                        ID_ADDRESS_LABEL,
                         ID_CACHE_EDIT,
                         ID_CACHE_LABEL,
                         ID_DISTRIBUTED_JOINS_COMBO_BOX,
@@ -108,17 +106,11 @@ namespace ignite
                     /** DSN name edit field. */
                     std::auto_ptr<Window> nameEdit;
 
-                    /** DSN server edit field label. */
-                    std::auto_ptr<Window> serverLabel;
+                    /** DSN address edit field label. */
+                    std::auto_ptr<Window> addressLabel;
 
-                    /** DSN server edit field. */
-                    std::auto_ptr<Window> serverEdit;
-
-                    /** DSN server port edit field label. */
-                    std::auto_ptr<Window> portLabel;
-
-                    /** DSN server port edit field. */
-                    std::auto_ptr<Window> portEdit;
+                    /** DSN address edit field. */
+                    std::auto_ptr<Window> addressEdit;
 
                     /** DSN cache edit field label. */
                     std::auto_ptr<Window> cacheLabel;

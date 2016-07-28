@@ -90,12 +90,14 @@ namespace ignite
 
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
+            std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress().c_str());
             std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost().c_str());
             uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
             std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
             bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
             bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
 
+            config.SetAddress(address);
             config.SetHost(server);
             config.SetTcpPort(port);
             config.SetCache(cache);

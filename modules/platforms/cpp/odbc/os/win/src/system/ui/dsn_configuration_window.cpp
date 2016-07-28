@@ -30,13 +30,11 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(340),
-                    height(220),
+                    height(200),
                     nameLabel(),
                     nameEdit(),
-                    serverLabel(),
-                    serverEdit(),
-                    portLabel(),
-                    portEdit(),
+                    addressLabel(),
+                    addressEdit(),
                     cacheLabel(),
                     cacheEdit(),
                     okButton(),
@@ -100,19 +98,9 @@ namespace ignite
 
                     rowPos += interval + rowSize;
 
-                    val = config.GetHost().c_str();
-                    serverLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Server:", ID_SERVER_LABEL);
-                    serverEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_SERVER_EDIT);
-
-                    rowPos += interval + rowSize;
-
-                    std::stringstream buf;
-                    buf << config.GetTcpPort();
-                    std::string strPort = buf.str();
-
-                    val = strPort.c_str();
-                    portLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Port:", ID_PORT_LABEL);
-                    portEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_PORT_EDIT, ES_NUMBER);
+                    val = config.GetAddress().c_str();
+                    addressLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Address:", ID_ADDRESS_LABEL);
+                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_ADDRESS_EDIT);
 
                     rowPos += interval + rowSize;
 
@@ -214,16 +202,14 @@ namespace ignite
                 void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
                 {
                     std::string dsn;
-                    std::string server;
-                    std::string port;
+                    std::string address;
                     std::string cache;
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
 
                     nameEdit->GetText(dsn);
-                    serverEdit->GetText(server);
-                    portEdit->GetText(port);
+                    addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
 
                     distributedJoins = distributedJoinsComboBox->IsChecked();
@@ -231,8 +217,7 @@ namespace ignite
 
                     LOG_MSG("Retriving arguments:\n");
                     LOG_MSG("DSN:                %s\n", dsn.c_str());
-                    LOG_MSG("Server:             %s\n", server.c_str());
-                    LOG_MSG("Port:               %s\n", port.c_str());
+                    LOG_MSG("Address:            %s\n", address.c_str());
                     LOG_MSG("Cache:              %s\n", cache.c_str());
                     LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
                     LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
@@ -240,14 +225,8 @@ namespace ignite
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
 
-                    int32_t numPort = common::LexicalCast<int32_t>(port);
-
-                    if (port.size() > (sizeof("65535") - 1) || numPort <= 0 || numPort >= INT16_MAX)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Port value should be in range from 1 to 65534.");
-
                     cfg.SetDsn(dsn);
-                    cfg.SetHost(server);
-                    cfg.SetTcpPort(numPort);
+                    cfg.SetAddress(address);
                     cfg.SetCache(cache);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
