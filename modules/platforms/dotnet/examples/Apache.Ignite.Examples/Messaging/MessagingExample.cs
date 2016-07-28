@@ -28,7 +28,7 @@ namespace Apache.Ignite.Examples.Messaging
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder;
     /// 2) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 3) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 4) Start example (F5 or Ctrl+F5).
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Examples.Messaging
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 var remotes = ignite.GetCluster().ForRemotes();
 
