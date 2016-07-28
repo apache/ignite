@@ -1,6 +1,23 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.7
+---------------------------------------
+Ignite .NET:
+* Added NuGet distribution.
+* Fixed a bug in IBinaryObjectBuilder causing type name to be lost.
+
+Ignite C++:
+* Fixed string deserialization performance issue.
+
+Ignite:
+* DR: Fixed a bug causing retention of unused file store data.
+* Fixed CountDownLatch recreation.
+* Node can be assigned as primary only after preloading is finished.
+* ODBC: Added decimal type support.
+* Supported distributed SQL JOIN.
+* Visor: Fixed data nodes calculation when node filter is set for cache.
+
 Apache Ignite In-Memory Data Fabric 1.6
 ---------------------------------------
 Ignite .NET:

@@ -15,13 +15,28 @@
  * limitations under the License.
  */
 
-/*
- * This software includes code from IntelliJ IDEA Community Edition
- * Copyright (C) JetBrains s.r.o.
- * https://www.jetbrains.com/idea/
- */
+package org.apache.ignite;
 
-/**
- * {@code Nullable} and {@code NotNull} annotations.
- */
-package org.jetbrains.annotations;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.springframework.context.ApplicationContext;
+
+import static org.junit.Assert.assertNotNull;
+
+/** Lifecycle bean for testing. */
+public class TestInjectionLifecycleBean implements LifecycleBean {
+    /** */
+    @SpringApplicationContextResource
+    private ApplicationContext appCtx;
+
+    /** Checks that context was injected. */
+    public void checkState() {
+        assertNotNull(appCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onLifecycleEvent(LifecycleEventType evt) {
+        checkState();
+    }
+}
