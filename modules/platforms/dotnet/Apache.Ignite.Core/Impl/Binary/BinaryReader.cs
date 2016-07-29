@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
@@ -744,6 +745,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 // Get schema from Java
                 var ignite = Marshaller.Ignite;
+
+                Debug.Assert(typeId != BinaryUtils.TypeUnregistered);
 
                 var schema = ignite == null ? null : ignite.ClusterGroup.GetSchema(typeId, _frame.Hdr.SchemaId);
 

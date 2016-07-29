@@ -249,13 +249,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (fieldIds == null)
             {
+                Debug.Assert(hdr.TypeId != BinaryUtils.TypeUnregistered);
+
                 if (marsh.Ignite != null)
                     fieldIds = marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
-
-                // TODO: What do we do when hdr.TypeId is 0?
-                // Need to test this scenario!
-                // Same thing in BinaryReader.readSchema
-
                 if (fieldIds == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
                                                     "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
