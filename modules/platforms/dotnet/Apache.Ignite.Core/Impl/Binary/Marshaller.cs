@@ -480,12 +480,26 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 
-            // TODO: What about conflicting types?
-            _idToDesc.GetOrAdd(typeKey, x => desc);
-            _typeNameToDesc.GetOrAdd(typeName, x => desc);
+            var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
+            if (desc0.Type != type)
+                ThrowConflictingTypeError(type, desc0.Type, typeId);
+
+            desc0 = _typeNameToDesc.GetOrAdd(typeName, x => desc);
+            if (desc0.Type != type)
+                ThrowConflictingTypeError(type, desc0.Type, typeId);
+
             _typeToDesc.GetOrAdd(type, x => desc);
 
             return desc;
+        }
+
+        /// <summary>
+        /// Throws the conflicting type error.
+        /// </summary>
+        private static void ThrowConflictingTypeError(object type1, object type2, int typeId)
+        {
+            throw new BinaryObjectException(string.Format("Conflicting type IDs [type1='{0}', " +
+                                                          "type2='{1}', typeId={2}]", type1, type2, typeId));
         }
 
         /// <summary>
@@ -608,8 +622,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var type2 = type != null ? type.AssemblyQualifiedName : typeName;
 
-                throw new BinaryObjectException(string.Format("Conflicting type IDs [type1='{0}', " +
-                                                              "type2='{1}', typeId={2}]", type1, type2, typeId));
+                ThrowConflictingTypeError(type1, type2, typeId);
             }
 
             if (userType && _typeNameToDesc.ContainsKey(typeName))
