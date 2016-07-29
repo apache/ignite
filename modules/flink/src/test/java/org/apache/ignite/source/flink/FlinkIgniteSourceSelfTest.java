@@ -48,7 +48,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
 
         cfg.setClientMode(false);
@@ -57,7 +57,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -107,7 +107,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
                 sinkEvtCntr++;
                 assertNotNull(cacheEvt.newValue().toString());
                 assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
-                if(sinkEvtCntr == 10){
+                if(sinkEvtCntr == 50){
                     igniteSrc.stop();
                 }
             }
@@ -143,7 +143,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
 
-        igniteSrc.setEvtBatchSize(1000);
+        igniteSrc.setEvtBatchSize(10);
 
         igniteSrc.setEvtBufferTimeout(10);
 
@@ -153,7 +153,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        while (cnt < 1000)  {
+        while (cnt < 100)  {
             cache.put(cnt, cnt);
 
             cnt++;
@@ -169,8 +169,8 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             @Override public void invoke(CacheEvent cacheEvt) throws Exception {
                 sinkEvtCntr++;
                 assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 1000);
-                if(sinkEvtCntr == 1000){
+                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 100);
+                if(sinkEvtCntr == 10){
                     igniteSrc.stop();
                 }
             }
