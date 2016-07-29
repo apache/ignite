@@ -478,19 +478,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, registered);
 
-            // TODO: Do not update maps for unregistered type?
+            if (registered)
+            {
+                var typeKey = BinaryUtils.TypeKey(true, typeId);
 
-            var typeKey = BinaryUtils.TypeKey(true, typeId);
+                var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
+                if (desc0.Type != type)
+                    ThrowConflictingTypeError(type, desc0.Type, typeId);
 
-            var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
-            if (desc0.Type != type)
-                ThrowConflictingTypeError(type, desc0.Type, typeId);
+                desc0 = _typeNameToDesc.GetOrAdd(typeName, x => desc);
+                if (desc0.Type != type)
+                    ThrowConflictingTypeError(type, desc0.Type, typeId);
 
-            desc0 = _typeNameToDesc.GetOrAdd(typeName, x => desc);
-            if (desc0.Type != type)
-                ThrowConflictingTypeError(type, desc0.Type, typeId);
-
-            _typeToDesc.GetOrAdd(type, x => desc);
+                _typeToDesc.GetOrAdd(type, x => desc);
+            }
 
             return desc;
         }
