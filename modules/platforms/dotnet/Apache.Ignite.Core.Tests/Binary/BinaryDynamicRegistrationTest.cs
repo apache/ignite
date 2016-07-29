@@ -38,6 +38,15 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryDynamicRegistrationTest
     {
         /// <summary>
+        /// Executes before each test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            ClearMarshallerWorkDir();
+        }
+
+        /// <summary>
         /// Tests the failed registration.
         /// </summary>
         [Test]
@@ -85,12 +94,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestStore()
         {
-            // Make sure marshaller dir is empty
-            var marshDir = Path.Combine(GetWorkDir(), "marshaller");
-
-            if (Directory.Exists(marshDir))
-                Directory.Delete(marshDir, true);
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
@@ -132,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // Delete directory and check that store no longer works
-            Directory.Delete(marshDir, true);
+            ClearMarshallerWorkDir();
 
             using (var ignite = Ignition.Start(cfg))
             {
@@ -251,6 +254,17 @@ namespace Apache.Ignite.Core.Tests.Binary
                 dir = Directory.GetParent(dir).FullName;
 
             return Path.Combine(dir, "work");
+        }
+
+        /// <summary>
+        /// Clears the marshaller work dir.
+        /// </summary>
+        private static void ClearMarshallerWorkDir()
+        {
+            var marshDir = Path.Combine(GetWorkDir(), "marshaller");
+
+            if (Directory.Exists(marshDir))
+                Directory.Delete(marshDir, true);
         }
 
         private interface ITest
