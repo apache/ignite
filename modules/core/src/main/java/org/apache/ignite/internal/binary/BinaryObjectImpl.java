@@ -156,7 +156,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len,
         final CacheObjectContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(this, buf, off, len, arr, start);
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
     }
 
     /** {@inheritDoc} */

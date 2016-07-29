@@ -49,13 +49,13 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         final TestCacheObject obj = new TestCacheObject((byte) 1);
 
         // Write part of the cache object and cut on header (3 bytes instead of 5)
-        assert CacheObjectAdapter.putValue(obj, dataBuf, off, len, data, 0);
+        assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);
 
         off += len;
         len = IncompleteCacheObject.HEAD_LEN - len + data.length;
 
         // Write rest data.
-        assert CacheObjectAdapter.putValue(obj, dataBuf, off, len, data, 0);
+        assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);
 
         assert !dataBuf.hasRemaining() : "Not all data were written.";
 

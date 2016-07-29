@@ -260,7 +260,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len,
         final CacheObjectContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(this, buf, off, len, valBytes, 0);
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */

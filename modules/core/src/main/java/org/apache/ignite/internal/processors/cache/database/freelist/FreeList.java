@@ -147,7 +147,7 @@ public class FreeList {
      * @param buf Page buffer.
      * @param row Cache data row.
      * @param io Data page IO.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void putInTree(final long pageId, final ByteBuffer buf, final CacheDataRow row,
         final DataPageIO io) throws IgniteCheckedException {
@@ -347,7 +347,7 @@ public class FreeList {
                     }
                 }
                 else
-                    writeExistedPage(page, fctx, row, entrySize);
+                    writeExistingPage(page, fctx, row, entrySize);
             }
         }
     }
@@ -357,9 +357,9 @@ public class FreeList {
      * @param fctx Fragment context.
      * @param row Cache data row.
      * @param entrySize Entry size.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    private void writeExistedPage(
+    private void writeExistingPage(
         final Page page,
         final @Nullable CacheEntryFragmentContext fctx,
         final CacheDataRow row,
@@ -377,7 +377,7 @@ public class FreeList {
      * @param fctx Fragment context.
      * @param row Cache data row.
      * @param entrySize Entry size.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void writeNewPage(
         final Page page,
