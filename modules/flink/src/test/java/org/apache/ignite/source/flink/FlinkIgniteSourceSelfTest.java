@@ -107,7 +107,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
                 sinkEvtCntr++;
                 assertNotNull(cacheEvt.newValue().toString());
                 assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
-                if(sinkEvtCntr == 50){
+                if(sinkEvtCntr == 10){
                     igniteSrc.stop();
                 }
             }
