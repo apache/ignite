@@ -198,7 +198,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @return Whether class name was registered.
      * @throws IgniteCheckedException In case of error.
      */
-    public abstract boolean registerClassName(int id, String clsName) throws IgniteCheckedException;
+    protected abstract boolean registerClassName(int id, String clsName) throws IgniteCheckedException;
 
     /**
      * Gets class name by type ID.
@@ -207,5 +207,5 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @return Class name.
      * @throws IgniteCheckedException In case of error.
      */
-    public abstract String className(int id) throws IgniteCheckedException;
+    protected abstract String className(int id) throws IgniteCheckedException;
 }

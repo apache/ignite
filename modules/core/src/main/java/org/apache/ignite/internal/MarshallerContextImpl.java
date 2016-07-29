@@ -69,7 +69,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
@@ -77,7 +77,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         log = ctx.log(MarshallerContextImpl.class);
