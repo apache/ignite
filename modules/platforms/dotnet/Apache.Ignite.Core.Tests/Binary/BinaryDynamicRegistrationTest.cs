@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
@@ -188,13 +187,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
-            using (var ignite = Ignition.Start(cfg))
+            using (Ignition.Start(cfg))
             {
-                var handleRegistry = ((Ignite) ignite).HandleRegistry;
-                var store = handleRegistry.GetItems().Select(x => x.Value).OfType<CacheStore>().Single();
+                var storeFactory = StoreFactory.LastInstance;
 
-                Assert.AreEqual("test", store.StringProp);
-                Assert.AreEqual(9, store.IntProp);
+                Assert.AreEqual("test", storeFactory.StringProp);
+                Assert.AreEqual(9, storeFactory.IntProp);
             }
         }
 
@@ -374,18 +372,17 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public int IntProp { get; set; }
 
+            public static StoreFactory LastInstance { get; set; }
+
             public ICacheStore CreateInstance()
             {
-                return new CacheStore { StringProp = StringProp, IntProp = IntProp };
+                LastInstance = this;
+                return new CacheStore();
             }
         }
 
         private class CacheStore : CacheStoreAdapter
         {
-            public string StringProp { get; set; }
-
-            public int IntProp { get; set; }
-
             private static readonly Dictionary<object, object>  Dict = new Dictionary<object, object>();
 
             public override object Load(object key)

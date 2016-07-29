@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private volatile MarshallerContext _ctx;
 
+        /** */
+        private readonly bool _compactFooter;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -70,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             _cfg = cfg ?? new BinaryConfiguration();
 
-            CompactFooter = _cfg.CompactFooter;
+            _compactFooter = _cfg.CompactFooter;
 
             if (_cfg.TypeConfigurations == null)
                 _cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
@@ -118,7 +121,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the compact footer flag.
         /// </summary>
-        public bool CompactFooter { get; set; }
+        public bool CompactFooter
+        {
+            // Do not use compact footers during startup
+            get { return _compactFooter && _ignite != null; }
+        }
 
         /// <summary>
         /// Marshal object.
