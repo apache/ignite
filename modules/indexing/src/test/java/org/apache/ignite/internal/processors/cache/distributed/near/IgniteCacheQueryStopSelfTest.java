@@ -25,21 +25,32 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.QueryCancelledException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
-public class IgniteCacheQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
+public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
+    /** Grids count. */
+    private static final int GRIDS_COUNT = 3;
+
+    /** IP finder. */
+    private static TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** Cache size. */
+    public static final int CACHE_SIZE = 10_000;
+
     /** Value size. */
     public static final int VAL_SIZE = 16;
 
@@ -52,77 +63,96 @@ public class IgniteCacheQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTe
     /** */
     private static final String QUERY_3 = "select a._val from String a";
 
-    /** */
-    private static final String QUERY_4 = "select a._key from String a";
-
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGridsMultiThreaded(GRIDS_COUNT);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+        spi.setIpFinder(IP_FINDER);
+
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        ccfg.setIndexedTypes(Integer.class, String.class);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        if ("client".equals(gridName))
+            cfg.setClientMode(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        for (Ignite g : G.allGrids())
+            g.cache(null).removeAll();
     }
 
     /** */
     public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryCancel(10_000, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableTimeout() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel1() throws Exception {
-        testQueryCancel(10_000, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel2() throws Exception {
-        testQueryCancel(10_000, VAL_SIZE, QUERY_1, 1_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 1_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel3() throws Exception {
-        testQueryCancel(10_000, VAL_SIZE, QUERY_1, 3_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 3_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel2() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_2, 1_500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 1_500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_2, 3_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 3_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_3, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel2() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_3, 1_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 1_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel3() throws Exception {
-        testQueryCancel(100_000, VAL_SIZE, QUERY_3, 3_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 3_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        testQueryCancel(100, VAL_SIZE, QUERY_4, 3000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(100, VAL_SIZE, QUERY_3, 3000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
@@ -159,7 +189,7 @@ public class IgniteCacheQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTe
             } else {
                 cursor = cache.query(qry);
 
-                ignite().scheduler().runLocal(new Runnable() {
+                client.scheduler().runLocal(new Runnable() {
                     @Override public void run() {
                         cursor.close();
                     }
@@ -185,9 +215,7 @@ public class IgniteCacheQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTe
      * Validates clean state on all participating nodes after query cancellation.
      */
     private void checkCleanState() {
-        int total = gridCount();
-
-        for (int i = 0; i < total; i++) {
+        for (int i = 0; i < GRIDS_COUNT; i++) {
             IgniteEx grid = grid(i);
 
             // Validate everything was cleaned up.
