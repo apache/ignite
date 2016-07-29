@@ -116,6 +116,19 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 Assert.AreEqual("test", foo.Str);
                 Assert.AreEqual(2, foo.Int);
+
+                // Client node
+                using (var igniteClient = Ignition.Start(new IgniteConfiguration(cfg)
+                {
+                    ClientMode = true,
+                    GridName = "grid2"
+                }))
+                {
+                    var fooClient = igniteClient.GetCache<int, Foo>(null)[1];
+
+                    Assert.AreEqual("test", fooClient.Str);
+                    Assert.AreEqual(2, fooClient.Int);
+                }
             }
 
             // Delete directory and check that store no longer works
