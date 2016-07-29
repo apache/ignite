@@ -47,7 +47,7 @@ public class MarshallerCacheListener {
         assert workDir != null;
 
         if (ctx.clientNode()) {
-            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
+            lsnr = new ContinuousQueryListener(ctx.log(MarshallerCacheListener.class), workDir);
 
             ctx.continuous().registerStaticRoutine(
                 cacheName,
