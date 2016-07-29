@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cacheobject;
-
-import org.apache.ignite.internal.processors.cache.CacheObject;
+package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 
@@ -28,17 +26,26 @@ import java.nio.ByteBuffer;
  * @param <T> Cache object type.
  */
 public class IncompleteCacheObject<T extends CacheObject> {
-    /** */
-    private final byte[] data;
+    /** 4 bytes - cache object length, 1 byte - type. */
+    public static final int HEAD_LEN = 5;
 
     /** */
-    private final byte type;
+    private byte[] data;
 
     /** */
-    private int offset;
+    private byte type;
+
+    /** */
+    private int off;
 
     /** */
     private T obj;
+
+    /** */
+    private int headOff;
+
+    /** */
+    private byte[] head;
 
     /**
      * @param data Data array.
@@ -50,10 +57,24 @@ public class IncompleteCacheObject<T extends CacheObject> {
     }
 
     /**
+     * @param buf Byte buffer.
+     */
+    public IncompleteCacheObject(final ByteBuffer buf) {
+        if (buf.remaining() >= HEAD_LEN) {
+            data = new byte[buf.getInt()];
+            type = buf.get();
+        }
+        // We cannot fully read head to initialize data buffer.
+        // Start partial read of header.
+        else
+            head = new byte[HEAD_LEN];
+    }
+
+    /**
      * @return {@code True} if cache object is fully assembled.
      */
     public boolean isReady() {
-        return offset == data.length;
+        return data != null && off == data.length;
     }
 
     /**
@@ -66,7 +87,7 @@ public class IncompleteCacheObject<T extends CacheObject> {
     /**
      * @param cacheObj Cache object.
      */
-    void cacheObject(T cacheObj) {
+    public void cacheObject(T cacheObj) {
         obj = cacheObj;
     }
 
@@ -74,11 +95,32 @@ public class IncompleteCacheObject<T extends CacheObject> {
      * @param buf Read remaining data.
      */
     public void readData(ByteBuffer buf) {
-        final int len = Math.min(data.length - offset, buf.remaining());
+        if (data == null) {
+            assert head != null;
 
-        buf.get(data, offset, len);
+            final int len = Math.min(HEAD_LEN - headOff, buf.remaining());
 
-        offset += len;
+            buf.get(head, headOff, len);
+
+            headOff += len;
+
+            if (headOff == HEAD_LEN) {
+                final ByteBuffer headBuf = ByteBuffer.wrap(head);
+
+                headBuf.order(buf.order());
+
+                data = new byte[headBuf.getInt()];
+                type = headBuf.get();
+            }
+        }
+
+        if (data != null) {
+            final int len = Math.min(data.length - off, buf.remaining());
+
+            buf.get(data, off, len);
+
+            off += len;
+        }
     }
 
     /**

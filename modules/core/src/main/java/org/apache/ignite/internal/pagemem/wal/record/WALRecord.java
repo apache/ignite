@@ -52,6 +52,9 @@ public abstract class WALRecord {
         DATA_PAGE_INSERT_RECORD,
 
         /** */
+        DATA_PAGE_INSERT_FRAGMENT_RECORD,
+
+        /** */
         DATA_PAGE_REMOVE_RECORD,
 
         /** */

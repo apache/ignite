@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -259,49 +260,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len,
         final CacheObjectContext ctx) throws IgniteCheckedException {
-        byte[] valBytes = valueBytes(ctx);
-
-        int dataLen = valBytes.length;
-
-        if (buf.remaining() < len)
-            return false;
-
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
-            buf.putInt(dataLen);
-            buf.put(cacheObjectType());
-
-            len -= headSize;
-        }
-        else if (off >= headSize)
-            off -= headSize;
-        else {
-            // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
-
-            head.order(buf.order());
-
-            head.putInt(dataLen);
-            head.put(cacheObjectType());
-
-            head.position(off);
-
-            if (len < head.capacity())
-                head.limit(head.position() + head.capacity() - len);
-
-            buf.put(head);
-
-            if (head.hasRemaining())
-                return true;
-
-            off -= headSize;
-            len -= head.capacity() - off;
-        }
-
-        buf.put(valBytes, off, len);
-
-        return true;
+        return CacheObjectAdapter.putValue(this, buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */

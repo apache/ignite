@@ -392,6 +392,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
                 c.getMarshaller().getClass().getName() + ']');
 
+        if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTS_COUNT)
+            throw new IgniteCheckedException("Affinity function must return at most " +
+                CacheConfiguration.MAX_PARTS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
+                ", affFunction=" + cc.getAffinity() + ", cacheName=" + cc.getName() + ']');
+
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
                 throw new IgniteCheckedException("Cannot enable write-behind (writer or store is not provided) " +
