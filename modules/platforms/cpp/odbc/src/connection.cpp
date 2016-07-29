@@ -128,12 +128,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            SqlResult res = MakeRequestHandshake();
-
-            if (res != SQL_RESULT_SUCCESS)
-                return res;
-
-            return MakeRequestConfigure();
+            return MakeRequestHandshake();
         }
 
         void Connection::Release()
@@ -314,7 +309,22 @@ namespace ignite
 
         SqlResult Connection::MakeRequestHandshake()
         {
-            HandshakeRequest req(PROTOCOL_VERSION);
+            bool distributedJoins = false;
+            bool enforceJoinOrder = false;
+
+            try
+            {
+                distributedJoins = config.IsDistributedJoins();
+                enforceJoinOrder = config.IsEnforceJoinOrder();
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            HandshakeRequest req(PROTOCOL_VERSION, distributedJoins, enforceJoinOrder);
             HandshakeResponse rsp;
 
             try
@@ -351,51 +361,6 @@ namespace ignite
                     << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
-
-                InternalRelease();
-
-                return SQL_RESULT_ERROR;
-            }
-
-            return SQL_RESULT_SUCCESS;
-        }
-
-        SqlResult Connection::MakeRequestConfigure()
-        {
-            bool distributedJoins = false;
-            bool enforceJoinOrder = false;
-
-            try
-            {
-                distributedJoins = config.IsDistributedJoins();
-                enforceJoinOrder = config.IsEnforceJoinOrder();
-            }
-            catch (const IgniteError& err)
-            {
-                AddStatusRecord(SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
-
-                return SQL_RESULT_ERROR;
-            }
-
-            ConfigureRequest req(distributedJoins, enforceJoinOrder);
-            Response rsp;
-
-            try
-            {
-                SyncMessage(req, rsp);
-            }
-            catch (const IgniteError& err)
-            {
-                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
-
-                return SQL_RESULT_ERROR;
-            }
-
-            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
-            {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
-
-                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
 
                 InternalRelease();
 

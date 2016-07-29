@@ -34,8 +34,14 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
+    /** First ODBC communication protocol version. */
+    public static final long PROTO_VER_FIRST = 1;
+
+    /** Communication protocol version in which Distributed Joins have been introduced. */
+    public static final long PROTO_VER_DISTRIBUTED_JOINS = 2;
+
     /** Current ODBC communication protocol version. */
-    public static final long PROTO_VER = 2;
+    public static final long PROTO_VER_CURRENT = PROTO_VER_DISTRIBUTED_JOINS;
 
     /** Apache Ignite version when ODBC communication protocol version has been introduced. */
     public static final String PROTO_VER_SINCE = "1.7.0";
@@ -82,24 +88,24 @@ public class OdbcMessageParser {
         // we has not confirmed that the remote client uses the same protocol version.
         if (!verConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE)
-                return new OdbcHandshakeRequest(reader.readLong());
+            {
+                OdbcHandshakeRequest res = new OdbcHandshakeRequest(reader.readLong());
+
+                if (res.getVersion() >= PROTO_VER_DISTRIBUTED_JOINS) {
+                    res.setDistributedJoins(reader.readBoolean());
+                    res.setEnforceJoinOrder(reader.readBoolean());
+                }
+
+                return res;
+            }
             else
-                throw new IgniteException("Unexpected ODBC command (first message is not a handshake request): [cmd=" +
-                    cmd + ']');
+                throw new IgniteException("Unexpected ODBC command " +
+                        "(first message is not a handshake request): [cmd=" + cmd + ']');
         }
 
         OdbcRequest res;
 
         switch (cmd) {
-            case OdbcRequest.CONFIGURE: {
-                boolean distributedJoins = reader.readBoolean();
-                boolean enforceJoinOrder = reader.readBoolean();
-
-                res = new OdbcConfigureRequest(distributedJoins, enforceJoinOrder);
-
-                break;
-            }
-
             case OdbcRequest.EXECUTE_SQL_QUERY: {
                 String cache = reader.readString();
                 String sql = reader.readString();

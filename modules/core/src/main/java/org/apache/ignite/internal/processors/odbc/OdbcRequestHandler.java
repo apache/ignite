@@ -91,9 +91,6 @@ public class OdbcRequestHandler {
                 case HANDSHAKE:
                     return performHandshake((OdbcHandshakeRequest) req);
 
-                case CONFIGURE:
-                    return confgure((OdbcConfigureRequest) req);
-
                 case EXECUTE_SQL_QUERY:
                     return executeQuery((OdbcQueryExecuteRequest) req);
 
@@ -118,35 +115,27 @@ public class OdbcRequestHandler {
     }
 
     /**
-     * {@link OdbcConfigureRequest} command handler.
-     *
-     * @param req Configure request.
-     * @return Response.
-     */
-    private OdbcResponse confgure(OdbcConfigureRequest req) {
-        distributedJoins = req.isDistributedJoins();
-        enforceJoinOrder = req.isEnforceJoinOrder();
-
-        return new OdbcResponse(null);
-    }
-
-    /**
      * {@link OdbcHandshakeRequest} command handler.
      *
      * @param req Handshake request.
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        OdbcHandshakeResult res;
-
-        if (req.version() == OdbcMessageParser.PROTO_VER)
-            res = new OdbcHandshakeResult(true, null, null);
-        else {
+        if (req.getVersion() > OdbcMessageParser.PROTO_VER_CURRENT) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(OdbcMessageParser.PROTO_VER_SINCE, verStr);
+
+            return new OdbcResponse(res);
+        }
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult();
+
+        if (req.getVersion() >= OdbcMessageParser.PROTO_VER_DISTRIBUTED_JOINS) {
+            distributedJoins = req.isDistributedJoins();
+            enforceJoinOrder = req.isEnforceJoinOrder();
         }
 
         return new OdbcResponse(res);
