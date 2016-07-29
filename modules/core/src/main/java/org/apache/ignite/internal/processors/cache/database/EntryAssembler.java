@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cacheobject.IncompleteCacheObject;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 
 import java.nio.ByteBuffer;
 

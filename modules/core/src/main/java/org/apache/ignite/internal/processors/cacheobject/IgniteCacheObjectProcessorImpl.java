@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -197,7 +198,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         @Nullable IncompleteCacheObject<CacheObject> incompleteObj
     ) throws IgniteCheckedException {
         if (incompleteObj == null)
-            incompleteObj = initIncompleteObject(buf);
+            incompleteObj = new IncompleteCacheObject<>(buf);
 
         if (incompleteObj.isReady())
             return incompleteObj;
@@ -217,7 +218,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         @Nullable IncompleteCacheObject<KeyCacheObject> incompleteObj
     ) throws IgniteCheckedException {
         if (incompleteObj == null)
-            incompleteObj = initIncompleteObject(buf);
+            incompleteObj = new IncompleteCacheObject<>(buf);
 
         if (incompleteObj.isReady())
             return incompleteObj;
@@ -228,22 +229,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             incompleteObj.cacheObject(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;
-    }
-
-    /**
-     * @param buf Buffer.
-     * @param <T> Cache object type.
-     * @return Initialized incomplete object.
-     */
-    private <T extends CacheObject> IncompleteCacheObject<T> initIncompleteObject(final ByteBuffer buf) {
-        assert buf.remaining() >= 5; // TODO implement partial init
-
-        final int len = buf.getInt();
-
-        if (len == 0)
-            return new IncompleteCacheObject<>(new byte[0], (byte) 0);
-
-        return new IncompleteCacheObject<>(new byte[len], buf.get());
     }
 
     /** {@inheritDoc} */
