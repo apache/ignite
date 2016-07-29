@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -49,6 +50,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** Next expire time. */
     private volatile long nextExpireTime;
+
+    /** Next expire time updater. */
+    private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
+        AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -90,10 +95,18 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         pendingEntries.add(e);
 
-        if (e.expireTime < nextExpireTime) {
-            synchronized (mux) {
-                mux.notifyAll();
-            }
+        while (true) {
+            long nextExpireTime = this.nextExpireTime;
+
+            if (e.expireTime < nextExpireTime) {
+                if (nextExpireTimeUpdater.compareAndSet(this, nextExpireTime, e.expireTime)) {
+                    synchronized (mux) {
+                        mux.notifyAll();
+                    }
+
+                    break;
+                }
+            } else break;
         }
     }
 
@@ -182,32 +195,31 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             while (!isCancelled()) {
                 expire();
 
-                synchronized (mux) {
-                    long waitTime;
-                    while (true) {
-                        long curTime = U.currentTimeMillis();
+                long waitTime;
+                while (true) {
+                    long curTime = U.currentTimeMillis();
 
-                        GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
+                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
 
-                        if (first == null) {
-                            waitTime = 500;
-                            nextExpireTime = curTime + 500;
-                        }
-                        else {
-                            long expireTime = first.expireTime;
+                    if (first == null) {
+                        waitTime = 500;
+                        nextExpireTime = curTime + 500;
+                    }
+                    else {
+                        long expireTime = first.expireTime;
 
-                            waitTime = expireTime - curTime;
-                            nextExpireTime = expireTime;
-                        }
-
-                        if (pendingEntries.firstx() == first)
-                            break;
+                        waitTime = expireTime - curTime;
+                        nextExpireTime = expireTime;
                     }
 
-                    if (waitTime <= 0)
-                        continue;
+                    synchronized (mux) {
+                        if (pendingEntries.firstx() == first) {
+                            if (waitTime > 0)
+                                mux.wait(waitTime);
 
-                    mux.wait(waitTime);
+                            break;
+                        }
+                    }
                 }
             }
         }

@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 
@@ -71,12 +74,13 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testThatNotificationWorkAsExpected() throws Exception {
-        try (final IgniteKernal g = (IgniteKernal)startGrid(0)) {
+        try (final Ignite g = startGrid(0)) {
             final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
 
-            g.context().event().addLocalEventListener(new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    queue.offer(evt);
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    queue.add(evt);
+                    return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
 
@@ -84,7 +88,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
             IgniteCache<Object, Object> cache = g.cache(null);
 
-            ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 10000));
+            ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100_000));
 
             cache.withExpiryPolicy(plc1).put(key + 1, 1);
 
@@ -95,6 +99,102 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
             cache.withExpiryPolicy(plc2).put(key + 2, 1);
 
             assertNotNull(queue.poll(5, SECONDS)); // We should receive event about second entry expiration.
+        }
+    }
+
+    /**
+     * Add in several threads value to cache with different expiration policy.
+     * Wait for expiration of keys with small expiration duration.
+     */
+    public void testThatNotificationWorkAsExpectedInMultithreadedMode() throws Exception {
+        final CyclicBarrier barrier = new CyclicBarrier(21);
+        final AtomicInteger keysRangeGen = new AtomicInteger();
+        final AtomicInteger evtCnt = new AtomicInteger();
+        final int cnt = 1_000;
+
+        try (final Ignite g = startGrid(0)) {
+            final IgniteCache<Object, Object> cache = g.cache(null);
+
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    evtCnt.incrementAndGet();
+                    return true;
+                }
+            }, EventType.EVT_CACHE_OBJECT_EXPIRED);
+
+
+            int smallDuration = 2000;
+
+            int threadCnt = 10;
+
+            GridTestUtils.runMultiThreadedAsync(
+                new CacheFiller(cache, 100_000, barrier, keysRangeGen, cnt),
+                threadCnt, "");
+
+            GridTestUtils.runMultiThreadedAsync(
+                new CacheFiller(cache, smallDuration, barrier, keysRangeGen, cnt),
+                threadCnt, "");
+
+            barrier.await();
+
+            Thread.sleep(1_000); // Cleaner should see at least one entry.
+
+            barrier.await();
+
+            assertEquals(2 * threadCnt * cnt, cache.size());
+
+            Thread.sleep(2 * smallDuration);
+
+            assertEquals(threadCnt * cnt, cache.size());
+            assertEquals(threadCnt * cnt, evtCnt.get());
+        }
+    }
+
+    /** */
+    private static class CacheFiller implements Runnable {
+        /** Barrier. */
+        private final CyclicBarrier barrier;
+        /** Keys range generator. */
+        private final AtomicInteger keysRangeGenerator;
+        /** Count. */
+        private final int cnt;
+        /** Cache. */
+        private final IgniteCache<Object, Object> cache;
+        /** Expiration duration. */
+        private final int expirationDuration;
+
+        /**
+         * @param cache Cache.
+         * @param expirationDuration Expiration duration.
+         * @param barrier Barrier.
+         * @param keysRangeGenerator Keys.
+         * @param cnt Count.
+         */
+        CacheFiller(IgniteCache<Object, Object> cache, int expirationDuration, CyclicBarrier barrier,
+            AtomicInteger keysRangeGenerator, int cnt) {
+            this.expirationDuration = expirationDuration;
+            this.barrier = barrier;
+            this.keysRangeGenerator = keysRangeGenerator;
+            this.cnt = cnt;
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                barrier.await();
+
+                ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, expirationDuration));
+                int keyStart = keysRangeGenerator.getAndIncrement() * cnt;
+
+                for (int i = keyStart; i < keyStart + cnt; i++)
+                    cache.withExpiryPolicy(plc1).put("key" + i, 1);
+
+                barrier.await();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
