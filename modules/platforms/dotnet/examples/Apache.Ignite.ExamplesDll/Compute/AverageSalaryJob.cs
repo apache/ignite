@@ -16,11 +16,11 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Apache.Ignite.Core.Compute;
 
 namespace Apache.Ignite.ExamplesDll.Compute
 {
+    using System.Collections;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
@@ -29,7 +29,7 @@ namespace Apache.Ignite.ExamplesDll.Compute
     public class AverageSalaryJob : ComputeJobAdapter<Tuple<long, int>>
     {
         /// <summary> Employees. </summary>
-        private readonly ICollection<Employee> _employees = new List<Employee>();
+        private readonly ArrayList _employees = new ArrayList();
 
         /// <summary>
         /// Adds employee.
