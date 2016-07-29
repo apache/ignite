@@ -254,6 +254,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // TODO: What do we do when hdr.TypeId is 0?
                 // Need to test this scenario!
+                // Same thing in BinaryReader.readSchema
 
                 if (fieldIds == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
