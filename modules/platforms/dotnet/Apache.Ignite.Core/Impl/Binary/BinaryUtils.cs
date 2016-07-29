@@ -1528,7 +1528,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (Enum.GetUnderlyingType(enumType) == TypInt)
             {
-                var desc = marshaller.GetDescriptor(enumType);
+                var desc = marshaller.GetDescriptor(enumType, false);
 
                 return desc == null ? ObjTypeId : desc.TypeId;
             }
