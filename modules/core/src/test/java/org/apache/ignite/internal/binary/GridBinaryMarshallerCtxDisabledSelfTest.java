@@ -95,12 +95,12 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+        @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public String className(int id) throws IgniteCheckedException {
+        @Override protected String className(int id) throws IgniteCheckedException {
             return null;
         }
     }
