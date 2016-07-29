@@ -17,7 +17,8 @@
 
 namespace Apache.Ignite.ExamplesDll.Compute
 {
-    using System.Collections.Generic;
+    using System;
+    using System.Collections;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.ExamplesDll.Binary;
 
