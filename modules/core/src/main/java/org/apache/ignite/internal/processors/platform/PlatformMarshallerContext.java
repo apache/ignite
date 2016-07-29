@@ -82,6 +82,8 @@ public class PlatformMarshallerContext {
      * @throws IgniteCheckedException If failed.
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+
         lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
@@ -119,6 +121,8 @@ public class PlatformMarshallerContext {
      * @throws IgniteCheckedException On collision.
      */
     public boolean registerTypeName(int id, String typName) throws IgniteCheckedException {
+        assert typName != null;
+
         GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null)
