@@ -108,8 +108,15 @@ public class PlatformMarshallerContext {
         latch.countDown();
     }
 
-    /** {@inheritDoc} */
-    public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+    /**
+     * Registers the type name.
+     *
+     * @param id Type id.
+     * @param typName Type name.
+     * @return True on success.
+     * @throws IgniteCheckedException On collision.
+     */
+    public boolean registerTypeName(int id, String typName) throws IgniteCheckedException {
         GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null)
@@ -118,10 +125,10 @@ public class PlatformMarshallerContext {
         Object key = getKey(id);
 
         try {
-            String old = cache0.tryGetAndPut(key, clsName);
+            String old = cache0.tryGetAndPut(key, typName);
 
-            if (old != null && !old.equals(clsName))
-                throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
+            if (old != null && !old.equals(typName))
+                throw new IgniteCheckedException("Type ID collision detected [id=" + key + ", clsName1=" + typName +
                     ", clsName2=" + old + ']');
 
             failedCnt = 0;
@@ -131,7 +138,7 @@ public class PlatformMarshallerContext {
         catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException ignored) {
             if (++failedCnt > 10) {
                 if (log.isQuiet())
-                    U.quiet(false, "Failed to register marshalled class for more than 10 times in a row " +
+                    U.quiet(false, "Failed to register platform marshalled type for more than 10 times in a row " +
                         "(may affect performance).");
 
                 failedCnt = 0;
@@ -141,8 +148,14 @@ public class PlatformMarshallerContext {
         }
     }
 
-    /** {@inheritDoc} */
-    public String className(int id) throws IgniteCheckedException {
+    /**
+     * Gets the type name.
+     *
+     * @param id Type id.
+     * @return Type name.
+     * @throws IgniteCheckedException
+     */
+    public String getTypeName(int id) throws IgniteCheckedException {
         GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null) {
@@ -151,21 +164,21 @@ public class PlatformMarshallerContext {
             cache0 = cache;
 
             if (cache0 == null)
-                throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
+                throw new IllegalStateException("Failed to initialize platform marshaller context (grid is stopping).");
         }
 
         Object key = getKey(id);
 
-        String clsName = cache0.getTopologySafe(key);
+        String typName = cache0.getTopologySafe(key);
 
-        if (clsName == null) {
-            clsName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir);
+        if (typName == null) {
+            typName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
-            registerClassName(id, clsName);
+            registerTypeName(id, typName);
         }
 
-        return clsName;
+        return typName;
     }
 
     /**

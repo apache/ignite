@@ -446,7 +446,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public boolean registerType(int id, String name) {
         try {
-            return platformMarshCtx.registerClassName(id, name);
+            return platformMarshCtx.registerTypeName(id, name);
         } catch (IgniteCheckedException e) {
             return false;
         }
@@ -455,7 +455,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public String getClass(int id) {
         try {
-            return platformMarshCtx.className(id);
+            return platformMarshCtx.getTypeName(id);
         } catch (IgniteCheckedException e) {
             return null;
         }
