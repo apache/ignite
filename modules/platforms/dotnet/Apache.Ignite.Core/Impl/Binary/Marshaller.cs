@@ -470,10 +470,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Descriptor.</returns>
         private BinaryFullTypeDescriptor AddUserType(Type type, int typeId, string typeName, bool registered)
         {
+            Debug.Assert(type != null);
+            Debug.Assert(typeName != null);
+
             var ser = GetSerializer(_cfg, null, type, typeId, null, null);
 
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, false, registered);
+
+            var typeKey = BinaryUtils.TypeKey(true, typeId);
+
+            // TODO: What about conflicting types?
+            _idToDesc.GetOrAdd(typeKey, x => desc);
+            _typeNameToDesc.GetOrAdd(typeName, x => desc);
+            _typeToDesc.GetOrAdd(type, x => desc);
 
             return desc;
         }
