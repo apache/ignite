@@ -28,8 +28,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.MarshallerContextImplPlatform;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -55,7 +53,6 @@ import org.apache.ignite.internal.processors.platform.transactions.PlatformTrans
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -91,7 +88,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final PlatformConfigurationEx interopCfg;
 
     /** Platform marshaller context. */
-    private final MarshallerContextImplPlatform platformMarshCtx;
+    private final PlatformMarshallerContext platformMarshCtx;
 
     /** Whether processor is started. */
     private boolean started;
@@ -128,7 +125,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         Byte prefix = interopCfg.marshallerCacheKeyPrefix();
 
         platformMarshCtx = prefix != null
-            ? new MarshallerContextImplPlatform(prefix)
+            ? new PlatformMarshallerContext(prefix)
             : null;
     }
 
@@ -442,7 +439,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public MarshallerContextImplPlatform platformMarshallerContext() {
+    @Override public PlatformMarshallerContext platformMarshallerContext() {
         return platformMarshCtx;
     }
 

@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerCacheListener;
+import org.apache.ignite.internal.MarshallerWorkDirectory;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
@@ -33,9 +36,9 @@ import java.io.ObjectOutput;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Marshaller context implementation.
+ * Platform marshaller context.
  */
-public class MarshallerContextImplPlatform {
+public class PlatformMarshallerContext {
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -64,7 +67,7 @@ public class MarshallerContextImplPlatform {
      * @param keyPrefix Composite key prefix.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImplPlatform(byte keyPrefix)
+    public PlatformMarshallerContext(byte keyPrefix)
         throws IgniteCheckedException {
 
         workDir = U.resolveWorkDirectory("marshaller", false);
@@ -88,7 +91,7 @@ public class MarshallerContextImplPlatform {
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        log = ctx.log(MarshallerContextImplPlatform.class);
+        log = ctx.log(PlatformMarshallerContext.class);
 
         cache = ctx.cache().internalCache(cacheName);
 

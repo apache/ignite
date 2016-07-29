@@ -20,11 +20,8 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.MarshallerContextImplPlatform;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -268,7 +265,7 @@ public interface PlatformProcessor extends GridProcessor {
      *
      * @return Platform marshaller context.
      */
-    public MarshallerContextImplPlatform platformMarshallerContext();
+    public PlatformMarshallerContext platformMarshallerContext();
 
     /**
      * Registers platform type name with provided type ID.
