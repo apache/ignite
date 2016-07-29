@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Compute;
-
 namespace Apache.Ignite.ExamplesDll.Compute
 {
-    using System.Collections;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
@@ -32,7 +30,7 @@ namespace Apache.Ignite.ExamplesDll.Compute
         private readonly ArrayList _employees = new ArrayList();
 
         /// <summary>
-        /// Adds employee.
+        ///     Adds employee.
         /// </summary>
         /// <param name="employee">Employee.</param>
         public void Add(Employee employee)
@@ -44,7 +42,7 @@ namespace Apache.Ignite.ExamplesDll.Compute
         /// Execute the job.
         /// </summary>
         /// <returns>Job result: tuple with total salary in the first item and employees count in the second.</returns>
-        override public Tuple<long, int> Execute()
+        public override Tuple<long, int> Execute()
         {
             long sum = 0;
             int count = 0;

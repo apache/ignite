@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Cache;
-
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>

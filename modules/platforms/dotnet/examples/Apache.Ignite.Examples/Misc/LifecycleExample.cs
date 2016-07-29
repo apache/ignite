@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Lifecycle;
-using Apache.Ignite.Core.Resource;
-
 namespace Apache.Ignite.Examples.Misc
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation
@@ -101,7 +100,7 @@ namespace Apache.Ignite.Examples.Misc
                 if (evt == LifecycleEventType.AfterNodeStart)
                     Started = true;
                 else if (evt == LifecycleEventType.AfterNodeStop)
-                    Started = false;          
+                    Started = false;
             }
 
             /// <summary>
