@@ -111,15 +111,33 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.GetCache<int, Foo>(null)[1] = new Foo {Str = "test", Int = 2};
+                // Put through statically started cache
+                var staticCache = ignite.GetCache<int, Foo>(null);
+                staticCache[1] = new Foo {Str = "test", Int = 2};
+            }
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                // Put through dynamically started cache
+                var dynCache = ignite.CreateCache<int, Foo>(new CacheConfiguration("dynCache")
+                {
+                    CacheStoreFactory = new StoreFactory(),
+                    ReadThrough = true,
+                    WriteThrough = true
+                });
+                dynCache[2] = new Foo {Str = "test2", Int = 3};
             }
 
             using (var ignite = Ignition.Start(cfg))
             {
                 var foo = ignite.GetCache<int, Foo>(null)[1];
+                var foo2 = ignite.GetCache<int, Foo>(null)[2];
 
                 Assert.AreEqual("test", foo.Str);
                 Assert.AreEqual(2, foo.Int);
+
+                Assert.AreEqual("test2", foo2.Str);
+                Assert.AreEqual(3, foo2.Int);
 
                 // Client node
                 using (var igniteClient = Ignition.Start(new IgniteConfiguration(cfg)
@@ -129,9 +147,13 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }))
                 {
                     var fooClient = igniteClient.GetCache<int, Foo>(null)[1];
+                    var fooClient2 = igniteClient.GetCache<int, Foo>(null)[2];
 
                     Assert.AreEqual("test", fooClient.Str);
                     Assert.AreEqual(2, fooClient.Int);
+
+                    Assert.AreEqual("test2", fooClient2.Str);
+                    Assert.AreEqual(3, fooClient2.Int);
                 }
             }
 

@@ -478,6 +478,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, registered);
 
+            // TODO: Do not update maps for unregistered type?
+
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 
             var desc0 = _idToDesc.GetOrAdd(typeKey, x => desc);
