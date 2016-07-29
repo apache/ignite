@@ -571,6 +571,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) throws BinaryObjectException {
+        if (metaDataCache == null)
+            return null;
+
         try {
             if (clientNode) {
                 BinaryType typeMeta = clientMetaDataCache.get(typeId);

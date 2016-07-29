@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
@@ -165,6 +166,35 @@ namespace Apache.Ignite.Core.Tests.Binary
             using (var ignite = Ignition.Start(cfg))
             {
                 Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>(null).Get(1));
+            }
+        }
+
+        /// <summary>
+        /// Tests the store factory property propagation.
+        /// </summary>
+        [Test]
+        public void TestStoreFactory()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration
+                    {
+                        CacheStoreFactory = new StoreFactory {StringProp = "test", IntProp = 9},
+                        ReadThrough = true,
+                        WriteThrough = true
+                    }
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var handleRegistry = ((Ignite) ignite).HandleRegistry;
+                var store = handleRegistry.GetItems().Select(x => x.Value).OfType<CacheStore>().Single();
+
+                Assert.AreEqual("test", store.StringProp);
+                Assert.AreEqual(9, store.IntProp);
             }
         }
 
@@ -340,14 +370,22 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private class StoreFactory : IFactory<ICacheStore>
         {
+            public string StringProp { get; set; }
+
+            public int IntProp { get; set; }
+
             public ICacheStore CreateInstance()
             {
-                return new CacheStore();
+                return new CacheStore { StringProp = StringProp, IntProp = IntProp };
             }
         }
 
         private class CacheStore : CacheStoreAdapter
         {
+            public string StringProp { get; set; }
+
+            public int IntProp { get; set; }
+
             private static readonly Dictionary<object, object>  Dict = new Dictionary<object, object>();
 
             public override object Load(object key)
