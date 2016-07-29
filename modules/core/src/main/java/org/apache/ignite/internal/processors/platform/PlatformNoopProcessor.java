@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.MarshallerContextImplPlatform;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -153,7 +154,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public MarshallerContextImpl platformMarshallerContext() {
+    @Override public MarshallerContextImplPlatform platformMarshallerContext() {
         return null;
     }
 

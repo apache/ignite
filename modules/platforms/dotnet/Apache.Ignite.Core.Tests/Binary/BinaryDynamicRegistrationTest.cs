@@ -192,6 +192,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests the client node.
+        /// </summary>
+        [Test]
+        public void TestClientNode()
+        {
+            // TODO! This is a special case!
+        }
+
+        /// <summary>
         /// Tests the type registration.
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)

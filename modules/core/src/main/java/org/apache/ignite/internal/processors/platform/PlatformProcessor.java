@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.MarshallerContextImplPlatform;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -267,7 +268,7 @@ public interface PlatformProcessor extends GridProcessor {
      *
      * @return Platform marshaller context.
      */
-    public MarshallerContext platformMarshallerContext();
+    public MarshallerContextImplPlatform platformMarshallerContext();
 
     /**
      * Registers platform type name with provided type ID.

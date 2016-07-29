@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.MarshallerContextImplPlatform;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -90,7 +91,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final PlatformConfigurationEx interopCfg;
 
     /** Platform marshaller context. */
-    private final MarshallerContextImpl platformMarshCtx;
+    private final MarshallerContextImplPlatform platformMarshCtx;
 
     /** Whether processor is started. */
     private boolean started;
@@ -127,7 +128,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         Byte prefix = interopCfg.marshallerCacheKeyPrefix();
 
         platformMarshCtx = prefix != null
-            ? new MarshallerContextImpl(null, CU.MARSH_CACHE_NAME_PLATFORM, prefix)
+            ? new MarshallerContextImplPlatform(prefix)
             : null;
     }
 
@@ -441,7 +442,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public MarshallerContextImpl platformMarshallerContext() {
+    @Override public MarshallerContextImplPlatform platformMarshallerContext() {
         return platformMarshCtx;
     }
 

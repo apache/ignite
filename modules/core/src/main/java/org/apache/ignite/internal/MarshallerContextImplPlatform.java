@@ -24,16 +24,18 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.PluginProvider;
 
+import java.io.Externalizable;
 import java.io.File;
-import java.util.List;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * Marshaller context implementation.
  */
-public class MarshallerContextImpl extends MarshallerContextAdapter {
+public class MarshallerContextImplPlatform {
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -41,7 +43,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final File workDir;
 
     /** */
-    private static final String cacheName = CU.MARSH_CACHE_NAME;
+    private static final String cacheName = CU.MARSH_CACHE_NAME_PLATFORM;
+
+    /** */
+    private final byte keyPrefix;
 
     /** */
     private IgniteLogger log;
@@ -56,20 +61,23 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private MarshallerCacheListener lsnr = new MarshallerCacheListener();
 
     /**
-     * @param plugins Plugins.
+     * @param keyPrefix Composite key prefix.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins)
+    public MarshallerContextImplPlatform(byte keyPrefix)
         throws IgniteCheckedException {
-        super(plugins);
 
         workDir = U.resolveWorkDirectory("marshaller", false);
+
+        this.keyPrefix = keyPrefix;
     }
+
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        // TODO: This is not called for platforms!
         lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
@@ -77,10 +85,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        log = ctx.log(MarshallerContextImpl.class);
+        log = ctx.log(MarshallerContextImplPlatform.class);
 
         cache = ctx.cache().internalCache(cacheName);
 
@@ -93,18 +101,21 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * Release marshaller context.
      */
     public void onKernalStop() {
+        // TODO: This is not called for platforms!
         latch.countDown();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+    public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
         GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null)
             return false;
 
+        Object key = getKey(id);
+
         try {
-            String old = cache0.tryGetAndPut(id, clsName);
+            String old = cache0.tryGetAndPut(key, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
@@ -128,7 +139,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public String className(int id) throws IgniteCheckedException {
+    public String className(int id) throws IgniteCheckedException {
         GridCacheAdapter<Object, String> cache0 = cache;
 
         if (cache0 == null) {
@@ -140,15 +151,96 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = cache0.getTopologySafe(id);
+        Object key = getKey(id);
+
+        String clsName = cache0.getTopologySafe(key);
 
         if (clsName == null) {
-            clsName = MarshallerWorkDirectory.getTypeNameFromFile(id, workDir);
+            clsName = MarshallerWorkDirectory.getTypeNameFromFile(key, workDir);
 
             // Must explicitly put entry to cache to invoke other continuous queries.
             registerClassName(id, clsName);
         }
 
         return clsName;
+    }
+
+    /**
+     * Gets the cache key for a type id.
+     *
+     * @param id Id.
+     * @return Cache key depending on keyPrefix.
+     */
+    private Object getKey(int id) {
+        return new TypeIdKey(keyPrefix, id);
+    }
+
+    /**
+     * Composite type key.
+     *
+     * Each platform can have a different type name for a given type id.
+     * Composite key allows sharing a single marshaller cache between multiple platforms.
+     */
+    private static class TypeIdKey implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private byte prefix;
+
+        /** */
+        private int id;
+
+        /**
+         * Default ctor for serialization.
+         */
+        public TypeIdKey() {
+            // No-op.
+        }
+
+        /**
+         * Ctor.
+         *
+         * @param prefix Prefix.
+         * @param id Id.
+         */
+        private TypeIdKey(byte prefix, int id) {
+            this.prefix = prefix;
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeByte(prefix);
+            out.writeInt(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            prefix = in.readByte();
+            id = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TypeIdKey key = (TypeIdKey)o;
+
+            return prefix == key.prefix && id == key.id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * (int)prefix + id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return prefix + "_" + id;
+        }
     }
 }
