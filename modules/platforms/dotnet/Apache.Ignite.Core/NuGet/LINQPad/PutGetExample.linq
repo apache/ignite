@@ -35,11 +35,8 @@ void Main()
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
-    // Configure cacheable types
-    var cfg = new IgniteConfiguration {BinaryConfiguration = new BinaryConfiguration(typeof(Organization))};
-
     // Start instance
-    using (var ignite = Ignition.Start(cfg))
+    using (var ignite = Ignition.Start())
     {
         // Create new cache
         var cache = ignite.CreateCache<int, Organization>("orgs");
