@@ -76,7 +76,9 @@ public class PlatformMarshallerContext {
     }
 
     /**
-     * @param ctx Context.
+     * Called when continuous processor has started.
+     *
+     * @param ctx Kernal context.
      * @throws IgniteCheckedException If failed.
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
@@ -85,6 +87,8 @@ public class PlatformMarshallerContext {
     }
 
     /**
+     * Called when marshaller cache has started.
+     *
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
