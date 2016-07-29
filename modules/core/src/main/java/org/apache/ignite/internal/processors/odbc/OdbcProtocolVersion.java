@@ -8,10 +8,10 @@ import java.util.Map;
  */
 public enum OdbcProtocolVersion {
     /** First version of the ODBC. Released with Ignite 1.6 */
-    VERSION_1_1_6(1),
+    VERSION_1_6(1),
 
     /** Second version of the ODBC. Released with Ignite 1.7 */
-    VERSION_1_1_7(2),
+    VERSION_1_7(2),
 
     /** Unknown version. */
     VERSION_UNKNOWN(Long.MIN_VALUE);
@@ -29,8 +29,8 @@ public enum OdbcProtocolVersion {
         for (OdbcProtocolVersion version : values())
             versions.put(version.longValue(), version);
 
-        since.put(VERSION_1_1_6, "1.6.0");
-        since.put(VERSION_1_1_7, "1.7.0");
+        since.put(VERSION_1_6, "1.6.0");
+        since.put(VERSION_1_7, "1.7.0");
     }
 
     /** Long value for version. */
@@ -57,7 +57,7 @@ public enum OdbcProtocolVersion {
      * @return Current version.
      */
     public static OdbcProtocolVersion current() {
-        return VERSION_1_1_7;
+        return VERSION_1_7;
     }
 
     /**
@@ -80,7 +80,7 @@ public enum OdbcProtocolVersion {
     public boolean isDistributedJoinsSupported() {
         assert !isUnknown();
 
-        return longVal >= VERSION_1_1_7.longVal;
+        return longVal >= VERSION_1_7.longVal;
     }
 
     /**

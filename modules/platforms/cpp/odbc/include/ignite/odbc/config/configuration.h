@@ -63,6 +63,9 @@ namespace ignite
 
                     /** Connection attribute keyword for enforce join order attribute. */
                     static const std::string enforceJoinOrder;
+
+                    /** Connection attribute keyword for protocol version attribute. */
+                    static const std::string protocolVersion;
                 };
 
                 /** Default values for configuration. */
@@ -82,6 +85,9 @@ namespace ignite
 
                     /** Default value for server attribute. */
                     static const std::string server;
+
+                    /** Default value for protocol version. */
+                    static const std::string protocolVersion;
 
                     /** Default value for port attribute. */
                     static const uint16_t port;
@@ -226,6 +232,13 @@ namespace ignite
                 }
 
                 /**
+                 * Get protocol version.
+                 *
+                 * @return Protocol version.
+                 */
+                int64_t GetProtocolVersion() const;
+
+                /**
                  * Get string value from the config.
                  *
                  * @param key Configuration key.
@@ -270,6 +283,15 @@ namespace ignite
                  * @param res Result is placed here.
                  */
                 static void ParseAddress(const std::string& address, EndPoint& res);
+
+                /**
+                 * Parse version and extract protocol version.
+                 *
+                 * @throw IgniteException if version can not be parsed.
+                 * @param version Version string to parse.
+                 * @return Long value for version.
+                 */
+                static int64_t ParseVersion(const std::string& version);
 
                 /** Arguments. */
                 ArgumentMap arguments;

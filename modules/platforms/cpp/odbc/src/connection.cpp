@@ -311,11 +311,13 @@ namespace ignite
         {
             bool distributedJoins = false;
             bool enforceJoinOrder = false;
+            int64_t protocolVersion = 0;
 
             try
             {
                 distributedJoins = config.IsDistributedJoins();
                 enforceJoinOrder = config.IsEnforceJoinOrder();
+                protocolVersion = config.GetProtocolVersion();
             }
             catch (const IgniteError& err)
             {
@@ -324,7 +326,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            HandshakeRequest req(PROTOCOL_VERSION, distributedJoins, enforceJoinOrder);
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder);
             HandshakeResponse rsp;
 
             try
