@@ -97,7 +97,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false}, // TODO: ??
+                // Disable compact footers to test grid restart with persistent store
+                // (Because store operates on raw binary objects).
+                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration
