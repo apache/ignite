@@ -82,47 +82,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len,
         final CacheObjectContext ctx) throws IgniteCheckedException {
-        int dataLen = val.length;
-
-        if (buf.remaining() < len)
-            return false;
-
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
-            buf.putInt(dataLen);
-            buf.put(cacheObjectType());
-
-            len -= headSize;
-        }
-        else if (off >= headSize)
-            off -= headSize;
-        else {
-            // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
-
-            head.order(buf.order());
-
-            head.putInt(dataLen);
-            head.put(cacheObjectType());
-
-            head.position(off);
-
-            if (len < head.capacity())
-                head.limit(head.position() + head.capacity() - len);
-
-            buf.put(head);
-
-            if (head.hasRemaining())
-                return true;
-
-            off -= headSize;
-            len -= head.capacity() - off;
-        }
-
-        buf.put(val, off, len);
-
-        return true;
+        return CacheObjectAdapter.putValue(this, buf, off, len, val, 0);
     }
 
     /** {@inheritDoc} */

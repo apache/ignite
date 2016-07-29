@@ -31,12 +31,14 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -61,88 +63,102 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<FragmentContext, Void> writeRow = new PageHandler<FragmentContext, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, FragmentContext fctx, int entrySize)
-            throws IgniteCheckedException {
-            final boolean fragmented = fctx.chunks > 1;
-
-            final CacheDataRow row = fctx.row;
-
+    private final PageHandler<CacheDataRow, Void> writeRow = new PageHandler<CacheDataRow, Void>() {
+        @Override public Void run(final long pageId, final Page page, final ByteBuffer buf, final CacheDataRow row,
+            final int entrySize) throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            DataPageIO.FragmentWritten written = null;
+            int idx = io.addRow(cctx.cacheObjectContext(), buf, row, entrySize);
 
-            if (fragmented) {
-                written = io.writeRowFragment(
-                    fctx.row.key(),
-                    fctx.row.value(),
-                    fctx.row.version(),
-                    buf,
-                    cctx.cacheObjectContext(),
-                    fctx.written,
-                    fctx.totalEntrySize,
-                    fctx.chunkSize,
-                    fctx.chunks,
-                    fctx.lastLink);
-            }
-            else
-                fctx.lastIdx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
-
-            assert fctx.lastIdx >= 0 : fctx.lastIdx;
+            assert idx >= 0 : idx;
 
             FreeTree tree = tree(row.partition());
 
-            if (tree.needWalDeltaRecord(page)) {
-                if (!fragmented) {
-                    wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
-                        row.version(), fctx.lastIdx, entrySize));
-                }
-                else {
-                    if (written.lastFragment()) {
-                        // Write entry tail in WAL.
-                        final byte[] frData = new byte[written.writtenBytes() - fctx.written];
+            if (tree.needWalDeltaRecord(page))
+                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
+                    row.version(), idx, entrySize));
 
-                        buf.position(written.dataOffset());
+            row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
 
-                        buf.get(frData);
-
-                        wal.log(new DataPageInsertFragmentRecord(
-                            cctx.cacheId(),
-                            pageId,
-                            fctx.written,
-                            fctx.lastLink,
-                            frData));
-
-                        buf.position(0);
-                    }
-                    else
-                        // Just mark page to store in WAL, because all fragments
-                        // except last one fill page fully.
-                        page.forceFullPageWalRecord(true);
-                }
-            }
-
-            if (fragmented) {
-                fctx.written = written.writtenBytes();
-
-                fctx.lastIdx = written.writtenIndex();
-            }
-
-            fctx.lastLink = PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIdx);
-
-            final int freeSlots = io.getFreeItemSlots(buf);
-
-            // If no free slots available then assume that page is full
-            int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
-
-            // Put our free item.
-            tree.put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
-
-            row.link(fctx.lastLink);
+            putInTree(pageId, buf, row, io);
 
             return null;
         }
     };
+
+    /** */
+    private final PageHandler<CacheEntryFragmentContext, Void> writeFragmentRow = new PageHandler<CacheEntryFragmentContext, Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, CacheEntryFragmentContext fctx, int entrySize)
+            throws IgniteCheckedException {
+            assert fctx.chunks() > 1;
+
+            final CacheDataRow row = fctx.dataRow();
+
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+            final int initWritten = fctx.written();
+
+            fctx.pageBuffer(buf);
+
+            io.addRowFragment(fctx);
+
+            assert fctx.lastIndex() >= 0 : fctx.lastIndex();
+
+            FreeTree tree = tree(row.partition());
+
+            if (tree.needWalDeltaRecord(page)) {
+                if (fctx.lastFragment()) {
+                    // Write entry tail in WAL.
+                    final byte[] frData = new byte[fctx.written() - initWritten];
+
+                    buf.position(fctx.pageDataOffset());
+
+                    buf.get(frData);
+
+                    wal.log(new DataPageInsertFragmentRecord(
+                        cctx.cacheId(),
+                        pageId,
+                        fctx.written(),
+                        fctx.lastLink(),
+                        frData));
+
+                    buf.position(0);
+                }
+                else
+                    // Just mark page to store in WAL, because all fragments
+                    // except last one fill page fully.
+                    page.forceFullPageWalRecord(true);
+            }
+
+            fctx.lastLink(PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIndex()));
+
+            putInTree(pageId, buf, row, io);
+
+            row.link(fctx.lastLink());
+
+            return null;
+        }
+    };
+
+    /**
+     * Return page in tree with updated free space value.
+     *
+     * @param pageId Page ID.
+     * @param buf Page buffer.
+     * @param row Cache data row.
+     * @param io Data page IO.
+     * @throws IgniteCheckedException
+     */
+    private void putInTree(final long pageId, final ByteBuffer buf, final CacheDataRow row,
+        final DataPageIO io) throws IgniteCheckedException {
+        final int freeSlots = io.getFreeItemSlots(buf);
+
+        // If no free slots available then assume that page is full
+        int freeSpace = freeSlots == 0 ? 0 : io.getFreeSpace(buf);
+
+        // Put our free item.
+        tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
+    }
 
     /** */
     private final PageHandler<FreeTree, Long> removeRow = new PageHandler<FreeTree, Long>() {
@@ -151,7 +167,7 @@ public class FreeList {
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            assert DataPageIO.check(itemId): itemId;
+            assert DataPageIO.checkIndex(itemId): itemId;
 
             final int dataOff = io.getDataOffset(buf, itemId);
 
@@ -282,7 +298,7 @@ public class FreeList {
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        int entrySize = DataPageIO.getEntrySize(coctx, row.key(), row.value());
+        final int entrySize = DataPageIO.getEntrySize(coctx, row.key(), row.value());
 
         assert entrySize > 0 : entrySize;
 
@@ -295,16 +311,16 @@ public class FreeList {
 
         assert chunks > 0;
 
-        final FragmentContext fctx =
-            new FragmentContext(entrySize, chunks, availablePageSize, row);
+        FragmentContext fctx = null;
 
-        final int freeLast = fctx.totalEntrySize - fctx.chunkSize * (fctx.chunks - 1);
+        if (chunks > 1)
+            fctx = new FragmentContext(entrySize, chunks, availablePageSize, row);
 
         for (int i = 0; i < chunks; i++) {
             int free = entrySize;
 
-            if (chunks > 1)
-                free = i == 0 ? freeLast : availablePageSize;
+            if (fctx != null)
+                free = i == 0 ? fctx.totalEntrySize() - fctx.chunkSize() * (fctx.chunks() - 1) : availablePageSize;
 
             FreeItem item = take(tree,
                 new FreeItem(free, 0, cctx.cacheId()));
@@ -324,16 +340,56 @@ public class FreeList {
                         // It is a newly allocated page and we will not write record to WAL here.
                         assert !page.isDirty();
 
-                        writeRow.run(page.id(), page, buf, fctx, entrySize);
+                        writeNewPage(page, buf, fctx, row, entrySize);
                     }
                     finally {
                         page.releaseWrite(true);
                     }
                 }
                 else
-                    writePage(page.id(), page, writeRow, fctx, entrySize);
+                    writeExistedPage(page, fctx, row, entrySize);
             }
         }
+    }
+
+    /**
+     * @param page Data page.
+     * @param fctx Fragment context.
+     * @param row Cache data row.
+     * @param entrySize Entry size.
+     * @throws IgniteCheckedException
+     */
+    private void writeExistedPage(
+        final Page page,
+        final @Nullable CacheEntryFragmentContext fctx,
+        final CacheDataRow row,
+        final int entrySize
+    ) throws IgniteCheckedException {
+        if (fctx != null)
+            writePage(page.id(), page, writeFragmentRow, fctx, entrySize);
+        else
+            writePage(page.id(), page, writeRow, row, entrySize);
+    }
+
+    /**
+     * @param page Data page.
+     * @param buf Data page buffer.
+     * @param fctx Fragment context.
+     * @param row Cache data row.
+     * @param entrySize Entry size.
+     * @throws IgniteCheckedException
+     */
+    private void writeNewPage(
+        final Page page,
+        final ByteBuffer buf,
+        final @Nullable CacheEntryFragmentContext fctx,
+        final CacheDataRow row,
+        final int entrySize
+    ) throws IgniteCheckedException {
+        if (fctx != null)
+            writeFragmentRow.run(page.id(), page, buf, fctx, entrySize);
+        else
+            writeRow.run(page.id(), page, buf, row, entrySize);
     }
 
     /**
@@ -345,51 +401,5 @@ public class FreeList {
         long pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
 
         return pageMem.page(cctx.cacheId(), pageId);
-    }
-
-    /**
-     *
-     */
-    public static class FragmentContext {
-        /** Totally written data (with overhead) */
-        private int written;
-
-        /** Index to last written chunk. */
-        public int lastIdx;
-
-        /** Link to last written chunk. */
-        public long lastLink;
-
-        /** Entry size with overhead all over the chunks. */
-        public final int totalEntrySize;
-
-        /** Number of chunks. */
-        public final int chunks;
-
-        /** Size of the chunk with overhead (except of last chunk, it may be smaller.) */
-        public final int chunkSize;
-
-        /** Data row to be written. */
-        public final CacheDataRow row;
-
-        /**
-         * @param totalEntrySize Entry size with overhead all over the chunks.
-         * @param chunks Number of chunks.
-         * @param chunkSize Size of the chunk with overhead (but not last chunk, it may be smaller.)
-         * @param row Data row to be written.
-         * @throws IgniteCheckedException If fail.
-         */
-        public FragmentContext(
-            final int totalEntrySize,
-            final int chunks,
-            final int chunkSize,
-            final CacheDataRow row
-        ) throws IgniteCheckedException {
-            this.totalEntrySize = totalEntrySize;
-            this.chunks = chunks;
-            this.chunkSize = chunkSize;
-            this.row = row;
-        }
-
     }
 }

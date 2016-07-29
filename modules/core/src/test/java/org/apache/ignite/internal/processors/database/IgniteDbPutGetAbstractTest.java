@@ -347,7 +347,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         final byte[] val = new byte[2048];
 
-        Arrays.fill(val, (byte) 1);
+        ThreadLocalRandom.current().nextBytes(val);
 
         cache.put(0, val);
 
@@ -355,9 +355,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         final IgniteCache<Integer, LargeDbValue> cache1 = ig.cache("large");
 
-        final LargeDbValue large = new LargeDbValue("str1", "str2", new int[1024]);
-
-        Arrays.fill(large.arr, 2);
+        final LargeDbValue large = new LargeDbValue("str1", "str2", randomInts(1024));
 
         cache1.put(1, large);
 
@@ -381,6 +379,21 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         assertNull(cache.get(0));
         assertNull(cache1.get(1));
+    }
+
+    /**
+     * @param size Array size.
+     * @return Array with random items.
+     */
+    private int[] randomInts(final int size) {
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final int[] arr = new int[size];
+
+        for (int i = 0; i < arr.length; i++)
+            arr[i] = rnd.nextInt();
+
+        return arr;
     }
 
     /**

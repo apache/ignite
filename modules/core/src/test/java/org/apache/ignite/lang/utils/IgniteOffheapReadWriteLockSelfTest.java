@@ -66,6 +66,9 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                             lock.writeLock(ptr);
 
                             try {
+                                assertTrue(lock.isWriteLocked(ptr));
+                                assertFalse(lock.isReadLocked(ptr));
+
                                 int idx = rnd.nextInt(numPairs);
                                 int delta = rnd.nextInt(100_000);
 
@@ -82,6 +85,9 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                             lock.readLock(ptr);
 
                             try {
+                                assertFalse(lock.isWriteLocked(ptr));
+                                assertTrue(lock.isReadLocked(ptr));
+
                                 for (int i1 = 0; i1 < data.length; i1++) {
                                     Pair pair = data[i1];
 
@@ -153,6 +159,9 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                         lock.writeLock(lPtr);
 
                         try {
+                            assertTrue(lock.isWriteLocked(lPtr));
+                            assertFalse(lock.isReadLocked(lPtr));
+
                             int delta = rnd.nextInt(100_000);
 
                             data[idx].a += delta;
@@ -168,6 +177,9 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                         lock.readLock(lPtr);
 
                         try {
+                            assertFalse(lock.isWriteLocked(lPtr));
+                            assertTrue(lock.isReadLocked(lPtr));
+
                             Pair pair = data[idx];
 
                             assertEquals("Failed check for index: " + idx, pair.a, -pair.b);

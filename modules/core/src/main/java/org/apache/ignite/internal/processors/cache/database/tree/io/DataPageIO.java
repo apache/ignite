@@ -25,7 +25,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -208,7 +209,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Direct count.
      */
     private void setDirectCount(ByteBuffer buf, int cnt) {
-        assert check(cnt): cnt;
+        assert checkCounter(cnt): cnt;
 
         buf.put(DIRECT_CNT_OFF, (byte)cnt);
     }
@@ -226,7 +227,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Indirect count.
      */
     private void setIndirectCount(ByteBuffer buf, int cnt) {
-        assert check(cnt): cnt;
+        assert checkCounter(cnt): cnt;
 
         buf.put(INDIRECT_CNT_OFF, (byte)cnt);
     }
@@ -235,8 +236,16 @@ public class DataPageIO extends PageIO {
      * @param idx Index.
      * @return {@code true} If the index is valid.
      */
-    public static boolean check(int idx) {
-        return idx >= 0 && idx < 256;
+    public static boolean checkIndex(int idx) {
+        return idx >= 0 && idx < 0xFF;
+    }
+
+    /**
+     * @param cnt Counter value.
+     * @return {@code true} If the counter fits 1 byte.
+     */
+    public static boolean checkCounter(int cnt) {
+        return cnt >= 0 && cnt <= 0xFF;
     }
 
     /**
@@ -364,7 +373,7 @@ public class DataPageIO extends PageIO {
      * @return Data entry offset in bytes.
      */
     public int getDataOffset(ByteBuffer buf, int itemId) {
-        assert check(itemId): itemId;
+        assert checkIndex(itemId): itemId;
 
         int directCnt = getDirectCount(buf);
 
@@ -459,7 +468,7 @@ public class DataPageIO extends PageIO {
      * @return Offset in buffer.
      */
     private static int itemOffset(int idx) {
-        assert check(idx): idx;
+        assert checkIndex(idx): idx;
 
         return ITEMS_OFF + idx * ITEM_SIZE;
     }
@@ -504,8 +513,8 @@ public class DataPageIO extends PageIO {
      * @return Indirect item.
      */
     private static short indirectItem(int itemId, int directItemIdx) {
-        assert check(itemId): itemId;
-        assert check(directItemIdx): directItemIdx;
+        assert checkIndex(itemId): itemId;
+        assert checkIndex(directItemIdx): directItemIdx;
 
         return (short)((itemId << 8) | directItemIdx);
     }
@@ -569,7 +578,7 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void removeRow(ByteBuffer buf, int itemId) throws IgniteCheckedException {
-        assert check(itemId) : itemId;
+        assert checkIndex(itemId) : itemId;
 
         // Record original counts to calculate delta in free space in the end of remove.
         final int directCnt = getDirectCount(buf);
@@ -670,9 +679,7 @@ public class DataPageIO extends PageIO {
     /**
      * @param coctx Cache object context.
      * @param buf Buffer.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
+     * @param row Cache data row.
      * @param entrySizeWithItem Entry size as returned by {@link #getEntrySize(int, int)}.
      * @return Item ID.
      * @throws IgniteCheckedException If failed.
@@ -680,13 +687,11 @@ public class DataPageIO extends PageIO {
     public int addRow(
         CacheObjectContext coctx,
         ByteBuffer buf,
-        CacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
+        CacheDataRow row,
         int entrySizeWithItem
     ) throws IgniteCheckedException {
         if (entrySizeWithItem > buf.capacity() - ITEMS_OFF)
-            throw new IgniteException("Too big entry [key=" + key + ", val=" + val +
+            throw new IgniteException("Too big entry [key=" + row.key() + ", val=" + row.value() +
                 ", entrySizeWithItem=" + entrySizeWithItem + ", activeCap=" + (buf.capacity() - ITEMS_OFF) + ']');
 
         int directCnt = getDirectCount(buf);
@@ -699,7 +704,7 @@ public class DataPageIO extends PageIO {
         // Write data right before the first entry.
         dataOff -= entrySizeWithItem - ITEM_SIZE;
 
-        writeRowData(coctx, buf, dataOff, entrySizeWithItem, key, val, ver);
+        writeRowData(coctx, buf, dataOff, entrySizeWithItem, row);
 
         return writeItemId(buf, entrySizeWithItem, directCnt, indirectCnt, dataOff);
     }
@@ -744,7 +749,7 @@ public class DataPageIO extends PageIO {
 
         int itemId = insertItem(buf, dataOff, directCnt, indirectCnt);
 
-        assert check(itemId): itemId;
+        assert checkIndex(itemId): itemId;
         assert getIndirectCount(buf) <= getDirectCount(buf);
 
         // Update free space. If number of indirect items changed, then we were able to reuse an item slot.
@@ -759,36 +764,43 @@ public class DataPageIO extends PageIO {
     /**
      * Writes next entry fragment.
      *
-     * @param key Entry key.
-     * @param val Entry value
-     * @param ver Grid cache version.
-     * @param buf Page buffer.
-     * @param ctx Cache object context.
-     * @param written Actual written entry bytes from the end.
-     * @param totalEntrySize Total entry size with overhead.
-     * @param chunkSize Fragment size.
-     * @param chunks Number of fragments.
-     * @param lastLink Last fragment link or 0 if it is the first one (from the entry end).
-     * @return Updated written bytes value and fragment index in the page.
+     * @param fctx Fragment context.
      * @throws IgniteCheckedException If failed.
      */
-    public FragmentWritten writeRowFragment(
-        final KeyCacheObject key,
-        final CacheObject val,
-        final GridCacheVersion ver,
-        final ByteBuffer buf,
-        final CacheObjectContext ctx,
-        int written,
-        final int totalEntrySize,
-        final int chunkSize,
-        final int chunks,
-        final long lastLink
-    ) throws IgniteCheckedException {
-        final boolean lastChunk = written == 0;
+    public void addRowFragment(final CacheEntryFragmentContext fctx) throws IgniteCheckedException {
+        final boolean lastChunk = fctx.written() == 0;
 
-        final int dataSize = key.valueBytesLength(ctx) + val.valueBytesLength(ctx) + VER_SIZE;
+        final int toWrite;
+        final int len;
+        final int off;
 
-        final int toWrite = lastChunk ? totalEntrySize - chunkSize * (chunks - 1) : chunkSize;
+        final CacheDataRow row = fctx.dataRow();
+        final ByteBuffer rowBuf = fctx.rowBuffer();
+        final ByteBuffer buf = fctx.pageBuffer();
+        final CacheObjectContext ctx = fctx.cacheObjectContext();
+
+        final int chunks = fctx.chunks();
+        final int chunkSize = fctx.chunkSize();
+        final int totalEntrySize = fctx.totalEntrySize();
+        int written = fctx.written();
+        final long lastLink = fctx.lastLink();
+
+        if (rowBuf == null) {
+            final int dataSize = row.key().valueBytesLength(ctx) + row.value().valueBytesLength(ctx) + VER_SIZE;
+
+            toWrite = lastChunk ? totalEntrySize - chunkSize * (chunks - 1) : chunkSize;
+
+            len = toWrite - ITEM_SIZE - KV_LEN_SIZE - LINK_SIZE;
+
+            off = Math.abs(written - dataSize) - len;
+        }
+        else {
+            toWrite = rowBuf.remaining() + ITEM_SIZE + KV_LEN_SIZE + LINK_SIZE;
+
+            len = rowBuf.remaining();
+
+            off = 0;
+        }
 
         int directCnt = getDirectCount(buf);
         int indirectCnt = getIndirectCount(buf);
@@ -802,13 +814,13 @@ public class DataPageIO extends PageIO {
         try {
             buf.position(dataOff);
 
-            final int len = toWrite - ITEM_SIZE - KV_LEN_SIZE - LINK_SIZE;
-            final int off = Math.abs(written - dataSize) - len;
-
             buf.putShort((short) (len | FRAGMENTED_FLAG));
             buf.putLong(lastLink);
 
-            writeFragmentData(key, val, ver, buf, ctx, off, len);
+            if (rowBuf == null)
+                writeFragmentData(row, buf, ctx, off, len);
+            else
+                buf.put(rowBuf);
 
             written += len;
         }
@@ -818,56 +830,10 @@ public class DataPageIO extends PageIO {
 
         final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
 
-        return new FragmentWritten(written, idx, dataOff + KV_LEN_SIZE + LINK_SIZE, lastChunk);
-    }
-
-    /**
-     * Write prepared fragment data to page.
-     *
-     * @param dataBuf Actual fragment data.
-     * @param buf Page buffer.
-     * @param written Actual written entry bytes from the end.
-     * @param lastLink Last fragment linc.
-     * @return Updated written bytes value and fragment index in the page.
-     */
-    public FragmentWritten writeFragmentData(
-        final ByteBuffer dataBuf,
-        final ByteBuffer buf,
-        int written,
-        final long lastLink
-    ) {
-        final boolean lastChunk = written == 0;
-
-        final int toWrite = dataBuf.remaining() + ITEM_SIZE + KV_LEN_SIZE + LINK_SIZE;
-
-        int directCnt = getDirectCount(buf);
-        int indirectCnt = getIndirectCount(buf);
-        int dataOff = getFirstEntryOffset(buf);
-
-        // Compact if we do not have enough space for entry.
-        dataOff = compactIfNeed(buf, toWrite, directCnt, indirectCnt, dataOff);
-
-        dataOff -= toWrite - ITEM_SIZE;
-
-        try {
-            buf.position(dataOff);
-
-            final int len = dataBuf.remaining();
-
-            buf.putShort((short) (len | FRAGMENTED_FLAG));
-            buf.putLong(lastLink);
-
-            buf.put(dataBuf);
-
-            written += len;
-        }
-        finally {
-            buf.position(0);
-        }
-
-        final int idx = writeItemId(buf, toWrite, directCnt, indirectCnt, dataOff);
-
-        return new FragmentWritten(written, idx, dataOff, lastChunk);
+        fctx.written(written);
+        fctx.lastIndex(idx);
+        fctx.pageDataOffset(dataOff + KV_LEN_SIZE + LINK_SIZE);
+        fctx.lastFragment(lastChunk);
     }
 
     /**
@@ -878,19 +844,17 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If fail.
      */
     private void writeFragmentData(
-        final KeyCacheObject key,
-        final CacheObject val,
-        final GridCacheVersion ver,
+        final CacheDataRow row,
         final ByteBuffer buf,
         final CacheObjectContext ctx,
         final int totalOff,
         final int totalLen
     ) throws IgniteCheckedException {
-        int written = writeFragment(key, val, ver, buf, ctx, totalOff, totalLen, EntryPart.KEY);
+        int written = writeFragment(row, buf, ctx, totalOff, totalLen, EntryPart.KEY);
 
-        written += writeFragment(key, val, ver, buf, ctx, totalOff + written, totalLen - written, EntryPart.VAL);
+        written += writeFragment(row, buf, ctx, totalOff + written, totalLen - written, EntryPart.VAL);
 
-        writeFragment(key, val, ver, buf, ctx, totalOff + written, totalLen - written, EntryPart.VER);
+        writeFragment(row, buf, ctx, totalOff + written, totalLen - written, EntryPart.VER);
     }
 
     /**
@@ -903,9 +867,7 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If fail.
      */
     private int writeFragment(
-        final KeyCacheObject key,
-        final CacheObject val,
-        final GridCacheVersion ver,
+        final CacheDataRow row,
         final ByteBuffer buf,
         final CacheObjectContext ctx,
         final int totalOff,
@@ -916,8 +878,8 @@ public class DataPageIO extends PageIO {
         final int prevLen;
         final int curLen;
 
-        final int keySize = key.valueBytesLength(ctx);
-        final int valSize = val.valueBytesLength(ctx);
+        final int keySize = row.key().valueBytesLength(ctx);
+        final int valSize = row.value().valueBytesLength(ctx);
 
         switch (type) {
             case KEY:
@@ -948,7 +910,7 @@ public class DataPageIO extends PageIO {
         final int len = Math.min(curLen - totalOff, totalLen);
 
         if (type == EntryPart.KEY || type == EntryPart.VAL) {
-            final CacheObject co = type == EntryPart.KEY ? key : val;
+            final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
 
             co.putValue(buf, totalOff - prevLen, len, ctx);
         }
@@ -957,7 +919,7 @@ public class DataPageIO extends PageIO {
 
             verBuf.order(buf.order());
 
-            writeGridCacheVersion(verBuf, ver);
+            writeGridCacheVersion(verBuf, row.version());
 
             buf.put(verBuf.array(), totalOff - prevLen, len);
         }
@@ -1021,7 +983,7 @@ public class DataPageIO extends PageIO {
      * @return New first entry offset.
      */
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
-        assert check(directCnt): directCnt;
+        assert checkCounter(directCnt): directCnt;
 
         int[] offs = new int[directCnt];
 
@@ -1105,33 +1067,28 @@ public class DataPageIO extends PageIO {
      * @param buf Buffer.
      * @param dataOff Data offset.
      * @param entrySize Entry size as returned by {@link #getEntrySize(int, int)}.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
      */
     private void writeRowData(
         CacheObjectContext coctx,
         ByteBuffer buf,
         int dataOff,
         int entrySize,
-        CacheObject key,
-        CacheObject val,
-        GridCacheVersion ver
+        CacheDataRow row
     ) throws IgniteCheckedException {
         try {
             buf.position(dataOff);
 
             buf.putShort((short)entrySize);
 
-            boolean written = key.putValue(buf, coctx);
+            boolean written = row.key().putValue(buf, coctx);
 
             assert written;
 
-            written = val.putValue(buf, coctx);
+            written = row.value().putValue(buf, coctx);
 
             assert written;
 
-            writeGridCacheVersion(buf, ver);
+            writeGridCacheVersion(buf, row.version());
         }
         finally {
             buf.position(0);
@@ -1147,63 +1104,5 @@ public class DataPageIO extends PageIO {
         buf.putInt(ver.nodeOrderAndDrIdRaw());
         buf.putLong(ver.globalTime());
         buf.putLong(ver.order());
-    }
-
-    /**
-     *
-     */
-    public static class FragmentWritten {
-        /** Total written entry bytes from the entry end. */
-        private final int writtenBytes;
-
-        /** Last fragment index. */
-        private final int idx;
-
-        /** Data offset that points to fragment actual data without overhead. */
-        private final int dataOff;
-
-        /** Last fragment flag. */
-        private final boolean lastFragment;
-
-        /**
-         * @param writtenBytes Total written entry bytes from the entry end.
-         * @param idx Last fragment index.
-         * @param dataOff Data offset that points to fragment actual data without overhead.
-         * @param lastFragment Last fragment flag.
-         */
-        public FragmentWritten(final int writtenBytes, final int idx, final int dataOff, final boolean lastFragment) {
-            this.writtenBytes = writtenBytes;
-            this.idx = idx;
-            this.dataOff = dataOff;
-            this.lastFragment = lastFragment;
-        }
-
-        /**
-         * @return Total written entry bytes from the entry end.
-         */
-        public int writtenBytes() {
-            return writtenBytes;
-        }
-
-        /**
-         * @return Last fragment index.
-         */
-        public int writtenIndex() {
-            return idx;
-        }
-
-        /**
-         * @return Data offset that points to fragment actual data without overhead.
-         */
-        public int dataOffset() {
-            return dataOff;
-        }
-
-        /**
-         * @return {@code True} if it was a last fragment written.
-         */
-        public boolean lastFragment() {
-            return lastFragment;
-        }
     }
 }

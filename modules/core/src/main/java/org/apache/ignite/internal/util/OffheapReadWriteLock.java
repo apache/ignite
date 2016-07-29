@@ -207,6 +207,22 @@ public class OffheapReadWriteLock {
     }
 
     /**
+     * @param lock Lock to check.
+     * @return {@code True} if write lock is held by any thread for the given offheap RW lock.
+     */
+    public boolean isWriteLocked(long lock) {
+        return lockCount(GridUnsafe.getLongVolatile(null, lock)) == -1;
+    }
+
+    /**
+     * @param lock Lock to check.
+     * @return {@code True} if at least one read lock is held by any thread for the given offheap RW lock.
+     */
+    public boolean isReadLocked(long lock) {
+        return lockCount(GridUnsafe.getLongVolatile(null, lock)) > 0;
+    }
+
+    /**
      * @param lock Lock address.
      */
     public void writeUnlock(long lock) {

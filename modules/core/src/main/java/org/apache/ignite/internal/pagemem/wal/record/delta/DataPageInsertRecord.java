@@ -22,15 +22,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
+public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRow {
     /** */
-    private CacheObject key;
+    private KeyCacheObject key;
 
     /** */
     private CacheObject val;
@@ -56,7 +58,7 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     public DataPageInsertRecord(
         int cacheId,
         long pageId,
-        CacheObject key,
+        KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
         int itemId,
@@ -74,21 +76,21 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     /**
      * @return Key.
      */
-    public CacheObject key() {
+    @Override public KeyCacheObject key() {
         return key;
     }
 
     /**
      * @return Value.
      */
-    public CacheObject value() {
+    @Override public CacheObject value() {
         return val;
     }
 
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 
@@ -113,7 +115,7 @@ public class DataPageInsertRecord extends PageDeltaRecord {
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        int itemId = io.addRow(coctx, buf, key, val, ver, entrySize);
+        int itemId = io.addRow(coctx, buf, this, entrySize);
 
         if (itemId != this.itemId)
             throw new DeltaApplicationException("Unexpected itemId: " + itemId);
@@ -122,5 +124,20 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(final long link) {
+        throw new UnsupportedOperationException();
     }
 }

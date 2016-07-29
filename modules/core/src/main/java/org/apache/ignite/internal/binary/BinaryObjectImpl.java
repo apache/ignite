@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -155,47 +156,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len,
         final CacheObjectContext ctx) throws IgniteCheckedException {
-        int dataLen = length();
-
-        if (buf.remaining() < len)
-            return false;
-
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
-            buf.putInt(dataLen);
-            buf.put(cacheObjectType());
-
-            len -= headSize;
-        }
-        else if (off >= headSize)
-            off -= headSize;
-        else {
-            // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
-
-            head.order(buf.order());
-
-            head.putInt(dataLen);
-            head.put(cacheObjectType());
-
-            head.position(off);
-
-            if (len < head.capacity())
-                head.limit(head.position() + head.capacity() - len);
-
-            buf.put(head);
-
-            if (head.hasRemaining())
-                return true;
-
-            off -= headSize;
-            len -= head.capacity() - off;
-        }
-
-        buf.put(arr, start + off, len);
-
-        return true;
+        return CacheObjectAdapter.putValue(this, buf, off, len, arr, start);
     }
 
     /** {@inheritDoc} */
