@@ -854,7 +854,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         HashLoginService hashLoginService = new HashLoginService();
         hashLoginService.setName("Test Realm");
         createRealm();
-        hashLoginService.setConfig("realm.properties");
+        hashLoginService.setConfig("/tmp/realm.properties");
         ctx.getSecurityHandler().setLoginService(hashLoginService);
 
         srv.setHandler(ctx);
@@ -884,14 +884,14 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
         if (srv != null){
             srv.stop();
-            File realmFile = new File("realm.properties");
+            File realmFile = new File("/tmp/realm.properties");
             realmFile.delete();
         }
     }
 
     /** Creates a realm file to store test user credentials */
     private void createRealm() throws Exception{
-        File realmFile = new File("realm.properties");
+        File realmFile = new File("/tmp/realm.properties");
         FileWriter fileWriter = new FileWriter(realmFile);
         fileWriter.append("admin:admin");
         fileWriter.flush();
@@ -1128,7 +1128,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 try {
                     req.login("admin", "admin");
                 } catch (Exception e) {
-                    X.printerrln("Login failed.");
+                    X.printerrln("Login failed due to exception.", e);
                 }
 
                 HttpSession session = req.getSession();

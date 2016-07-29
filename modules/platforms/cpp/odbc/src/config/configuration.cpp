@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <cstring>
-
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -31,50 +29,25 @@ namespace ignite
     {
         namespace config
         {
-            /** Default values for configuration. */
-            namespace dflt
-            {
-                /** Default value for DSN attribute. */
-                const std::string dsn = "Default Apache Ignite DSN";
+            const std::string Configuration::Key::dsn     = "dsn";
+            const std::string Configuration::Key::driver  = "driver";
+            const std::string Configuration::Key::cache   = "cache";
+            const std::string Configuration::Key::address = "address";
+            const std::string Configuration::Key::server  = "server";
+            const std::string Configuration::Key::port    = "port";
 
-                /** Default value for Driver attribute. */
-                const std::string driver = "Apache Ignite";
-
-                /** Default value for host attribute. */
-                const std::string host = "localhost";
-
-                /** Default value for port attribute. */
-                const uint16_t port = 10800;
-
-                /** Default value for cache attribute. */
-                const std::string cache = "";
-            }
-
-            /** Connection attribute keywords. */
-            namespace attrkey
-            {
-                /** Connection attribute keyword for DSN attribute. */
-                const std::string dsn = "dsn";
-            
-                /** Connection attribute keyword for Driver attribute. */
-                const std::string driver = "driver";
-
-                /** Connection attribute keyword for server host attribute. */
-                const std::string host = "server";
-
-                /** Connection attribute keyword for server port attribute. */
-                const std::string port = "port";
-
-                /** Connection attribute keyword for cache attribute. */
-                const std::string cache = "cache";
-            }
+            const std::string Configuration::DefaultValue::dsn     = "Apache Ignite DSN";
+            const std::string Configuration::DefaultValue::driver  = "Apache Ignite";
+            const std::string Configuration::DefaultValue::cache   = "";
+            const std::string Configuration::DefaultValue::address = "";
+            const std::string Configuration::DefaultValue::server  = "";
+            const std::string Configuration::DefaultValue::port    = "10800";
+            const uint16_t Configuration::DefaultValue::uintPort = common::LexicalCast<uint16_t>(port);
 
             Configuration::Configuration() :
-                dsn(dflt::dsn), driver(dflt::driver),
-                host(dflt::host), port(dflt::port),
-                cache(dflt::cache)
+                arguments()
             {
-                // No-op.
+                ParseAddress(DefaultValue::address, endPoint);
             }
 
             Configuration::~Configuration()
@@ -84,7 +57,11 @@ namespace ignite
 
             void Configuration::FillFromConnectString(const char* str, size_t len)
             {
-                ArgumentMap connect_attributes;
+                // Initializing map.
+                arguments.clear();
+
+                // Initializing DSN to empty string.
+                arguments[Key::dsn].clear();
 
                 // Ignoring terminating zero byte if present.
                 // Some Driver Managers pass zero-terminated connection string
@@ -92,39 +69,19 @@ namespace ignite
                 if (len && !str[len - 1])
                     --len;
 
-                ParseAttributeList(str, len, ';', connect_attributes);
+                ParseAttributeList(str, len, ';', arguments);
 
-                ArgumentMap::const_iterator it;
-
-                it = connect_attributes.find(attrkey::dsn);
-                if (it != connect_attributes.end())
-                    dsn = it->second;
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+                if (it != arguments.end())
+                {
+                    // Parsing address.
+                    ParseAddress(it->second, endPoint);
+                }
                 else
-                    dsn.clear();
-
-                it = connect_attributes.find(attrkey::driver);
-                if (it != connect_attributes.end())
-                    driver = it->second;
-                else
-                    driver = dflt::driver;
-
-                it = connect_attributes.find(attrkey::host);
-                if (it != connect_attributes.end())
-                    host = it->second;
-                else
-                    host = dflt::host;
-
-                it = connect_attributes.find(attrkey::port);
-                if (it != connect_attributes.end())
-                    port = atoi(it->second.c_str());
-                else
-                    port = dflt::port;
-
-                it = connect_attributes.find(attrkey::cache);
-                if (it != connect_attributes.end())
-                    cache = it->second;
-                else
-                    cache = dflt::cache;
+                {
+                    endPoint.host = GetStringValue(Key::server, DefaultValue::server);
+                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                }
             }
 
             void Configuration::FillFromConnectString(const std::string& str)
@@ -136,27 +93,27 @@ namespace ignite
             {
                 std::stringstream connect_string_buffer;
 
-                if (!driver.empty())
-                    connect_string_buffer << attrkey::driver << "={" << driver << "};";
+                for (ArgumentMap::const_iterator it = arguments.begin(); it != arguments.end(); ++it)
+                {
+                    const std::string& key = it->first;
+                    const std::string& value = it->second;
 
-                if (!host.empty())
-                    connect_string_buffer << attrkey::host << '=' << host << ';';
+                    if (value.empty())
+                        continue;
 
-                if (port)
-                    connect_string_buffer << attrkey::port << '=' << port << ';';
-
-                if (!dsn.empty())
-                    connect_string_buffer << attrkey::dsn << '=' << dsn << ';';
-
-                if (!cache.empty())
-                    connect_string_buffer << attrkey::cache << '=' << cache << ';';
+                    if (value.find(' ') == std::string::npos)
+                        connect_string_buffer << key << '=' << value << ';';
+                    else
+                        connect_string_buffer << key << "={" << value << "};";
+                }
 
                 return connect_string_buffer.str();
             }
 
             void Configuration::FillFromConfigAttributes(const char * attributes)
             {
-                ArgumentMap config_attributes;
+                // Initializing map.
+                arguments.clear();
 
                 size_t len = 0;
 
@@ -166,45 +123,34 @@ namespace ignite
 
                 ++len;
 
-                ParseAttributeList(attributes, len, '\0', config_attributes);
+                ParseAttributeList(attributes, len, '\0', arguments);
 
-                ArgumentMap::const_iterator it;
-
-                it = config_attributes.find(attrkey::dsn);
-                if (it != config_attributes.end())
-                    dsn = it->second;
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+                if (it != arguments.end())
+                {
+                    // Parsing address.
+                    ParseAddress(it->second, endPoint);
+                }
                 else
-                    dsn = dflt::dsn;
-
-                it = config_attributes.find(attrkey::driver);
-                if (it != config_attributes.end())
-                    driver = it->second;
-                else
-                    driver.clear();
-
-                it = config_attributes.find(attrkey::host);
-                if (it != config_attributes.end())
-                    host = it->second;
-                else
-                    host.clear();
-
-                it = config_attributes.find(attrkey::port);
-                if (it != config_attributes.end())
-                    port = atoi(it->second.c_str());
-                else
-                    port = 0;
-
-                it = config_attributes.find(attrkey::cache);
-                if (it != config_attributes.end())
-                    cache = it->second;
-                else
-                    cache.clear();
+                {
+                    endPoint.host = GetStringValue(Key::server, DefaultValue::server);
+                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                }
             }
 
-            void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args) const
+            const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                    return it->second;
+
+                return dflt;
+            }
+
+            void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)
             {
                 std::string connect_str(str, len);
-                args.clear();
 
                 while (!connect_str.empty())
                 {
@@ -244,6 +190,51 @@ namespace ignite
 
                     connect_str.erase(attr_begin - 1);
                 }
+            }
+
+            void Configuration::ParseAddress(const std::string& address, EndPoint& res)
+            {
+                int64_t colonNum = std::count(address.begin(), address.end(), ':');
+
+                if (colonNum == 0)
+                {
+                    res.host = address;
+                    res.port = DefaultValue::uintPort;
+                }
+                else if (colonNum == 1)
+                {
+                    size_t pos = address.find(':');
+
+                    if (pos == address.size() - 1)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: no port after colon");
+
+                    res.host = address.substr(0, pos);
+
+                    std::string port = address.substr(pos + 1);
+
+                    if (!common::AllOf(port.begin(), port.end(), isdigit))
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: port can only contain digits");
+
+                    int32_t intPort = common::LexicalCast<int32_t>(port);
+
+                    if (port.size() > sizeof("65535") - 1 || intPort > UINT16_MAX)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: Port value is too large,"
+                            " valid value should be in range from 1 to 65535");
+                    }
+
+                    if (intPort == 0)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid address format: Port value can not be zero");
+
+                    res.port = static_cast<uint16_t>(intPort);
+                }
+                else
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
+                        "Invalid address format: too many colons");
             }
         }
     }

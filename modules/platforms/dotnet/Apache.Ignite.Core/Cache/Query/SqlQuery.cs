@@ -97,6 +97,17 @@ namespace Apache.Ignite.Core.Cache.Query
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public object[] Arguments { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether distributed joins should be enabled for this query.
+        /// <para />
+        /// When disabled, join results will only contain colocated data (joins work locally).
+        /// When enabled, joins work as expected, no matter how the data is distributed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if enable distributed joins should be enabled; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnableDistributedJoins { get; set; }
+
         /** <inheritDoc /> */
         internal override void Write(BinaryWriter writer, bool keepBinary)
         {
@@ -113,6 +124,8 @@ namespace Apache.Ignite.Core.Cache.Query
             writer.WriteInt(PageSize);
 
             WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
         }
 
         /** <inheritDoc /> */

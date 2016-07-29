@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
     /// full text queries over this data.
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class QueryExample
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");

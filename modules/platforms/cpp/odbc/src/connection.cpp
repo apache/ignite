@@ -41,7 +41,11 @@ namespace ignite
     {
         const std::string Connection::PROTOCOL_VERSION_SINCE = "1.6.0";
 
-        Connection::Connection() : socket(), connected(false), cache(), parser()
+        Connection::Connection() :
+            socket(),
+            connected(false),
+            parser(),
+            config()
         {
             // No-op.
         }
@@ -53,8 +57,8 @@ namespace ignite
         
         const config::ConnectionInfo& Connection::GetInfo() const
         {
-            // Connection info is the same for all connections now.
-            static config::ConnectionInfo info;
+            // Connection info is constant and the same for all connections now.
+            const static config::ConnectionInfo info;
 
             return info;
         }
@@ -76,32 +80,38 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& server)
+        void Connection::Establish(const std::string& connectStr)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(server));
+            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr));
         }
 
-        SqlResult Connection::InternalEstablish(const std::string& server)
+        SqlResult Connection::InternalEstablish(const std::string& connectStr)
         {
             config::Configuration config;
 
-            if (server != config.GetDsn())
+            try
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown server.");
+                config.FillFromConnectString(connectStr);
+            }
+            catch (IgniteError& e)
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, e.GetText());
 
                 return SQL_RESULT_ERROR;
             }
 
-            return InternalEstablish(config.GetHost(), config.GetPort(), config.GetCache());
+            return InternalEstablish(config);
         }
 
-        void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
+        void Connection::Establish(const config::Configuration cfg)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(host, port, cache));
+            IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
-        SqlResult Connection::InternalEstablish(const std::string & host, uint16_t port, const std::string & cache)
+        SqlResult Connection::InternalEstablish(const config::Configuration cfg)
         {
+            config = cfg;
+
             if (connected)
             {
                 AddStatusRecord(SQL_STATE_08002_ALREADY_CONNECTED, "Already connected.");
@@ -109,9 +119,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            this->cache = cache;
-
-            connected = socket.Connect(host.c_str(), port);
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetPort());
 
             if (!connected)
             {
@@ -262,11 +270,16 @@ namespace ignite
 
         const std::string& Connection::GetCache() const
         {
-            return cache;
+            return config.GetCache();
+        }
+
+        const config::Configuration& Connection::GetConfiguration() const
+        {
+            return config;
         }
 
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
-            const std::string& message, int32_t rowNum, int32_t columnNum) const
+            const std::string& message, int32_t rowNum, int32_t columnNum)
         {
             return diagnostic::DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
         }

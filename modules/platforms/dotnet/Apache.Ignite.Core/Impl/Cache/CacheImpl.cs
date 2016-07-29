@@ -977,6 +977,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 WriteQueryArgs(writer, qry.Arguments);
 
+                writer.WriteBoolean(qry.EnableDistributedJoins);
+                writer.WriteBoolean(qry.EnforceJoinOrder);
+
                 FinishMarshal(writer);
 
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
