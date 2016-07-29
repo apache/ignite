@@ -121,19 +121,21 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        if (req.getVersion() > OdbcMessageParser.PROTO_VER_CURRENT) {
+        OdbcProtocolVersion version = req.getVersion();
+
+        if (version.isUnknown()) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            OdbcHandshakeResult res = new OdbcHandshakeResult(OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(OdbcProtocolVersion.current().since(), verStr);
 
             return new OdbcResponse(res);
         }
 
         OdbcHandshakeResult res = new OdbcHandshakeResult();
 
-        if (req.getVersion() >= OdbcMessageParser.PROTO_VER_DISTRIBUTED_JOINS) {
+        if (version.isDistributedJoinsSupported()) {
             distributedJoins = req.isDistributedJoins();
             enforceJoinOrder = req.isEnforceJoinOrder();
         }

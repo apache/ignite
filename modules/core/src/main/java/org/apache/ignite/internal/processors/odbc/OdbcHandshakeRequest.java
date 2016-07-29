@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OdbcHandshakeRequest extends OdbcRequest {
     /** Protocol version. */
-    private final long ver;
+    private final OdbcProtocolVersion ver;
 
     /** Distributed joins flag. */
     private boolean distributedJoins = false;
@@ -38,13 +38,13 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     public OdbcHandshakeRequest(long ver) {
         super(HANDSHAKE);
 
-        this.ver = ver;
+        this.ver = OdbcProtocolVersion.fromLong(ver);
     }
 
     /**
      * @return Protocol version.
      */
-    public long getVersion() {
+    public OdbcProtocolVersion getVersion() {
         return ver;
     }
 

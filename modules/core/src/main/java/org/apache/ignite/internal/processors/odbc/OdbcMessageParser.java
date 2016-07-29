@@ -34,17 +34,17 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
-    /** First ODBC communication protocol version. */
-    public static final long PROTO_VER_FIRST = 1;
-
-    /** Communication protocol version in which Distributed Joins have been introduced. */
-    public static final long PROTO_VER_DISTRIBUTED_JOINS = 2;
-
-    /** Current ODBC communication protocol version. */
-    public static final long PROTO_VER_CURRENT = PROTO_VER_DISTRIBUTED_JOINS;
-
-    /** Apache Ignite version when ODBC communication protocol version has been introduced. */
-    public static final String PROTO_VER_SINCE = "1.7.0";
+//    /** First ODBC communication protocol version. */
+//    public static final long PROTO_VER_FIRST = 1;
+//
+//    /** Communication protocol version in which Distributed Joins have been introduced. */
+//    public static final long PROTO_VER_DISTRIBUTED_JOINS = 2;
+//
+//    /** Current ODBC communication protocol version. */
+//    public static final long PROTO_VER_CURRENT = PROTO_VER_DISTRIBUTED_JOINS;
+//
+//    /** Apache Ignite version when ODBC communication protocol version has been introduced. */
+//    public static final String PROTO_VER_SINCE = "1.7.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
@@ -91,7 +91,12 @@ public class OdbcMessageParser {
             {
                 OdbcHandshakeRequest res = new OdbcHandshakeRequest(reader.readLong());
 
-                if (res.getVersion() >= PROTO_VER_DISTRIBUTED_JOINS) {
+                OdbcProtocolVersion version = res.getVersion();
+
+                if (version.isUnknown())
+                    return res;
+
+                if (version.isDistributedJoinsSupported()) {
                     res.setDistributedJoins(reader.readBoolean());
                     res.setEnforceJoinOrder(reader.readBoolean());
                 }
