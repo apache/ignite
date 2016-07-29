@@ -1148,7 +1148,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Result of closure execution.
      * @throws Exception If failed.
      */
-    protected <T> T doInTransaction(Ignite ignite,
+    protected static <T> T doInTransaction(Ignite ignite,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         Callable<T> clo) throws Exception {
