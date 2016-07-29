@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * TTL manager self test.
+ *
  */
 public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -71,30 +71,30 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testThatNotificationWorkAsExpected() throws Exception {
-        final IgniteKernal g = (IgniteKernal)startGrid(0);
+        try (final IgniteKernal g = (IgniteKernal)startGrid(0)) {
+            final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
 
-        final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
+            g.context().event().addLocalEventListener(new GridLocalEventListener() {
+                @Override public void onEvent(Event evt) {
+                    queue.offer(evt);
+                }
+            }, EventType.EVT_CACHE_OBJECT_EXPIRED);
 
-        g.context().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                queue.offer(evt);
-            }
-        }, EventType.EVT_CACHE_OBJECT_EXPIRED);
+            final String key = "key";
 
-        final String key = "key";
+            IgniteCache<Object, Object> cache = g.cache(null);
 
-        IgniteCache<Object, Object> cache = g.cache(null);
+            ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 10000));
 
-        ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 10000));
+            cache.withExpiryPolicy(plc1).put(key + 1, 1);
 
-        cache.withExpiryPolicy(plc1).put(key + 1, 1);
+            Thread.sleep(1_000); // Cleaner should see entry.
 
-        Thread.sleep(1_000); //Cleaner should see entry
+            ExpiryPolicy plc2 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000));
 
-        ExpiryPolicy plc2 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000));
+            cache.withExpiryPolicy(plc2).put(key + 2, 1);
 
-        cache.withExpiryPolicy(plc2).put(key + 2, 1);
-
-        assertNotNull(queue.poll(5, SECONDS)); //we should receive event about second entry expiration
+            assertNotNull(queue.poll(5, SECONDS)); // We should receive event about second entry expiration.
+        }
     }
 }
