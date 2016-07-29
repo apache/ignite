@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -243,28 +244,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Gets the work dir.
-        /// </summary>
-        private static string GetWorkDir()
-        {
-            var dir = typeof(BinaryDynamicRegistrationTest).Assembly.Location;
-
-            // Java resolves the work dir to the project folder
-            while (!File.Exists(Path.Combine(dir, "Apache.Ignite.Core.Tests.csproj")))
-                dir = Directory.GetParent(dir).FullName;
-
-            return Path.Combine(dir, "work");
-        }
-
-        /// <summary>
         /// Clears the marshaller work dir.
         /// </summary>
         private static void ClearMarshallerWorkDir()
         {
-            var marshDir = Path.Combine(GetWorkDir(), "marshaller");
+            // Delete all *.classname files within IGNITE_HOME
+            var home = IgniteHome.Resolve(null);
 
-            if (Directory.Exists(marshDir))
-                Directory.Delete(marshDir, true);
+            var files = Directory.GetFiles(home, "*.classname", SearchOption.AllDirectories);
+
+            files.ToList().ForEach(File.Delete);
         }
 
         private interface ITest
