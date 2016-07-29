@@ -82,7 +82,6 @@ public class PlatformMarshallerContext {
      * @throws IgniteCheckedException If failed.
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        // TODO: This is not called for platforms!
         lsnr.onContinuousProcessorStarted(ctx, cacheName, workDir);
     }
 
@@ -108,7 +107,6 @@ public class PlatformMarshallerContext {
      * Release marshaller context.
      */
     public void onKernalStop() {
-        // TODO: This is not called for platforms!
         latch.countDown();
     }
 

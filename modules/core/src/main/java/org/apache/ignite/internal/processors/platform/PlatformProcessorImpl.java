@@ -164,6 +164,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        platformMarshCtx.onKernalStop();
+
         startLatch.countDown();
     }
 
