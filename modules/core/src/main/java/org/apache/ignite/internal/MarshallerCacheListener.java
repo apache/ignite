@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -57,7 +57,7 @@ public class MarshallerCacheListener {
      * @param cache Cache.
      *@param log Log.
      */
-    public void onMarshallerCacheStarted(GridKernalContext ctx, GridCacheAdapter<Object, String> cache,
+    public void onMarshallerCacheStarted(GridKernalContext ctx, IgniteInternalCache<Object,String> cache,
         final IgniteLogger log, File workDir) throws IgniteCheckedException {
         assert ctx != null;
 
