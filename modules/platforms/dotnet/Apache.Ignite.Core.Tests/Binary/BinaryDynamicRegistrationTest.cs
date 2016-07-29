@@ -143,13 +143,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the two grid scenario.
         /// </summary>
         [Test]
-        public void TestTwoGrids()
+        public void TestTwoGrids([Values(false, true)] bool clientMode)
         {
             using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "grid2"
+                    GridName = "grid2",
+                    ClientMode = clientMode
                 }))
                 {
                     Test(ignite1, ignite2);
@@ -192,15 +193,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests the client node.
-        /// </summary>
-        [Test]
-        public void TestClientNode()
-        {
-            // TODO! This is a special case!
-        }
-
-        /// <summary>
         /// Tests the type registration.
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
@@ -231,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Test compute
             var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
-            Assert.AreEqual(ignite1.GetCluster().GetNodes().Count, res.Count);
+            Assert.AreEqual(ignite1.GetCluster().ForServers().GetNodes().Count, res.Count);
         }
 
         /// <summary>
