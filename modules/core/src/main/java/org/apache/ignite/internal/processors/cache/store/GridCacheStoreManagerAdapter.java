@@ -249,7 +249,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void stop0(boolean cancel, boolean destroy) {
         if (store instanceof LifecycleAware) {
             try {
                 // Avoid second start() call on store in case when near cache is enabled.

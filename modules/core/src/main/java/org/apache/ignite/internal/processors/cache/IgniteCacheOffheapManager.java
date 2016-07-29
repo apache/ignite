@@ -21,6 +21,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -60,6 +61,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Free list.
      */
     public FreeList freeList();
+
+    /**
+     * @return Meta store.
+     */
+    public MetaStore meta();
 
     /**
      * @param entry Cache entry.
@@ -226,6 +232,13 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
+
+        /**
+         * Destroys the tree associated with the store.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        public void destroy() throws IgniteCheckedException;
 
         /**
          * Data store listener.

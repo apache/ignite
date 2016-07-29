@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
@@ -620,6 +621,11 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return new AffinityProcessProxy<>(cacheName, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /**

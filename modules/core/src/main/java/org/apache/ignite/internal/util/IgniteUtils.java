@@ -8443,6 +8443,27 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Masks name for a valid directory path.
+     *
+     * @param name Name.
+     * @return Masked name.
+     */
+    public static String maskForFileName(CharSequence name) {
+        StringBuilder b = new StringBuilder(name.length());
+
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+
+            if (Character.isLetterOrDigit(c))
+                b.append(c);
+            else
+                b.append('_');
+        }
+
+        return b.toString();
+    }
+
+    /**
      * @param obj Object.
      * @return {@code True} if given object has overridden equals and hashCode method.
      */

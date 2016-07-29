@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
 import java.nio.ByteBuffer;
 
@@ -36,6 +34,13 @@ public interface PageStore {
     public long allocatePage() throws IgniteCheckedException;
 
     /**
+     * Gets number of allocated pages.
+     *
+     * @return Number of allocated pages.
+     */
+    public int pages();
+
+    /**
      * Reads a page.
      *
      * @param pageId Page ID.
@@ -45,6 +50,14 @@ public interface PageStore {
     public void read(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
+     * Reads a header.
+     *
+     * @param buf Buffer to write to.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readHeader(ByteBuffer buf) throws IgniteCheckedException;
+
+    /**
      * Writes a page.
      *
      * @param pageId Page ID.
@@ -52,6 +65,14 @@ public interface PageStore {
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
     public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+
+    /**
+     * Gets page offset within the store file.
+     *
+     * @param pageId Page ID.
+     * @return Page offset.
+     */
+    public long pageOffset(long pageId);
 
     /**
      * Sync method used to ensure that the given pages are guaranteed to be written to the store.
