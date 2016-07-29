@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
+                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false}, // TODO: ??
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration
@@ -109,14 +109,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                // Put through statically started cache
-                var staticCache = ignite.GetCache<int, Foo>(null);
-                staticCache[1] = new Foo {Str = "test", Int = 2};
-            }
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // Put through dynamically started cache
                 var dynCache = ignite.CreateCache<int, Foo>(new CacheConfiguration("dynCache")
@@ -125,7 +118,14 @@ namespace Apache.Ignite.Core.Tests.Binary
                     ReadThrough = true,
                     WriteThrough = true
                 });
-                dynCache[2] = new Foo {Str = "test2", Int = 3};
+                dynCache[2] = new Foo { Str = "test2", Int = 3 };
+            }
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                // Put through statically started cache
+                var staticCache = ignite.GetCache<int, Foo>(null);
+                staticCache[1] = new Foo {Str = "test", Int = 2};
             }
 
             using (var ignite = Ignition.Start(cfg))

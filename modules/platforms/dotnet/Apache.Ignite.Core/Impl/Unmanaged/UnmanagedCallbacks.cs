@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
+                var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry, _ignite);
 
                 if (_ignite != null)
                     cacheStore.Init(_ignite);
