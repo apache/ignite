@@ -1183,7 +1183,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Write type name for unregistered types
             if (!desc.IsRegistered)
+            {
+                Debugger.Launch();
                 WriteString(type.AssemblyQualifiedName);
+            }
 
             var headerSize = _stream.Position - pos;
 

@@ -53,19 +53,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc =
             new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
-        /** Cached metadatas. */
+        /** Cached binary types. */
         private volatile IDictionary<int, BinaryTypeHolder> _metas = new Dictionary<int, BinaryTypeHolder>();
 
         /** */
-        private Ignite _ignite;
+        private volatile Ignite _ignite;
 
         /** */
-        private MarshallerContext _ctx;
+        private volatile MarshallerContext _ctx;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="cfg">Configurtaion.</param>
+        /// <param name="cfg">Configuration.</param>
         public Marshaller(BinaryConfiguration cfg)
         {
             _cfg = cfg ?? new BinaryConfiguration();
@@ -136,11 +136,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Marshal object.
+        /// Marshals an object.
         /// </summary>
         /// <param name="val">Value.</param>
         /// <param name="stream">Output stream.</param>
-        /// <returns>Collection of metadatas (if any).</returns>
         private void Marshal<T>(T val, IBinaryStream stream)
         {
             BinaryWriter writer = StartMarshal(stream);
