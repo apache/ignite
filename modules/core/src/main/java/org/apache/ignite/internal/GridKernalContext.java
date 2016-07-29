@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -574,7 +573,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Marshaller context.
      */
-    public MarshallerContext marshallerContext();
+    public MarshallerContextImpl marshallerContext();
 
     /**
      * @return {@code True} if local node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).

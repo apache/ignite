@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 
 /**
  * Marshaller context.
@@ -52,20 +51,4 @@ public interface MarshallerContext {
      * @return {@code true} if the type is a system one, {@code false} otherwise.
      */
     public boolean isSystemType(String typeName);
-
-    /**
-     * Should be called when continuous processor is started.
-     *
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Should be called when marshaller cache is started.
-     *
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException;
 }

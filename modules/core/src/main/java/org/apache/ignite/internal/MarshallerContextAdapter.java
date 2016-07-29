@@ -208,14 +208,4 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @throws IgniteCheckedException In case of error.
      */
     public abstract String className(int id) throws IgniteCheckedException;
-
-    /** {@inheritDoc} */
-    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
 }

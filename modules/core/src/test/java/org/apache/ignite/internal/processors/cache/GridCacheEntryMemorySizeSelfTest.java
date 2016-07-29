@@ -28,7 +28,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -148,14 +147,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             @Override public boolean isSystemType(String typeName) {
                 return false;
-            }
-
-            @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-                throw new UnsupportedOperationException();
             }
         });
 
