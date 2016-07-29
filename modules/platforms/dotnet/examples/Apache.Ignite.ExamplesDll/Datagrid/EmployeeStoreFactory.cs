@@ -17,14 +17,12 @@
 
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
-    using System;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Employee store factory.
     /// </summary>
-    [Serializable]
     public class EmployeeStoreFactory : IFactory<ICacheStore>
     {
         /// <summary>
