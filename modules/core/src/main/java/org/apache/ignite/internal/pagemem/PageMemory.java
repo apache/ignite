@@ -24,9 +24,12 @@ import org.apache.ignite.lifecycle.LifecycleAware;
  */
 public interface PageMemory extends LifecycleAware, PageIdAllocator {
     /**
-     * @return Meta page.
+     * Gets or allocates metadata page for specified cacheId.
+     *
+     * @param cacheId Cache ID.
+     * @return Meta page for cacheId.
      */
-    public Page metaPage() throws IgniteCheckedException;
+    public Page metaPage(int cacheId) throws IgniteCheckedException;
 
     /**
      * Gets the page associated with the given page ID. Each page obtained with this method must be released by

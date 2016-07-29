@@ -44,7 +44,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
+import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -442,9 +444,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Collection<DynamicCacheDescriptor> receivedCaches;
 
+            BackupMessage backupMsg = null;
+
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
+
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
+                else if (customMsg instanceof BackupMessage) {
+                    if (CU.clientNode(discoEvt.eventNode()))
+                        exchange = onClientNodeEvent(crdNode);
+                    else
+                        exchange = onServerNodeEvent(crdNode);
+
+                    backupMsg = (BackupMessage)customMsg;
+                }
                 else {
                     assert affChangeMsg != null : this;
 
@@ -468,6 +482,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             updateTopologies(crdNode);
 
             cctx.database().checkpointReadLock();
+
+            IgniteInternalFuture backupInitFut = null;
+
+            if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
+                backupInitFut = cctx.database().startBackup(backupMsg, discoEvt.eventNode());
+            }
 
             try {
                 switch (exchange) {
@@ -500,6 +520,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             finally {
                 cctx.database().checkpointReadUnlock();
             }
+
+            if (backupInitFut != null)
+                backupInitFut.get();
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -517,7 +540,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-      * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
         if (crd != null) {
@@ -620,7 +643,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert !discoEvt.eventNode().isLocal() : discoEvt;
         }
         else
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+            assert discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
         cctx.affinity().onClientEvent(this, crd);
 
@@ -645,11 +668,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
-        else {
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
-
+        else
             cctx.affinity().onServerJoin(this, crd);
-        }
 
         if (cctx.kernalContext().clientNode())
             return ExchangeType.CLIENT;
@@ -1383,7 +1403,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(node)) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
-                            ", nodeId=" + node.id() + ']');
+                        ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
                     fullMsgs.put(node, msg);

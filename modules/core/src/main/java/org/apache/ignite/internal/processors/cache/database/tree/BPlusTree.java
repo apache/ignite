@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -590,7 +589,7 @@ public abstract class BPlusTree<L, T extends L> {
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        FullPageId metaPageId,
+        long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
@@ -606,13 +605,12 @@ public abstract class BPlusTree<L, T extends L> {
         assert pageMem != null;
         assert innerIos != null;
         assert leafIos != null;
-        assert PageIdUtils.flag(metaPageId.pageId()) == PageIdAllocator.FLAG_META;
 
         this.innerIos = innerIos;
         this.leafIos = leafIos;
         this.pageMem = pageMem;
         this.cacheId = cacheId;
-        this.metaPageId = metaPageId.pageId();
+        this.metaPageId = metaPageId;
         this.reuseList = reuseList;
         this.wal = wal;
     }
@@ -647,7 +645,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
-        long rootId = allocatePage(null);
+        long rootId = allocatePageForNew();
 
         // Allocate the first leaf page, it will be our root.
         try (Page root = page(rootId)) {
@@ -896,12 +894,11 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param instance Instance name.
-     * @param cacheId Cache ID.
      * @param type Tree type.
      * @return Tree name.
      */
-    public static String treeName(String instance, int cacheId, String type) {
-        return instance + "@" + cacheId + "##" + type;
+    public static String treeName(String instance, String type) {
+        return instance + "##" + type;
     }
 
     /**
@@ -1513,7 +1510,7 @@ public abstract class BPlusTree<L, T extends L> {
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.add(this, bag);
+                            reuseList.add(bag);
 
                             assert bag.size() == 0 : bag.size();
                         }
@@ -1529,7 +1526,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
         }
 
-        reuseList.add(this, bag);
+        reuseList.add(bag);
 
         assert bag.size() == 0 : bag.size();
         assert pagesCnt >= 2 : pagesCnt;
@@ -2541,7 +2538,7 @@ public abstract class BPlusTree<L, T extends L> {
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && bag == null)
-                reuseList.add(BPlusTree.this, this);
+                reuseList.add(this);
         }
 
         /**
@@ -2878,7 +2875,7 @@ public abstract class BPlusTree<L, T extends L> {
         if (leafIos.getType() == type)
             return leafIos.forVersion(ver);
 
-        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + PageIO.getPageId(buf));
+        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + U.hexLong(PageIO.getPageId(buf)));
     }
 
     /**
@@ -2919,6 +2916,16 @@ public abstract class BPlusTree<L, T extends L> {
         assert pageId != 0;
 
         return pageId;
+    }
+
+    /**
+     * Allocates page for new BPlus tree.
+     *
+     * @return New page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected long allocatePageForNew() throws IgniteCheckedException {
+        return allocatePage(null);
     }
 
     /**
@@ -3145,7 +3152,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         /** {@inheritDoc} */
         @Override public long pollFreePage() {
-            return remove();
+            return isEmpty() ? 0 : remove();
         }
     }
 
