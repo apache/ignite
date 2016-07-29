@@ -40,7 +40,12 @@ public class MarshallerCacheListener {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void onContinuousProcessorStarted(GridKernalContext ctx, String cacheName, File workDir) throws IgniteCheckedException {
+    public void onContinuousProcessorStarted(GridKernalContext ctx, String cacheName, File workDir)
+        throws IgniteCheckedException {
+        assert ctx != null;
+        assert cacheName != null;
+        assert workDir != null;
+
         if (ctx.clientNode()) {
             lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
 
@@ -60,6 +65,9 @@ public class MarshallerCacheListener {
     public void onMarshallerCacheStarted(GridKernalContext ctx, IgniteInternalCache<Object,String> cache,
         final IgniteLogger log, File workDir) throws IgniteCheckedException {
         assert ctx != null;
+        assert cache != null;
+        assert log != null;
+        assert workDir != null;
 
         final GridCacheContext<Object, String> cacheCtx = cache.context();
 
@@ -121,6 +129,4 @@ public class MarshallerCacheListener {
             }
         }
     }
-
-
 }
