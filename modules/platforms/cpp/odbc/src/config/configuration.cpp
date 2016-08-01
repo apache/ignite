@@ -32,9 +32,6 @@ namespace ignite
     {
         namespace config
         {
-            const int64_t ProtocolVersion::VERSION_1_6_0 = 1;
-            const int64_t ProtocolVersion::VERSION_2_0_0 = 0x0002000000000000LL;
-
             const std::string Configuration::Key::dsn               = "dsn";
             const std::string Configuration::Key::driver            = "driver";
             const std::string Configuration::Key::cache             = "cache";
@@ -50,12 +47,13 @@ namespace ignite
             const std::string Configuration::DefaultValue::cache           = "";
             const std::string Configuration::DefaultValue::address         = "";
             const std::string Configuration::DefaultValue::server          = "";
-            const std::string Configuration::DefaultValue::protocolVersion = "2.0.0";
 
             const uint16_t Configuration::DefaultValue::port = 10800;
 
             const bool Configuration::DefaultValue::distributedJoins = false;
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
+
+            const ProtocolVersion Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 
 
             Configuration::Configuration() :
@@ -164,7 +162,12 @@ namespace ignite
 
             int64_t Configuration::GetProtocolVersion() const
             {
-                return ParseVersion(GetProtocolVersionStr());
+                ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
+
+                if (it != arguments.end())
+                    return ProtocolVersion::FromString(it->second);
+
+                return DefaultValue::protocolVersion;
             }
 
             void Configuration::SetProtocolVersion(const std::string& version)
@@ -310,36 +313,6 @@ namespace ignite
                 else
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
                         "Invalid address format: too many colons");
-            }
-
-            int64_t Configuration::ParseVersion(const std::string& version)
-            {
-                typedef std::map<std::string, int64_t> VersionMap;
-
-                static common::concurrent::CriticalSection cs;
-                static VersionMap versionMap;
-
-                if (versionMap.empty())
-                {
-                    common::concurrent::CsLockGuard guard(cs);
-
-                    if (versionMap.empty())
-                    {
-                        versionMap["1.6.0"] = ProtocolVersion::VERSION_1_6_0;
-                        versionMap["2.0.0"] = ProtocolVersion::VERSION_2_0_0;
-                    }
-                }
-
-                VersionMap::const_iterator it = versionMap.find(common::ToLower(version));
-
-                if (it == versionMap.end())
-                {
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major "
-                        "and minor versions and revision of Ignite since which protocol is introduced.");
-                }
-
-                return it->second;
             }
         }
     }

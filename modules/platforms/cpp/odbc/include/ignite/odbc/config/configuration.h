@@ -22,22 +22,14 @@
 #include <string>
 #include <map>
 
+#include "ignite/odbc/protocol_version.h"
+
 namespace ignite
 {
     namespace odbc
     {
         namespace config
         {
-            /** Protocol version. */
-            struct ProtocolVersion
-            {
-                /** First version of the protocol that was introduced in Ignite 1.6.0. */
-                static const int64_t VERSION_1_6_0;
-
-                /** First version of the protocol that was introduced in Ignite 2.0.0. */
-                static const int64_t VERSION_2_0_0;
-            };
-
             /**
              * ODBC configuration abstraction.
              */
@@ -97,7 +89,7 @@ namespace ignite
                     static const std::string server;
 
                     /** Default value for protocol version. */
-                    static const std::string protocolVersion;
+                    static const ProtocolVersion protocolVersion;
 
                     /** Default value for port attribute. */
                     static const uint16_t port;
@@ -330,7 +322,7 @@ namespace ignite
                  *
                  * @return Protocol version.
                  */
-                int64_t GetProtocolVersion() const;
+                ProtocolVersion GetProtocolVersion() const;
 
                 /**
                  * Set protocol version.
@@ -391,15 +383,6 @@ namespace ignite
                  * @param res Result is placed here.
                  */
                 static void ParseAddress(const std::string& address, EndPoint& res);
-
-                /**
-                 * Parse version and extract protocol version.
-                 *
-                 * @throw IgniteException if version can not be parsed.
-                 * @param version Version string to parse.
-                 * @return Long value for version.
-                 */
-                static int64_t ParseVersion(const std::string& version);
 
                 /** Arguments. */
                 ArgumentMap arguments;

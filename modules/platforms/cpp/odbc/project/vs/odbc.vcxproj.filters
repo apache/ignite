@@ -133,6 +133,9 @@
     <ClCompile Include="..\..\src\dsn_config.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\protocol_version.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -252,6 +255,9 @@
       <Filter>Code\system\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
