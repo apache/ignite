@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool CompactFooter
         {
             // Do not use compact footers during startup
-            get { return _compactFooter && _ignite != null; }
+            get { return _compactFooter; }
         }
 
         /// <summary>
