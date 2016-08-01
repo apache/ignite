@@ -49,10 +49,6 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
 
     /** */
     @GridToStringInclude
-    private String update;
-
-    /** */
-    @GridToStringInclude
     @GridDirectTransient
     private Object[] params;
 
