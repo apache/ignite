@@ -106,7 +106,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                     break;
                 }
-            } else break;
+            } else
+                break;
         }
     }
 
@@ -196,6 +197,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 expire();
 
                 long waitTime;
+
                 while (true) {
                     long curTime = U.currentTimeMillis();
 

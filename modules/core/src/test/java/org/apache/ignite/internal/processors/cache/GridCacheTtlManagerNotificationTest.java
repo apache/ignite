@@ -80,6 +80,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
             g.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     queue.add(evt);
+
                     return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
@@ -118,6 +119,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
             g.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     evtCnt.incrementAndGet();
+
                     return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
