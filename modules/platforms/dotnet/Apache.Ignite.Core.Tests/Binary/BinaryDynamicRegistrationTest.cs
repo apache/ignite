@@ -378,6 +378,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+        [Serializable]
         private class StoreFactory : IFactory<ICacheStore>
         {
             public string StringProp { get; set; }

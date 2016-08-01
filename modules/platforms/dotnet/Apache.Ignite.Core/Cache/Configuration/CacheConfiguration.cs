@@ -325,7 +325,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(WriteThrough);
 
             if (CacheStoreFactory != null && !CacheStoreFactory.GetType().IsSerializable)
-                throw new IgniteException("CacheConfiguration.CacheStoreFactory should be serializable.");
+                throw new IgniteException("CacheConfiguration.CacheStoreFactory should be serializable: " +
+                                          CacheStoreFactory.GetType());
 
             writer.WriteObject(CacheStoreFactory);
 
