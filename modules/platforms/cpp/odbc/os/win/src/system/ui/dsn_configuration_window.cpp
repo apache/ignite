@@ -29,8 +29,8 @@ namespace ignite
             {
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
-                    width(340),
-                    height(200),
+                    width(360),
+                    height(240),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
@@ -81,7 +81,7 @@ namespace ignite
                     int margin = 10;
                     int interval = 10;
 
-                    int labelSizeX = 60;
+                    int labelSizeX = 80;
                     int labelPosX = margin + interval;
 
                     int editSizeX = width - labelSizeX - 2 * margin - 3 * interval;
@@ -90,7 +90,7 @@ namespace ignite
                     int rowSize = 20;
                     int rowPos = margin + 2 * interval;
 
-                    int comboBoxSize = (editSizeX - interval) / 2;
+                    int checkBoxSize = (editSizeX - interval) / 2;
 
                     const char* val = config.GetDsn().c_str();
                     nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ID_NAME_LABEL);
@@ -110,11 +110,21 @@ namespace ignite
 
                     rowPos += interval + rowSize;
 
-                    distributedJoinsComboBox = CreateComboBox(editPosX, rowPos, comboBoxSize, rowSize,
-                        "Distributed Joins", ID_DISTRIBUTED_JOINS_COMBO_BOX, config.IsDistributedJoins());
+                    val = config.GetProtocolVersionStr().c_str();
+                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Protocol version:", ID_PROTOCOL_VERSION_LABEL);
+                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize, val, ID_PROTOCOL_VERSION_COMBO_BOX);
 
-                    enforceJoinOrderComboBox = CreateComboBox(editPosX + comboBoxSize + interval, rowPos, comboBoxSize,
-                        rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_COMBO_BOX, config.IsEnforceJoinOrder());
+                    protocolVersionComboBox->SetText(val);
+                    protocolVersionComboBox->AddString("1.6.0");
+                    protocolVersionComboBox->AddString("2.0.0");
+
+                    rowPos += interval + rowSize;
+
+                    distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Distributed Joins", ID_DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
+
+                    enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
                     rowPos += interval * 2 + rowSize;
                     rowSize = 25;
@@ -164,16 +174,16 @@ namespace ignite
                                     break;
                                 }
 
-                                case ID_DISTRIBUTED_JOINS_COMBO_BOX:
+                                case ID_DISTRIBUTED_JOINS_CHECK_BOX:
                                 {
-                                    distributedJoinsComboBox->SetChecked(!distributedJoinsComboBox->IsChecked());
+                                    distributedJoinsCheckBox->SetChecked(!distributedJoinsCheckBox->IsChecked());
 
                                     break;
                                 }
 
-                                case ID_ENFORCE_JOIN_ORDER_COMBO_BOX:
+                                case ID_ENFORCE_JOIN_ORDER_CHECK_BOX:
                                 {
-                                    enforceJoinOrderComboBox->SetChecked(!enforceJoinOrderComboBox->IsChecked());
+                                    enforceJoinOrderCheckBox->SetChecked(!enforceJoinOrderCheckBox->IsChecked());
 
                                     break;
                                 }
@@ -204,6 +214,7 @@ namespace ignite
                     std::string dsn;
                     std::string address;
                     std::string cache;
+                    std::string version;
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
@@ -211,14 +222,16 @@ namespace ignite
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
+                    protocolVersionComboBox->GetText(version);
 
-                    distributedJoins = distributedJoinsComboBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderComboBox->IsChecked();
+                    distributedJoins = distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:\n");
                     LOG_MSG("DSN:                %s\n", dsn.c_str());
                     LOG_MSG("Address:            %s\n", address.c_str());
                     LOG_MSG("Cache:              %s\n", cache.c_str());
+                    LOG_MSG("Protocol version:   %s\n", version.c_str());
                     LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
                     LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
 
@@ -228,6 +241,7 @@ namespace ignite
                     cfg.SetDsn(dsn);
                     cfg.SetAddress(address);
                     cfg.SetCache(cache);
+                    cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                 }

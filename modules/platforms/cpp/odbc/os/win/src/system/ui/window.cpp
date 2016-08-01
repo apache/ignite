@@ -147,6 +147,11 @@ namespace ignite
                     text.resize(len);
                 }
 
+                void Window::SetText(const std::string& text) const
+                {
+                    SNDMSG(handle, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(text.c_str()));
+                }
+
                 bool Window::IsChecked() const
                 {
                     return Button_GetCheck(handle) == BST_CHECKED;
@@ -155,6 +160,11 @@ namespace ignite
                 void Window::SetChecked(bool state)
                 {
                     Button_SetCheck(handle, state ? BST_CHECKED : BST_UNCHECKED);
+                }
+
+                void Window::AddString(const std::string & str)
+                {
+                    SNDMSG(handle, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.c_str()));
                 }
             }
         }

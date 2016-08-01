@@ -323,7 +323,21 @@ namespace ignite
                  *
                  * @return Protocol version.
                  */
+                const std::string& GetProtocolVersionStr() const;
+
+                /**
+                 * Get protocol version.
+                 *
+                 * @return Protocol version.
+                 */
                 int64_t GetProtocolVersion() const;
+
+                /**
+                 * Set protocol version.
+                 *
+                 * @param version Version to set.
+                 */
+                void SetProtocolVersion(const std::string& version);
 
                 /**
                  * Get string value from the config.
@@ -359,7 +373,6 @@ namespace ignite
                  * @param val Value to set.
                  */
                 void SetBoolValue(const std::string& key, bool val);
-
             private:
                 /**
                  * Parse connect string into key-value storage.

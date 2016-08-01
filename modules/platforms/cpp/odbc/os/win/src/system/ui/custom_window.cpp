@@ -157,7 +157,7 @@ namespace ignite
                     return child;
                 }
 
-                std::auto_ptr<Window> CustomWindow::CreateComboBox(int posX, int posY,
+                std::auto_ptr<Window> CustomWindow::CreateCheckBox(int posX, int posY,
                     int sizeX, int sizeY, const char* title, int id, bool state)
                 {
                     std::auto_ptr<Window> child(new Window(this, "Button", title));
@@ -165,6 +165,16 @@ namespace ignite
                     child->Create(WS_CHILD | WS_VISIBLE | BS_CHECKBOX, posX, posY, sizeX, sizeY, id);
 
                     child->SetChecked(state);
+
+                    return child;
+                }
+
+                std::auto_ptr<Window> CustomWindow::CreateComboBox(int posX, int posY,
+                    int sizeX, int sizeY, const char * title, int id)
+                {
+                    std::auto_ptr<Window> child(new Window(this, "Combobox", title));
+
+                    child->Create(WS_CHILD | WS_VISIBLE | CBS_DROPDOWN, posX, posY, sizeX, sizeY, id);
 
                     return child;
                 }

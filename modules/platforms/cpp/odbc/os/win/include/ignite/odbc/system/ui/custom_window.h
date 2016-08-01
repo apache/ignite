@@ -141,6 +141,20 @@ namespace ignite
                         int sizeX, int sizeY, const char* title, int id);
 
                     /**
+                     * Create child CheckBox window.
+                     *
+                     * @param posX Position by X coordinate.
+                     * @param posY Position by Y coordinate.
+                     * @param sizeX Size by X coordinate.
+                     * @param sizeY Size by Y coordinate.
+                     * @param title Title.
+                     * @param id ID to be assigned to the created window.
+                     * @return Auto pointer containing new window.
+                     */
+                    std::auto_ptr<Window> CreateCheckBox(int posX, int posY,
+                        int sizeX, int sizeY, const char* title, int id, bool state);
+
+                    /**
                      * Create child ComboBox window.
                      *
                      * @param posX Position by X coordinate.
@@ -152,8 +166,7 @@ namespace ignite
                      * @return Auto pointer containing new window.
                      */
                     std::auto_ptr<Window> CreateComboBox(int posX, int posY,
-                        int sizeX, int sizeY, const char* title, int id, bool state);
-
+                        int sizeX, int sizeY, const char* title, int id);
                 private:
                     IGNITE_NO_COPY_ASSIGNMENT(CustomWindow)
 

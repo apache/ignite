@@ -157,11 +157,19 @@ namespace ignite
                 arguments[Key::port] = common::LexicalCast<std::string>(port);
             }
 
+            const std::string& Configuration::GetProtocolVersionStr() const
+            {
+                return GetStringValue(Key::protocolVersion, DefaultValue::protocolVersion);
+            }
+
             int64_t Configuration::GetProtocolVersion() const
             {
-                const std::string& version = GetStringValue(Key::protocolVersion, DefaultValue::protocolVersion);
+                return ParseVersion(GetProtocolVersionStr());
+            }
 
-                return ParseVersion(version);
+            void Configuration::SetProtocolVersion(const std::string& version)
+            {
+                arguments[Key::protocolVersion] = version;
             }
 
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
