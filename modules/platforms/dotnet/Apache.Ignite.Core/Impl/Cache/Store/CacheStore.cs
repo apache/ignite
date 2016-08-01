@@ -94,16 +94,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="registry">The handle registry.</param>
-        /// <param name="ignite"></param>
         /// <returns>
         /// Interop cache store.
         /// </returns>
-        internal static CacheStore CreateInstance(long memPtr, HandleRegistry registry, Ignite ignite)
+        internal static CacheStore CreateInstance(long memPtr, HandleRegistry registry)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var marsh = ignite != null ? ignite.Marshaller : BinaryUtils.Marshaller;
-                var reader = marsh.StartUnmarshal(stream);
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
                 var convertBinary = reader.ReadBoolean();
                 var factory = reader.ReadObject<IFactory<ICacheStore>>();
@@ -119,6 +117,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
                     store = IgniteUtils.CreateInstance<ICacheStore>(className, propertyMap);
                 }
+
 
                 return new CacheStore(store, convertBinary, registry);
             }
