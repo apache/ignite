@@ -1146,16 +1146,12 @@ public final class IgfsImpl implements IgfsEx {
 
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                FileDescriptor desc = getFileDescriptor(path);
+                IgfsMode mode = resolveMode(path);
 
-                if (desc == null)
-                    throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
+                boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
-                // Cannot update times for root.
-                if (desc.parentId == null)
-                    return null;
-
-                meta.updateTimes(desc.parentId, desc.fileId, desc.fileName, accessTime, modificationTime);
+                meta.updateTimes(path, accessTime, modificationTime,
+                    useSecondary ? (IgfsSecondaryFileSystemV2)secondaryFs : null);
 
                 return null;
             }

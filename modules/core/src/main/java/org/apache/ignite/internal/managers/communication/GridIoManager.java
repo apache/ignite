@@ -559,6 +559,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             U.shutdownNow(getClass(), affPool, log);
 
+            U.shutdownNow(getClass(), idxPool, log);
+
             GridEventStorageManager evtMgr = ctx.event();
 
             if (evtMgr != null && discoLsnr != null)

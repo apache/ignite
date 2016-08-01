@@ -24,47 +24,70 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/odbc/config/configuration.h>
+#include <ignite/ignite_error.h>
+#include <ignite/common/utils.h>
 
 using namespace ignite::odbc::config;
 
 namespace
 {
-    const char* testDriverName = "Ignite";
-    const char* testServerHost = "testhost.com";
+    const std::string testDriverName = "Ignite Driver";
+    const std::string testServerHost = "testhost.com";
     const uint16_t testServerPort = 4242;
-    const char* testCacheName = "TestCache";
-    const char* testDsn = "Ignite DSN";
+    const std::string testCacheName = "TestCache";
+    const std::string testDsn = "Ignite DSN";
+
+    const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
 
-BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
+void CheckValidAddress(const char* connectStr, uint16_t port)
+{
+    Configuration cfg;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+
+    BOOST_CHECK_EQUAL(cfg.GetPort(), port);
+}
 
 void CheckConnectionConfig(const Configuration& cfg)
 {
-    BOOST_REQUIRE(cfg.GetDriver() == testDriverName);
-    BOOST_REQUIRE(cfg.GetHost() == testServerHost);
-    BOOST_REQUIRE(cfg.GetPort() == testServerPort);
-    BOOST_REQUIRE(cfg.GetCache() == testCacheName);
-    BOOST_REQUIRE(cfg.GetDsn().empty());
+    BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
+    BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
+    BOOST_CHECK_EQUAL(cfg.GetPort(), testServerPort);
+    BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
+    BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
+    BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
 
     std::stringstream constructor;
 
-    constructor << "driver={" << testDriverName << "};"
-                << "server=" << testServerHost << ";"
-                << "port=" << testServerPort << ";"
-                << "cache=" << testCacheName << ";";
+    constructor << "address=" << testAddress << ';'
+                << "cache=" << testCacheName << ';'
+                << "driver={" << testDriverName << "};";
 
     const std::string& expectedStr = constructor.str();
 
-    BOOST_REQUIRE(cfg.ToConnectString() == expectedStr);
+    BOOST_CHECK_EQUAL(cfg.ToConnectString(), expectedStr);
 }
 
 void CheckDsnConfig(const Configuration& cfg)
 {
-    BOOST_REQUIRE(cfg.GetDriver() == testDriverName);
-    BOOST_REQUIRE(cfg.GetDsn() == testDsn);
-    BOOST_REQUIRE(cfg.GetHost().empty());
-    BOOST_REQUIRE(cfg.GetCache().empty());
-    BOOST_REQUIRE(cfg.GetPort() == 0);
+    BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
+    BOOST_CHECK_EQUAL(cfg.GetDsn(), testDsn);
+    BOOST_CHECK_EQUAL(cfg.GetCache(), Configuration::DefaultValue::cache);
+    BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
+    BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
+    BOOST_CHECK_EQUAL(cfg.GetPort(), Configuration::DefaultValue::uintPort);
+}
+
+BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
+
+BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
+{
+    BOOST_CHECK_NE(testDriverName, Configuration::DefaultValue::driver);
+    BOOST_CHECK_NE(testAddress, Configuration::DefaultValue::address);
+    BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::uintPort);
+    BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
+    BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
@@ -74,13 +97,12 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
     std::stringstream constructor;
 
     constructor << "DRIVER={" << testDriverName << "};"
-                << "SERVER=" << testServerHost <<";"
-                << "PORT=" << testServerPort << ";"
+                << "ADDRESS=" << testAddress << ';'
                 << "CACHE=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size());
+    cfg.FillFromConnectString(connectStr);
 
     CheckConnectionConfig(cfg);
 }
@@ -92,13 +114,12 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "server=" << testServerHost << ";"
-                << "port=" << testServerPort << ";"
+                << "address=" << testAddress << ';'
                 << "cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size());
+    cfg.FillFromConnectString(connectStr);
 
     CheckConnectionConfig(cfg);
 }
@@ -110,8 +131,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "server=" << testServerHost << ";"
-                << "port=" << testServerPort << ";"
+                << "address=" << testAddress << ';'
                 << "cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
@@ -128,13 +148,12 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
     std::stringstream constructor;
 
     constructor << "Driver={" << testDriverName << "};"
-                << "Server=" << testServerHost << ";"
-                << "Port=" << testServerPort << ";"
+                << "Address=" << testAddress << ';'
                 << "Cache=" << testCacheName;
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size());
+    cfg.FillFromConnectString(connectStr);
 
     CheckConnectionConfig(cfg);
 }
@@ -146,15 +165,38 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
     std::stringstream constructor;
 
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
-                << " SERVER =" << testServerHost << " ; \n"
-                << "PORT= " << testServerPort << "; "
+                << " ADDRESS =" << testAddress << "; "
                 << "CACHE = \n\r" << testCacheName;
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size());
+    cfg.FillFromConnectString(connectStr);
 
     CheckConnectionConfig(cfg);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
+{
+    Configuration cfg;
+
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:0;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:00000;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:fdsf;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:123:1;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322221;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322a;"), ignite::IgniteError);
+    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:;"), ignite::IgniteError);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
+{
+    Configuration cfg;
+
+    CheckValidAddress("Address=example.com:1;", 1);
+    CheckValidAddress("Address=example.com:31242;", 31242);
+    CheckValidAddress("Address=example.com:55555;", 55555);
+    CheckValidAddress("Address=example.com:110;", 110);
+    CheckValidAddress("Address=example.com;", Configuration::DefaultValue::uintPort);
 }
 
 BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)

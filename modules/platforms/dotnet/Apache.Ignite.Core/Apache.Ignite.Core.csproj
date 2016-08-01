@@ -85,6 +85,11 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
+    <Compile Include="DataStructures\Configuration\Package-Info.cs" />
+    <Compile Include="Discovery\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
@@ -427,6 +432,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Interop\Package-Info.cs" />
     <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />

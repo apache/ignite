@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests
                 // Check that listen/stop work concurrently
                 messaging.StopRemoteListen(messaging.RemoteListen(sharedListener));
 
-            }, threadCnt, runSeconds);
+            }, threadCnt, runSeconds / 2);
 
             MessagingTestHelper.ListenResult = false;
 
@@ -396,15 +396,21 @@ namespace Apache.Ignite.Core.Tests
 
             senders.Wait(); // wait for senders to stop
 
-            var sharedResult = MessagingTestHelper.ReceivedMessages.Count;
+            MessagingTestHelper.ClearReceived(int.MaxValue);
 
-            messaging.Send(NextMessage());
+            var lastMsg = NextMessage();
+            messaging.Send(lastMsg);
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             // Check that unsubscription worked properly
-            Assert.AreEqual(sharedResult, MessagingTestHelper.ReceivedMessages.Count);
-            
+            var sharedResult = MessagingTestHelper.ReceivedMessages.ToArray();
+
+            if (sharedResult.Length != 0)
+            {
+                Assert.Fail("Unexpected messages ({0}): {1}; last sent message: {2}", sharedResult.Length, 
+                    string.Join(",", sharedResult), lastMsg);
+            }
         }
 
         /// <summary>

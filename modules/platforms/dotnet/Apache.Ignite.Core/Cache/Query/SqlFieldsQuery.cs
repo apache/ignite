@@ -74,8 +74,33 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Optional page size.
         /// <para />
-        /// Defautls to <see cref="DfltPageSize"/>.
+        /// Defaults to <see cref="DfltPageSize"/>.
         /// </summary>
         public int PageSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether distributed joins should be enabled for this query.
+        /// <para />
+        /// When disabled, join results will only contain colocated data (joins work locally).
+        /// When enabled, joins work as expected, no matter how the data is distributed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if enable distributed joins should be enabled; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnableDistributedJoins { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether join order of tables should be enforced.
+        /// <para />
+        /// When true, query optimizer will not reorder tables in join.
+        /// <para />
+        /// It is not recommended to enable this property until you are sure that your indexes
+        /// and the query itself are correct and tuned as much as possible but
+        /// query optimizer still produces wrong join order.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnforceJoinOrder { get; set; }
     }
 }

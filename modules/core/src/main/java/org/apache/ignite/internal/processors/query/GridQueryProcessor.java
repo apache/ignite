@@ -1389,7 +1389,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
+                aliases, d);
 
             d.addProperty(prop, false);
         }
