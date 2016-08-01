@@ -138,7 +138,7 @@ public class GridJobExecuteRequest implements Message {
     private Collection<UUID> top;
 
     /** */
-    private int[] cacheIds;
+    private int[] idsOfCaches;
 
     /** */
     private int part;
@@ -248,7 +248,7 @@ public class GridJobExecuteRequest implements Message {
         this.sesFullSup = sesFullSup;
         this.internal = internal;
         this.subjId = subjId;
-        this.cacheIds = cacheIds;
+        this.idsOfCaches = cacheIds;
         this.part = part;
         this.topVer = topVer;
 
@@ -444,7 +444,7 @@ public class GridJobExecuteRequest implements Message {
      * @return Caches' identifiers to reserve specified partition for job execution.
      */
     public int[] getCacheIds() {
-        return cacheIds;
+        return idsOfCaches;
     }
 
     /**
@@ -479,37 +479,37 @@ public class GridJobExecuteRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIntArray("cacheIds", cacheIds))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeBoolean("dynamicSiblings", dynamicSiblings))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeIntArray("idsOfCaches", idsOfCaches))
                     return false;
 
                 writer.incrementState();
@@ -636,14 +636,6 @@ public class GridJobExecuteRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                cacheIds = reader.readIntArray("cacheIds");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 clsLdrId = reader.readIgniteUuid("clsLdrId");
 
                 if (!reader.isLastRead())
@@ -651,7 +643,7 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 cpSpi = reader.readString("cpSpi");
 
                 if (!reader.isLastRead())
@@ -659,7 +651,7 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 byte depModeOrd;
 
                 depModeOrd = reader.readByte("depMode");
@@ -671,7 +663,7 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 dynamicSiblings = reader.readBoolean("dynamicSiblings");
 
                 if (!reader.isLastRead())
@@ -679,8 +671,16 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 forceLocDep = reader.readBoolean("forceLocDep");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                idsOfCaches = reader.readIntArray("idsOfCaches");
 
                 if (!reader.isLastRead())
                     return false;
