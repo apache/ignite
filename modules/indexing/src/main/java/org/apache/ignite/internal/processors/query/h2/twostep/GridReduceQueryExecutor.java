@@ -581,11 +581,12 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                if (!mapQrysCancel.compareAndSet(clo, new GridAbsClosure() { // Update cancellation for current attempt.
+                GridAbsClosure cancelClo;
+                if (!mapQrysCancel.compareAndSet(clo, (cancelClo = new GridAbsClosure() { // Update cancellation for current attempt.
                     @Override public void apply() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
-                }))
+                })))
                     throw new CacheException(new QueryCancelledException());
 
                 boolean retry = false;
@@ -594,7 +595,8 @@ public class GridReduceQueryExecutor {
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
                     awaitAllReplies(r, nodes);
 
-                    mapQrysCancel.set(F.noop()); // Remote queries are finished.
+                    if (mapQrysCancel.get() == F.noop()) // Query might be cancelled while waiting for pages.
+                        throw new QueryCancelledException();
 
                     Object state = r.state.get();
 
@@ -669,7 +671,7 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (clo != F.noop()) // Do explicit cancellation if it wasn't cancelled before.
-                    cancelRemoteQueries(nodes, r, qryReqId);
+                    cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
 
                 if (retry) {
                     if (Thread.currentThread().isInterrupted())
@@ -686,11 +688,16 @@ public class GridReduceQueryExecutor {
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.conn);
 
-                if (e instanceof QueryCancelledException) // Explicitly stop remote queries on reduce query cancellation.
-                    cancelRemoteQueries(nodes, r, qryReqId);
+                if (e instanceof QueryCancelledException) // Implicitly stop remote queries.
+                    cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
 
-                if (e instanceof CacheException)
+                if (e instanceof CacheException) {
+                    if (e.getMessage().contains("Failed to fetch data from node") &&
+                        (mapQrysCancel.get() == F.noop() || reduceQryCancel.get() == F.noop()))
+                        throw new CacheException("Failed to run reduce query locally.", new QueryCancelledException());
+
                     throw (CacheException)e;
+                }
 
                 Throwable cause = e;
 
@@ -722,7 +729,7 @@ public class GridReduceQueryExecutor {
      * @param r Query run.
      * @param qryReqId Query id.
      */
-    private void cancelRemoteQueries(Collection<ClusterNode> nodes, QueryRun r, long qryReqId) {
+    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes, QueryRun r, long qryReqId) {
         for (GridMergeIndex idx : r.idxs) {
             if (!idx.fetchedAll()) {
                 send(nodes, new GridQueryCancelRequest(qryReqId), null);

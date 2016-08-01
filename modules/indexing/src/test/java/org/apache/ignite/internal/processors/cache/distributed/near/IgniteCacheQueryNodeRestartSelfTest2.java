@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.h2.QueryCancelledException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -238,10 +239,16 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             assertEquals(pRes, cache.query(qry).getAll());
                         }
                         catch (CacheException e) {
-                            if (!smallPageSize)
+                            boolean failedOnCancellation = false;
+
+                            if (e.getCause() instanceof QueryCancelledException)
+                                failedOnCancellation = true;
+
+                            if (!smallPageSize && !failedOnCancellation) {
                                 e.printStackTrace();
 
-                            assertTrue("On large page size must retry.", smallPageSize);
+                                fail("On large page size must retry.");
+                            }
 
                             boolean failedOnRemoteFetch = false;
 
@@ -257,10 +264,10 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 }
                             }
 
-                            if (!failedOnRemoteFetch) {
+                            if (!failedOnRemoteFetch && !failedOnCancellation) {
                                 e.printStackTrace();
 
-                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
+                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass or in cancellation.");
                             }
                         }
                     }

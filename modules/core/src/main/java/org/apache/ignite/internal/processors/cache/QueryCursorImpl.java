@@ -95,7 +95,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 all.add(t);
         }
         finally {
-            close();
+            doClose(false);
         }
 
         return all;
@@ -108,12 +108,19 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 clo.consume(t);
         }
         finally {
-            close();
+            doClose(false);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        doClose(true);
+    }
+
+    /**
+     * @param cancellable Cancellable flag.
+     */
+    private void doClose(boolean cancellable) {
         Iterator<T> i;
 
         if ((i = iter) != null) {
@@ -127,7 +134,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                     throw new IgniteException(e);
                 }
             }
-        } else {
+        } else if (cancellable) {
             GridAbsClosure clo;
             if (mapQrysCancel != null) {
                 // Make sure we use correct closure.

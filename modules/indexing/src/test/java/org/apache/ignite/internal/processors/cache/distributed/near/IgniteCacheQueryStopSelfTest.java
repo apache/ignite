@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
-    private static final int GRIDS_COUNT = 3;
+    private static final int GRIDS_COUNT = 1;
 
     /** IP finder. */
     private static TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

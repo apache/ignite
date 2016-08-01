@@ -700,6 +700,9 @@ public class GridMapQueryExecutor {
             return true;
         }
 
+        /**
+         * Cancels the query.
+         */
         void cancel() {
             if (canceled)
                 return;
