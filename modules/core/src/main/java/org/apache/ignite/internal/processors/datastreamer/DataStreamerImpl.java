@@ -189,6 +189,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         @Override public void apply(IgniteInternalFuture<?> t) {
             boolean rmv = activeFuts.remove(t);
 
+            try {
+                t.get();
+            }
+            catch (Exception e) {
+                if (!log.isQuiet())
+                    U.error(log, "DataStreamer job has failed.", e);
+            }
+
             assert rmv;
         }
     };
@@ -837,19 +845,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         List<IgniteInternalFuture> activeFuts0 = null;
 
-        int doneCnt = 0;
-
         for (IgniteInternalFuture<?> f : activeFuts) {
             if (!f.isDone()) {
                 if (activeFuts0 == null)
-                    activeFuts0 = new ArrayList<>((int)(activeFuts.size() * 1.2));
+                    activeFuts0 = new ArrayList<>(activeFuts.size() / 2);
 
                 activeFuts0.add(f);
-            }
-            else {
-                f.get();
-
-                doneCnt++;
             }
         }
 
@@ -915,7 +916,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     continue;
             }
 
-            doneCnt = 0;
+            int doneCnt = 0;
 
             for (int i = 0; i < activeFuts0.size(); i++) {
                 IgniteInternalFuture f = activeFuts0.get(i);
