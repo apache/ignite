@@ -15,23 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+package org.apache.ignite;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.springframework.context.ApplicationContext;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.junit.Assert.assertNotNull;
 
-/**
- * Reduce fields queries tests for local cache.
- */
-public class GridCacheReduceFieldsQueryLocalSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
+/** Lifecycle bean for testing. */
+public class TestInjectionLifecycleBean implements LifecycleBean {
+    /** */
+    @SpringApplicationContextResource
+    private ApplicationContext appCtx;
+
+    /** Checks that context was injected. */
+    public void checkState() {
+        assertNotNull(appCtx);
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override public void onLifecycleEvent(LifecycleEventType evt) {
+        checkState();
     }
 }

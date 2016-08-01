@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLostPartitionTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**

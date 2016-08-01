@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 
 /**
- * Reduce fields queries tests for partitioned cache.
+ * Extended version of secondary file system with missing methods.
+ *
+ * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
  */
-public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFieldsQueryPartitionedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
+@Deprecated
+public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
+    /**
+     * Set times for the given path.
+     *
+     * @param path Path.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
+     * @throws IgniteException If failed.
+     */
+    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
 }

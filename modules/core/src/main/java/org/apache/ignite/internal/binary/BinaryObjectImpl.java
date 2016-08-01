@@ -98,6 +98,17 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject copy(int part) {
+        if (this.part == part)
+            return this;
+
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+        cp.part = part;
+
+        return cp;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }

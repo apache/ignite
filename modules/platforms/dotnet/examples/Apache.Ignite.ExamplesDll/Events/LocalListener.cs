@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
-using Apache.Ignite.Core.Events;
-
 namespace Apache.Ignite.ExamplesDll.Events
 {
+    using System;
+    using System.Threading;
+    using Apache.Ignite.Core.Events;
+
     /// <summary>
     /// Local event listener.
     /// </summary>

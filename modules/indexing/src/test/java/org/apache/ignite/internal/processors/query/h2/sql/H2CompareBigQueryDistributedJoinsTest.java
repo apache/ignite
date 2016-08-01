@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-/*
- * This software includes code from IntelliJ IDEA Community Edition
- * Copyright (C) JetBrains s.r.o.
- * https://www.jetbrains.com/idea/
- */
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * {@code Nullable} and {@code NotNull} annotations.
+ * Executes SQL big query test using distributed joins mode.
  */
-package org.jetbrains.annotations;
+public class H2CompareBigQueryDistributedJoinsTest extends H2CompareBigQueryTest {
+    /** {@inheritDoc} */
+    @Override protected boolean distributedJoins() {
+        return true;
+    }
+}

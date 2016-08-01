@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Universal adapter over {@link IgfsEx} filesystem.
@@ -60,6 +63,7 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public Map<String, String> properties(String path) {
         return igfsEx.info(new IgfsPath(path)).properties();
     }
@@ -92,6 +96,17 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     }
 
     /** {@inheritDoc} */
+    @Override public T2<Long, Long> times(String path) throws IOException {
+        IgfsFile info = igfsEx.info(new IgfsPath(path));
+
+        if (info == null)
+            throw new IOException("Path not found: " + path);
+
+        return new T2<>(info.accessTime(), info.modificationTime());
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
         if (clazz == IgfsEx.class)
             return (T)igfsEx;
