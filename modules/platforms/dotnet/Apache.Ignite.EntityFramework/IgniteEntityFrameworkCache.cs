@@ -47,9 +47,9 @@ namespace Apache.Ignite.EntityFramework
          */
         private readonly ICache<string, string[]> _dependencyCache;
 
-        /** Cached caches per expiry seconds. */
-        private volatile Dictionary<double, ICache<string, object>> _expiryCaches =
-            new Dictionary<double, ICache<string, object>>();
+        /** Cached caches per (expiry_seconds * 10). */
+        private volatile Dictionary<long, ICache<string, object>> _expiryCaches =
+            new Dictionary<long, ICache<string, object>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -193,8 +193,8 @@ namespace Apache.Ignite.EntityFramework
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<double, ICache<string, object>>()
-                    : new Dictionary<double, ICache<string, object>>(_expiryCaches);
+                    ? new Dictionary<long, ICache<string, object>>()
+                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
 
                 expiryCache =
                     _cache.WithExpiryPolicy(GetExpiryPolicy(expirySeconds));
@@ -208,10 +208,10 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the expiry policy.
         /// </summary>
-        private static ExpiryPolicy GetExpiryPolicy(double absoluteSeconds)
+        private static ExpiryPolicy GetExpiryPolicy(long absoluteSeconds)
         {
-            var absolute = !double.IsNaN(absoluteSeconds)
-                ? TimeSpan.FromSeconds(absoluteSeconds)
+            var absolute = absoluteSeconds != long.MaxValue
+                ? TimeSpan.FromSeconds((double)absoluteSeconds / 10)
                 : (TimeSpan?) null;
 
             return new ExpiryPolicy(absolute, null, null);
@@ -220,14 +220,17 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the seconds.
         /// </summary>
-        private static double GetSeconds(DateTimeOffset ts)
+        private static long GetSeconds(DateTimeOffset ts)
         {
-            var seconds = ts == DateTimeOffset.MaxValue ? double.NaN : (ts - DateTimeOffset.Now).TotalSeconds;
+            if (ts == DateTimeOffset.MaxValue)
+                return long.MaxValue;
+
+            var seconds = (ts - DateTimeOffset.Now).TotalSeconds;
 
             if (seconds < 0)
                 seconds = 0;
 
-            return Math.Round(seconds, 1);
+            return (long) (seconds * 10);
         }
     }
 }
