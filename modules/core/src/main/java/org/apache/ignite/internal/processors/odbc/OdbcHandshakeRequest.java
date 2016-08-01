@@ -33,7 +33,7 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     private boolean enforceJoinOrder = false;
 
     /**
-     * @param ver Protocol version.
+     * @param ver Long value for protocol version.
      */
     public OdbcHandshakeRequest(long ver) {
         super(HANDSHAKE);

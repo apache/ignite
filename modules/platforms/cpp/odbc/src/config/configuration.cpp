@@ -32,6 +32,9 @@ namespace ignite
     {
         namespace config
         {
+            const int64_t ProtocolVersion::VERSION_1_6_0 = 1;
+            const int64_t ProtocolVersion::VERSION_2_0_0 = 0x0002000000000000LL;
+
             const std::string Configuration::Key::dsn               = "dsn";
             const std::string Configuration::Key::driver            = "driver";
             const std::string Configuration::Key::cache             = "cache";
@@ -47,7 +50,7 @@ namespace ignite
             const std::string Configuration::DefaultValue::cache           = "";
             const std::string Configuration::DefaultValue::address         = "";
             const std::string Configuration::DefaultValue::server          = "";
-            const std::string Configuration::DefaultValue::protocolVersion = "VERSION_1_7";
+            const std::string Configuration::DefaultValue::protocolVersion = "2.0.0";
 
             const uint16_t Configuration::DefaultValue::port = 10800;
 
@@ -304,8 +307,8 @@ namespace ignite
 
                     if (versionMap.empty())
                     {
-                        versionMap["version_1_6"] = 1;
-                        versionMap["version_1_7"] = 2;
+                        versionMap["1.6.0"] = ProtocolVersion::VERSION_1_6_0;
+                        versionMap["2.0.0"] = ProtocolVersion::VERSION_2_0_0;
                     }
                 }
 
@@ -314,8 +317,8 @@ namespace ignite
                 if (it == versionMap.end())
                 {
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Invalid version format. Valid format is VERSION_X_Y, where X and Y "
-                        "are major and minor versions of Ignite since which protocol is introduced.");
+                        "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major "
+                        "and minor versions and revision of Ignite since which protocol is introduced.");
                 }
 
                 return it->second;
