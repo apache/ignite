@@ -69,8 +69,10 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
         cancelAllJobs = true;
         // Workaround for initial update job metadata.
         try {
-            grid(0).compute().affinityRun(new TestRun(orgId),
-                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()), orgId);
+            grid(0).compute().affinityRun(
+                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                orgId,
+                new TestRun(orgId));
         } catch (Exception e) {
             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
             // The test checks only correct partition release in case CollisionSpi is used.
@@ -105,9 +107,10 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                                 n = jobNum.getAndIncrement();
 
                                 log.info("+++ Job submitted " + n);
-                                grid(0).compute().affinityRun(new TestRun(n),
+                                grid(0).compute().affinityRun(
                                     Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                    orgId);
+                                    orgId,
+                                    new TestRun(n));
                             }
                         }
                         catch (Exception e) {

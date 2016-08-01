@@ -145,9 +145,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     private void notReservedCacheOp(final String cacheName) throws Exception {
         // Workaround for initial update job metadata.
         grid(0).compute().affinityRun(
-            new NotReservedCacheOpAffinityRun(0, 0, cacheName),
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
-            orgIds.get(0));
+            orgIds.get(0),
+            new NotReservedCacheOpAffinityRun(0, 0, cacheName));
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -160,9 +160,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                 @Override public void run() {
                     for (int i = 0; i < PARTS_CNT; ++i) {
                         grid(0).compute().affinityRun(
-                            new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            i);
+                            i,
+                            new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -190,9 +190,10 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
-        grid(0).compute().affinityRun(new ReservedPartitionCacheOpAffinityRun(0, 0),
+        grid(0).compute().affinityRun(
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
-            0);
+            0,
+            new ReservedPartitionCacheOpAffinityRun(0, 0));
 
         // Run restart threads: start re-balancing
         beginNodesRestart();
@@ -206,9 +207,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                             break;
 
                         grid(0).compute().affinityRun(
-                            new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT),
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            i);
+                            i,
+                            new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");

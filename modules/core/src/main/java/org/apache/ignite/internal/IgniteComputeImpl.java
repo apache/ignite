@@ -132,7 +132,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, Object affKey) {
+    @Override public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
         A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
@@ -161,7 +161,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, int partId) {
+    @Override public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job) {
         A.ensure(partId >= 0, "partId = " + partId);
         A.notNull(job, "job");
         A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
@@ -207,7 +207,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, Object affKey) {
+    @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
         A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");
@@ -236,7 +236,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, int partId) {
+    @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job) {
         A.ensure(partId >= 0, "partId = " + partId);
         A.notNull(job, "job");
         A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");

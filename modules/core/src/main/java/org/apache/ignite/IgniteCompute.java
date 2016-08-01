@@ -146,7 +146,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, Object affKey)
+    public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -155,13 +155,13 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * while the job is executed. The data of the extra caches' partitions with the same partition number
      * also will not be migrated.
      *
-     * @param job Job which will be co-located on the node with given affinity key.
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition number.
+     * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(IgniteRunnable job, @NotNull Collection<String> cacheNames, int partId)
+    public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -191,7 +191,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, Object affKey)
+    public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
@@ -200,14 +200,14 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * while the job is executed. The data of the extra caches' partitions with the same partition number
      * also will not be migrated.
      *
-     * @param partId Partition to reserve.
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param partId Partition to reserve.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(IgniteCallable<R> job, @NotNull Collection<String> cacheNames, int partId)
+    public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
