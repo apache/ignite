@@ -97,7 +97,7 @@ namespace Apache.Ignite.EntityFramework
                 // Update the entitySet -> key[] mapping
                 // With a finite set of cached queries, we will reach a point when all dependencies are populated,
                 // so _dependencyCache won't be updated on PutItem any more.
-                foreach (var entitySet in dependentEntitySets)
+                foreach (var entitySet in Sort(dependentEntitySets))
                 {
                     string[] keys;
 
@@ -120,7 +120,7 @@ namespace Apache.Ignite.EntityFramework
         {
             using (var tx = TxStart())
             {
-                var sets = _dependencyCache.GetAll(entitySets);
+                var sets = _dependencyCache.GetAll(Sort(entitySets));
 
                 // Remove all cached queries that depend on specific entity set
                 foreach (var dependentKeys in sets)
@@ -130,6 +130,18 @@ namespace Apache.Ignite.EntityFramework
 
                 tx.Commit();
             }
+        }
+
+        /// <summary>
+        /// Sorts the strings.
+        /// </summary>
+        private static List<string> Sort(IEnumerable<string> strings)
+        {
+            var res = strings.ToList();
+
+            res.Sort();
+
+            return res;
         }
 
         /** <inheritdoc /> */
