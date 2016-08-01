@@ -121,6 +121,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                     WriteThrough = true
                 });
                 dynCache[2] = new Foo { Str = "test2", Int = 3 };
+
+                // Start another server node so that store is initialized there
+                using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    GridName = "grid2"
+                }))
+                {
+                    var dynCache2 = ignite2.GetCache<int, Foo>(dynCache.Name);
+
+                    Assert.AreEqual("test2", dynCache2[2].Str);
+                    Assert.AreEqual(3, dynCache2[2].Int);
+                }
             }
 
             using (var ignite = Ignition.Start(cfg))
