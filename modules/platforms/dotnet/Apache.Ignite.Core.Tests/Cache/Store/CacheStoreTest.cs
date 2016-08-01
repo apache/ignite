@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestNonSerializableStoreFactory()
         {
-            var ignite = Ignition.GetIgnite();
+            var ignite = Ignition.GetIgnite(GridName);
 
             var ex = Assert.Throws<IgniteException>(
                 () => ignite.CreateCache<int, string>(new CacheConfiguration("TestNonSerializableStoreFactory")
@@ -515,7 +515,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 }));
 
             Assert.AreEqual("CacheConfiguration.CacheStoreFactory should be serializable: " +
-                            "Apache.Ignite.ExamplesDll.Datagrid.EmployeeStoreFactory", ex.Message);
+                            "Apache.Ignite.Core.Tests.Cache.Store.CacheStoreTest+NonSerializableStoreFactory", 
+                            ex.Message);
         }
 
         /// <summary>
