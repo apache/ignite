@@ -46,9 +46,7 @@ namespace ignite
 
             REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 6,
-
-            REQUEST_TYPE_CONFIGURE = 7
+            REQUEST_TYPE_GET_TABLES_METADATA = 6
         };
 
         enum ResponseStatus
@@ -68,9 +66,13 @@ namespace ignite
              * Constructor.
              *
              * @param version Protocol version.
+             * @param distributedJoins Distributed joins flag.
+             * @param enforceJoinOrder Enforce join order flag.
              */
-            HandshakeRequest(int64_t version) :
-                version(version)
+            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder) :
+                version(version),
+                distributedJoins(distributedJoins),
+                enforceJoinOrder(enforceJoinOrder)
             {
                 // No-op.
             }
@@ -92,53 +94,15 @@ namespace ignite
                 writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
 
                 writer.WriteInt64(version);
-            }
-
-        private:
-            /** Protocol version. */
-            int64_t version;
-        };
-
-        /**
-         * Configure request.
-         */
-        class ConfigureRequest
-        {
-        public:
-            /**
-             * Constructor.
-             *
-             * @param distributedJoins Distributed joins flag.
-             * @param enforceJoinOrder Enforce join order flag.
-             */
-            ConfigureRequest(bool distributedJoins, bool enforceJoinOrder) :
-                distributedJoins(distributedJoins),
-                enforceJoinOrder(enforceJoinOrder)
-            {
-                // No-op.
-            }
-
-            /**
-             * Destructor.
-             */
-            ~ConfigureRequest()
-            {
-                // No-op.
-            }
-
-            /**
-             * Write request using provided writer.
-             * @param writer Writer.
-             */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_CONFIGURE);
 
                 writer.WriteBool(distributedJoins);
                 writer.WriteBool(enforceJoinOrder);
             }
 
         private:
+            /** Protocol version. */
+            int64_t version;
+
             /** Distributed joins flag. */
             bool distributedJoins;
 
