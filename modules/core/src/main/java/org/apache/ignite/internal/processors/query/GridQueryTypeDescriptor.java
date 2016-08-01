@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,6 +79,18 @@ public interface GridQueryTypeDescriptor {
      * @return Key class.
      */
     public Class<?> keyClass();
+
+    /**
+     * Gets original key class set in {@link QueryEntity} this descriptor was built upon.
+     * @return Original key class.
+     */
+    public Class<?> origKeyClass();
+
+    /**
+     * Gets original value class set in {@link QueryEntity} this descriptor was built upon.
+     * @return Original value class.
+     */
+    public Class<?> origValueClass();
 
     /**
      * Returns {@code true} if string representation of value should be indexed as text.

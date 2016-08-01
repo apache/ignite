@@ -550,7 +550,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(final String name) {
-            return new GridQueryProperty() {
+            return new GridQueryProperty(false) {
                 @Override public Object value(Object key, Object val) throws IgniteCheckedException {
                     return TypeDesc.this.value(name, key, val);
                 }
@@ -610,6 +610,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** */
         @Override public Class<?> keyClass() {
+            return Integer.class;
+        }
+
+        /** */
+        @Override public Class<?> origValueClass() {
+            return Object.class;
+        }
+
+        /** */
+        @Override public Class<?> origKeyClass() {
             return Integer.class;
         }
 

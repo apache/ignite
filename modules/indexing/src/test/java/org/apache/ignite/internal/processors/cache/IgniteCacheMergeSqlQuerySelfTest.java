@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -61,6 +62,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
+        ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
     }
 
     /** {@inheritDoc} */
@@ -176,7 +178,23 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key {
+    public void testPrimitives() {
+        IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
+
+        QueryCursor c = p.query(new SqlFieldsQuery("merge into Integer(_key, _val) values (1, ?), " +
+            "(?, 4)").setArgs(2, 3));
+
+        c.iterator();
+
+        assertEquals(2, (int)p.get(1));
+
+        assertEquals(4, (int)p.get(3));
+    }
+
+    /**
+     *
+     */
+    private final static class Key implements Serializable {
         /** */
         public Key(int key) {
             this.key = key;
@@ -206,7 +224,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key2 {
+    private final static class Key2 implements Serializable {
         /** */
         public Key2(int Id) {
             this.Id = Id;
@@ -236,7 +254,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Person {
+    private static class Person implements Serializable {
         /** */
         @SuppressWarnings("unused")
         private Person() {

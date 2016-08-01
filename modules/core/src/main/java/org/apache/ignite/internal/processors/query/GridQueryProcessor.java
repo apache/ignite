@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,9 +71,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -235,6 +232,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
 
                     desc.name(simpleValType);
+                    desc.origKeyClass(keyCls);
+                    desc.origValueClass(valCls);
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -1313,7 +1312,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
 
             d.addProperty(prop, false);
 
@@ -1325,7 +1324,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
 
             d.addProperty(prop, false);
 
@@ -1337,7 +1336,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, d);
 
             d.addProperty(prop, false);
 
@@ -1355,7 +1354,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
+                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases, d);
 
                     d.addProperty(prop, false);
 
@@ -1369,7 +1368,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1390,7 +1389,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases, d);
 
             d.addProperty(prop, false);
         }
@@ -1490,9 +1489,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
+     * @param d Type descriptor.
      * @return Binary property.
      */
-    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
+    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases,
+        TypeDescriptor d) throws IgniteCheckedException {
+        boolean key;
+
+        // First let's check key, then value, in consistence with #buildClassProperty and BinaryProperty#value
+        Member member = deepFindMember(pathStr, d.origKeyClass(), resType);
+
+        if (member == null) {
+            member = deepFindMember(pathStr, d.origValueClass(), resType);
+            key = false;
+        }
+        else
+            key = true;
+
+        if (member == null)
+            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' of type '" +
+                resType.getName() + "' for key class '" + d.origKeyClass() + "' and value class '" + d.origValueClass() +
+                "'. Make sure that one of these classes contains respective getter method or field.");
+
         String[] path = pathStr.split("\\.");
 
         BinaryProperty res = null;
@@ -1507,7 +1525,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            res = new BinaryProperty(prop, res, resType, alias);
+            // The key flag that we've found out is valid for the whole path.
+            res = new BinaryProperty(prop, res, resType, member, key, alias);
         }
 
         return res;
@@ -1567,41 +1586,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            StringBuilder bld = new StringBuilder("get");
+            Member mem = findMember(prop, cls);
 
-            bld.append(prop);
-
-            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
-            ClassProperty tmp = null;
-
-            try {
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-            }
-            catch (NoSuchMethodException ignore) {
-                // No-op.
-            }
-
-            if (tmp == null) {
-                try {
-                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias, coCtx);
-                }
-                catch (NoSuchFieldException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (tmp == null) {
-                try {
-                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (tmp == null)
+            if (mem == null)
                 return null;
+
+            ClassProperty tmp = new ClassProperty(mem, key, alias, coCtx);
 
             tmp.parent(res);
 
@@ -1756,6 +1746,85 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param member Member.
+     * @return Type of field or return type of method.
+     */
+    private static Class<?> memberType(Member member) {
+        return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
+    }
+
+    /**
+     * @param pathStr Full path to property.
+     * @param cls Properties hierarchy entry point (outermost class).
+     * @param resType
+     * @return Member (field or property) at the end of properties hierarchy denoted by {@code pathStr}.
+     */
+    @Nullable private static Member deepFindMember(String pathStr, Class<?> cls, Class<?> resType) {
+        String[] path = pathStr.split("\\.");
+
+        Member res = null;
+
+        for (String prop : path) {
+            Member mem = findMember(prop, cls);
+
+            if (mem == null)
+                return null;
+
+            cls = memberType(mem);
+
+            res = mem;
+        }
+
+        if (res == null)
+            return null;
+
+        Class<?> actualResType = memberType(res);
+
+        if (!U.box(resType).isAssignableFrom(U.box(actualResType)))
+            return null;
+
+        return res;
+    }
+
+    /**
+     * Find a member (either a getter method or a field) with given name of given class.
+     * @param prop Property name.
+     * @param cls Class to search for a member in.
+     * @return Member for given name.
+     */
+    @Nullable private static Member findMember(String prop, Class<?> cls) {
+        StringBuilder bld = new StringBuilder("get");
+
+        bld.append(prop);
+
+        bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+
+        try {
+            return cls.getMethod(bld.toString());
+        }
+        catch (NoSuchMethodException ignore) {
+            // No-op.
+        }
+
+        try {
+            return cls.getDeclaredField(prop);
+        }
+        catch (NoSuchFieldException ignored) {
+            // No-op.
+        }
+
+        try {
+            return cls.getMethod(prop);
+        }
+        catch (NoSuchMethodException ignored) {
+            // No-op.
+        }
+
+        // No luck.
+        return null;
+    }
+
+    /**
      * Description of type property.
      */
     private static class ClassProperty extends GridQueryProperty {
@@ -1766,16 +1835,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private ClassProperty parent;
 
         /** */
-        private String name;
+        private final String name;
 
         /** */
-        private boolean field;
+        private final boolean field;
 
         /** */
-        private boolean key;
-
-        /** */
-        private CacheObjectContext coCtx;
+        private final CacheObjectContext coCtx;
 
         /**
          * Constructor.
@@ -1783,8 +1849,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param member Element.
          */
         ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
+            super(key);
             this.member = member;
-            this.key = key;
 
             this.name = !F.isEmpty(name) ? name :
                 member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
@@ -1799,7 +1865,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = unwrap(this.key ? key : val);
+            Object x = unwrap(key() ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1826,7 +1892,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
-            Object x = unwrap(this.key ? key : val);
+            Object x = unwrap(key() ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1865,7 +1931,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Class<?> type() {
-            return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
+            return memberType(member);
         }
 
         /**
@@ -1893,6 +1959,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      */
     private class BinaryProperty extends GridQueryProperty {
+        /** Member */
+        private final Member member;
+
         /** Property name. */
         private String propName;
 
@@ -1923,9 +1992,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
+         * @param member
+         * @param key
+         * @param alias Field alias.
          */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, String alias) {
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, Member member, boolean key, String alias) {
+            super(key);
             this.propName = propName;
+            this.member = member;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;
@@ -2067,6 +2141,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Class<?> valCls;
 
         /** */
+        private Class<?> origKeyCls;
+
+        /**  */
+        private Class<?> origValCls;
+
+        /** */
         private boolean valTextIdx;
 
         /** */
@@ -2110,7 +2190,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(String name) {
-            return props.get(name);
+            return getProperty(name);
         }
 
         /** {@inheritDoc} */
@@ -2223,6 +2303,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void keyClass(Class<?> keyCls) {
             this.keyCls = keyCls;
+        }
+
+        /** {@inheritDoc} */
+        public Class<?> origKeyClass() {
+            return origKeyCls;
+        }
+
+        /**
+         * Sets original key class set in {@link QueryEntity} this descriptor was built upon.
+         * @param origKeyClass Original key class.
+         */
+        public void origKeyClass(Class<?> origKeyClass) {
+            this.origKeyCls = origKeyClass;
+        }
+
+        /** {@inheritDoc} */
+        public Class<?> origValueClass() {
+            return origValCls;
+        }
+
+        /**
+         * Sets original value class set in {@link QueryEntity} this descriptor was built upon.
+         * @param origValueClass Original value class.
+         */
+        public void origValueClass(Class<?> origValueClass) {
+            this.origValCls = origValueClass;
         }
 
         /**

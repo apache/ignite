@@ -508,6 +508,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         return obj0;
     }
 
+    /** {@inheritDoc} */
+    @Override public void registerType(Class<?> cls) {
+        int typeId = typeId(cls.getSimpleName());
+
+        if (metadata(typeId) == null)
+            binaryContext().registerPredefinedType(cls, typeId);
+    }
+
     /**
      * @return Marshaller.
      */

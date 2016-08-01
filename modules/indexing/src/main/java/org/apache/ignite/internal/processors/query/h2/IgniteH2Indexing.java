@@ -57,6 +57,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -67,6 +68,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -113,6 +116,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -957,14 +961,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx
      * @param conn Connection,.
-     * @param schemas
      * @param tbls
      * @param sql Sql query.
      * @param params Parameters.   @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, JdbcConnection conn, Set<String> schemas,
-        Set<String> tbls, String sql, Object[] params) throws IgniteCheckedException {
+    public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, JdbcConnection conn, Set<String> tbls, String sql,
+        Object[] params) throws IgniteCheckedException {
         PreparedStatement stmt;
 
         try {
@@ -988,16 +991,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         A.ensure(!(gridStmt instanceof GridSqlQuery), "Non query grid SQL statement expected");
 
-        A.ensure(schemas.size() == 1, "SQL update operations don't support more than one schema");
         A.ensure(tbls.size() == 1, "SQL update operations don't support more than one table");
 
-        String schema = schemas.iterator().next();
         String tbl = tbls.iterator().next();
-        String type = dataTablesToTypes.get(tbl);
 
-        A.ensure(type != null, "Failed to resolve table to value type [tbl=" + tbl + ']');
-
-        TableDescriptor desc = tableDescriptor(type, space(schema));
+        TableDescriptor desc = tableDescriptorForNativeName(tbl, schema(cctx.name()));
+        A.notNull(desc, "Table descriptor not found [tbl=" + tbl + ']');
 
         if (gridStmt instanceof GridSqlMerge)
             return doMerge(cctx, (GridSqlMerge)gridStmt, desc, params);
@@ -1022,22 +1021,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridSqlColumn[] cols = gridStmt.columns();
 
-        int keyColIdx = -1;
-        for (int i = 0; i < cols.length; i++)
-            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                keyColIdx = i;
-                break;
-            }
+        if (marshaller instanceof BinaryMarshaller) {
+            A.ensure(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor,
+                "Expected binary cache object processor when using binary marshaller");
+
+            CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
+
+            if (desc.type().keyClass() == Object.class)
+                binProc.registerType(desc.type().origKeyClass());
+
+            if (desc.type().valueClass() == Object.class)
+                binProc.registerType(desc.type().origValueClass());
+        }
 
         if (gridStmt.rows().size() == 1) {
-            IgniteBiTuple t = rowToKeyValue(desc, cols, gridStmt.rows().get(0), params, keyColIdx);
+            IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, gridStmt.rows().get(0), params);
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
         }
         else {
             Map<Object, Object> rows = new LinkedHashMap<>(gridStmt.rows().size());
             for (GridSqlElement[] row : gridStmt.rows()) {
-                IgniteBiTuple t = rowToKeyValue(desc, cols, row, params, keyColIdx);
+                IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, row, params);
                 rows.put(t.getKey(), t.getValue());
             }
             cctx.cache().putAll(rows);
@@ -1047,40 +1052,129 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Convert bunch of {@link GridSqlElement}s into key-value pair to be inserted to cache.
+     *
+     * @param cctx Cache context.
      * @param desc Table descriptor.
      * @param cols Query cols.
      * @param row Row to process.
      * @param params Params to fill {@link GridSqlParameter}s.
-     * @param keyColIdx Index of <tt>_key</tt> column if it's present in query.
      * @return Key-value pair.
      * @throws IgniteCheckedException if failed.
      */
-    private static IgniteBiTuple<?, ?> rowToKeyValue(TableDescriptor desc, GridSqlColumn[] cols, GridSqlElement[] row,
-        Object[] params, int keyColIdx) throws IgniteCheckedException {
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, TableDescriptor desc, GridSqlColumn[] cols,
+        GridSqlElement[] row, Object[] params) throws IgniteCheckedException {
         for (GridSqlElement rowEl : row)
             A.ensure(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
                 "SQL INSERT and MERGE statements support literal values only");
 
+        Class<?> keyCls = desc.type().origKeyClass();
+        Class<?> valCls = desc.type().origValueClass();
+
         Object key = null;
-        Object val;
+        Object val = null;
 
-        try {
-            if (keyColIdx == -1)
-                key = GridUnsafe.allocateInstance(desc.type().keyClass());
-            else
-                key = getLiteralValue(row[keyColIdx], params);
+        boolean isKeyLiteral = isLiteralType(keyCls);
+        boolean isValLiteral = isLiteralType(valCls);
 
-            val = GridUnsafe.allocateInstance(desc.type().valueClass());
+        if (marshaller instanceof BinaryMarshaller) {
+            BinaryObjectBuilder keyBuilder = !isKeyLiteral ? cctx.grid().binary().builder(keyCls.getName()) : null;
+            BinaryObjectBuilder valBuilder = !isValLiteral ? cctx.grid().binary().builder(valCls.getName()) : null;
+
+            for (int i = 0; i < cols.length; i++) {
+                Object colVal = getLiteralValue(row[i], params);
+
+                if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                        "[keyCls=" + keyCls.getName() + ']');
+
+                    key = colVal;
+                    continue;
+                }
+
+                if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                        "[valCls=" + valCls.getName() + ']');
+
+                    val = colVal;
+                    continue;
+                }
+
+                GridQueryProperty prop = desc.type().property(cols[i].columnName());
+                A.notNull(prop, "Property '" + cols[i].columnName() + "' not found.");
+
+                BinaryObjectBuilder builder = prop.key() ? keyBuilder : valBuilder;
+                A.notNull(builder, "Null builder for class '" + prop.type() + "'");
+
+                setBinaryFieldValue(builder, prop.name(), colVal, prop.type());
+            }
+
+            //TODO change these statements when there's available the way of generating hash codes for new binary objects
+
+            if (!isKeyLiteral)
+                key = keyBuilder.build().deserialize();
+
+            if (!isValLiteral)
+                val = valBuilder.build().deserialize();
         }
-        catch (InstantiationException e) {
-            throw new IgniteCheckedException("Failed to allocate key or value fpr SQL statement", e);
+        else {
+            try {
+                if (!isKeyLiteral)
+                    key = GridUnsafe.allocateInstance(keyCls);
+
+                if (!isValLiteral)
+                    val = GridUnsafe.allocateInstance(valCls);
+            }
+            catch (InstantiationException e) {
+                throw new IgniteCheckedException("Failed to allocate key or value for SQL statement", e);
+            }
+
+            for (int i = 0; i < cols.length; i++) {
+                Object colVal = getLiteralValue(row[i], params);
+
+                if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                        "[keyCls=" + keyCls.getName() + ']');
+
+                    key = colVal;
+                    continue;
+                }
+
+                if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                        "[valCls=" + valCls.getName() + ']');
+
+                    val = colVal;
+                    continue;
+                }
+
+                desc.type().setValue(cols[i].columnName(), key, val, colVal);
+            }
         }
 
-        for (int i = 0; i < cols.length; i++)
-            if (i != keyColIdx)
-                desc.type().setValue(cols[i].columnName(), key, val, getLiteralValue(row[i], params));
+        A.notNull(key, "Key for MERGE must not be null");
+        A.notNull(val, "Value for MERGE must not be null");
 
         return new IgniteBiTuple<>(key, val);
+    }
+
+    /**
+     * @param builder Object builder.
+     * @param field Field name.
+     * @param val Value to set.
+     * @param valType Type of {@code val}.
+     * @param <T> Value type.
+     */
+    private static <T> void setBinaryFieldValue(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
+        //noinspection unchecked
+        builder.setField(field, (T)val, valType);
+    }
+
+    /**
+     * @param cls Class.
+     * @return {@code true} if given class represents one of primitive types or their wrappers, or String, false otherwise.
+     */
+    private boolean isLiteralType(Class<?> cls) {
+        return IgniteUtils.isPrimitiveOrWrapper(cls) || String.class == cls;
     }
 
     /**
@@ -1655,6 +1749,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return null;
 
         return s.tbls.get(type);
+    }
+
+    /**
+     * Gets table descriptor by type and space names.
+     *
+     * @param h2TblId H2 table identifier.
+     * @param schema Schema name.
+     * @return Table descriptor.
+     * @see GridH2Table#identifier()
+     */
+    @Nullable private TableDescriptor tableDescriptorForNativeName(String h2TblId, @Nullable String schema) {
+        Schema s = schemas.get(schema);
+
+        if (s == null)
+            return null;
+
+        return s.h2Tbls.get(h2TblId);
     }
 
     /**
@@ -2800,6 +2911,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap8<>();
 
+        /** Not a duplicate of {@link #tbls} - maps names of <i>H2 tables</i> to descriptors. */
+        private final ConcurrentMap<String, TableDescriptor> h2Tbls = new ConcurrentHashMap8<>();
+
         /** Cache for deserialized offheap rows. */
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
 
@@ -2839,6 +2953,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          */
         public void add(TableDescriptor tbl) {
             if (tbls.putIfAbsent(tbl.name(), tbl) != null)
+                throw new IllegalStateException("Table already registered: " + tbl.name());
+
+            if (h2Tbls.putIfAbsent(tbl.tbl.identifier(), tbl) != null)
                 throw new IllegalStateException("Table already registered: " + tbl.name());
         }
 

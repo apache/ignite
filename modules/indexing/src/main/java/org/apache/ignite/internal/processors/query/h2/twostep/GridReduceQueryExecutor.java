@@ -699,7 +699,7 @@ public class GridReduceQueryExecutor {
                                 resIter = new Iter(res);
                             }
                             else {
-                                int res = h2.executeSqlUpdateQuery(cctx, r.conn, qry.schemas(), qry.tables(), rdc.query(), rdc.parameters());
+                                int res = h2.executeSqlUpdateQuery(cctx, r.conn, qry.tables(), rdc.query(), rdc.parameters());
 
                                 return new UpdateResIter(res);
                             }
