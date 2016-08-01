@@ -317,7 +317,7 @@ namespace ignite
             {
                 distributedJoins = config.IsDistributedJoins();
                 enforceJoinOrder = config.IsEnforceJoinOrder();
-                protocolVersion = config.GetProtocolVersion();
+                protocolVersion = config.GetProtocolVersion().GetIntValue();
             }
             catch (const IgniteError& err)
             {
