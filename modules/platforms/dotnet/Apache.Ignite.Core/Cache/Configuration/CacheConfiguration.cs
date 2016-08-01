@@ -323,6 +323,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
+
+            if (CacheStoreFactory != null && !CacheStoreFactory.GetType().IsSerializable)
+                throw new IgniteException("CacheConfiguration.CacheStoreFactory should be serializable.");
+
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
