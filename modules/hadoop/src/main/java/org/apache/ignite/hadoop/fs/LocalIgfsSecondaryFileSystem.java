@@ -17,7 +17,6 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -25,9 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -45,7 +42,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -59,14 +55,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName;
+    private String dfltUsrName = IgfsUtils.fixUserName(null);
 
     /** Factory. */
     private HadoopFileSystemFactory fsFactory;
@@ -79,34 +74,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      */
     public LocalIgfsSecondaryFileSystem() {
         // No-op.
-    }
-
-    /**
-     * Gets default user name.
-     * <p>
-     * Defines user name which will be used during file system invocation in case no user name is defined explicitly
-     * through {@link FileSystem#get(URI, Configuration, String)}.
-     * <p>
-     * Also this name will be used if you manipulate {@link IgniteFileSystem} directly and do not set user name
-     * explicitly using {@link IgfsUserContext#doAs(String, IgniteOutClosure)} or
-     * {@link IgfsUserContext#doAs(String, Callable)} methods.
-     * <p>
-     * If not set value of system property {@code "user.name"} will be used. If this property is not set either,
-     * {@code "anonymous"} will be used.
-     *
-     * @return Default user name.
-     */
-    @Nullable public String getDefaultUserName() {
-        return dfltUsrName;
-    }
-
-    /**
-     * Sets default user name. See {@link #getDefaultUserName()} for details.
-     *
-     * @param dfltUsrName Default user name.
-     */
-    public void setDefaultUserName(@Nullable String dfltUsrName) {
-        this.dfltUsrName = dfltUsrName;
     }
 
     /**
@@ -507,8 +474,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        dfltUsrName = IgfsUtils.fixUserName(dfltUsrName);
-
         if (fsFactory == null)
             fsFactory = new CachingHadoopFileSystemFactory();
 
