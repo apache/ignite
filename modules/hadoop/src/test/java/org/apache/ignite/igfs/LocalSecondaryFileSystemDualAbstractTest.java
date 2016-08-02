@@ -17,7 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
@@ -49,15 +48,9 @@ public abstract class LocalSecondaryFileSystemDualAbstractTest extends IgfsDualA
         if (!workDir.exists())
             assert workDir.mkdirs();
 
-        CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
-
-        factory.setUri("file:///");
-
         LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
 
         second.setWorkDirectory(workDir.getAbsolutePath());
-
-        second.setFileSystemFactory(factory);
 
         igfsSecondary = new LocalIgfsSecondaryFileSystemTestAdapter(workDir);
 

@@ -73,29 +73,11 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Default constructor.
      */
     public LocalIgfsSecondaryFileSystem() {
-        // No-op.
-    }
+        CachingHadoopFileSystemFactory fsFactory0 = new CachingHadoopFileSystemFactory();
 
-    /**
-     * Gets secondary file system factory.
-     * <p>
-     * This factory will be used whenever a call to a target {@link FileSystem} is required.
-     * <p>
-     * If not set, {@link CachingHadoopFileSystemFactory} will be used.
-     *
-     * @return Secondary file system factory.
-     */
-    public HadoopFileSystemFactory getFileSystemFactory() {
-        return fsFactory;
-    }
+        fsFactory0.setUri("file:///");
 
-    /**
-     * Sets secondary file system factory. See {@link #getFileSystemFactory()} for details.
-     *
-     * @param factory Secondary file system factory.
-     */
-    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
-        this.fsFactory = factory;
+        fsFactory = fsFactory0;
     }
 
     /**
