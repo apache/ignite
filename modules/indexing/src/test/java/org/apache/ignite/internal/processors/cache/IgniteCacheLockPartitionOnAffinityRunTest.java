@@ -332,7 +332,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
                                 grid(0).compute().affinityRun(
                                     Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                    orgId,
+                                    new Integer(orgId),
                                     new TestAffinityRun(personsCntGetter, orgId));
                             }
                         }
@@ -345,7 +345,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
                                 int personsCnt = grid(0).compute().affinityCall(
                                     Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                    orgId,
+                                    new Integer(orgId),
                                     new TestAffinityCall(personsCntGetter, orgId));
 
                                 assertEquals(PERS_AT_ORG_CNT, personsCnt);
@@ -371,7 +371,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME),
-                orgId,
+                new Integer(orgId),
                 new IgniteRunnable() {
                     @Override public void run() {
                         // No-op.
@@ -388,7 +388,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityCall(
                 Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME),
-                orgId,
+                new Integer(orgId),
                 new IgniteCallable<Object>() {
                     @Override public Object call() throws Exception {
                         return null;
@@ -411,7 +411,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
         grid(0).compute().affinityRun(
             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-            orgId,
+            new Integer(orgId),
             new IgniteRunnable() {
                 @IgniteInstanceResource
                 IgniteEx ignite;
@@ -431,7 +431,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
         grid(0).compute().affinityCall(
             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-            orgId,
+            new Integer(orgId),
             new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 IgniteEx ignite;
@@ -460,7 +460,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteRunnable() {
                     @IgniteInstanceResource
                     IgniteEx ignite;
@@ -487,7 +487,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityCall(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteCallable<Object>() {
                     @IgniteInstanceResource
                     IgniteEx ignite;
@@ -520,7 +520,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteRunnable() {
                     @IgniteInstanceResource
                     IgniteEx ignite;
@@ -546,7 +546,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityCall(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteCallable<Object>() {
                     @IgniteInstanceResource
                     IgniteEx ignite;
@@ -579,7 +579,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(0).compute().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new JobFailUnmarshaling());
             fail("Unmarshaling exception must be thrown");
         }
@@ -597,7 +597,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(1).compute().withAsync().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteRunnable() {
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -638,7 +638,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(1).compute().withAsync().affinityCall(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new IgniteCallable<Object>() {
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -686,7 +686,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         try {
             grid(1).compute().withAsync().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new RunnableWithMasterLeave() {
                     @IgniteInstanceResource
                     private Ignite ignite;

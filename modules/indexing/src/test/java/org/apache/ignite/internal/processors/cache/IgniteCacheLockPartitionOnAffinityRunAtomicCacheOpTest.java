@@ -146,7 +146,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         // Workaround for initial update job metadata.
         grid(0).compute().affinityRun(
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
-            orgIds.get(0),
+            new Integer(orgIds.get(0)),
             new NotReservedCacheOpAffinityRun(0, 0, cacheName));
 
         // Run restart threads: start re-balancing
@@ -161,7 +161,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                     for (int i = 0; i < PARTS_CNT; ++i) {
                         grid(0).compute().affinityRun(
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            i,
+                            new Integer(i),
                             new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
                     }
                 }
@@ -208,7 +208,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
                         grid(0).compute().affinityRun(
                             Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            i,
+                            new Integer(i),
                             new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
                     }
                 }

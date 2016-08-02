@@ -71,7 +71,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
         try {
             grid(0).compute().affinityRun(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                orgId,
+                new Integer(orgId),
                 new TestRun(orgId));
         } catch (Exception e) {
             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
@@ -109,7 +109,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                                 log.info("+++ Job submitted " + n);
                                 grid(0).compute().affinityRun(
                                     Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                    orgId,
+                                    new Integer(orgId),
                                     new TestRun(n));
                             }
                         }
