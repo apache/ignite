@@ -136,6 +136,13 @@ namespace ignite
                      */
                     void AddString(const std::string& str);
 
+                    /**
+                     * Set current ComboBox selection.
+                     *
+                     * @param idx List index.
+                     */
+                    void SetSelection(int idx);
+
                 protected:
                     /**
                      * Set window handle.

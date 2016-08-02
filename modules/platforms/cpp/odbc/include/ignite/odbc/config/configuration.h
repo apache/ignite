@@ -89,7 +89,7 @@ namespace ignite
                     static const std::string server;
 
                     /** Default value for protocol version. */
-                    static const ProtocolVersion protocolVersion;
+                    static const ProtocolVersion& protocolVersion;
 
                     /** Default value for port attribute. */
                     static const uint16_t port;
@@ -309,13 +309,6 @@ namespace ignite
                 {
                     return arguments;
                 }
-
-                /**
-                 * Get protocol version.
-                 *
-                 * @return Protocol version.
-                 */
-                const std::string& GetProtocolVersionStr() const;
 
                 /**
                  * Get protocol version.

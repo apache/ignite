@@ -166,6 +166,11 @@ namespace ignite
                 {
                     SNDMSG(handle, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.c_str()));
                 }
+
+                void Window::SetSelection(int idx)
+                {
+                    SNDMSG(handle, CB_SETCURSEL, static_cast<WPARAM>(idx), 0);
+                }
             }
         }
     }

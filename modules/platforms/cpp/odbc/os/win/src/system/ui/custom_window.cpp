@@ -174,7 +174,7 @@ namespace ignite
                 {
                     std::auto_ptr<Window> child(new Window(this, "Combobox", title));
 
-                    child->Create(WS_CHILD | WS_VISIBLE | CBS_DROPDOWN, posX, posY, sizeX, sizeY, id);
+                    child->Create(WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST, posX, posY, sizeX, sizeY, id);
 
                     return child;
                 }

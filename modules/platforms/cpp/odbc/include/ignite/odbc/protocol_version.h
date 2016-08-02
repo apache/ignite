@@ -47,11 +47,18 @@ namespace ignite
             static const ProtocolVersion VERSION_UNKNOWN;
 
             /**
+             * Get string to version map.
+             *
+             * @return String to version map.
+             */
+            static const StringToVersionMap& GetMap();
+
+            /**
              * Get current version.
              *
              * @return Current version.
              */
-            static ProtocolVersion GetCurrent();
+            static const ProtocolVersion& GetCurrent();
 
             /**
              * Parse string and extract protocol version.
@@ -146,6 +153,8 @@ namespace ignite
              * @param val Underlying value.
              */
             explicit ProtocolVersion(int64_t val);
+
+            ProtocolVersion();
 
             /** String to version map. */
             static const StringToVersionMap stringToVersionMap;

@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "ignite/odbc/protocol_version.h"
 #include <ignite/common/concurrent.h>
 #include <ignite/common/utils.h>
 #include <ignite/ignite_error.h>
+
+#include "ignite/odbc/protocol_version.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -50,7 +51,12 @@ namespace ignite
             // No-op.
         }
 
-        ProtocolVersion ProtocolVersion::GetCurrent()
+        const ProtocolVersion::StringToVersionMap& ProtocolVersion::GetMap()
+        {
+            return stringToVersionMap;
+        }
+
+        const ProtocolVersion& ProtocolVersion::GetCurrent()
         {
             return VERSION_2_0_0;
         }

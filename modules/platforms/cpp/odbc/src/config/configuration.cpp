@@ -53,7 +53,7 @@ namespace ignite
             const bool Configuration::DefaultValue::distributedJoins = false;
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
 
-            const ProtocolVersion Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
+            const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 
 
             Configuration::Configuration() :
@@ -155,12 +155,7 @@ namespace ignite
                 arguments[Key::port] = common::LexicalCast<std::string>(port);
             }
 
-            const std::string& Configuration::GetProtocolVersionStr() const
-            {
-                return GetStringValue(Key::protocolVersion, DefaultValue::protocolVersion);
-            }
-
-            int64_t Configuration::GetProtocolVersion() const
+            ProtocolVersion Configuration::GetProtocolVersion() const
             {
                 ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
 

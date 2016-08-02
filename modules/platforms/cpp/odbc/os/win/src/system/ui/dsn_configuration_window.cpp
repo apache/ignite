@@ -110,13 +110,25 @@ namespace ignite
 
                     rowPos += interval + rowSize;
 
-                    val = config.GetProtocolVersionStr().c_str();
-                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Protocol version:", ID_PROTOCOL_VERSION_LABEL);
-                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize, val, ID_PROTOCOL_VERSION_COMBO_BOX);
+                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize,
+                        "Protocol version:", ID_PROTOCOL_VERSION_LABEL);
+                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize,
+                        "Protocol version", ID_PROTOCOL_VERSION_COMBO_BOX);
 
-                    protocolVersionComboBox->SetText(val);
-                    protocolVersionComboBox->AddString("1.6.0");
-                    protocolVersionComboBox->AddString("2.0.0");
+                    int id = 0;
+
+                    const ProtocolVersion::StringToVersionMap& versionMap = ProtocolVersion::GetMap();
+
+                    ProtocolVersion::StringToVersionMap::const_iterator it;
+                    for (it = versionMap.begin(); it != versionMap.end(); ++it)
+                    {
+                        protocolVersionComboBox->AddString(it->first);
+
+                        if (it->second == config.GetProtocolVersion())
+                            protocolVersionComboBox->SetSelection(id);
+
+                        ++id;
+                    }
 
                     rowPos += interval + rowSize;
 
