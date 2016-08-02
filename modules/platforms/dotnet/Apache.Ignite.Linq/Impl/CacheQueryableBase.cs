@@ -66,7 +66,12 @@ namespace Apache.Ignite.Linq.Impl
             var data = GetQueryData();
             var executor = CacheQueryProvider.Executor;
 
-            return new SqlFieldsQuery(data.QueryText, executor.Local, data.Parameters.ToArray());
+            return new SqlFieldsQuery(data.QueryText, executor.Local, data.Parameters.ToArray())
+            {
+                EnableDistributedJoins = executor.EnableDistributedJoins,
+                EnforceJoinOrder = executor.EnforceJoinOrder,
+                PageSize = executor.PageSize
+            };
         }
 
         /** <inheritdoc /> */

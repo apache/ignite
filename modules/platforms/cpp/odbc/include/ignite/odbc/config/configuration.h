@@ -22,6 +22,8 @@
 #include <string>
 #include <map>
 
+#include <ignite/common/common.h>
+#include <ignite/common/utils.h>
 #include "ignite/odbc/protocol_version.h"
 
 namespace ignite

@@ -595,7 +595,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestPrimitiveFields()
         {
-            IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Primitives))
+            // Generic SetField method.
+            var binObj = _grid.GetBinary().GetBuilder(typeof(Primitives))
                 .SetField<byte>("fByte", 1)
                 .SetField("fBool", true)
                 .SetField<short>("fShort", 2)
@@ -604,16 +605,73 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<long>("fLong", 4)
                 .SetField<float>("fFloat", 5)
                 .SetField<double>("fDouble", 6)
+                .SetField("fDecimal", 7.7m)
                 .SetHashCode(100)
                 .Build();
 
+            CheckPrimitiveFields1(binObj);
+
+            // Specific setter methods.
+            binObj = _grid.GetBinary().GetBuilder(typeof(Primitives))
+                .SetByteField("fByte", 1)
+                .SetBooleanField("fBool", true)
+                .SetShortField("fShort", 2)
+                .SetCharField("fChar", 'a')
+                .SetIntField("fInt", 3)
+                .SetLongField("fLong", 4)
+                .SetFloatField("fFloat", 5)
+                .SetDoubleField("fDouble", 6)
+                .SetDecimalField("fDecimal", 7.7m)
+                .SetHashCode(100)
+                .Build();
+
+            CheckPrimitiveFields1(binObj);
+
+            // Overwrite with generic methods.
+            binObj = binObj.ToBuilder()
+                .SetField<byte>("fByte", 7)
+                .SetField("fBool", false)
+                .SetField<short>("fShort", 8)
+                .SetField("fChar", 'b')
+                .SetField("fInt", 9)
+                .SetField<long>("fLong", 10)
+                .SetField<float>("fFloat", 11)
+                .SetField<double>("fDouble", 12)
+                .SetField("fDecimal", 13.13m)
+                .SetHashCode(200)
+                .Build();
+
+            CheckPrimitiveFields2(binObj);
+
+            // Overwrite with specific methods.
+            binObj = binObj.ToBuilder()
+                .SetByteField("fByte", 7)
+                .SetBooleanField("fBool", false)
+                .SetShortField("fShort", 8)
+                .SetCharField("fChar", 'b')
+                .SetIntField("fInt", 9)
+                .SetLongField("fLong", 10)
+                .SetFloatField("fFloat", 11)
+                .SetDoubleField("fDouble", 12)
+                .SetDecimalField("fDecimal", 13.13m)
+                .SetHashCode(200)
+                .Build();
+
+            CheckPrimitiveFields2(binObj);
+        }
+
+        /// <summary>
+        /// Checks the primitive fields values.
+        /// </summary>
+        private static void CheckPrimitiveFields1(IBinaryObject binObj)
+        {
             Assert.AreEqual(100, binObj.GetHashCode());
 
             IBinaryType meta = binObj.GetBinaryType();
 
             Assert.AreEqual(typeof(Primitives).Name, meta.TypeName);
 
-            Assert.AreEqual(8, meta.Fields.Count);
+            Assert.AreEqual(9, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameByte, meta.GetFieldTypeName("fByte"));
             Assert.AreEqual(BinaryTypeNames.TypeNameBool, meta.GetFieldTypeName("fBool"));
@@ -623,6 +681,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameLong, meta.GetFieldTypeName("fLong"));
             Assert.AreEqual(BinaryTypeNames.TypeNameFloat, meta.GetFieldTypeName("fFloat"));
             Assert.AreEqual(BinaryTypeNames.TypeNameDouble, meta.GetFieldTypeName("fDouble"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameDecimal, meta.GetFieldTypeName("fDecimal"));
 
             Assert.AreEqual(1, binObj.GetField<byte>("fByte"));
             Assert.AreEqual(true, binObj.GetField<bool>("fBool"));
@@ -632,6 +691,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(4, binObj.GetField<long>("fLong"));
             Assert.AreEqual(5, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(6, binObj.GetField<double>("fDouble"));
+            Assert.AreEqual(7.7m, binObj.GetField<decimal>("fDecimal"));
 
             Primitives obj = binObj.Deserialize<Primitives>();
 
@@ -643,20 +703,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(4, obj.FLong);
             Assert.AreEqual(5, obj.FFloat);
             Assert.AreEqual(6, obj.FDouble);
+            Assert.AreEqual(7.7m, obj.FDecimal);
+        }
 
-            // Overwrite.
-            binObj = binObj.ToBuilder()
-                .SetField<byte>("fByte", 7)
-                .SetField("fBool", false)
-                .SetField<short>("fShort", 8)
-                .SetField("fChar", 'b')
-                .SetField("fInt", 9)
-                .SetField<long>("fLong", 10)
-                .SetField<float>("fFloat", 11)
-                .SetField<double>("fDouble", 12)
-                .SetHashCode(200)
-                .Build();
-
+        /// <summary>
+        /// Checks the primitive fields values.
+        /// </summary>
+        private static void CheckPrimitiveFields2(IBinaryObject binObj)
+        {
             Assert.AreEqual(200, binObj.GetHashCode());
 
             Assert.AreEqual(7, binObj.GetField<byte>("fByte"));
@@ -667,8 +721,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(10, binObj.GetField<long>("fLong"));
             Assert.AreEqual(11, binObj.GetField<float>("fFloat"));
             Assert.AreEqual(12, binObj.GetField<double>("fDouble"));
+            Assert.AreEqual(13.13m, binObj.GetField<decimal>("fDecimal"));
 
-            obj = binObj.Deserialize<Primitives>();
+            var obj = binObj.Deserialize<Primitives>();
 
             Assert.AreEqual(7, obj.FByte);
             Assert.AreEqual(false, obj.FBool);
@@ -678,6 +733,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(10, obj.FLong);
             Assert.AreEqual(11, obj.FFloat);
             Assert.AreEqual(12, obj.FDouble);
+            Assert.AreEqual(13.13m, obj.FDecimal);
         }
 
         /// <summary>
@@ -686,7 +742,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestPrimitiveArrayFields()
         {
-            IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
+            // Generic SetField method.
+            var binObj = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
                 .SetField("fByte", new byte[] { 1 })
                 .SetField("fBool", new[] { true })
                 .SetField("fShort", new short[] { 2 })
@@ -695,16 +752,71 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField("fLong", new long[] { 4 })
                 .SetField("fFloat", new float[] { 5 })
                 .SetField("fDouble", new double[] { 6 })
+                .SetField("fDecimal", new decimal?[] { 7.7m })
                 .SetHashCode(100)
                 .Build();
 
+            CheckPrimitiveArrayFields1(binObj);
+
+            // Specific setters.
+            binObj = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
+                .SetByteArrayField("fByte", new byte[] {1})
+                .SetBooleanArrayField("fBool", new[] {true})
+                .SetShortArrayField("fShort", new short[] {2})
+                .SetCharArrayField("fChar", new[] {'a'})
+                .SetIntArrayField("fInt", new[] {3})
+                .SetLongArrayField("fLong", new long[] {4})
+                .SetFloatArrayField("fFloat", new float[] {5})
+                .SetDoubleArrayField("fDouble", new double[] {6})
+                .SetDecimalArrayField("fDecimal", new decimal?[] {7.7m})
+                .SetHashCode(100)
+                .Build();
+            
+            // Overwrite with generic setter.
+            binObj = _grid.GetBinary().GetBuilder(binObj)
+                .SetField("fByte", new byte[] { 7 })
+                .SetField("fBool", new[] { false })
+                .SetField("fShort", new short[] { 8 })
+                .SetField("fChar", new[] { 'b' })
+                .SetField("fInt", new[] { 9 })
+                .SetField("fLong", new long[] { 10 })
+                .SetField("fFloat", new float[] { 11 })
+                .SetField("fDouble", new double[] { 12 })
+                .SetField("fDecimal", new decimal?[] { 13.13m })
+                .SetHashCode(200)
+                .Build();
+
+            CheckPrimitiveArrayFields2(binObj);
+
+            // Overwrite with specific setters.
+            binObj = _grid.GetBinary().GetBuilder(binObj)
+                .SetByteArrayField("fByte", new byte[] { 7 })
+                .SetBooleanArrayField("fBool", new[] { false })
+                .SetShortArrayField("fShort", new short[] { 8 })
+                .SetCharArrayField("fChar", new[] { 'b' })
+                .SetIntArrayField("fInt", new[] { 9 })
+                .SetLongArrayField("fLong", new long[] { 10 })
+                .SetFloatArrayField("fFloat", new float[] { 11 })
+                .SetDoubleArrayField("fDouble", new double[] { 12 })
+                .SetDecimalArrayField("fDecimal", new decimal?[] { 13.13m })
+                .SetHashCode(200)
+                .Build();
+
+            CheckPrimitiveArrayFields2(binObj);
+        }
+
+        /// <summary>
+        /// Checks the primitive array fields.
+        /// </summary>
+        private static void CheckPrimitiveArrayFields1(IBinaryObject binObj)
+        {
             Assert.AreEqual(100, binObj.GetHashCode());
 
             IBinaryType meta = binObj.GetBinaryType();
 
             Assert.AreEqual(typeof(PrimitiveArrays).Name, meta.TypeName);
 
-            Assert.AreEqual(8, meta.Fields.Count);
+            Assert.AreEqual(9, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayByte, meta.GetFieldTypeName("fByte"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayBool, meta.GetFieldTypeName("fBool"));
@@ -714,6 +826,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayLong, meta.GetFieldTypeName("fLong"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayFloat, meta.GetFieldTypeName("fFloat"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayDouble, meta.GetFieldTypeName("fDouble"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameArrayDecimal, meta.GetFieldTypeName("fDecimal"));
 
             Assert.AreEqual(new byte[] { 1 }, binObj.GetField<byte[]>("fByte"));
             Assert.AreEqual(new[] { true }, binObj.GetField<bool[]>("fBool"));
@@ -723,6 +836,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 4 }, binObj.GetField<long[]>("fLong"));
             Assert.AreEqual(new float[] { 5 }, binObj.GetField<float[]>("fFloat"));
             Assert.AreEqual(new double[] { 6 }, binObj.GetField<double[]>("fDouble"));
+            Assert.AreEqual(new decimal?[] { 7.7m }, binObj.GetField<decimal?[]>("fDecimal"));
 
             PrimitiveArrays obj = binObj.Deserialize<PrimitiveArrays>();
 
@@ -734,20 +848,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 4 }, obj.FLong);
             Assert.AreEqual(new float[] { 5 }, obj.FFloat);
             Assert.AreEqual(new double[] { 6 }, obj.FDouble);
+            Assert.AreEqual(new decimal?[] { 7.7m }, obj.FDecimal);
+        }
 
-            // Overwrite.
-            binObj = _grid.GetBinary().GetBuilder(binObj)
-                .SetField("fByte", new byte[] { 7 })
-                .SetField("fBool", new[] { false })
-                .SetField("fShort", new short[] { 8 })
-                .SetField("fChar", new[] { 'b' })
-                .SetField("fInt", new[] { 9 })
-                .SetField("fLong", new long[] { 10 })
-                .SetField("fFloat", new float[] { 11 })
-                .SetField("fDouble", new double[] { 12 })
-                .SetHashCode(200)
-                .Build();
-
+        /// <summary>
+        /// Checks the primitive array fields.
+        /// </summary>
+        private static void CheckPrimitiveArrayFields2(IBinaryObject binObj)
+        {
             Assert.AreEqual(200, binObj.GetHashCode());
 
             Assert.AreEqual(new byte[] { 7 }, binObj.GetField<byte[]>("fByte"));
@@ -758,8 +866,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 10 }, binObj.GetField<long[]>("fLong"));
             Assert.AreEqual(new float[] { 11 }, binObj.GetField<float[]>("fFloat"));
             Assert.AreEqual(new double[] { 12 }, binObj.GetField<double[]>("fDouble"));
+            Assert.AreEqual(new decimal?[] { 13.13m }, binObj.GetField<decimal?[]>("fDecimal"));
 
-            obj = binObj.Deserialize<PrimitiveArrays>();
+            var obj = binObj.Deserialize<PrimitiveArrays>();
 
             Assert.AreEqual(new byte[] { 7 }, obj.FByte);
             Assert.AreEqual(new[] { false }, obj.FBool);
@@ -769,6 +878,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new long[] { 10 }, obj.FLong);
             Assert.AreEqual(new float[] { 11 }, obj.FFloat);
             Assert.AreEqual(new double[] { 12 }, obj.FDouble);
+            Assert.AreEqual(new decimal?[] { 13.13m }, obj.FDecimal);
         }
 
         /// <summary>
@@ -777,69 +887,141 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestStringDateGuidEnum()
         {
-            DateTime? nDate = DateTime.Now;
+            DateTime? nDate = DateTime.Now.ToUniversalTime();
 
             Guid? nGuid = Guid.NewGuid();
 
+            // Generic setters.
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
                 .SetField("fNDate", nDate)
-                .SetGuidField("fNGuid", nGuid)
+                .SetTimestampField("fNTimestamp", nDate)
+                .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
-                .SetField("fStrArr", new[] { "str" })
+                .SetStringArrayField("fStrArr", new[] { "str" })
                 .SetArrayField("fDateArr", new[] { nDate })
+                .SetTimestampArrayField("fTimestampArr", new[] { nDate })
                 .SetGuidArrayField("fGuidArr", new[] { nGuid })
-                .SetField("fEnumArr", new[] { TestEnum.One })
+                .SetEnumArrayField("fEnumArr", new[] { TestEnum.One })
                 .SetHashCode(100)
                 .Build();
 
+            CheckStringDateGuidEnum1(binObj, nDate, nGuid);
+
+            // Specific setters.
+            binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+                .SetStringField("fStr", "str")
+                .SetField("fNDate", nDate)
+                .SetTimestampField("fNTimestamp", nDate)
+                .SetGuidField("fNGuid", nGuid)
+                .SetEnumField("fEnum", TestEnum.One)
+                .SetStringArrayField("fStrArr", new[] { "str" })
+                .SetArrayField("fDateArr", new[] { nDate })
+                .SetTimestampArrayField("fTimestampArr", new[] { nDate })
+                .SetGuidArrayField("fGuidArr", new[] { nGuid })
+                .SetEnumArrayField("fEnumArr", new[] { TestEnum.One })
+                .SetHashCode(100)
+                .Build();
+
+            CheckStringDateGuidEnum1(binObj, nDate, nGuid);
+
+            // Overwrite.
+            nDate = DateTime.Now.ToUniversalTime();
+            nGuid = Guid.NewGuid();
+
+            binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+                .SetField("fStr", "str2")
+                .SetField("fNDate", nDate)
+                .SetTimestampField("fNTimestamp", nDate)
+                .SetField("fNGuid", nGuid)
+                .SetField("fEnum", TestEnum.Two)
+                .SetField("fStrArr", new[] { "str2" })
+                .SetArrayField("fDateArr", new[] { nDate })
+                .SetTimestampArrayField("fTimestampArr", new[] { nDate })
+                .SetField("fGuidArr", new[] { nGuid })
+                .SetField("fEnumArr", new[] { TestEnum.Two })
+                .SetHashCode(200)
+                .Build();
+
+            CheckStringDateGuidEnum2(binObj, nDate, nGuid);
+
+            // Overwrite with specific setters
+            binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+                .SetStringField("fStr", "str2")
+                .SetField("fNDate", nDate)
+                .SetTimestampField("fNTimestamp", nDate)
+                .SetGuidField("fNGuid", nGuid)
+                .SetEnumField("fEnum", TestEnum.Two)
+                .SetStringArrayField("fStrArr", new[] { "str2" })
+                .SetArrayField("fDateArr", new[] { nDate })
+                .SetTimestampArrayField("fTimestampArr", new[] { nDate })
+                .SetGuidArrayField("fGuidArr", new[] { nGuid })
+                .SetEnumArrayField("fEnumArr", new[] { TestEnum.Two })
+                .SetHashCode(200)
+                .Build();
+
+            CheckStringDateGuidEnum2(binObj, nDate, nGuid);
+        }
+
+        /// <summary>
+        /// Checks the string date guid enum values.
+        /// </summary>
+        private void CheckStringDateGuidEnum1(IBinaryObject binObj, DateTime? nDate, Guid? nGuid)
+        {
             Assert.AreEqual(100, binObj.GetHashCode());
 
             IBinaryType meta = binObj.GetBinaryType();
 
             Assert.AreEqual(typeof(StringDateGuidEnum).Name, meta.TypeName);
 
-            Assert.AreEqual(8, meta.Fields.Count);
+            Assert.AreEqual(10, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameString, meta.GetFieldTypeName("fStr"));
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("fNDate"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameTimestamp, meta.GetFieldTypeName("fNTimestamp"));
             Assert.AreEqual(BinaryTypeNames.TypeNameGuid, meta.GetFieldTypeName("fNGuid"));
             Assert.AreEqual(BinaryTypeNames.TypeNameEnum, meta.GetFieldTypeName("fEnum"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayString, meta.GetFieldTypeName("fStrArr"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayObject, meta.GetFieldTypeName("fDateArr"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameArrayTimestamp, meta.GetFieldTypeName("fTimestampArr"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayGuid, meta.GetFieldTypeName("fGuidArr"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayEnum, meta.GetFieldTypeName("fEnumArr"));
 
             Assert.AreEqual("str", binObj.GetField<string>("fStr"));
             Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNTimestamp"));
             Assert.AreEqual(nGuid, binObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.One, binObj.GetField<TestEnum>("fEnum"));
-            Assert.AreEqual(new[] { "str" }, binObj.GetField<string[]>("fStrArr"));
-            Assert.AreEqual(new[] { nDate }, binObj.GetField<DateTime?[]>("fDateArr"));
-            Assert.AreEqual(new[] { nGuid }, binObj.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] {"str"}, binObj.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] {nDate}, binObj.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] {nDate}, binObj.GetField<DateTime?[]>("fTimestampArr"));
+            Assert.AreEqual(new[] {nGuid}, binObj.GetField<Guid?[]>("fGuidArr"));
             Assert.AreEqual(new[] {TestEnum.One}, binObj.GetField<TestEnum[]>("fEnumArr"));
 
             StringDateGuidEnum obj = binObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str", obj.FStr);
             Assert.AreEqual(nDate, obj.FnDate);
+            Assert.AreEqual(nDate, obj.FnTimestamp);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.One, obj.FEnum);
-            Assert.AreEqual(new[] { "str" }, obj.FStrArr);
-            Assert.AreEqual(new[] { nDate }, obj.FDateArr);
-            Assert.AreEqual(new[] { nGuid }, obj.FGuidArr);
-            Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
+            Assert.AreEqual(new[] {"str"}, obj.FStrArr);
+            Assert.AreEqual(new[] {nDate}, obj.FDateArr);
+            Assert.AreEqual(new[] {nGuid}, obj.FGuidArr);
+            Assert.AreEqual(new[] {TestEnum.One}, obj.FEnumArr);
 
             // Check builder field caching.
             var builder = _grid.GetBinary().GetBuilder(binObj);
 
             Assert.AreEqual("str", builder.GetField<string>("fStr"));
             Assert.AreEqual(nDate, builder.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nDate, builder.GetField<DateTime?>("fNTimestamp"));
             Assert.AreEqual(nGuid, builder.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.One, builder.GetField<TestEnum>("fEnum"));
-            Assert.AreEqual(new[] { "str" }, builder.GetField<string[]>("fStrArr"));
-            Assert.AreEqual(new[] { nDate }, builder.GetField<DateTime?[]>("fDateArr"));
-            Assert.AreEqual(new[] { nGuid }, builder.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] {"str"}, builder.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] {nDate}, builder.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] {nDate}, builder.GetField<DateTime?[]>("fTimestampArr"));
+            Assert.AreEqual(new[] {nGuid}, builder.GetField<Guid?[]>("fGuidArr"));
             Assert.AreEqual(new[] {TestEnum.One}, builder.GetField<TestEnum[]>("fEnumArr"));
 
             // Check reassemble.
@@ -847,55 +1029,51 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual("str", binObj.GetField<string>("fStr"));
             Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNTimestamp"));
             Assert.AreEqual(nGuid, binObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.One, binObj.GetField<TestEnum>("fEnum"));
-            Assert.AreEqual(new[] { "str" }, binObj.GetField<string[]>("fStrArr"));
-            Assert.AreEqual(new[] { nDate }, binObj.GetField<DateTime?[]>("fDateArr"));
-            Assert.AreEqual(new[] { nGuid }, binObj.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] {"str"}, binObj.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] {nDate}, binObj.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] {nDate}, binObj.GetField<DateTime?[]>("fTimestampArr"));
+            Assert.AreEqual(new[] {nGuid}, binObj.GetField<Guid?[]>("fGuidArr"));
             Assert.AreEqual(new[] {TestEnum.One}, binObj.GetField<TestEnum[]>("fEnumArr"));
 
             obj = binObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str", obj.FStr);
             Assert.AreEqual(nDate, obj.FnDate);
+            Assert.AreEqual(nDate, obj.FnTimestamp);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.One, obj.FEnum);
-            Assert.AreEqual(new[] { "str" }, obj.FStrArr);
-            Assert.AreEqual(new[] { nDate }, obj.FDateArr);
-            Assert.AreEqual(new[] { nGuid }, obj.FGuidArr);
-            Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
+            Assert.AreEqual(new[] {"str"}, obj.FStrArr);
+            Assert.AreEqual(new[] {nDate}, obj.FDateArr);
+            Assert.AreEqual(new[] {nGuid}, obj.FGuidArr);
+            Assert.AreEqual(new[] {TestEnum.One}, obj.FEnumArr);
+        }
 
-            // Overwrite.
-            nDate = DateTime.Now.ToUniversalTime();
-            nGuid = Guid.NewGuid();
-
-            binObj = builder
-                .SetField("fStr", "str2")
-                .SetTimestampField("fNDate", nDate)
-                .SetField("fNGuid", nGuid)
-                .SetField("fEnum", TestEnum.Two)
-                .SetField("fStrArr", new[] { "str2" })
-                .SetArrayField("fDateArr", new[] { nDate })
-                .SetField("fGuidArr", new[] { nGuid })
-                .SetField("fEnumArr", new[] { TestEnum.Two })
-                .SetHashCode(200)
-                .Build();
-
+        /// <summary>
+        /// Checks the string date guid enum values.
+        /// </summary>
+        private static void CheckStringDateGuidEnum2(IBinaryObject binObj, DateTime? nDate, Guid? nGuid)
+        {
             Assert.AreEqual(200, binObj.GetHashCode());
 
             Assert.AreEqual("str2", binObj.GetField<string>("fStr"));
             Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNTimestamp"));
             Assert.AreEqual(nGuid, binObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.Two, binObj.GetField<TestEnum>("fEnum"));
             Assert.AreEqual(new[] { "str2" }, binObj.GetField<string[]>("fStrArr"));
             Assert.AreEqual(new[] { nDate }, binObj.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] { nDate }, binObj.GetField<DateTime?[]>("fTimestampArr"));
             Assert.AreEqual(new[] { nGuid }, binObj.GetField<Guid?[]>("fGuidArr"));
-            Assert.AreEqual(new[] {TestEnum.Two}, binObj.GetField<TestEnum[]>("fEnumArr"));
+            Assert.AreEqual(new[] { TestEnum.Two }, binObj.GetField<TestEnum[]>("fEnumArr"));
 
-            obj = binObj.Deserialize<StringDateGuidEnum>();
+            var obj = binObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str2", obj.FStr);
             Assert.AreEqual(nDate, obj.FnDate);
+            Assert.AreEqual(nDate, obj.FnTimestamp);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.Two, obj.FEnum);
             Assert.AreEqual(new[] { "str2" }, obj.FStrArr);
@@ -1524,6 +1702,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long FLong;
         public float FFloat;
         public double FDouble;
+        public decimal FDecimal;
     }
 
     /// <summary>
@@ -1539,6 +1718,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public long[] FLong;
         public float[] FFloat;
         public double[] FDouble;
+        public decimal?[] FDecimal;
     }
 
     /// <summary>
@@ -1548,6 +1728,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     {
         public string FStr;
         public DateTime? FnDate;
+        public DateTime? FnTimestamp;
         public Guid? FnGuid;
         public TestEnum FEnum;
 
