@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,7 +81,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     }
 
     /**
-     *
+     * Adapter for local secondary file system.
      */
     private static class LocalFileSystemAdapter extends HadoopFileSystemUniversalFileSystemAdapter {
         /** */
@@ -97,7 +98,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public String name() throws IOException {
-            return super.name();
+            return "local";
         }
 
         /** {@inheritDoc} */
@@ -107,7 +108,10 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public boolean delete(final String path, final boolean recursive) throws IOException {
-            return super.delete(addParent(path), recursive);
+            if (recursive)
+                return deleteRecursively(path(path));
+            else
+                return path(path).toFile().delete();
         }
 
         /** {@inheritDoc} */
@@ -148,6 +152,29 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
          */
         private Path path(String path) {
             return Paths.get(workDir + path);
+        }
+
+        /**
+         * Delete recursively.
+         *
+         * @param path Path.
+         * @throws IOException If failed.
+         */
+        private boolean deleteRecursively(Path path) throws IOException {
+            if (Files.isDirectory(path)) {
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    for (Path innerPath : stream) {
+                        boolean res = deleteRecursively(innerPath);
+
+                        if (!res)
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+            else
+                return path.toFile().delete();
         }
 
         /**
