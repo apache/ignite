@@ -114,6 +114,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProjectionForRandom(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForOldest(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForYoungest(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteProjectionForServers(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionOutOpRet(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
 
@@ -180,6 +181,9 @@ extern "C" {
 
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
+
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
 }
 
 #endif //_IGNITE_JNI_EXPORTS

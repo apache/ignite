@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -56,6 +55,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
+        /** Console write delegate. */
+        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
+
+        /** Console write pointer. */
+        private static readonly void* ConsoleWritePtr =
+            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
+
         /** Unmanaged context. */
         private volatile UnmanagedContext _ctx;
 
@@ -72,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon Ignite initialisation. */
+        /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
@@ -159,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
         
-        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
@@ -172,6 +178,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
         private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
+
+        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
         /// <summary>
         /// constructor.
@@ -747,8 +755,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
+                    string stackTrace = reader.ReadString();
 
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -932,7 +941,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(svcPtr);
+
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return;
 
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -1056,10 +1070,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
         
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
-            int errMsgCharsLen, void* errData, int errDataLen)
+            int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
+            string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
 
             switch (errType)
             {
@@ -1069,13 +1084,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, 
+                            _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
-                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
-                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
+                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg, stackTrace);
 
                 case ErrJvmAttach:
                     throw new IgniteException("Failed to attach to JVM.");
@@ -1099,6 +1115,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 _ignite.OnClientReconnected(clusterRestarted);
             });
+        }
+
+        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
+        {
+            try
+            {
+                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+
+                var target = isErr ? Console.Error : Console.Out;
+
+                target.Write(str);
+
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
+            }
         }
 
         #endregion
@@ -1156,38 +1189,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
-                        var writer = _ignite.Marshaller.StartMarshal(outStream);
-
-                        var partCnt = 0;
-                        writer.WriteInt(partCnt);  // reserve size
-
-                        foreach (var part in parts)
-                        {
-                            if (part == null)
-                                throw new IgniteException(func.GetType() +
-                                                          ".AssignPartitions() returned invalid partition: null");
-
-                            partCnt++;
-
-                            var nodeCnt = 0;
-                            var cntPos = outStream.Position;
-                            writer.WriteInt(nodeCnt);  // reserve size
-
-                            foreach (var node in part)
-                            {
-                                nodeCnt++;
-                                writer.WriteGuid(node.Id);
-                            }
-
-                            var endPos = outStream.Position;
-                            outStream.Seek(cntPos, SeekOrigin.Begin);
-                            outStream.WriteInt(nodeCnt);
-                            outStream.Seek(endPos, SeekOrigin.Begin);
-                        }
-
-                        outStream.SynchronizeOutput();
-                        outStream.Seek(0, SeekOrigin.Begin);
-                        writer.WriteInt(partCnt);
+                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
                     }
                 }
             });
@@ -1317,6 +1319,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite = null;
             
             _handleRegistry.Close();
+        }
+
+        /// <summary>
+        /// Gets the console write handler.
+        /// </summary>
+        public static void* ConsoleWriteHandler
+        {
+            get { return ConsoleWritePtr; }
         }
     }
 }

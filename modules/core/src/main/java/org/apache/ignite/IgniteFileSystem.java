@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -453,6 +454,14 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      */
     @Nullable public IgfsFile info(IgfsPath path) throws IgniteException;
+
+    /**
+     * Get mode for the given path.
+     *
+     * @param path Path.
+     * @return Mode used for this path.
+     */
+    public IgfsMode mode(IgfsPath path);
 
     /**
      * Gets used space in bytes.

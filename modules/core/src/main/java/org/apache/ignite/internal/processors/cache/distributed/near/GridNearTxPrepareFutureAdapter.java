@@ -140,6 +140,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx tx() {
+        return tx;
+    }
+
+    /**
      * Prepares transaction.
      */
     public abstract void prepare();

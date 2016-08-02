@@ -51,6 +51,7 @@
     <ClCompile Include="..\..\src\binary_test_defs.cpp" />
     <ClCompile Include="..\..\src\cache_query_test.cpp" />
     <ClCompile Include="..\..\src\interop_memory_test.cpp" />
+    <ClCompile Include="..\..\src\interop_test.cpp" />
     <ClCompile Include="..\..\src\bits_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />

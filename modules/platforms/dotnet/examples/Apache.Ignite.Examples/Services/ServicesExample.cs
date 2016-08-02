@@ -32,7 +32,7 @@ namespace Apache.Ignite.Examples.Services
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class ServicesExample
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Examples.Services
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine(">>> Services example started.");
                 Console.WriteLine();

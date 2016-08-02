@@ -84,6 +84,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Common\JavaException.cs" />
+    <Compile Include="DataStructures\Configuration\Package-Info.cs" />
+    <Compile Include="Discovery\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
+    <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
@@ -164,13 +172,16 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
+    <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
-    <Compile Include="Impl\Common\Platform.cs" />
+    <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
-    <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
+    <Compile Include="Impl\Common\Platform.cs" />
+    <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
@@ -360,7 +371,6 @@
     <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
-    <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
@@ -422,6 +432,8 @@
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Interop\Package-Info.cs" />
+    <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
@@ -500,6 +512,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />

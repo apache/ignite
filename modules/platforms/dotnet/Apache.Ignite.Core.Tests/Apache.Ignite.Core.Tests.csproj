@@ -49,21 +49,26 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestAppConfig.cs" />
+    <Compile Include="AspNet\IgniteOutputCacheProviderTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
-    <Compile Include="Cache\CacheAffinityFieldTest.cs" />
-    <Compile Include="Cache\CacheConfigurationTest.cs" />
+    <Compile Include="Binary\BinaryStringTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFieldTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
+    <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheNearTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
-    <Compile Include="Cache\CacheAffinityTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityTest.cs" />
     <Compile Include="Cache\CacheEntryTest.cs" />
     <Compile Include="Cache\CacheForkedTest.cs" />
     <Compile Include="Cache\CacheLocalAtomicTest.cs" />
@@ -109,6 +114,7 @@
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
+    <Compile Include="ConsoleRedirectTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="Dataload\DataStreamerTestTopologyChange.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
@@ -161,6 +167,10 @@
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj">
+      <Project>{13EA96FC-CC83-4164-A7C0-4F30ED797460}</Project>
+      <Name>Apache.Ignite.AspNet</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
@@ -282,6 +292,9 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="app.config" />
     <Content Include="Config\ignite-dotnet-cfg.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -102,7 +103,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "Schema for cache already registered");
+        }, IgniteException.class, "Cache already registered: ");
     }
 
     /**
@@ -185,7 +186,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
                 cache.query(qryWrong);
                 return null;
             }
-        }, IgniteException.class, "Failed to parse query");
+        }, CacheException.class, "Failed to parse query");
 
         SqlFieldsQuery qryCorrect = new SqlFieldsQuery("select f.\"id\", f.\"name\" " +
             "from \""+schemaName+"\".\"Fact\" f");

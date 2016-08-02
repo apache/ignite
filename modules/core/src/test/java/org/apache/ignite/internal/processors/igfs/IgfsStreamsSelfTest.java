@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -123,6 +124,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setLateAffinityAssignment(false);
         cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -155,13 +157,13 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         else {
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setNearConfiguration(null);
-
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
         }
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return cacheCfg;
     }
@@ -232,6 +234,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         Collection<IgfsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
 
         assertEquals(1, affNodes.size());
+
         Collection<UUID> nodeIds = F.first(affNodes).nodeIds();
 
         assertEquals(1, nodeIds.size());

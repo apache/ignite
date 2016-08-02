@@ -18,10 +18,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -31,8 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.PartitionedReadOnlySet;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,7 +93,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int size() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions())
+        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
             size += part.size();
 
         return size;
@@ -105,7 +103,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int publicSize() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions())
+        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
             size += part.publicSize();
 
         return size;
@@ -137,25 +135,23 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
-        Collection<Set<KeyCacheObject>> sets = new ArrayList<>();
-
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-            sets.add(partition.keySet(filter));
-
-        return new PartitionedReadOnlySet<>(sets);
+    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
+        return new PartitionedSet<KeyCacheObject>() {
+            @Override protected Set<KeyCacheObject> set(GridDhtLocalPartition part) {
+                return part.keySet(filter);
+            }
+        };
     }
 
     /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
-
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-                    iterators.add(partition.entries(filter).iterator());
-
-                return F.flatIterators(iterators);
+                return new PartitionedIterator<GridCacheMapEntry>() {
+                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
+                        return part.entries(filter).iterator();
+                    }
+                };
             }
         };
     }
@@ -164,24 +160,108 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
-
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-                    iterators.add(partition.allEntries(filter).iterator());
-
-                return F.flatIterators(iterators);
+                return new PartitionedIterator<GridCacheMapEntry>() {
+                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
+                        return part.allEntries(filter).iterator();
+                    }
+                };
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
-        Collection<Set<GridCacheMapEntry>> sets = new ArrayList<>();
+    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
+        return new PartitionedSet<GridCacheMapEntry>() {
+            @Override protected Set<GridCacheMapEntry> set(GridDhtLocalPartition part) {
+                return part.entrySet(filter);
+            }
+        };
+    }
 
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-            sets.add(partition.entrySet(filter));
+    /**
+     * Combined iterator over current local partitions.
+     */
+    private abstract class PartitionedIterator<T> implements Iterator<T> {
+        /** Partitions iterator. */
+        private Iterator<GridDhtLocalPartition> partsIter = ctx.topology().currentLocalPartitions().iterator();
 
-        return new PartitionedReadOnlySet<>(sets);
+        /** Current partition iterator. */
+        private Iterator<T> currIter = partsIter.hasNext() ? iterator(partsIter.next()) :
+            Collections.<T>emptyIterator();
+
+        /**
+         * @param part Partition.
+         * @return Iterator over entries of given partition.
+         */
+        protected abstract Iterator<T> iterator(GridDhtLocalPartition part);
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            if (currIter.hasNext())
+                return true;
+
+            while (partsIter.hasNext()) {
+                currIter = iterator(partsIter.next());
+
+                if (currIter.hasNext())
+                    return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            if (hasNext())
+                return currIter.next();
+            else
+                throw new NoSuchElementException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException("remove");
+        }
+    }
+
+    /**
+     * Read-only partitioned set.
+     */
+    private abstract class PartitionedSet<T> extends AbstractSet<T> {
+        /**
+         * @param part Partition.
+         * @return Set of entries from given partition.
+         */
+        protected abstract Set<T> set(GridDhtLocalPartition part);
+
+        /** {@inheritDoc} */
+        @Override public Iterator<T> iterator() {
+            return new PartitionedIterator<T>() {
+                @Override protected Iterator<T> iterator(GridDhtLocalPartition part) {
+                    return set(part).iterator();
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            int size = 0;
+
+            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+                size += set(part).size();
+
+            return size;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean contains(Object o) {
+            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                if (set(part).contains(o))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

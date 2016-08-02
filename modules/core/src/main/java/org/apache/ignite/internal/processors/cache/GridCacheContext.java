@@ -245,6 +245,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private boolean deferredDel;
 
+    /** */
+    private boolean customAffMapper;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -362,6 +365,13 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+    }
+
+    /**
+     * @return {@code True} if custom {@link AffinityKeyMapper} is configured for cache.
+     */
+    public boolean customAffinityMapper() {
+        return customAffMapper;
     }
 
     /**
@@ -564,6 +574,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean isReplicated() {
         return cacheCfg.getCacheMode() == CacheMode.REPLICATED;
+    }
+
+    /**
+     * @return {@code True} if cache is partitioned cache.
+     */
+    public boolean isPartitioned() {
+        return cacheCfg.getCacheMode() == CacheMode.PARTITIONED;
     }
 
     /**
@@ -1132,6 +1149,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
         this.cacheObjCtx = cacheObjCtx;
+
+        customAffMapper = cacheCfg.getAffinityMapper().getClass() != cacheObjCtx.defaultAffMapper().getClass();
     }
 
     /**
