@@ -126,6 +126,11 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         return second;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean appendSupported() {
+        return false;
+    }
+
     /**
      * Starts underlying Ignite process.
      * @throws IOException On failure.
@@ -149,66 +154,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         secondaryConfFullPath = writeConfiguration(secondaryConf, SECONDARY_CFG_PATH);
 
         secondaryUri = mkUri("file", SECONDARY_AUTHORITY);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendParentMissingPartially() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendParentMissing() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppend() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendParentRoot() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendRenameNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendRenameParentNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendDeleteNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendDeleteParentNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendUpdateNoClose() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendConsistency() throws Exception {
-        log.info("Append is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAppendConsistencyMultithreaded() throws Exception {
-        log.info("Append is not supported");
     }
 
     /**

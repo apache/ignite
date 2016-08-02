@@ -94,7 +94,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
@@ -263,6 +263,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected boolean useOptimizedMarshaller() {
         return false;
+    }
+
+    /**
+     * @return Whether append is supported.
+     */
+    protected boolean appendSupported() {
+        return true;
     }
 
     /**
@@ -1644,6 +1651,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @SuppressWarnings("ThrowFromFinallyBlock")
             @Override public void run() {
                 while (!stop.get() && err.get() == null) {
                     IgfsOutputStream os = null;
@@ -1710,129 +1718,140 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TryFinallyCanBeTryWithResources", "EmptyTryBlock"})
     public void testAppend() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        assert igfs.exists(SUBDIR);
+            assert igfs.exists(SUBDIR);
 
-        createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
+            createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
 
-        checkFile(igfs, igfsSecondary, FILE, chunk);
+            checkFile(igfs, igfsSecondary, FILE, chunk);
 
-        appendFile(igfs, FILE, chunk);
+            appendFile(igfs, FILE, chunk);
 
-        checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+            checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
 
-        // Test create via append:
-        IgfsPath path2 = FILE2;
+            // Test create via append:
+            IgfsPath path2 = FILE2;
 
-        IgfsOutputStream os = null;
+            IgfsOutputStream os = null;
 
-        try {
-            os = igfs.append(path2, true/*create*/);
+            try {
+                os = igfs.append(path2, true/*create*/);
 
-            writeFileChunks(os, chunk);
-        }
-        finally {
-            U.closeQuiet(os);
+                writeFileChunks(os, chunk);
+            } finally {
+                U.closeQuiet(os);
 
-            awaitFileClose(igfs.asSecondary(), path2);
-        }
+                awaitFileClose(igfs.asSecondary(), path2);
+            }
 
-        try {
-            os = igfs.append(path2, false/*create*/);
+            try {
+                os = igfs.append(path2, false/*create*/);
 
-            writeFileChunks(os, chunk);
-        }
-        finally {
-            U.closeQuiet(os);
+                writeFileChunks(os, chunk);
+            } finally {
+                U.closeQuiet(os);
 
-            awaitFileClose(igfs.asSecondary(), path2);
-        }
+                awaitFileClose(igfs.asSecondary(), path2);
+            }
 
-        checkFile(igfs, igfsSecondary, path2, chunk, chunk);
+            checkFile(igfs, igfsSecondary, path2, chunk, chunk);
 
-        // Negative append (create == false):
-        try {
-            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/should-not-be-created"), false)) {}
+            // Negative append (create == false):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/should-not-be-created"), false)) {
+                    // No-op.
+                }
 
-            fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
-        }
-        checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
+                fail("Exception expected");
+            } catch (IgniteException e) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
 
-        // Positive mkdirs via append:
-        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l"), true)) {
+            // Positive mkdirs via append:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l"), true)) {
+                checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+                assert igfs.info(new IgfsPath("/k/l")).isFile();
+            }
+
+            // Negative append (file is immediate parent):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l/m"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException e) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
             checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
             assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+            // Negative append (file is in the parent chain):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l/m/n/o/p"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException e) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+            // Negative append (target is a directory):
+            igfs.mkdirs(new IgfsPath("/x/y"), null);
+            checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+            assert igfs.info(new IgfsPath("/x/y")).isDirectory();
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException e) {
+                // okay
+            }
+
+            // Positive append with create
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+            }
+
+            // Positive append with create & 1 mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+            }
+
+            // Positive append with create & 2 mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/t/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+            }
+
+            // Positive mkdirs create & many mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+            }
+
+            // Negative mkdirs via append (create == false):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/d1/d2/d3/f"), false)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException e) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
         }
-
-        // Negative append (file is immediate parent):
-        try {
-            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l/m"), true)) {}
-
-            fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
-        }
-        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
-        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
-        assert igfs.info(new IgfsPath("/k/l")).isFile();
-
-        // Negative append (file is in the parent chain):
-        try {
-            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l/m/n/o/p"), true)) {}
-
-            fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
-        }
-        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
-        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
-        assert igfs.info(new IgfsPath("/k/l")).isFile();
-
-        // Negative append (target is a directory):
-        igfs.mkdirs(new IgfsPath("/x/y"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
-        assert igfs.info(new IgfsPath("/x/y")).isDirectory();
-        try {
-            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y"), true)) {}
-
-            fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
-        }
-
-        // Positive append with create
-        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/f"), true)) {
-            assert igfs.info(new IgfsPath("/x/y/f")).isFile();
-        }
-
-        // Positive append with create & 1 mkdirs:
-        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/f"), true)) {
-            assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
-        }
-
-        // Positive append with create & 2 mkdirs:
-        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/t/f"), true)) {
-            assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
-        }
-
-        // Positive mkdirs create & many mkdirs:
-        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), true)) {
-            assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
-        }
-
-        // Negative mkdirs via append (create == false):
-        try {
-            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/d1/d2/d3/f"), false)) {}
-
-            fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
-        }
-        checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
     }
 
     /**
@@ -1841,13 +1860,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendParentRoot() throws Exception {
-        IgfsPath file = new IgfsPath("/" + FILE.name());
+        if (appendSupported()) {
+            IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(igfs, file, true, BLOCK_SIZE, chunk);
+            createFile(igfs, file, true, BLOCK_SIZE, chunk);
 
-        appendFile(igfs, file, chunk);
+            appendFile(igfs, file, chunk);
 
-        checkFile(igfs, igfsSecondary, file, chunk, chunk);
+            checkFile(igfs, igfsSecondary, file, chunk, chunk);
+        }
     }
 
     /**
@@ -1856,27 +1877,29 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os1 = null;
-                IgfsOutputStream os2 = null;
+            GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    IgfsOutputStream os1 = null;
+                    IgfsOutputStream os2 = null;
 
-                try {
-                    os1 = igfs.append(FILE, false);
-                    os2 = igfs.append(FILE, false);
+                    try {
+                        os1 = igfs.append(FILE, false);
+                        os2 = igfs.append(FILE, false);
+                    } finally {
+                        U.closeQuiet(os1);
+                        U.closeQuiet(os2);
+                    }
+
+                    return null;
                 }
-                finally {
-                    U.closeQuiet(os1);
-                    U.closeQuiet(os2);
-                }
-
-                return null;
-            }
-        }, IgniteException.class, null);
+            }, IgniteException.class, null);
+        }
     }
 
     /**
@@ -1885,21 +1908,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        IgfsOutputStream os = null;
+            IgfsOutputStream os = null;
 
-        try {
-            os = igfs.append(FILE, false);
+            try {
+                os = igfs.append(FILE, false);
 
-            igfs.rename(FILE, FILE2);
+                igfs.rename(FILE, FILE2);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -1909,21 +1933,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameParentNoClose() throws Exception {
-        create(igfs.asSecondary(), paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs.asSecondary(), paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        IgfsOutputStream os = null;
+            IgfsOutputStream os = null;
 
-        try {
-            os = igfs.append(FILE, false);
+            try {
+                os = igfs.append(FILE, false);
 
-            igfs.rename(SUBDIR, SUBDIR2);
+                igfs.rename(SUBDIR, SUBDIR2);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -1933,48 +1958,50 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        IgfsOutputStream os = null;
-        IgniteUuid id = null;
+            IgfsOutputStream os = null;
+            IgniteUuid id = null;
 
-        try {
-            id = igfs.context().meta().fileId(FILE);
+            try {
+                id = igfs.context().meta().fileId(FILE);
 
-            os = igfs.append(FILE, false);
+                os = igfs.append(FILE, false);
 
-            boolean del = igfs.delete(FILE, false);
+                boolean del = igfs.delete(FILE, false);
 
-            assertTrue(del);
-            assertFalse(igfs.exists(FILE));
-            assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
-            // it is locked for writing and just moved to TRASH.
-            // Delete worker cannot delete it for that reason.
+                assertTrue(del);
+                assertFalse(igfs.exists(FILE));
+                assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+                // it is locked for writing and just moved to TRASH.
+                // Delete worker cannot delete it for that reason.
 
-            os.write(chunk);
+                os.write(chunk);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
-        }
-
-        assert id != null;
-
-        final IgniteUuid id0 = id;
-
-        // Delete worker should delete the file once its output stream is finally closed:
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    return !igfs.context().meta().exists(id0);
-                } catch (IgniteCheckedException ice) {
-                    throw new IgniteException(ice);
-                }
+                os.close();
+            } finally {
+                U.closeQuiet(os);
             }
-        }, 5_000L);
+
+            assert id != null;
+
+            final IgniteUuid id0 = id;
+
+            // Delete worker should delete the file once its output stream is finally closed:
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override
+                public boolean apply() {
+                    try {
+                        return !igfs.context().meta().exists(id0);
+                    } catch (IgniteCheckedException ice) {
+                        throw new IgniteException(ice);
+                    }
+                }
+            }, 5_000L);
+        }
     }
 
     /**
@@ -1983,48 +2010,50 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        IgfsOutputStream os = null;
-        IgniteUuid id = null;
+            IgfsOutputStream os = null;
+            IgniteUuid id = null;
 
-        try {
-            id = igfs.context().meta().fileId(FILE);
+            try {
+                id = igfs.context().meta().fileId(FILE);
 
-            os = igfs.append(FILE, false);
+                os = igfs.append(FILE, false);
 
-            boolean del = igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
+                boolean del = igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
 
-            assertTrue(del);
-            assertFalse(igfs.exists(FILE));
-            assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
-            // it is locked for writing and just moved to TRASH.
-            // Delete worker cannot delete it for that reason.
+                assertTrue(del);
+                assertFalse(igfs.exists(FILE));
+                assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+                // it is locked for writing and just moved to TRASH.
+                // Delete worker cannot delete it for that reason.
 
-            os.write(chunk);
+                os.write(chunk);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
-        }
-
-        assert id != null;
-
-        final IgniteUuid id0 = id;
-
-        // Delete worker should delete the file once its output stream is finally closed:
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    return !igfs.context().meta().exists(id0);
-                } catch (IgniteCheckedException ice) {
-                    throw new IgniteException(ice);
-                }
+                os.close();
+            } finally {
+                U.closeQuiet(os);
             }
-        }, 5_000L);
+
+            assert id != null;
+
+            final IgniteUuid id0 = id;
+
+            // Delete worker should delete the file once its output stream is finally closed:
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override
+                public boolean apply() {
+                    try {
+                        return !igfs.context().meta().exists(id0);
+                    } catch (IgniteCheckedException ice) {
+                        throw new IgniteException(ice);
+                    }
+                }
+            }, 5_000L);
+        }
     }
 
     /**
@@ -2033,23 +2062,24 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendUpdateNoClose() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        if (appendSupported()) {
+            Map<String, String> props = properties("owner", "group", "0555");
 
-        create(igfs, paths(DIR, SUBDIR), null);
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, false);
+            createFile(igfs.asSecondary(), FILE, false);
 
-        IgfsOutputStream os = null;
+            IgfsOutputStream os = null;
 
-        try {
-            os = igfs.append(FILE, false);
+            try {
+                os = igfs.append(FILE, false);
 
-            igfs.update(FILE, props);
+                igfs.update(FILE, props);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -2059,47 +2089,49 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistency() throws Exception {
-        final AtomicInteger ctr = new AtomicInteger();
-        final AtomicReference<Exception> err = new AtomicReference<>();
+        if (appendSupported()) {
+            final AtomicInteger ctr = new AtomicInteger();
+            final AtomicReference<Exception> err = new AtomicReference<>();
 
-        int threadCnt = 10;
+            int threadCnt = 10;
 
-        for (int i = 0; i < threadCnt; i++)
-            createFile(igfs.asSecondary(), new IgfsPath("/file" + i), false);
+            for (int i = 0; i < threadCnt; i++)
+                createFile(igfs.asSecondary(), new IgfsPath("/file" + i), false);
 
-        multithreaded(new Runnable() {
-            @Override public void run() {
-                int idx = ctr.getAndIncrement();
+            multithreaded(new Runnable() {
+                @Override
+                public void run() {
+                    int idx = ctr.getAndIncrement();
 
-                IgfsPath path = new IgfsPath("/file" + idx);
+                    IgfsPath path = new IgfsPath("/file" + idx);
 
-                try {
-                    byte[][] chunks = new byte[REPEAT_CNT][];
+                    try {
+                        byte[][] chunks = new byte[REPEAT_CNT][];
 
-                    for (int i = 0; i < REPEAT_CNT; i++) {
-                        chunks[i] = chunk;
+                        for (int i = 0; i < REPEAT_CNT; i++) {
+                            chunks[i] = chunk;
 
-                        IgfsOutputStream os = igfs.append(path, false);
+                            IgfsOutputStream os = igfs.append(path, false);
 
-                        os.write(chunk);
+                            os.write(chunk);
 
-                        os.close();
+                            os.close();
 
-                        assert igfs.exists(path);
+                            assert igfs.exists(path);
+                        }
+
+                        awaitFileClose(igfs.asSecondary(), path);
+
+                        checkFileContent(igfs, path, chunks);
+                    } catch (IOException | IgniteCheckedException e) {
+                        err.compareAndSet(null, e); // Log the very first error.
                     }
-
-                    awaitFileClose(igfs.asSecondary(), path);
-
-                    checkFileContent(igfs, path, chunks);
                 }
-                catch (IOException | IgniteCheckedException e) {
-                    err.compareAndSet(null, e); // Log the very first error.
-                }
-            }
-        }, threadCnt);
+            }, threadCnt);
 
-        if (err.get() != null)
-            throw err.get();
+            if (err.get() != null)
+                throw err.get();
+        }
     }
 
     /**
@@ -2108,71 +2140,71 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistencyMultithreaded() throws Exception {
-        final AtomicBoolean stop = new AtomicBoolean();
+        if (appendSupported()) {
+            final AtomicBoolean stop = new AtomicBoolean();
 
-        final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
-        final AtomicReference<Exception> err = new AtomicReference<>();
+            final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
+            final AtomicReference<Exception> err = new AtomicReference<>();
 
-        igfs.create(FILE, false).close();
+            igfs.create(FILE, false).close();
 
-        int threadCnt = 50;
+            int threadCnt = 50;
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (!stop.get() && err.get() == null) {
-                    IgfsOutputStream os = null;
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+                @SuppressWarnings("ThrowFromFinallyBlock")
+                @Override
+                public void run() {
+                    while (!stop.get() && err.get() == null) {
+                        IgfsOutputStream os = null;
 
-                    try {
-                        os = igfs.append(FILE, false);
+                        try {
+                            os = igfs.append(FILE, false);
 
-                        os.write(chunk);
+                            os.write(chunk);
 
-                        os.close();
+                            os.close();
 
-                        chunksCtr.incrementAndGet();
-                    }
-                    catch (IgniteException ignore) {
-                        // No-op.
-                    }
-                    catch (IOException e) {
-                        err.compareAndSet(null, e);
-                    }
-                    finally {
-                        if (os != null)
-                            try {
-                                os.close();
-                            }
-                            catch (IOException ioe) {
-                                throw new IgniteException(ioe);
-                            }
+                            chunksCtr.incrementAndGet();
+                        } catch (IgniteException ignore) {
+                            // No-op.
+                        } catch (IOException e) {
+                            err.compareAndSet(null, e);
+                        } finally {
+                            if (os != null)
+                                try {
+                                    os.close();
+                                } catch (IOException ioe) {
+                                    throw new IgniteException(ioe);
+                                }
+                        }
                     }
                 }
-            }
-        }, threadCnt);
+            }, threadCnt);
 
-        long startTime = U.currentTimeMillis();
+            long startTime = U.currentTimeMillis();
 
-        while (err.get() == null
+            while (err.get() == null
                 && chunksCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
-            U.sleep(100);
+                U.sleep(100);
 
-        stop.set(true);
+            stop.set(true);
 
-        fut.get();
+            fut.get();
 
-        awaitFileClose(igfs.asSecondary(), FILE);
+            awaitFileClose(igfs.asSecondary(), FILE);
 
-        if (err.get() != null) {
-            X.println("Test failed: rethrowing first error: " + err.get());
+            if (err.get() != null) {
+                X.println("Test failed: rethrowing first error: " + err.get());
 
-            throw err.get();
+                throw err.get();
+            }
+
+            byte[][] data = new byte[chunksCtr.get()][];
+
+            Arrays.fill(data, chunk);
+
+            checkFileContent(igfs, FILE, data);
         }
-
-        byte[][] data = new byte[chunksCtr.get()][];
-
-        Arrays.fill(data, chunk);
-
-        checkFileContent(igfs, FILE, data);
     }
 
     /**
