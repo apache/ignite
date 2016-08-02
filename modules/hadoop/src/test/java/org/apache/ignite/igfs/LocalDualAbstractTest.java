@@ -31,8 +31,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 /**
@@ -134,12 +136,15 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public InputStream openInputStream(final String path) throws IOException {
-            return super.openInputStream(addParent(path));
+            return Files.newInputStream(path(path));
         }
 
         /** {@inheritDoc} */
         @Override public OutputStream openOutputStream(final String path, final boolean append) throws IOException {
-            return super.openOutputStream(addParent(path), append);
+            if (append)
+                return Files.newOutputStream(path(path), StandardOpenOption.APPEND);
+            else
+                return Files.newOutputStream(path(path));
         }
 
         /** {@inheritDoc} */
