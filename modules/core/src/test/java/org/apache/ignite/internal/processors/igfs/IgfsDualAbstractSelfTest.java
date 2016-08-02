@@ -80,6 +80,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
         assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
 
+        // All the child paths of "/ignite/" must be visible in listings:
         assert igfs.listFiles(gg).size() == 3;
         assert igfs.listPaths(gg).size() == 3;
     }

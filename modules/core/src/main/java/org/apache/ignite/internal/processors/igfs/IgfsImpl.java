@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -841,7 +842,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Collection<IgfsFile> files = new HashSet<>();
+                Set<IgfsFile> files = new HashSet<>();
 
                 if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
