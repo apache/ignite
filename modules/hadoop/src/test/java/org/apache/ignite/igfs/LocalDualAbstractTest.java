@@ -17,20 +17,14 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
-import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
-import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
-import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
