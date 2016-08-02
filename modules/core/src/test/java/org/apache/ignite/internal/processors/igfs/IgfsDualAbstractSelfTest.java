@@ -985,13 +985,14 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -1012,13 +1013,14 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -1707,31 +1709,32 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSetTimesMissingPartially() throws Exception {
-        create(igfs, paths(DIR), null);
+        if (timesSupported()) {
+            create(igfs, paths(DIR), null);
 
-        createFile(igfsSecondary, FILE, chunk);
+            createFile(igfsSecondary, FILE, chunk);
 
-        igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
+            igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
 
-        IgfsFile info = igfs.info(FILE);
+            IgfsFile info = igfs.info(FILE);
 
-        assert info != null;
+            assert info != null;
 
-        assertEquals(Long.MAX_VALUE - 1, info.accessTime());
-        assertEquals(Long.MAX_VALUE, info.modificationTime());
+            assertEquals(Long.MAX_VALUE - 1, info.accessTime());
+            assertEquals(Long.MAX_VALUE, info.modificationTime());
 
-        T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
+            T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
-        assertEquals(info.accessTime(), (long)secondaryTimes.get1());
-        assertEquals(info.modificationTime(), (long)secondaryTimes.get2());
+            assertEquals(info.accessTime(), (long) secondaryTimes.get1());
+            assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
 
-        try {
-            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+            try {
+                igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
 
-            fail("Exception is not thrown for missing file.");
-        }
-        catch (Exception ignore) {
-            // No-op.
+                fail("Exception is not thrown for missing file.");
+            } catch (Exception ignore) {
+                // No-op.
+            }
         }
     }
 }

@@ -18,12 +18,12 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
-import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.util.io.GridFilenameUtils;
+import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
@@ -71,7 +71,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         second.setFileSystemFactory(factory);
 
-        igfsSecondary = new LocalFileSystemAdapter(factory, workDir);
+        igfsSecondary = new LocalFileSystemAdapter(workDir);
 
         return second;
     }
@@ -81,20 +81,27 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean permissionsSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean timesSupported() {
+        return false;
+    }
+
     /**
      * Adapter for local secondary file system.
      */
-    private static class LocalFileSystemAdapter extends HadoopFileSystemUniversalFileSystemAdapter {
+    private static class LocalFileSystemAdapter implements UniversalFileSystemAdapter {
         /** */
         private final String workDir;
 
         /**
-         * @param factory FS factory.
          * @param workDir Work dir.
          */
-        public LocalFileSystemAdapter(final HadoopFileSystemFactory factory, final File workDir) {
-            super(factory);
-
+        public LocalFileSystemAdapter(final File workDir) {
             this.workDir = workDir.getAbsolutePath();
         }
 
@@ -131,7 +138,14 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public Map<String, String> properties(final String path) throws IOException {
-            return super.properties(addParent(path));
+            // TODO: Create ticket for this!
+            throw new UnsupportedOperationException("properties");
+        }
+
+        /** {@inheritDoc} */
+        @Override public String permissions(String path) throws IOException {
+            // TODO: Create ticket for this!
+            throw new UnsupportedOperationException("permissions");
         }
 
         /** {@inheritDoc} */
@@ -145,6 +159,12 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
                 return Files.newOutputStream(path(path), StandardOpenOption.APPEND);
             else
                 return Files.newOutputStream(path(path));
+        }
+
+        /** {@inheritDoc} */
+        @Override public T2<Long, Long> times(String path) throws IOException {
+            // TODO: Create ticket for this!
+            throw new UnsupportedOperationException("times");
         }
 
         /** {@inheritDoc} */
@@ -181,17 +201,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
             }
 
             return path.toFile().delete();
-        }
-
-        /**
-         * @param path Current path.
-         * @return Path to add.
-         */
-        private String addParent(String path) {
-            if (path.startsWith("/"))
-                path = path.substring(1, path.length());
-
-            return GridFilenameUtils.concat(workDir, path);
         }
     }
 }

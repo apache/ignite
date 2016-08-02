@@ -273,6 +273,20 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Whether permissions are supported.
+     */
+    protected boolean permissionsSupported() {
+        return true;
+    }
+
+    /**
+     * @return Whether times are supported.
+     */
+    protected boolean timesSupported() {
+        return true;
+    }
+
+    /**
      * @return Amount of nodes to start.
      */
     protected int nodeCount() {
@@ -885,14 +899,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Ensure that directory was created and properties are propagated.
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        if (dual)
-            // Check only permissions because user and group will always be present in Hadoop Fs.
-            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-                igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            if (dual)
+                // Check only permissions because user and group will always be present in Hadoop Fs.
+                assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -908,13 +923,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         checkExist(igfs, igfsSecondary, DIR);
 
-        if (dual)
-            // check permission only since Hadoop Fs will always have user and group:
-            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-                igfsSecondary.properties(DIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            if (dual)
+                // check permission only since Hadoop Fs will always have user and group:
+                assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(DIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfs.info(DIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(DIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -1190,77 +1207,80 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSetTimes(IgfsPath path) throws Exception {
-        IgfsFile info = igfs.info(path);
-        T2<Long, Long> secondaryTimes = dual ? igfsSecondary.times(path.toString()) : null;
+        if (timesSupported()) {
 
-        assert info != null;
+            IgfsFile info = igfs.info(path);
+            T2<Long, Long> secondaryTimes = dual ? igfsSecondary.times(path.toString()) : null;
 
-        // Change nothing.
-        igfs.setTimes(path, -1, -1);
+            assert info != null;
 
-        IgfsFile newInfo = igfs.info(path);
+            // Change nothing.
+            igfs.setTimes(path, -1, -1);
 
-        assert newInfo != null;
+            IgfsFile newInfo = igfs.info(path);
 
-        assertEquals(info.accessTime(), newInfo.accessTime());
-        assertEquals(info.modificationTime(), newInfo.modificationTime());
+            assert newInfo != null;
 
-        if (dual) {
-            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+            assertEquals(info.accessTime(), newInfo.accessTime());
+            assertEquals(info.modificationTime(), newInfo.modificationTime());
 
-            assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
-            assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
-        }
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-        // Change only access time.
-        igfs.setTimes(path, info.accessTime() + 1, -1);
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
+                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+            }
 
-        newInfo = igfs.info(path);
+            // Change only access time.
+            igfs.setTimes(path, info.accessTime() + 1, -1);
 
-        assert newInfo != null;
+            newInfo = igfs.info(path);
 
-        assertEquals(info.accessTime() + 1, newInfo.accessTime());
-        assertEquals(info.modificationTime(), newInfo.modificationTime());
+            assert newInfo != null;
 
-        if (dual) {
-            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+            assertEquals(info.accessTime() + 1, newInfo.accessTime());
+            assertEquals(info.modificationTime(), newInfo.modificationTime());
 
-            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
-            assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
-        }
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-        // Change only modification time.
-        igfs.setTimes(path, -1, info.modificationTime() + 1);
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
+                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+            }
 
-        newInfo = igfs.info(path);
+            // Change only modification time.
+            igfs.setTimes(path, -1, info.modificationTime() + 1);
 
-        assert newInfo != null;
+            newInfo = igfs.info(path);
 
-        assertEquals(info.accessTime() + 1, newInfo.accessTime());
-        assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
+            assert newInfo != null;
 
-        if (dual) {
-            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+            assertEquals(info.accessTime() + 1, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
 
-            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
-            assertEquals(newInfo.modificationTime(), (long)newSecondaryTimes.get2());
-        }
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-        // Change both.
-        igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+            }
 
-        newInfo = igfs.info(path);
+            // Change both.
+            igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
 
-        assert newInfo != null;
+            newInfo = igfs.info(path);
 
-        assertEquals(info.accessTime() + 2, newInfo.accessTime());
-        assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
+            assert newInfo != null;
 
-        if (dual) {
-            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+            assertEquals(info.accessTime() + 2, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
 
-            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
-            assertEquals(newInfo.modificationTime(), (long)newSecondaryTimes.get2());
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+            }
         }
     }
 

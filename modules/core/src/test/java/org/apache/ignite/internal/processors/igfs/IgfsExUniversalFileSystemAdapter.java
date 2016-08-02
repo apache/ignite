@@ -70,6 +70,11 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     }
 
     /** {@inheritDoc} */
+    @Override public String permissions(String path) throws IOException {
+        return properties(path).get(IgfsUtils.PROP_PERMISSION);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean delete(String path, boolean recursive) throws IOException {
         IgfsPath igfsPath = new IgfsPath(path);
 

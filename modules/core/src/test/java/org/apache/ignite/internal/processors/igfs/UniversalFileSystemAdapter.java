@@ -77,6 +77,15 @@ public interface UniversalFileSystemAdapter {
     Map<String,String> properties(String path) throws IOException;
 
     /**
+     * Get permissions.
+     *
+     * @param path Path.
+     * @return Permissions.
+     * @throws IOException If failed.
+     */
+    String permissions(String path) throws IOException;
+
+    /**
      * Opens input stream to read file contents.
      * @param path the path to the file.
      */
