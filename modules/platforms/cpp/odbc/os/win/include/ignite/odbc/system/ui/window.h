@@ -143,6 +143,27 @@ namespace ignite
                      */
                     void SetSelection(int idx);
 
+                    /**
+                     * Get current ComboBox selection.
+                     *
+                     * @return idx List index.
+                     */
+                    int GetSelection() const;
+
+                    /**
+                     * Set enabled.
+                     *
+                     * @param enabled Enable flag.
+                     */
+                    void SetEnabled(bool enabled);
+
+                    /**
+                     * Check if the window is enabled.
+                     *
+                     * @return True if enabled.
+                     */
+                    bool IsEnabled() const;
+
                 protected:
                     /**
                      * Set window handle.

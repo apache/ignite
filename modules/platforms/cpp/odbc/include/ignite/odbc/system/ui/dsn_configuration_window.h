@@ -102,6 +102,9 @@ namespace ignite
                     /** Connection settings group box. */
                     std::auto_ptr<Window> connectionSettingsGroupBox;
 
+                    /** Query settings group box. */
+                    std::auto_ptr<Window> querySettingsGroupBox;
+
                     /** DSN name edit field label. */
                     std::auto_ptr<Window> nameLabel;
 

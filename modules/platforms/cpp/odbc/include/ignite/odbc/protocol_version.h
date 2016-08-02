@@ -93,6 +93,13 @@ namespace ignite
             bool IsUnknown() const;
 
             /**
+             * Check if the distributed joins supported.
+             *
+             * @retuen True if the distributed joins supported.
+             */
+            bool IsDistributedJoinsSupported() const;
+
+            /**
              * Comparison operator.
              *
              * @param val1 First value.

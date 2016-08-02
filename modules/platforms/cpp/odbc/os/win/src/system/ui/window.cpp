@@ -171,6 +171,21 @@ namespace ignite
                 {
                     SNDMSG(handle, CB_SETCURSEL, static_cast<WPARAM>(idx), 0);
                 }
+
+                int Window::GetSelection() const
+                {
+                    return static_cast<int>(SNDMSG(handle, CB_GETCURSEL, 0, 0));
+                }
+
+                void Window::SetEnabled(bool enabled)
+                {
+                    EnableWindow(GetHandle(), enabled);
+                }
+
+                bool Window::IsEnabled() const
+                {
+                    return IsWindowEnabled(GetHandle()) != 0;
+                }
             }
         }
     }

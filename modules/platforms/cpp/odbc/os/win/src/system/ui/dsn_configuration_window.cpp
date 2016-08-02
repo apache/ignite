@@ -30,7 +30,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(240),
+                    height(250),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
@@ -92,6 +92,8 @@ namespace ignite
 
                     int checkBoxSize = (editSizeX - interval) / 2;
 
+                    int sectionBegin = margin;
+
                     const char* val = config.GetDsn().c_str();
                     nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ID_NAME_LABEL);
                     nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_NAME_EDIT);
@@ -130,7 +132,14 @@ namespace ignite
                         ++id;
                     }
 
-                    rowPos += interval + rowSize;
+                    rowPos += interval * 2 + rowSize;
+
+                    connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
+                        rowPos - interval - sectionBegin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
+
+                    sectionBegin = rowPos;
+
+                    rowPos += interval;
 
                     distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
                         "Distributed Joins", ID_DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
@@ -138,15 +147,22 @@ namespace ignite
                     enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
                         rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
-                    rowPos += interval * 2 + rowSize;
-                    rowSize = 25;
+                    if (!config.GetProtocolVersion().IsDistributedJoinsSupported())
+                    {
+                        distributedJoinsCheckBox->SetEnabled(false);
+                        enforceJoinOrderCheckBox->SetEnabled(false);
+                    }
 
-                    connectionSettingsGroupBox = CreateGroupBox(margin, margin, width - 2 * margin,
-                        rowPos - 2 * margin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
+                    rowPos += interval * 2 + rowSize;
+
+                    querySettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
+                        rowPos - interval - sectionBegin, "Query settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
 
                     int buttonSizeX = 80;
                     int cancelPosX = width - margin - buttonSizeX;
                     int okPosX = cancelPosX - interval - buttonSizeX;
+
+                    rowSize = 25;
 
                     okButton = CreateButton(okPosX, rowPos, buttonSizeX, rowSize, "Ok", ID_OK_BUTTON);
                     cancelButton = CreateButton(cancelPosX, rowPos, buttonSizeX, rowSize, "Cancel", ID_CANCEL_BUTTON);
@@ -173,6 +189,31 @@ namespace ignite
                                     catch (IgniteError& err)
                                     {
                                         MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+                                    }
+
+                                    break;
+                                }
+
+                                case ID_PROTOCOL_VERSION_COMBO_BOX:
+                                {
+                                    if (HIWORD(wParam) == CBN_SELCHANGE)
+                                    {
+                                        std::string text;
+
+                                        protocolVersionComboBox->GetText(text);
+
+                                        ProtocolVersion version = ProtocolVersion::FromString(text);
+
+                                        if (!version.IsUnknown() && !version.IsDistributedJoinsSupported())
+                                        {
+                                            distributedJoinsCheckBox->SetEnabled(false);
+                                            enforceJoinOrderCheckBox->SetEnabled(false);
+                                        }
+                                        else
+                                        {
+                                            distributedJoinsCheckBox->SetEnabled(true);
+                                            enforceJoinOrderCheckBox->SetEnabled(true);
+                                        }
                                     }
 
                                     break;
@@ -236,8 +277,8 @@ namespace ignite
                     cacheEdit->GetText(cache);
                     protocolVersionComboBox->GetText(version);
 
-                    distributedJoins = distributedJoinsCheckBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
+                    distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:\n");
                     LOG_MSG("DSN:                %s\n", dsn.c_str());

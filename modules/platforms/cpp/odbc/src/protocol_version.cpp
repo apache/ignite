@@ -100,6 +100,11 @@ namespace ignite
             return *this == VERSION_UNKNOWN;
         }
 
+        bool ProtocolVersion::IsDistributedJoinsSupported() const
+        {
+            return *this >= VERSION_2_0_0;
+        }
+
         bool operator==(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
             return val1.val == val2.val;
