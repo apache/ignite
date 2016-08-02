@@ -140,20 +140,8 @@ public class HadoopIgfsUtils {
      * @throws IOException On error.
      */
     public static void clear(FileSystem fs) throws IOException {
-       clear(fs, "/");
-    }
-
-    /**
-     * Deletes all files from the given file system.
-     *
-     * @param fs The file system to clean up.
-     * @throws IOException On error.
-     */
-    public static void clear(FileSystem fs, @Nullable String root) throws IOException {
         // Delete root contents:
-        root = root == null ? "/" : root;
-
-        FileStatus[] statuses = fs.listStatus(new Path(root));
+        FileStatus[] statuses = fs.listStatus(new Path("/"));
 
         if (statuses != null) {
             for (FileStatus stat: statuses)
