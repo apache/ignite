@@ -90,7 +90,7 @@ public class LoadTestsCassandraArtifactsCreator {
         }
         catch (Throwable e) {
             System.out.println("[ERROR] Failed to recreate Cassandra artifacts");
-            e.printStackTrace();
+            e.printStackTrace(System.out);
 
             if (e instanceof RuntimeException)
                 throw (RuntimeException)e;
