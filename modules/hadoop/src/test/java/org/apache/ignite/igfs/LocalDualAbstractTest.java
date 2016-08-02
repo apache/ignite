@@ -17,8 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
@@ -27,7 +25,6 @@ import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
@@ -41,34 +38,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.configuration;
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.mkUri;
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.writeConfiguration;
-import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
-
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
 public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
-    /** Secondary grid name */
-    private static final String GRID_NAME = "grid_secondary";
-
-    /** Secondary file system name */
-    private static final String IGFS_NAME = "igfs_secondary";
-
-    /** Secondary file system REST endpoint port */
-    private static final int PORT = 11500;
-
-    /** Secondary file system REST endpoint configuration map. */
-    private static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration() {{
-        setType(IgfsIpcEndpointType.TCP);
-        setPort(PORT);
-    }};
-
-    /** Secondary file system authority. */
-    private static final String SECONDARY_AUTHORITY = IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + PORT;
-
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
@@ -84,8 +57,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws Exception On failure.
      */
     @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        startUnderlying();
-
         KerberosUserNameMapper mapper1 = new KerberosUserNameMapper();
 
         mapper1.setRealm("TEST.COM");
@@ -103,7 +74,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
-        factory.setUri(mkUri("file", SECONDARY_AUTHORITY));
+        factory.setUri("file:///");
         factory.setUserNameMapper(mapper);
 
         LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
@@ -120,14 +91,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean appendSupported() {
         return false;
-    }
-
-    /**
-     * Starts underlying Ignite process.
-     * @throws IOException On failure.
-     */
-    protected void startUnderlying() throws Exception {
-        startGridWithIgfs(GRID_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG, secondaryIpFinder);
     }
 
     /**
