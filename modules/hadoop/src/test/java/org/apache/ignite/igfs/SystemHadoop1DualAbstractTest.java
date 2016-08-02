@@ -117,7 +117,7 @@ public abstract class SystemHadoop1DualAbstractTest extends IgfsDualAbstractSelf
 
         LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
 
-        second.parent(workDir.getAbsolutePath());
+        second.setWorkDirectory(workDir.getAbsolutePath());
 
         second.setFileSystemFactory(factory);
 

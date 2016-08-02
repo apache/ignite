@@ -38,7 +38,6 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
@@ -73,7 +72,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     private HadoopFileSystemFactory fsFactory;
 
     /** Path that will be added to each passed path. */
-    private String parent;
+    private String workDir;
 
     /**
      * Default constructor for Spring.
@@ -176,7 +175,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (path.startsWith("/"))
             path = path.substring(1, path.length());
 
-        return GridFilenameUtils.concat(parent, path);
+        return GridFilenameUtils.concat(workDir, path);
     }
 
     /**
@@ -548,16 +547,20 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /**
-     * @return Parent path.
+     * Get work directory.
+     *
+     * @return Work directory.
      */
-    public String parent() {
-        return parent;
+    public String getWorkDirectory() {
+        return workDir;
     }
 
     /**
-     * @param parent Parent path.
+     * Set work directory.
+     *
+     * @param workDir Work directory.
      */
-    public void parent(final String parent) {
-        this.parent = parent;
+    public void setWorkDirectory(final String workDir) {
+        this.workDir = workDir;
     }
 }
