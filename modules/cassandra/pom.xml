@@ -166,6 +166,10 @@
                     <artifactId>log4j-over-slf4j</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>netty-all</artifactId>
+                    <groupId>io.netty</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -214,7 +218,12 @@
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
                             <excludeArtifactIds>
-                                netty-all
+                                netty-all,cassandra-all,snappy-java,lz4,compress-lzf,commons-codec,commons-lang3,commons-math3,
+                                concurrentlinkedhashmap-lru,antlr,ST4,antlr-runtime,jcl-over-slf4j,jackson-core-asl,
+                                jackson-mapper-asl,json-simple,high-scale-lib,snakeyaml,jbcrypt,reporter-config3,
+                                reporter-config-base,hibernate-validator,validation-api,jboss-logging,thrift-server,
+                                disruptor,stream,fastutil,logback-core,logback-classic,libthrift,httpclient,httpcore,
+                                cassandra-thrift,jna,jamm,joda-time,sigar,ecj,tools
                             </excludeArtifactIds>
                         </configuration>
                     </execution>
