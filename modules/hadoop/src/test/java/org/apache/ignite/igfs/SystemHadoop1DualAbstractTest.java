@@ -22,7 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
-import org.apache.ignite.hadoop.fs.IgniteSystemHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
@@ -115,7 +115,7 @@ public abstract class SystemHadoop1DualAbstractTest extends IgfsDualAbstractSelf
         factory.setConfigPaths(secondaryConfFullPath);
         factory.setUserNameMapper(mapper);
 
-        IgniteSystemHadoopIgfsSecondaryFileSystem second = new IgniteSystemHadoopIgfsSecondaryFileSystem();
+        LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
 
         second.parent(workDir.getAbsolutePath());
 

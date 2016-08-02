@@ -63,11 +63,9 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
- * Secondary file system which delegates calls to an instance of Hadoop {@link FileSystem}.
- * <p>
- * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
+ * Secondary file system which delegates to local file system.
  */
-public class IgniteSystemHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
+public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
     HadoopPayloadAware {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
@@ -81,7 +79,7 @@ public class IgniteSystemHadoopIgfsSecondaryFileSystem implements IgfsSecondaryF
     /**
      * Default constructor for Spring.
      */
-    public IgniteSystemHadoopIgfsSecondaryFileSystem() {
+    public LocalIgfsSecondaryFileSystem() {
         // No-op.
     }
 
@@ -95,7 +93,7 @@ public class IgniteSystemHadoopIgfsSecondaryFileSystem implements IgfsSecondaryF
      * @deprecated Use {@link #getFileSystemFactory()} instead.
      */
     @Deprecated
-    public IgniteSystemHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
+    public LocalIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
         @Nullable String userName) throws IgniteCheckedException {
         setDefaultUserName(userName);
 
