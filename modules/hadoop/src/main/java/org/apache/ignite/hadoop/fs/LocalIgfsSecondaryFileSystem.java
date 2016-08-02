@@ -65,8 +65,7 @@ import java.util.concurrent.Callable;
 /**
  * Secondary file system which delegates to local file system.
  */
-public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
-    HadoopPayloadAware {
+public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
 
@@ -546,11 +545,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public void stop() throws IgniteException {
         if (fsFactory instanceof LifecycleAware)
              ((LifecycleAware)fsFactory).stop();
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopFileSystemFactory getPayload() {
-        return fsFactory;
     }
 
     /**
