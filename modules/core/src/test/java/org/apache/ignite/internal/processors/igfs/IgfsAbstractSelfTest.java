@@ -2968,7 +2968,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         finally {
             U.closeQuiet(os);
 
-            IgfsEx igfsEx = uni.unwrap(IgfsEx.class);
+            IgfsEx igfsEx = uni.igfs();
 
             if (igfsEx != null)
                 awaitFileClose(igfsEx.asSecondary(), file);
@@ -3089,7 +3089,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected void checkExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws IgniteCheckedException {
-        IgfsEx ex = uni.unwrap(IgfsEx.class);
+        IgfsEx ex = uni.igfs();
+
         for (IgfsPath path : paths) {
             if (ex != null)
                 assert ex.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + ex.name() +
@@ -3097,7 +3098,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             try {
                 assert uni.exists(path.toString()) : "Path doesn't exist [igfs=" + uni.name() + ", path=" + path + ']';
-            } catch (IOException ioe) {
+            }
+            catch (IOException ioe) {
                 throw new IgniteCheckedException(ioe);
             }
         }
@@ -3139,7 +3141,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkNotExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws Exception {
-        IgfsEx ex = uni.unwrap(IgfsEx.class);
+        IgfsEx ex = uni.igfs();
 
         for (IgfsPath path : paths) {
             if (ex != null)
@@ -3452,7 +3454,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
-        IgfsEx igfsEx = uni.unwrap(IgfsEx.class);
+        IgfsEx igfsEx = uni.igfs();
 
         if (igfsEx != null)
             clear(igfsEx);

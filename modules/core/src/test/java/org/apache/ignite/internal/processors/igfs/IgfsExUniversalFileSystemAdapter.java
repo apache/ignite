@@ -26,6 +26,7 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Universal adapter over {@link IgfsEx} filesystem.
@@ -106,11 +107,7 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz == IgfsEx.class)
-            return (T)igfsEx;
-
-        return null;
+    @Override public IgfsEx igfs() {
+        return igfsEx;
     }
 }

@@ -22,6 +22,7 @@ import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -147,8 +148,8 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T unwrap(final Class<T> cls) {
-            return super.unwrap(cls);
+        @Override public IgfsEx igfs() {
+            return null;
         }
 
         /**

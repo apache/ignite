@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -119,11 +120,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (HadoopFileSystemFactory.class.isAssignableFrom(cls))
-            return (T)factory;
-
+    @Override public IgfsEx igfs() {
         return null;
     }
 

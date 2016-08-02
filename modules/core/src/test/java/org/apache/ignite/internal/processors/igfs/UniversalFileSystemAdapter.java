@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,10 +101,9 @@ public interface UniversalFileSystemAdapter {
     T2<Long, Long> times(String path) throws IOException;
 
     /**
-     * Gets an entity of the given type (class) associated with this universal adapter.
-     * @param clazz The class representing the type we wish to adapt to.
-     * @param <T> The type we need to adapt to.
-     * @return the adapter object of the given type.
+     * Get underlying IGFS if it is possible.
+     *
+     * @return Underlying IGFS or null.
      */
-    <T> T unwrap(Class<T> clazz);
+    @Nullable IgfsEx igfs();
 }
