@@ -133,7 +133,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
      * @return File system.
      * @throws IOException If failed.
      */
-    private FileSystem get() throws IOException {
+    protected FileSystem get() throws IOException {
         return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
     }
 }

@@ -1027,7 +1027,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        try (IgfsOutputStream os = igfs.append(FILE, false)) {
+        try (IgfsOutputStream os = igfs.create(FILE, true)) {
             os.write(new byte[10 * 1024 * 1024]);
         }
 
