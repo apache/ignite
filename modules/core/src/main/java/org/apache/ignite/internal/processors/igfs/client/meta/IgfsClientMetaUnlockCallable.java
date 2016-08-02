@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -95,8 +96,11 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
         BinaryUtils.writeIgniteUuid(writer, lockId);
         writer.writeLong(modificationTime);
         writer.writeBoolean(updateSpace);
-        writer.writeLong(space);
-        writer.writeObject(affRange); // TODO: implement util method if need to performance impact
+
+        if (updateSpace)
+            writer.writeLong(space);
+
+        IgfsUtils.writeFileAffinityRange(writer, affRange);
     }
 
     /** {@inheritDoc} */
@@ -105,8 +109,11 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
         lockId = BinaryUtils.readIgniteUuid(reader);
         modificationTime = reader.readLong();
         updateSpace = reader.readBoolean();
-        space = reader.readLong();
-        affRange = reader.readObject();
+
+        if (updateSpace)
+            space = reader.readLong();
+
+        affRange = IgfsUtils.readFileAffinityRange(reader);
     }
 
     /** {@inheritDoc} */

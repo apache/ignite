@@ -746,6 +746,40 @@ public class IgfsUtils {
     }
 
     /**
+     * Write IgfsFileAffinityRange.
+     *
+     * @param writer Writer
+     * @param affRange affinity range.
+     */
+    public static void writeFileAffinityRange(BinaryRawWriter writer, @Nullable IgfsFileAffinityRange affRange) {
+        if (affRange != null) {
+            writer.writeBoolean(true);
+
+            affRange.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IgfsFileAffinityRange.
+     *
+     * @param reader Reader.
+     * @return File affinity range.
+     */
+    public static IgfsFileAffinityRange readFileAffinityRange(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsFileAffinityRange affRange = new IgfsFileAffinityRange();
+
+            affRange.readRawBinary(reader);
+
+            return affRange;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
