@@ -75,34 +75,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     private String workDir;
 
     /**
-     * Default constructor for Spring.
+     * Default constructor.
      */
     public LocalIgfsSecondaryFileSystem() {
         // No-op.
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @param userName User name.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public LocalIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
-        @Nullable String userName) throws IgniteCheckedException {
-        setDefaultUserName(userName);
-
-        CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
-
-        fac.setUri(uri);
-
-        if (cfgPath != null)
-            fac.setConfigPaths(cfgPath);
-
-        setFileSystemFactory(fac);
     }
 
     /**
