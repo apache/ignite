@@ -57,17 +57,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws Exception On failure.
      */
     @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        KerberosUserNameMapper mapper1 = new KerberosUserNameMapper();
-
-        mapper1.setRealm("TEST.COM");
-
-        TestUserNameMapper mapper2 = new TestUserNameMapper();
-
-        ChainedUserNameMapper mapper = new ChainedUserNameMapper();
-
-        mapper.setMappers(mapper1, mapper2);
-
-        final File workDir = new File(FS_WORK_DIR);
+       final File workDir = new File(FS_WORK_DIR);
 
         if (!workDir.exists())
             assert workDir.mkdirs();
@@ -75,7 +65,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
         factory.setUri("file:///");
-        factory.setUserNameMapper(mapper);
 
         LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
 
@@ -91,35 +80,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean appendSupported() {
         return false;
-    }
-
-    /**
-     * Test user name mapper.
-     */
-    private static class TestUserNameMapper implements UserNameMapper, LifecycleAware {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Started flag. */
-        private boolean started;
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String map(String name) {
-            assert started;
-            assert name != null && name.contains("@");
-
-            return name.substring(0, name.indexOf("@"));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start() throws IgniteException {
-            started = true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop() throws IgniteException {
-            // No-op.
-        }
     }
 
     /**
