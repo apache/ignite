@@ -30,6 +30,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -99,7 +101,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public boolean exists(final String path) throws IOException {
-            return super.exists(addParent(path));
+            return Files.exists(Paths.get(workDir + path));
         }
 
         /** {@inheritDoc} */
