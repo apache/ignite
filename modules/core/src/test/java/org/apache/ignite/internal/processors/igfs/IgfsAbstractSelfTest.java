@@ -181,7 +181,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static IgfsSecondaryFileSystem igfsSecondaryFileSystem;
 
     /** Secondary file system lower layer "backdoor" wrapped in UniversalFileSystemAdapter: */
-    protected static UniversalFileSystemAdapter igfsSecondary;
+    protected static IgfsSecondaryFileSystemTestAdapter igfsSecondary;
 
     /** IGFS mode. */
     protected final IgfsMode mode;
@@ -351,7 +351,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
 
-        igfsSecondary = new IgfsExUniversalFileSystemAdapter(secondaryIgfsImpl);
+        igfsSecondary = new DefaultIgfsSecondaryFileSystemTestAdapter(secondaryIgfsImpl);
 
         return secondaryIgfsImpl.asSecondary();
     }
@@ -2930,7 +2930,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception On error.
      */
     @SuppressWarnings("EmptyTryBlock")
-    public void create(UniversalFileSystemAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
+    public void create(IgfsSecondaryFileSystemTestAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
         if (dirs != null) {
             for (IgfsPath dir : dirs)
                 uni.mkdirs(dir.toString());
@@ -2976,7 +2976,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
      */
-    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, @Nullable byte[]... chunks)
+    protected static void createFile(IgfsSecondaryFileSystemTestAdapter uni, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException {
         OutputStream os = null;
 
@@ -3082,7 +3082,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths) throws Exception {
+    protected void checkExist(IgfsImpl igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary, IgfsPath... paths) throws Exception {
         checkExist(igfs, paths);
 
         if (dual)
@@ -3108,7 +3108,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
-    protected void checkExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws IgniteCheckedException {
+    protected void checkExist(IgfsSecondaryFileSystemTestAdapter uni, IgfsPath... paths) throws IgniteCheckedException {
         IgfsEx ex = uni.igfs();
 
         for (IgfsPath path : paths) {
@@ -3133,7 +3133,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths)
+    protected void checkNotExist(IgfsImpl igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary, IgfsPath... paths)
         throws Exception {
         checkNotExist(igfs, paths);
 
@@ -3160,7 +3160,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws Exception {
+    protected void checkNotExist(IgfsSecondaryFileSystemTestAdapter uni, IgfsPath... paths) throws Exception {
         IgfsEx ex = uni.igfs();
 
         for (IgfsPath path : paths) {
@@ -3181,7 +3181,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(@Nullable IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath file,
+    protected void checkFile(@Nullable IgfsImpl igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary, IgfsPath file,
         @Nullable byte[]... chunks) throws Exception {
         if (igfs != null) {
             checkExist(igfs, file);
@@ -3243,7 +3243,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected void checkFileContent(UniversalFileSystemAdapter uni, String path, @Nullable byte[]... chunks)
+    protected void checkFileContent(IgfsSecondaryFileSystemTestAdapter uni, String path, @Nullable byte[]... chunks)
         throws IOException, IgniteCheckedException {
         if (chunks != null && chunks.length > 0) {
             InputStream is = null;
@@ -3325,7 +3325,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param igfsSecondary Second IGFS.
      * @throws Exception If failed.
      */
-    protected void clear(IgniteFileSystem igfs, UniversalFileSystemAdapter igfsSecondary) throws Exception {
+    protected void clear(IgniteFileSystem igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary) throws Exception {
         clear(igfs);
 
         if (dual)
@@ -3467,13 +3467,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Clear particular {@link UniversalFileSystemAdapter}.
+     * Clear particular {@link IgfsSecondaryFileSystemTestAdapter}.
      *
      * @param uni IGFS.
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public static void clear(UniversalFileSystemAdapter uni) throws Exception {
+    public static void clear(IgfsSecondaryFileSystemTestAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.igfs();
 
         if (igfsEx != null)

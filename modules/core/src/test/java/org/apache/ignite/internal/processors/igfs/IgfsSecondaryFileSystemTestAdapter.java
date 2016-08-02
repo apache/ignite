@@ -30,7 +30,7 @@ import java.util.Map;
  * Typically used for secondary filesystem.
  * To be used solely in tests.
  */
-public interface UniversalFileSystemAdapter {
+public interface IgfsSecondaryFileSystemTestAdapter {
     /**
      * Gets name of the FS.
      * @return name of this file system.

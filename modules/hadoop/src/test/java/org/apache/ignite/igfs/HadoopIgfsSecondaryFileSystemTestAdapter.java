@@ -31,13 +31,13 @@ import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
-import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Universal adapter wrapping {@link org.apache.hadoop.fs.FileSystem} instance.
  */
-public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
+public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** File system factory. */
     private final HadoopFileSystemFactory factory;
 
@@ -45,7 +45,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
      * Constructor.
      * @param factory File system factory.
      */
-    public HadoopFileSystemUniversalFileSystemAdapter(HadoopFileSystemFactory factory) {
+    public HadoopIgfsSecondaryFileSystemTestAdapter(HadoopFileSystemFactory factory) {
         assert factory != null;
 
         this.factory = factory;

@@ -26,12 +26,11 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Universal adapter over {@link IgfsEx} filesystem.
+ * Adapter over {@link IgfsEx} filesystem.
  */
-public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
+public class DefaultIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** The wrapped igfs. */
     private final IgfsEx igfsEx;
 
@@ -39,7 +38,7 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
      * Constructor.
      * @param igfsEx the igfs to be wrapped.
      */
-    public IgfsExUniversalFileSystemAdapter(IgfsEx igfsEx) {
+    public DefaultIgfsSecondaryFileSystemTestAdapter(IgfsEx igfsEx) {
         this.igfsEx = igfsEx;
     }
 

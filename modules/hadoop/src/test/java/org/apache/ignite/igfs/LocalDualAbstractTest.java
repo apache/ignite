@@ -22,7 +22,7 @@ import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -71,7 +71,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         second.setFileSystemFactory(factory);
 
-        igfsSecondary = new LocalFileSystemAdapter(workDir);
+        igfsSecondary = new LocalIgfsSecondaryFileSystemTestAdapter(workDir);
 
         return second;
     }
@@ -94,14 +94,14 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     /**
      * Adapter for local secondary file system.
      */
-    private static class LocalFileSystemAdapter implements UniversalFileSystemAdapter {
+    private static class LocalIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
         /** */
         private final String workDir;
 
         /**
          * @param workDir Work dir.
          */
-        public LocalFileSystemAdapter(final File workDir) {
+        public LocalIgfsSecondaryFileSystemTestAdapter(final File workDir) {
             this.workDir = workDir.getAbsolutePath();
         }
 
