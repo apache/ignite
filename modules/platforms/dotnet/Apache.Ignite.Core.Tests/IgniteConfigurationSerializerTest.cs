@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Text;
     using System.Threading;
     using System.Xml;
+    using System.Xml.Linq;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
@@ -212,6 +213,53 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all properties are present in the schema.
+        /// </summary>
+        [Test]
+        public void TestAllPropertiesArePresentInSchema()
+        {
+            // ReSharper disable once PossibleNullReferenceException
+            var schema = XDocument.Load("IgniteConfigurationSection.xsd")
+                    .Root.Elements()
+                    .Single(x => x.Attribute("name").Value == "igniteConfiguration");
+
+            var type = typeof(IgniteConfiguration);
+
+            CheckPropertyIsPresentInSchema(type, schema);
+        }
+
+        /// <summary>
+        /// Checks the property is present in schema.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void CheckPropertyIsPresentInSchema(Type type, XElement schema)
+        {
+            Func<string, string> toLowerCamel = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
+
+            foreach (var prop in type.GetProperties())
+            {
+                var propType = prop.PropertyType;
+
+                var isCollection = propType.IsGenericType &&
+                                   propType.GetGenericTypeDefinition() == typeof(ICollection<>);
+
+                if (isCollection)
+                    propType = propType.GetGenericArguments().First();
+
+                var propName = toLowerCamel(prop.Name);
+
+                Assert.IsTrue(schema.Descendants().Select(x => x.Attribute("name"))
+                    .Any(x => x != null && x.Value == propName),
+                    "Property is missing in XML schema: " + propName);
+
+                var isComplexProp = propType.Namespace != null && propType.Namespace.StartsWith("Apache.Ignite.Core");
+
+                if (isComplexProp)
+                    CheckPropertyIsPresentInSchema(propType, schema);
+            }
+        }
+
+        /// <summary>
         /// Tests the schema validation.
         /// </summary>
         [Test]
@@ -253,7 +301,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var document = new XmlDocument();
 
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection", 
+            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
                 XmlReader.Create("IgniteConfigurationSection.xsd"));
 
             document.Load(new StringReader(xml));
@@ -390,8 +438,8 @@ namespace Apache.Ignite.Core.Tests
                         Backups = 15,
                         CacheMode = CacheMode.Replicated,
                         CacheStoreFactory = new TestCacheStoreFactory(),
-                        CopyOnRead = true,
-                        EagerTtl = true,
+                        CopyOnRead = false,
+                        EagerTtl = false,
                         EnableSwap = true,
                         EvictSynchronized = true,
                         EvictSynchronizedConcurrencyLevel = 13,
@@ -426,7 +474,7 @@ namespace Apache.Ignite.Core.Tests
                                 ValueType = typeof (long)
                             },
                         },
-                        ReadFromBackup = true,
+                        ReadFromBackup = false,
                         RebalanceBatchSize = 33,
                         RebalanceDelay = TimeSpan.MaxValue,
                         RebalanceMode = CacheRebalanceMode.Sync,
@@ -437,7 +485,7 @@ namespace Apache.Ignite.Core.Tests
                         StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
-                        WriteBehindFlushFrequency = TimeSpan.FromSeconds(5),
+                        WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
@@ -457,7 +505,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             ExcludeNeighbors = true,
                             Partitions = 48
-                        }
+                        },
                     }
                 },
                 ClientMode = true,
@@ -542,7 +590,9 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
-                }
+                },
+                IsLateAffinityAssignment = false,
+                SpringConfigUrl = "test",
             };
         }
 
@@ -643,21 +693,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestSerializer : IBinarySerializer
         {
-            /// <summary>
-            /// Write portalbe object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="writer">Poratble writer.</param>
+            /** <inheritdoc /> */
             public void WriteBinary(object obj, IBinaryWriter writer)
             {
                 // No-op.
             }
 
-            /// <summary>
-            /// Read binary object.
-            /// </summary>
-            /// <param name="obj">Instantiated empty object.</param>
-            /// <param name="reader">Poratble reader.</param>
+            /** <inheritdoc /> */
             public void ReadBinary(object obj, IBinaryReader reader)
             {
                 // No-op.
