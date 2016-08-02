@@ -21,7 +21,6 @@ import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,7 +84,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
      */
     private static class LocalFileSystemAdapter extends HadoopFileSystemUniversalFileSystemAdapter {
         /** */
-        private final File workDir;
+        private final String workDir;
 
         /**
          * @param factory FS factory.
@@ -93,7 +92,8 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
          */
         public LocalFileSystemAdapter(final HadoopFileSystemFactory factory, final File workDir) {
             super(factory);
-            this.workDir = workDir;
+
+            this.workDir = workDir.getAbsolutePath();
         }
 
         /** {@inheritDoc} */
@@ -121,7 +121,10 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void format() throws IOException {
-            HadoopIgfsUtils.clear(get(), workDir.getAbsolutePath());
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(workDir))) {
+                for (Path innerPath : stream)
+                    deleteRecursively(innerPath);
+            }
         }
 
         /** {@inheritDoc} */
@@ -170,11 +173,9 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
                             return false;
                     }
                 }
-
-                return true;
             }
-            else
-                return path.toFile().delete();
+
+            return path.toFile().delete();
         }
 
         /**
@@ -185,7 +186,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
             if (path.startsWith("/"))
                 path = path.substring(1, path.length());
 
-            return GridFilenameUtils.concat(workDir.getAbsolutePath(), path);
+            return GridFilenameUtils.concat(workDir, path);
         }
     }
 }
