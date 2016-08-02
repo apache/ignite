@@ -22,8 +22,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.igfs.LocalDualAsyncTest;
-import org.apache.ignite.igfs.LocalDualSyncTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualAsyncTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualSyncTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -80,8 +80,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));*/
 
-        suite.addTest(new TestSuite(ldr.loadClass(LocalDualSyncTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LocalDualAsyncTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualSyncTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualAsyncTest.class.getName())));
 
         /*suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 

@@ -40,13 +40,13 @@ import java.util.Map;
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
-public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
+public abstract class LocalSecondaryFileSystemDualAbstractTest extends IgfsDualAbstractSelfTest {
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
 
     /** Constructor. */
-    public LocalDualAbstractTest(IgfsMode mode) {
+    public LocalSecondaryFileSystemDualAbstractTest(IgfsMode mode) {
         super(mode);
     }
 
