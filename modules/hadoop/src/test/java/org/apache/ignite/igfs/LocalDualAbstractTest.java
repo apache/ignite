@@ -73,12 +73,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
 
-    /** Secondary Fs configuration full path. */
-    protected String secondaryConfFullPath;
-
-    /** Secondary Fs URI. */
-    protected String secondaryUri;
-
     /** Constructor. */
     public LocalDualAbstractTest(IgfsMode mode) {
         super(mode);
@@ -91,8 +85,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
      */
     @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
         startUnderlying();
-
-        prepareConfiguration();
 
         KerberosUserNameMapper mapper1 = new KerberosUserNameMapper();
 
@@ -111,8 +103,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
-        factory.setUri(secondaryUri);
-        factory.setConfigPaths(secondaryConfFullPath);
+        factory.setUri(mkUri("file", SECONDARY_AUTHORITY));
         factory.setUserNameMapper(mapper);
 
         LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
@@ -137,23 +128,6 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
      */
     protected void startUnderlying() throws Exception {
         startGridWithIgfs(GRID_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG, secondaryIpFinder);
-    }
-
-    /**
-     * Prepares Fs configuration.
-     * @throws IOException On failure.
-     */
-    protected void prepareConfiguration() throws IOException {
-        Configuration secondaryConf = configuration("file://", SECONDARY_AUTHORITY, true, true);
-
-        secondaryConf.setInt("fs.igfs.block.size", 1024);
-
-        secondaryConf.set(HadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP,
-            new Path(new Path("file://"), "user/" + System.getProperty("user.name")).toString());
-
-        secondaryConfFullPath = writeConfiguration(secondaryConf, SECONDARY_CFG_PATH);
-
-        secondaryUri = mkUri("file", SECONDARY_AUTHORITY);
     }
 
     /**
