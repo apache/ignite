@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
@@ -38,8 +41,9 @@ public class IgfsModeResolverSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        reslvr = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(new T2<>(new IgfsPath("/a/b/c/d"), PROXY), new T2<>
-            (new IgfsPath("/a/P/"), PRIMARY), new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)));
+        reslvr = new IgfsModeResolver(DUAL_SYNC, new ArrayList<>(Arrays.asList(new T2<>(
+            new IgfsPath("/a/b/c/d"), PROXY), new T2<>(new IgfsPath("/a/P/"), PRIMARY), new T2<>(new IgfsPath("/a/b/"),
+            DUAL_ASYNC))));
     }
 
     /**
@@ -90,7 +94,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         try {
             IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
                 new T2<>(new IgfsPath("/a/"), PRIMARY),
-                new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)));
+                new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)), new HashSet<IgfsPath>());
 
             fail("IgniteCheckedException expected");
         }
@@ -102,7 +106,8 @@ public class IgfsModeResolverSelfTest extends TestCase {
         for (IgfsMode m: IgfsMode.values()) {
             if (m != IgfsMode.PRIMARY) {
                 try {
-                    IgfsUtils.preparePathModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"), DUAL_ASYNC)));
+                    IgfsUtils.preparePathModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"), DUAL_ASYNC)),
+                        new HashSet<IgfsPath>());
 
                     fail("IgniteCheckedException expected");
                 }
@@ -117,7 +122,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
             new T2<>(new IgfsPath("/a"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/e/f"), PRIMARY)
-        ));
+        ), new HashSet<IgfsPath>());
         assertNotNull(modes);
         assertEquals(2, modes.size());
         assertEquals(modes, Arrays.asList(
@@ -130,7 +135,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
             new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC),
             new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
             new T2<>(new IgfsPath("/a/b/c/d"), DUAL_ASYNC)
-        ));
+        ), new HashSet<IgfsPath>());
         assertNotNull(modes);
         assertEquals(modes.size(), 3);
         assertEquals(modes, Arrays.asList(
@@ -138,5 +143,39 @@ public class IgfsModeResolverSelfTest extends TestCase {
             new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
             new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC)
         ));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDualParentsWithPrimaryChild() throws Exception {
+        Set<IgfsPath> set = new HashSet<>();
+
+        IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
+            new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC),
+            new T2<>(new IgfsPath("/a/b/c"), PRIMARY),
+            new T2<>(new IgfsPath("/a/b/x/y"), PRIMARY),
+            new T2<>(new IgfsPath("/a/b/x/z"), PRIMARY),
+            new T2<>(new IgfsPath("/m"), PRIMARY)
+        ), set);
+        assertEquals(set, new HashSet<IgfsPath>() {{
+            add(new IgfsPath("/a/b"));
+            add(new IgfsPath("/a/b/x"));
+            add(new IgfsPath("/"));
+        }});
+
+        set = new HashSet<>();
+
+        IgfsUtils.preparePathModes(DUAL_ASYNC, Arrays.asList(
+            new T2<>(new IgfsPath("/a/b/x/y/z"), PRIMARY),
+            new T2<>(new IgfsPath("/a/b/c"), PRIMARY),
+            new T2<>(new IgfsPath("/a/k"), PRIMARY),
+            new T2<>(new IgfsPath("/a/z"), PRIMARY)
+        ), set);
+        assertEquals(set, new HashSet<IgfsPath>() {{
+            add(new IgfsPath("/a/b"));
+            add(new IgfsPath("/a"));
+            add(new IgfsPath("/a/b/x/y"));
+        }});
     }
 }
