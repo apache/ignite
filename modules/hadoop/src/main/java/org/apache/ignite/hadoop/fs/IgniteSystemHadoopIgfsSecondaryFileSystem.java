@@ -86,32 +86,6 @@ public class IgniteSystemHadoopIgfsSecondaryFileSystem implements IgfsSecondaryF
     }
 
     /**
-     * Simple constructor that is to be used by default.
-     *
-     * @param uri URI of file system.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteSystemHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
-        this(uri, null, null);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteSystemHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath)
-        throws IgniteCheckedException {
-        this(uri, cfgPath, null);
-    }
-
-    /**
      * Constructor.
      *
      * @param uri URI of file system.
