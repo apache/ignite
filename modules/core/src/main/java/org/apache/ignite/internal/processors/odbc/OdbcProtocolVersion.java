@@ -11,7 +11,7 @@ public enum OdbcProtocolVersion {
     VERSION_1_6_0(1),
 
     /** Second version of the ODBC. Released with Ignite 2.0 */
-    VERSION_2_0_0(2),
+    VERSION_2_0_0(0x0002000000000000L),
 
     /** Unknown version. */
     VERSION_UNKNOWN(Long.MIN_VALUE);

@@ -50,7 +50,7 @@ namespace ignite
             // No-op.
         }
 
-        ProtocolVersion ProtocolVersion::GetCurrent()
+        const ProtocolVersion& ProtocolVersion::GetCurrent()
         {
             return VERSION_2_0_0;
         }

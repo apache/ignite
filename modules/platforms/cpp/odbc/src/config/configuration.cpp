@@ -53,7 +53,7 @@ namespace ignite
             const bool Configuration::DefaultValue::distributedJoins = false;
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
 
-            const ProtocolVersion Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
+            const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 
 
             Configuration::Configuration() :

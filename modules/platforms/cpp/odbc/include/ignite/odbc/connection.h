@@ -42,12 +42,6 @@ namespace ignite
             friend class Environment;
         public:
             /**
-             * Apache Ignite version when the current ODBC communication
-             * protocol version has been introduced.
-             */
-            static const std::string PROTOCOL_VERSION_SINCE;
-
-            /**
              * Destructor.
              */
             ~Connection();

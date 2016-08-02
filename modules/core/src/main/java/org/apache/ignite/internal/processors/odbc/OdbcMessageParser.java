@@ -89,7 +89,9 @@ public class OdbcMessageParser {
         if (!verConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE)
             {
-                OdbcHandshakeRequest res = new OdbcHandshakeRequest(reader.readLong());
+                long longVersion = reader.readLong();
+
+                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
 
                 OdbcProtocolVersion version = res.getVersion();
 

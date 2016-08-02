@@ -51,7 +51,7 @@ namespace ignite
              *
              * @return Current version.
              */
-            static ProtocolVersion GetCurrent();
+            static const ProtocolVersion& GetCurrent();
 
             /**
              * Parse string and extract protocol version.
