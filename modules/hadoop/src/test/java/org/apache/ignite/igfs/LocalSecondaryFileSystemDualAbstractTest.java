@@ -68,6 +68,11 @@ public abstract class LocalSecondaryFileSystemDualAbstractTest extends IgfsDualA
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean propertiesSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean timesSupported() {
         return false;
     }

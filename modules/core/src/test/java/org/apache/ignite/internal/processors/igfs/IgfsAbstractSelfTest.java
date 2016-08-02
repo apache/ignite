@@ -280,6 +280,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Whether properties are supported.
+     */
+    protected boolean propertiesSupported() {
+        return true;
+    }
+
+    /**
      * @return Whether times are supported.
      */
     protected boolean timesSupported() {

@@ -1316,21 +1316,33 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateParentMissingPartially() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
-
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
-
-        igfsSecondaryFileSystem.update(SUBDIR, props);
 
         createFile(igfs.asSecondary(), FILE, true, chunk);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk);
+    }
 
-        // Ensure properties propagation of the created subdirectory.
-        assertEquals(props, igfs.info(SUBDIR).properties());
+    /**
+     * Test properties set on partially missing directory.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetPropertiesOnPartiallyMissingDirectory() throws Exception {
+        if (propertiesSupported()) {
+            Map<String, String> props = properties("owner", "group", "0555");
+
+            create(igfsSecondary, paths(DIR, SUBDIR), null);
+            create(igfs, paths(DIR), null);
+
+            igfsSecondaryFileSystem.update(SUBDIR, props);
+
+            // Ensure properties propagation of the created subdirectory.
+            assertEquals(props, igfs.info(SUBDIR).properties());
+        }
     }
 
     /**
@@ -1339,23 +1351,35 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateParentMissing() throws Exception {
-        Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
-        Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
-
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
-
-        igfsSecondaryFileSystem.update(DIR, propsDir);
-        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
         createFile(igfs.asSecondary(), FILE, true, chunk);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk);
+    }
 
-        // Ensure properties propagation of the created directories.
-        assertEquals(propsDir, igfs.info(DIR).properties());
-        assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
+    /**
+     * Test properties set on missing directory.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetPropertiesOnMissingDirectory() throws Exception {
+        if (propertiesSupported()) {
+            Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
+            Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
+
+            create(igfsSecondary, paths(DIR, SUBDIR), null);
+            create(igfs, null, null);
+
+            igfsSecondaryFileSystem.update(DIR, propsDir);
+            igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
+
+            // Ensure properties propagation of the created directories.
+            assertEquals(propsDir, igfs.info(DIR).properties());
+            assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
+        }
     }
 
     /**
@@ -1365,12 +1389,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     public void testAppendParentMissingPartially() throws Exception {
         if (appendSupported()) {
-            Map<String, String> props = properties("owner", "group", "0555");
-
             create(igfsSecondary, paths(DIR, SUBDIR), null);
             create(igfs, paths(DIR), null);
-
-            igfsSecondaryFileSystem.update(SUBDIR, props);
 
             createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
@@ -1379,9 +1399,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             // Ensure that directory structure was created.
             checkExist(igfs, igfsSecondary, SUBDIR);
             checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
-
-            // Ensure properties propagation of the created subdirectory.
-            assertEquals(props, igfs.info(SUBDIR).properties());
         }
     }
 
@@ -1392,14 +1409,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     public void testAppendParentMissing() throws Exception {
         if (appendSupported()) {
-            Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
-            Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
-
             create(igfsSecondary, paths(DIR, SUBDIR), null);
             create(igfs, null, null);
-
-            igfsSecondaryFileSystem.update(DIR, propsDir);
-            igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
             createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
@@ -1407,10 +1418,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             checkExist(igfs, igfsSecondary, SUBDIR);
             checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
-
-            // Ensure properties propagation of the created directories.
-            assertEquals(propsDir, igfs.info(DIR).properties());
-            assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
         }
     }
 
