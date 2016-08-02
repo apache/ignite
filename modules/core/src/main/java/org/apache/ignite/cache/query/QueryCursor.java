@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 /**
@@ -42,4 +43,10 @@ public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
      * Closes all resources related to this cursor.
      */
     @Override public void close();
+
+    /**
+     * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
+     * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
+     */
+    public boolean isResultSet();
 }

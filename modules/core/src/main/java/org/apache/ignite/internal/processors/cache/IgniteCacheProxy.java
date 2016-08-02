@@ -508,7 +508,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     }
                 }, false);
 
-            return new QueryCursorImpl<>(iter);
+            return new QueryCursorImpl<>(iter, true);
         }
 
         final CacheQueryFuture<Map.Entry<K, V>> fut;
@@ -571,7 +571,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             @Override protected void onClose() throws IgniteCheckedException {
                 fut.cancel();
             }
-        });
+        }, true);
     }
 
     /**
@@ -642,6 +642,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         throw U.convertException(e);
                     }
                 }
+
+                @Override public boolean isResultSet() {
+                    return true;
+                }
             };
         }
         catch (IgniteCheckedException e) {
@@ -682,7 +686,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             return ctx.kernalContext().query().queryLocal(ctx, p,
                                 opCtxCall != null && opCtxCall.isKeepBinary());
                         }
-                    });
+                    }, true);
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }

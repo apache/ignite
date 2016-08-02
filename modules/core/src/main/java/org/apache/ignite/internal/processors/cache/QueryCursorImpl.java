@@ -30,7 +30,9 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** Query executor. */
-    private Iterable<T> iterExec;
+    private final Iterable<T> iterExec;
+
+    private final boolean isResSet;
 
     /** */
     private Iterator<T> iter;
@@ -43,9 +45,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /**
      * @param iterExec Query executor.
+     * @param isResSet Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    public QueryCursorImpl(Iterable<T> iterExec) {
+    public QueryCursorImpl(Iterable<T> iterExec, boolean isResSet) {
         this.iterExec = iterExec;
+        this.isResSet = isResSet;
     }
 
     /** {@inheritDoc} */
@@ -107,6 +111,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isResultSet() {
+        return isResSet;
     }
 
     /**

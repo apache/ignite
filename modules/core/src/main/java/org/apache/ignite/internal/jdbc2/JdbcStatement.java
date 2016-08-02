@@ -26,10 +26,12 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -84,7 +86,7 @@ public class JdbcStatement implements Statement {
 
         rs = null;
 
-        if (sql == null || sql.isEmpty())
+        if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
         Ignite ignite = conn.ignite();
@@ -95,8 +97,8 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, args,
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -120,7 +122,49 @@ public class JdbcStatement implements Statement {
     @Override public int executeUpdate(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        rs = null;
+
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            JdbcQueryTask.QueryResult qryRes =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            List<List<?>> rows = qryRes.getRows();
+
+            if (F.isEmpty(rows))
+                return 0;
+
+            if (rows.size() != 1)
+                throw new SQLException("Expected number of rows of 1 for update operation");
+
+            List<?> row = rows.get(0);
+
+            if (row.size() != 1)
+                throw new SQLException("Expected row size of 1 for update operation");
+
+            Object res = row.get(0);
+
+            if (res instanceof Integer)
+                return (Integer)res;
+            else
+                throw new SQLException("Unexpected update result type");
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -222,9 +266,42 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        rs = executeQuery(sql);
+        rs = null;
 
-        return true;
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, args,
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            JdbcQueryTask.QueryResult res =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            if (res.isQuery()) {
+                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
+                    res.getRows(), res.isFinished());
+
+                rs.setFetchSize(fetchSize);
+
+                resSets.add(rs);
+
+                this.rs = rs;
+            }
+
+            return res.isQuery();
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */

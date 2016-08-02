@@ -146,7 +146,7 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
                 fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
             try {

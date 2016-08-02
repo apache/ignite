@@ -142,6 +142,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
+import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -1341,7 +1342,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
 
         // No metadata for SQL queries.
-        return new QueryCursorImpl<Cache.Entry<K,V>>(converted) {
+        return new QueryCursorImpl<Cache.Entry<K,V>>(converted, true) {
             @Override public void close() {
                 res.close();
             }
@@ -1419,10 +1420,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             try {
+                Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+
+                Boolean isQry = qry.isQuery();
+
+                A.ensure(isQry == null || (isQry == prep.isQuery()), "Query type mismatch - " +
+                    "expected " + (prep.isQuery() ? "non query" : "query"));
+
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
                     distributedJoins);
+
+                twoStepQry.setQuery(prep.isQuery());
 
                 List<Integer> caches;
                 List<Integer> extraCaches = null;
@@ -1480,7 +1490,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         twoStepQry.pageSize(qry.getPageSize());
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder));
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder), twoStepQry.isQuery());
 
         cursor.fieldsMeta(meta);
 

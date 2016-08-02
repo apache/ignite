@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -77,6 +78,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Sql. */
     private final String sql;
 
+    /** Operation type flag - query or not. */
+    private Boolean isQry;
+
     /** Args. */
     private final Object[] args;
 
@@ -99,6 +103,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param ignite Ignite.
      * @param cacheName Cache name.
      * @param sql Sql query.
+     * @param isQry Operation type flag - query or not - to enforce query type check.
      * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
@@ -108,13 +113,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param distributedJoins Distributed joins flag.
      */
     public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
-        boolean loc, Object[] args, int fetchSize, UUID uuid,
-        boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+                         Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
+                         Boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
         this.cacheName = cacheName;
         this.sql = sql;
+        this.isQry = isQry;
         this.fetchSize = fetchSize;
         this.loc = loc;
         this.locQry = locQry;
@@ -154,8 +160,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            if (isQry != null)
+                qry.setQuery(isQry);
 
             QueryCursor<List<?>> qryCursor = cache.query(qry);
+
+            if (isQry == null)
+                isQry = qryCursor.isResultSet();
 
             Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)qryCursor).fieldsMeta();
 
@@ -197,7 +208,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         else if (!loc && !CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
-        return new QueryResult(uuid, finished, rows, cols, tbls, types);
+        A.notNull(isQry, "Query flag must be set prior to returning result");
+
+        return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
     }
 
     /**
@@ -272,6 +285,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         /** Finished. */
         private final boolean finished;
 
+        /** Result type - query or update. */
+        private final boolean isQry;
+
         /** Rows. */
         private final List<List<?>> rows;
 
@@ -287,13 +303,15 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         /**
          * @param uuid UUID..
          * @param finished Finished.
+         * @param isQry
          * @param rows Rows.
          * @param cols Columns.
          * @param tbls Tables.
          * @param types Types.
          */
-        public QueryResult(UUID uuid, boolean finished, List<List<?>> rows, List<String> cols,
+        public QueryResult(UUID uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
             List<String> tbls, List<String> types) {
+            this.isQry = isQry;
             this.cols = cols;
             this.uuid = uuid;
             this.finished = finished;
@@ -342,6 +360,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          */
         public boolean isFinished() {
             return finished;
+        }
+
+        /**
+         * @return {@code true} if it is result of a query operation, not update; {@code false} otherwise.
+         */
+        public boolean isQuery() {
+            return isQry;
         }
     }
 

@@ -61,6 +61,9 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
+    private boolean qry;
+
+    /** */
     private List<Integer> caches;
 
     /** */
@@ -93,6 +96,19 @@ public class GridCacheTwoStepQuery {
         return distributedJoins;
     }
 
+    /**
+     * @return {@code true} if this query is reduced to a query operation, {@code false} if it's reduced to update.
+     */
+    public boolean isQuery() {
+        return qry;
+    }
+
+    /**
+     * @param qry {@code true} if this query is reduced to a query operation, {@code false} if it's reduced to update.
+     */
+    public void setQuery(boolean qry) {
+        this.qry = qry;
+    }
 
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
