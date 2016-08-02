@@ -247,11 +247,43 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
                 testConcurrentTx(cache, PESSIMISTIC, REPEATABLE_READ, oneEntry);
                 testConcurrentTx(cache, PESSIMISTIC, READ_COMMITTED, oneEntry);
+
+                testConcurrentTxGet(cache, txConcurrency, txIsolation);
             }
         }
         finally {
             cache.destroy();
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation Transaction isolation.
+     * @throws Exception If failed.
+     */
+    private void testConcurrentTxGet(final IgniteCache<Integer, TestValue> cache,
+        final TransactionConcurrency txConcurrency,
+        final TransactionIsolation txIsolation) throws Exception {
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+
+                final int key = 42;
+
+                cache.put(key, new TestValue(key));
+
+                for(int ind = 0; ind < 128; ind++) {
+                    try(Transaction tx = grid(0).transactions().txStart(txConcurrency, txIsolation)) {
+
+                        cache.get(key);
+
+                        tx.commit();
+                    }
+                }
+
+                return null;
+            }
+        }, 10, "tx-thread");
     }
 
     /**
