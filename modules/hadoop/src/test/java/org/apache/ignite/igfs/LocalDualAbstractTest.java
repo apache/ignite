@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -101,7 +102,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public boolean exists(final String path) throws IOException {
-            return Files.exists(Paths.get(workDir + path));
+            return Files.exists(path(path));
         }
 
         /** {@inheritDoc} */
@@ -111,7 +112,7 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void mkdirs(final String path) throws IOException {
-            super.mkdirs(addParent(path));
+            Files.createDirectory(path(path));
         }
 
         /** {@inheritDoc} */
@@ -137,6 +138,16 @@ public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
         /** {@inheritDoc} */
         @Override public <T> T unwrap(final Class<T> cls) {
             return super.unwrap(cls);
+        }
+
+        /**
+         * Convert path.
+         *
+         * @param path String path.
+         * @return Java File API path.
+         */
+        private Path path(String path) {
+            return Paths.get(workDir + path);
         }
 
         /**
