@@ -20,11 +20,11 @@ package org.apache.ignite.igfs;
 /**
  * DUAL_SYNC mode.
  */
-public class SystemHadoop1OverIgfsDualSyncTest extends SystemHadoop1DualAbstractTest {
+public class LocalDualSyncTest extends LocalDualAbstractTest {
     /**
      * Constructor.
      */
-    public SystemHadoop1OverIgfsDualSyncTest() {
+    public LocalDualSyncTest() {
         super(IgfsMode.DUAL_SYNC);
     }
 }

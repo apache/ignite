@@ -50,7 +50,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
-public abstract class SystemHadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
+public abstract class LocalDualAbstractTest extends IgfsDualAbstractSelfTest {
     /** Secondary grid name */
     private static final String GRID_NAME = "grid_secondary";
 
@@ -80,7 +80,7 @@ public abstract class SystemHadoop1DualAbstractTest extends IgfsDualAbstractSelf
     protected String secondaryUri;
 
     /** Constructor. */
-    public SystemHadoop1DualAbstractTest(IgfsMode mode) {
+    public LocalDualAbstractTest(IgfsMode mode) {
         super(mode);
     }
 
