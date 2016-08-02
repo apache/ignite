@@ -1377,7 +1377,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                false);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -2348,6 +2349,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         IgniteTxEntry txEntry = entry(txKey);
 
+        boolean sendValToBackup = cacheCtx.operationContextPerCall() != null &&
+            cacheCtx.operationContextPerCall().isSendValToBackup();
+
         // First time access.
         if (txEntry == null) {
             while (true) {
@@ -2437,7 +2441,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 -1L,
                                 null,
                                 skipStore,
-                                keepBinary);
+                                keepBinary,
+                                false
+                            );
 
                             txEntry.markValid();
 
@@ -2469,7 +2475,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        sendValToBackup);
 
                     if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
                         cacheCtx.evicts().touch(entry, topologyVersion());
@@ -2575,7 +2582,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary);
+                    keepBinary,
+                    sendValToBackup);
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -2804,31 +2812,47 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         GridCacheVersion ver) {
         GridCacheContext ctx = txEntry.context();
 
-        Object key0 = null;
-        Object val0 = null;
+        CacheObject val0 = cacheVal;
+        Object res = null;
+        Exception err = null;
 
-        try {
-            Object res = null;
+        boolean modified = false;
 
-            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
-                    val0, ver, txEntry.keepBinary(), txEntry.cached());
+        for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+            CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val0, ver,
+                txEntry.keepBinary(), txEntry.cached());
 
-                EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
+            try {
+                EntryProcessor<Object, Object, Object> processor = t.get1();
 
-                res = entryProcessor.process(invokeEntry, t.get2());
+                res = processor.process(invokeEntry, t.get2());
 
-                val0 = invokeEntry.value();
+                if (invokeEntry.modified())
+                    val0 = ctx.toCacheObject(invokeEntry.getValue(true));
+            }
+            catch (Exception e) {
+                err = e;
 
-                key0 = invokeEntry.key();
+                break;
             }
 
-            if (res != null)
-                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null);
+            modified |= invokeEntry.modified();
         }
-        catch (Exception e) {
-            ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e);
+
+        GridCacheOperation op = modified ? (val0 == null ? DELETE : UPDATE) : NOOP;
+
+        if (txEntry.sendValueToBackup()) {
+            txEntry.op(op);
+            txEntry.value(val0, true, false);
+            txEntry.entryProcessors(null);
         }
+        else
+            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val0));
+
+        if (err != null || res != null)
+            ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, res, err, txEntry.keepBinary());
+        else
+            ret.invokeResult(true);
     }
 
     /**
@@ -3582,6 +3606,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
      * @param skipStore Skip store flag.
+     * @param sendValToBackup Send to backup value insted of entry processor.
      * @return Transaction entry.
      */
     protected final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -3596,7 +3621,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean sendValToBackup
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -3628,6 +3654,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 // Will change the op.
                 old.addEntryProcessor(entryProcessor, invokeArgs);
+
+                old.sendValueToBackup(sendValToBackup);
             }
             else {
                 assert old.op() != TRANSFORM;
@@ -3683,6 +3711,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             if (log.isDebugEnabled())
                 log.debug("Created transaction entry: " + txEntry);
+
+            txEntry.sendValueToBackup(sendValToBackup);
         }
 
         txEntry.filtersSet(filtersSet);

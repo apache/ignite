@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.IgfsEvent;
@@ -37,6 +40,7 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -44,6 +48,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
@@ -140,13 +147,21 @@ public class IgfsMetaManager extends IgfsManager {
     /** Relaxed flag. */
     private final boolean relaxed;
 
+    /** Client flag. */
+    private final boolean client;
+
+    /** Compute facade for client tasks. */
+    private IgniteCompute cliCompute;
+
     /**
      * Constructor.
      *
      * @param relaxed Relaxed mode flag.
+     * @param client Client flag.
      */
-    public IgfsMetaManager(boolean relaxed) {
+    public IgfsMetaManager(boolean relaxed, boolean client) {
         this.relaxed = relaxed;
+        this.client = client;
     }
 
     /**
@@ -215,6 +230,53 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         busyLock.block();
+    }
+
+    /**
+     * @return Client flag.
+     */
+    boolean isClient() {
+        return client;
+    }
+
+    /**
+     * Run client task.
+     *
+     * @param task Task.
+     * @return Result.
+     */
+    <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
+        try {
+            return clientCompute().call(task);
+        }
+        catch (ClusterTopologyException e) {
+            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+        }
+    }
+
+    /**
+     * Get compute facade for client tasks.
+     *
+     * @return Compute facade.
+     */
+    private IgniteCompute clientCompute() {
+        assert client;
+
+        IgniteCompute cliCompute0 = cliCompute;
+
+        if (cliCompute0 == null) {
+            IgniteEx ignite = igfsCtx.kernalContext().grid();
+
+            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
+
+            cliCompute0 = ignite.compute(cluster);
+
+            cliCompute = cliCompute0;
+        }
+
+        assert cliCompute0 != null;
+
+        return cliCompute0;
     }
 
     /**
@@ -2085,6 +2147,28 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Get info for the given path.
+     *
+     * @param path Path.
+     * @return Info.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
+        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+    }
+
+    /**
+     * Get IDs for the given path.
+     *
+     * @param path Path.
+     * @return IDs.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
+        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+    }
+
+    /**
      * Open file in DUAL mode.
      *
      * @param fs Secondary file system.
@@ -2094,15 +2178,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If input stream open has failed.
      */
     public IgfsSecondaryInputStreamDescriptor openDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
-        final int bufSize)
-        throws IgniteCheckedException {
+        final int bufSize) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
                 assert path != null;
 
                 // First, try getting file info without any transactions and synchronization.
-                IgfsEntryInfo info = info(fileId(path));
+                IgfsEntryInfo info = infoForPath(path);
 
                 if (info != null) {
                     if (!info.isFile())
@@ -2164,7 +2247,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (busyLock.enterBusy()) {
             try {
                 // First, try getting file info without any transactions and synchronization.
-                IgfsEntryInfo info = info(fileId(path));
+                IgfsEntryInfo info = infoForPath(path);
 
                 if (info != null)
                     return info;
@@ -2640,7 +2723,7 @@ public class IgfsMetaManager extends IgfsManager {
             List<List<IgniteUuid>> pathIds = new ArrayList<>(paths.length);
 
             for (IgfsPath path : paths)
-                pathIds.add(fileIds(path));
+                pathIds.add(idsForPath(path));
 
             // Start pessimistic.
             try (IgniteInternalTx tx = startTx()) {

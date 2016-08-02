@@ -430,6 +430,20 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
         "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
 
+    /**
+     * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
+     * of this property.
+     * <p>
+     * If property is {@code false} then node is not required to have service implementation class if service is not
+     * deployed on this node.
+     * <p>
+     * If the property is {@code true} then service implementation class is required on node even if service
+     * is not deployed on this node.
+     * <p>
+     * If the property is not set ({@code null}) then Ignite will automatically detect which compatibility mode
+     * should be used.
+     */
+    public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
     /**
      * Enforces singleton.

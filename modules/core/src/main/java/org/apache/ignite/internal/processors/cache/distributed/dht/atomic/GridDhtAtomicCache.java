@@ -1874,7 +1874,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
-                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
+                            computed = ctx.unwrapTemporary(computed);
+
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null,
+                                req.keepBinary());
                         }
 
                         if (!invokeEntry.modified())
@@ -1888,7 +1891,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (invokeRes == null)
                             invokeRes = new GridCacheReturn(node.isLocal());
 
-                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e);
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, req.keepBinary());
 
                         updated = old;
                     }
@@ -2022,8 +2025,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 entry.key(),
                                 old,
                                 req.keepBinary()),
-                            updated.value(
-                                ctx.cacheObjectContext(),
+                            ctx.unwrapBinaryIfNeeded(
+                                updated, 
+                                req.keepBinary(), 
                                 false));
 
                         if (val == null)
@@ -2366,7 +2370,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             k,
                             null,
                             compRes.get1(),
-                            compRes.get2());
+                            compRes.get2(),
+                            req.keepBinary());
                     }
                 }
                 else {
