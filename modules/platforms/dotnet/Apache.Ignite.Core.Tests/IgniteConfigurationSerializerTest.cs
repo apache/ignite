@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Tests
                 }
             };
 
-            Assert.AreEqual(@"<?xml version=""1.0"" encoding=""utf-16""?>
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
 <igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
   <cacheConfiguration>
     <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests
     <int>CacheEntryCreated</int>
     <int>CacheNodesLeft</int>
   </includedEventTypes>
-</igniteConfiguration>", cfg.ToXml());
+</igniteConfiguration>"), cfg.ToXml());
 
             // Custom section name and indent
             var sb = new StringBuilder();
@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Tests
                 cfg.ToXml(xmlWriter, "igCfg");
             }
 
-            Assert.AreEqual(@"<?xml version=""1.0"" encoding=""utf-16""?>
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
 <igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
  <cacheConfiguration>
   <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Tests
   <int>CacheEntryCreated</int>
   <int>CacheNodesLeft</int>
  </includedEventTypes>
-</igCfg>", sb.ToString());
+</igCfg>"), sb.ToString());
         }
 
         /// <summary>
@@ -392,6 +392,16 @@ namespace Apache.Ignite.Core.Tests
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
             AssertReflectionEqual(new IgniteConfiguration { GridName = "myGrid", ClientMode = true }, cfg);
+        }
+
+        /// <summary>
+        /// Ensures windows-style \r\n line endings in a string literal.
+        /// Git settings may cause string literals in both styles.
+        /// </summary>
+        private static string FixLineEndings(string s)
+        {
+            return s.Split('\n').Select(x => x.TrimEnd('\r'))
+                .Aggregate((acc, x) => string.Format("{0}\r\n{1}", acc, x));
         }
 
         /// <summary>
