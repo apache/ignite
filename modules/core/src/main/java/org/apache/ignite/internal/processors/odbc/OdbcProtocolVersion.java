@@ -51,11 +51,11 @@ public enum OdbcProtocolVersion {
      *
      * @param major Major version.
      * @param minor Minor version.
-     * @param revision Revision.
+     * @param maintenance Maintenance version.
      * @return Long value for the version.
      */
-    private static long makeVersion(int major, int minor, int revision) {
-        return ((major & LONG_MASK) << 48) | ((minor & LONG_MASK) << 32) | ((revision & LONG_MASK) << 16);
+    private static long makeVersion(int major, int minor, int maintenance) {
+        return ((major & LONG_MASK) << 48) | ((minor & LONG_MASK) << 32) | ((maintenance & LONG_MASK) << 16);
     }
 
     /**

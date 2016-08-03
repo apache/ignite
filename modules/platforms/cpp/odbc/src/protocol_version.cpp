@@ -50,10 +50,10 @@ namespace ignite
             // No-op.
         }
 
-        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t revision)
+        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t maintenance)
         {
             const static int64_t MASK = 0x000000000000FFFFLL;
-            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((revision & MASK) << 16);
+            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((maintenance & MASK) << 16);
         }
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()
@@ -68,8 +68,8 @@ namespace ignite
             if (it == stringToVersionMap.end())
             {
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major "
-                    "and minor versions and revision of Ignite since which protocol is introduced.");
+                    "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major, "
+                    "minor and maintenance versions of Ignite since which protocol is introduced.");
             }
 
             return it->second;

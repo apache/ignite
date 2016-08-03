@@ -152,10 +152,10 @@ namespace ignite
              *
              * @param major Major version.
              * @param minor Minor version.
-             * @param revision Revision.
+             * @param maintenance Maintenance version.
              * @return Int value for the version.
              */
-            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t revision);
+            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t maintenance);
 
             /** String to version map. */
             static const StringToVersionMap stringToVersionMap;
