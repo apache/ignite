@@ -278,6 +278,41 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the XML conversion.
+        /// </summary>
+        [Test]
+        public void TestToXml()
+        {
+            // Empty config
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteConfiguration " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection\" />",
+                new IgniteConfiguration().ToXml());
+
+            // Some properties
+            var cfg = new IgniteConfiguration
+            {
+                GridName = "myGrid",
+                ClientMode = true,
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("myCache") {CacheMode = CacheMode.Partitioned},
+                }
+            };
+            Assert.AreEqual("", cfg.ToXml());
+
+            // Custom section name and indent
+        }
+
+        /// <summary>
+        /// Tests the deserialization.
+        /// </summary>
+        [Test]
+        public void TestFromXml()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Checks the schema validation.
         /// </summary>
         private static void CheckSchemaValidation()
