@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Tests
                 ClientMode = true,
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration("myCache") {CacheMode = CacheMode.Partitioned},
+                    new CacheConfiguration("myCache") {CacheMode = CacheMode.Replicated},
                 }
             };
             Assert.AreEqual("", cfg.ToXml());
