@@ -55,6 +55,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean initializeDefaultPathModes() {
+        // Enable default modes in order to test various modes.
+        return true;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -68,6 +74,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         for (IgfsPath p : paths)
             assert igfs.exists(p);
 
+        assert igfs.modeResolver().resolveMode(gg) == mode;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "sync")) == IgfsMode.DUAL_SYNC;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "async")) == IgfsMode.DUAL_ASYNC;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
+        assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
+
+        // All the child paths of "/ignite/" must be visible in listings:
         assert igfs.listFiles(gg).size() == 3;
         assert igfs.listPaths(gg).size() == 3;
     }

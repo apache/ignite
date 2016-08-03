@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -66,6 +67,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -819,11 +821,13 @@ public class IgfsUtils {
      *
      * @param dfltMode The root mode. Must always be not null.
      * @param modes The subdirectory modes.
+     * @param dualParentsContainingPrimaryChildren The set to store parents into.
      * @return Descending list of filtered and checked modes.
-     * @throws IgniteCheckedException On error or
+     * @throws IgniteCheckedException On error.
      */
     public static ArrayList<T2<IgfsPath, IgfsMode>> preparePathModes(final IgfsMode dfltMode,
-        @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+        @Nullable List<T2<IgfsPath, IgfsMode>> modes, Set<IgfsPath> dualParentsContainingPrimaryChildren)
+        throws IgniteCheckedException {
         if (modes == null)
             return null;
 
@@ -856,6 +860,10 @@ public class IgfsUtils {
 
                     // Add to the 1st position (deep first).
                     resModes.add(0, mode);
+
+                    // Store primary paths inside dual paths in separate collection:
+                    if (mode.getValue() == PRIMARY)
+                        dualParentsContainingPrimaryChildren.add(mode.getKey().parent());
 
                     break;
                 }
