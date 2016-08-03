@@ -325,20 +325,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
         {
-            var sb = new StringBuilder();
+            var xml = cfg.ToXml();
 
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter, "igniteConfig");
-            }
-
-            var xml = sb.ToString();
-
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
-            {
-                xmlReader.MoveToContent();
-                return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
-            }
+            return IgniteConfiguration.FromXml(xml);
         }
 
         /// <summary>
