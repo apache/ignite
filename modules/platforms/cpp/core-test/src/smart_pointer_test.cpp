@@ -25,7 +25,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 
-#include "ignite/smart_pointer.h"
+#include "ignite/common/smart_pointer.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(shared);
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(shared);
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(autop);
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(autop);
 
         BOOST_CHECK(objAlive);
     }
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(std::move(unique));
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(std::move(unique));
 
         BOOST_CHECK(objAlive);
     }
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(shared);
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(shared);
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(BoostUniquePointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = Pack(boost::move(unique));
+        SmartPointer<LivenessMarker> smart = PassSmartPointer(boost::move(unique));
 
         BOOST_CHECK(objAlive);
     }
