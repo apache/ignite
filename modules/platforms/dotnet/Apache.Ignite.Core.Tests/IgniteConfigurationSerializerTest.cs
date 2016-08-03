@@ -20,6 +20,8 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.CodeDom;
+    using System.CodeDom.Compiler;
     using System.Collections;
     using System.Collections.Generic;
     using System.Globalization;
@@ -295,12 +297,68 @@ namespace Apache.Ignite.Core.Tests
                 ClientMode = true,
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration("myCache") {CacheMode = CacheMode.Replicated},
+                    new CacheConfiguration("myCache")
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity(typeof(int)),
+                            new QueryEntity(typeof(int), typeof(string))
+                        }
+                    }
+                },
+                IncludedEventTypes = new[]
+                {
+                    EventType.CacheEntryCreated,
+                    EventType.CacheNodesLeft
                 }
             };
-            Assert.AreEqual("", cfg.ToXml());
+
+            Assert.AreEqual(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+  <cacheConfiguration>
+    <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+      <queryEntities>
+        <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+        <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+      </queryEntities>
+    </cacheConfiguration>
+  </cacheConfiguration>
+  <includedEventTypes>
+    <int>CacheEntryCreated</int>
+    <int>CacheNodesLeft</int>
+  </includedEventTypes>
+</igniteConfiguration>", cfg.ToXml());
 
             // Custom section name and indent
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = " "
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                cfg.ToXml(xmlWriter, "igCfg");
+            }
+
+            Assert.AreEqual(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+ <cacheConfiguration>
+  <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+   <queryEntities>
+    <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+    <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+   </queryEntities>
+  </cacheConfiguration>
+ </cacheConfiguration>
+ <includedEventTypes>
+  <int>CacheEntryCreated</int>
+  <int>CacheNodesLeft</int>
+ </includedEventTypes>
+</igCfg>", sb.ToString());
         }
 
         /// <summary>
@@ -310,6 +368,20 @@ namespace Apache.Ignite.Core.Tests
         public void TestFromXml()
         {
             // TODO
+
+            // Test invalid xml
+        }
+
+        private static string ToLiteral(string input)
+        {
+            using (var writer = new StringWriter())
+            {
+                using (var provider = CodeDomProvider.CreateProvider("CSharp"))
+                {
+                    provider.GenerateCodeFromExpression(new CodePrimitiveExpression(input), writer, null);
+                    return writer.ToString();
+                }
+            }
         }
 
         /// <summary>
