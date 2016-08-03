@@ -737,7 +737,9 @@
 
             using (var xmlReader = XmlReader.Create(new StringReader(xml)))
             {
+                // Skip XML header.
                 xmlReader.MoveToContent();
+
                 return FromXml(xmlReader);
             }
         }

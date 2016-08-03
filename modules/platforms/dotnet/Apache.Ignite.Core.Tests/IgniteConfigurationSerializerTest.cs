@@ -370,6 +370,10 @@ namespace Apache.Ignite.Core.Tests
             var cfg = IgniteConfiguration.FromXml("<x />");
             AssertReflectionEqual(new IgniteConfiguration(), cfg);
 
+            // Empty section with XML header.
+            cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
             // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
             AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
