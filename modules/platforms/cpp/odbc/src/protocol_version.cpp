@@ -25,7 +25,7 @@ namespace ignite
     namespace odbc
     {
         const ProtocolVersion ProtocolVersion::VERSION_1_6_0(1);
-        const ProtocolVersion ProtocolVersion::VERSION_1_8_0(0x0001000800000000LL);
+        const ProtocolVersion ProtocolVersion::VERSION_1_8_0(MakeVersion(1,8,0));
         const ProtocolVersion ProtocolVersion::VERSION_UNKNOWN(INT64_MIN);
 
         ProtocolVersion::StringToVersionMap::value_type s2vInitVals[] = {
@@ -48,6 +48,12 @@ namespace ignite
             val(val)
         {
             // No-op.
+        }
+
+        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t revision)
+        {
+            const static int64_t MASK = 0x000000000000FFFFLL;
+            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((revision & MASK) << 16);
         }
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()

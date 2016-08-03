@@ -146,6 +146,16 @@ namespace ignite
              * @param val Underlying value.
              */
             explicit ProtocolVersion(int64_t val);
+            
+            /**
+             * Make int value for the version.
+             *
+             * @param major Major version.
+             * @param minor Minor version.
+             * @param revision Revision.
+             * @return Int value for the version.
+             */
+            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t revision);
 
             /** String to version map. */
             static const StringToVersionMap stringToVersionMap;
