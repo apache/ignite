@@ -111,9 +111,8 @@ namespace Apache.Ignite.Core.Tests
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                         </igniteConfig>";
-            var reader = XmlReader.Create(new StringReader(xml));
 
-            var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
+            var cfg = IgniteConfiguration.FromXml(xml);
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);

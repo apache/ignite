@@ -701,7 +701,12 @@
         {
             var sb = new StringBuilder();
 
-            using (var xmlWriter = XmlWriter.Create(sb))
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
             {
                 ToXml(xmlWriter, "igniteConfiguration");
             }
