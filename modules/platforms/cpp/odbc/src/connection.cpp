@@ -39,8 +39,6 @@ namespace ignite
 {
     namespace odbc
     {
-        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.7.0";
-
         Connection::Connection() :
             socket(),
             connected(false),
@@ -360,7 +358,7 @@ namespace ignite
                 constructor << "Node rejected handshake message. "
                     << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
                     << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
-                    << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
+                    << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
 

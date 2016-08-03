@@ -74,6 +74,24 @@ public class CacheQueryExample {
     /** Persons cache name. */
     private static final String PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "Persons";
 
+    /** Second version of the ODBC. Released with Ignite 1.8 */
+    private static long VERSION_1_8_0 = makeVersion(1,8,0);
+
+    /** Mask to get 2 lowest bytes of the value and cast to long. */
+    private static final long LONG_MASK = 0x000000000000FFFFL;
+
+    /**
+     * Make long value for the version.
+     *
+     * @param major Major version.
+     * @param minor Minor version.
+     * @param revision Revision.
+     * @return Long value for the version.
+     */
+    private static long makeVersion(int major, int minor, int revision) {
+        return ((major & LONG_MASK) << 48) | ((minor & LONG_MASK) << 32) | ((revision & LONG_MASK) << 16);
+    }
+
     /**
      * Executes example.
      *
@@ -81,6 +99,8 @@ public class CacheQueryExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
+        System.out.println("Version: " + String.format("%016X", VERSION_1_8_0));
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");

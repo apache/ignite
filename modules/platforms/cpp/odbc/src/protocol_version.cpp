@@ -26,12 +26,12 @@ namespace ignite
     namespace odbc
     {
         const ProtocolVersion ProtocolVersion::VERSION_1_6_0(1);
-        const ProtocolVersion ProtocolVersion::VERSION_2_0_0(0x0002000000000000LL);
+        const ProtocolVersion ProtocolVersion::VERSION_1_8_0(MakeVersion(1,8,0));
         const ProtocolVersion ProtocolVersion::VERSION_UNKNOWN(INT64_MIN);
 
         ProtocolVersion::StringToVersionMap::value_type s2vInitVals[] = {
             std::make_pair("1.6.0", ProtocolVersion::VERSION_1_6_0),
-            std::make_pair("2.0.0", ProtocolVersion::VERSION_2_0_0)
+            std::make_pair("1.8.0", ProtocolVersion::VERSION_1_8_0)
         };
 
         const ProtocolVersion::StringToVersionMap ProtocolVersion::stringToVersionMap(s2vInitVals,
@@ -39,7 +39,7 @@ namespace ignite
 
         ProtocolVersion::VersionToStringMap::value_type v2sInitVals[] = {
             std::make_pair(ProtocolVersion::VERSION_1_6_0, "1.6.0"),
-            std::make_pair(ProtocolVersion::VERSION_2_0_0, "2.0.0")
+            std::make_pair(ProtocolVersion::VERSION_1_8_0, "1.8.0")
         };
 
         const ProtocolVersion::VersionToStringMap ProtocolVersion::versionToStringMap(v2sInitVals,
@@ -51,6 +51,12 @@ namespace ignite
             // No-op.
         }
 
+        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t revision)
+        {
+            const static int64_t MASK = 0x000000000000FFFFLL;
+            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((revision & MASK) << 16);
+        }
+
         const ProtocolVersion::StringToVersionMap& ProtocolVersion::GetMap()
         {
             return stringToVersionMap;
@@ -58,7 +64,7 @@ namespace ignite
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()
         {
-            return VERSION_2_0_0;
+            return VERSION_1_8_0;
         }
 
         ProtocolVersion ProtocolVersion::FromString(const std::string& version)

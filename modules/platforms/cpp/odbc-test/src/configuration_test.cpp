@@ -52,6 +52,24 @@ void CheckValidAddress(const char* connectStr, uint16_t port)
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), port);
 }
 
+void CheckValidProtocolVersion(const char* connectStr, ignite::odbc::ProtocolVersion version)
+{
+    Configuration cfg;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+
+    BOOST_CHECK(cfg.GetProtocolVersion() == version);
+}
+
+void CheckInvalidProtocolVersion(const char* connectStr)
+{
+    Configuration cfg;
+
+    cfg.FillFromConnectString(connectStr);
+
+    BOOST_CHECK_THROW(cfg.GetProtocolVersion(), ignite::IgniteError);
+}
+
 void CheckValidBoolValue(const std::string& connectStr, const std::string& key, bool val)
 {
     Configuration cfg;
@@ -229,8 +247,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
 {
-    Configuration cfg;
-
     CheckValidAddress("Address=example.com:1;", 1);
     CheckValidAddress("Address=example.com:31242;", 31242);
     CheckValidAddress("Address=example.com:55555;", 55555);
@@ -238,10 +254,24 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
     CheckValidAddress("Address=example.com;", Configuration::DefaultValue::port);
 }
 
+BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)
+{
+    CheckInvalidProtocolVersion("Protocol_Version=0;");
+    CheckInvalidProtocolVersion("Protocol_Version=1;");
+    CheckInvalidProtocolVersion("Protocol_Version=2;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.6.1;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.7.0;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.8.1;");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringValidVersion)
+{
+    CheckValidProtocolVersion("Protocol_Version=1.6.0;", ignite::odbc::ProtocolVersion::VERSION_1_6_0);
+    CheckValidProtocolVersion("Protocol_Version=1.8.0;", ignite::odbc::ProtocolVersion::VERSION_1_8_0);
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
 {
-    Configuration cfg;
-
     typedef std::set<std::string> Set;
 
     Set keys;
@@ -266,8 +296,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidBoolKeys)
 {
-    Configuration cfg;
-
     typedef std::set<std::string> Set;
 
     Set keys;
@@ -305,7 +333,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
     CheckDsnConfig(cfg);
 }
 
-BOOST_AUTO_TEST_CASE(TestDsnStrinLowercase)
+BOOST_AUTO_TEST_CASE(TestDsnStringLowercase)
 {
     Configuration cfg;
 
@@ -321,7 +349,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStrinLowercase)
     CheckDsnConfig(cfg);
 }
 
-BOOST_AUTO_TEST_CASE(TestDsnStrinMixed)
+BOOST_AUTO_TEST_CASE(TestDsnStringMixed)
 {
     Configuration cfg;
 
@@ -337,7 +365,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStrinMixed)
     CheckDsnConfig(cfg);
 }
 
-BOOST_AUTO_TEST_CASE(TestDsnStrinWhitespaces)
+BOOST_AUTO_TEST_CASE(TestDsnStringWhitespaces)
 {
     Configuration cfg;
 
