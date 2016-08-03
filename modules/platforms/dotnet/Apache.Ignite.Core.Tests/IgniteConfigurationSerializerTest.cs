@@ -20,10 +20,9 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -367,29 +366,20 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestFromXml()
         {
-            // Empty section
-            var cfg = IgniteConfiguration.FromXml(@"<x />");
+            // Empty section.
+            var cfg = IgniteConfiguration.FromXml("<x />");
             AssertReflectionEqual(new IgniteConfiguration(), cfg);
 
-            // Simple test
+            // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
             AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
 
-            // TODO
+            // Invalid xml.
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                IgniteConfiguration.FromXml(@"<igCfg foo=""bar"" />"));
 
-            // Test invalid xml
-        }
-
-        private static string ToLiteral(string input)
-        {
-            using (var writer = new StringWriter())
-            {
-                using (var provider = CodeDomProvider.CreateProvider("CSharp"))
-                {
-                    provider.GenerateCodeFromExpression(new CodePrimitiveExpression(input), writer, null);
-                    return writer.ToString();
-                }
-            }
+            Assert.AreEqual("Invalid IgniteConfiguration attribute 'foo=bar', there is no such property " +
+                            "on 'Apache.Ignite.Core.IgniteConfiguration'", ex.Message);
         }
 
         /// <summary>
