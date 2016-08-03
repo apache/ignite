@@ -380,6 +380,14 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual("Invalid IgniteConfiguration attribute 'foo=bar', there is no such property " +
                             "on 'Apache.Ignite.Core.IgniteConfiguration'", ex.Message);
+
+            // Xml reader.
+            using (var xmlReader = XmlReader.Create(
+                new StringReader(@"<igCfg gridName=""myGrid"" clientMode=""true"" />")))
+            {
+                cfg = IgniteConfiguration.FromXml(xmlReader);
+            }
+            AssertReflectionEqual(new IgniteConfiguration { GridName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
