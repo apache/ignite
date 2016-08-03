@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
+package org.apache.ignite.testframework.assertions;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -23,7 +23,6 @@ import java.util.Iterator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.testframework.assertions.Assertion;
 
 /**
  * {@link Assertion} that checks that the primary and backup partitions are distributed such that we won't lose any data
