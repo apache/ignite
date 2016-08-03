@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static IDiscoverySpi GetStaticDiscovery()
+        public static TcpDiscoverySpi GetStaticDiscovery()
         {
             return new TcpDiscoverySpi
             {

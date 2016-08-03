@@ -19,7 +19,7 @@ import angular from 'angular';
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
 class IgniteAgentMonitor {
-    constructor(socketFactory, $root, $q, $state, $modal, $common) {
+    constructor(socketFactory, $root, $q, $state, $modal, Messages) {
         this._scope = $root.$new();
 
         $root.$watch('user', () => {
@@ -45,7 +45,7 @@ class IgniteAgentMonitor {
          * Special dialog hide function.
          */
         this._downloadAgentModal.hide = () => {
-            $common.hideAlert();
+            Messages.hideAlert();
 
             _modalHide();
         };
@@ -87,7 +87,7 @@ class IgniteAgentMonitor {
 
         this._$q = $q;
 
-        this._$common = $common;
+        this.Messages = Messages;
     }
 
     /**
@@ -234,7 +234,7 @@ class IgniteAgentMonitor {
         if (this._scope.showModal) {
             this._downloadAgentModal.$promise.then(this._downloadAgentModal.show);
 
-            this._$common.showError(err);
+            this.Messages.showError(err);
         }
     }
 
@@ -314,7 +314,7 @@ class IgniteAgentMonitor {
     }
 }
 
-IgniteAgentMonitor.$inject = ['igniteSocketFactory', '$rootScope', '$q', '$state', '$modal', '$common'];
+IgniteAgentMonitor.$inject = ['igniteSocketFactory', '$rootScope', '$q', '$state', '$modal', 'IgniteMessages'];
 
 angular
     .module('ignite-console.agent', [

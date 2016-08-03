@@ -147,6 +147,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
+        checkQuery("select avg(old) from Person right join Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
 
         checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
@@ -164,6 +166,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select person.* from Person, Address a");
         checkQuery("select p.*, street from Person p, Address a");
         checkQuery("select p.name, a.street from Person p, Address a");
+        checkQuery("select p.name, a.street from Address a, Person p");
         checkQuery("select distinct p.name, a.street from Person p, Address a");
         checkQuery("select distinct name, street from Person, Address group by old");
         checkQuery("select distinct name, street from Person, Address");
@@ -249,20 +252,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("(select name from Person limit 4) UNION (select street from Address limit 1) limit ? offset ?");
         checkQuery("(select 2 a) union all (select 1) order by 1");
         checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
-    }
-
-    /**
-     *
-     */
-    public void testExample1() throws Exception {
-        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
-
-        GridSqlQueryParser ses = new GridSqlQueryParser();
-
-        GridSqlQuery gridSelect = ses.parse(select);
-
-        //System.out.println(select.getPlanSQL());
-        System.out.println(gridSelect.getSQL());
     }
 
     /**

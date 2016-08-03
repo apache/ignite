@@ -92,7 +92,7 @@ namespace ignite
 
             typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
-            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
@@ -209,6 +209,9 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
+				
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -223,7 +226,8 @@ namespace ignite
                 /**
                  * Write error information.
                  */
-                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen);
+                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen, 
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -556,7 +560,7 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-                
+
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);

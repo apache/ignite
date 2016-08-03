@@ -144,11 +144,6 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryNextPageResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }
@@ -303,5 +298,12 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryNextPageResponse.class, this,
+            "valsSize", vals != null ? vals.size() : 0,
+            "rowsSize", plainRows != null ? plainRows.size() : 0);
     }
 }

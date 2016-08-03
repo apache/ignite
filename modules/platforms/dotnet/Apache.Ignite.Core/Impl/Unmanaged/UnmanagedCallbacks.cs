@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
         
-        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
@@ -649,7 +649,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
+        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr,
             byte keepBinary)
         {
             SafeCall(() =>
@@ -770,8 +770,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
+                    string stackTrace = reader.ReadString();
 
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -1084,10 +1085,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
         
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
-            int errMsgCharsLen, void* errData, int errDataLen)
+            int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
+            string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
 
             switch (errType)
             {
@@ -1097,13 +1099,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, 
+                            _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
-                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
-                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
+                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg, stackTrace);
 
                 case ErrJvmAttach:
                     throw new IgniteException("Failed to attach to JVM.");

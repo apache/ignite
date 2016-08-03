@@ -131,6 +131,9 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     /** Hash calculator.  */
     private JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
 
+    /** Types transformer.  */
+    private JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
+
     /** Types that store could process. */
     private JdbcType[] types;
 
@@ -154,6 +157,8 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
         store.setMaximumWriteAttempts(maxWriteAttempts);
         store.setParallelLoadCacheMinimumThreshold(parallelLoadCacheMinThreshold);
         store.setTypes(types);
+        store.setHasher(hasher);
+        store.setTransformer(transformer);
 
         if (dataSrc != null)
             store.setDataSource(dataSrc);
@@ -359,6 +364,27 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      */
     public CacheJdbcPojoStoreFactory setHasher(JdbcTypeHasher hasher) {
         this.hasher = hasher;
+
+        return this;
+    }
+
+    /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
 
         return this;
     }

@@ -35,7 +35,7 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache"/>
+                    <property name="name" value="QueryPerson"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -69,6 +69,43 @@
                                     </list>
                                 </property>
                             </bean>
+							
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="QueryRelation"/>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="personId" value="java.lang.Integer"/>
+                                        <entry key="someVal" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+				
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="QueryRelation"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+                    
+                    <property name="typeMetadata">
+                        <list>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="valueType" value="QueryRelation"/>
+                                <property name="queryFields">
+                                    <map>
+                                        <entry key="personId" value="java.lang.Integer"/>
+                                        <entry key="someVal" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                            </bean>
                         </list>
                     </property>
                 </bean>
@@ -82,11 +119,12 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

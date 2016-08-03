@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerNotificationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
 
@@ -70,6 +71,8 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheEntryListenerExpiredEventsTest.class);
 
         suite.addTestSuite(IgniteCacheExpireAndUpdateConsistencyTest.class);
+
+        suite.addTestSuite(GridCacheTtlManagerNotificationTest.class);
 
         return suite;
     }
