@@ -108,7 +108,7 @@ namespace ignite
 
         bool ProtocolVersion::IsDistributedJoinsSupported() const
         {
-            return *this >= VERSION_2_0_0;
+            return *this >= VERSION_1_8_0;
         }
 
         bool operator==(const ProtocolVersion& val1, const ProtocolVersion& val2)
