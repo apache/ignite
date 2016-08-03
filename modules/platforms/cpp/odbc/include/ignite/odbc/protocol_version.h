@@ -40,8 +40,8 @@ namespace ignite
             /** First version of the protocol that was introduced in Ignite 1.6.0. */
             static const ProtocolVersion VERSION_1_6_0;
 
-            /** First version of the protocol that was introduced in Ignite 2.0.0. */
-            static const ProtocolVersion VERSION_2_0_0;
+            /** First version of the protocol that was introduced in Ignite 1.8.0. */
+            static const ProtocolVersion VERSION_1_8_0;
 
             /** Unknown version of the protocol. */
             static const ProtocolVersion VERSION_UNKNOWN;

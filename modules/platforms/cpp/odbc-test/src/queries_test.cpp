@@ -344,9 +344,9 @@ BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
 }
 
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_0_0)
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_8_0)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=2.0.0");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.8.0");
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
