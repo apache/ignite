@@ -51,7 +51,8 @@ private:
 
 void TestFunction(SmartPointer<LivenessMarker> ptr)
 {
-    //
+    SmartPointer<LivenessMarker> copy(ptr);
+    SmartPointer<LivenessMarker> copy2(ptr);
 }
 
 
@@ -190,6 +191,25 @@ BOOST_AUTO_TEST_CASE(BoostUniquePointerTest)
     }
 
     BOOST_CHECK(!objAlive);
+}
+
+BOOST_AUTO_TEST_CASE(PassingToFunction)
+{
+    bool objAlive = false;
+
+    std::shared_ptr<LivenessMarker> stdShared = std::make_shared<LivenessMarker>(objAlive);
+    std::unique_ptr<LivenessMarker> stdUnique(new LivenessMarker(objAlive));
+    std::auto_ptr<LivenessMarker> stdAuto(new LivenessMarker(objAlive));
+
+    boost::interprocess::unique_ptr<LivenessMarker> boostUnique(new LivenessMarker(objAlive));
+    boost::shared_ptr<LivenessMarker> boostShared = boost::make_shared<LivenessMarker>(objAlive);
+
+    TestFunction(PassSmartPointer(stdShared));
+    TestFunction(PassSmartPointer(std::move(stdUnique)));
+    TestFunction(PassSmartPointer(stdAuto));
+
+    TestFunction(PassSmartPointer(boost::move(boostUnique)));
+    TestFunction(PassSmartPointer(boostShared));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
