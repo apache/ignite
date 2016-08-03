@@ -367,6 +367,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestFromXml()
         {
+            // Empty section
+            var cfg = IgniteConfiguration.FromXml(@"<x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
+            // Simple test
+            cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
+            AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
+
             // TODO
 
             // Test invalid xml
