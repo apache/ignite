@@ -71,7 +71,7 @@ namespace ignite
         };
 
         /**
-         * Smart pointer wrapper class.
+         * Smart pointer implementation class.
          *
          * Note, this class does not implement any smart pointer functionality
          * itself, instead it wraps one of the existing wide-spread smart
@@ -153,6 +153,84 @@ namespace ignite
             P ptr;
         };
 
+        /**
+         * Smart pointer implementation specialization for the raw pointer.
+         */
+        template<typename T>
+        class SmartPointerImpl<T*> : public SmartPointerImplBase<T>
+        {
+        public:
+            typedef T ElementType;
+
+            /**
+             * Destructor.
+             */
+            virtual ~SmartPointerImpl()
+            {
+                delete ptr;
+            }
+
+            /**
+             * Default constructor.
+             */
+            SmartPointerImpl() :
+                ptr(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Dereference the pointer.
+             *
+             * If the pointer is null then this operation causes undefined
+             * behaviour.
+             *
+             * @return Constant reference to underlying value.
+             */
+            const ElementType& Get() const
+            {
+                return *ptr;
+            }
+
+            /**
+             * Dereference the pointer.
+             *
+             * If the pointer is null then this operation causes undefined
+             * behaviour.
+             *
+             * @return Reference to underlying value.
+             */
+            ElementType& Get()
+            {
+                return *ptr;
+            }
+
+            /**
+             * Check if the pointer is null.
+             *
+             * @return True if the value is null.
+             */
+            bool IsNull() const
+            {
+                return 0 == ptr;
+            }
+
+            /**
+             * Swap contents with another instance.
+             *
+             * @param other Another instance.
+             */
+            void Swap(T*& other)
+            {
+                using std::swap;
+
+                swap(ptr, other);
+            }
+
+        private:
+            /** Underlying pointer. */
+            T* ptr;
+        };
     }
 
     /**
@@ -273,6 +351,28 @@ namespace ignite
         impl->Swap(ptr);
 
         return res;
+    }
+
+    namespace common
+    {
+        /**
+         * Used to copy instance and store it as a SmartPointer.
+         *
+         * @param val Instance.
+         * @return Implementation defined value. User should not explicitly use the
+         *     returned value.
+         */
+        template<typename T>
+        SmartPointer<typename T::element_type> PassCopy(const T& val)
+        {
+            common::SmartPointerImpl<T*>* impl = new common::SmartPointerImpl<T*>();
+
+            SmartPointer<T> res(impl);
+
+            impl->Swap(new T(val));
+
+            return res;
+        }
     }
 }
 
