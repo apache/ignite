@@ -81,8 +81,6 @@ public class HadoopExternalProcessStarter {
      * @throws Exception
      */
     public void run() throws Exception {
-        U.setWorkDirectory(args.workDir, U.getIgniteHome());
-
         File outputDir = outputDirectory();
 
         initializeStreams(outputDir);
@@ -98,7 +96,8 @@ public class HadoopExternalProcessStarter {
             new JdkMarshaller(),
             log,
             msgExecSvc,
-            "external"
+            "external",
+            args.workDir
         );
 
         comm.start();

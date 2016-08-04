@@ -21,7 +21,7 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.*;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -37,10 +37,9 @@ public class JavaLoggerTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testLogInitialize() throws Exception {
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         log = new JavaLogger();
 
+//        ((LoggerWorkDirectoryAware)log).setWorkDir(null);
         ((LoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         if (log.isDebugEnabled())

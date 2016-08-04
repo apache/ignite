@@ -47,6 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridAtomicInitializer;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -296,10 +297,11 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
+        IgniteConfiguration cfg = ignite.configuration();
+        String path = baseDir + File.separator + gridName + File.separator + cfg.getNodeId();
 
         try {
-            dir = U.resolveWorkDirectory(path, true);
+            dir = U.resolveWorkDirectory(cfg.getWorkDirectory(), path, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);

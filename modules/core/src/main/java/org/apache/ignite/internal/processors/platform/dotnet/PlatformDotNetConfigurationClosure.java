@@ -152,13 +152,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             // If user provided IGNITE_HOME - set it as a system property.
             U.setIgniteHome(ggHome);
 
-        try {
-            U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
     }

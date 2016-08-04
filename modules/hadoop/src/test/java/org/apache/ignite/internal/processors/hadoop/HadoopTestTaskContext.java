@@ -188,7 +188,8 @@ class HadoopTestTaskContext extends HadoopV2TaskContext {
      * @param gridJob Grid Hadoop job.
      */
     public HadoopTestTaskContext(HadoopTaskInfo taskInfo, HadoopJob gridJob) throws IgniteCheckedException {
-        super(taskInfo, gridJob, gridJob.id(), null, jobConfDataInput(gridJob));
+        //TODO "Must pass correct work dir here". See IGNITE-3597.
+        super(taskInfo, gridJob, gridJob.id(), null, null, jobConfDataInput(gridJob));
     }
 
     /**

@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1029,7 +1030,8 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
         URI uri;
 
         try {
-            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
+            IgniteConfiguration cfg = ignite.configuration();
+            uri = U.resolveWorkDirectory(cfg.getWorkDirectory(), DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize default file scanner", e);

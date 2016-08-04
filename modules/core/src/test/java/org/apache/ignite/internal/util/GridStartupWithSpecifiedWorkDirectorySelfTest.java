@@ -34,7 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
-import static org.apache.ignite.internal.util.IgniteUtils.nullifyWorkDirectory;
 
 /**
  * Checks creation of work folder.
@@ -53,16 +52,12 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     @Override protected void setUp() throws Exception {
         // Protection against previously cached values.
         nullifyHomeDirectory();
-        nullifyWorkDirectory();
     }
 
     /** {@inheritDoc} */
     @Override protected void tearDown() throws Exception {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
-        nullifyWorkDirectory();
-
-        U.setWorkDirectory(null, U.getIgniteHome());
     }
 
     /**
@@ -107,10 +102,11 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         try {
             for (int i = 0; i < GRID_COUNT; i++) {
-                try (Ignite g = G.start(getConfiguration(log))) {
+                IgniteConfiguration cfg = getConfiguration(log);
+                try (Ignite g = G.start(cfg)) {
                     assert g != null;
 
-                    testWorkDir = U.resolveWorkDirectory(getName(), true);
+                    testWorkDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), getName(), true);
 
                     assertTrue("Work directory wasn't created", testWorkDir.exists());
 
@@ -149,7 +145,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                 try (Ignite g = G.start(cfg)) {
                     assert g != null;
 
-                    File testWorkDir = U.resolveWorkDirectory(getName(), true);
+                    File testWorkDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), getName(), true);
 
                     assertTrue("Work directory wasn't created", testWorkDir.exists());
 

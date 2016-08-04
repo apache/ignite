@@ -142,6 +142,9 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
     /** Local node ID */
     private final UUID locNodeId;
 
+    /** Working directory */
+    private final String workDir;
+
     /** Counters for task. */
     private final HadoopCounters cntrs = new HadoopCountersImpl();
 
@@ -153,9 +156,10 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
      * @param jobConfDataInput DataInput for read JobConf.
      */
     public HadoopV2TaskContext(HadoopTaskInfo taskInfo, HadoopJob job, HadoopJobId jobId,
-        @Nullable UUID locNodeId, DataInput jobConfDataInput) throws IgniteCheckedException {
+        @Nullable UUID locNodeId, String workDir, DataInput jobConfDataInput) throws IgniteCheckedException {
         super(taskInfo, job);
         this.locNodeId = locNodeId;
+        this.workDir = workDir;
 
         // Before create JobConf instance we should set new context class loader.
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
@@ -281,12 +285,12 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             case REDUCE:
                 job().prepareTaskEnvironment(taskInfo());
 
-                locDir = taskLocalDir(locNodeId, taskInfo());
+                locDir = taskLocalDir(workDir, locNodeId, taskInfo());
 
                 break;
 
             default:
-                locDir = jobLocalDir(locNodeId, taskInfo().jobId());
+                locDir = jobLocalDir(workDir, locNodeId, taskInfo().jobId());
         }
 
         Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
