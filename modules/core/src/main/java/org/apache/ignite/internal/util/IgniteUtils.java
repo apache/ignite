@@ -8876,7 +8876,6 @@ public abstract class IgniteUtils {
     /**
      * Nullifies Ignite home directory. For test purposes only.
      */
-    @Deprecated
     public static void nullifyHomeDirectory() {
         ggHome = null;
     }
