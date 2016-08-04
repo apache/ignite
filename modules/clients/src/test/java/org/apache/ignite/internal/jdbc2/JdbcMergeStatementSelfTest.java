@@ -20,7 +20,11 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -51,11 +55,21 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
         "('p2', 2, 'Joe', 'Black', 35), " +
         "('p3', 3, 'Mike', 'Green', 40)";
 
+    /** SQL query. */
+    private static final String SQL_SELECT = "select * from Person";
+
+    /** SQL query. */
+    private static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age) values " +
+        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+
     /** Connection. */
     private Connection conn;
 
     /** Statement. */
     private Statement stmt;
+
+    /** Prepared statement. */
+    private PreparedStatement prepStmt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -99,38 +113,133 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(BASE_URL);
         stmt = conn.createStatement();
+        prepStmt = conn.prepareStatement(SQL_PREPARED);
 
         assertNotNull(stmt);
         assertFalse(stmt.isClosed());
+
+        assertNotNull(prepStmt);
+        assertFalse(prepStmt.isClosed());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        try (Statement selStmt = conn.createStatement()) {
+            assert selStmt.execute(SQL_SELECT);
+
+            ResultSet rs = selStmt.getResultSet();
+
+            assert rs != null;
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+
+                switch (id) {
+                    case 1:
+                        assert "p1".equals(rs.getString("_key"));
+                        assert "John".equals(rs.getString("firstName"));
+                        assert "White".equals(rs.getString("lastName"));
+                        assert rs.getInt("age") == 25;
+                        break;
+
+                    case 2:
+                        assert "p2".equals(rs.getString("_key"));
+                        assert "Joe".equals(rs.getString("firstName"));
+                        assert "Black".equals(rs.getString("lastName"));
+                        assert rs.getInt("age") == 35;
+                        break;
+
+                    case 3:
+                        assert "p3".equals(rs.getString("_key"));
+                        assert "Mike".equals(rs.getString("firstName"));
+                        assert "Green".equals(rs.getString("lastName"));
+                        assert rs.getInt("age") == 40;
+                        break;
+
+                    case 4:
+                        assert "p4".equals(rs.getString("_key"));
+                        assert "Leah".equals(rs.getString("firstName"));
+                        assert "Grey".equals(rs.getString("lastName"));
+                        assert rs.getInt("age") == 22;
+                        break;
+
+                    default:
+                        assert false : "Invalid ID: " + id;
+                }
+            }
+        }
+
+        grid(0).cache(null).clear();
+
+        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+
         if (stmt != null && !stmt.isClosed())
             stmt.close();
 
+        if (prepStmt != null && !prepStmt.isClosed())
+            prepStmt.close();
+
         conn.close();
 
+        assertTrue(prepStmt.isClosed());
         assertTrue(stmt.isClosed());
         assertTrue(conn.isClosed());
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws SQLException If failed.
      */
-    public void testExecuteUpdate() throws Exception {
+    public void testExecuteUpdate() throws SQLException {
         int res = stmt.executeUpdate(SQL);
 
         assertEquals(3, res);
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws SQLException If failed.
      */
-    public void testExecute() throws Exception {
+    public void testExecute() throws SQLException {
         boolean res = stmt.execute(SQL);
 
         assertEquals(false, res);
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testBatch() throws SQLException {
+        prepStmt.setString(1, "p1");
+        prepStmt.setInt(2, 1);
+        prepStmt.setString(3, "John");
+        prepStmt.setString(4, "White");
+        prepStmt.setInt(5, 25);
+        //prepStmt.addBatch();
+
+        prepStmt.setString(6, "p2");
+        prepStmt.setInt(7, 2);
+        prepStmt.setString(8, "Joe");
+        prepStmt.setString(9, "Black");
+        prepStmt.setInt(10, 35);
+        prepStmt.addBatch();
+
+        prepStmt.setString(1, "p3");
+        prepStmt.setInt(2, 3);
+        prepStmt.setString(3, "Mike");
+        prepStmt.setString(4, "Green");
+        prepStmt.setInt(5, 40);
+        //prepStmt.addBatch();
+
+        prepStmt.setString(6, "p4");
+        prepStmt.setInt(7, 4);
+        prepStmt.setString(8, "Leah");
+        prepStmt.setString(9, "Grey");
+        prepStmt.setInt(10, 22);
+        prepStmt.addBatch();
+
+        int[] res = prepStmt.executeBatch();
+
+        assertEquals(2, res[0]);
+        assertEquals(2, res[1]);
     }
 
     /**

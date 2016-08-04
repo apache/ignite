@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -113,8 +114,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isResultSet() {
+    /**
+     * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
+     * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
+     */
+    public boolean isResultSet() {
         return isResSet;
     }
 

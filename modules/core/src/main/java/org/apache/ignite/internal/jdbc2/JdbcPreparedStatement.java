@@ -23,6 +23,7 @@ import java.net.*;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC prepared statement implementation.
@@ -31,8 +32,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /** Arguments count. */
-    private final int argsCnt;
+    /**
+     * Batch arguments.
+     */
+    private List<List<Object>> batchArgs;
 
     /**
      * Creates new prepared statement.
@@ -44,9 +47,16 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         super(conn);
 
         this.sql = sql;
-
-        argsCnt = sql.replaceAll("[^?]", "").length();
     }
+
+    /** {@inheritDoc} */
+    @Override public void addBatch(String sql) throws SQLException {
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+    }
+
+
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
@@ -181,7 +191,33 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(new ArrayList<>(args));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] executeBatch() throws SQLException {
+        if (batchArgs == null)
+            return U.EMPTY_INTS;
+
+        int[] res = new int[batchArgs.size()];
+
+        for (int i = 0; i < res.length; i++) {
+            try {
+                res[i] = doUpdate(sql, batchArgs.get(i).toArray());
+            }
+            catch (Exception e) {
+                res[i] = Statement.EXECUTE_FAILED;
+
+                Throwable cause = (e instanceof SQLException ? e.getCause() : e);
+
+                throw new BatchUpdateException("Failed to query Ignite.", res, U.firstNotNull(cause, e));
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -400,12 +436,25 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (paramIdx < 1 || paramIdx > argsCnt)
+        if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);
 
-        if (args == null)
-            args = new Object[argsCnt];
+        ensureArgsSize(paramIdx);
 
-        args[paramIdx - 1] = val;
+        args.set(paramIdx - 1, val);
+    }
+
+    /**
+     * Initialize {@link #args} and increase its capacity and size up to given argument if needed.
+     * @param size new expected size.
+     */
+    private void ensureArgsSize(int size) {
+        if (args == null)
+            args = new ArrayList<>(size);
+
+        args.ensureCapacity(size);
+
+        while (args.size() < size)
+            args.add(null);
     }
 }

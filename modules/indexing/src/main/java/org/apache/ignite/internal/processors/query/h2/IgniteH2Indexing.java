@@ -59,6 +59,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -1422,7 +1423,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
-                Boolean isQry = qry.isQuery();
+                Boolean isQry = qry instanceof JdbcSqlFieldsQuery ? ((JdbcSqlFieldsQuery)qry).isQuery() : null;
 
                 A.ensure(isQry == null || (isQry == prep.isQuery()), "Query type mismatch - " +
                     "expected " + (prep.isQuery() ? "non query" : "query"));

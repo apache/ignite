@@ -642,10 +642,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         throw U.convertException(e);
                     }
                 }
-
-                @Override public boolean isResultSet() {
-                    return true;
-                }
             };
         }
         catch (IgniteCheckedException e) {

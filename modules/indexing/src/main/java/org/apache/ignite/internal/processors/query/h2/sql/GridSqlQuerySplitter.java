@@ -256,7 +256,12 @@ public class GridSqlQuerySplitter {
         // Build resulting two step query.
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(schemas, tbls);
 
-        GridCacheSqlQuery rdc = new GridCacheSqlQuery(gridStmt.getSQL(), params);
+        IntArray paramIdxs = new IntArray(params.length);
+
+        GridCacheSqlQuery rdc = new GridCacheSqlQuery(gridStmt.getSQL(),
+            findParams(gridStmt, params, new ArrayList<>(), paramIdxs).toArray());
+
+        rdc.parameterIndexes(toArray(paramIdxs));
 
         res.reduceQuery(rdc);
 
@@ -626,6 +631,24 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param stmt Statement.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlStatement stmt, Object[] params, ArrayList<Object> target,
+                                           IntArray paramIdxs) {
+        if (stmt instanceof GridSqlQuery)
+            return findParams((GridSqlQuery)stmt, params, target, paramIdxs);
+
+        if (stmt instanceof GridSqlMerge)
+            return findParams((GridSqlMerge)stmt, params, target, paramIdxs);
+
+        return target;
+    }
+
+    /**
      * @param qry Select.
      * @param params Parameters.
      * @param target Extracted parameters.
@@ -711,6 +734,28 @@ public class GridSqlQuerySplitter {
         else
             for (GridSqlElement child : el)
                 findParams(child, params, target, paramIdxs);
+    }
+
+    /**
+     * @param stmt Statement.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlMerge stmt, Object[] params, ArrayList<Object> target,
+                                           IntArray paramIdxs) {
+        if (params.length == 0)
+            return target;
+
+        for (GridSqlElement el : stmt.columns())
+            findParams(el, params, target, paramIdxs);
+
+        for (GridSqlElement[] row : stmt.rows())
+            for (GridSqlElement el : row)
+                findParams(el, params, target, paramIdxs);
+
+        return target;
     }
 
     /**

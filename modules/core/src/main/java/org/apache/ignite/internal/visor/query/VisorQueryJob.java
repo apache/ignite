@@ -245,11 +245,6 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isResultSet() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
         @Override public Iterator<T> iterator() {
             return it;
         }

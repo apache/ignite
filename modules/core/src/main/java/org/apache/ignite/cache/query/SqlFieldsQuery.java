@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -43,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see IgniteCache#query(Query)
  */
-public final class SqlFieldsQuery extends Query<List<?>> {
+public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,9 +61,6 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private boolean distributedJoins;
-
-    /** Flag set by JDBC driver to enforce checks for correct operation type. Ignored if null. */
-    @Nullable private Boolean isQry;
 
     /**
      * Constructs SQL fields query.
@@ -206,20 +202,6 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
-    }
-
-    /**
-     * @return Flag indicating whether this object denotes a query or an update operation. May be missing ({@code null}).
-     */
-    @Nullable public Boolean isQuery() {
-        return isQry;
-    }
-
-    /**
-     * @param qry Flag indicating whether this object denotes a query or an update operation.
-     */
-    public void setQuery(boolean qry) {
-        isQry = qry;
     }
 
     /** {@inheritDoc} */
