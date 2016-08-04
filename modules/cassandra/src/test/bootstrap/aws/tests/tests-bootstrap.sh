@@ -237,6 +237,8 @@ setupTestsPackage()
 
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "test"
 
+    setupNTP
+
     echo "[INFO] Starting logs collector daemon"
 
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')

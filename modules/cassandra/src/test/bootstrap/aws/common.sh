@@ -1036,7 +1036,16 @@ installGangliaPackages()
 
         unzipDir=$(ls /opt | grep "gperf")
 
+        if [ $? -ne 0 ]; then
+            terminate "Failed to update creation date to current for all files inside: /opt/$unzipDir"
+        fi
+
         pushd /opt/$unzipDir
+
+        cat ./configure | sed -r "s/test \"\\\$2\" = conftest.file/test 1 = 1/g" > ./configure1
+        rm ./configure
+        mv ./configure1 ./configure
+        chmod a+x ./configure
 
         ./configure
         if [ $? -ne 0 ]; then
@@ -1074,9 +1083,18 @@ installGangliaPackages()
         mv /opt/$unzipDir /opt/rrdtool
     fi
 
+    if [ $? -ne 0 ]; then
+        terminate "Failed to update creation date to current for all files inside: /opt/rrdtool"
+    fi
+
     export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
 
     pushd /opt/rrdtool
+
+    cat ./configure | sed -r "s/test \"\\\$2\" = conftest.file/test 1 = 1/g" > ./configure1
+    rm ./configure
+    mv ./configure1 ./configure
+    chmod a+x ./configure
 
     ./configure --prefix=/usr/local/rrdtool
     if [ $? -ne 0 ]; then
@@ -1108,6 +1126,10 @@ installGangliaPackages()
 
     gitClone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
 
+    if [ $? -ne 0 ]; then
+        terminate "Failed to update creation date to current for all files inside: /opt/monitor-core"
+    fi
+
     pushd /opt/monitor-core
 
     git checkout efe9b5e5712ea74c04e3b15a06eb21900e18db40
@@ -1117,6 +1139,11 @@ installGangliaPackages()
     if [ $? -ne 0 ]; then
         terminate "Failed to prepare ganglia-core for compilation"
     fi
+
+    cat ./configure | sed -r "s/test \"\\\$2\" = conftest.file/test 1 = 1/g" > ./configure1
+    rm ./configure
+    mv ./configure1 ./configure
+    chmod a+x ./configure
 
     ./configure --with-gmetad --with-librrd=/usr/local/rrdtool
 
@@ -1147,6 +1174,10 @@ installGangliaPackages()
     echo "[INFO] Installing ganglia-web"
 
     gitClone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to update creation date to current for all files inside: /opt/web"
+    fi
 
     cat /opt/web/Makefile | sed -r "s/GDESTDIR = \/usr\/share\/ganglia-webfrontend/GDESTDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile1
     cat /opt/web/Makefile1 | sed -r "s/GCONFDIR = \/etc\/ganglia-web/GCONFDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile2
@@ -1192,6 +1223,26 @@ installGangliaPackages()
     echo "</Directory>" >> /etc/httpd/conf/httpd.conf
 
     echo "[INFO] ganglia-web successfully installed"
+}
+
+# Setup ntpd service
+setupNTP()
+{
+    echo "[INFO] Installing ntp package"
+
+    yum -y install ntp
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install ntp package"
+    fi
+
+    echo "[INFO] Starting ntpd service"
+
+    service ntpd restart
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to restart ntpd service"
+    fi
 }
 
 # Installs and run Ganglia agent ('gmond' daemon)
