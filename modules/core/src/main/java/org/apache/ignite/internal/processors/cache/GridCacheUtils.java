@@ -1289,6 +1289,15 @@ public class GridCacheUtils {
 //    }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} if IGFS cache.
+     */
+    public static boolean isIgfsCache(String cacheName) {
+        return cacheName != null && cacheName.startsWith(IgfsUtils.IGFS_CACHE_PREFIX)
+            && (cacheName.endsWith(IgfsUtils.DATA_CACHE_SUFFIX) || cacheName.endsWith(IgfsUtils.META_CACHE_SUFFIX));
+    }
+
+    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.

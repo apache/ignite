@@ -1996,6 +1996,12 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
+                    if (CU.isIgfsCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot match \"" +
+                            IgfsUtils.IGFS_CACHE_PREFIX + "<name>(" + IgfsUtils.DATA_CACHE_SUFFIX + '|'
+                            + IgfsUtils.META_CACHE_SUFFIX +
+                            ")\" because it is reserved for IGFS caches.");
+
                     cacheCfgs.add(ccfg);
                 }
             }
@@ -2004,6 +2010,8 @@ public class IgnitionEx {
 
             // Iterate over IGFS caches and prepare their configurations if needed.
             assert cfg.getCacheConfiguration() != null;
+
+            IgfsUtils.validateLocalIgfsConfigurations(cfg);
 
             for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
                 IgfsUtils.prepareCacheConfiguration(cfg, ccfg);

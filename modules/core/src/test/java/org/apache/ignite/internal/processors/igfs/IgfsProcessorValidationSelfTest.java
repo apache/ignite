@@ -46,7 +46,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  * Tests for node validation logic in {@link IgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link IgfsProcessor#validateLocalIgfsConfigurations(org.apache.ignite.configuration.FileSystemConfiguration[])}.
+ * {@link IgfsUtils#validateLocalIgfsConfigurations(org.apache.ignite.configuration.IgniteConfiguration)}.
  * <p>
  * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkIgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
@@ -274,99 +274,85 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRemoteIfMetaCacheNameDiffers() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
+    public void testLocalIfDataCacheNameEquals() throws Exception {
 
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
+        FileSystemConfiguration g1IgfsCfg1 = new FileSystemConfiguration(this.g1IgfsCfg1);
+        FileSystemConfiguration g1IgfsCfg2 = new FileSystemConfiguration(this.g1IgfsCfg1);
 
-        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
+        g1IgfsCfg1.setName("g1IgfsCfg1");
+        g1IgfsCfg2.setName("g2IgfsCfg2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             CacheConfiguration.class));
+        g1IgfsCfg1.setMetaCacheName("metaCache1");
+        g1IgfsCfg2.setMetaCacheName("metaCache2");
 
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
+        g1IgfsCfg1.setDataCacheName("dataCache");
+        g1IgfsCfg2.setDataCacheName("dataCache");
 
-        G.start(g1Cfg);
+        g1Cfg.setCacheConfiguration(
+            concat(
+                dataCaches(1024, "dataCache", "dataCache2"),
+                metaCaches("metaCache1", "metaCache2"),
+                CacheConfiguration.class));
 
-        checkGridStartFails(g2Cfg, "Meta cache name should be the same on all nodes in grid for IGFS", false);
+        g1Cfg.setFileSystemConfiguration(g1IgfsCfg1, g1IgfsCfg2);
+
+        checkGridStartFails(g1Cfg, "Data cache names should be different for different IGFS instances", false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testRemoteIfMetaCacheNameEquals() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
+    public void testLocalIfMetaCacheNameEquals() throws Exception {
 
         FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
+        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg1);
 
-        g2IgfsCfg1.setName("g2IgfsCfg1");
+        g2IgfsCfg1.setName("g1IgfsCfg1");
         g2IgfsCfg2.setName("g2IgfsCfg2");
 
-        g2IgfsCfg1.setDataCacheName("g2DataCache1");
-        g2IgfsCfg2.setDataCacheName("g2DataCache2");
+        g2IgfsCfg1.setMetaCacheName("metaCache");
+        g2IgfsCfg2.setMetaCacheName("metaCache");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             CacheConfiguration.class));
+        g2IgfsCfg1.setDataCacheName("dataCache1");
+        g2IgfsCfg2.setDataCacheName("dataCache2");
 
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
+        g1Cfg.setCacheConfiguration(
+            concat(
+                dataCaches(1024, "dataCache1", "dataCache2"),
+                metaCaches("metaCache", "metaCache"),
+                CacheConfiguration.class));
 
-        G.start(g1Cfg);
+        g1Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
-        checkGridStartFails(g2Cfg, "Meta cache names should be different for different IGFS instances", false);
+        checkGridStartFails(g1Cfg, "Meta cache names should be different for different IGFS instances", false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testRemoteIfDataCacheNameDiffers() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
+    public void testLocalIfDataAndMetaShareCache() throws Exception {
 
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
+        FileSystemConfiguration g1IgfsCfg1 = new FileSystemConfiguration(this.g1IgfsCfg1);
+        FileSystemConfiguration g1IgfsCfg2 = new FileSystemConfiguration(this.g1IgfsCfg1);
 
-        g2IgfsCfg1.setDataCacheName("g2DataCache1");
-        g2IgfsCfg2.setDataCacheName("g2DataCache2");
+        g1IgfsCfg1.setName("g1IgfsCfg1");
+        g1IgfsCfg2.setName("g2IgfsCfg2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             CacheConfiguration.class));
+        g1IgfsCfg1.setMetaCacheName("metaCache1");
+        g1IgfsCfg2.setMetaCacheName("sharedCache");
 
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
+        g1IgfsCfg1.setDataCacheName("sharedCache");
+        g1IgfsCfg2.setDataCacheName("dataCache2");
 
-        G.start(g1Cfg);
+        g1Cfg.setCacheConfiguration(
+            concat(
+                dataCaches(1024, "dataCache1", "sharedCache"),
+                metaCaches("metaCache1", "metaCache2"),
+                CacheConfiguration.class));
 
-        checkGridStartFails(g2Cfg, "Data cache name should be the same on all nodes in grid for IGFS", false);
-    }
+        g1Cfg.setFileSystemConfiguration(g1IgfsCfg1, g1IgfsCfg2);
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteIfDataCacheNameEquals() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
-
-        g2IgfsCfg1.setName("g2IgfsCfg1");
-        g2IgfsCfg2.setName("g2IgfsCfg2");
-
-        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             CacheConfiguration.class));
-
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
-
-        G.start(g1Cfg);
-
-        checkGridStartFails(g2Cfg, "Data cache names should be different for different IGFS instances", false);
+        checkGridStartFails(g1Cfg, "Meta cache and data cache should be different", false);
     }
 
     /**
@@ -473,6 +459,17 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUserCacheName() throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration("igfs-badname-data");
+        g1Cfg.setCacheConfiguration(ccfg);
+
+        checkGridStartFails(g1Cfg, "Cache name cannot match \"igfs-<name>(-data|-meta)\" " +
+            "because it is reserved for IGFS caches.", true);
+    }
+
+    /**
      * Checks that the given grid configuration will lead to {@link IgniteCheckedException} upon grid startup.
      *
      * @param cfg Grid configuration to check.
@@ -490,9 +487,10 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         }
         catch (IgniteException e) {
             if (testLoc) {
-                if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
+                if (e.getMessage().contains(excMsgSnippet) ||
+                    ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
                     (e.getCause().getMessage().contains(excMsgSnippet) ||
-                     e.getCause().getCause().getMessage().contains(excMsgSnippet)))
+                     e.getCause().getCause().getMessage().contains(excMsgSnippet))))
                     return; // Expected exception.
             }
             else if (e.getMessage().contains(excMsgSnippet))
