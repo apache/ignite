@@ -81,14 +81,14 @@ public class OdbcMessageParser {
 
                 OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
 
-                OdbcProtocolVersion version = res.getVersion();
+                OdbcProtocolVersion version = res.version();
 
                 if (version.isUnknown())
                     return res;
 
                 if (version.isDistributedJoinsSupported()) {
-                    res.setDistributedJoins(reader.readBoolean());
-                    res.setEnforceJoinOrder(reader.readBoolean());
+                    res.distributedJoins(reader.readBoolean());
+                    res.enforceJoinOrder(reader.readBoolean());
                 }
 
                 return res;

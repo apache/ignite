@@ -44,7 +44,7 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     /**
      * @return Protocol version.
      */
-    public OdbcProtocolVersion getVersion() {
+    public OdbcProtocolVersion version() {
         return ver;
     }
 
@@ -58,7 +58,7 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     /**
      * @param distributedJoins Distributed joins flag.
      */
-    public void setDistributedJoins(boolean distributedJoins) {
+    public void distributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
     }
 
@@ -72,7 +72,7 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     /**
      * @param enforceJoinOrder Enforce join order flag.
      */
-    public void setEnforceJoinOrder(boolean enforceJoinOrder) {
+    public void enforceJoinOrder(boolean enforceJoinOrder) {
         this.enforceJoinOrder = enforceJoinOrder;
     }
 
