@@ -41,7 +41,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
     private static final String META_CACHE_NAME = "meta";
 
     /** Data cache name. */
-    private static final String DATA_CACHE_NAME = null;
+    private static final String DATA_CACHE_NAME = "data";
 
     /** Regular cache name. */
     private static final String CACHE_NAME = "cache";

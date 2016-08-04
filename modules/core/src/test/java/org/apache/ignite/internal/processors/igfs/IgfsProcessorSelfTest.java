@@ -70,11 +70,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "replicated";
-
-    /** Data cache name. */
-    public static final String DATA_CACHE_NAME = "data";
+    /** IGFS name. */
+    private static final String IGFS_NAME = "igfs";
 
     /** Random numbers generator. */
     protected final SecureRandom rnd = new SecureRandom();
@@ -124,7 +121,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration("meta"), cacheConfiguration("data"));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -134,9 +131,9 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setName("igfs");
+        igfsCfg.setMetaCacheName("meta");
+        igfsCfg.setDataCacheName("data");
+        igfsCfg.setName(IGFS_NAME);
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
@@ -149,7 +146,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -695,8 +692,11 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        GridCacheAdapter<IgniteUuid, IgfsEntryInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
-        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(DATA_CACHE_NAME);
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+        final String metaCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getMetaCacheName();
+
+        GridCacheAdapter<IgniteUuid, IgfsEntryInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(metaCacheName);
+        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(dataCacheName);
 
         IgfsEntryInfo info = metaCache.get(fileId);
 
@@ -916,6 +916,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @param path Path to the file.
      * @param props File properties to set.
+     * @param cls Class of expected Throwable.
      * @param msg Failure message if expected exception was not thrown.
      */
     private void assertUpdatePropertiesFails(@Nullable final IgfsPath path,

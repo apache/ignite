@@ -55,6 +55,12 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     /** Grid instance hosting primary IGFS. */
     private IgniteEx grid;
 
+    /** IGFS name. */
+    private static final String IGFS_NAME = "igfs";
+
+    /** IGFS name. */
+    private static final String IGFS_SECONDARY_NAME = "igfs-secondary";
+
     /** Primary IGFS. */
     private IgfsImpl igfs;
 
@@ -98,9 +104,9 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
-        igfsCfg.setName("igfs");
+        igfsCfg.setDataCacheName("data");
+        igfsCfg.setMetaCacheName("meta");
+        igfsCfg.setName(IGFS_NAME);
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setInitializeDefaultPathModes(true);
 
@@ -116,7 +122,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
+        cacheCfg.setName("data");
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -126,7 +132,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
+        metaCacheCfg.setName("meta");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -148,7 +154,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         grid = (IgniteEx)G.start(cfg);
 
-        igfs = (IgfsImpl)grid.fileSystem("igfs");
+        igfs = (IgfsImpl)grid.fileSystem(IGFS_NAME);
     }
 
     /**
@@ -159,9 +165,9 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void startUpSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
-        igfsCfg.setName("igfs-secondary");
+        igfsCfg.setDataCacheName("data-sec");
+        igfsCfg.setMetaCacheName("meta-sec");
+        igfsCfg.setName(IGFS_SECONDARY_NAME);
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
 
@@ -172,7 +178,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
+        cacheCfg.setName("data-sec");
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -182,7 +188,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
+        metaCacheCfg.setName("meta-sec");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -202,7 +208,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-        igfsSecondary = (IgfsImpl)G.start(cfg).fileSystem("igfs-secondary");
+        igfsSecondary = (IgfsImpl)G.start(cfg).fileSystem(IGFS_SECONDARY_NAME);
     }
 
     /**
@@ -391,7 +397,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getCause().getMessage();
+            errMsg = e.getMessage();
         }
 
         assertTrue(errMsg.startsWith(
@@ -457,7 +463,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getCause().getMessage();
+            errMsg = e.getMessage();
         }
 
         assertTrue(errMsg.startsWith(
@@ -602,7 +608,9 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             assert !igfsSecondary.exists(file);
         }
 
-        int cacheSize = grid.cachex("partitioned").size();
+        final String dataCacheName = igfs.configuration().getDataCacheName();
+
+        int cacheSize = grid.cachex(dataCacheName).size();
 
         if (primaryNotUsed)
             assert cacheSize == 0;

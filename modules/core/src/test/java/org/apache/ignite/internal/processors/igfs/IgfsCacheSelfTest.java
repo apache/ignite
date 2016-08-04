@@ -41,20 +41,17 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests ensuring that IGFS data and meta caches are not "visible" through public API.
  */
 public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = null;
-
     /** Regular cache name. */
     private static final String CACHE_NAME = "cache";
+
+    /** IGFS name. */
+    private static final String IGFS_NAME = "igfs";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
+        cfg.setCacheConfiguration(cacheConfiguration("meta"), cacheConfiguration("data"),
             cacheConfiguration(CACHE_NAME));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -65,9 +62,9 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setName("igfs");
+        igfsCfg.setMetaCacheName("meta");
+        igfsCfg.setDataCacheName("data");
+        igfsCfg.setName(IGFS_NAME);
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
@@ -80,7 +77,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -113,6 +110,8 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
      */
     public void testCache() throws Exception {
         final Ignite g = grid();
+        final String dataCacheName = g.fileSystem(IGFS_NAME).configuration().getDataCacheName();
+        final String metaCacheName = g.fileSystem(IGFS_NAME).configuration().getMetaCacheName();
 
         Collection<IgniteCacheProxy<?, ?>> caches = ((IgniteKernal)g).caches();
 
@@ -128,7 +127,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(META_CACHE_NAME);
+                g.cache(metaCacheName);
 
                 return null;
             }
@@ -136,7 +135,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(DATA_CACHE_NAME);
+                g.cache(dataCacheName);
 
                 return null;
             }

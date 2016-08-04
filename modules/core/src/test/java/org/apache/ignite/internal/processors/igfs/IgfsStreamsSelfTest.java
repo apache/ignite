@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -68,11 +69,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "replicated";
-
-    /** Data cache name. */
-    public static final String DATA_CACHE_NAME = "data";
+    /** IGFS name. */
+    private static final String IGFS_NAME = "igfs";
 
     /** Group size. */
     public static final int CFG_GRP_SIZE = 128;
@@ -114,7 +112,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             return;
 
         // Initialize FS.
-        fs = grid(0).fileSystem("igfs");
+        fs = grid(0).fileSystem(IGFS_NAME);
 
         // Cleanup FS.
         fs.format();
@@ -125,7 +123,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLateAffinityAssignment(false);
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration("meta"), cacheConfiguration("data"));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -135,8 +133,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheName("meta");
+        igfsCfg.setDataCacheName("data");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(CFG_BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(true);
@@ -152,7 +150,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -178,11 +176,11 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         IgniteInternalCache dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);
-        assertEquals(META_CACHE_NAME, metaCache.name());
+        assertTrue(CU.isIgfsCache(metaCache.name()));
         assertEquals(REPLICATED, metaCache.configuration().getCacheMode());
 
         assertNotNull(dataCache);
-        assertEquals(DATA_CACHE_NAME, dataCache.name());
+        assertTrue(CU.isIgfsCache(dataCache.name()));
         assertEquals(PARTITIONED, dataCache.configuration().getCacheMode());
     }
 
@@ -206,6 +204,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileColocated() throws Exception {
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
         IgfsPath path = new IgfsPath("/colocated");
 
         UUID uuid = UUID.randomUUID();
@@ -217,7 +217,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         while (true) {
             affKey = new IgniteUuid(uuid, idx);
 
-            if (grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(affKey).id().equals(grid(0).localNode().id()))
+            if (grid(0).affinity(dataCacheName).mapKeyToNode(affKey).id().equals(grid(0).localNode().id()))
                 break;
 
             idx++;
@@ -243,6 +243,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+        final String metaCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getMetaCacheName();
+
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
 
         IgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
@@ -278,7 +281,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
             IgfsFileImpl fileImpl = (IgfsFileImpl)fs.info(path);
 
-            GridCacheAdapter<Object, Object> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
+            GridCacheAdapter<Object, Object> metaCache = ((IgniteKernal)grid(0)).internalCache(metaCacheName);
 
             IgfsEntryInfo fileInfo = (IgfsEntryInfo)metaCache.get(fileImpl.fileId());
 
@@ -313,7 +316,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             boolean hasData = false;
 
             for (int i = 0; i < NODES_CNT; i++)
-                hasData |= !grid(i).cachex(DATA_CACHE_NAME).isEmpty();
+                hasData |= !grid(i).cachex(dataCacheName).isEmpty();
 
             assertTrue(hasData);
 
@@ -323,7 +326,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.retryAssert(log, ASSERT_RETRIES, ASSERT_RETRY_INTERVAL, new CAX() {
             @Override public void applyx() {
                 for (int i = 0; i < NODES_CNT; i++)
-                    assertTrue(grid(i).cachex(DATA_CACHE_NAME).isEmpty());
+                    assertTrue(grid(i).cachex(dataCacheName).isEmpty());
             }
         });
     }

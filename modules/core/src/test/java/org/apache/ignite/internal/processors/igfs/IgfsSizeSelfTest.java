@@ -280,11 +280,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private void check() throws Exception {
         startUp();
 
+        String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
         // Ensure that cache was marked as IGFS data cache.
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            IgniteInternalCache cache = g.cachex(DATA_CACHE_NAME).cache();
+            IgniteInternalCache cache = g.cachex(dataCacheName).cache();
 
             assert cache.isIgfsDataCache();
         }
@@ -297,7 +299,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         for (IgfsFile file : files) {
             for (IgfsBlock block : file.blocks()) {
-                Collection<UUID> ids = primaryOrBackups(block.key());
+                Collection<UUID> ids = primaryOrBackups(block.key(), dataCacheName);
 
                 for (UUID id : ids) {
                     if (expSizes.get(id) == null)
@@ -451,6 +453,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         startUp();
 
+        String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
         // Perform writes.
         Collection<IgfsFile> files = write();
 
@@ -459,7 +463,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         for (IgfsFile file : files) {
             for (IgfsBlock block : file.blocks()) {
-                Collection<UUID> ids = primaryOrBackups(block.key());
+                Collection<UUID> ids = primaryOrBackups(block.key(), dataCacheName);
 
                 for (UUID id : ids) {
                     if (expSizes.get(id) == null)
@@ -494,7 +498,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         for (IgfsFile file : files) {
             for (IgfsBlock block : file.blocks()) {
-                Collection<UUID> ids = primaryOrBackups(block.key());
+                Collection<UUID> ids = primaryOrBackups(block.key(), dataCacheName);
 
                 assert !ids.isEmpty();
 
@@ -539,15 +543,16 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * Determine primary and backup node IDs for the given block key.
      *
      * @param key Block key.
+     * @param dataCacheName Data cache name.
      * @return Collection of node IDs.
      */
-    private Collection<UUID> primaryOrBackups(IgfsBlockKey key) {
+    private Collection<UUID> primaryOrBackups(IgfsBlockKey key, String dataCacheName) {
         IgniteEx grid = grid(0);
 
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.affinity(DATA_CACHE_NAME).isPrimaryOrBackup(node, key))
+            if (grid.affinity(dataCacheName).isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 
@@ -572,7 +577,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<IgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<IgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
+        String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
+        return (GridCacheAdapter<IgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(dataCacheName)
             .<IgfsBlockKey, byte[]>cache();
     }
 

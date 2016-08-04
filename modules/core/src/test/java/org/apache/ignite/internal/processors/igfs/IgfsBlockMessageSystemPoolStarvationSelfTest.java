@@ -213,7 +213,8 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     private GridCacheAdapter dataCache(Ignite node) throws Exception  {
-        return ((IgniteKernal)node).internalCache(DATA_CACHE_NAME);
+        final String dataCacheName = node.fileSystem(null).configuration().getDataCacheName();
+        return ((IgniteKernal)node).internalCache(dataCacheName);
     }
 
     /**

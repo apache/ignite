@@ -225,6 +225,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      */
     public void testDeleteFragmentizing() throws Exception {
         IgfsImpl igfs = (IgfsImpl)grid(0).fileSystem("igfs");
+        final String dataCacheName = igfs.configuration().getDataCacheName();
 
         for (int i = 0; i < 30; i++) {
             IgfsPath path = new IgfsPath("/someFile" + i);
@@ -244,7 +245,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
                 for (int i = 0; i < NODE_CNT; i++) {
                     IgniteEx g = grid(i);
 
-                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(DATA_CACHE_NAME);
+                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(dataCacheName);
 
                     assertTrue("Data cache is not empty [keys=" + cache.keySet() +
                         ", node=" + g.localNode().id() + ']', cache.isEmpty());

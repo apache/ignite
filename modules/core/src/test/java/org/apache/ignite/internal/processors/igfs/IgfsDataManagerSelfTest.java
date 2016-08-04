@@ -57,11 +57,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = "partitioned";
+    /** IGFS name. */
+    private static final String IGFS_NAME = "igfs";
 
     /** Groups count for data blocks. */
     private static final int DATA_BLOCK_GROUP_CNT = 2;
@@ -86,7 +83,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgfsEx igfs = (IgfsEx)grid(0).fileSystem("igfs");
+        IgfsEx igfs = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
 
         mgr = igfs.context().data();
     }
@@ -95,7 +92,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration("meta"), cacheConfiguration("data"));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -105,8 +102,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheName("meta");
+        igfsCfg.setDataCacheName("data");
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
@@ -122,7 +119,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -140,10 +137,13 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clear();
+        String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+        String metaCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getMetaCacheName();
 
-            grid(i).cachex(DATA_CACHE_NAME).clear();
+        for (int i = 0; i < NODES_CNT; i++) {
+            grid(i).cachex(metaCacheName).clear();
+
+            grid(i).cachex(dataCacheName).clear();
         }
     }
 
@@ -164,6 +164,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testDataStoring() throws Exception {
+        String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
 
@@ -200,7 +202,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(dataCacheName),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -248,6 +250,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      */
     public void testDataStoringRemainder() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
 
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
@@ -292,7 +295,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(dataCacheName),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -339,6 +342,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testDataStoringFlush() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
         final int writesCnt = 64;
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
 
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
@@ -376,7 +380,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(dataCacheName),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -464,6 +468,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testAffinity2() throws Exception {
         int blockSize = BLOCK_SIZE;
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
 
         long t = System.currentTimeMillis();
 
@@ -482,7 +487,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             do {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(), null, false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(dataCacheName).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -546,6 +551,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param affinity Affinity block locations to check.
      */
     private void checkAffinity(int blockSize, IgfsEntryInfo info, Iterable<IgfsBlockLocation> affinity) {
+        final String dataCacheName = grid(0).fileSystem(IGFS_NAME).configuration().getDataCacheName();
+
         for (IgfsBlockLocation loc : affinity) {
             info("Going to check IGFS block location: " + loc);
 
@@ -557,7 +564,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(),
                     info.fileMap().affinityKey(block * blockSize, false), false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(dataCacheName).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
