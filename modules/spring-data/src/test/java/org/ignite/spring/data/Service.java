@@ -30,7 +30,7 @@ public class Service {
     /**
      *
      */
-    public Iterable<Pojo> call() {
+    public Iterable<Person> call() {
         return repo.findAll();
     }
 }

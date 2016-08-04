@@ -41,8 +41,6 @@ import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.repository.query.parser.Part;
-import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -116,27 +114,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                 //TODO namedQueries handling
 
-                PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
-
-                StringBuilder sql = new StringBuilder();
-
-                for (PartTree.OrPart orPart : parts) {
-                    for (Part part : orPart) {
-                        switch (part.getType()) {
-                            case SIMPLE_PROPERTY:
-                                sql.append(part.getProperty()).append("=?");
-                                break;
-                            default:
-                                throw new UnsupportedOperationException();
-                        }
-                    }
-
-                    sql.append(" OR ");
-                }
-
-                sql.delete(sql.length() - 4, sql.length());
-
-                return new IgniteRepositoryQuery(metadata, sql.toString(), mtd, factory);
+                return new IgniteRepositoryQuery(
+                    metadata,
+                    QueryGenerator.generateSql(mtd, metadata),
+                    mtd,
+                    factory);
             }
         };
     }

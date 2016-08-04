@@ -54,16 +54,15 @@ public class SpringContext {
         String strCls = String.class.getCanonicalName();
 
         LinkedHashMap<String, String> qryFields = new LinkedHashMap<>();
-        qryFields.put("val", strCls);
+        qryFields.put("firstName", strCls);
 
         QueryEntity qryEntity = new QueryEntity();
         qryEntity.setFields(qryFields);
-        qryEntity.setValueType(Pojo.class.getName());
+        qryEntity.setValueType(Person.class.getName());
         qryEntity.setKeyType(Integer.class.getName());
 
-
         qryEntity.setIndexes(Arrays.asList(
-            new QueryIndex("val", true)
+            new QueryIndex("firstName", true)
         ));
 
         ccfg.setQueryEntities(Collections.singleton(qryEntity));

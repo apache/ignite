@@ -19,19 +19,24 @@ package org.ignite.spring.data;
 
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
-public class Pojo {
+public class Person {
     @QuerySqlField(index = true)
-    private String val;
+    private String firstName;
 
-    public String getVal() {
-        return val;
+    @QuerySqlField(index = true)
+    private String secondName;
+
+    public Person(String firstName) {
+        this.firstName = firstName;
     }
 
-    public void setVal(String val) {
-        this.val = val;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public Pojo(String val) {
-        this.val = val;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
+
+
 }

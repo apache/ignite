@@ -19,10 +19,12 @@ package org.springframework.data.ignite.repository;
 
 import java.io.Serializable;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.Repository;
 
 
 //TODO replace CRUD with PagingAndSortingRepository
+@NoRepositoryBean
 public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
     public <S extends T> void save(ID key, S entity);
 }

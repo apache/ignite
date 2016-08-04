@@ -30,22 +30,39 @@ public class Main {
         FirstRepository repo = ctx.getBean(FirstRepository.class);
 
         for (int i = 0; i < 100; i++)
-            repo.save(i, new Pojo(Integer.toHexString(i)));
+            repo.save(i, new Person("person" + Integer.toHexString(i)));
 
         Service svc = ctx.getBean(Service.class);
-        Iterable<Pojo> call = svc.call();
+        Iterable<Person> call = svc.call();
 
-        for (Pojo pojo : call)
-            System.out.println(pojo.getVal());
+        for (Person person : call)
+            System.out.println(person.getFirstName());
 
-        List<Pojo> val = repo.findByVal("4e");
+        List<Person> persons = repo.byVal("person4a");
 
-        for (Pojo pojo : val)
-            System.out.println("pojo = " + pojo);
+        for (Person person : persons)
+            System.out.println("query = " + person);
 
-        List<Pojo> pojos = repo.byVal("4a");
+        List<Person> val = repo.findByFirstName("person4e");
 
-        for (Pojo pojo : pojos)
-            System.out.println("pojo = " + pojo);
+        for (Person person : val)
+            System.out.println("simple = " + person);
+
+        List<Person> containing = repo.findByFirstNameContaining("person4");
+
+        for (Person person : containing)
+            System.out.println("containing = " + person);
+
+        List<Person> top = repo.findTopByFirstNameContaining("person4");
+
+        for (Person person : top)
+            System.out.println("top = " + person);
+
+        List<Person> like = repo.findFirst10ByFirstNameLike("person");
+
+        for (Person person : like)
+            System.out.println("like10 = " + person);
+
+
     }
 }

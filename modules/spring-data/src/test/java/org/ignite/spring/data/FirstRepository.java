@@ -23,10 +23,16 @@ import org.springframework.data.ignite.repository.config.Query;
 import org.springframework.data.ignite.repository.config.RepositoryConfig;
 
 @RepositoryConfig(cacheName = "cache")
-public interface FirstRepository extends IgniteRepository<Pojo, Integer> {
+public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
-    public List<Pojo> findByVal(String val);
+    public List<Person> findByFirstName(String val);
 
-    @Query("val = ?")
-    public List<Pojo> byVal(String val);
+    public List<Person> findByFirstNameContaining(String val);
+
+    public List<Person> findTopByFirstNameContaining(String val);
+
+    public List<Person> findFirst10ByFirstNameLike(String val);
+
+    @Query("firstName = ?")
+    public List<Person> byVal(String val);
 }

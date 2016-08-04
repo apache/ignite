@@ -26,7 +26,14 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.springframework.data.ignite.repository.IgniteRepository;
+import org.springframework.data.repository.NoRepositoryBean;
 
+/**
+ *
+ * @param <T>
+ * @param <ID>
+ */
+@NoRepositoryBean
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID>{
 
     private final IgniteCache<ID, T> cache;
