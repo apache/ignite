@@ -850,6 +850,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirs() throws Exception {
+        if (!propertiesSupported())
+            return;
+
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(new IgfsPath("/x"), null);
@@ -995,6 +998,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testUpdate() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
@@ -1014,6 +1020,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testUpdateParentRoot() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR), null);
@@ -1567,6 +1576,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateUpdateNoClose() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -2937,7 +2949,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception On error.
      */
     @SuppressWarnings("EmptyTryBlock")
-    public void create(IgfsSecondaryFileSystemTestAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
+    public void create(IgfsSecondaryFileSystemTestAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files)
+        throws Exception {
         if (dirs != null) {
             for (IgfsPath dir : dirs)
                 uni.mkdirs(dir.toString());
