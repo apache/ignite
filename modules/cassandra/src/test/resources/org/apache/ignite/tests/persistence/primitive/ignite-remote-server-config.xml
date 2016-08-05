@@ -25,7 +25,11 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!-- Cassandra connection settings -->
-    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.TokenAwarePolicy">
+        <constructor-arg type="com.datastax.driver.core.policies.LoadBalancingPolicy">
+            <bean class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+        </constructor-arg>
+    </bean>
 
     <util:list id="contactPoints" value-type="java.lang.String">
         <value>cassandra-node-1.abc.com</value>

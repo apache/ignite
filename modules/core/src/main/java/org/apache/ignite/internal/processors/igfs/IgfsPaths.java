@@ -48,7 +48,7 @@ public class IgfsPaths implements Externalizable {
     private IgfsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<IgfsPath, IgfsMode>> pathModes;
+    private ArrayList<T2<IgfsPath, IgfsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -65,7 +65,7 @@ public class IgfsPaths implements Externalizable {
      * @param pathModes Path modes.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes)
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> pathModes)
         throws IgniteCheckedException {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -91,7 +91,7 @@ public class IgfsPaths implements Externalizable {
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<IgfsPath, IgfsMode>> pathModes() {
+    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> pathModes() {
         return pathModes;
     }
 
