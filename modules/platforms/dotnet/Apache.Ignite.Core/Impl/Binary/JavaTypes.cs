@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
