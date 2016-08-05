@@ -207,16 +207,6 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
         /// <summary>
-        /// Tests that the java log is not used when custom logger is defined.
-        /// </summary>
-        [Test]
-        public void TestJavaLogIsNotUsed()
-        {
-            // TODO:
-            
-        }
-
-        /// <summary>
         /// Tests the <see cref="LoggerExtensions"/> methods.
         /// </summary>
         [Test]

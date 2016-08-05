@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
+    using LogLevel = Apache.Ignite.Core.Log.LogLevel;
 
     /// <summary>
     /// Tests the default logger.
@@ -48,12 +49,18 @@ namespace Apache.Ignite.Core.Tests.Log
                 getLogs().ToList().ForEach(File.Delete);
 
                 // Start Ignite and verify file log
-                using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false))
+                using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false))
                 {
                     SpringConfigUrl = @"config\log\custom-log.xml"
                 }))
                 {
-                    // No-op.
+                    // Log with all levels
+                    var log = ignite.Logger;
+                    var ex = new Exception("EXCEPTION_TEST");
+                    var levels = new[] {LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error};
+
+                    foreach (var level in levels)
+                        log.Log(level, "DOTNET-" + level, null, null, "=DOTNET=", null, ex);
                 }
 
                 using (var fs = File.Open(getLogs().Single(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -66,6 +73,7 @@ namespace Apache.Ignite.Core.Tests.Log
                     // Check output from .NET:
                     Assert.IsTrue(log.Contains("Starting Ignite.NET " + typeof(Ignition).Assembly.GetName().Version));
 
+                    // Check custom log output:
                     // TODO: Check all levels, exception overloads, etc
                 }
             }
