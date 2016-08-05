@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
+import org.apache.ignite.internal.processors.cache.database.freelist.FragmentContext;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -209,7 +209,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Direct count.
      */
     private void setDirectCount(ByteBuffer buf, int cnt) {
-        assert checkCounter(cnt): cnt;
+        assert checkCount(cnt): cnt;
 
         buf.put(DIRECT_CNT_OFF, (byte)cnt);
     }
@@ -227,7 +227,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Indirect count.
      */
     private void setIndirectCount(ByteBuffer buf, int cnt) {
-        assert checkCounter(cnt): cnt;
+        assert checkCount(cnt): cnt;
 
         buf.put(INDIRECT_CNT_OFF, (byte)cnt);
     }
@@ -236,7 +236,7 @@ public class DataPageIO extends PageIO {
      * @param idx Index.
      * @return {@code true} If the index is valid.
      */
-    public static boolean checkIndex(int idx) {
+    private static boolean checkIndex(int idx) {
         return idx >= 0 && idx < 0xFF;
     }
 
@@ -244,7 +244,7 @@ public class DataPageIO extends PageIO {
      * @param cnt Counter value.
      * @return {@code true} If the counter fits 1 byte.
      */
-    public static boolean checkCounter(int cnt) {
+    private static boolean checkCount(int cnt) {
         return cnt >= 0 && cnt <= 0xFF;
     }
 
@@ -271,7 +271,7 @@ public class DataPageIO extends PageIO {
      * @param indirectCnt Indirect items count.
      * @return Found index of indirect item.
      */
-    private static int findIndirectItemIndex(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
+    private int findIndirectItemIndex(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
         int low = directCnt;
         int high = directCnt + indirectCnt - 1;
 
@@ -402,7 +402,7 @@ public class DataPageIO extends PageIO {
      * @param dataOff Points to the entry start.
      * @return Link to the next entry fragment or 0 if no fragments left or if entry is not fragmented.
      */
-    public static long getNextFragmentLink(final ByteBuffer buf, final int dataOff) {
+    public long getNextFragmentLink(final ByteBuffer buf, final int dataOff) {
         final int pos = buf.position();
 
         buf.position(dataOff);
@@ -425,7 +425,7 @@ public class DataPageIO extends PageIO {
      * @param dataOff Points to the entry start.
      * @return Fragment size on current page (with removed fragmented flag).
      */
-    public static int getFragmentSize(final ByteBuffer buf, final int dataOff) {
+    public int getFragmentSize(final ByteBuffer buf, final int dataOff) {
         final short size = buf.getShort(dataOff);
 
         return size & ~FRAGMENTED_FLAG & 0xFFFF;
@@ -437,7 +437,7 @@ public class DataPageIO extends PageIO {
      * @param buf Byte buffer.
      * @param dataOff Points to the entry start.
      */
-    public static void setPositionAndLimitOnFragment(final ByteBuffer buf, final int dataOff) {
+    public void setPositionAndLimitOnFragment(final ByteBuffer buf, final int dataOff) {
         final int size = getFragmentSize(buf, dataOff);
 
         buf.position(dataOff + KV_LEN_SIZE + LINK_SIZE);
@@ -450,7 +450,7 @@ public class DataPageIO extends PageIO {
      * @param idx Item index.
      * @return Item.
      */
-    private static short getItem(ByteBuffer buf, int idx) {
+    private short getItem(ByteBuffer buf, int idx) {
         return buf.getShort(itemOffset(idx));
     }
 
@@ -528,7 +528,7 @@ public class DataPageIO extends PageIO {
      * @param indirectCnt Indirect items count.
      * @return {@code true} If the last direct item already had corresponding indirect item.
      */
-    private static boolean moveLastItem(ByteBuffer buf, int freeDirectIdx, int directCnt, int indirectCnt) {
+    private boolean moveLastItem(ByteBuffer buf, int freeDirectIdx, int directCnt, int indirectCnt) {
         int lastIndirectId = findIndirectIndexForLastDirect(buf, directCnt, indirectCnt);
 
         int lastItemId = directCnt - 1;
@@ -559,7 +559,7 @@ public class DataPageIO extends PageIO {
      * @param indirectCnt Indirect items count.
      * @return Index of indirect item for the last direct item.
      */
-    private static int findIndirectIndexForLastDirect(ByteBuffer buf, int directCnt, int indirectCnt) {
+    private int findIndirectIndexForLastDirect(ByteBuffer buf, int directCnt, int indirectCnt) {
         int lastDirectId = directCnt - 1;
 
         for (int i = directCnt, end = directCnt + indirectCnt; i < end; i++) {
@@ -767,7 +767,7 @@ public class DataPageIO extends PageIO {
      * @param fctx Fragment context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRowFragment(final CacheEntryFragmentContext fctx) throws IgniteCheckedException {
+    public void addRowFragment(final FragmentContext fctx) throws IgniteCheckedException {
         final boolean lastChunk = fctx.written() == 0;
 
         final int toWrite;
@@ -983,7 +983,7 @@ public class DataPageIO extends PageIO {
      * @return New first entry offset.
      */
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
-        assert checkCounter(directCnt): directCnt;
+        assert checkCount(directCnt): directCnt;
 
         int[] offs = new int[directCnt];
 

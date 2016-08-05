@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
-
-import java.nio.ByteBuffer;
 
 /**
  *
  */
-public class FragmentContext implements CacheEntryFragmentContext {
+public class FragmentContext {
     /** */
     private CacheDataRow row;
 
@@ -87,123 +85,171 @@ public class FragmentContext implements CacheEntryFragmentContext {
         this.row = row;
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheDataRow dataRow() {
+    /**
+     * @return Row.
+     */
+    public CacheDataRow dataRow() {
         return row;
     }
 
-    /** {@inheritDoc} */
-    @Override public void dataRow(final CacheDataRow row) {
+    /**
+     * @param row Row.
+     */
+    public void dataRow(final CacheDataRow row) {
         this.row = row;
     }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer rowBuffer() {
+    /**
+     * @return Row buffer.
+     */
+    public ByteBuffer rowBuffer() {
         return rowBuf;
     }
 
-    /** {@inheritDoc} */
-    @Override public void rowBuffer(final ByteBuffer rowBuf) {
+    /**
+     * @param rowBuf Row bufer.
+     */
+    public void rowBuffer(final ByteBuffer rowBuf) {
         this.rowBuf = rowBuf;
     }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer pageBuffer() {
+    /**
+     * @return Page buffer.
+     */
+    public ByteBuffer pageBuffer() {
         return pageBuf;
     }
 
-    /** {@inheritDoc} */
-    @Override public void pageBuffer(final ByteBuffer buf) {
+    /**
+     * @param buf Page buffer.
+     */
+    public void pageBuffer(final ByteBuffer buf) {
         this.pageBuf = buf;
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheObjectContext cacheObjectContext() {
+    /**
+     * @return Cache object context.
+     */
+    public CacheObjectContext cacheObjectContext() {
         return coctx;
     }
 
-    /** {@inheritDoc} */
-    @Override public void cacheObjectContext(final CacheObjectContext coctx) {
+    /**
+     * @param coctx Cache object context.
+     */
+    public void cacheObjectContext(final CacheObjectContext coctx) {
         this.coctx = coctx;
     }
 
-    /** {@inheritDoc} */
-    @Override public int written() {
+    /**
+     * @return Written bytes.
+     */
+    public int written() {
         return written;
     }
 
-    /** {@inheritDoc} */
-    @Override public void written(final int written) {
+    /**
+     * @param written Written bytes.
+     */
+    public void written(final int written) {
         this.written = written;
     }
 
-    /** {@inheritDoc} */
-    @Override public int totalEntrySize() {
+    /**
+     * @return Total entry size in bytes.
+     */
+    public int totalEntrySize() {
         return totalEntrySize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void totalEntrySize(final int totalEntrySize) {
+    /**
+     * @param totalEntrySize Total entry size in bytes.
+     */
+    public void totalEntrySize(final int totalEntrySize) {
         this.totalEntrySize = totalEntrySize;
     }
 
-    /** {@inheritDoc} */
-    @Override public int chunkSize() {
+    /**
+     * @return Chunk size in bytes.
+     */
+    public int chunkSize() {
         return chunkSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void chunkSize(final int chunkSize) {
+    /**
+     * @param chunkSize Chunk size in bytes.
+     */
+    public void chunkSize(final int chunkSize) {
         this.chunkSize = chunkSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public int chunks() {
+    /**
+     * @return Number of chunks.
+     */
+    public int chunks() {
         return chunks;
     }
 
-    /** {@inheritDoc} */
-    @Override public void chunks(final int chunks) {
+    /**
+     * @param chunks Number of chunks.
+     */
+    public void chunks(final int chunks) {
         this.chunks = chunks;
     }
 
-    /** {@inheritDoc} */
-    @Override public long lastLink() {
+    /**
+     * @return Last link.
+     */
+    public long lastLink() {
         return lastLink;
     }
 
-    /** {@inheritDoc} */
-    @Override public void lastLink(final long lastLink) {
+    /**
+     * @param lastLink Last link.
+     */
+    public void lastLink(final long lastLink) {
         this.lastLink = lastLink;
     }
 
-    /** {@inheritDoc} */
-    @Override public int lastIndex() {
+    /**
+     * @return Last index.
+     */
+    public int lastIndex() {
         return lastIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public void lastIndex(final int idx) {
+    /**
+     * @param idx Last index.
+     */
+    public void lastIndex(final int idx) {
         this.lastIdx = idx;
     }
 
-    /** {@inheritDoc} */
-    @Override public int pageDataOffset() {
+    /**
+     * @return Page data offset.
+     */
+    public int pageDataOffset() {
         return pageDataOff;
     }
 
-    /** {@inheritDoc} */
-    @Override public void pageDataOffset(final int dataOff) {
+    /**
+     * @param dataOff Page data offset.
+     */
+    public void pageDataOffset(final int dataOff) {
         this.pageDataOff = dataOff;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean lastFragment() {
+    /**
+     * @return Last fragment flag.
+     */
+    public boolean lastFragment() {
         return lastFragment;
     }
 
-    /** {@inheritDoc} */
-    @Override public void lastFragment(final boolean last) {
+    /**
+     * @param last Last fragment flag.
+     */
+    public void lastFragment(final boolean last) {
         this.lastFragment = last;
     }
 }

@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.EntryAssembler;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -54,9 +54,12 @@ public class H2RowFactory {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row getRow(long link) throws IgniteCheckedException {
-        final EntryAssembler assembler = new EntryAssembler();
+        // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
+        // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
 
-        assembler.readRow(cctx, link, false);
+        final CacheDataRowAdapter assembler = new CacheDataRowAdapter(link);
+
+        assembler.assemble(cctx, false);
 
         GridH2Row row;
 

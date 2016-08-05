@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -35,15 +36,18 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * Assembles entry from data pages.
  */
-public class EntryAssembler {
+public class CacheDataRowAdapter implements CacheDataRow {
     /** */
-    private KeyCacheObject key;
+    protected long link;
 
     /** */
-    private CacheObject val;
+    protected KeyCacheObject key;
 
     /** */
-    private GridCacheVersion ver;
+    protected CacheObject val;
+
+    /** */
+    protected GridCacheVersion ver;
 
     /** Fragmented entry read phase. Refer {@link #readFragment(ByteBuffer, CacheObjectContext, boolean)} */
     private int phase;
@@ -55,19 +59,26 @@ public class EntryAssembler {
     private IncompleteCacheObject<CacheObject> incompleteVal;
 
     /** */
-    private IncompleteCacheObject incompleteVer =
-        new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte) 0);
+    private IncompleteCacheObject incompleteVer;
 
     /**
-     * Read row from data pages.
+     * @param link Link.
+     */
+    public CacheDataRowAdapter(long link) {
+        this.link = link;
+    }
+
+    /**
+     * Assemble row from data pages.
      *
      * @param cctx Cache context.
-     * @param link Link to entry.
      * @param keyOnly {@code True} if need read only key object.
      * @throws IgniteCheckedException If failed.
      */
-    public void readRow(final GridCacheContext<?, ?> cctx, final long link, boolean keyOnly)
-        throws IgniteCheckedException {
+    public void assemble(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
+        assert cctx != null;
+        assert link != 0;
+
         phase = 0;
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
@@ -80,7 +91,7 @@ public class EntryAssembler {
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
 
-                long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
+                long nextLink = io.getNextFragmentLink(buf, dataOff);
 
                 if (nextLink == 0) {
                     buf.position(dataOff);
@@ -97,7 +108,7 @@ public class EntryAssembler {
                     }
                 }
                 else {
-                    DataPageIO.setPositionAndLimitOnFragment(buf, dataOff);
+                    io.setPositionAndLimitOnFragment(buf, dataOff);
 
                     readFragment(buf, coctx, keyOnly);
 
@@ -109,13 +120,13 @@ public class EntryAssembler {
                             try {
                                 final ByteBuffer b = p.getForRead();
 
-                                final DataPageIO pageIo = DataPageIO.VERSIONS.forPage(b);
+                                io = DataPageIO.VERSIONS.forPage(b);
 
-                                final int off = pageIo.getDataOffset(b, dwordsOffset(nextLink));
+                                final int off = io.getDataOffset(b, dwordsOffset(nextLink));
 
-                                nextLink = DataPageIO.getNextFragmentLink(b, off);
+                                nextLink = io.getNextFragmentLink(b, off);
 
-                                DataPageIO.setPositionAndLimitOnFragment(b, off);
+                                io.setPositionAndLimitOnFragment(b, off);
 
                                 readFragment(b, coctx, keyOnly);
 
@@ -149,31 +160,40 @@ public class EntryAssembler {
         return key != null && val != null && ver != null;
     }
 
-    /**
-     * @return Key cache object.
-     */
-    public KeyCacheObject key() {
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key() {
         assert key != null : "Key is not ready";
 
         return key;
     }
 
-    /**
-     * @return Value cache object.
-     */
-    public CacheObject value() {
+    /** {@inheritDoc} */
+    @Override public CacheObject value() {
         assert val != null : "Value is not ready";
 
         return val;
     }
 
-    /**
-     * @return Grid cache version.
-     */
-    public GridCacheVersion version() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
         assert ver != null : "Version is not ready";
 
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return PageIdUtils.partId(link);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(long link) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -220,16 +240,26 @@ public class EntryAssembler {
         }
 
         if (phase == 2) {
-            incompleteVer.readData(buf);
-
-            if (incompleteVer.isReady()) {
-                final ByteBuffer verBuf = ByteBuffer.wrap(incompleteVer.data());
-
-                verBuf.order(buf.order());
-
-                ver = readVersion(verBuf);
+            if (buf.remaining() >= DataPageIO.VER_SIZE) {
+                ver = readVersion(buf);
 
                 phase = 3;
+            }
+            else {
+                if (incompleteVer == null)
+                    incompleteVer = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte)0);
+
+                incompleteVer.readData(buf);
+
+                if (incompleteVer.isReady()) {
+                    final ByteBuffer verBuf = ByteBuffer.wrap(incompleteVer.data());
+
+                    verBuf.order(buf.order());
+
+                    ver = readVersion(verBuf);
+
+                    phase = 3;
+                }
             }
         }
 

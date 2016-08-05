@@ -31,7 +31,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.CacheEntryFragmentContext;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
@@ -87,8 +86,8 @@ public class FreeList {
     };
 
     /** */
-    private final PageHandler<CacheEntryFragmentContext, Void> writeFragmentRow = new PageHandler<CacheEntryFragmentContext, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, CacheEntryFragmentContext fctx, int entrySize)
+    private final PageHandler<FragmentContext, Void> writeFragmentRow = new PageHandler<FragmentContext, Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, FragmentContext fctx, int entrySize)
             throws IgniteCheckedException {
             assert fctx.chunks() > 1;
 
@@ -167,11 +166,9 @@ public class FreeList {
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            assert DataPageIO.checkIndex(itemId): itemId;
-
             final int dataOff = io.getDataOffset(buf, itemId);
 
-            final long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
+            final long nextLink = io.getNextFragmentLink(buf, dataOff);
 
             int oldFreeSpace = io.getFreeSpace(buf);
 
@@ -361,7 +358,7 @@ public class FreeList {
      */
     private void writeExistingPage(
         final Page page,
-        final @Nullable CacheEntryFragmentContext fctx,
+        final @Nullable FragmentContext fctx,
         final CacheDataRow row,
         final int entrySize
     ) throws IgniteCheckedException {
@@ -382,7 +379,7 @@ public class FreeList {
     private void writeNewPage(
         final Page page,
         final ByteBuffer buf,
-        final @Nullable CacheEntryFragmentContext fctx,
+        final @Nullable FragmentContext fctx,
         final CacheDataRow row,
         final int entrySize
     ) throws IgniteCheckedException {
