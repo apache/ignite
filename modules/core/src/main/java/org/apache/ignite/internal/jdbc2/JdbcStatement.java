@@ -73,7 +73,7 @@ public class JdbcStatement implements Statement {
     Map<String, Integer> fieldsIdxs = new HashMap<>();
 
     /** Current updated items count. */
-    protected int updateCnt = -1;
+    int updateCnt = -1;
 
     /** Batch statements. */
     private List<String> batch;
@@ -176,6 +176,11 @@ public class JdbcStatement implements Statement {
         }
     }
 
+    /**
+     * @param qryRes query result.
+     * @return update counter, if found
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
     private static int updateCounterFromQueryResult(JdbcQueryTask.QueryResult qryRes) throws SQLException {
         List<List<?>> rows = qryRes.getRows();
 

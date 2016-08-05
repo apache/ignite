@@ -33,6 +33,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** Query executor. */
     private final Iterable<T> iterExec;
 
+    /** Result type flag - result set or update counter. */
     private final boolean isResSet;
 
     /** */

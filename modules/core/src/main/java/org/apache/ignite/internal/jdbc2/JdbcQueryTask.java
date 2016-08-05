@@ -154,7 +154,8 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, isQry).setArgs(args);
+            SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+                .setArgs(args);
 
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);

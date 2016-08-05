@@ -29,13 +29,13 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
     private static final long serialVersionUID = 0L;
 
     /** Flag set by JDBC driver to enforce checks for correct operation type. Ignored if null. */
-    private final Boolean isQry;
+    private final boolean isQry;
 
     /**
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation. May be missing ({@code null}).
      */
-    JdbcSqlFieldsQuery(String sql, Boolean isQry) {
+    JdbcSqlFieldsQuery(String sql, boolean isQry) {
         super(sql);
         this.isQry = isQry;
     }
