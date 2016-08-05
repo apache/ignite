@@ -74,11 +74,11 @@ namespace Apache.Ignite.Core.Impl.Log
             // Either we log in .NET, and Java sends us logs, or we log in Java, and .NET sends logs, not both.
             Debug.Assert(nativeErrorInfo == null);
 
-            if (!IsEnabled(level))
-                return;
-
             lock (_syncRoot)
             {
+                if (!IsEnabled(level))
+                    return;
+
                 var msg = args == null ? message : string.Format(formatProvider, message, args);
                 var err = ex != null ? ex.ToString() : null;
 
@@ -89,19 +89,22 @@ namespace Apache.Ignite.Core.Impl.Log
             }
         }
 
+        /** <inheritdoc /> */
+        public bool IsEnabled(LogLevel level)
+        {
+            lock (_syncRoot)
+            {
+                return _proc == null || _enabledLevels.Contains(level);
+            }
+        }
+
         /// <summary>
         /// Logs the message.
         /// </summary>
         private void Log(LogLevel level, string msg, string category, string err)
         {
             if (IsEnabled(level))
-                UnmanagedUtils.ProcessorLoggerLog(_proc, (int) level, msg, category, err);
-        }
-
-        /** <inheritdoc /> */
-        public bool IsEnabled(LogLevel level)
-        {
-            return _proc == null || _enabledLevels.Contains(level);
+                UnmanagedUtils.ProcessorLoggerLog(_proc, (int)level, msg, category, err);
         }
     }
 }
