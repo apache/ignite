@@ -66,6 +66,7 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/app/application_data_buffer.cpp \
     ../odbc/src/config/configuration.cpp \
     ../odbc/src/row.cpp \
+    ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
     ../odbc/src/utility.cpp \
     ../odbc/src/result_page.cpp

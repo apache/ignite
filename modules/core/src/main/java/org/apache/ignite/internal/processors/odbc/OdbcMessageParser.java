@@ -34,12 +34,6 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
-    /** Current ODBC communication protocol version. */
-    public static final long PROTO_VER = 1;
-
-    /** Apache Ignite version when ODBC communication protocol version has been introduced. */
-    public static final String PROTO_VER_SINCE = "1.6.0";
-
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
@@ -82,10 +76,26 @@ public class OdbcMessageParser {
         // we has not confirmed that the remote client uses the same protocol version.
         if (!verConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE)
-                return new OdbcHandshakeRequest(reader.readLong());
+            {
+                long longVersion = reader.readLong();
+
+                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
+
+                OdbcProtocolVersion version = res.version();
+
+                if (version.isUnknown())
+                    return res;
+
+                if (version.isDistributedJoinsSupported()) {
+                    res.distributedJoins(reader.readBoolean());
+                    res.enforceJoinOrder(reader.readBoolean());
+                }
+
+                return res;
+            }
             else
-                throw new IgniteException("Unexpected ODBC command (first message is not a handshake request): [cmd=" +
-                    cmd + ']');
+                throw new IgniteException("Unexpected ODBC command " +
+                        "(first message is not a handshake request): [cmd=" + cmd + ']');
         }
 
         OdbcRequest res;
@@ -174,6 +184,8 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
+        if (res0 == null)
+            return writer.array();
         if (res0 instanceof OdbcHandshakeResult) {
             OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
 
@@ -189,8 +201,8 @@ public class OdbcMessageParser {
             }
             else {
                 writer.writeBoolean(false);
-                writer.writeString(res.protoVerSince());
-                writer.writeString(res.currentVer());
+                writer.writeString(res.protocolVersionSince());
+                writer.writeString(res.currentVersion());
             }
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {
