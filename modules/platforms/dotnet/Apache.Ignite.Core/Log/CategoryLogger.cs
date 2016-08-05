@@ -50,14 +50,30 @@ namespace Apache.Ignite.Core.Log
             _category = category;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Logs the specified message.
+        /// </summary>
+        /// <param name="level">The level.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments to format <paramref name="message" />.
+        /// Can be null (formatting will not occur).</param>
+        /// <param name="formatProvider">The format provider. Can be null if <paramref name="args" /> is null.</param>
+        /// <param name="category">The logging category name.</param>
+        /// <param name="nativeErrorInfo">The native error information.</param>
+        /// <param name="ex">The exception. Can be null.</param>
         public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
             string nativeErrorInfo, Exception ex)
         {
             _logger.Log(level, message, args, formatProvider, category ?? _category, nativeErrorInfo, ex);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Determines whether the specified log level is enabled.
+        /// </summary>
+        /// <param name="level">The level.</param>
+        /// <returns>
+        /// Value indicating whether the specified log level is enabled
+        /// </returns>
         public bool IsEnabled(LogLevel level)
         {
             return _logger.IsEnabled(level);
