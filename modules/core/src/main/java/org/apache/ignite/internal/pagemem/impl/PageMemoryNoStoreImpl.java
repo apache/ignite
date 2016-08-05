@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.jsr166.ConcurrentHashMap8;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 
@@ -132,6 +133,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private AtomicInteger selector = new AtomicInteger();
 
     /** */
+    private ConcurrentHashMap8<Integer, Long> cacheMetaPages = new ConcurrentHashMap8<>();
+
+    /** */
     private OffheapReadWriteLock rwLock;
 
     /**
@@ -200,7 +204,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
+    @Override public long allocatePage(int cacheId, int partId, byte flags) {
         long relPtr = INVALID_REL_PTR;
         long absPtr = 0;
 
@@ -258,12 +262,24 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         seg.releaseFreePage(pageId);
 
+        cacheMetaPages.remove(cacheId, pageId);
+
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Page metaPage() throws IgniteCheckedException {
-        return segments[0].acquirePage(0, segments[0].metaPageId());
+    @Override public Page metaPage(int cacheId) throws IgniteCheckedException {
+        Long pageId = cacheMetaPages.get(cacheId);
+
+        if (pageId == null) {
+            pageId = cacheMetaPages.computeIfAbsent(cacheId, new ConcurrentHashMap8.Fun<Integer, Long>() {
+                @Override public Long apply(Integer cacheId) {
+                    return allocatePage(cacheId, 0, FLAG_IDX);
+                }
+            });
+        }
+
+        return page(cacheId, pageId);
     }
 
     /** {@inheritDoc} */
@@ -477,9 +493,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /** Last allocated page index. */
         private long lastAllocatedIdxPtr;
 
-        /** Metadata page ID. */
-        private long metaRelPtr;
-
         /** Base address for all pages. */
         private long pagesBase;
 
@@ -520,19 +533,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             GridUnsafe.putLong(freePageListPtr, INVALID_REL_PTR);
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
-
-            metaRelPtr = allocateFreePage();
-
-            long absPtr = absolute(metaRelPtr);
-
-            GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
-        }
-
-        /**
-         * @return Metadata page ID.
-         */
-        private long metaPageId() {
-            return metaRelPtr;
         }
 
         /**

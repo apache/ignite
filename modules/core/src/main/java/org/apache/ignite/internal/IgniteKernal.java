@@ -97,6 +97,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -2929,6 +2930,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return cache.affinity();
 
         return ctx.affinity().affinityProxy(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
+        try {
+            return ctx.cache().startBackup(cacheNames);
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

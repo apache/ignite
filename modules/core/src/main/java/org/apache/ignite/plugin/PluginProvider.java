@@ -76,6 +76,14 @@ public interface PluginProvider<C extends PluginConfiguration> {
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx Plugin context.
+     */
+    public CachePluginProvider createCacheProvider(CachePluginContext ctx);
+
+    /**
      * Starts grid component.
      *
      * @param ctx Plugin context.

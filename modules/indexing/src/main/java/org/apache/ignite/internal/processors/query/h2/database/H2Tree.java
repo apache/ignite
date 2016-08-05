@@ -54,7 +54,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         H2RowFactory rowStore,
-        FullPageId metaPageId,
+        long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);

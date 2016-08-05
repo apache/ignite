@@ -13,16 +13,45 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal.pagemem.backup;
 
-import java.io.Serializable;
-import org.apache.ignite.configuration.CacheConfiguration;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
- * and extend existing functionality of cache.
+ * Info of ongoing backup.
  */
-public interface CachePluginConfiguration<K, V> extends Serializable {
+public interface BackupInfo {
+    /**
+     * Backup ID.
+     * @return Backup ID.
+     */
+    public long backupId();
+
+    /**
+     * Backup initiator node ID.
+     * @return Initiator node ID.
+     */
+    public UUID initiatorNode();
+
+    /**
+     * Cache names.
+     * @return Cache names.
+     */
+    public Collection<String> cacheNames();
+
+    /**
+     * @return {@code True} if local node is initiator.
+     */
+    public boolean initiator();
+
+    /**
+     * Initialization future.
+     * @return Initialization future.
+     */
+    public GridFutureAdapter initFut();
 }

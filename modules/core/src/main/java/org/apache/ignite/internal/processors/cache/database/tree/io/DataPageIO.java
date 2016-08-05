@@ -597,14 +597,13 @@ public class DataPageIO extends PageIO {
         }
         else {
             // Get the entry size before the actual remove.
-            int rmvEntrySize = getEntrySize(buf, getDataOffset(buf, itemId), false);
+            final int dataOff = getDataOffset(buf, itemId);
+
+            int rmvEntrySize = getEntrySize(buf, dataOff, false);
 
             // Entry size may have fragment flag set.
-            if ((rmvEntrySize & FRAGMENTED_FLAG) > 0) {
-                rmvEntrySize &= ~FRAGMENTED_FLAG;
-
-                rmvEntrySize += LINK_SIZE;
-            }
+            if ((rmvEntrySize & FRAGMENTED_FLAG) > 0)
+                rmvEntrySize = getFragmentSize(buf, dataOff) + LINK_SIZE;
 
             int indirectId = 0;
 
@@ -1004,6 +1003,10 @@ public class DataPageIO extends PageIO {
             assert off < prevOff: off;
 
             int entrySize = getEntrySize(buf, off, false);
+
+            // Entry size may have fragment flag set.
+            if ((entrySize & FRAGMENTED_FLAG) > 0)
+                entrySize = getFragmentSize(buf, off) + LINK_SIZE + KV_LEN_SIZE;
 
             int delta = prevOff - (off + entrySize);
 
