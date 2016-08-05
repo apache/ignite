@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -111,9 +112,8 @@ namespace Apache.Ignite.Core.Tests
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                         </igniteConfig>";
-            var reader = XmlReader.Create(new StringReader(xml));
 
-            var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
+            var cfg = IgniteConfiguration.FromXml(xml);
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
@@ -279,6 +279,132 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the XML conversion.
+        /// </summary>
+        [Test]
+        public void TestToXml()
+        {
+            // Empty config
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteConfiguration " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection\" />",
+                new IgniteConfiguration().ToXml());
+
+            // Some properties
+            var cfg = new IgniteConfiguration
+            {
+                GridName = "myGrid",
+                ClientMode = true,
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("myCache")
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity(typeof(int)),
+                            new QueryEntity(typeof(int), typeof(string))
+                        }
+                    }
+                },
+                IncludedEventTypes = new[]
+                {
+                    EventType.CacheEntryCreated,
+                    EventType.CacheNodesLeft
+                }
+            };
+
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+  <cacheConfiguration>
+    <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+      <queryEntities>
+        <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+        <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+      </queryEntities>
+    </cacheConfiguration>
+  </cacheConfiguration>
+  <includedEventTypes>
+    <int>CacheEntryCreated</int>
+    <int>CacheNodesLeft</int>
+  </includedEventTypes>
+</igniteConfiguration>"), cfg.ToXml());
+
+            // Custom section name and indent
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = " "
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                cfg.ToXml(xmlWriter, "igCfg");
+            }
+
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+ <cacheConfiguration>
+  <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+   <queryEntities>
+    <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+    <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+   </queryEntities>
+  </cacheConfiguration>
+ </cacheConfiguration>
+ <includedEventTypes>
+  <int>CacheEntryCreated</int>
+  <int>CacheNodesLeft</int>
+ </includedEventTypes>
+</igCfg>"), sb.ToString());
+        }
+
+        /// <summary>
+        /// Tests the deserialization.
+        /// </summary>
+        [Test]
+        public void TestFromXml()
+        {
+            // Empty section.
+            var cfg = IgniteConfiguration.FromXml("<x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
+            // Empty section with XML header.
+            cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
+            // Simple test.
+            cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
+            AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
+
+            // Invalid xml.
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                IgniteConfiguration.FromXml(@"<igCfg foo=""bar"" />"));
+
+            Assert.AreEqual("Invalid IgniteConfiguration attribute 'foo=bar', there is no such property " +
+                            "on 'Apache.Ignite.Core.IgniteConfiguration'", ex.Message);
+
+            // Xml reader.
+            using (var xmlReader = XmlReader.Create(
+                new StringReader(@"<igCfg gridName=""myGrid"" clientMode=""true"" />")))
+            {
+                cfg = IgniteConfiguration.FromXml(xmlReader);
+            }
+            AssertReflectionEqual(new IgniteConfiguration { GridName = "myGrid", ClientMode = true }, cfg);
+        }
+
+        /// <summary>
+        /// Ensures windows-style \r\n line endings in a string literal.
+        /// Git settings may cause string literals in both styles.
+        /// </summary>
+        private static string FixLineEndings(string s)
+        {
+            return s.Split('\n').Select(x => x.TrimEnd('\r'))
+                .Aggregate((acc, x) => string.Format("{0}\r\n{1}", acc, x));
+        }
+
+        /// <summary>
         /// Checks the schema validation.
         /// </summary>
         private static void CheckSchemaValidation()
@@ -325,20 +451,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
         {
-            var sb = new StringBuilder();
+            var xml = cfg.ToXml();
 
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter, "igniteConfig");
-            }
-
-            var xml = sb.ToString();
-
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
-            {
-                xmlReader.MoveToContent();
-                return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
-            }
+            return IgniteConfiguration.FromXml(xml);
         }
 
         /// <summary>
