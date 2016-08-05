@@ -56,9 +56,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -327,21 +325,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(GridCacheMapEntry entry)
+    @Override @Nullable public CacheDataRow read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
-        try {
-            KeyCacheObject key = entry.key();
+        KeyCacheObject key = entry.key();
 
-            assert cctx.isLocal() || entry.localPartition() != null : entry;
+        assert cctx.isLocal() || entry.localPartition() != null : entry;
 
-            return dataStore(entry.localPartition()).find(key);
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to read entry: " + entry.key(), e);
-        }
+        return dataStore(entry.localPartition()).find(key);
     }
 
     /** {@inheritDoc} */
@@ -718,11 +708,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<CacheObject, GridCacheVersion> find(KeyCacheObject key)
+        @Override public CacheDataRow find(KeyCacheObject key)
             throws IgniteCheckedException {
-            DataRow dataRow = dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
-
-            return dataRow != null ? F.t(dataRow.value(), dataRow.version()) : null;
+            return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
         }
 
         /** {@inheritDoc} */
@@ -769,7 +757,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             assert link() != 0;
 
             try {
-                assemble(cctx, keyOnly);
+                initFromLink(cctx, keyOnly);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e.getMessage(), e);
@@ -783,11 +771,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             initData(true);
 
             return key;
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(KeySearchRow.class, this);
         }
     }
 
@@ -834,11 +817,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public void link(long link) {
             this.link = link;
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(DataRow.class, this);
         }
     }
 

@@ -68,7 +68,7 @@ public class DataPageIO extends PageIO {
     private static final int LINK_SIZE = 8;
 
     /** */
-    private static final int FRAGMENTED_FLAG = 0x8000;
+    private static final int FRAGMENTED_FLAG = 0b10000000_00000000;
 
     /**
      * @param ver Page format version.
@@ -426,9 +426,9 @@ public class DataPageIO extends PageIO {
      * @return Fragment size on current page (with removed fragmented flag).
      */
     public int getFragmentSize(final ByteBuffer buf, final int dataOff) {
-        final short size = buf.getShort(dataOff);
+        final int size = buf.getShort(dataOff) & 0xFFFF;
 
-        return size & ~FRAGMENTED_FLAG & 0xFFFF;
+        return size & ~FRAGMENTED_FLAG;
     }
 
     /**

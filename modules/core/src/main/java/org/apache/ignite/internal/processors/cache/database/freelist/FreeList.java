@@ -333,7 +333,8 @@ public class FreeList {
                     try {
                         io.initNewPage(buf, page.id());
 
-                        // It is a newly allocated page and we will not write record to WAL here.
+                        // It is a newly allocated page and we will not write record to WAL here,
+                        // because data pages are never reused.
                         assert !page.isDirty();
 
                         writeNewPage(page, buf, fctx, row, entrySize);

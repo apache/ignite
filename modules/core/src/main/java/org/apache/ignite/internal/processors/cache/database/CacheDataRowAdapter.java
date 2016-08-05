@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
-
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -38,28 +39,20 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
  */
 public class CacheDataRowAdapter implements CacheDataRow {
     /** */
+    @GridToStringInclude
     protected long link;
 
     /** */
+    @GridToStringInclude
     protected KeyCacheObject key;
 
     /** */
+    @GridToStringInclude
     protected CacheObject val;
 
     /** */
+    @GridToStringInclude
     protected GridCacheVersion ver;
-
-    /** Fragmented entry read phase. Refer {@link #readFragment(ByteBuffer, CacheObjectContext, boolean)} */
-    private int phase;
-
-    /** */
-    private IncompleteCacheObject<KeyCacheObject> incompleteKey;
-
-    /** */
-    private IncompleteCacheObject<CacheObject> incompleteVal;
-
-    /** */
-    private IncompleteCacheObject incompleteVer;
 
     /**
      * @param link Link.
@@ -75,13 +68,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param keyOnly {@code True} if need read only key object.
      * @throws IgniteCheckedException If failed.
      */
-    public void assemble(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
+    public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
         assert cctx != null;
         assert link != 0;
-
-        phase = 0;
+        assert key == null;
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
+
+        long nextLink = 0;
+        IncompleteCacheObject incomplete = null;
 
         try (Page page = page(pageId(link), cctx)) {
             ByteBuffer buf = page.getForRead();
@@ -91,7 +86,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
 
-                long nextLink = io.getNextFragmentLink(buf, dataOff);
+                nextLink = io.getNextFragmentLink(buf, dataOff);
 
                 if (nextLink == 0) {
                     buf.position(dataOff);
@@ -108,35 +103,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     }
                 }
                 else {
+                    // Read the first chunk of multi-page entry.
                     io.setPositionAndLimitOnFragment(buf, dataOff);
 
-                    readFragment(buf, coctx, keyOnly);
+                    incomplete = readIncompleteKey(coctx, buf, null);
 
-                    if (keyOnly && isKeyReady())
-                        return;
+                    if (key != null) {
+                        if (keyOnly)
+                            return;
 
-                    while (nextLink != 0) {
-                        try (final Page p = page(pageId(nextLink), cctx)) {
-                            try {
-                                final ByteBuffer b = p.getForRead();
+                        incomplete = readIncompleteValue(coctx, buf, null);
 
-                                io = DataPageIO.VERSIONS.forPage(b);
-
-                                final int off = io.getDataOffset(b, dwordsOffset(nextLink));
-
-                                nextLink = io.getNextFragmentLink(b, off);
-
-                                io.setPositionAndLimitOnFragment(b, off);
-
-                                readFragment(b, coctx, keyOnly);
-
-                                if (keyOnly && isKeyReady())
-                                    return;
-                            }
-                            finally {
-                                p.releaseRead();
-                            }
-                        }
+                        if (val != null)
+                            incomplete = readIncompleteVersion(buf, null);
                     }
                 }
             }
@@ -144,39 +123,172 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 page.releaseRead();
             }
         }
+
+        // Read other chunks outside of the lock on first page.
+        while (nextLink != 0) {
+            assert !isReady();
+
+            try (final Page p = page(pageId(nextLink), cctx)) {
+                try {
+                    final ByteBuffer b = p.getForRead();
+
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(b);
+
+                    final int off = io.getDataOffset(b, dwordsOffset(nextLink));
+
+                    nextLink = io.getNextFragmentLink(b, off);
+
+                    io.setPositionAndLimitOnFragment(b, off);
+
+                    // Read key.
+                    if (key == null) {
+                        incomplete = readIncompleteKey(coctx, b, incomplete);
+
+                        if (key == null)
+                            continue;
+
+                        if (keyOnly)
+                            return;
+
+                        incomplete = null;
+                    }
+
+                    // Read value.
+                    if (val == null) {
+                        incomplete = readIncompleteValue(coctx, b, incomplete);
+
+                        if (val == null)
+                            continue;
+
+                        incomplete = null;
+                    }
+
+                    // Read version.
+                    if (ver == null)
+                        incomplete = readIncompleteVersion(b, incomplete);
+                }
+                finally {
+                    p.releaseRead();
+                }
+            }
+        }
     }
 
     /**
-     * @return {@code True} if key is read.
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param incomplete Incomplete object.
+     * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean isKeyReady() {
-        return phase > 0;
+    private IncompleteCacheObject readIncompleteKey(
+        CacheObjectContext coctx,
+        ByteBuffer buf,
+        IncompleteCacheObject incomplete
+    ) throws IgniteCheckedException {
+        incomplete = coctx.processor().toKeyCacheObject(coctx, buf, incomplete);
+
+        if (incomplete.isReady()) {
+            key = (KeyCacheObject)incomplete.cacheObject();
+
+            assert key != null;
+        }
+        else
+            assert !buf.hasRemaining();
+
+        return incomplete;
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param incomplete Incomplete object.
+     * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IncompleteCacheObject readIncompleteValue(
+        CacheObjectContext coctx,
+        ByteBuffer buf,
+        IncompleteCacheObject incomplete
+    ) throws IgniteCheckedException {
+        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete);
+
+        if (incomplete.isReady()) {
+            val = incomplete.cacheObject();
+
+            assert val != null;
+        }
+        else
+            assert !buf.hasRemaining();
+
+        return incomplete;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param incomplete Incomplete object.
+     * @return Incomplete object.
+     */
+    private IncompleteCacheObject readIncompleteVersion(
+        ByteBuffer buf,
+        IncompleteCacheObject incomplete
+    ) {
+        if (incomplete == null) {
+            // If the whole version is on a single page, just read it.
+            if (buf.remaining() >= DataPageIO.VER_SIZE) {
+                ver = readVersion(buf);
+
+                assert !buf.hasRemaining(): buf.remaining();
+                assert ver != null;
+
+                return null;
+            }
+
+            // We have to read multipart version.
+            incomplete = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte)0);
+        }
+
+        incomplete.readData(buf);
+
+        if (incomplete.isReady()) {
+            final ByteBuffer verBuf = ByteBuffer.wrap(incomplete.data());
+
+            verBuf.order(buf.order());
+
+            ver = readVersion(verBuf);
+
+            assert ver != null;
+        }
+
+        assert !buf.hasRemaining();
+
+        return incomplete;
     }
 
     /**
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return key != null && val != null && ver != null;
+        return ver != null && val != null && key != null;
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
-        assert key != null : "Key is not ready";
+        assert key != null : "Key is not ready: " + this;
 
         return key;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready";
+        assert val != null : "Value is not ready: " + this;
 
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        assert ver != null : "Version is not ready";
+        assert ver != null : "Version is not ready: " + this;
 
         return ver;
     }
@@ -196,6 +308,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheDataRowAdapter.class, this);
+    }
+
     /**
      * @param buf Buffer.
      * @return Version.
@@ -207,63 +324,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         long order = buf.getLong();
 
         return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-    }
-
-    /**
-     * Read entry fragment.
-     *
-     * @param buf To read from.
-     * @throws IgniteCheckedException If fail.
-     */
-    private void readFragment(final ByteBuffer buf, final CacheObjectContext coctx, final boolean keyOnly) throws IgniteCheckedException {
-        if (phase == 0) {
-            incompleteKey = coctx.processor().toKeyCacheObject(coctx, buf, incompleteKey);
-
-            if (incompleteKey.isReady()) {
-                key = incompleteKey.cacheObject();
-
-                phase = 1;
-            }
-        }
-
-        if (keyOnly)
-            return;
-
-        if (phase == 1) {
-            incompleteVal = coctx.processor().toCacheObject(coctx, buf, incompleteVal);
-
-            if (incompleteVal.isReady()) {
-                val = incompleteVal.cacheObject();
-
-                phase = 2;
-            }
-        }
-
-        if (phase == 2) {
-            if (buf.remaining() >= DataPageIO.VER_SIZE) {
-                ver = readVersion(buf);
-
-                phase = 3;
-            }
-            else {
-                if (incompleteVer == null)
-                    incompleteVer = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte)0);
-
-                incompleteVer.readData(buf);
-
-                if (incompleteVer.isReady()) {
-                    final ByteBuffer verBuf = ByteBuffer.wrap(incompleteVer.data());
-
-                    verBuf.order(buf.order());
-
-                    ver = readVersion(verBuf);
-
-                    phase = 3;
-                }
-            }
-        }
-
-        assert !buf.hasRemaining();
     }
 
     /**

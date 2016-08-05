@@ -57,15 +57,15 @@ public class H2RowFactory {
         // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
         // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
 
-        final CacheDataRowAdapter assembler = new CacheDataRowAdapter(link);
+        final CacheDataRowAdapter rowBuilder = new CacheDataRowAdapter(link);
 
-        assembler.assemble(cctx, false);
+        rowBuilder.initFromLink(cctx, false);
 
         GridH2Row row;
 
         try {
-            row = rowDesc.createRow(assembler.key(),
-                PageIdUtils.partId(link), assembler.value(), assembler.version(), 0);
+            row = rowDesc.createRow(rowBuilder.key(),
+                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), 0);
 
             row.link = link;
         }
