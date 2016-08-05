@@ -115,6 +115,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
+    /** Old value before update. */
+    @GridToStringInclude
+    private TxEntryValueHolder oldVal = new TxEntryValueHolder();
+
     /** Transform. */
     @GridToStringInclude
     @GridDirectTransient
@@ -580,6 +584,27 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @Nullable public CacheObject value() {
         return val.value();
+    }
+
+    /**
+     * @return Old value.
+     */
+    @Nullable public CacheObject oldValue() {
+        return oldVal.value();
+    }
+
+    /**
+     * @return {@code True} if old value present.
+     */
+    public boolean hasOldValue() {
+        return oldVal.hasValue();
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(@Nullable CacheObject oldVal, boolean hasReadVal) {
+        this.oldVal.value(this.val.op(), oldVal, false, hasReadVal);
     }
 
     /**
@@ -1069,6 +1094,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeMessage("oldVal", oldVal))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1180,6 +1210,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             case 12:
                 partId = reader.readInt("partId", -1);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                oldVal = reader.readMessage("oldVal");
 
                 if (!reader.isLastRead())
                     return false;
