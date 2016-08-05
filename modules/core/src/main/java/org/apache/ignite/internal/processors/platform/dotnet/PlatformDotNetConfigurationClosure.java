@@ -216,7 +216,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(marshaller.reader(inMem.input()), interopCfg.logger());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -225,9 +225,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * Process prepare result.
      *
      * @param in Input stream.
-     * @param logger
      */
-    private void processPrepareResult(BinaryReaderExImpl in, PlatformLogger logger) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
