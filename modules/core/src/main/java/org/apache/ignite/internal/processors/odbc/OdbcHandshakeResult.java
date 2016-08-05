@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * ODBC handshake result.
  */
@@ -33,11 +31,13 @@ public class OdbcHandshakeResult {
     private final String curVer;
 
     /**
-     * @param accepted Handshake accepted.
+     * Construct reject result.
+     *
+     * @param accepted Indicates whether handshake accepted or not.
      * @param protoVerSince Apache Ignite version when protocol version has been introduced.
      * @param curVer Current Apache Ignite version.
      */
-    public OdbcHandshakeResult(boolean accepted, @Nullable String protoVerSince, @Nullable String curVer) {
+    public OdbcHandshakeResult(boolean accepted, String protoVerSince, String curVer) {
         this.accepted = accepted;
         this.protoVerSince = protoVerSince;
         this.curVer = curVer;
@@ -53,14 +53,14 @@ public class OdbcHandshakeResult {
     /**
      * @return Apache Ignite version when protocol version has been introduced.
      */
-    @Nullable public String protoVerSince() {
+    public String protoVerSince() {
         return protoVerSince;
     }
 
     /**
      * @return Current Apache Ignite version.
      */
-    @Nullable public String currentVer() {
+    public String currentVer() {
         return curVer;
     }
 }
