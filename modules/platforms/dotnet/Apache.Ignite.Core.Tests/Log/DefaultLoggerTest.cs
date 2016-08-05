@@ -65,6 +65,8 @@ namespace Apache.Ignite.Core.Tests.Log
 
                     // Check output from .NET:
                     Assert.IsTrue(log.Contains("Starting Ignite.NET " + typeof(Ignition).Assembly.GetName().Version));
+
+                    // TODO: Check all levels, exception overloads, etc
                 }
             }
             else

@@ -50,5 +50,5 @@ public interface PlatformConfigurationEx {
     /**
      * @return Platform logger.
      */
-    PlatformLogger logger();
+    public PlatformLogger logger();
 }

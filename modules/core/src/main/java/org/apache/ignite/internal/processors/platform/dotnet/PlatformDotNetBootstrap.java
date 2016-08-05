@@ -44,6 +44,7 @@ public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
         return new PlatformDotNetConfigurationClosure(envPtr);
     }
 
+    /** {@inheritDoc} */
     @Override protected void processInput(PlatformInputStream input, IgniteConfiguration cfg) {
         if (input.readBoolean())
             cfg.setGridLogger(new PlatformLogger());
