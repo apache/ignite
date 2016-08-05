@@ -56,11 +56,14 @@ namespace Apache.Ignite.Core.Tests.Log
                 {
                     // Log with all levels
                     var log = ignite.Logger;
-                    var ex = new Exception("EXCEPTION_TEST");
                     var levels = new[] {LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error};
 
                     foreach (var level in levels)
+                    {
+                        var ex = new Exception("EXCEPTION_TEST_" + level);
+
                         log.Log(level, "DOTNET-" + level, null, null, "=DOTNET=", null, ex);
+                    }
                 }
 
                 using (var fs = File.Open(getLogs().Single(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -73,8 +76,12 @@ namespace Apache.Ignite.Core.Tests.Log
                     // Check output from .NET:
                     Assert.IsTrue(log.Contains("Starting Ignite.NET " + typeof(Ignition).Assembly.GetName().Version));
 
-                    // Check custom log output:
-                    // TODO: Check all levels, exception overloads, etc
+                    // Check custom log output (trace is disabled):
+                    Assert.IsTrue(log.Contains("[INFO ][main][=DOTNET=] DOTNET-Info"));
+                    Assert.IsTrue(log.Contains("[DEBUG][main][=DOTNET=] DOTNET-Debug"));
+                    Assert.IsTrue(log.Contains("[WARN ][main][=DOTNET=] DOTNET-Warn"));
+                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                                               "Platform error:System.Exception: EXCEPTION_TEST"));
                 }
             }
             else
