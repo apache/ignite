@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl
         /// Load JVM DLL if needed.
         /// </summary>
         /// <param name="configJvmDllPath">JVM DLL path from config.</param>
-        /// <param name="log"></param>
+        /// <param name="log">Log.</param>
         public static void LoadDlls(string configJvmDllPath, ILogger log)
         {
             if (_loaded)

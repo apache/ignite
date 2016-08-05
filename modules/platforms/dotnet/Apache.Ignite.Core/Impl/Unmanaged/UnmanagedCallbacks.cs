@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
 
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
-                onClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
 
                 affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
                 affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),

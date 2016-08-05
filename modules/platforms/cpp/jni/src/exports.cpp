@@ -30,7 +30,7 @@ extern "C" {
         return ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
     }
 
-    void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
+	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
         return ctx->IgnitionInstance(name);
     }
 
@@ -38,11 +38,11 @@ extern "C" {
         return ctx->IgnitionEnvironmentPointer(name);
     }
 
-    bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel) {
+	bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel) {
         return ctx->IgnitionStop(name, cancel);
     }
 
-    void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel) {
+	void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel) {
         return ctx->IgnitionStopAll(cancel);
     }
 
@@ -130,11 +130,11 @@ extern "C" {
         return ctx->ProcessorAtomicReference(static_cast<jobject>(obj), name, memPtr, create);
     }
 
-    void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long long memPtr) {
+	void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long long memPtr) {
         return ctx->ProcessorGetIgniteConfiguration(static_cast<jobject>(obj), memPtr);
     }
 
-    void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr) {
+	void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr) {
         return ctx->ProcessorGetCacheNames(static_cast<jobject>(obj), memPtr);
     }
 

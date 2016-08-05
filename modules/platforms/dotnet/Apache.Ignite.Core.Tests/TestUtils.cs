@@ -338,7 +338,6 @@ namespace Apache.Ignite.Core.Tests
             };
         }
 
-
         /// <summary>
         /// Runs the test in new process.
         /// </summary>
