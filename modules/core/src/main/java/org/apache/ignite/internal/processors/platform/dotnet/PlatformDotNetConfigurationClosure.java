@@ -265,11 +265,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             }
         }
 
-        // Set up platform logger
-        // TODO
-        /*if (cfg.getGridLogger() == null)
-            cfg.setGridLogger(logger);*/
-
         // Process affinity functions
         List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
 
