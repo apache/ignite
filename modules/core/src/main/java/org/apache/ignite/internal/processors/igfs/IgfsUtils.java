@@ -376,8 +376,7 @@ public class IgfsUtils {
                         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
-                            ccfg.getAffinityMapper() == null)
+                        if (igfsCfg.isColocateMetadata() && ccfg.getAffinityMapper() == null)
                             ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
 
                         return;
