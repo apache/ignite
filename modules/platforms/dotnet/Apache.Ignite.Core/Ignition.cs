@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -203,7 +204,7 @@ namespace Apache.Ignite.Core
             lock (SyncRoot)
             {
                 // 0. Init logger
-                var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info);
+                var log = cfg.Logger ?? new JavaLogger();
 
                 log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 
@@ -228,11 +229,16 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
+
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
                     interopProc = node.InteropProcessor;
+
+                    var javaLogger = log as JavaLogger;
+                    if (javaLogger != null)
+                        javaLogger.SetProcessor(interopProc);
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();

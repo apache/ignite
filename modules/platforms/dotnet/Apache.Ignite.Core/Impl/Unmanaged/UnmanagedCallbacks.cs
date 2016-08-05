@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Resource;
@@ -1135,6 +1136,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
             int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr)
         {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
             SafeCall(() =>
             {
                 var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
@@ -1157,6 +1161,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private bool LoggerIsLevelEnabled(void* target, int level)
         {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
             return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
         }
 

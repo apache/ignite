@@ -943,7 +943,7 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Notifies platform about client reconnect.
+     * Logs to the platform.
      *
      * @param level Log level.
      * @param message Message.
