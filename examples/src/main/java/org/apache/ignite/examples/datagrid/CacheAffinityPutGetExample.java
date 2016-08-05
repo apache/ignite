@@ -126,7 +126,7 @@ public class CacheAffinityPutGetExample {
             X.printerr("Unable to get value p1 due to NULL affinity key.");
         }
         Person p11 = colPersonCache.get(p1.key());
-        X.println("Got key p1.id with affinity key p1.key() for value "+p11);
+        X.println("Got affinity key p1.key() with value "+p11);
     }
 
    /**
