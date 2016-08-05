@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * ODBC handshake result.
  */
@@ -31,25 +33,14 @@ public class OdbcHandshakeResult {
     private final String curVer;
 
     /**
-     * Construct accept result.
-     */
-    public OdbcHandshakeResult() {
-        this.accepted = true;
-        this.protoVerSince = null;
-        this.curVer = null;
-    }
-
-    /**
-     * Construct reject result.
+     * Constructor.
      *
+     * @param accepted Indicates whether handshake accepted or not.
      * @param protoVerSince Apache Ignite version when protocol version has been introduced.
      * @param curVer Current Apache Ignite version.
      */
-    public OdbcHandshakeResult(String protoVerSince, String curVer) {
-        assert protoVerSince != null;
-        assert curVer != null;
-
-        this.accepted = false;
+    public OdbcHandshakeResult(boolean accepted, String protoVerSince, String curVer) {
+        this.accepted = accepted;
         this.protoVerSince = protoVerSince;
         this.curVer = curVer;
     }
@@ -64,14 +55,19 @@ public class OdbcHandshakeResult {
     /**
      * @return Apache Ignite version when protocol version has been introduced.
      */
-    public String protoVerSince() {
+    public String protocolVersionSince() {
         return protoVerSince;
     }
 
     /**
      * @return Current Apache Ignite version.
      */
-    public String currentVer() {
+    public String currentVersion() {
         return curVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcHandshakeResult.class, this);
     }
 }

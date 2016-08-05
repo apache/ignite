@@ -362,8 +362,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * will not be affected. Other properties will be added or overwritten. Passed properties with {@code null} values
      * will be removed from the stored properties or ignored if they don't exist in the file info.
      * <p>
-     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
-     * to the secondary file system:
+     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes with Hadoop secondary file system only the following properties will be updated:
      * <ul>
      * <li>{@code usrName} - file owner name;</li>
      * <li>{@code grpName} - file owner group;</li>

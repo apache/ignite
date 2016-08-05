@@ -81,14 +81,14 @@ public class OdbcMessageParser {
 
                 OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
 
-                OdbcProtocolVersion version = res.getVersion();
+                OdbcProtocolVersion version = res.version();
 
                 if (version.isUnknown())
                     return res;
 
                 if (version.isDistributedJoinsSupported()) {
-                    res.setDistributedJoins(reader.readBoolean());
-                    res.setEnforceJoinOrder(reader.readBoolean());
+                    res.distributedJoins(reader.readBoolean());
+                    res.enforceJoinOrder(reader.readBoolean());
                 }
 
                 return res;
@@ -184,11 +184,8 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
-        if (res0 == null) {
-            // The most simple case. Simple accept/error response.
-            // We don't need to add anything here.
+        if (res0 == null)
             return writer.array();
-        }
         if (res0 instanceof OdbcHandshakeResult) {
             OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
 
@@ -204,8 +201,8 @@ public class OdbcMessageParser {
             }
             else {
                 writer.writeBoolean(false);
-                writer.writeString(res.protoVerSince());
-                writer.writeString(res.currentVer());
+                writer.writeString(res.protocolVersionSince());
+                writer.writeString(res.currentVersion());
             }
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {

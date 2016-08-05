@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -248,7 +249,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        modeRslvr = new IgfsModeResolver(dfltMode, IgfsUtils.preparePathModes(dfltMode, modes));
+        modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
         Object secondaryFsPayload = null;
 
@@ -816,12 +817,14 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
-                IgniteUuid fileId = meta.fileId(path);
+                if (!IgfsUtils.isDualMode(mode) || modeRslvr.hasPrimaryChild(path)) {
+                    IgniteUuid fileId = meta.fileId(path);
 
-                if (fileId != null)
-                    files.addAll(meta.directoryListing(fileId).keySet());
-                else if (mode == PRIMARY)
-                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                    if (fileId != null)
+                        files.addAll(meta.directoryListing(fileId).keySet());
+                    else if (mode == PRIMARY)
+                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
                     @Override public IgfsPath apply(String e) {
@@ -846,7 +849,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Collection<IgfsFile> files = new HashSet<>();
+                Set<IgfsFile> files = new HashSet<>();
 
                 if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
@@ -859,6 +862,9 @@ public final class IgfsImpl implements IgfsEx {
 
                             files.add(impl);
                         }
+
+                        if (!modeRslvr.hasPrimaryChild(path))
+                            return files;
                     }
                     catch (Exception e) {
                         U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
@@ -1345,29 +1351,6 @@ public final class IgfsImpl implements IgfsEx {
         return fut;
     }
 
-    /**
-     * Get file descriptor for specified path.
-     *
-     * @param path Path to file.
-     * @return Detailed file descriptor or {@code null}, if file does not exist.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
-        assert path != null;
-
-        List<IgniteUuid> ids = meta.idsForPath(path);
-
-        IgfsEntryInfo fileInfo = meta.info(ids.get(ids.size() - 1));
-
-        if (fileInfo == null)
-            return null; // File does not exist.
-
-        // Resolve parent ID for removed file.
-        IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
-
-        return new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile());
-    }
-
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
@@ -1519,20 +1502,16 @@ public final class IgfsImpl implements IgfsEx {
 
             case DUAL_SYNC:
             case DUAL_ASYNC:
-                info = meta.infoForPath(path);
+                try {
+                    IgfsFile status = secondaryFs.info(path);
 
-                if (info == null) {
-                    try {
-                        IgfsFile status = secondaryFs.info(path);
+                    if (status != null)
+                        return new IgfsFileImpl(status, data.groupBlockSize());
+                }
+                catch (Exception e) {
+                    U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
 
-                        if (status != null)
-                            return new IgfsFileImpl(status, data.groupBlockSize());
-                    }
-                    catch (Exception e) {
-                        U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
-
-                        throw e;
-                    }
+                    throw e;
                 }
 
                 break;

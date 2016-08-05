@@ -52,6 +52,7 @@
     <Reference Include="System.Web" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestAppConfig.cs" />
