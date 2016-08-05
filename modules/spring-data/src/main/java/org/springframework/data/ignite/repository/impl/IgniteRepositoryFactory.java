@@ -107,7 +107,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /** {@inheritDoc} */
-    @Override protected QueryLookupStrategy getQueryLookupStrategy(QueryLookupStrategy.Key key,
+    @Override protected QueryLookupStrategy getQueryLookupStrategy(final QueryLookupStrategy.Key key,
         EvaluationContextProvider evaluationCtxProvider) {
 
         return new QueryLookupStrategy() {
@@ -116,11 +116,17 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                 final Query annotation = mtd.getAnnotation(Query.class);
 
-                if (annotation != null && StringUtils.hasText(annotation.value()))
-                    return new IgniteRepositoryQuery(metadata,
-                        new IgniteQuery(annotation.value(), false, IgniteQueryGenerator.isDynamic(mtd)), mtd, factory);
+                if (annotation != null) {
+                    String qryStr = annotation.value();
 
+                    if (key != Key.CREATE && StringUtils.hasText(qryStr))
+                        return new IgniteRepositoryQuery(metadata,
+                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.isDynamic(mtd)), mtd, factory);
+                }
                 //TODO namedQueries handling
+
+                if (key == Key.USE_DECLARED_QUERY)
+                    throw new IllegalStateException();
 
                 return new IgniteRepositoryQuery(
                     metadata,
@@ -129,6 +135,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                     factory);
             }
         };
+    }
+
+    private boolean isFieldQuery(String s) {
+        return s.matches("^SELECT.*") && !s.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
 
     enum ReturnStrategy {
@@ -208,29 +218,57 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
             QueryCursor qryCursor = cache.query(qry);
 
-            Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
 
-            switch (returnStrategy) {
-                case LIST:
-                    ArrayList list = new ArrayList();
+            if (query.isFieldQuery()) {
+                Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
 
-                    for (CacheEntryImpl entry : qryIter)
-                        list.add(entry.getValue());
+                switch (returnStrategy) {
+                    case LIST:
+                        ArrayList list = new ArrayList();
 
-                    return list;
-                case ONE_VALUE:
-                    Iterator<CacheEntryImpl> iter = qryIter.iterator();
-                    if (iter.hasNext())
-                        return iter.next();
+                        for (ArrayList entry : qryIter)
+                            list.add(entry.get(0));
 
-                    return null;
-                case SLICE:
-                    ArrayList content = new ArrayList();
+                        return list;
+                    case ONE_VALUE:
+                        Iterator<ArrayList> iter = qryIter.iterator();
+                        if (iter.hasNext())
+                            return iter.next().get(0);
 
-                    for (CacheEntryImpl entry : qryIter)
-                        content.add(entry.getValue());
+                        return null;
+                    case SLICE:
+                        ArrayList content = new ArrayList();
 
-                    return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                        for (ArrayList entry : qryIter)
+                            content.add(entry.get(0));
+
+                        return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                }
+            } else {
+                Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
+
+                switch (returnStrategy) {
+                    case LIST:
+                        ArrayList list = new ArrayList();
+
+                        for (CacheEntryImpl entry : qryIter)
+                            list.add(entry.getValue());
+
+                        return list;
+                    case ONE_VALUE:
+                        Iterator<CacheEntryImpl> iter = qryIter.iterator();
+                        if (iter.hasNext())
+                            return iter.next();
+
+                        return null;
+                    case SLICE:
+                        ArrayList content = new ArrayList();
+
+                        for (CacheEntryImpl entry : qryIter)
+                            content.add(entry.getValue());
+
+                        return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                }
             }
 
             return null;

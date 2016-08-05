@@ -96,6 +96,9 @@ public class Main {
         for (Person person : queryWithPaging)
             System.out.println("queryWithPaging = " + person);
 
-
+        List<String> queryFields = repo.byQuery4("^[a-z]+$", new PageRequest(1, 7, Sort.Direction.DESC, "secondName"));
+        for (String queryField : queryFields) {
+            System.out.println("queryField = " + queryField);
+        }
     }
 }

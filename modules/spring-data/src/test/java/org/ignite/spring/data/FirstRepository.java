@@ -50,6 +50,9 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
     @Query("firstName REGEXP ?")
     public List<Person> byQuery2(String val, Sort sort);
 
-    @Query("firstName REGEXP ?")
+    @Query("SELECT * FROM Person WHERE firstName REGEXP ?")
     public List<Person> byQuery3(String val, Pageable sort);
+
+    @Query("SELECT secondName FROM Person WHERE firstName REGEXP ?")
+    public List<String> byQuery4(String val, Pageable sort);
 }
