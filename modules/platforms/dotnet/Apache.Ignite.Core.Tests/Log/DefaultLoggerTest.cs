@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using System;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
     using LogLevel = Apache.Ignite.Core.Log.LogLevel;
@@ -48,11 +49,17 @@ namespace Apache.Ignite.Core.Tests.Log
 
                 getLogs().ToList().ForEach(File.Delete);
 
-                // Start Ignite and verify file log
-                using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false))
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false))
                 {
-                    SpringConfigUrl = @"config\log\custom-log.xml"
-                }))
+                    SpringConfigUrl = @"config\log\custom-log.xml",
+                    CacheConfiguration = new[]
+                    {
+                        new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(ulong)))
+                    }
+                };
+
+                // Start Ignite and verify file log
+                using (var ignite = Ignition.Start(cfg))
                 {
                     // Log with all levels
                     var log = ignite.Logger;
@@ -76,8 +83,16 @@ namespace Apache.Ignite.Core.Tests.Log
                     // Check output from .NET:
                     Assert.IsTrue(log.Contains("Starting Ignite.NET " + typeof(Ignition).Assembly.GetName().Version));
 
+                    Assert.IsTrue(log.Contains(
+                        "Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:java.lang." +
+                        "Long': Type 'System.UInt32' maps to Java type 'java.lang.Integer' using unchecked " +
+                        "conversion. This may cause issues in SQL queries. You can use 'System.Int32' " +
+                        "instead to achieve direct mapping."));
+
+
                     // Check custom log output (trace is disabled, errors are logged from Warn and up):
                     Assert.IsTrue(log.Contains("[INFO ][main][=DOTNET=] DOTNET-Info"));
+
                     Assert.IsTrue(log.Contains("[DEBUG][main][=DOTNET=] DOTNET-Debug"));
 
                     Assert.IsTrue(log.Contains("[WARN ][main][=DOTNET=] DOTNET-Warn"));
