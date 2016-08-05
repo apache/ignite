@@ -60,6 +60,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
+        ensureNotClosed();
+
         ResultSet rs = executeQuery(sql);
 
         args = null;
@@ -71,7 +73,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        int res = executeUpdate(sql);
+
+        args = null;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -173,6 +179,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
+    @Override public void clearBatch() throws SQLException {
+        ensureNotClosed();
+
+        batchArgs = null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType) throws SQLException {
         setArgument(paramIdx, x);
     }
@@ -199,6 +212,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
+        rs = null;
+
+        updateCnt = -1;
+
         if (batchArgs == null)
             return U.EMPTY_INTS;
 
@@ -216,6 +233,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
                 throw new BatchUpdateException("Failed to query Ignite.", res, U.firstNotNull(cause, e));
             }
         }
+
+        batchArgs = null;
 
         return res;
     }

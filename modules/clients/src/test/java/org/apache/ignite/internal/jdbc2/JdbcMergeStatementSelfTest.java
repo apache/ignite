@@ -213,7 +213,6 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
         prepStmt.setString(3, "John");
         prepStmt.setString(4, "White");
         prepStmt.setInt(5, 25);
-        //prepStmt.addBatch();
 
         prepStmt.setString(6, "p2");
         prepStmt.setInt(7, 2);
@@ -227,7 +226,6 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
         prepStmt.setString(3, "Mike");
         prepStmt.setString(4, "Green");
         prepStmt.setInt(5, 40);
-        //prepStmt.addBatch();
 
         prepStmt.setString(6, "p4");
         prepStmt.setInt(7, 4);
