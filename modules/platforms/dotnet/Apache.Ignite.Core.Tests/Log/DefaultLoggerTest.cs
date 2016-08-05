@@ -76,12 +76,17 @@ namespace Apache.Ignite.Core.Tests.Log
                     // Check output from .NET:
                     Assert.IsTrue(log.Contains("Starting Ignite.NET " + typeof(Ignition).Assembly.GetName().Version));
 
-                    // Check custom log output (trace is disabled):
+                    // Check custom log output (trace is disabled, errors are logged from Warn and up):
                     Assert.IsTrue(log.Contains("[INFO ][main][=DOTNET=] DOTNET-Info"));
                     Assert.IsTrue(log.Contains("[DEBUG][main][=DOTNET=] DOTNET-Debug"));
+
                     Assert.IsTrue(log.Contains("[WARN ][main][=DOTNET=] DOTNET-Warn"));
                     Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
-                                               "Platform error:System.Exception: EXCEPTION_TEST"));
+                                               "Platform error:System.Exception: EXCEPTION_TEST_Warn"));
+
+                    Assert.IsTrue(log.Contains("[ERROR][main][=DOTNET=] DOTNET-Error"));
+                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                                               "Platform error:System.Exception: EXCEPTION_TEST_Error"));
                 }
             }
             else
