@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -96,6 +97,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
         Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,
@@ -106,7 +109,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl);
+        return lockAllAsync(keys, entryProcessors, invokeArgs, timeout, tx, isInvalidate, isRead, retval,
+            isolation, accessTtl);
     }
 
     /** {@inheritDoc} */
@@ -115,6 +119,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         // Return value flag is true because we choose to bring values for explicit locks.
         return lockAllAsync(ctx.cacheKeysView(keys),
+            null,
+            null,
             timeout,
             tx,
             false,
@@ -136,6 +142,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @return Future for locks.
      */
     protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,

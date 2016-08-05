@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -440,6 +441,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(
         Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isInvalidate,

@@ -713,6 +713,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -1434,6 +1436,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
             keys,
+            null,
+            null,
             topVer,
             !skipStore,
             forcePrimary,

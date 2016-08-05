@@ -19,9 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -88,6 +93,21 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@code True} if first lock request for lock operation sent from client node. */
     private boolean firstClientReq;
+
+    /** Entry processors. */
+    @GridDirectTransient
+    private List<EntryProcessor> entryProcessors;
+
+    /** Entry processors bytes. */
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> entryProcessorsBytes;
+
+    /** Optional arguments for entry processor. */
+    @GridDirectTransient
+    private Object[] invokeArgs;
+
+    /** Entry processor arguments bytes. */
+    private byte[][] invokeArgsBytes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -304,6 +324,39 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * Adds a key.
+     *
+     * @param key Key.
+     * @param dhtVer DHT version.
+     * @param ctx Context.
+     * @param args Entry processor arguments.
+     * @param entryProcessor Cache entry processor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addKeyBytes(
+        KeyCacheObject key,
+        boolean retVal,
+        @Nullable GridCacheVersion dhtVer,
+        GridCacheContext ctx,
+        @Nullable EntryProcessor<Object, Object, Object> entryProcessor,
+        @Nullable Object[] args
+    ) throws IgniteCheckedException {
+        dhtVers[idx] = dhtVer;
+
+        if (entryProcessors == null && entryProcessor != null)
+            entryProcessors = new ArrayList<>(keysCount());
+
+        if (entryProcessor != null)
+            entryProcessors.add(idx, entryProcessor);
+
+        if (invokeArgs == null && args != null)
+            invokeArgs = args;
+
+        // Delegate to super.
+        addKeyBytes(key, retVal, ctx);
+    }
+
+    /**
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
@@ -318,18 +371,43 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
+    /**
+     * @return Entry processors.
+     */
+    public List<EntryProcessor> entryProcessors() {
+        return entryProcessors;
+    }
+
+    /**
+     * @return Invoke arguments.
+     */
+    public Object[] invokeArguments() {
+        return invokeArgs;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
+        GridCacheContext cctx = null;
+
         if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
+            cctx = ctx.cacheContext(cacheId);
 
             for (CacheEntryPredicate p : filter) {
                 if (p != null)
                     p.prepareMarshal(cctx);
             }
         }
+
+        if (entryProcessorsBytes == null) {
+            cctx = cctx == null ? ctx.cacheContext(cacheId) : cctx;
+
+            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+        }
+
+        if (invokeArgsBytes == null)
+            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
     }
 
     /** {@inheritDoc} */
@@ -344,6 +422,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                     p.finishUnmarshal(cctx, ldr);
             }
         }
+
+        if (entryProcessors == null)
+            entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+
+        if (invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -451,6 +535,17 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
+            case 35:
+                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 36:
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -587,6 +682,22 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
+            case 35:
+                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 36:
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearLockRequest.class);
@@ -599,7 +710,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 35;
+        return 37;
     }
 
     /** {@inheritDoc} */

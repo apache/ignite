@@ -85,6 +85,13 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
+     * @param key Key.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
      * @return Result.
      */
     public CacheObject result() {

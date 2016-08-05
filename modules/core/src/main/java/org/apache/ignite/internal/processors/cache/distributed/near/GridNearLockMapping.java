@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -36,6 +37,14 @@ public class GridNearLockMapping {
     /** Collection of mapped keys. */
     @GridToStringInclude
     private final Collection<KeyCacheObject> mappedKeys = new ArrayList<>();
+
+    /** Collection of mapped keys. */
+    @GridToStringInclude
+    private final Collection<EntryProcessor> entryProcessors = new ArrayList<>();
+
+    /** Invoke arguments. */
+    @GridToStringExclude
+    private final Object[] invkArgs;
 
     /** Near lock request. */
     @GridToStringExclude
@@ -58,6 +67,29 @@ public class GridNearLockMapping {
         this.node = node;
 
         mappedKeys.add(firstKey);
+        invkArgs = null;
+    }
+
+    /**
+     * Creates near lock mapping for specified node and key.
+     *
+     * @param node Node.
+     * @param firstKey First key in mapped keys collection.
+     * @param entryProcessor Entry processor.
+     * @param args Invoke arguments.
+     */
+    public GridNearLockMapping(ClusterNode node,
+        KeyCacheObject firstKey,
+        EntryProcessor entryProcessor,
+        Object[] args) {
+        assert node != null;
+        assert firstKey != null;
+
+        this.node = node;
+
+        mappedKeys.add(firstKey);
+        entryProcessors.add(entryProcessor);
+        invkArgs = args;
     }
 
     /**
@@ -79,6 +111,15 @@ public class GridNearLockMapping {
      */
     public void addKey(KeyCacheObject key) {
         mappedKeys.add(key);
+        entryProcessors.add(null);
+    }
+
+    /**
+     * @param key Key to add to mapping.
+     */
+    public void addKey(KeyCacheObject key, EntryProcessor entryProcessor) {
+        mappedKeys.add(key);
+        entryProcessors.add(entryProcessor);
     }
 
     /**

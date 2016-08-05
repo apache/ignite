@@ -23,13 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -37,6 +40,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -44,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -59,18 +65,17 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
  */
-public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> implements GridCacheFuture<Object>,
-    CacheGetFuture {
+public class CachePartitionedSingleInvokeFuture extends GridFutureAdapter<Object> implements GridCacheFuture<Object> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final IgniteProductVersion SINGLE_GET_MSG_SINCE = IgniteProductVersion.fromString("1.5.0");
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -86,6 +91,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
     /** Key. */
     private final KeyCacheObject key;
+
+    /** Entry processor. */
+    private final EntryProcessor entryProcessor;
+
+    /** Invoke arguments. */
+    private final Object[] invokeArg;
 
     /** Read through flag. */
     private final boolean readThrough;
@@ -105,12 +116,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** Task name. */
     private final String taskName;
 
-    /** Whether to deserialize binary objects. */
-    private boolean deserializeBinary;
-
-    /** Skip values flag. */
-    private boolean skipVals;
-
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
@@ -118,14 +123,11 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean canRemap;
 
     /** */
-    private final boolean needVer;
-
-    /** */
-    private final boolean keepCacheObjects;
-
-    /** */
     @GridToStringInclude
     private ClusterNode node;
+
+    /** Keep binary flag. */
+    private final boolean keepBinary;
 
     /**
      * @param cctx Context.
@@ -137,12 +139,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
-     * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
-     * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObjects Keep cache objects flag.
      */
-    public GridPartitionedSingleGetFuture(
+    public CachePartitionedSingleInvokeFuture(
         GridCacheContext cctx,
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
@@ -152,10 +151,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals,
         boolean canRemap,
-        boolean needVer,
-        boolean keepCacheObjects
+        @Nullable EntryProcessor entryProcessor,
+        @Nullable Object... invokeArg
     ) {
         assert key != null;
 
@@ -173,18 +171,17 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.forcePrimary = forcePrimary;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
-        this.skipVals = skipVals;
         this.canRemap = canRemap;
-        this.needVer = needVer;
-        this.keepCacheObjects = keepCacheObjects;
         this.topVer = topVer;
+        this.entryProcessor = entryProcessor;
+        this.invokeArg = invokeArg;
+        this.keepBinary = !deserializeBinary;
 
         futId = IgniteUuid.randomUuid();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridPartitionedSingleGetFuture.class);
+            log = U.logger(cctx.kernalContext(), logRef, CachePartitionedSingleInvokeFuture.class);
     }
 
     /**
@@ -224,7 +221,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
-                skipVals);
+                false);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -246,7 +243,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
                             assert F.isEmpty(infos) || infos.size() == 1 : infos;
 
-                            setResult(F.first(infos));
+                            GridCacheEntryInfo info = null;
+
+                            if (!F.isEmpty(infos))
+                                info = F.first(infos);
+
+                            setResult(info != null ? info.value() : null,
+                                info != null ? info.version() : null,
+                                entryProcessor, invokeArg);
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -271,39 +275,19 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 cctx.mvcc().addFuture(this, futId);
             }
 
-            GridCacheMessage req;
-
-            if (node.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0) {
-                req = new GridNearSingleGetRequest(cctx.cacheId(),
-                    futId.localId(),
-                    key,
-                    readThrough,
-                    topVer,
-                    subjId,
-                    taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals,
-                    /**add reader*/false,
-                    needVer,
-                    cctx.deploymentEnabled());
-            }
-            else {
-                Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
-
-                req = new GridNearGetRequest(
-                    cctx.cacheId(),
-                    futId,
-                    futId,
-                    cctx.versions().next(),
-                    map,
-                    readThrough,
-                    topVer,
-                    subjId,
-                    taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals,
-                    cctx.deploymentEnabled());
-            }
+            GridCacheMessage req = new GridNearSingleInvokeRequest(cctx.cacheId(),
+                futId.localId(),
+                key,
+                entryProcessor,
+                invokeArg,
+                readThrough,
+                topVer,
+                subjId,
+                taskName == null ? 0 : taskName.hashCode(),
+                expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                keepBinary,
+                /*need ver*/false,
+                cctx.deploymentEnabled());
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -315,6 +299,40 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     onDone(e);
             }
         }
+    }
+
+    /**
+     * @param val Value.
+     * @param ver Entry version.
+     * @param entryProcessor Entry processor.
+     * @param invkArgs Invoke arguments.
+     */
+    private void setResult(CacheObject val, GridCacheVersion ver, EntryProcessor entryProcessor, Object[] invkArgs) {
+        CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val, ver, keepBinary, cctx);
+
+        Object procRes = null;
+        Exception err = null;
+
+        try {
+            procRes = entryProcessor.process(invokeEntry, invkArgs);
+        }
+        catch (Exception e) {
+            err = e;
+        }
+
+        if (invokeEntry.modified())
+            val = cctx.toCacheObject(cctx.unwrapTemporary(invokeEntry.getValue(true)));
+
+        GridCacheOperation op = invokeEntry.modified() ? (val == null ? DELETE : UPDATE) : NOOP;
+
+        GridCacheReturn ret = new GridCacheReturn();
+
+        if (err != null || procRes != null)
+            ret.addEntryProcessResult(cctx, key, null, procRes, err, keepBinary);
+        else
+            ret.invokeResult(true);
+
+        setResult(val, ret, op);
     }
 
     /**
@@ -370,59 +388,32 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
-
-                    if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true);
-
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
-                        }
-                    }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true);
-                    }
+                    CacheObject v = entry.innerGet(
+                        null,
+                        null,
+                        /*swap*/true,
+                        /*read-through*/false,
+                        /*update-metrics*/false,
+                        /*event*/true,
+                        /*temporary*/false,
+                        subjId,
+                        null,
+                        taskName,
+                        expiryPlc,
+                        true);
 
                     colocated.context().evicts().touch(entry, topVer);
 
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
+                        if (isNew)
                             colocated.removeEntry(entry);
                     }
                     else {
-                        if (!skipVals && cctx.config().isStatisticsEnabled())
+                        if (cctx.config().isStatisticsEnabled())
                             cctx.cache().metrics0().onRead(true);
 
-                        if (!skipVals)
-                            setResult(v, ver);
-                        else
-                            setSkipValueResult(true, ver);
+                        setResult(v, null, entryProcessor, invokeArg);
 
                         return true;
                     }
@@ -432,13 +423,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (cctx.config().isStatisticsEnabled())
                         colocated.metrics0().onRead(false);
 
-                    if (skipVals)
-                        setSkipValueResult(false, null);
-                    else
-                        setResult(null, null);
+                    setResult(null, null, entryProcessor, invokeArg);
 
                     return true;
                 }
@@ -463,51 +451,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param nodeId Node ID.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearSingleGetResponse res) {
+    public void onResult(UUID nodeId, GridNearSingleInvokeResponse res) {
         if (!processResponse(nodeId) ||
             !checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId))
             return;
 
-        Message res0 = res.result();
-
-        if (needVer) {
-            CacheVersionedValue verVal = (CacheVersionedValue)res0;
-
-            if (verVal != null) {
-                if (skipVals)
-                    setSkipValueResult(true, verVal.version());
-                else
-                    setResult(verVal.value() , verVal.version());
-            }
-            else {
-                if (skipVals)
-                    setSkipValueResult(false, null);
-                else
-                    setResult(null , null);
-            }
-        }
-        else {
-            if (skipVals)
-                setSkipValueResult(res.containsValue(), null);
-            else
-                setResult((CacheObject)res0, null);
-        }
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Result.
-     */
-    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
-        if (!processResponse(nodeId) ||
-            !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId))
-            return;
-
-        Collection<GridCacheEntryInfo> infos = res.entries();
-
-        assert F.isEmpty(infos) || infos.size() == 1 : infos;
-
-        setResult(F.first(infos));
+        setResult(res.result(), res.invokeResult(), res.op());
     }
 
     /**
@@ -583,60 +532,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     }
 
     /**
-     * @param info Entry info.
-     */
-    private void setResult(@Nullable GridCacheEntryInfo info) {
-        assert info == null || skipVals == (info.value() == null);
-
-        if (skipVals) {
-            if (info != null)
-                setSkipValueResult(true, info.version());
-            else
-                setSkipValueResult(false, null);
-        }
-        else {
-            if (info != null)
-                setResult(info.value(), info.version());
-            else
-                setResult(null, null);
-        }
-    }
-
-    /**
-     * @param res Result.
-     * @param ver Version.
-     */
-    private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver) {
-        assert skipVals;
-
-        if (needVer) {
-            assert ver != null || !res;
-
-            onDone(new T2<>(res, ver));
-        }
-        else
-            onDone(res);
-    }
-
-    /**
      * @param val Value.
-     * @param ver Version.
+     * @param ret Cache return.
+     * @param op Cache operation.
      */
-    private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
+    private void setResult(@Nullable CacheObject val, @Nullable GridCacheReturn ret, GridCacheOperation op) {
         try {
-            assert !skipVals;
-
-            if (val != null) {
-                if (!keepCacheObjects) {
-                    Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
-
-                    onDone(needVer ? new T2<>(res, ver) : res);
-                }
-                else
-                    onDone(needVer ? new T2<>(val, ver) : val);
-            }
-            else
-                onDone(null);
+            onDone(F.t(val, ret, op));
         }
         catch (Exception e) {
             onDone(e);
@@ -751,6 +653,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionedSingleGetFuture.class, this);
+        return S.toString(CachePartitionedSingleInvokeFuture.class, this);
     }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -62,6 +62,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -490,6 +491,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 existing.ttl(e.ttl());
                 existing.filters(e.filters());
                 existing.expiry(e.expiry());
+                existing.sendValueToBackup(e.sendValueToBackup());
 
                 existing.conflictExpireTime(e.conflictExpireTime());
                 existing.conflictVersion(e.conflictVersion());
@@ -533,6 +535,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param cacheCtx Cache context.
      * @param entries Entries to lock.
      * @param msgId Message ID.
+     * @param entryProcessors Entry processors.
+     * @param invokeArgs Invoke arguments.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
      * @param needRetVal Return value flag.
@@ -543,6 +547,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     IgniteInternalFuture<GridCacheReturn> lockAllAsync(
         GridCacheContext cacheCtx,
         List<GridCacheEntryEx> entries,
+        List<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long msgId,
         final boolean read,
         final boolean needRetVal,
@@ -605,10 +611,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     addActiveCache(dhtCache.context());
 
-                    txEntry = addEntry(NOOP,
+                    EntryProcessor entryProcessor = entryProcessors != null ? entryProcessors.get(i) : null;
+
+                    txEntry = addEntry(entryProcessor == null ? NOOP : TRANSFORM,
                         null,
-                        null,
-                        null,
+                        entryProcessor,
+                        invokeArgs,
                         cached,
                         null,
                         CU.empty0(),
@@ -617,7 +625,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         -1L,
                         null,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        entryProcessor != null);
 
                     if (read)
                         txEntry.ttl(accessTtl);
@@ -726,7 +735,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         /*read*/read,
                         accessTtl,
                         filter == null ? CU.empty0() : filter,
-                        /**computeInvoke*/false);
+                        /*computeInvoke*/true);
 
                     return ret;
                 }

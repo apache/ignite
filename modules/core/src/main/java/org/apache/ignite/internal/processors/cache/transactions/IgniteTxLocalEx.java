@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -192,5 +193,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
-        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
+        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c,
+        @Nullable Map<?, EntryProcessor> map,
+        @Nullable Object[] invokeArgs);
 }

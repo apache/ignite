@@ -24,12 +24,14 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -40,12 +42,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionedSingleInvokeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
@@ -55,8 +59,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
@@ -78,6 +84,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Colocated cache.
@@ -143,9 +153,21 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }
         });
 
+        ctx.io().addHandler(ctx.cacheId(), GridNearInvokeResponse.class, new CI2<UUID, GridNearInvokeResponse>() {
+            @Override public void apply(UUID nodeId, GridNearInvokeResponse res) {
+                processNearGetResponse(nodeId, res);
+            }
+        });
+
         ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetResponse.class, new CI2<UUID, GridNearSingleGetResponse>() {
             @Override public void apply(UUID nodeId, GridNearSingleGetResponse res) {
                 processNearSingleGetResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearSingleInvokeResponse.class, new CI2<UUID, GridNearSingleInvokeResponse>() {
+            @Override public void apply(UUID nodeId, GridNearSingleInvokeResponse res) {
+                processNearSingleInvokeResponse(nodeId, res);
             }
         });
 
@@ -376,7 +398,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             canRemap,
             needVer,
-            false);
+            false,
+            null,
+            null);
     }
 
     /**
@@ -406,25 +430,47 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObj
+        boolean keepCacheObj,
+        @Nullable EntryProcessor entryProcessor,
+        @Nullable Object[] invokeArgs
     ) {
-        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
-            ctx.toCacheKeyObject(key),
-            topVer,
-            readThrough,
-            forcePrimary,
-            subjId,
-            taskName,
-            deserializeBinary,
-            expiryPlc,
-            skipVals,
-            canRemap,
-            needVer,
-            keepCacheObj);
+        if (entryProcessor == null) {
+            GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+                ctx.toCacheKeyObject(key),
+                topVer,
+                readThrough,
+                forcePrimary,
+                subjId,
+                taskName,
+                deserializeBinary,
+                expiryPlc,
+                skipVals,
+                canRemap,
+                needVer,
+                keepCacheObj);
 
-        fut.init();
+            fut.init();
 
-        return fut;
+            return fut;
+        }
+        else {
+            CachePartitionedSingleInvokeFuture fut = new CachePartitionedSingleInvokeFuture(ctx,
+                ctx.toCacheKeyObject(key),
+                topVer,
+                readThrough,
+                forcePrimary,
+                subjId,
+                taskName,
+                deserializeBinary,
+                expiryPlc,
+                canRemap,
+                entryProcessor,
+                invokeArgs);
+
+            fut.init();
+
+            return fut;
+        }
     }
 
     /**
@@ -454,7 +500,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObj
+        boolean keepCacheObj,
+        @Nullable Map<?, EntryProcessor> mapProcessors,
+        @Nullable Object[] invokeArgs
     ) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -467,6 +515,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Map<K, V> locVals = null;
 
             boolean success = true;
+
+            boolean transform = !(mapProcessors == null || mapProcessors.isEmpty());
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (KeyCacheObject key : keys) {
@@ -531,14 +581,55 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (locVals == null)
                                     locVals = U.newHashMap(keys.size());
 
-                                ctx.addResult(locVals,
-                                    key,
-                                    v,
-                                    skipVals,
-                                    keepCacheObj,
-                                    deserializeBinary,
-                                    true,
-                                    ver);
+                                if (!transform) {
+                                    ctx.addResult(locVals,
+                                        key,
+                                        v,
+                                        skipVals,
+                                        keepCacheObj,
+                                        deserializeBinary,
+                                        true,
+                                        ver);
+                                }
+                                else {
+                                    CacheObject res0 = v;
+                                    Object procRes = null;
+                                    Exception err = null;
+
+                                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, res0,
+                                        ver, !deserializeBinary, ctx);
+
+                                    try {
+                                        EntryProcessor<Object, Object, Object> processor = mapProcessors.get(key);
+
+                                        assert processor != null;
+
+                                        procRes = processor.process(invokeEntry, invokeArgs);
+                                    }
+                                    catch (Exception e) {
+                                        err = e;
+                                    }
+
+                                    if (invokeEntry.modified())
+                                        res0 = ctx.toCacheObject(ctx.unwrapTemporary(invokeEntry.getValue(true)));
+
+                                    GridCacheOperation op =
+                                        invokeEntry.modified() ? (res0 == null ? DELETE : UPDATE) : NOOP;
+
+                                    GridCacheReturn ret = new GridCacheReturn();
+
+                                    if (procRes != null || err != null)
+                                        ret.addEntryProcessResult(ctx,
+                                            key,
+                                            null,
+                                            procRes,
+                                            err,
+                                            false);
+                                    else
+                                        ret.invokeResult(true);
+
+                                    locVals.put((K)key, (V)F.t(res0, ret, op));
+                                }
                             }
                         }
                         else
@@ -583,6 +674,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(
             ctx,
             keys,
+            (Map)mapProcessors,
+            invokeArgs,
             topVer,
             readThrough,
             forcePrimary,
@@ -607,6 +700,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
         Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
@@ -623,6 +718,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         GridDhtColocatedLockFuture fut = new GridDhtColocatedLockFuture(ctx,
             keys,
+            entryProcessors,
+            invokeArgs,
             txx,
             isRead,
             retval,

@@ -1531,6 +1531,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,

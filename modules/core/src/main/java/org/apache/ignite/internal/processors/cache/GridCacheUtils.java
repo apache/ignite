@@ -152,6 +152,9 @@ public class GridCacheUtils {
     /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
     public static final int OLD_VAL_ON_PRIMARY = 0x4;
 
+    /** Send value to backups instead of entry processor. */
+    public static final int SEND_VALUE_TO_BACKUP = 0x8;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 

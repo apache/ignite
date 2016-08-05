@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -78,6 +81,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 
 /**
  * Colocated cache lock future.
@@ -103,6 +107,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /** Keys to lock. */
     private Collection<KeyCacheObject> keys;
+
+    /** Entry processors. */
+    private EntryProcessor[] entryProcessors;
+
+    /** Invoke arguments. */
+    private Object[] invokeArgs;
 
     /** Future ID. */
     private final IgniteUuid futId;
@@ -157,6 +167,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
+     * @param entryProcessors Entry processors.
+     * @param invokeArgs Invoke args.
      * @param tx Transaction.
      * @param read Read flag.
      * @param retval Flag to return value or not.
@@ -168,6 +180,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     public GridDhtColocatedLockFuture(
         GridCacheContext<?, ?> cctx,
         Collection<KeyCacheObject> keys,
+        @Nullable Collection<EntryProcessor> entryProcessors,
+        @Nullable Object[] invokeArgs,
         @Nullable GridNearTxLocal tx,
         boolean read,
         boolean retval,
@@ -190,6 +204,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.invokeArgs = invokeArgs;
+
+        if (entryProcessors != null) {
+            this.entryProcessors = new EntryProcessor[entryProcessors.size()];
+
+            entryProcessors.toArray(this.entryProcessors);
+        }
 
         ignoreInterrupts(true);
 
@@ -624,8 +645,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
-                if (fut.topologyVersion().equals(topVer)){
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
+                if (fut.topologyVersion().equals(topVer)) {
                     Throwable err = fut.validateCache(cctx);
 
                     if (err != null) {
@@ -793,8 +814,15 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         // Assign keys to primary nodes.
         GridNearLockMapping map = null;
 
+        EntryProcessor entryProcessor0 = null;
+
+        int idx = 0;
+
         for (KeyCacheObject key : keys) {
-            GridNearLockMapping updated = map(key, map, topVer);
+            if (entryProcessors != null)
+                entryProcessor0 = entryProcessors[idx];
+
+            GridNearLockMapping updated = map(key, map, topVer, entryProcessor0, invokeArgs);
 
             // If new mapping was created, add to collection.
             if (updated != map) {
@@ -805,6 +833,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             map = updated;
+
+            ++idx;
         }
 
         if (isDone()) {
@@ -820,6 +850,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         boolean hasRmtNodes = false;
 
         boolean first = true;
+
+        idx = 0;
 
         // Create mini futures.
         for (Iterator<GridNearLockMapping> iter = mappings.iterator(); iter.hasNext(); ) {
@@ -838,6 +870,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             for (KeyCacheObject key : mappedKeys) {
                 IgniteTxKey txKey = cctx.txKey(key);
+
+                if (entryProcessors != null)
+                    entryProcessor0 = entryProcessors[idx];
 
                 GridDistributedCacheEntry entry = null;
 
@@ -896,37 +931,37 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         !topLocked &&
                                         (tx == null || !tx.hasRemoteLocks());
 
-                                        first = false;
-                                    }
-
-                                    req = new GridNearLockRequest(
-                                        cctx.cacheId(),
-                                        topVer,
-                                        cctx.nodeId(),
-                                        threadId,
-                                        futId,
-                                        lockVer,
-                                        inTx(),
-                                        implicitTx(),
-                                        implicitSingleTx(),
-                                        read,
-                                        retval,
-                                        isolation(),
-                                        isInvalidate(),
-                                        timeout,
-                                        mappedKeys.size(),
-                                        inTx() ? tx.size() : mappedKeys.size(),
-                                        inTx() && tx.syncMode() == FULL_SYNC,
-                                        inTx() ? tx.subjectId() : null,
-                                        inTx() ? tx.taskNameHash() : 0,
-                                        read ? accessTtl : -1L,
-                                        skipStore,
-                                        keepBinary,
-                                        clientFirst,
-                                        cctx.deploymentEnabled());
-
-                                    mapping.request(req);
+                                    first = false;
                                 }
+
+                                req = new GridNearLockRequest(
+                                    cctx.cacheId(),
+                                    topVer,
+                                    cctx.nodeId(),
+                                    threadId,
+                                    futId,
+                                    lockVer,
+                                    inTx(),
+                                    implicitTx(),
+                                    implicitSingleTx(),
+                                    read,
+                                    retval,
+                                    isolation(),
+                                    isInvalidate(),
+                                    timeout,
+                                    mappedKeys.size(),
+                                    inTx() ? tx.size() : mappedKeys.size(),
+                                    inTx() && tx.syncMode() == FULL_SYNC,
+                                    inTx() ? tx.subjectId() : null,
+                                    inTx() ? tx.taskNameHash() : 0,
+                                    read ? accessTtl : -1L,
+                                    skipStore,
+                                    keepBinary,
+                                    clientFirst,
+                                    cctx.deploymentEnabled());
+
+                                mapping.request(req);
+                            }
 
                             distributedKeys.add(key);
 
@@ -937,7 +972,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                 key,
                                 retval,
                                 dhtVer, // Include DHT version to match remote DHT entry.
-                                cctx);
+                                cctx,
+                                entryProcessor0,
+                                invokeArgs);
                         }
 
                         explicit = inTx() && cand == null;
@@ -954,6 +991,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                         entry = null;
                     }
                 }
+
+                ++idx;
 
                 // Mark mapping explicit lock flag.
                 if (explicit) {
@@ -1253,7 +1292,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private GridNearLockMapping map(
         KeyCacheObject key,
         @Nullable GridNearLockMapping mapping,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        @Nullable EntryProcessor entryProcessor,
+        @Nullable Object[] args
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
@@ -1268,9 +1309,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             throw newTopologyException(null, primary.id());
 
         if (mapping == null || !primary.id().equals(mapping.node().id()))
-            mapping = new GridNearLockMapping(primary, key);
+            mapping = new GridNearLockMapping(primary, key, entryProcessor, args);
         else
-            mapping.addKey(key);
+            mapping.addKey(key, entryProcessor);
 
         return mapping;
     }
@@ -1483,6 +1524,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
             else  {
                 int i = 0;
+                int idxInvk = 0;
 
                 for (KeyCacheObject k : keys) {
                     IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
@@ -1503,6 +1545,24 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                         // In colocated cache we must receive responses only for detached entries.
                         assert txEntry.cached().detached() : txEntry;
+
+                        if (res.hasInvokeResults() && txEntry.op() == GridCacheOperation.TRANSFORM) {
+                            GridCacheOperation op = res.cacheOperations(idxInvk);
+
+                            txEntry.op(op);
+
+                            newVal = res.invokeCacheObject(idxInvk);
+
+                            txEntry.value(newVal, op != NOOP, op == NOOP);
+
+                            txEntry.entryProcessors(null);
+
+                            CacheInvokeResult invokeRes = res.invokeResCol(idxInvk);
+
+                            txEntry.invokeResult(invokeRes);
+
+                            ++idxInvk;
+                        }
 
                         txEntry.markLocked();
 

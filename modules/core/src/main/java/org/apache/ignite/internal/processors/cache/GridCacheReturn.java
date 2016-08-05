@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,7 +58,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
     /** */
     @GridDirectCollection(CacheInvokeDirectResult.class)
-    private Collection<CacheInvokeDirectResult> invokeResCol;
+    private List<CacheInvokeDirectResult> invokeResCol;
 
     /** Success flag. */
     private volatile boolean success;
@@ -160,6 +160,27 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /**
+     * @return First entry processor result.
+     */
+    public CacheInvokeDirectResult firstInvokeResult() {
+        if (invokeResCol != null && !invokeResCol.isEmpty())
+            return invokeResCol.get(0);
+
+        return null;
+    }
+
+    /**
+     * @param idx Index.
+     * @return First entry processor result.
+     */
+    public CacheInvokeDirectResult invokeResult(int idx) {
+        if (invokeResCol != null && !invokeResCol.isEmpty() && invokeResCol.size() > idx)
+            return invokeResCol.get(idx);
+
+        return null;
+    }
+
+    /**
      * @return Success flag.
      */
     public boolean success() {
@@ -222,7 +243,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param keepBinary Keep binary.
      */
     @SuppressWarnings("unchecked")
-    public synchronized void addEntryProcessResult(
+    public synchronized CacheInvokeResult addEntryProcessResult(
         GridCacheContext cctx,
         KeyCacheObject key,
         @Nullable Object key0,
@@ -250,6 +271,8 @@ public class GridCacheReturn implements Externalizable, Message {
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
 
             resMap.put(resKey, res0);
+
+            return res0;
         }
         else {
             assert v == null;
@@ -264,6 +287,8 @@ public class GridCacheReturn implements Externalizable, Message {
                 new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) : new CacheInvokeDirectResult(key, err);
 
             invokeResCol.add(res0);
+
+            return null;
         }
     }
 

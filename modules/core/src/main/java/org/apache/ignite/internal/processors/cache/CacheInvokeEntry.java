@@ -66,6 +66,27 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     }
 
     /**
+     * Constructor.
+     *
+     * @param keyObj Key cache object.
+     * @param valObj Cache object value.
+     * @param ver Entry version.
+     * @param keepBinary Keep binary flag.
+     * @param cctx Cache context.
+     */
+    public CacheInvokeEntry(KeyCacheObject keyObj,
+        @Nullable CacheObject valObj,
+        GridCacheVersion ver,
+        boolean keepBinary,
+        GridCacheContext cctx
+    ) {
+        super(cctx, keyObj, valObj, keepBinary);
+
+        this.hadVal = valObj != null;
+        this.ver = ver;
+    }
+
+    /**
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Value cache object.

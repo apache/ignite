@@ -19,14 +19,25 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -56,6 +67,25 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /** DHT candidate versions. */
     @GridToStringInclude
     private GridCacheVersion[] mappedVers;
+
+    /** */
+    @GridToStringExclude
+    @GridDirectCollection(CacheInvokeDirectResult.class)
+    private CacheInvokeDirectResult[] invokeResCol;
+
+    /** */
+    @GridDirectTransient
+    private transient List<CacheInvokeResult> invokeResults;
+
+    /** */
+    @GridToStringExclude
+    @GridDirectCollection(GridCacheOperation.class)
+    private byte[] cacheOperations;
+
+    /** */
+    @GridToStringExclude
+    @GridDirectCollection(CacheObject.class)
+    private CacheObject[] invokeCacheObject;
 
     /** Filter evaluation results for fast-commit transactions. */
     private boolean[] filterRes;
@@ -179,7 +209,9 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         @Nullable CacheObject val,
         boolean filterPassed,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheVersion mappedVer
+        @Nullable GridCacheVersion mappedVer,
+        @Nullable CacheInvokeDirectResult invokeRet,
+        @Nullable T2<GridCacheOperation, CacheObject> invokeRes
     ) throws IgniteCheckedException {
         int idx = valuesSize();
 
@@ -189,8 +221,111 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         if (filterRes != null)
             filterRes[idx] = filterPassed;
 
+        if (invokeRes != null) {
+            if (cacheOperations == null) {
+                cacheOperations = new byte[keysCount()];
+                invokeCacheObject = new CacheObject[keysCount()];
+                invokeResCol = new CacheInvokeDirectResult[keysCount()];
+            }
+
+            cacheOperations[idx] = (byte)invokeRes.get1().ordinal();
+            invokeCacheObject[idx] = invokeRes.get2();
+
+            invokeResCol[idx] = invokeRet;
+        }
+
         // Delegate to super.
         addValue(val);
+    }
+
+    /**
+     * @param idx Index.
+     * @return Cache invoke result.
+     */
+    public CacheInvokeResult invokeResCol(int idx) {
+        if (invokeResults.size() > idx)
+            return invokeResults.get(idx);
+        else
+            return null;
+    }
+
+    /**
+     * @return Cache operation.
+     */
+    public GridCacheOperation cacheOperations(int idx) {
+        assert cacheOperations.length > idx : "Length: " + cacheOperations.length + ", idx: " + idx;
+
+        return GridCacheOperation.fromOrdinal(cacheOperations[idx]);
+    }
+
+    /**
+     * @return Cache object.
+     */
+    public CacheObject invokeCacheObject(int idx) {
+        return invokeCacheObject[idx];
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        GridCacheContext cctx;
+
+        if (invokeCacheObject != null) {
+            cctx = ctx.cacheContext(cacheId);
+
+            for (CacheObject o : invokeCacheObject)
+                prepareMarshalCacheObject(o, cctx);
+        }
+
+        if (invokeResCol != null) {
+            cctx = ctx.cacheContext(cacheId);
+
+            for (CacheInvokeDirectResult o : invokeResCol) {
+                if (o != null)
+                    o.prepareMarshal(cctx);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        CacheObjectContext objCtx = cctx.cacheObjectContext();
+
+        if (invokeCacheObject != null && invokeCacheObject.length != 0) {
+            for (CacheObject o : invokeCacheObject) {
+                if (o != null)
+                    o.finishUnmarshal(objCtx, ldr);
+            }
+        }
+
+        if (invokeResCol != null && invokeResCol.length != 0) {
+            invokeResults = new ArrayList<>(invokeResCol.length + 1);
+
+            for (CacheInvokeDirectResult res : invokeResCol) {
+                CacheInvokeResult<?> res0 = null;
+
+                if (res != null) {
+                    res.finishUnmarshal(cctx, ldr);
+
+                    res0 = res.error() == null ?
+                        CacheInvokeResult.fromResult(objCtx.unwrapBinaryIfNeeded(res.result(), true, false)) :
+                        CacheInvokeResult.fromError(res.error());
+                }
+
+                invokeResults.add(res0);
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if responce contains invoke a result, otherwise {@code false}.
+     */
+    public boolean hasInvokeResults() {
+        return cacheOperations != null;
     }
 
     /** {@inheritDoc} */
@@ -240,6 +375,24 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
             case 15:
                 if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
+                if (!writer.writeObjectArray("invokeResCol", invokeResCol, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
+                if (!writer.writeByteArray("cacheOperations", cacheOperations))
+                    return false;
+
+                writer.incrementState();
+
+            case 18:
+                if (!writer.writeObjectArray("invokeCacheObject", invokeCacheObject, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -308,6 +461,30 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
                 reader.incrementState();
 
+            case 16:
+                invokeResCol = reader.readObjectArray("invokeResCol", MessageCollectionItemType.MSG, CacheInvokeDirectResult.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 17:
+                cacheOperations = reader.readByteArray("cacheOperations");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 18:
+                invokeCacheObject = reader.readObjectArray("invokeCacheObject", MessageCollectionItemType.MSG, CacheObject.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearLockResponse.class);
@@ -320,7 +497,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 19;
     }
 
     /** {@inheritDoc} */

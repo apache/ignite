@@ -82,10 +82,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -160,6 +164,26 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -113:
+                msg = new GridNearInvokeResponse();
+
+                break;
+
+            case -112:
+                msg = new GridNearInvokeRequest();
+
+                break;
+
+            case -111:
+                msg = new GridNearSingleInvokeResponse();
+
+                break;
+
+            case -110:
+                msg = new GridNearSingleInvokeRequest();
+
+                break;
+
             case -26:
                 msg = new TxLockList();
 

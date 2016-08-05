@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -329,7 +330,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final boolean skipVals,
         final boolean needVer,
         boolean keepBinary,
-        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
+        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c,
+        @Nullable Map<?, EntryProcessor> mapProcessors,
+        @Nullable Object[] invokeArgs
     ) {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
@@ -359,11 +362,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         else if (cacheCtx.isColocated()) {
             if (keys.size() == 1) {
                 final KeyCacheObject key = F.first(keys);
+                final EntryProcessor entryProcessor = mapProcessors != null ? F.firstValue(mapProcessors) : null;
 
                 return cacheCtx.colocated().loadAsync(
                     key,
                     readThrough,
-                    /*force primary*/needVer,
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -372,7 +376,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     skipVals,
                     /*can remap*/true,
                     needVer,
-                    /*keepCacheObject*/true
+                    /*keepCacheObject*/true,
+                    entryProcessor,
+                    invokeArgs
                 ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
                     @Override public Void apply(IgniteInternalFuture<Object> f) {
                         try {
@@ -394,7 +400,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 return cacheCtx.colocated().loadAsync(
                     keys,
                     readThrough,
-                    /*force primary*/needVer,
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -403,7 +409,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     skipVals,
                     /*can remap*/true,
                     needVer,
-                    /*keepCacheObject*/true
+                    /*keepCacheObject*/true,
+                    mapProcessors,
+                    invokeArgs
                 ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
                     @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
                         try {
@@ -433,7 +441,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 skipVals,
                 keepBinary,
                 needVer,
-                c);
+                c,
+                null,
+                null);
         }
     }
 

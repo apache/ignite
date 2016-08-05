@@ -31,13 +31,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePeekModes;
@@ -50,7 +52,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -62,8 +66,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersion
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -85,6 +93,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
@@ -143,6 +154,27 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
 
         GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+            .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param res Near get response.
+     */
+    protected void processNearSingleInvokeResponse(UUID nodeId, GridNearSingleInvokeResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        CachePartitionedSingleInvokeFuture fut = (CachePartitionedSingleInvokeFuture)ctx.mvcc()
             .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
 
         if (fut == null) {
@@ -853,6 +885,118 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param nodeId Node ID.
      * @param req Get request.
      */
+    protected void processNearSingleInvokeRequest(final UUID nodeId, final GridNearSingleInvokeRequest req) {
+        assert ctx.affinityNode();
+
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(req.accessTtl());
+
+        IgniteInternalFuture<GridCacheEntryInfo> fut =
+            getDhtSingleAsync(
+                nodeId,
+                req.messageId(),
+                req.key(),
+                false,
+                req.readThrough(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                expiryPlc,
+                false);
+
+        fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+            @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
+                GridNearSingleInvokeResponse res;
+
+                GridDhtFuture<GridCacheEntryInfo> fut = (GridDhtFuture<GridCacheEntryInfo>)f;
+
+                try {
+                    GridCacheEntryInfo info = fut.get();
+
+                    if (F.isEmpty(fut.invalidPartitions())) {
+                        CacheObject res0 = null;
+                        Object procRes = null;
+                        Exception err = null;
+
+                        if (info != null)
+                            res0 = info.value();
+
+                        CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(req.key(), res0,
+                            info != null ? info.version() : null, req.keepBinary(), ctx);
+
+                        try {
+                            EntryProcessor processor = req.entryProcessor();
+
+                            procRes = processor.process(invokeEntry, req.invokeArguments());
+                        }
+                        catch (Exception e) {
+                            err = e;
+                        }
+
+                        if (invokeEntry.modified())
+                            res0 = context().toCacheObject(context().unwrapTemporary(invokeEntry.getValue(true)));
+
+                        GridCacheOperation op = invokeEntry.modified() ? (res0 == null ? DELETE : UPDATE) : NOOP;
+
+                        CacheObject invkRes = err == null ? ctx.toCacheObject(procRes) : null;
+
+                        res = new GridNearSingleInvokeResponse(ctx,
+                            req.key(),
+                            ctx.cacheId(),
+                            req.futureId(),
+                            req.topologyVersion(),
+                            res0,
+                            false,
+                            req.addDeploymentInfo(),
+                            invkRes,
+                            null,
+                            err,
+                            op);
+
+                        if (res0 != null)
+                            res.setContainsValue();
+                    }
+                    else {
+                        AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
+
+                        assert topVer.compareTo(req.topologyVersion()) >= 0 : "Wrong ready topology version for " +
+                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
+
+                        res = new GridNearSingleInvokeResponse(
+                            ctx.cacheId(),
+                            req.futureId(),
+                            topVer,
+                            true);
+                    }
+                }
+                catch (NodeStoppingException e) {
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed processing invoke request: " + req, e);
+
+                    res = new GridNearSingleInvokeResponse(ctx.cacheId(),
+                        req.futureId(),
+                        req.topologyVersion(),
+                        e);
+                }
+
+                try {
+                    ctx.io().send(nodeId, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send invoke response to node (is node still alive?) [nodeId=" + nodeId +
+                        ",req=" + req + ", res=" + res + ']', e);
+                }
+
+                sendTtlUpdateRequest(expiryPlc);
+            }
+        });
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Get request.
+     */
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
         assert ctx.affinityNode();
         assert !req.reload() : req;
@@ -887,6 +1031,115 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     Collection<GridCacheEntryInfo> entries = fut.get();
 
                     res.entries(entries);
+                }
+                catch (NodeStoppingException e) {
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed processing get request: " + req, e);
+
+                    res.error(e);
+                }
+
+                if (!F.isEmpty(fut.invalidPartitions()))
+                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().readyAffinityVersion());
+                else
+                    res.invalidPartitions(fut.invalidPartitions(), req.topologyVersion());
+
+                try {
+                    ctx.io().send(nodeId, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                        ",req=" + req + ", res=" + res + ']', e);
+                }
+
+                sendTtlUpdateRequest(expiryPlc);
+            }
+        });
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Get request.
+     */
+    protected void processNearInvokeRequest(final UUID nodeId, final GridNearInvokeRequest req) {
+        assert ctx.affinityNode();
+        assert !req.reload() : req;
+
+        long ttl = req.accessTtl();
+
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
+
+        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
+            getDhtAsync(nodeId,
+                req.messageId(),
+                req.keys(),
+                req.readThrough(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                expiryPlc,
+                req.skipValues());
+
+        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+            @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                GridNearInvokeResponse res = new GridNearInvokeResponse(ctx.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.deployInfo() != null);
+
+                GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
+                    (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
+
+                try {
+                    Collection<GridCacheEntryInfo> entries = fut.get();
+
+                    res.entries(entries);
+
+                    int idx = 0;
+                    byte[] cacheOperations = new byte[entries.size()];
+                    GridCacheReturn ret = new GridCacheReturn(false);
+
+                    for (GridCacheEntryInfo info : entries) {
+                        CacheObject res0 = info.value();
+                        Object procRes = null;
+                        Exception err = null;
+
+                        CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(info.key(), res0,
+                            info.version(), req.keepBinary(), ctx);
+
+                        try {
+                            EntryProcessor<Object, Object, Object> processor = req.entryProcessor(info.key());
+
+                            procRes = processor.process(invokeEntry, req.invokeArguments());
+                        }
+                        catch (Exception e) {
+                            err = e;
+                        }
+
+                        if (invokeEntry.modified())
+                            res0 = context().toCacheObject(context().unwrapTemporary(invokeEntry.getValue(true)));
+
+                        GridCacheOperation op = invokeEntry.modified() ? (res0 == null ? DELETE : UPDATE) : NOOP;
+                        cacheOperations[idx] = (byte)op.ordinal();
+
+                        if (op != NOOP)
+                            info.value(res0);
+
+                        CacheObject invkRes = err == null ? ctx.toCacheObject(procRes) : null;
+
+                        if (invkRes != null || err != null)
+                            ret.addEntryProcessResult(ctx, info.key(), null, invkRes, err, true);
+                        else
+                            ret.invokeResult(true);
+
+                        ++idx;
+                    }
+
+                    res.cacheReturn(ret);
+                    res.cacheOperation(cacheOperations);
                 }
                 catch (NodeStoppingException e) {
                     return;

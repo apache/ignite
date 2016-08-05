@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -49,9 +52,11 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
@@ -71,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -79,6 +85,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -126,6 +133,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest>() {
             @Override public void apply(UUID nodeId, GridNearGetRequest req) {
                 processNearGetRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearInvokeRequest.class, new CI2<UUID, GridNearInvokeRequest>() {
+            @Override public void apply(UUID nodeId, GridNearInvokeRequest req) {
+                processNearInvokeRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearSingleInvokeRequest.class, new CI2<UUID, GridNearSingleInvokeRequest>() {
+            @Override public void apply(UUID nodeId, GridNearSingleInvokeRequest req) {
+                processNearSingleInvokeRequest(nodeId, req);
             }
         });
 
@@ -643,6 +662,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
         @Nullable Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         IgniteTxLocalEx txx,
         boolean isInvalidate,
@@ -976,6 +997,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 IgniteInternalFuture<GridCacheReturn> txFut = tx.lockAllAsync(
                     cacheCtx,
                     entries,
+                    req.entryProcessors(),
+                    req.invokeArguments(),
                     req.messageId(),
                     req.txRead(),
                     req.needReturnValue(),
@@ -1000,6 +1023,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 entries,
                                 req,
                                 t,
+                                o,
                                 t.xidVersion(),
                                 e);
 
@@ -1051,6 +1075,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             GridNearLockResponse res = createLockReply(nearNode,
                                 entries,
                                 req,
+                                null,
                                 null,
                                 mappedVer,
                                 e);
@@ -1133,6 +1158,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         List<GridCacheEntryEx> entries,
         GridNearLockRequest req,
         @Nullable GridDhtTxLocalAdapter tx,
+        @Nullable GridCacheReturn cacheRet,
         GridCacheVersion mappedVer,
         Throwable err) {
         assert mappedVer != null;
@@ -1160,6 +1186,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 res.completedVersions(versPair.get1(), versPair.get2());
 
                 int i = 0;
+                int idxInvk = 0;
 
                 for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext();) {
                     GridCacheEntryEx e = it.next();
@@ -1215,18 +1242,36 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 if (ret && val == null)
                                     val = e.valueBytes(null);
 
+                                IgniteTxEntry txEntry = tx.entry(e.txKey());
+
+                                CacheInvokeDirectResult invokeVal = null;
+                                T2<GridCacheOperation, CacheObject> result = null;
+
+                                if (cacheRet != null && txEntry != null && cacheRet.invokeResult()) {
+                                    result = txEntry.entryProcessorCalculatedValue();
+
+                                    invokeVal = cacheRet.invokeResult(idxInvk);
+
+                                    if (invokeVal != null && invokeVal.key().equals(e.key()))
+                                        ++idxInvk;
+                                    else
+                                        invokeVal = null;
+                                }
+
                                 // We include values into response since they are required for local
                                 // calls and won't be serialized. We are also including DHT version.
                                 res.addValueBytes(
                                     ret ? val : null,
                                     filterPassed,
                                     ver,
-                                    mappedVer);
+                                    mappedVer,
+                                    invokeVal,
+                                    result);
                             }
                             else {
                                 // We include values into response since they are required for local
                                 // calls and won't be serialized. We are also including DHT version.
-                                res.addValueBytes(null, false, e.version(), mappedVer);
+                                res.addValueBytes(null, false, e.version(), mappedVer, null, null);
                             }
 
                             break;

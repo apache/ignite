@@ -30,7 +30,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -58,6 +60,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SEND_VALUE_TO_BACKUP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.OLD_VAL_ON_PRIMARY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
@@ -208,6 +211,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** */
     private GridCacheVersion serReadVer;
+
+    /** */
+    @GridDirectTransient
+    private transient CacheInvokeResult invokeResult;
+
+    /** */
+    @GridDirectTransient
+    private transient boolean hasInvokeRes = false;
 
     /**
      * Required by {@link Externalizable}
@@ -527,6 +538,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * Sets send value to backup flag value.
+     *
+     * @param sendValToBackup Keep binary flag value.
+     */
+    public void sendValueToBackup(boolean sendValToBackup) {
+        setFlag(sendValToBackup, SEND_VALUE_TO_BACKUP);
+    }
+
+    /**
+     * @return Send value to backup flag value.
+     */
+    public boolean sendValueToBackup() {
+        return isFlag(SEND_VALUE_TO_BACKUP);
+    }
+
+    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -684,6 +711,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         transformClosBytes = null;
 
         val.op(TRANSFORM);
+
+        hasInvokeRes = false;
+        invokeResult = null;
     }
 
     /**
@@ -944,6 +974,29 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         assert entryProcessorCalcVal != null;
 
         this.entryProcessorCalcVal = entryProcessorCalcVal;
+    }
+
+    /**
+     * @param invokeResult Invoke entry processor result.
+     */
+    public void invokeResult(CacheInvokeResult invokeResult) {
+        this.invokeResult = invokeResult;
+
+        this.hasInvokeRes = true;
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    public CacheInvokeResult invokeResult() {
+        return invokeResult;
+    }
+
+    /**
+     * @return {@code True} if entry has calculated invoke result otherwise {@code false}.
+     */
+    public boolean hasInvokeRes() {
+        return hasInvokeRes;
     }
 
     /**

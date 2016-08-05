@@ -356,7 +356,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     EntryProcessor entryProc = null;
 
-                    if (evt && txEntry.op() == TRANSFORM)
+                    if (txEntry.op() == TRANSFORM)
                         entryProc = F.first(txEntry.entryProcessors()).get1();
 
                     final boolean keepBinary = txEntry.keepBinary();
@@ -392,10 +392,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             txEntry.oldValueOnPrimary(val != null);
 
                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
-                                     txEntry.cached().version(), keepBinary, txEntry.cached());
+                                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
+                                    txEntry.cached().version(), keepBinary, txEntry.cached());
 
-                                 try {
+                                try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
                                     procRes = processor.process(invokeEntry, t.get2());
@@ -408,7 +408,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     break;
                                 }
 
-                                 modified |= invokeEntry.modified();
+                                modified |= invokeEntry.modified();
                             }
 
                             if (modified)
@@ -427,7 +427,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 }
                             }
 
-                            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
+                            if (txEntry.sendValueToBackup()) {
+                                txEntry.op(op);
+                                txEntry.value(val, true, false);
+                                txEntry.entryProcessors(null);
+                            }
+                            else
+                                txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
 
                             if (retVal) {
                                 if (err != null || procRes != null)

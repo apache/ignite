@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -112,6 +113,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(Collection<KeyCacheObject> keys,
+        Collection<EntryProcessor> entryProcessors,
+        Object[] invokeArgs,
         long timeout,
         IgniteTxLocalEx tx,
         boolean isRead,
