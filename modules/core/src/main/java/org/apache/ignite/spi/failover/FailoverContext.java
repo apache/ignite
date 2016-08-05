@@ -60,21 +60,21 @@ public interface FailoverContext {
 
     /**
      * Gets affinity key for {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)},
-     * {@link IgniteCompute#affinityRun(IgniteRunnable, Collection, Object)},
+     * {@link IgniteCompute#affinityRun(Collection, Object, IgniteRunnable)},
      * {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}
-     * and {@link IgniteCompute#affinityCall(IgniteCallable, Collection, Object)}.
+     * and {@link IgniteCompute#affinityCall(Collection, Object, IgniteCallable)}.
      *
      * @return Affinity key.
      */
     @Nullable public Object affinityKey();
 
     /**
-     * Gets partition for {@link IgniteCompute#affinityRun(IgniteRunnable, Collection, int)}
-     * and {@link IgniteCompute#affinityCall(IgniteCallable, Collection, int)}.
+     * Gets partition for {@link IgniteCompute#affinityRun(Collection, int, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(Collection, int, IgniteCallable)}.
      *
      * @return Partition number.
      */
-    @Nullable public int partition();
+    public int partition();
 
     /**
      * Returns affinity cache name {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
