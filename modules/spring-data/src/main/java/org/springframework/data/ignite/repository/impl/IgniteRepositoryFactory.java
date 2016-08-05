@@ -20,13 +20,20 @@ package org.springframework.data.ignite.repository.impl;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.ignite.repository.IgniteRepository;
 import org.springframework.data.ignite.repository.config.Query;
 import org.springframework.data.ignite.repository.config.RepositoryConfig;
@@ -110,55 +117,123 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 final Query annotation = mtd.getAnnotation(Query.class);
 
                 if (annotation != null && StringUtils.hasText(annotation.value()))
-                    return new IgniteRepositoryQuery(metadata, annotation.value(), mtd, factory);
+                    return new IgniteRepositoryQuery(metadata,
+                        new IgniteQuery(annotation.value(), false, IgniteQueryGenerator.isDynamic(mtd)), mtd, factory);
 
                 //TODO namedQueries handling
 
                 return new IgniteRepositoryQuery(
                     metadata,
-                    QueryGenerator.generateSql(mtd, metadata),
+                    IgniteQueryGenerator.generateSql(mtd, metadata),
                     mtd,
                     factory);
             }
         };
     }
 
+    enum ReturnStrategy {
+        LIST, SLICE, ONE_VALUE;
+    }
+
     /**
      *
      */
     private class IgniteRepositoryQuery implements RepositoryQuery {
+        /** Type. */
         private final Class<?> type;
-        private final String sql;
+        /** Sql. */
+        private final IgniteQuery query;
+        /** Cache. */
         private final IgniteCache cache;
 
+        /** Method. */
         private final Method mtd;
+        /** Metadata. */
         private final RepositoryMetadata metadata;
+        /** Factory. */
         private final ProjectionFactory factory;
 
-        public IgniteRepositoryQuery(RepositoryMetadata metadata, String sql,
+        /** Return strategy. */
+        private final ReturnStrategy returnStrategy;
+
+        public IgniteRepositoryQuery(RepositoryMetadata metadata, IgniteQuery query,
             Method mtd, ProjectionFactory factory) {
             type = metadata.getDomainType();
-            this.sql = sql;
+            this.query = query;
             cache = ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface()));
 
             this.metadata = metadata;
             this.mtd = mtd;
             this.factory = factory;
+
+            Class<?> returnType = mtd.getReturnType();
+
+            if (returnType.isAssignableFrom(ArrayList.class))
+                returnStrategy = ReturnStrategy.LIST;
+            else if (returnType == Slice.class)
+                returnStrategy = ReturnStrategy.SLICE;
+            else
+                returnStrategy = ReturnStrategy.ONE_VALUE;
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute(Object[] parameters) {
-            SqlQuery qry = new SqlQuery(type, sql);
-            qry.setArgs(parameters);
+        @Override public Object execute(Object[] prmtrs) {
+            Object[] parameters = prmtrs;
+            String sql = this.query.sql();
 
-            List<CacheEntryImpl> allEntries = cache.query(qry).getAll();
+            org.apache.ignite.cache.query.Query qry;
 
-            ArrayList list = new ArrayList();
+            switch (query.dynamicity()) {
+                case SORTABLE:
+                    sql = IgniteQueryGenerator.addSorting(new StringBuilder(sql),
+                        (Sort) parameters[parameters.length - 1]).toString();
+                    parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+                    break;
+                case PAGEBABLE:
+                    sql = IgniteQueryGenerator.addPaging(new StringBuilder(sql),
+                        (Pageable) parameters[parameters.length - 1]).toString();
+                    parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+                    break;
+            }
 
-            for (CacheEntryImpl entry : allEntries)
-                list.add(entry.getValue());
+            if (query.isFieldQuery()) {
+                SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
+                sqlFieldsQry.setArgs(parameters);
+                qry = sqlFieldsQry;
+            } else {
+                SqlQuery sqlQry = new SqlQuery(type, sql);
+                sqlQry.setArgs(parameters);
+                qry = sqlQry;
+            }
 
-            return list;
+            QueryCursor qryCursor = cache.query(qry);
+
+            Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
+
+            switch (returnStrategy) {
+                case LIST:
+                    ArrayList list = new ArrayList();
+
+                    for (CacheEntryImpl entry : qryIter)
+                        list.add(entry.getValue());
+
+                    return list;
+                case ONE_VALUE:
+                    Iterator<CacheEntryImpl> iter = qryIter.iterator();
+                    if (iter.hasNext())
+                        return iter.next();
+
+                    return null;
+                case SLICE:
+                    ArrayList content = new ArrayList();
+
+                    for (CacheEntryImpl entry : qryIter)
+                        content.add(entry.getValue());
+
+                    return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+            }
+
+            return null;
         }
 
         /** {@inheritDoc} */

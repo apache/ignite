@@ -19,6 +19,7 @@ package org.springframework.data.ignite.repository.impl;
 
 import java.lang.reflect.Method;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.parser.Part;
@@ -27,25 +28,29 @@ import org.springframework.data.repository.query.parser.PartTree;
 /**
  *
  */
-public class QueryGenerator {
+public class IgniteQueryGenerator {
     /**
      * @param mtd Method.
      * @param metadata Metadata.
      */
-    @NotNull public static String generateSql(Method mtd, RepositoryMetadata metadata) {
+    @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
 
         StringBuilder sql = new StringBuilder();
 
         if (parts.isDelete())
-            sql.append("DELETE ");
+            throw new UnsupportedOperationException();
+//            sql.append("DELETE ");
         else {
             sql.append("SELECT ");
 
             if (parts.isDistinct())
-                sql.append("DISTINCT ");
+                throw new UnsupportedOperationException();
 
-            sql.append(" * ");
+            if (parts.isCountProjection())
+                sql.append("COUNT(1) ");
+            else
+                sql.append(" * ");
         }
 
         sql.append("FROM ").append(metadata.getDomainType().getSimpleName());
@@ -68,8 +73,17 @@ public class QueryGenerator {
             sql.delete(sql.length() - 4, sql.length());
         }
 
-        Sort sort = parts.getSort();
+        addSorting(sql, parts.getSort());
 
+        if (parts.isLimiting()) {
+            sql.append(" LIMIT ");
+            sql.append(parts.getMaxResults().intValue());
+        }
+
+        return new IgniteQuery(sql.toString(), parts.isCountProjection(), isDynamic(mtd));
+    }
+
+    public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
         if (sort != null) {
             sql.append(" ORDER BY ");
             for (Sort.Order order : sort) {
@@ -92,76 +106,105 @@ public class QueryGenerator {
             sql.delete(sql.length() - 2, sql.length());
         }
 
-        if (parts.isLimiting()) {
-            sql.append(" LIMIT ");
-            sql.append(parts.getMaxResults().intValue());
+        return sql;
+    }
+
+    public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
+        if (pageable.getSort() != null)
+            addSorting(sql, pageable.getSort());
+
+        sql.append(" LIMIT ").append(pageable.getPageSize()).append(" OFFSET ").append(pageable.getOffset());
+
+        return sql;
+    }
+
+    public static IgniteQuery.Dynamicity isDynamic(Method mtd) {
+        IgniteQuery.Dynamicity dynamicity;
+
+        Class<?>[] types = mtd.getParameterTypes();
+        Class<?> type = types[types.length - 1];
+
+        if (type == Sort.class)
+            dynamicity = IgniteQuery.Dynamicity.SORTABLE;
+        else if (type == Pageable.class)
+            dynamicity = IgniteQuery.Dynamicity.PAGEBABLE;
+        else
+            dynamicity = IgniteQuery.Dynamicity.NONE;
+
+        for (int i = 0; i < types.length - 1; i++) {
+            Class<?> tp = types[i];
+            if (tp == Sort.class || tp == Pageable.class)
+                throw new AssertionError("Sort and Pageable parameters is allowed only on last position");
         }
 
-        return sql.toString();
+        return dynamicity;
     }
 
     private static void handlePart(StringBuilder sql, Part part) {
         sql.append("(");
+
+        sql.append(part.getProperty());
+
         switch (part.getType()) {
             case SIMPLE_PROPERTY:
-                sql.append(part.getProperty()).append("=?");
+                sql.append("=?");
                 break;
             case NEGATING_SIMPLE_PROPERTY:
-                sql.append(part.getProperty()).append("!=?");
+                sql.append("!=?");
                 break;
             case GREATER_THAN:
-                sql.append(part.getProperty()).append(">?");
+                sql.append(">?");
                 break;
             case GREATER_THAN_EQUAL:
-                sql.append(part.getProperty()).append(">=?");
+                sql.append(">=?");
                 break;
             case LESS_THAN:
-                sql.append(part.getProperty()).append("<?");
+                sql.append("<?");
                 break;
             case LESS_THAN_EQUAL:
-                sql.append(part.getProperty()).append("<=?");
+                sql.append("<=?");
                 break;
             case IS_NOT_NULL:
-                sql.append(part.getProperty()).append(" IS NOT NULL");
+                sql.append(" IS NOT NULL");
                 break;
             case IS_NULL:
-                sql.append(part.getProperty()).append(" IS NULL");
+                sql.append(" IS NULL");
                 break;
             case BETWEEN:
-                sql.append(part.getProperty()).append(" BETWEEN ? AND ?");
+                sql.append(" BETWEEN ? AND ?");
                 break;
             case FALSE:
-                sql.append(part.getProperty()).append(" = FALSE");
+                sql.append(" = FALSE");
                 break;
             case TRUE:
-                sql.append(part.getProperty()).append(" = TRUE");
+                sql.append(" = TRUE");
                 break;
             case CONTAINING:
-                sql.append(part.getProperty()).append(" LIKE '%' || ? || '%'");
+                sql.append(" LIKE '%' || ? || '%'");
                 break;
             case NOT_CONTAINING:
-                sql.append(part.getProperty()).append(" NOT LIKE '%' || ? || '%'");
+                sql.append(" NOT LIKE '%' || ? || '%'");
                 break;
             case LIKE:
-                sql.append(part.getProperty()).append(" LIKE '%' || ? || '%'");
+                sql.append(" LIKE '%' || ? || '%'");
                 break;
             case NOT_LIKE:
-                sql.append(part.getProperty()).append(" NOT LIKE '%' || ? || '%'");
+                sql.append(" NOT LIKE '%' || ? || '%'");
                 break;
             case STARTING_WITH:
-                sql.append(part.getProperty()).append(" LIKE  ? || '%'");
+                sql.append(" LIKE  ? || '%'");
                 break;
             case ENDING_WITH:
-                sql.append(part.getProperty()).append(" LIKE '%' || ?");
+                sql.append(" LIKE '%' || ?");
                 break;
             case IN:
-                sql.append(part.getProperty()).append(" IN ?");
+                sql.append(" IN ?");
                 break;
             case NOT_IN:
-                sql.append(part.getProperty()).append(" NOT IN ?");
+                sql.append(" NOT IN ?");
                 break;
             case REGEX:
-                sql.append(part.getProperty()).append(" REGEXP ?");
+                sql.append(" REGEXP ?");
                 break;
             case NEAR:
             case AFTER:

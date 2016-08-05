@@ -51,22 +51,7 @@ public class SpringContext {
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setName("cache");
 
-        String strCls = String.class.getCanonicalName();
-
-        LinkedHashMap<String, String> qryFields = new LinkedHashMap<>();
-        qryFields.put("firstName", strCls);
-
-        QueryEntity qryEntity = new QueryEntity();
-        qryEntity.setFields(qryFields);
-        qryEntity.setValueType(Person.class.getName());
-        qryEntity.setKeyType(Integer.class.getName());
-
-        qryEntity.setIndexes(Arrays.asList(
-            new QueryIndex("firstName", true)
-        ));
-
-        ccfg.setQueryEntities(Collections.singleton(qryEntity));
-
+        ccfg.setIndexedTypes(Integer.class, Person.class);
 
         configuration.setCacheConfiguration(ccfg);
         return configuration;

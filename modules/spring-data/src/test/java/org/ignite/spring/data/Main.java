@@ -19,6 +19,8 @@ package org.ignite.spring.data;
 
 import java.util.List;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 public class Main {
     public static void main(String args[]) {
@@ -29,8 +31,8 @@ public class Main {
 
         FirstRepository repo = ctx.getBean(FirstRepository.class);
 
-        for (int i = 0; i < 100; i++)
-            repo.save(i, new Person("person" + Integer.toHexString(i)));
+        for (int i = 0; i < 1000; i++)
+            repo.save(i, new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString(i+16)));
 
         Service svc = ctx.getBean(Service.class);
         Iterable<Person> call = svc.call();
@@ -38,7 +40,7 @@ public class Main {
         for (Person person : call)
             System.out.println(person.getFirstName());
 
-        List<Person> persons = repo.byVal("person4a");
+        List<Person> persons = repo.byQuery("person4a");
 
         for (Person person : persons)
             System.out.println("query = " + person);
@@ -53,15 +55,46 @@ public class Main {
         for (Person person : containing)
             System.out.println("containing = " + person);
 
-        List<Person> top = repo.findTopByFirstNameContaining("person4");
+        Iterable<Person> top = repo.findTopByFirstNameContaining("person4");
 
         for (Person person : top)
             System.out.println("top = " + person);
 
-        List<Person> like = repo.findFirst10ByFirstNameLike("person");
+        Iterable<Person> like = repo.findFirst10ByFirstNameLike("person");
 
         for (Person person : like)
             System.out.println("like10 = " + person);
+
+        int count = repo.countByFirstNameLike("person");
+
+        System.out.println("count1 = " + count);
+
+        count = repo.countByFirstNameLike("person4");
+        System.out.println("count2 = " + count);
+
+        PageRequest pageable = new PageRequest(1, 5, Sort.Direction.DESC, "firstName");
+
+        List<Person> pageable1 = repo.findByFirstNameRegex("^[a-z]+$", pageable);
+        for (Person person : pageable1)
+            System.out.println("pageable1 = " + person);
+
+        List<Person> pageable2 = repo.findByFirstNameRegex("^[a-z]+$", pageable.next());
+        for (Person person : pageable2)
+            System.out.println("pageable2 = " + person);
+
+        int countAnd = repo.countByFirstNameLikeAndSecondNameLike("person1", "lastName1");
+        System.out.println("countAnd = " + countAnd);
+
+        int countOr = repo.countByFirstNameStartingWithOrSecondNameStartingWith("person1", "lastName1");
+        System.out.println("countOr = " + countOr);
+
+        List<Person> queryWithSort = repo.byQuery2("^[a-z]+$", new Sort(Sort.Direction.DESC, "secondName"));
+        for (Person person : queryWithSort)
+            System.out.println("queryWithSort = " + person);
+
+        List<Person> queryWithPaging = repo.byQuery3("^[a-z]+$", new PageRequest(1, 7, Sort.Direction.DESC, "secondName"));
+        for (Person person : queryWithPaging)
+            System.out.println("queryWithPaging = " + person);
 
 
     }

@@ -17,7 +17,10 @@
 
 package org.ignite.spring.data;
 
+import java.util.Collection;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.ignite.repository.IgniteRepository;
 import org.springframework.data.ignite.repository.config.Query;
 import org.springframework.data.ignite.repository.config.RepositoryConfig;
@@ -29,10 +32,24 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
     public List<Person> findByFirstNameContaining(String val);
 
-    public List<Person> findTopByFirstNameContaining(String val);
+    public List<Person> findByFirstNameRegex(String val, Pageable pageable);
 
-    public List<Person> findFirst10ByFirstNameLike(String val);
+    public Collection<Person> findTopByFirstNameContaining(String val);
+
+    public Iterable<Person> findFirst10ByFirstNameLike(String val);
+
+    public int countByFirstNameLike(String val);
+
+    public int countByFirstNameLikeAndSecondNameLike(String like1, String like2);
+
+    public int countByFirstNameStartingWithOrSecondNameStartingWith(String like1, String like2);
 
     @Query("firstName = ?")
-    public List<Person> byVal(String val);
+    public List<Person> byQuery(String val);
+
+    @Query("firstName REGEXP ?")
+    public List<Person> byQuery2(String val, Sort sort);
+
+    @Query("firstName REGEXP ?")
+    public List<Person> byQuery3(String val, Pageable sort);
 }

@@ -15,34 +15,31 @@
  * limitations under the License.
  */
 
-package org.ignite.spring.data;
+package org.springframework.data.ignite.repository.impl;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+public class IgniteQuery {
+    public enum Dynamicity {SORTABLE, PAGEBABLE, NONE}
 
-public class Person {
-    @QuerySqlField(index = true)
-    private String firstName;
+    private final String sql;
+    private final boolean isFieldQuery;
+    private final Dynamicity dynamicity;
 
-    @QuerySqlField(index = true)
-    private String secondName;
 
-    public Person(String firstName, String secondName) {
-        this.firstName = firstName;
-        this.secondName = secondName;
+    public IgniteQuery(String sql, boolean isFieldQuery, Dynamicity dynamicity) {
+        this.sql = sql;
+        this.isFieldQuery = isFieldQuery;
+        this.dynamicity = dynamicity;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public String sql() {
+        return sql;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
+    public boolean isFieldQuery() {
+        return isFieldQuery;
     }
 
-    @Override public String toString() {
-        return "Person{" +
-            "firstName='" + firstName + '\'' +
-            ", secondName='" + secondName + '\'' +
-            '}';
+    public Dynamicity dynamicity() {
+        return dynamicity;
     }
 }
