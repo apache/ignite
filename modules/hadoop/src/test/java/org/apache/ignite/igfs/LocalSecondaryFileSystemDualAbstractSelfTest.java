@@ -27,13 +27,13 @@ import java.io.File;
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
-public abstract class LocalSecondaryFileSystemDualAbstractTest extends IgfsDualAbstractSelfTest {
+public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsDualAbstractSelfTest {
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
 
     /** Constructor. */
-    public LocalSecondaryFileSystemDualAbstractTest(IgfsMode mode) {
+    public LocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
     }
 

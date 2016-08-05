@@ -18,13 +18,13 @@
 package org.apache.ignite.igfs;
 
 /**
- * DUAL_SYNC mode.
+ * DUAL_ASYNC mode test.
  */
-public class LocalSecondaryFileSystemDualSyncTest extends LocalSecondaryFileSystemDualAbstractTest {
+public class LocalSecondaryFileSystemDualAsyncSelfTest extends LocalSecondaryFileSystemDualAbstractSelfTest {
     /**
      * Constructor.
      */
-    public LocalSecondaryFileSystemDualSyncTest() {
-        super(IgfsMode.DUAL_SYNC);
+    public LocalSecondaryFileSystemDualAsyncSelfTest() {
+        super(IgfsMode.DUAL_ASYNC);
     }
 }
