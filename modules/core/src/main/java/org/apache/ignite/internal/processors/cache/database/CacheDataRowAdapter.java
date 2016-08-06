@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
+import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -76,7 +77,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
         long nextLink = 0;
-        IncompleteCacheObject incomplete = null;
+        IncompleteObject<?> incomplete = null;
 
         try (Page page = page(pageId(link), cctx)) {
             ByteBuffer buf = page.getForRead();
@@ -142,7 +143,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     // Read key.
                     if (key == null) {
-                        incomplete = readIncompleteKey(coctx, b, incomplete);
+                        incomplete = readIncompleteKey(coctx, b, (IncompleteCacheObject)incomplete);
 
                         if (key == null)
                             continue;
@@ -155,7 +156,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     // Read value.
                     if (val == null) {
-                        incomplete = readIncompleteValue(coctx, b, incomplete);
+                        incomplete = readIncompleteValue(coctx, b, (IncompleteCacheObject)incomplete);
 
                         if (val == null)
                             continue;
@@ -189,7 +190,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         incomplete = coctx.processor().toKeyCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
-            key = (KeyCacheObject)incomplete.cacheObject();
+            key = (KeyCacheObject)incomplete.object();
 
             assert key != null;
         }
@@ -214,7 +215,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
-            val = incomplete.cacheObject();
+            val = incomplete.object();
 
             assert val != null;
         }
@@ -229,9 +230,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param incomplete Incomplete object.
      * @return Incomplete object.
      */
-    private IncompleteCacheObject readIncompleteVersion(
+    private IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
-        IncompleteCacheObject incomplete
+        IncompleteObject<?> incomplete
     ) {
         if (incomplete == null) {
             // If the whole version is on a single page, just read it.
@@ -245,7 +246,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             // We have to read multipart version.
-            incomplete = new IncompleteCacheObject(new byte[DataPageIO.VER_SIZE], (byte)0);
+            incomplete = new IncompleteObject<>(new byte[DataPageIO.VER_SIZE]);
         }
 
         incomplete.readData(buf);

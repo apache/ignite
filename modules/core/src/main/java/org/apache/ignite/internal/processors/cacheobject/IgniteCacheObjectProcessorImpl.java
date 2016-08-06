@@ -192,13 +192,13 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IncompleteCacheObject<CacheObject> toCacheObject(
+    @Override public IncompleteCacheObject toCacheObject(
         final CacheObjectContext ctx,
         final ByteBuffer buf,
-        @Nullable IncompleteCacheObject<CacheObject> incompleteObj
+        @Nullable IncompleteCacheObject incompleteObj
     ) throws IgniteCheckedException {
         if (incompleteObj == null)
-            incompleteObj = new IncompleteCacheObject<>(buf);
+            incompleteObj = new IncompleteCacheObject(buf);
 
         if (incompleteObj.isReady())
             return incompleteObj;
@@ -206,19 +206,19 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         incompleteObj.readData(buf);
 
         if (incompleteObj.isReady())
-            incompleteObj.cacheObject(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;
     }
 
     /** {@inheritDoc} */
-    @Override public IncompleteCacheObject<KeyCacheObject> toKeyCacheObject(
+    @Override public IncompleteCacheObject toKeyCacheObject(
         final CacheObjectContext ctx,
         final ByteBuffer buf,
-        @Nullable IncompleteCacheObject<KeyCacheObject> incompleteObj
+        @Nullable IncompleteCacheObject incompleteObj
     ) throws IgniteCheckedException {
         if (incompleteObj == null)
-            incompleteObj = new IncompleteCacheObject<>(buf);
+            incompleteObj = new IncompleteCacheObject(buf);
 
         if (incompleteObj.isReady())
             return incompleteObj;
@@ -226,7 +226,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         incompleteObj.readData(buf);
 
         if (incompleteObj.isReady())
-            incompleteObj.cacheObject(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;
     }

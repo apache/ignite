@@ -64,7 +64,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         // Cut on header for reading.
         dataBuf.limit(3);
 
-        final IncompleteCacheObject<CacheObject> incompleteObj = new IncompleteCacheObject<>(dataBuf);
+        final IncompleteCacheObject incompleteObj = new IncompleteCacheObject(dataBuf);
 
         incompleteObj.readData(dataBuf);
 

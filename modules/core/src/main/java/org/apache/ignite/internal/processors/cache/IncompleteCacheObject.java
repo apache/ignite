@@ -22,39 +22,19 @@ import java.nio.ByteBuffer;
 /**
  * Cache object container that accumulates partial binary data
  * unless all of them ready.
- *
- * @param <T> Cache object type.
  */
-public class IncompleteCacheObject<T extends CacheObject> {
+public class IncompleteCacheObject extends IncompleteObject<CacheObject> {
     /** 4 bytes - cache object length, 1 byte - type. */
     public static final int HEAD_LEN = 5;
 
     /** */
-    private byte[] data;
-
-    /** */
     private byte type;
-
-    /** */
-    private int off;
-
-    /** */
-    private T obj;
 
     /** */
     private int headOff;
 
     /** */
     private byte[] head;
-
-    /**
-     * @param data Data array.
-     * @param type Data type.
-     */
-    public IncompleteCacheObject(final byte[] data, final byte type) {
-        this.data = data;
-        this.type = type;
-    }
 
     /**
      * @param buf Byte buffer.
@@ -70,30 +50,7 @@ public class IncompleteCacheObject<T extends CacheObject> {
             head = new byte[HEAD_LEN];
     }
 
-    /**
-     * @return {@code True} if cache object is fully assembled.
-     */
-    public boolean isReady() {
-        return data != null && off == data.length;
-    }
-
-    /**
-     * @return Cache object if ready.
-     */
-    public T cacheObject() {
-        return obj;
-    }
-
-    /**
-     * @param cacheObj Cache object.
-     */
-    public void cacheObject(T cacheObj) {
-        obj = cacheObj;
-    }
-
-    /**
-     * @param buf Read remaining data.
-     */
+    /** {@inheritDoc} */
     public void readData(ByteBuffer buf) {
         if (data == null) {
             assert head != null;
@@ -114,13 +71,8 @@ public class IncompleteCacheObject<T extends CacheObject> {
             }
         }
 
-        if (data != null) {
-            final int len = Math.min(data.length - off, buf.remaining());
-
-            buf.get(data, off, len);
-
-            off += len;
-        }
+        if (data != null)
+            super.readData(buf);
     }
 
     /**
@@ -128,12 +80,5 @@ public class IncompleteCacheObject<T extends CacheObject> {
      */
     public byte type() {
         return type;
-    }
-
-    /**
-     * @return Data array.
-     */
-    public byte[] data() {
-        return data;
     }
 }
