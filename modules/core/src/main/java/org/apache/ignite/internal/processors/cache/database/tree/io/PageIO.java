@@ -223,6 +223,26 @@ public abstract class PageIO {
     }
 
     /**
+     * @param type IO Type.
+     * @param ver IO Version.
+     * @return Page IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public static <Q extends PageIO> Q getPageIO(int type, int ver) throws IgniteCheckedException {
+        switch (type) {
+            case T_DATA:
+                return (Q)DataPageIO.VERSIONS.forVersion(ver);
+
+            case T_BPLUS_META:
+                return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            default:
+                return (Q)getBPlusIO(type, ver);
+        }
+    }
+
+    /**
      * @param buf Buffer.
      * @return IO for either inner or leaf B+Tree page.
      * @throws IgniteCheckedException If failed.
@@ -280,6 +300,6 @@ public abstract class PageIO {
                 return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
         }
 
-        throw new IgniteCheckedException("Unknown B+Tree page IO type: " + type);
+        throw new IgniteCheckedException("Unknown page IO type: " + type);
     }
 }

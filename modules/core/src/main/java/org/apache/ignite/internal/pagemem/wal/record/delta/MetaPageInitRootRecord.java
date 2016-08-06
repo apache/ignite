@@ -20,58 +20,41 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 
 /**
- * Initialize new empty leaf page.
+ * Initialize new meta page.
  */
-public class LeafPageInitRecord extends PageDeltaRecord {
+public class MetaPageInitRootRecord extends PageDeltaRecord {
     /** */
-    private int ioType;
-
-    /** */
-    private int ioVer;
-
-    /** */
-    private long newPageId;
+    private long rootId;
 
     /**
-     * @param cacheId Cache ID.
-     * @param pageId  Page ID.
-     * @param ioType IO Type.
-     * @param ioVer IO Version.
-     * @param newPageId New leaf page ID.
+     * @param pageId Meta page ID.
      */
-    public LeafPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long newPageId) {
+    public MetaPageInitRootRecord(int cacheId, long pageId, long rootId) {
         super(cacheId, pageId);
 
-        this.ioType = ioType;
-        this.ioVer = ioVer;
-        this.newPageId = newPageId;
+        this.rootId = rootId;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException {
-        BPlusLeafIO<?> io = PageIO.getBPlusIO(ioType, ioVer);
+    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf)
+        throws IgniteCheckedException {
+        BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
-        io.initNewPage(buf, newPageId);
+        io.initRoot(buf, rootId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_PAGE_INIT_LEAF;
+        return RecordType.BTREE_META_PAGE_INIT_ROOT;
     }
 
-    public int ioType() {
-        return ioType;
-    }
-
-    public int ioVersion() {
-        return ioVer;
-    }
-
-    public long newPageId() {
-        return newPageId;
+    /**
+     * @return Root ID.
+     */
+    public long rootId() {
+        return rootId;
     }
 }

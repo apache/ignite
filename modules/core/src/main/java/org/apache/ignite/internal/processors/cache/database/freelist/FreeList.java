@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -71,9 +69,7 @@ public class FreeList {
 
             assert idx >= 0 : idx;
 
-            FreeTree tree = tree(row.partition());
-
-            if (tree.needWalDeltaRecord(page))
+            if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
                     row.version(), idx, entrySize));
 
@@ -103,9 +99,7 @@ public class FreeList {
 
             assert fctx.lastIndex() >= 0 : fctx.lastIndex();
 
-            FreeTree tree = tree(row.partition());
-
-            if (tree.needWalDeltaRecord(page)) {
+            if (isWalDeltaRecordNeeded(wal, page)) {
                 if (fctx.lastFragment()) {
                     // Write entry tail in WAL.
                     final byte[] frData = new byte[fctx.written() - initWritten];
@@ -174,7 +168,7 @@ public class FreeList {
 
             io.removeRow(buf, (byte)itemId);
 
-            if (tree.needWalDeltaRecord(page))
+            if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageRemoveRecord(cctx.cacheId(), page.id(), itemId));
 
             int newFreeSpace = io.getFreeSpace(buf);
@@ -325,68 +319,15 @@ public class FreeList {
                 allocateDataPage(row.partition()) :
                 pageMem.page(item.cacheId(), item.pageId())
             ) {
-                if (item == null) {
-                    DataPageIO io = DataPageIO.VERSIONS.latest();
+                // If it is a existing page, we do not need to initialize it.
+                DataPageIO init = item == null ? DataPageIO.VERSIONS.latest() : null;
 
-                    ByteBuffer buf = page.getForWrite(); // Initial write.
-
-                    try {
-                        io.initNewPage(buf, page.id());
-
-                        // It is a newly allocated page and we will not write record to WAL here,
-                        // because data pages are never reused.
-                        assert !page.isDirty();
-
-                        writeNewPage(page, buf, fctx, row, entrySize);
-                    }
-                    finally {
-                        page.releaseWrite(true);
-                    }
-                }
+                if (fctx != null)
+                    writePage(page.id(), page, writeFragmentRow, init, wal, fctx, entrySize);
                 else
-                    writeExistingPage(page, fctx, row, entrySize);
+                    writePage(page.id(), page, writeRow, init, wal, row, entrySize);
             }
         }
-    }
-
-    /**
-     * @param page Data page.
-     * @param fctx Fragment context.
-     * @param row Cache data row.
-     * @param entrySize Entry size.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void writeExistingPage(
-        final Page page,
-        final @Nullable FragmentContext fctx,
-        final CacheDataRow row,
-        final int entrySize
-    ) throws IgniteCheckedException {
-        if (fctx != null)
-            writePage(page.id(), page, writeFragmentRow, fctx, entrySize);
-        else
-            writePage(page.id(), page, writeRow, row, entrySize);
-    }
-
-    /**
-     * @param page Data page.
-     * @param buf Data page buffer.
-     * @param fctx Fragment context.
-     * @param row Cache data row.
-     * @param entrySize Entry size.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void writeNewPage(
-        final Page page,
-        final ByteBuffer buf,
-        final @Nullable FragmentContext fctx,
-        final CacheDataRow row,
-        final int entrySize
-    ) throws IgniteCheckedException {
-        if (fctx != null)
-            writeFragmentRow.run(page.id(), page, buf, fctx, entrySize);
-        else
-            writeRow.run(page.id(), page, buf, row, entrySize);
     }
 
     /**

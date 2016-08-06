@@ -581,15 +581,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         };
     }
 
-    /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(long pageId) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
-    }
-
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();

@@ -20,54 +20,67 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
 /**
- * Initialize new meta page.
+ * Initializes new page by calling {@link PageIO#initNewPage(ByteBuffer, long)}.
  */
-public class MetaPageInitNewRecord extends PageDeltaRecord {
+public class InitNewPageRecord extends PageDeltaRecord {
     /** */
-    private long metaId;
-
-    /** */
-    private long rootId;
+    private int ioType;
 
     /** */
     private int ioVer;
 
+    /** */
+    private long newPageId;
+
     /**
      * @param cacheId Cache ID.
-     * @param pageId Meta page ID.
-     * @param rootId Root page ID.
+     * @param pageId  Page ID.
+     * @param ioType IO type.
+     * @param ioVer IO version.
+     * @param newPageId Virtual page ID.
      */
-    public MetaPageInitNewRecord(int cacheId, long pageId, long metaId, long rootId, int ioVer) {
+    public InitNewPageRecord(int cacheId, long pageId, int ioType, int ioVer, long newPageId) {
         super(cacheId, pageId);
 
-        this.metaId = metaId;
-        this.rootId = rootId;
+        this.ioType = ioType;
         this.ioVer = ioVer;
+        this.newPageId = newPageId;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf)
-        throws IgniteCheckedException {
-        BPlusMetaIO.VERSIONS.forVersion(ioVer).initNewPage(buf, metaId, rootId);
+    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException {
+        PageIO io = PageIO.getPageIO(ioType, ioVer);
+
+        io.initNewPage(buf, newPageId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_META_PAGE_INIT_NEW;
+        return RecordType.INIT_NEW_PAGE_RECORD;
     }
 
-    public long metaId() {
-        return metaId;
-    }
-
-    public long rootId() {
-        return rootId;
-    }
-
+    /**
+     * @return IO Version.
+     */
     public int ioVersion() {
         return ioVer;
     }
+
+    /**
+     * @return IO Type.
+     */
+    public int ioType() {
+        return ioType;
+    }
+
+    /**
+     * @return Virtual page ID.
+     */
+    public long newPageId() {
+        return newPageId;
+    }
 }
+

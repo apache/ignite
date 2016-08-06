@@ -41,19 +41,11 @@ public class BPlusMetaIO extends PageIO {
         super(T_BPLUS_META, ver);
     }
 
-    /** {@inheritDoc} */
-    @Override public void initNewPage(ByteBuffer buf, long pageId) {
-        throw new IllegalStateException("Should never be called, use overloaded version.");
-    }
-
     /**
      * @param buf Buffer.
-     * @param metaId Meta page ID.
      * @param rootId Root page ID.
      */
-    public void initNewPage(ByteBuffer buf, long metaId, long rootId) {
-        super.initNewPage(buf, metaId);
-
+    public void initRoot(ByteBuffer buf, long rootId) {
         setLevelsCount(buf, 1);
         setFirstPageId(buf, 0, rootId);
     }

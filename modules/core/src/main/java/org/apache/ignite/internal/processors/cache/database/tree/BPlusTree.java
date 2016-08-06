@@ -38,13 +38,13 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.LeafPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitNewRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
@@ -77,6 +77,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTre
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
@@ -633,10 +634,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @param page Updated page.
      * @return {@code true} If we need to make a delta WAL record for the change in this page.
      */
-    public final boolean needWalDeltaRecord(Page page) {
-        // If the page is clean, then it is either newly allocated or just after checkpoint.
-        // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && page.isDirty();
+    private boolean needWalDeltaRecord(Page page) {
+        return isWalDeltaRecordNeeded(wal, page);
     }
 
     /**
@@ -656,8 +655,8 @@ public abstract class BPlusTree<L, T extends L> {
 
                 io.initNewPage(buf, rootId);
 
-                if (needWalDeltaRecord(root))
-                    wal.log(new LeafPageInitRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
+                if (needWalDeltaRecord(root)) // TODO Use PageHandler.writePage with init.
+                    wal.log(new InitNewPageRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
             }
             finally {
                 root.releaseWrite(true);
@@ -671,10 +670,15 @@ public abstract class BPlusTree<L, T extends L> {
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
-                io.initNewPage(buf, metaPageId, rootId);
+                io.initNewPage(buf, metaPageId);
+
+                if (needWalDeltaRecord(meta)) // TODO Use PageHandler.writePage with init.
+                    wal.log(new InitNewPageRecord(cacheId, meta.id(), io.getType(), io.getVersion(), metaPageId));
+
+                io.initRoot(buf, rootId);
 
                 if (needWalDeltaRecord(meta))
-                    wal.log(new MetaPageInitNewRecord(cacheId, meta.id(), metaPageId, rootId, io.getVersion()));
+                    wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
             }
             finally {
                 meta.releaseWrite(true);
@@ -1480,7 +1484,7 @@ public abstract class BPlusTree<L, T extends L> {
         long pagesCnt = 0;
 
         try (Page meta = page(metaPageId)) {
-            ByteBuffer metaBuf = meta.getForWrite();
+            ByteBuffer metaBuf = meta.getForWrite(); // No checks, we must be out of use.
 
             try {
                 BPlusMetaIO mio = BPlusMetaIO.VERSIONS.forPage(metaBuf);
@@ -1492,7 +1496,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     do {
                         try (Page page = page(pageId)) {
-                            ByteBuffer buf = page.getForWrite();
+                            ByteBuffer buf = page.getForWrite(); // No checks, we must be out of use.
 
                             try {
                                 BPlusIO<L> io = io(buf);
