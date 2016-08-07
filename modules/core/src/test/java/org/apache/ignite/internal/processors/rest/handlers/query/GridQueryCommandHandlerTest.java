@@ -184,5 +184,4 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         assertTrue(res.getLast());
     }
-
 }
