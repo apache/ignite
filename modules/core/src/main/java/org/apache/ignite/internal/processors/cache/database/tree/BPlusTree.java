@@ -101,7 +101,7 @@ public abstract class BPlusTree<L, T extends L> {
     private final IgniteWriteAheadLogManager wal;
 
     /** */
-    protected final PageMemory pageMem;
+    private final PageMemory pageMem;
 
     /** */
     private final ReuseList reuseList;
