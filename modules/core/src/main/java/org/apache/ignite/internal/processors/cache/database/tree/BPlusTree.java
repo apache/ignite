@@ -38,7 +38,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
@@ -575,6 +574,23 @@ public abstract class BPlusTree<L, T extends L> {
         }
     };
 
+    /** */
+    private final PageHandler<Long, Void> initRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootId, int lvl)
+            throws IgniteCheckedException {
+            assert rootId != null;
+
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
+
+            io.initRoot(buf, rootId);
+
+            if (needWalDeltaRecord(meta))
+                wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+
+            return null;
+        }
+    };
+
     /**
      * @param name Tree name.
      * @param cacheId Cache ID.
@@ -644,45 +660,16 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
+        // Allocate the first leaf page, it will be our root.
         long rootId = allocatePageForNew();
 
-        // Allocate the first leaf page, it will be our root.
         try (Page root = page(rootId)) {
-            ByteBuffer buf = root.getForWrite(); // Initial write, no check for concurrent modification.
-
-            try {
-                BPlusLeafIO<L> io = latestLeafIO();
-
-                io.initNewPage(buf, rootId);
-
-                if (needWalDeltaRecord(root)) // TODO Use PageHandler.writePage with init.
-                    wal.log(new InitNewPageRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
-            }
-            finally {
-                root.releaseWrite(true);
-            }
+            writePage(rootId, root, PageHandler.NOOP, latestLeafIO(), wal, null, 0);
         }
 
         // Initialize meta page with new root page.
         try (Page meta = page(metaPageId)) {
-            ByteBuffer buf = meta.getForWrite(); // Initial write, no need to check for concurrent modification.
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
-
-                io.initNewPage(buf, metaPageId);
-
-                if (needWalDeltaRecord(meta)) // TODO Use PageHandler.writePage with init.
-                    wal.log(new InitNewPageRecord(cacheId, meta.id(), io.getType(), io.getVersion(), metaPageId));
-
-                io.initRoot(buf, rootId);
-
-                if (needWalDeltaRecord(meta))
-                    wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
-            }
-            finally {
-                meta.releaseWrite(true);
-            }
+            writePage(metaPageId, meta, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0);
         }
     }
 
@@ -2915,7 +2902,7 @@ public abstract class BPlusTree<L, T extends L> {
             pageId = reuseList.take(this, bag);
 
         if (pageId == 0)
-            pageId = allocatePage0();
+            pageId = allocatePageNoReuse();
 
         assert pageId != 0;
 
@@ -2934,9 +2921,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @return Page ID of newly allocated page.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    protected long allocatePage0() throws IgniteCheckedException {
+    protected final long allocatePageNoReuse() throws IgniteCheckedException {
         return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 
