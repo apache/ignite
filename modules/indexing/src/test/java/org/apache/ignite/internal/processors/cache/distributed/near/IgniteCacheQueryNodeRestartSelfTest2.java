@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.QueryCancelledException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -239,16 +240,16 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             assertEquals(pRes, cache.query(qry).getAll());
                         }
                         catch (CacheException e) {
-                            boolean failedOnCancellation = false;
+                            if (e.getCause() instanceof IgniteInterruptedCheckedException)
+                                continue;
 
-                            if (e.getCause() instanceof QueryCancelledException)
-                                failedOnCancellation = true;
+                            if ( e.getCause() instanceof QueryCancelledException)
+                                fail("Retry is expected.");
 
-                            if (!smallPageSize && !failedOnCancellation) {
+                            if (!smallPageSize)
                                 e.printStackTrace();
 
-                                fail("On large page size must retry.");
-                            }
+                            assertTrue("On large page size must retry.", smallPageSize);
 
                             boolean failedOnRemoteFetch = false;
 
@@ -264,10 +265,10 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 }
                             }
 
-                            if (!failedOnRemoteFetch && !failedOnCancellation) {
+                            if (!failedOnRemoteFetch) {
                                 e.printStackTrace();
 
-                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass or in cancellation.");
+                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                             }
                         }
                     }
