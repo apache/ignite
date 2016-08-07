@@ -122,6 +122,9 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
         List<Object> items = new ArrayList<>();
 
+        if(req.pageSize() == null)
+            throw new IgniteException("Incorrect page size [pageSize=" + req.pageSize() + "]");
+
         for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
             items.add(cur.next());
 
