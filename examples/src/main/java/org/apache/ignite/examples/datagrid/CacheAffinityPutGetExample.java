@@ -78,7 +78,6 @@ public class CacheAffinityPutGetExample {
             ) {
                 // Populate cache.
                 putGet();
-
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -118,7 +117,6 @@ public class CacheAffinityPutGetExample {
         // to ensure that all persons are collocated with their organizations.
         colPersonCache.put(p1.key(), p1);
         colPersonCache.put(p2.key(), p2);
-
 
         try {
             colPersonCache.get(new AffinityKey<>(p1.id));
