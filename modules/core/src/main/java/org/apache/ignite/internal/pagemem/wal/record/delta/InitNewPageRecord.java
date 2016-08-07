@@ -40,7 +40,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
      * @param pageId  Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
-     * @param newPageId Virtual page ID.
+     * @param newPageId New page ID.
      */
     public InitNewPageRecord(int cacheId, long pageId, int ioType, int ioVer, long newPageId) {
         super(cacheId, pageId);
@@ -77,7 +77,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
     }
 
     /**
-     * @return Virtual page ID.
+     * @return New page ID.
      */
     public long newPageId() {
         return newPageId;

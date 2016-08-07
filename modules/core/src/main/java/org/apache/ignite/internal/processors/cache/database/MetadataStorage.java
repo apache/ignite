@@ -139,7 +139,7 @@ public class MetadataStorage implements MetaStore {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
             final int cacheId,
@@ -148,8 +148,9 @@ public class MetadataStorage implements MetaStore {
             final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
-            final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
-            throws IgniteCheckedException {
+            final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
+            final boolean initNew
+        ) throws IgniteCheckedException {
             super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
