@@ -132,10 +132,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                MiniFuture mini = (MiniFuture)futs.get(i);
+            for (int i = 0; i < futuresSize(); i++) {
+                MiniFuture mini = (MiniFuture)futureGet(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())
