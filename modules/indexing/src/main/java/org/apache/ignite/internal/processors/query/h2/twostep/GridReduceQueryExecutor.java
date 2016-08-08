@@ -467,7 +467,7 @@ public class GridReduceQueryExecutor {
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
 
-                    throw new CacheException("Query was interrupted.", e);
+                    throw new CacheException("Query execution was interrupted.", e);
                 }
             }
 
@@ -668,10 +668,8 @@ public class GridReduceQueryExecutor {
 
                         resIter = new Iter(res);
                     }
-                }
-
-                if (clo != F.noop()) // Do explicit cancellation if it wasn't cancelled before.
-                    cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
+                } else if (clo != F.noop()) // Always explicitly cancel on retry if not cancelled before.
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null);
 
                 if (retry) {
                     if (Thread.currentThread().isInterrupted())
