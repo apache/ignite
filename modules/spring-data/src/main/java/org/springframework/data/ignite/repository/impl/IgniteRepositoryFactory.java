@@ -19,11 +19,14 @@ package org.springframework.data.ignite.repository.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -121,7 +124,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                     if (key != Key.CREATE && StringUtils.hasText(qryStr))
                         return new IgniteRepositoryQuery(metadata,
-                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.isDynamic(mtd)), mtd, factory);
+                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.isDynamic(mtd)), mtd, factory,
+                                ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface())));
                 }
                 //TODO namedQueries handling
 
@@ -132,7 +136,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                     metadata,
                     IgniteQueryGenerator.generateSql(mtd, metadata),
                     mtd,
-                    factory);
+                    factory,
+                    ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface())));
             }
         };
     }
@@ -142,13 +147,13 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     enum ReturnStrategy {
-        LIST, SLICE, ONE_VALUE;
+        ONE_VALUE, CACHE_ENTRY, LIST_OF_CACHE_ENTRIES, LIST, LIST_OF_LISTS, SLICE;
     }
 
     /**
      *
      */
-    private class IgniteRepositoryQuery implements RepositoryQuery {
+    private static class IgniteRepositoryQuery implements RepositoryQuery {
         /** Type. */
         private final Class<?> type;
         /** Sql. */
@@ -167,10 +172,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         private final ReturnStrategy returnStrategy;
 
         public IgniteRepositoryQuery(RepositoryMetadata metadata, IgniteQuery query,
-            Method mtd, ProjectionFactory factory) {
+            Method mtd, ProjectionFactory factory, IgniteCache cache) {
             type = metadata.getDomainType();
             this.query = query;
-            cache = ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface()));
+            this.cache = cache;
 
             this.metadata = metadata;
             this.mtd = mtd;
@@ -178,10 +183,27 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
             Class<?> returnType = mtd.getReturnType();
 
-            if (returnType.isAssignableFrom(ArrayList.class))
-                returnStrategy = ReturnStrategy.LIST;
-            else if (returnType == Slice.class)
+            if (returnType.isAssignableFrom(ArrayList.class)) {
+                Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
+
+                if (actualTypeArguments.length == 0 )
+                    returnStrategy = ReturnStrategy.LIST;
+                else {
+                    if (actualTypeArguments[0] instanceof ParameterizedType) {
+                        ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
+                        Class type1 = (Class)type.getRawType();
+
+                        if (Cache.Entry.class.isAssignableFrom(type1))
+                            returnStrategy = ReturnStrategy.LIST_OF_CACHE_ENTRIES;
+                        else
+                            returnStrategy = ReturnStrategy.LIST;
+                    } else
+                        returnStrategy = ReturnStrategy.LIST;
+                }
+            } else if (returnType == Slice.class)
                 returnStrategy = ReturnStrategy.SLICE;
+            else if (Cache.Entry.class.isAssignableFrom(returnType))
+                returnStrategy = ReturnStrategy.CACHE_ENTRY;
             else
                 returnStrategy = ReturnStrategy.ONE_VALUE;
         }
@@ -196,12 +218,12 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             switch (query.dynamicity()) {
                 case SORTABLE:
                     sql = IgniteQueryGenerator.addSorting(new StringBuilder(sql),
-                        (Sort) parameters[parameters.length - 1]).toString();
+                        (Sort)parameters[parameters.length - 1]).toString();
                     parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
                     break;
                 case PAGEBABLE:
                     sql = IgniteQueryGenerator.addPaging(new StringBuilder(sql),
-                        (Pageable) parameters[parameters.length - 1]).toString();
+                        (Pageable)parameters[parameters.length - 1]).toString();
                     parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
                     break;
             }
@@ -210,14 +232,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
                 sqlFieldsQry.setArgs(parameters);
                 qry = sqlFieldsQry;
-            } else {
+            }
+            else {
                 SqlQuery sqlQry = new SqlQuery(type, sql);
                 sqlQry.setArgs(parameters);
                 qry = sqlQry;
             }
 
             QueryCursor qryCursor = cache.query(qry);
-
 
             if (query.isFieldQuery()) {
                 Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
@@ -243,8 +265,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                             content.add(entry.get(0));
 
                         return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                    default:
+                        throw new IllegalStateException();
                 }
-            } else {
+            }
+            else {
                 Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
 
                 switch (returnStrategy) {
@@ -256,9 +281,15 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                         return list;
                     case ONE_VALUE:
-                        Iterator<CacheEntryImpl> iter = qryIter.iterator();
-                        if (iter.hasNext())
-                            return iter.next();
+                        Iterator<CacheEntryImpl> iter1 = qryIter.iterator();
+                        if (iter1.hasNext())
+                            return iter1.next().getValue();
+
+                        return null;
+                    case CACHE_ENTRY:
+                        Iterator<CacheEntryImpl> iter2 = qryIter.iterator();
+                        if (iter2.hasNext())
+                            return iter2.next();
 
                         return null;
                     case SLICE:
@@ -268,10 +299,12 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                             content.add(entry.getValue());
 
                         return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                    case LIST_OF_CACHE_ENTRIES:
+                        return qryCursor.getAll();
+                    default:
+                        throw new IllegalStateException();
                 }
             }
-
-            return null;
         }
 
         /** {@inheritDoc} */

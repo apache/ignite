@@ -19,6 +19,7 @@ package org.ignite.spring.data;
 
 import java.util.Collection;
 import java.util.List;
+import javax.cache.Cache;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.ignite.repository.IgniteRepository;
@@ -55,4 +56,10 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
     @Query("SELECT secondName FROM Person WHERE firstName REGEXP ?")
     public List<String> byQuery4(String val, Pageable sort);
+
+    public List<Cache.Entry<Integer, Person>> findBySecondNameLike(String val);
+
+    public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
+
+    public Person findTopBySecondNameStartingWith(String val);
 }

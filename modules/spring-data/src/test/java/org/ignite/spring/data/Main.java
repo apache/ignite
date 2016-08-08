@@ -18,6 +18,7 @@
 package org.ignite.spring.data;
 
 import java.util.List;
+import javax.cache.Cache;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -97,8 +98,17 @@ public class Main {
             System.out.println("queryWithPaging = " + person);
 
         List<String> queryFields = repo.byQuery4("^[a-z]+$", new PageRequest(1, 7, Sort.Direction.DESC, "secondName"));
-        for (String queryField : queryFields) {
+        for (String queryField : queryFields)
             System.out.println("queryField = " + queryField);
-        }
+
+        List<Cache.Entry<Integer, Person>> cacheEntries = repo.findBySecondNameLike("lastName1");
+        for (Cache.Entry<Integer, Person> entry : cacheEntries)
+            System.out.println("listEntries: key=" + entry.getKey() + ", value=" + entry.getValue());
+
+        Cache.Entry<Integer, Person> cacheEntry = repo.findTopBySecondNameLike("lastName18");
+        System.out.println("oneEntry: key=" + cacheEntry.getKey() + ", value=" + cacheEntry.getValue());
+
+        Person person = repo.findTopBySecondNameStartingWith("lastName18");
+        System.out.println("person = " + person);
     }
 }
