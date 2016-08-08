@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.ignite.spring.data;
+package org.apache.ignite.springdata;
 
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.springdata.config.Query;
+import org.apache.ignite.springdata.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.config.Query;
-import org.apache.ignite.springdata.config.RepositoryConfig;
 
 @RepositoryConfig(cacheName = "cache")
 public interface FirstRepository extends IgniteRepository<Person, Integer> {
@@ -45,6 +45,12 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
     public int countByFirstNameStartingWithOrSecondNameStartingWith(String like1, String like2);
 
+    public List<Cache.Entry<Integer, Person>> findBySecondNameLike(String val);
+
+    public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
+
+    public Person findTopBySecondNameStartingWith(String val);
+
     @Query("firstName = ?")
     public List<Person> byQuery(String val);
 
@@ -52,14 +58,11 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
     public List<Person> byQuery2(String val, Sort sort);
 
     @Query("SELECT * FROM Person WHERE firstName REGEXP ?")
-    public List<Person> byQuery3(String val, Pageable sort);
+    public List<Person> byQuery3(String val, Pageable pageable);
 
     @Query("SELECT secondName FROM Person WHERE firstName REGEXP ?")
-    public List<String> byQuery4(String val, Pageable sort);
+    public List<String> byQuery4(String val, Pageable pageable);
 
-    public List<Cache.Entry<Integer, Person>> findBySecondNameLike(String val);
-
-    public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
-
-    public Person findTopBySecondNameStartingWith(String val);
+    @Query("SELECT _key, secondName FROM Person WHERE firstName REGEXP ?")
+    public List<List> byQuery5(String val, Pageable pageable);
 }

@@ -72,23 +72,53 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         Class<?> returnType = mtd.getReturnType();
 
         if (returnType.isAssignableFrom(ArrayList.class)) {
-            Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
+            if (query.isFieldQuery()) {
+                Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
 
-            if (actualTypeArguments.length == 0 )
-                returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-            else {
-                if (actualTypeArguments[0] instanceof ParameterizedType) {
-                    ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
-                    Class type1 = (Class)type.getRawType();
+                if (actualTypeArguments.length == 0)
+                    returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                else {
+                    if (actualTypeArguments[0] instanceof ParameterizedType) {
+                        ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
+                        Class<?> type1 = (Class)type.getRawType();
 
-                    if (Cache.Entry.class.isAssignableFrom(type1))
-                        returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_CACHE_ENTRIES;
+                        if (type1.isAssignableFrom(ArrayList.class))
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_LISTS;
+                        else
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                    }
+                    else if (actualTypeArguments[0] instanceof Class) {
+                        Class cls = (Class)actualTypeArguments[0];
+                        if (cls.isAssignableFrom(ArrayList.class))
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_LISTS;
+                        else
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                    }
                     else
                         returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                } else
-                    returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                }
             }
-        } else if (returnType == Slice.class)
+            else {
+                Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
+
+                if (actualTypeArguments.length == 0)
+                    returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                else {
+                    if (actualTypeArguments[0] instanceof ParameterizedType) {
+                        ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
+                        Class type1 = (Class)type.getRawType();
+
+                        if (Cache.Entry.class.isAssignableFrom(type1))
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_CACHE_ENTRIES;
+                        else
+                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                    }
+                    else
+                        returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
+                }
+            }
+        }
+        else if (returnType == Slice.class)
             returnStrategy = IgniteRepositoryFactory.ReturnStrategy.SLICE;
         else if (Cache.Entry.class.isAssignableFrom(returnType))
             returnStrategy = IgniteRepositoryFactory.ReturnStrategy.CACHE_ENTRY;
@@ -153,6 +183,8 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                         content.add(entry.get(0));
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                case LIST_OF_LISTS:
+                    return qryCursor.getAll();
                 default:
                     throw new IllegalStateException();
             }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.ignite.spring.data;
+package org.apache.ignite.springdata;
 
 import java.util.List;
 import javax.cache.Cache;
@@ -27,7 +27,7 @@ public class Main {
     public static void main(String args[]) {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 
-        ctx.scan("org.ignite.spring.data");
+        ctx.scan("org.apache.ignite.springdata");
         ctx.refresh();
 
         FirstRepository repo = ctx.getBean(FirstRepository.class);
@@ -110,5 +110,9 @@ public class Main {
 
         Person person = repo.findTopBySecondNameStartingWith("lastName18");
         System.out.println("person = " + person);
+
+        List<List> lists = repo.byQuery5("^[a-z]+$", new PageRequest(2, 6));
+        for (List list : lists)
+            System.out.println("listlist: key=" + list.get(0) + ", secondName=" + list.get(1));
     }
 }

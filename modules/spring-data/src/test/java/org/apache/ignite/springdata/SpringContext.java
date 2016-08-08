@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.ignite.spring.data;
+package org.apache.ignite.springdata;
 
 import org.apache.ignite.IgniteSpringBean;
 import org.apache.ignite.configuration.CacheConfiguration;

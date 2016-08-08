@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.ignite.spring.data;
+package org.apache.ignite.springdata;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
