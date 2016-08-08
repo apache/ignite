@@ -212,17 +212,50 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         try {
             File f = fileForPath(path);
+
+            // TODO: IGNITE-3642.
             if (!recursive || !f.isDirectory())
                 return f.delete();
             else
-                return deleteDir(f);
+                return deleteDirectory(f);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
         }
+    }
+
+    /**
+     * Delete directory recursively.
+     *
+     * @param dir Directory.
+     * @throws IOException If fails.
+     * @return {@code true} if successful.
+     */
+    private boolean deleteDirectory(File dir) throws IOException {
+        File[] entries = dir.listFiles();
+
+        if (entries != null) {
+            for (File entry : entries) {
+                if (entry.isDirectory())
+                    deleteDirectory(entry);
+                else if (entry.isFile()) {
+                    if (!entry.delete())
+                        throw new IOException("Cannot remove file: " + entry);
+                }
+                else
+                    // TODO: IGNITE-3642.
+                    throw new UnsupportedOperationException("Symlink deletion is not supported: " + entry);
+            }
+        }
+
+        if (!dir.delete())
+            throw new IOException("Cannot remove directory: " + dir);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -550,33 +583,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             return new File(path.toString());
         else
             return new File(workDir, path.toString());
-    }
-
-    /**
-     * @param dir Directory.
-     * @throws IOException If fails.
-     * @return {@code true} if successful.
-     */
-    private boolean deleteDir(File dir) throws IOException {
-        File[] dirEntries = dir.listFiles();
-
-        if (dirEntries != null) {
-            for (int i = 0; i < dirEntries.length; ++i) {
-                File f = dirEntries[i];
-
-                if (!f.isDirectory()) { // TODO: should we support symlink?
-                    if (!f.delete())
-                        throw new IOException("Cannot remove [file=" + f + ']');
-                }
-                else
-                    deleteDir(dirEntries[i]);
-            }
-        }
-
-        if (!dir.delete())
-            throw new IOException("Cannot remove [dir=" + dir + ']');
-
-        return true;
     }
 
     /**
