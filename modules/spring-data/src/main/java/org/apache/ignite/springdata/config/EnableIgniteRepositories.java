@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.config;
+package org.apache.ignite.springdata.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -25,8 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.ignite.repository.impl.IgniteRepositoryFactoryBean;
-import org.springframework.data.ignite.repository.impl.IgniteRepositoryImpl;
+import org.apache.ignite.springdata.repository.impl.IgniteRepositoryFactoryBean;
+import org.apache.ignite.springdata.repository.impl.IgniteRepositoryImpl;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

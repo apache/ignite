@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.config;
+package org.apache.ignite.springdata.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Documented
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Query {
-    String value() default "";
+@Documented
+@Inherited
+public @interface RepositoryConfig {
+    String cacheName() default "";
 }

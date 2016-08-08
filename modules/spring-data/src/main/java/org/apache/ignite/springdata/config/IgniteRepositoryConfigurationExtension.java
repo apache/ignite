@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.config;
+package org.apache.ignite.springdata.config;
 
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
 

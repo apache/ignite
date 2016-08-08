@@ -17,17 +17,12 @@
 
 package org.ignite.spring.data;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteSpringBean;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.ignite.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.config.EnableIgniteRepositories;
 
 @Configuration
 @EnableIgniteRepositories

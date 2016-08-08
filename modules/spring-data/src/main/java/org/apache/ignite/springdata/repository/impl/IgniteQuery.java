@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository;
+package org.apache.ignite.springdata.repository.impl;
 
-import java.io.Serializable;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.NoRepositoryBean;
-import org.springframework.data.repository.Repository;
+public class IgniteQuery {
+    public enum Dynamicity {SORTABLE, PAGEBABLE, NONE}
+
+    private final String sql;
+    private final boolean isFieldQuery;
+    private final Dynamicity dynamicity;
 
 
-//TODO replace CRUD with PagingAndSortingRepository
-@NoRepositoryBean
-public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
-    public <S extends T> void save(ID key, S entity);
+    public IgniteQuery(String sql, boolean isFieldQuery, Dynamicity dynamicity) {
+        this.sql = sql;
+        this.isFieldQuery = isFieldQuery;
+        this.dynamicity = dynamicity;
+    }
+
+    public String sql() {
+        return sql;
+    }
+
+    public boolean isFieldQuery() {
+        return isFieldQuery;
+    }
+
+    public Dynamicity dynamicity() {
+        return dynamicity;
+    }
 }

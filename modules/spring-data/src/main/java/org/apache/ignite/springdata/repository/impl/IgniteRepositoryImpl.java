@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.impl;
+package org.apache.ignite.springdata.repository.impl;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -25,7 +25,7 @@ import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.springframework.data.ignite.repository.IgniteRepository;
+import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 /**
@@ -34,7 +34,7 @@ import org.springframework.data.repository.NoRepositoryBean;
  * @param <ID>
  */
 @NoRepositoryBean
-public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID>{
+public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
 
     private final IgniteCache<ID, T> cache;
 

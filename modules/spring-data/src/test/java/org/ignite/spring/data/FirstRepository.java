@@ -22,9 +22,9 @@ import java.util.List;
 import javax.cache.Cache;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.ignite.repository.IgniteRepository;
-import org.springframework.data.ignite.repository.config.Query;
-import org.springframework.data.ignite.repository.config.RepositoryConfig;
+import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata.config.Query;
+import org.apache.ignite.springdata.config.RepositoryConfig;
 
 @RepositoryConfig(cacheName = "cache")
 public interface FirstRepository extends IgniteRepository<Person, Integer> {

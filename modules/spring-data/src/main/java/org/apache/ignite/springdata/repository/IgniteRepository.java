@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.config;
+package org.apache.ignite.springdata.repository;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.Serializable;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.data.repository.Repository;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Inherited
-public @interface RepositoryConfig {
-    String cacheName() default "";
+
+//TODO replace CRUD with PagingAndSortingRepository
+@NoRepositoryBean
+public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
+    public <S extends T> void save(ID key, S entity);
 }

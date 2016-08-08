@@ -15,31 +15,23 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.impl;
+package org.apache.ignite.springdata.config;
 
-public class IgniteQuery {
-    public enum Dynamicity {SORTABLE, PAGEBABLE, NONE}
+import java.lang.annotation.Annotation;
+import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
+import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
-    private final String sql;
-    private final boolean isFieldQuery;
-    private final Dynamicity dynamicity;
-
-
-    public IgniteQuery(String sql, boolean isFieldQuery, Dynamicity dynamicity) {
-        this.sql = sql;
-        this.isFieldQuery = isFieldQuery;
-        this.dynamicity = dynamicity;
+/**
+ *
+ */
+public class IgniteRepositoryRegistrar extends RepositoryBeanDefinitionRegistrarSupport {
+    /** {@inheritDoc} */
+    @Override protected Class<? extends Annotation> getAnnotation() {
+        return EnableIgniteRepositories.class;
     }
 
-    public String sql() {
-        return sql;
-    }
-
-    public boolean isFieldQuery() {
-        return isFieldQuery;
-    }
-
-    public Dynamicity dynamicity() {
-        return dynamicity;
+    /** {@inheritDoc} */
+    @Override protected RepositoryConfigurationExtension getExtension() {
+        return new IgniteRepositoryConfigurationExtension();
     }
 }

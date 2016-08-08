@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.impl;
+package org.apache.ignite.springdata.repository.impl;
 
 import java.lang.reflect.Method;
 import org.jetbrains.annotations.NotNull;

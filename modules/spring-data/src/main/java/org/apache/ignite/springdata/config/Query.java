@@ -15,23 +15,17 @@
  * limitations under the License.
  */
 
-package org.springframework.data.ignite.repository.config;
+package org.apache.ignite.springdata.config;
 
-import java.lang.annotation.Annotation;
-import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
-import org.springframework.data.repository.config.RepositoryConfigurationExtension;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- *
- */
-public class IgniteRepositoryRegistrar extends RepositoryBeanDefinitionRegistrarSupport {
-    /** {@inheritDoc} */
-    @Override protected Class<? extends Annotation> getAnnotation() {
-        return EnableIgniteRepositories.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected RepositoryConfigurationExtension getExtension() {
-        return new IgniteRepositoryConfigurationExtension();
-    }
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Query {
+    String value() default "";
 }
