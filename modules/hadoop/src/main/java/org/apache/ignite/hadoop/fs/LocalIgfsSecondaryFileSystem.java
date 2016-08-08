@@ -63,7 +63,7 @@ import java.util.Map;
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** Default buffer size. */
-    // TODO: Choose proper buffer size.
+    // TODO: IGNITE-3643.
     public static final int DFLT_BUF_SIZE = 8 * 1024;
 
     /** The default user name. It is used if no user context is set. */
