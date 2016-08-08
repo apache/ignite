@@ -331,12 +331,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
-        try {
-            return fileSystemForUser().append(convert(path), bufSize);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ", bufSize=" + bufSize + "]");
-        }
+        return append0(path, bufSize);
     }
 
     /** {@inheritDoc} */
@@ -603,7 +598,30 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             return new BufferedOutputStream(new FileOutputStream(file), bufSize);
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
+            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
+        }
+    }
+
+    /**
+     * Internal create routine.
+     *
+     * @param path Path.
+     * @param bufSize Buffer size.
+     * @return Output stream.
+     */
+    private OutputStream append0(IgfsPath path, int bufSize) {
+        try {
+            File file = fileForPath(path);
+
+            boolean exists = file.exists();
+
+            if (!exists)
+                throw new IOException("File not found.");
+
+            return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ']');
         }
     }
 }
