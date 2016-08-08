@@ -17,22 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -60,6 +49,19 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
@@ -106,6 +108,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         this.ctx = ctx;
 
         GridKernalContext kernalCtx = ctx.kernalContext();
+
         log = kernalCtx.log(HadoopExternalTaskExecutor.class);
 
         outputBase = U.resolveWorkDirectory(kernalCtx.config().getWorkDirectory(), "hadoop", false);
@@ -532,6 +535,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         List<String> cmd = new ArrayList<>();
 
         IgniteConfiguration cfg = ctx.kernalContext().config();
+
         File workDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), "", false);
 
         cmd.add(javaCmd);

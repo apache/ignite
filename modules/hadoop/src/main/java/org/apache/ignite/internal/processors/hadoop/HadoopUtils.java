@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -225,7 +226,7 @@ public class HadoopUtils {
         JobConf jobConf = new JobConf(cfg);
 
         boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
-                || jobConf.get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
+            || jobConf.get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
 
         int numReduces = jobConf.getNumReduceTasks();
 
@@ -304,7 +305,8 @@ public class HadoopUtils {
      * @throws IgniteCheckedException If Failed.
      */
     public static File jobLocalDir(String workDir, UUID locNodeId, HadoopJobId jobId) throws IgniteCheckedException {
-        return new File(new File(U.resolveWorkDirectory(workDir, "hadoop", false), "node-" + locNodeId), "job_" + jobId);
+        return new File(new File(U.resolveWorkDirectory(workDir, "hadoop", false), "node-" + locNodeId),
+            "job_" + jobId);
     }
 
     /**
@@ -325,6 +327,7 @@ public class HadoopUtils {
     /**
      * Creates {@link Configuration} in a correct class loader context to avoid caching
      * of inappropriate class loader in the Configuration object.
+     *
      * @return New instance of {@link Configuration}.
      */
     public static Configuration safeCreateConfiguration() {
@@ -343,6 +346,7 @@ public class HadoopUtils {
     /**
      * Creates {@link JobConf} in a correct class loader context to avoid caching
      * of inappropriate class loader in the Configuration object.
+     *
      * @return New instance of {@link JobConf}.
      */
     public static JobConf safeCreateJobConf() {

@@ -2357,6 +2357,7 @@ object visor extends VisorTag {
         val fileName = f.getName
 
         val cfg = ignite.configuration()
+
         logFile = new File(U.resolveWorkDirectory(cfg.getWorkDirectory(), folder, false), fileName)
 
         logFile.createNewFile()

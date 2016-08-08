@@ -142,6 +142,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
                 else {
                     try {
                         IgniteConfiguration cfg = ignite.configuration();
+
                         tmp = U.resolveWorkDirectory(cfg.getWorkDirectory(), path, false);
                     }
                     catch (IgniteCheckedException e) {

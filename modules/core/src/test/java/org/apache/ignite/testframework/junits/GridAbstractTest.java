@@ -484,7 +484,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-
+        // Will clean and re-create marshaller directory from scratch.
+        U.resolveWorkDirectory(null, "marshaller", true);
     }
 
     /**
@@ -532,9 +533,6 @@ public abstract class GridAbstractTest extends TestCase {
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
-
-                // Will clean and re-create marshaller directory from scratch.
-                U.resolveWorkDirectory(cfg.getWorkDirectory(), "marshaller", true);
 
                 G.start(cfg);
             }
