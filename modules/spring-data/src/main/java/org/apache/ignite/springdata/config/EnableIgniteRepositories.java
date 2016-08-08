@@ -28,29 +28,42 @@ import org.springframework.context.annotation.Import;
 import org.apache.ignite.springdata.repository.impl.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springdata.repository.impl.IgniteRepositoryImpl;
 
+/**
+ * Annotation to enable Ignite repositories.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
 @Import(IgniteRepositoryRegistrar.class)
 public @interface EnableIgniteRepositories {
+    /** */
     String[] value() default {};
 
+    /** */
     String[] basePackages() default {};
 
+    /** */
     Class<?>[] basePackageClasses() default {};
 
+    /** */
     ComponentScan.Filter[] includeFilters() default {};
 
+    /** */
     ComponentScan.Filter[] excludeFilters() default {};
 
+    /** */
     Class<?> repositoryFactoryBeanClass() default IgniteRepositoryFactoryBean.class;
 
+    /** */
     Class<?> repositoryBaseClass() default IgniteRepositoryImpl.class;
 
+    /** */
     String namedQueriesLocation() default "";
 
+    /** */
     String repositoryImplementationPostfix() default "Impl";
 
+    /** */
     boolean considerNestedRepositories() default false;
 }

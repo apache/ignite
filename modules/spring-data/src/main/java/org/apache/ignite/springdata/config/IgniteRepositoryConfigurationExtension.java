@@ -17,14 +17,28 @@
 
 package org.apache.ignite.springdata.config;
 
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata.repository.impl.IgniteRepositoryFactoryBean;
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
 
+/**
+ *
+ */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
+    /** {@inheritDoc} */
     @Override protected String getModulePrefix() {
-        return "ignite"; //TODO
+        return "ignite";
     }
 
+    /** {@inheritDoc} */
     @Override public String getRepositoryFactoryClassName() {
-        return null; //TODO
+        return IgniteRepositoryFactoryBean.class.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<Class<?>> getIdentifyingTypes() {
+        return Collections.<Class<?>>singleton(IgniteRepository.class);
     }
 }

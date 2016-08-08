@@ -113,7 +113,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
 
         QueryCursor qryCursor = cache.query(qry);
 
-        return transfromQueryCursor(prmtrs, qryCursor);
+        return transformQueryCursor(prmtrs, qryCursor);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +153,6 @@ class IgniteRepositoryQuery implements RepositoryQuery {
             return ReturnStrategy.ONE_VALUE;
     }
 
-
     /**
      * @param cls Class 1.
      * @param mtd Method.
@@ -185,7 +184,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
      * @param prmtrs Prmtrs.
      * @param qryCursor Query cursor.
      */
-    @Nullable private Object transfromQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
+    @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
         if (this.qry.isFieldQuery()) {
             Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
 
@@ -199,6 +198,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                     return list;
                 case ONE_VALUE:
                     Iterator<ArrayList> iter = qryIter.iterator();
+
                     if (iter.hasNext())
                         return iter.next().get(0);
 
@@ -229,12 +229,14 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                     return list;
                 case ONE_VALUE:
                     Iterator<CacheEntryImpl> iter1 = qryIter.iterator();
+
                     if (iter1.hasNext())
                         return iter1.next().getValue();
 
                     return null;
                 case CACHE_ENTRY:
                     Iterator<CacheEntryImpl> iter2 = qryIter.iterator();
+
                     if (iter2.hasNext())
                         return iter2.next();
 

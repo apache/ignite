@@ -24,10 +24,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Repository to provide cache configuration for repository.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
 public @interface RepositoryConfig {
+    /**
+     * @return cacheName
+     */
     String cacheName() default "";
 }

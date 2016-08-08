@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.test;
 
 import org.apache.ignite.IgniteSpringBean;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -24,15 +24,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.ignite.springdata.config.EnableIgniteRepositories;
 
+/**
+ *
+ */
 @Configuration
 @EnableIgniteRepositories
 public class SpringContext {
-
-    @Bean Service getService() {
-        return new Service();
-    }
-
-    @Bean IgniteSpringBean igniteSpringBean() {
+    /**
+     *
+     */
+    @Bean
+    IgniteSpringBean igniteSpringBean() {
         IgniteSpringBean igniteSpringBean = new IgniteSpringBean();
 
         igniteSpringBean.setConfiguration(igniteConfiguration());
@@ -40,7 +42,11 @@ public class SpringContext {
         return igniteSpringBean;
     }
 
-    @Bean IgniteConfiguration igniteConfiguration() {
+    /**
+     *
+     */
+    @Bean
+    IgniteConfiguration igniteConfiguration() {
         IgniteConfiguration configuration = new IgniteConfiguration();
 
         CacheConfiguration ccfg = new CacheConfiguration();

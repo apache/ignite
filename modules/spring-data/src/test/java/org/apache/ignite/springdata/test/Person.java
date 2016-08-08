@@ -15,30 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.test;
 
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
+/**
+ *
+ */
 public class Person {
+    /** First name. */
     @QuerySqlField(index = true)
     private String firstName;
 
+    /** Second name. */
     @QuerySqlField(index = true)
     private String secondName;
 
+    /**
+     * @param firstName First name.
+     * @param secondName Second name.
+     */
     public Person(String firstName, String secondName) {
         this.firstName = firstName;
         this.secondName = secondName;
     }
 
+    /**
+     *
+     */
     public String getFirstName() {
         return firstName;
     }
 
+    /**
+     * @param firstName First name.
+     */
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
+    /**
+     *
+     */
+    public String getSecondName() {
+        return secondName;
+    }
+
+    /**
+     * @param secondName Second name.
+     */
+    public void setSecondName(String secondName) {
+        this.secondName = secondName;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "Person{" +
             "firstName='" + firstName + '\'' +

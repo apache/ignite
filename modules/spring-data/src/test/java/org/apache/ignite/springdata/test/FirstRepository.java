@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.test;
 
 import java.util.Collection;
 import java.util.List;
@@ -26,48 +26,65 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 
+/**
+ *
+ */
 @RepositoryConfig(cacheName = "cache")
 public interface FirstRepository extends IgniteRepository<Person, Integer> {
-
+    /** */
     public List<Person> findByFirstName(String val);
 
+    /** */
     public List<Person> findByFirstNameContaining(String val);
 
+    /** */
     public List<Person> findByFirstNameRegex(String val, Pageable pageable);
 
+    /** */
     public Collection<Person> findTopByFirstNameContaining(String val);
 
+    /** */
     public Iterable<Person> findFirst10ByFirstNameLike(String val);
 
+    /** */
     public int countByFirstNameLike(String val);
 
+    /** */
     public int countByFirstNameLikeAndSecondNameLike(String like1, String like2);
 
+    /** */
     public int countByFirstNameStartingWithOrSecondNameStartingWith(String like1, String like2);
 
+    /** */
     public List<Cache.Entry<Integer, Person>> findBySecondNameLike(String val);
 
+    /** */
     public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
 
+    /** */
     public Person findTopBySecondNameStartingWith(String val);
 
-
-
+    /** */
     @Query("firstName = ?")
-    public List<Person> byQuery(String val);
+    public List<Person> simpleQuery(String val);
 
+    /** */
     @Query("firstName REGEXP ?")
-    public List<Person> byQuery2(String val, Sort sort);
+    public List<Person> queryWithSort(String val, Sort sort);
 
+    /** */
     @Query("SELECT * FROM Person WHERE firstName REGEXP ?")
-    public List<Person> byQuery3(String val, Pageable pageable);
+    public List<Person> queryWithPageable(String val, Pageable pageable);
 
+    /** */
     @Query("SELECT secondName FROM Person WHERE firstName REGEXP ?")
-    public List<String> byQuery4(String val, Pageable pageable);
+    public List<String> selectField(String val, Pageable pageable);
 
+    /** */
     @Query("SELECT _key, secondName FROM Person WHERE firstName REGEXP ?")
-    public List<List> byQuery5(String val, Pageable pageable);
+    public List<List> selectSeveralField(String val, Pageable pageable);
 
+    /** */
     @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
-    public int byQuery6(String val);
+    public int countQuery(String val);
 }

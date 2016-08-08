@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.testsuites;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import junit.framework.TestSuite;
+import org.apache.ignite.springdata.test.IgniteSpringDataTest;
 
 /**
  *
  */
-public class Service {
-    /** Repository. */
-    @Autowired
-    FirstRepository repo;
-
+public class IgniteSpringDataTestSuite extends TestSuite {
     /**
-     *
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public Iterable<Person> call() {
-        return repo.findAll();
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Spring Data Test Suite");
+
+        suite.addTest(new IgniteSpringDataTest());
+
+        return suite;
     }
 }
