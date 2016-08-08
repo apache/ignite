@@ -17,6 +17,11 @@
 
 package org.apache.ignite.hadoop.fs;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -24,6 +29,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
@@ -60,6 +66,9 @@ import java.util.Map;
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
+    /** Default buffer size. */
+    public static final int DFLT_BUF_SIZE = 8 * 1024;
+
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName = IgfsUtils.fixUserName(null);
 
@@ -68,6 +77,9 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** Path that will be added to each passed path. */
     private String workDir;
+
+    /** Buffer size. */
+    private int bufSize = DFLT_BUF_SIZE;
 
     /**
      * Default constructor.
@@ -117,6 +129,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */
@@ -201,7 +214,11 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         try {
-            return fileSystemForUser().delete(convert(path), recursive);
+            File f = fileForPath(path);
+            if (!recursive || !f.isDirectory())
+                return f.delete();
+            else
+                return deleteDir(f);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
@@ -210,24 +227,15 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path) {
-        try {
-            if (!fileSystemForUser().mkdirs(convert(path)))
-                throw new IgniteException("Failed to make directories [path=" + path + "]");
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + "]");
-        }
+        if (!mkdirs0(fileForPath(path)))
+            throw new IgniteException("Failed to make directories [path=" + path + "]");
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-        try {
-            if (!fileSystemForUser().mkdirs(convert(path), new HadoopIgfsProperties(props).permission()))
-                throw new IgniteException("Failed to make directories [path=" + path + ", props=" + props + "]");
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + ", props=" + props + "]");
-        }
+        // TODO: Add properties handling.
+        if (!mkdirs0(fileForPath(path)))
+            throw new IgniteException("Failed to make directories [path=" + path + "]");
     }
 
     /** {@inheritDoc} */
@@ -299,36 +307,27 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize) {
-        return new HadoopIgfsSecondaryFileSystemPositionedReadable(fileSystemForUser(), convert(path), bufSize);
+        try {
+            FileInputStream in = new FileInputStream(fileForPath(path));
+
+            return new LocalIgfsSecondaryFileSystemPositionedReadable(in, bufSize);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed to open file for read: " + path);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        try {
-            return fileSystemForUser().create(convert(path), overwrite);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
-        }
+        return create0(path, overwrite, bufSize);
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        HadoopIgfsProperties props0 =
-            new HadoopIgfsProperties(props != null ? props : Collections.<String, String>emptyMap());
-
-        try {
-            return fileSystemForUser().create(convert(path), props0.permission(), overwrite, bufSize,
-                (short) replication, blockSize, null);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", props=" + props +
-                ", overwrite=" + overwrite + ", bufSize=" + bufSize + ", replication=" + replication +
-                ", blockSize=" + blockSize + "]");
-        }
+        // TODO: Handle properties.
+        return create0(path, overwrite, bufSize);
     }
-
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
@@ -485,5 +484,126 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      */
     public void setWorkDirectory(final String workDir) {
         this.workDir = workDir;
+    }
+
+    /**
+     * Get buffer size.
+     *
+     * @return Buffer size.
+     */
+    public int getBufferSize() {
+        return bufSize;
+    }
+
+    /**
+     * Set buffer size.
+     *
+     * @param bufSize Buffer size.
+     */
+    public void setBufferSize(int bufSize) {
+        this.bufSize = bufSize;
+    }
+
+    /**
+     * Create file for IGFS path.
+     *
+     * @param path IGFS path.
+     * @return File object.
+     */
+    private File fileForPath(IgfsPath path) {
+        if (workDir == null)
+            return new File(path.toString());
+        else
+            return new File(workDir, path.toString());
+    }
+
+    /**
+     * @param dir Directory.
+     * @throws IOException If fails.
+     * @return {@code true} if successful.
+     */
+    private boolean deleteDir(File dir) throws IOException {
+        File[] dirEntries = dir.listFiles();
+
+        if (dirEntries != null) {
+            for (int i = 0; i < dirEntries.length; ++i) {
+                File f = dirEntries[i];
+
+                if (!f.isDirectory()) { // TODO: should we support symlink?
+                    if (!f.delete())
+                        throw new IOException("Cannot remove [file=" + f + ']');
+                }
+                else
+                    deleteDir(dirEntries[i]);
+            }
+        }
+
+        if (!dir.delete())
+            throw new IOException("Cannot remove [dir=" + dir + ']');
+
+        return true;
+    }
+
+    /**
+     * Create directories.
+     *
+     * @param dir Directory.
+     * @return Result.
+     */
+    private boolean mkdirs0(File dir) {
+        if (dir == null)
+            return true; // Nothing to create.
+
+        if (dir.exists()) {
+            if (dir.isDirectory())
+                return true; // Already exists, so no-op.
+            else
+                return false; // TODO: should we support symlink?
+        }
+        else {
+            File parentDir = dir.getParentFile();
+
+            if (!mkdirs0(parentDir)) // Create parent first.
+                return false;
+
+            boolean res = dir.mkdir();
+
+            if (!res)
+                res = dir.exists(); // Tolerate concurrent creation.
+
+            return res;
+        }
+    }
+
+    /**
+     * Internal create routine.
+     *
+     * @param path Path.
+     * @param overwrite Overwirte flag.
+     * @param bufSize Buffer size.
+     * @return Output stream.
+     */
+    private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+        try {
+            File file = fileForPath(path);
+
+            boolean exists = file.exists();
+
+            if (exists) {
+                if (!overwrite)
+                    throw new IOException("File already exists.");
+            }
+            else {
+                File parent = file.getParentFile();
+
+                if (!mkdirs0(parent))
+                    throw new IOException("Failed to create parent directory: " + parent);
+            }
+
+            return new BufferedOutputStream(new FileOutputStream(file), bufSize);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
+        }
     }
 }
