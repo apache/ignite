@@ -36,9 +36,9 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setFileSystemConfiguration(
-            igfsConfiguration(null, null, null), // Check null IPC endpoint config won't bring any hassles.
-            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1, null),
-            igfsConfiguration(IgfsIpcEndpointType.SHMEM, IgfsIpcEndpointConfiguration.DFLT_PORT + 2, null));
+            igfsConfiguration(cfg, null, null, null), // Check null IPC endpoint config won't bring any hassles.
+            igfsConfiguration(cfg, IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1, null),
+            igfsConfiguration(cfg, IgfsIpcEndpointType.SHMEM, IgfsIpcEndpointConfiguration.DFLT_PORT + 2, null));
 
         G.start(cfg);
 

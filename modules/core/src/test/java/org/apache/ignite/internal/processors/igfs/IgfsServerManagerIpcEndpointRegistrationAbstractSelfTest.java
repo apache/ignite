@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,6 +55,8 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
     private static final AtomicInteger mgmtPort = new AtomicInteger(DFLT_MGMT_PORT);
 
+    private static AtomicInteger igfsCounter = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -83,8 +88,8 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setFileSystemConfiguration(
-            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, "127.0.0.1"),
-            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1,
+            igfsConfiguration(cfg, IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, "127.0.0.1"),
+            igfsConfiguration(cfg, IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1,
                 U.getLocalHost().getHostName()));
 
         G.start(cfg);
@@ -100,6 +105,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * Counts all registered IPC endpoints.
      *
      * @return Tuple2 where (tcp endpoints count, shmem endpoints count).
+     * @throws Exception If fails.
      */
     protected T2<Integer, Integer> checkRegisteredIpcEndpoints() throws Exception {
         GridKernalContext ctx = ((IgniteKernal)grid()).context();
@@ -157,6 +163,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @param endPntPort End point port.
      * @param endPntHost End point host.
      * @return test-purposed IgfsConfiguration.
+     * @throws IgniteCheckedException If failed.
      */
     protected FileSystemConfiguration igfsConfiguration(@Nullable IgfsIpcEndpointType endPntType,
         @Nullable Integer endPntPort, @Nullable String endPntHost) throws IgniteCheckedException {
@@ -178,6 +185,71 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         igfsConfiguration.setDataCacheName("partitioned");
         igfsConfiguration.setMetaCacheName("replicated");
+        igfsConfiguration.setName("igfs" + UUID.randomUUID());
+        igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+
+        if (endPntCfg != null)
+            igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);
+
+        return igfsConfiguration;
+    }
+
+    /**
+     * Creates test-purposed IgfsConfiguration.
+     *
+     * @param cfg Ignite config.
+     * @param endPntType End point type.
+     * @param endPntPort End point port.
+     * @param endPntHost End point host.
+     * @return test-purposed IgfsConfiguration.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected FileSystemConfiguration igfsConfiguration(
+        IgniteConfiguration cfg,
+        @Nullable IgfsIpcEndpointType endPntType,
+        @Nullable Integer endPntPort,
+        @Nullable String endPntHost) throws IgniteCheckedException {
+        String cachePrefix = "igfscache" + igfsCounter.getAndIncrement();
+
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+
+        dataCacheCfg.setName(cachePrefix + "-partitioned");
+        dataCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+
+        metaCacheCfg.setName(cachePrefix + "-replicated");
+        metaCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        // Add cache configurations
+        List<CacheConfiguration> caches = new ArrayList<>();
+        caches.addAll(Arrays.asList(cfg.getCacheConfiguration()));
+        caches.add(dataCacheCfg);
+        caches.add(metaCacheCfg);
+        cfg.setCacheConfiguration(caches.toArray(new CacheConfiguration[caches.size()]));
+
+        IgfsIpcEndpointConfiguration endPntCfg = null;
+
+        if (endPntType != null) {
+            endPntCfg = new IgfsIpcEndpointConfiguration();
+
+            endPntCfg.setType(endPntType);
+
+            if (endPntPort != null)
+                endPntCfg.setPort(endPntPort);
+
+            if (endPntHost != null)
+                endPntCfg.setHost(endPntHost);
+        }
+
+        FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
+
+        igfsConfiguration.setDataCacheName(cachePrefix + "-partitioned");
+        igfsConfiguration.setMetaCacheName(cachePrefix + "-replicated");
         igfsConfiguration.setName("igfs" + UUID.randomUUID());
         igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 

@@ -333,6 +333,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
     /**
      * Tests Hadoop command line integration.
+     * @throws Exception If failed.
      */
     public void testHadoopCommandLine() throws Exception {
         assertEquals(0, executeHadoopCmd("fs", "-ls", "/"));
