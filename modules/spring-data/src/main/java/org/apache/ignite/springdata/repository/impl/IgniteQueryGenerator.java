@@ -144,9 +144,9 @@ public class IgniteQueryGenerator {
         Class<?>[] types = mtd.getParameterTypes();
         Class<?> type = types[types.length - 1];
 
-        if (type == Sort.class)
+        if (Sort.class.isAssignableFrom(type))
             dynamicity = IgniteQuery.Dynamicity.SORTABLE;
-        else if (type == Pageable.class)
+        else if (Pageable.class.isAssignableFrom(type))
             dynamicity = IgniteQuery.Dynamicity.PAGEBABLE;
         else
             dynamicity = IgniteQuery.Dynamicity.NONE;
@@ -173,7 +173,7 @@ public class IgniteQueryGenerator {
                 sql.append("=?");
                 break;
             case NEGATING_SIMPLE_PROPERTY:
-                sql.append("!=?");
+                sql.append("<>?");
                 break;
             case GREATER_THAN:
                 sql.append(">?");

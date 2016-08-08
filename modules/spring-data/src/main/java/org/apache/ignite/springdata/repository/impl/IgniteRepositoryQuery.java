@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -68,7 +67,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         SLICE_OF_VALUES,
 
         /** Slice of cache entries. */
-        SLICE_OF_CACHE_ENTRIES;
+        SLICE_OF_CACHE_ENTRIES
     }
 
     /** Type. */
@@ -174,9 +173,9 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         }
 
         if (actualTypeArguments[0] instanceof Class) {
-            Class typeArgument = (Class)actualTypeArguments[0];
+            Class typeArg = (Class)actualTypeArguments[0];
 
-            return typeArgument.isAssignableFrom(cls);
+            return typeArg.isAssignableFrom(cls);
         }
 
         return false;
@@ -247,6 +246,8 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                         content.add(entry.getValue());
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                case SLICE_OF_CACHE_ENTRIES:
+                    return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
                 case LIST_OF_CACHE_ENTRIES:
                     return qryCursor.getAll();
                 default:
@@ -281,15 +282,16 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         if (this.qry.isFieldQuery()) {
             SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
             sqlFieldsQry.setArgs(parameters);
+
             qry = sqlFieldsQry;
         }
         else {
             SqlQuery sqlQry = new SqlQuery(type, sql);
             sqlQry.setArgs(parameters);
+
             qry = sqlQry;
         }
 
         return qry;
     }
-
 }

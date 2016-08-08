@@ -17,5 +17,13 @@
 
 package org.apache.ignite.springdata;
 
-public class SecondRepository {
+import javax.cache.Cache;
+import org.apache.ignite.springdata.config.RepositoryConfig;
+import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+
+@RepositoryConfig(cacheName = "cache")
+public interface SecondRepository  extends IgniteRepository<Person, Integer> {
+    public Slice<Cache.Entry<Integer, Person>> findBySecondNameIsNot(String val, PageRequest pageRequest);
 }

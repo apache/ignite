@@ -21,6 +21,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 
 public class Main {
@@ -31,6 +32,7 @@ public class Main {
         ctx.refresh();
 
         FirstRepository repo = ctx.getBean(FirstRepository.class);
+        SecondRepository repo2 = ctx.getBean(SecondRepository.class);
 
         for (int i = 0; i < 1000; i++)
             repo.save(i, new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString((i+16) % 256)));
@@ -117,5 +119,9 @@ public class Main {
 
         int queryCount = repo.byQuery6(".*");
         System.out.println("queryCount = " + queryCount);
+
+        Slice<Cache.Entry<Integer, Person>> name18 = repo2.findBySecondNameIsNot("lastName18",  new PageRequest(3, 4));
+        for (Cache.Entry<Integer, Person> entry : name18)
+            System.out.println("sliceCacheEntry: key = " + entry.getKey() + ", value = " + entry.getValue());
     }
 }

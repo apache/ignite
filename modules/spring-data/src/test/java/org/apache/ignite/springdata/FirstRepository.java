@@ -51,6 +51,8 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
     public Person findTopBySecondNameStartingWith(String val);
 
+
+
     @Query("firstName = ?")
     public List<Person> byQuery(String val);
 
