@@ -50,6 +50,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
+    private static final Integer DFLT_HASH_CODE_MAGIC = 0;
+
     /** */
     private final BinaryContext ctx;
 
@@ -84,7 +86,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private final BinaryBuilderReader reader;
 
     /** */
-    private int hashCode;
+    private Integer hashCode = DFLT_HASH_CODE_MAGIC;
 
     /**
      * @param clsName Class name.
@@ -329,7 +331,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(true, registeredType, hashCode);
+            //noinspection NumberEquality
+            writer.postWrite(true, registeredType, hashCode, hashCode != DFLT_HASH_CODE_MAGIC);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -408,8 +411,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("UnnecessaryBoxing")
     @Override public BinaryObjectBuilderImpl hashCode(int hashCode) {
-        this.hashCode = hashCode;
+        this.hashCode = new Integer(hashCode);
 
         return this;
     }
