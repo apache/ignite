@@ -233,9 +233,39 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-        // TODO: Add properties handling.
-        if (!mkdirs0(fileForPath(path)))
-            throw new IgniteException("Failed to make directories [path=" + path + "]");
+        // TODO: IGNITE-3641: Add properties handling.
+        mkdirs(path);
+    }
+
+    /**
+     * Create directories.
+     *
+     * @param dir Directory.
+     * @return Result.
+     */
+    private boolean mkdirs0(@Nullable File dir) {
+        if (dir == null)
+            return true; // Nothing to create.
+
+        if (dir.exists()) {
+            if (dir.isDirectory())
+                return true; // Already exists, so no-op.
+            else
+                return false; // TODO: should we support symlink?
+        }
+        else {
+            File parentDir = dir.getParentFile();
+
+            if (!mkdirs0(parentDir)) // Create parent first.
+                return false;
+
+            boolean res = dir.mkdir();
+
+            if (!res)
+                res = dir.exists(); // Tolerate concurrent creation.
+
+            return res;
+        }
     }
 
     /** {@inheritDoc} */
@@ -478,6 +508,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @return Work directory.
      */
     public String getWorkDirectory() {
+        // TODO: Correct work directory support.
         return workDir;
     }
 
@@ -546,37 +577,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             throw new IOException("Cannot remove [dir=" + dir + ']');
 
         return true;
-    }
-
-    /**
-     * Create directories.
-     *
-     * @param dir Directory.
-     * @return Result.
-     */
-    private boolean mkdirs0(File dir) {
-        if (dir == null)
-            return true; // Nothing to create.
-
-        if (dir.exists()) {
-            if (dir.isDirectory())
-                return true; // Already exists, so no-op.
-            else
-                return false; // TODO: should we support symlink?
-        }
-        else {
-            File parentDir = dir.getParentFile();
-
-            if (!mkdirs0(parentDir)) // Create parent first.
-                return false;
-
-            boolean res = dir.mkdir();
-
-            if (!res)
-                res = dir.exists(); // Tolerate concurrent creation.
-
-            return res;
-        }
     }
 
     /**
