@@ -167,6 +167,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
         try {
+            // TODO
             return fileSystemForUser().exists(convert(path));
         }
         catch (IOException e) {
@@ -176,6 +177,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+        // TODO
         HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         final FileSystem fileSys = fileSystemForUser();
@@ -197,6 +199,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
+        // TODO
         // Delegate to the secondary file system.
         try {
             if (!fileSystemForUser().rename(convert(src), convert(dest)))
@@ -238,6 +241,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
         try {
+            // TODO
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -261,6 +265,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
         try {
+            // TODO
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -334,6 +339,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
         try {
+            // TODO
             final FileStatus status = fileSystemForUser().getFileStatus(convert(path));
 
             if (status == null)
@@ -407,6 +413,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         try {
+            // TODO
             // We don't use FileSystem#getUsed() since it counts only the files
             // in the filesystem root, not all the files recursively.
             return fileSystemForUser().getContentSummary(new Path("/")).getSpaceConsumed();
@@ -414,15 +421,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
         }
-    }
-
-    /**
-     * Gets the underlying {@link FileSystem}.
-     * This method is used solely for testing.
-     * @return the underlying Hadoop {@link FileSystem}.
-     */
-    public FileSystem fileSystem() {
-        return fileSystemForUser();
     }
 
     /**
