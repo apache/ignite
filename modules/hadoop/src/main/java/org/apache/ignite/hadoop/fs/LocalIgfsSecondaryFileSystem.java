@@ -109,7 +109,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (path.startsWith("/"))
             path = path.substring(1, path.length());
 
-        return GridFilenameUtils.concat(workDir, path);
+        if (workDir == null)
+            return path;
+        else
+            return GridFilenameUtils.concat(workDir, path);
     }
 
     /**
