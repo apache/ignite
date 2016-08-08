@@ -167,7 +167,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
         try {
-            // TODO
+            // TODO: IGNITE-3644.
             return fileSystemForUser().exists(convert(path));
         }
         catch (IOException e) {
@@ -177,7 +177,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        // TODO
+        // TODO: IGNITE-3645.
         HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         final FileSystem fileSys = fileSystemForUser();
@@ -199,7 +199,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
-        // TODO
+        // TODO: IGNITE-3638.
         // Delegate to the secondary file system.
         try {
             if (!fileSystemForUser().rename(convert(src), convert(dest)))
@@ -266,7 +266,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-        // TODO: IGNITE-3641: Add properties handling.
+        // TODO: IGNITE-3641.
         mkdirs(path);
     }
 
@@ -284,7 +284,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             if (dir.isDirectory())
                 return true; // Already exists, so no-op.
             else
-                return false; // TODO: should we support symlink?
+                // TODO: IGNITE-3646.
+                return false;
         }
         else {
             File parentDir = dir.getParentFile();
@@ -304,7 +305,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
         try {
-            // TODO
+            // TODO: IGNITE-3647.
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -328,7 +329,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
         try {
-            // TODO
+            // TODO: IGNITE-3647.
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -390,14 +391,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        // TODO: Handle properties.
+        // TODO: IGNITE-3648.
         return create0(path, overwrite, bufSize);
     }
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
-        // TODO: Handle properties.
-        // TODO: Create flag is not used.
+        // TODO: IGNITE-3648.
+        // TODO: IGNITE-3649.
         try {
             File file = fileForPath(path);
 
@@ -416,7 +417,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
         try {
-            // TODO
+            // TODO: IGNITE-3650.
             final FileStatus status = fileSystemForUser().getFileStatus(convert(path));
 
             if (status == null)
@@ -490,7 +491,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         try {
-            // TODO
+            // TODO: IGNITE-3651.
             // We don't use FileSystem#getUsed() since it counts only the files
             // in the filesystem root, not all the files recursively.
             return fileSystemForUser().getContentSummary(new Path("/")).getSpaceConsumed();
@@ -541,7 +542,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @return Work directory.
      */
     public String getWorkDirectory() {
-        // TODO: Correct work directory support.
+        // TODO: IGNITE-3652.
         return workDir;
     }
 
