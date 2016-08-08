@@ -39,13 +39,14 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- *
- *
+ * Crucial for spring-data functionality class. Create proxies for repositories.
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
+    /** Ignite. */
     private Ignite ignite;
 
-    private final Map<Class<?>, String> cacheNameForRepos = new HashMap<>();
+    /** Cache name for repository. */
+    private final Map<Class<?>, String> cacheNameForRepo = new HashMap<>();
 
     /**
      * @param ignite Ignite.
@@ -71,7 +72,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** {@inheritDoc} */
     @Override protected Object getTargetRepository(RepositoryInformation metadata) {
         return getTargetRepositoryViaReflection(metadata,
-            ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface())));
+            ignite.getOrCreateCache(cacheNameForRepo.get(metadata.getRepositoryInterface())));
     }
 
     /** {@inheritDoc} */
@@ -88,7 +89,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         Assert.notNull(annotation, "You should provide cache name in @RepositoryConfig annotation");
         Assert.hasText(annotation.cacheName());
 
-        cacheNameForRepos.put(repoItf, annotation.cacheName());
+        cacheNameForRepo.put(repoItf, annotation.cacheName());
 
         return super.getRepositoryMetadata(repoItf);
     }
@@ -108,30 +109,30 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                     if (key != Key.CREATE && StringUtils.hasText(qryStr))
                         return new IgniteRepositoryQuery(metadata,
-                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.isDynamic(mtd)), mtd, factory,
-                                ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface())));
+                            new IgniteQuery(
+                                qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.isDynamic(mtd)), mtd, factory,
+                                ignite.getOrCreateCache(cacheNameForRepo.get(metadata.getRepositoryInterface())));
                 }
-                //TODO namedQueries handling
 
                 if (key == Key.USE_DECLARED_QUERY)
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Query not found! \n" +
+                        "\tWith QueryLookupStrategy.Key.USE_DECLARED_QUERY use should use @Query annotation. " +
+                        "\nNamed-queries is not supported.");
 
                 return new IgniteRepositoryQuery(
                     metadata,
                     IgniteQueryGenerator.generateSql(mtd, metadata),
                     mtd,
                     factory,
-                    ignite.getOrCreateCache(cacheNameForRepos.get(metadata.getRepositoryInterface())));
+                    ignite.getOrCreateCache(cacheNameForRepo.get(metadata.getRepositoryInterface())));
             }
         };
     }
 
+    /**
+     * For SqlQuery we only support SELECT * and SELECT alias.*
+     */
     private boolean isFieldQuery(String s) {
         return s.matches("^SELECT.*") && !s.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
-
-    enum ReturnStrategy {
-        ONE_VALUE, CACHE_ENTRY, LIST_OF_CACHE_ENTRIES, LIST, LIST_OF_LISTS, SLICE;
-    }
-
 }

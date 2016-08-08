@@ -65,4 +65,7 @@ public interface FirstRepository extends IgniteRepository<Person, Integer> {
 
     @Query("SELECT _key, secondName FROM Person WHERE firstName REGEXP ?")
     public List<List> byQuery5(String val, Pageable pageable);
+
+    @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
+    public int byQuery6(String val);
 }

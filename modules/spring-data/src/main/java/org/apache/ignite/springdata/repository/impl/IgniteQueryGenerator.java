@@ -26,9 +26,12 @@ import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 
 /**
- *
+ * Bunch of methods for creating IgniteQuery and other related functionality.
  */
 public class IgniteQueryGenerator {
+    /** Default constructor. */
+    private IgniteQueryGenerator() {}
+
     /**
      * @param mtd Method.
      * @param metadata Metadata.
@@ -39,13 +42,13 @@ public class IgniteQueryGenerator {
         StringBuilder sql = new StringBuilder();
 
         if (parts.isDelete())
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("DELETE clause is not supported now.");
 //            sql.append("DELETE ");
         else {
             sql.append("SELECT ");
 
             if (parts.isDistinct())
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("DISTINCT clause in not supported.");
 
             if (parts.isCountProjection())
                 sql.append("COUNT(1) ");
@@ -61,7 +64,7 @@ public class IgniteQueryGenerator {
             for (PartTree.OrPart orPart : parts) {
                 sql.append("(");
                 for (Part part : orPart) {
-                    handlePart(sql, part);
+                    handleQueryPart(sql, part);
                     sql.append(" AND ");
                 }
 
@@ -83,11 +86,18 @@ public class IgniteQueryGenerator {
         return new IgniteQuery(sql.toString(), parts.isCountProjection(), isDynamic(mtd));
     }
 
+    /**
+     * Add dynamic part of query for sorting support
+     * @param sql Sql.
+     * @param sort Sort.
+     */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
         if (sort != null) {
             sql.append(" ORDER BY ");
+
             for (Sort.Order order : sort) {
                 sql.append(order.getProperty()).append(" ").append(order.getDirection());
+
                 if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
                     sql.append(" ").append("NULL ");
                     switch (order.getNullHandling()) {
@@ -99,7 +109,6 @@ public class IgniteQueryGenerator {
                             break;
                     }
                 }
-
                 sql.append(", ");
             }
 
@@ -109,6 +118,12 @@ public class IgniteQueryGenerator {
         return sql;
     }
 
+    /**
+     * Add dynamic part of qyery for paging support
+     * @param sql
+     * @param pageable
+     * @return
+     */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
         if (pageable.getSort() != null)
             addSorting(sql, pageable.getSort());
@@ -118,6 +133,11 @@ public class IgniteQueryGenerator {
         return sql;
     }
 
+    /**
+     * Determines whether query is dynamic or not (by list of method parameters)
+     * @param mtd
+     * @return type of dynamicity
+     */
     public static IgniteQuery.Dynamicity isDynamic(Method mtd) {
         IgniteQuery.Dynamicity dynamicity;
 
@@ -134,13 +154,16 @@ public class IgniteQueryGenerator {
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];
             if (tp == Sort.class || tp == Pageable.class)
-                throw new AssertionError("Sort and Pageable parameters is allowed only on last position");
+                throw new AssertionError("Sort and Pageable parameters are allowed only on last position");
         }
 
         return dynamicity;
     }
 
-    private static void handlePart(StringBuilder sql, Part part) {
+    /**
+     * Transform part to sql expression
+     */
+    private static void handleQueryPart(StringBuilder sql, Part part) {
         sql.append("(");
 
         sql.append(part.getProperty());
@@ -211,7 +234,7 @@ public class IgniteQueryGenerator {
             case BEFORE:
             case EXISTS:
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException(part.getType() + " is not supported!");
         }
 
         sql.append(")");

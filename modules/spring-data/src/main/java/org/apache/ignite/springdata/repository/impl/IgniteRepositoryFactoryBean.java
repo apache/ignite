@@ -34,7 +34,7 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
     extends RepositoryFactoryBeanSupport<T, S, ID> implements ApplicationContextAware {
-
+    /** Application context. */
     private ApplicationContext applicationCtx;
 
     /** {@inheritDoc} */

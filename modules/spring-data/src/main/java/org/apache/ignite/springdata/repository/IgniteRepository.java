@@ -22,9 +22,33 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.Repository;
 
-
-//TODO replace CRUD with PagingAndSortingRepository
+/**
+ * Ignite repository. Extend it to use Ignite via spring-data interface.
+ * @param <T>
+ * @param <ID>
+ */
 @NoRepositoryBean
 public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
+    /**
+     * Save entity to cache with set key.
+     * @param key Key.
+     * @param entity Entity.
+     */
     public <S extends T> void save(ID key, S entity);
+
+    /** Not supported! Use {@link #save(Serializable, Object)} instead!*/
+    @Deprecated
+    @Override public <S extends T> S save(S entity);
+
+    /** Not supported! Use {@link #save(Serializable, Object)} instead!*/
+    @Deprecated
+    @Override public <S extends T> Iterable<S> save(Iterable<S> entities);
+
+    /** Not supported! Use {@link #delete(Serializable)} instead!*/
+    @Deprecated
+    @Override public void delete(T entity);
+
+    /** Not supported! Use {@link #delete(Serializable)} instead!*/
+    @Deprecated
+    @Override public void delete(Iterable<? extends T> entities);
 }

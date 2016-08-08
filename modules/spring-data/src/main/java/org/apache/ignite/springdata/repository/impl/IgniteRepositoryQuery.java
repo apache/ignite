@@ -25,10 +25,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
@@ -39,13 +43,38 @@ import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 
 /**
- *
+ * Provide realization for custom repositories methods.
  */
+@SuppressWarnings("unchecked")
 class IgniteRepositoryQuery implements RepositoryQuery {
+    /** Defines the way how to process query result */
+    private enum ReturnStrategy {
+        /** Need to return only one value. */
+        ONE_VALUE,
+
+        /** Need to return one cache entry */
+        CACHE_ENTRY,
+
+        /** Need to return list of cache entries */
+        LIST_OF_CACHE_ENTRIES,
+
+        /** Need to return list of values */
+        LIST_OF_VALUES,
+
+        /** Need to return list of lists */
+        LIST_OF_LISTS,
+
+        /** Need to return slice */
+        SLICE_OF_VALUES,
+
+        /** Slice of cache entries. */
+        SLICE_OF_CACHE_ENTRIES;
+    }
+
     /** Type. */
     private final Class<?> type;
     /** Sql. */
-    private final IgniteQuery query;
+    private final IgniteQuery qry;
     /** Cache. */
     private final IgniteCache cache;
 
@@ -57,113 +86,112 @@ class IgniteRepositoryQuery implements RepositoryQuery {
     private final ProjectionFactory factory;
 
     /** Return strategy. */
-    private final IgniteRepositoryFactory.ReturnStrategy returnStrategy;
+    private final ReturnStrategy returnStgy;
 
-    public IgniteRepositoryQuery(RepositoryMetadata metadata, IgniteQuery query,
+    /**
+     * @param metadata Metadata.
+     * @param qry Query.
+     * @param mtd Method.
+     * @param factory Factory.
+     * @param cache Cache.
+     */
+    public IgniteRepositoryQuery(RepositoryMetadata metadata, IgniteQuery qry,
         Method mtd, ProjectionFactory factory, IgniteCache cache) {
         type = metadata.getDomainType();
-        this.query = query;
+        this.qry = qry;
         this.cache = cache;
 
         this.metadata = metadata;
         this.mtd = mtd;
         this.factory = factory;
 
-        Class<?> returnType = mtd.getReturnType();
-
-        if (returnType.isAssignableFrom(ArrayList.class)) {
-            if (query.isFieldQuery()) {
-                Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
-
-                if (actualTypeArguments.length == 0)
-                    returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                else {
-                    if (actualTypeArguments[0] instanceof ParameterizedType) {
-                        ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
-                        Class<?> type1 = (Class)type.getRawType();
-
-                        if (type1.isAssignableFrom(ArrayList.class))
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_LISTS;
-                        else
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                    }
-                    else if (actualTypeArguments[0] instanceof Class) {
-                        Class cls = (Class)actualTypeArguments[0];
-                        if (cls.isAssignableFrom(ArrayList.class))
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_LISTS;
-                        else
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                    }
-                    else
-                        returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                }
-            }
-            else {
-                Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
-
-                if (actualTypeArguments.length == 0)
-                    returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                else {
-                    if (actualTypeArguments[0] instanceof ParameterizedType) {
-                        ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
-                        Class type1 = (Class)type.getRawType();
-
-                        if (Cache.Entry.class.isAssignableFrom(type1))
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST_OF_CACHE_ENTRIES;
-                        else
-                            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                    }
-                    else
-                        returnStrategy = IgniteRepositoryFactory.ReturnStrategy.LIST;
-                }
-            }
-        }
-        else if (returnType == Slice.class)
-            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.SLICE;
-        else if (Cache.Entry.class.isAssignableFrom(returnType))
-            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.CACHE_ENTRY;
-        else
-            returnStrategy = IgniteRepositoryFactory.ReturnStrategy.ONE_VALUE;
+        returnStgy = calcReturnType(mtd,  qry.isFieldQuery());
     }
 
     /** {@inheritDoc} */
     @Override public Object execute(Object[] prmtrs) {
-        Object[] parameters = prmtrs;
-        String sql = this.query.sql();
-
-        org.apache.ignite.cache.query.Query qry;
-
-        switch (query.dynamicity()) {
-            case SORTABLE:
-                sql = IgniteQueryGenerator.addSorting(new StringBuilder(sql),
-                    (Sort)parameters[parameters.length - 1]).toString();
-                parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
-                break;
-            case PAGEBABLE:
-                sql = IgniteQueryGenerator.addPaging(new StringBuilder(sql),
-                    (Pageable)parameters[parameters.length - 1]).toString();
-                parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
-                break;
-        }
-
-        if (query.isFieldQuery()) {
-            SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
-            sqlFieldsQry.setArgs(parameters);
-            qry = sqlFieldsQry;
-        }
-        else {
-            SqlQuery sqlQry = new SqlQuery(type, sql);
-            sqlQry.setArgs(parameters);
-            qry = sqlQry;
-        }
+        Query qry = prepareQuery(prmtrs);
 
         QueryCursor qryCursor = cache.query(qry);
 
-        if (query.isFieldQuery()) {
+        return transfromQueryCursor(prmtrs, qryCursor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryMethod getQueryMethod() {
+        return new QueryMethod(mtd, metadata, factory);
+    }
+
+    /**
+     * @param mtd Method.
+     * @param isFieldQry Is field query.
+     */
+    private ReturnStrategy calcReturnType(Method mtd, boolean isFieldQry) {
+        Class<?> returnType = mtd.getReturnType();
+
+        if (returnType.isAssignableFrom(ArrayList.class)) {
+            if (isFieldQry) {
+                if (hasAssignableGenericReturnTypeFrom(ArrayList.class, mtd))
+                    return ReturnStrategy.LIST_OF_LISTS;
+
+                return ReturnStrategy.LIST_OF_VALUES;
+            }
+            else {
+                if (hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
+                    return ReturnStrategy.LIST_OF_CACHE_ENTRIES;
+
+                return ReturnStrategy.LIST_OF_VALUES;
+            }
+        }
+        else if (returnType == Slice.class) {
+            if (!isFieldQry && hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
+                return ReturnStrategy.SLICE_OF_CACHE_ENTRIES;
+
+            return ReturnStrategy.SLICE_OF_VALUES;
+        } else if (Cache.Entry.class.isAssignableFrom(returnType))
+            return ReturnStrategy.CACHE_ENTRY;
+        else
+            return ReturnStrategy.ONE_VALUE;
+    }
+
+
+    /**
+     * @param cls Class 1.
+     * @param mtd Method.
+     */
+    private boolean hasAssignableGenericReturnTypeFrom(Class<?> cls, Method mtd) {
+        Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
+
+        if (actualTypeArguments.length == 0)
+            return false;
+
+        if (actualTypeArguments[0] instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
+
+            Class<?> type1 = (Class)type.getRawType();
+
+            return type1.isAssignableFrom(cls);
+        }
+
+        if (actualTypeArguments[0] instanceof Class) {
+            Class typeArgument = (Class)actualTypeArguments[0];
+
+            return typeArgument.isAssignableFrom(cls);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param prmtrs Prmtrs.
+     * @param qryCursor Query cursor.
+     */
+    @Nullable private Object transfromQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
+        if (this.qry.isFieldQuery()) {
             Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
 
-            switch (returnStrategy) {
-                case LIST:
+            switch (returnStgy) {
+                case LIST_OF_VALUES:
                     ArrayList list = new ArrayList();
 
                     for (ArrayList entry : qryIter)
@@ -176,7 +204,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                         return iter.next().get(0);
 
                     return null;
-                case SLICE:
+                case SLICE_OF_VALUES:
                     ArrayList content = new ArrayList();
 
                     for (ArrayList entry : qryIter)
@@ -192,8 +220,8 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         else {
             Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
 
-            switch (returnStrategy) {
-                case LIST:
+            switch (returnStgy) {
+                case LIST_OF_VALUES:
                     ArrayList list = new ArrayList();
 
                     for (CacheEntryImpl entry : qryIter)
@@ -212,7 +240,7 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                         return iter2.next();
 
                     return null;
-                case SLICE:
+                case SLICE_OF_VALUES:
                     ArrayList content = new ArrayList();
 
                     for (CacheEntryImpl entry : qryIter)
@@ -227,8 +255,41 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryMethod getQueryMethod() {
-        return new QueryMethod(mtd, metadata, factory);
+    /**
+     * @param prmtrs Prmtrs.
+     * @return prepared query for execution
+     */
+    @NotNull private Query prepareQuery(Object[] prmtrs) {
+        Object[] parameters = prmtrs;
+        String sql = this.qry.sql();
+
+        Query qry;
+
+        switch (this.qry.dynamicity()) {
+            case SORTABLE:
+                sql = IgniteQueryGenerator.addSorting(new StringBuilder(sql),
+                    (Sort)parameters[parameters.length - 1]).toString();
+                parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+                break;
+            case PAGEBABLE:
+                sql = IgniteQueryGenerator.addPaging(new StringBuilder(sql),
+                    (Pageable)parameters[parameters.length - 1]).toString();
+                parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+                break;
+        }
+
+        if (this.qry.isFieldQuery()) {
+            SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
+            sqlFieldsQry.setArgs(parameters);
+            qry = sqlFieldsQry;
+        }
+        else {
+            SqlQuery sqlQry = new SqlQuery(type, sql);
+            sqlQry.setArgs(parameters);
+            qry = sqlQry;
+        }
+
+        return qry;
     }
+
 }

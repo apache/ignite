@@ -33,7 +33,7 @@ public class Main {
         FirstRepository repo = ctx.getBean(FirstRepository.class);
 
         for (int i = 0; i < 1000; i++)
-            repo.save(i, new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString(i+16)));
+            repo.save(i, new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString((i+16) % 256)));
 
         Service svc = ctx.getBean(Service.class);
         Iterable<Person> call = svc.call();
@@ -114,5 +114,8 @@ public class Main {
         List<List> lists = repo.byQuery5("^[a-z]+$", new PageRequest(2, 6));
         for (List list : lists)
             System.out.println("listlist: key=" + list.get(0) + ", secondName=" + list.get(1));
+
+        int queryCount = repo.byQuery6(".*");
+        System.out.println("queryCount = " + queryCount);
     }
 }

@@ -17,28 +17,54 @@
 
 package org.apache.ignite.springdata.repository.impl;
 
+/**
+ * Representation of query.
+ */
 public class IgniteQuery {
-    public enum Dynamicity {SORTABLE, PAGEBABLE, NONE}
+    /** */
+    public enum Dynamicity {
+        /** Query will be used with Sort object. */
+        SORTABLE,
 
+        /** Query will be used with Pageable object. */
+        PAGEBABLE,
+
+        /** Not dynamic query. */
+        NONE
+    }
+
+    /** Sql-query text. */
     private final String sql;
+
+    /** Is field query. */
     private final boolean isFieldQuery;
+
+    /** Type of dynamicity. */
     private final Dynamicity dynamicity;
 
 
+    /**
+     * @param sql Sql.
+     * @param isFieldQuery Is field query.
+     * @param dynamicity Dynamicity.
+     */
     public IgniteQuery(String sql, boolean isFieldQuery, Dynamicity dynamicity) {
         this.sql = sql;
         this.isFieldQuery = isFieldQuery;
         this.dynamicity = dynamicity;
     }
 
+    /** get sql query */
     public String sql() {
         return sql;
     }
 
+    /** Is field query */
     public boolean isFieldQuery() {
         return isFieldQuery;
     }
 
+    /** Type of dynamicity */
     public Dynamicity dynamicity() {
         return dynamicity;
     }
