@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
@@ -46,6 +48,9 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /** Keys count. */
     private static final int KEYS_COUNT = 1024;
 
+    /** CQ count. */
+    private static final int QUERY_COUNT = 20;
+
     /** Grid count. */
     private static final int GRID_COUNT = 2;
 
@@ -54,6 +59,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
+
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -64,6 +70,13 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        startGridsMultiThreaded(GRID_COUNT);
     }
 
     /** {@inheritDoc} */
@@ -82,14 +95,12 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testBackupQueue() throws Exception {
-        startGridsMultiThreaded(GRID_COUNT);
-
         final CacheEventListener lsnr = new CacheEventListener();
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
         qry.setLocalListener(lsnr);
-        qry.setRemoteFilterFactory(new FilterFactory());
+        qry.setRemoteFilterFactory(new AlwaysFalseFilterFactory());
 
         try (QueryCursor<?> ignore = grid(0).cache(null).query(qry)) {
             for (int i = 0; i < KEYS_COUNT; i++) {
@@ -104,19 +115,45 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testManyQueryBackupQueue() throws Exception {
+        List<QueryCursor> qryCursors = new ArrayList<>();
+
+        for (int i = 0; i < QUERY_COUNT; i++) {
+            ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+            qry.setLocalListener(new CacheEventListener());
+            qry.setRemoteFilterFactory(new AlwaysFalseFilterFactory());
+
+            qryCursors.add(grid(0).cache(null).query(qry));
+        }
+
+        for (int i = 0; i < KEYS_COUNT; i++) {
+            log.info("Put key: " + i);
+
+            for (int j = 0; j < 100; j++)
+                grid(i % GRID_COUNT).cache(null).put(i, new byte[1024 * 50]);
+        }
+
+        for (QueryCursor qry : qryCursors)
+            qry.close();
+    }
+
+    /**
      *
      */
-    private static class FilterFactory implements Factory<CacheEntryEventFilter<Object, Object>> {
+    private static class AlwaysFalseFilterFactory implements Factory<CacheEntryEventFilter<Object, Object>> {
         /** {@inheritDoc} */
         @Override public CacheEntryEventFilter<Object, Object> create() {
-            return new CacheEventFilter();
+            return new AlwaysFalseFilter();
         }
     }
 
     /**
      *
      */
-    private static class CacheEventFilter implements CacheEntryEventFilter<Object, Object>, Serializable {
+    private static class AlwaysFalseFilter implements CacheEntryEventFilter<Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             return false;
