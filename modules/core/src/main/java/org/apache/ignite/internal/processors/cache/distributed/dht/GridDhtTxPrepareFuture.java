@@ -359,7 +359,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (sndOldVal) {
                     val = getCurrentValue(txEntry, hasFilters);
 
-                    val.valueBytes(cacheCtx.cacheObjectContext());
+                    if (val != null)
+                        val.valueBytes(cacheCtx.cacheObjectContext());
 
                     txEntry.oldValue(val, true);
                 }
