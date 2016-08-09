@@ -46,10 +46,12 @@ public class DataRecord extends WALRecord {
 
         Collection<IgniteTxEntry> writes = tx.writeEntries();
 
-        Collection<DataEntry> entries = new ArrayList<>(writes.size());
+        List<DataEntry> entries = new ArrayList<>(writes.size());
 
         for (IgniteTxEntry write : writes)
             entries.add(DataEntry.fromTxEntry(write, tx));
+
+        rec.writeEntries = entries;
 
         return rec;
     }
