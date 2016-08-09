@@ -1198,6 +1198,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var reader = Marshaller.StartUnmarshal(inStream, _flagKeepBinary);
 
+            var item = reader.ReadObject<object>();
+
             var clsName = item as string;
 
             if (clsName == null)
@@ -1207,7 +1209,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var trace = Unmarshal<string>(inStream);
             var inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
                 
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg, trace, null, inner));
+            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg, trace, 
+                innerException: inner));
         }
 
         /// <summary>
