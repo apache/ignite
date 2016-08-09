@@ -115,10 +115,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** Keep binary. */
     private boolean keepBinary;
 
-    /** */
-    @GridDirectTransient
-    private transient List<Long> filteredEvtsList;
-
     /**
      * Required by {@link Message}.
      */
@@ -208,45 +204,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * This methods take from the queue counters which less than {@link #updateCntr}.
-     *
-     * @param updateCntrs Update counters.
+     * @param topVer Topology version.
      */
-    void addFilteredEvents(ConcurrentLinkedDeque<Long> updateCntrs) {
-        assert filteredEvts == null;
-
-        Iterator<Long> iter = updateCntrs.descendingIterator();
-
-        while (iter.hasNext()) {
-            Long filteredUpdateCntr = iter.next();
-
-            if (updateCntr > filteredUpdateCntr) {
-                if (filteredEvtsList == null)
-                    filteredEvtsList = new ArrayList<>();
-
-                filteredEvtsList.add(filteredUpdateCntr);
-
-                iter.remove();
-            }
-        }
-    }
-
-    /**
-     * @param updateCntr Update counters.
-     */
-    void addFilteredEvent(Long updateCntr) {
-        assert filteredEvts == null;
-
-        if (filteredEvtsList == null)
-            filteredEvtsList = new ArrayList<>();
-
-        if (this.updateCntr < updateCntr) {
-            filteredEvtsList.add(this.updateCntr);
-
-            this.updateCntr = updateCntr;
-        }
-        else
-            filteredEvtsList.add(updateCntr);
+    void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -265,7 +226,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             return this;
 
         CacheContinuousQueryEntry e =
-            new CacheContinuousQueryEntry(cacheId, null, null, null, null, keepBinary, part, updateCntr, topVer);
+            new CacheContinuousQueryEntry(cacheId, null, null, null, null, keepBinary, part, updateCntr, null);
 
         e.flags = flags;
 
@@ -297,8 +258,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param cntrs Filtered events.
      */
     void filteredEvents(GridLongList cntrs) {
-        assert filteredEvtsList == null;
-
         filteredEvts = cntrs;
     }
 
@@ -323,15 +282,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         if (oldVal != null)
             oldVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (filteredEvtsList != null && !filteredEvtsList.isEmpty()) {
-            assert filteredEvts == null;
-
-            filteredEvts = new GridLongList(filteredEvtsList.size());
-
-            for (Long cntr : filteredEvtsList)
-                filteredEvts.add(cntr);
-        }
     }
 
     /**

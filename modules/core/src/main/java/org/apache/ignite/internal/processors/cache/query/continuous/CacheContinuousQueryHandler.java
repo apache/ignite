@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
@@ -65,15 +64,13 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
-import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -83,7 +80,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -136,7 +132,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean skipPrimaryCheck;
 
     /** Backup queue. */
-    private transient BackupQueue backupQueue;
+    private transient volatile Collection<CacheContinuousQueryEntry> backupQueue;
 
     /** */
     private boolean locCache;
@@ -340,7 +336,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         entryBufs = new ConcurrentHashMap<>();
 
-        backupQueue = new BackupQueue(cacheContext(ctx), nodeId);
+        if (ctx.discovery().node(nodeId) != null)
+            backupQueue = new ConcurrentLinkedDeque8<>();
 
         ackBuf = new AcknowledgeBuffer();
 
@@ -434,33 +431,64 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
-                backupQueue.cleanupBackupQueue(updateCntrs);
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 != null) {
+                    Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator();
+
+                    while (it.hasNext()) {
+                        CacheContinuousQueryEntry backupEntry = it.next();
+
+                        Long updateCntr = updateCntrs.get(backupEntry.partition());
+
+                        if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
+                            it.remove();
+                    }
+                }
             }
 
             @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
-                if (backupQueue.isEmpty())
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 == null)
                     return;
 
                 try {
-                    GridCacheContext<K, V> cctx = cacheContext(ctx);
+                    ClusterNode nodeId0 = ctx.discovery().node(nodeId);
 
-                    for (CacheContinuousQueryEntry e : backupQueue) {
-                        if (!e.isFiltered())
-                            prepareEntry(cctx, nodeId, e);
+                    if (nodeId0 != null) {
+                        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                        for (CacheContinuousQueryEntry e : backupQueue0) {
+                            if (!e.isFiltered())
+                                prepareEntry(cctx, nodeId, e);
+
+                            e.topologyVersion(topVer);
+                        }
+
+                        ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue0, topic);
                     }
+                    else
+                        // Node which start CQ leave topology. Not needed to put data to backup queue.
+                        backupQueue = null;
 
-                    ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
-
-                    Collection<CacheContinuousQueryEntry> entries = backupQueue.filteredEntries();
-
-                    // In case when all entries was filtered. For example filter always returns false.
-                    if (!entries.isEmpty())
-                        ctx.continuous().addBackupNotification(nodeId, routineId, entries, topic);
-
-                    backupQueue.clear();
+                    backupQueue0.clear();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to send backup event notification to node: " + nodeId, e);
+                }
+            }
+
+            @Override public void nodeLeftTopology(UUID nodeId0) {
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 == null)
+                    return;
+
+                if (nodeId.equals(nodeId0)) {
+                    backupQueue = null;
+
+                    backupQueue0.clear();
                 }
             }
 
@@ -480,9 +508,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void onPartitionEvicted(int part) {
-                for (Iterator<CacheContinuousQueryEntry> it = backupQueue.iterator(); it.hasNext();) {
-                    if (it.next().partition() == part)
-                        it.remove();
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 != null) {
+                    for (Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator(); it.hasNext(); ) {
+                        if (it.next().partition() == part)
+                            it.remove();
+                    }
                 }
             }
 
@@ -520,7 +552,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param entry Entry.
      * @throws IgniteCheckedException In case of error.
      */
-    private static void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
+    private void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
         throws IgniteCheckedException {
         if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null) {
             entry.prepareMarshal(cctx);
@@ -741,7 +773,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!primary && !internal && entry.updateCounter() != -1L /* Skip init query and expire entries */) {
             entry.markBackup();
 
-            backupQueue.add(entry.forBackupQueue());
+            Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+            if (backupQueue0 != null)
+                backupQueue0.add(entry.forBackupQueue());
         }
 
         return notify;
@@ -766,12 +801,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (!locCache) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    if (!evts.isEmpty()) {
+                    if (!evts.isEmpty())
                         locLsnr.onUpdated(evts);
 
-                        if (!internal && !skipPrimaryCheck)
-                            sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
-                    }
+                    if (!internal && !skipPrimaryCheck)
+                        sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
@@ -932,7 +966,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @param topVer Topology version.
          * @param initCntr Update counters.
          */
-        public PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
+        PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
             this.log = log;
 
             if (initCntr != null) {
@@ -1067,162 +1101,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * This class encapsulate logic which squashed filtered entries on backups.
-     * For cases when filter often returns {@code false} this allows to save memory.
-     */
-    private static class BackupQueue extends ConcurrentLinkedDeque8<CacheContinuousQueryEntry> {
-        /** */
-        private ConcurrentMap<Integer, ConcurrentLinkedDeque<Long>> filteredEntries = new ConcurrentHashMap8<>();
-
-        /** */
-        private GridCacheContext ctx;
-
-        /** */
-        private UUID nodeId;
-
-        /** */
-        private AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
-
-        /**
-         * @param ctx Cache context.
-         * @param nodeId Node id.
-         */
-        BackupQueue(GridCacheContext ctx, UUID nodeId) {
-            super();
-
-            this.ctx = ctx;
-            this.nodeId = nodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean add(CacheContinuousQueryEntry e) {
-            ConcurrentLinkedDeque<Long> part = filteredEntries.get(e.partition());
-
-            if (part == null) {
-                ConcurrentLinkedDeque<Long> oldVal =
-                    filteredEntries.putIfAbsent(e.partition(), part = new ConcurrentLinkedDeque<>());
-
-                if (oldVal != null)
-                    part = oldVal;
-            }
-
-            if (e.topologyVersion() != null && topVer.compareTo(e.topologyVersion()) < 0)
-                topVer = e.topologyVersion();
-
-            if (e.isFiltered())
-                part.add(e.updateCounter());
-            else {
-                e.addFilteredEvents(part);
-
-                super.add(e);
-            }
-
-            return true;
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * Send with non-filtered events filtered counters.
-         */
-        @NotNull @Override public Iterator<CacheContinuousQueryEntry> iterator() {
-            Iterator<CacheContinuousQueryEntry> iter = F.iterator(super.iterator(),
-                new CX1<CacheContinuousQueryEntry, CacheContinuousQueryEntry>() {
-                    @Override public CacheContinuousQueryEntry applyx(CacheContinuousQueryEntry e)
-                        throws IgniteCheckedException {
-                        ConcurrentLinkedDeque<Long> part = filteredEntries.get(e.partition());
-
-                        if (part != null)
-                            e.addFilteredEvents(part);
-
-                        prepareEntry(ctx, nodeId, e);
-
-                        return e;
-                    }
-                }, false);
-
-            return iter;
-        }
-
-        /**
-         * @return Filtered entries.
-         */
-        Collection<CacheContinuousQueryEntry> filteredEntries() {
-            List<CacheContinuousQueryEntry> res = null;
-
-            if (!filteredEntries.isEmpty()) {
-                for (Map.Entry<Integer, ConcurrentLinkedDeque<Long>> e : filteredEntries.entrySet()) {
-                    if (!e.getValue().isEmpty()) {
-                        CacheContinuousQueryEntry entry = null;
-
-                        Iterator<Long> iter = e.getValue().iterator();
-
-                        while (iter.hasNext()) {
-                            Long cntr = iter.next();
-
-                            if (entry == null)
-                                entry = new CacheContinuousQueryEntry(ctx.cacheId(), null, null, null, null, true,
-                                    e.getKey(), cntr, topVer);
-
-                            entry.addFilteredEvent(cntr);
-
-                            iter.remove();
-                        }
-
-                        if (entry != null) {
-                            if (res == null)
-                                res = new ArrayList<>(filteredEntries.size());
-
-                            res.add(entry);
-                        }
-                    }
-                }
-            }
-
-            return res == null ? Collections.<CacheContinuousQueryEntry>emptyList() : res;
-        }
-
-        /**
-         * Remove events on which received ack.
-         *
-         * @param updateCntrs Update counter.
-         */
-        void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
-            for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
-                ConcurrentLinkedDeque<Long> cntrs = filteredEntries.get(e.getKey());
-
-                if (cntrs != null) {
-                    Iterator<Long> iter = cntrs.iterator();
-
-                    while (iter.hasNext()) {
-                        if (e.getValue() > iter.next())
-                            iter.remove();
-                    }
-                }
-            }
-
-            Iterator<CacheContinuousQueryEntry> it = super.iterator();
-
-            while (it.hasNext()) {
-                CacheContinuousQueryEntry backupEntry = it.next();
-
-                Long updateCntr = updateCntrs.get(backupEntry.partition());
-
-                if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
-                    it.remove();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear() {
-            for (ConcurrentLinkedDeque<Long> cntrs : filteredEntries.values())
-                cntrs.clear();
-
-            super.clear();
-        }
-    }
-
-    /**
      *
      */
     private static class EntryBuffer {
@@ -1353,7 +1231,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** {@inheritDoc} */
     @Override public GridContinuousBatch createBatch() {
-        return new GridContinuousBatchAdapter();
+        return new GridContinuousQueryBatch();
     }
 
     /** {@inheritDoc} */
@@ -1502,7 +1380,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         @SuppressWarnings("unchecked")
         @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
         onAcknowledged(GridContinuousBatch batch) {
-            size += batch.size();
+            assert batch instanceof GridContinuousQueryBatch;
+
+            size += ((GridContinuousQueryBatch)batch).entriesCount();
 
             Collection<CacheContinuousQueryEntry> entries = (Collection)batch.collect();
 
@@ -1518,7 +1398,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          */
         @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
         onAcknowledged(CacheContinuousQueryEntry e) {
-            size += e.size();
+            size++;
 
             addEntry(e);
 

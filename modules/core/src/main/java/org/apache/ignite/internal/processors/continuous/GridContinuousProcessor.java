@@ -865,6 +865,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 try {
                     sendNotification(nodeId, routineId, futId, F.asList(obj), null, msg, null);
+
+                    info.hnd.onBatchAcknowledged(routineId, info.add(obj), ctx);
                 }
                 catch (IgniteCheckedException e) {
                     syncMsgFuts.remove(futId);
