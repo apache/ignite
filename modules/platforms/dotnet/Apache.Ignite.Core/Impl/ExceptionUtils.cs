@@ -120,8 +120,9 @@ namespace Apache.Ignite.Core.Impl
         public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
-            if (!string.IsNullOrEmpty(stackTrace))
-                innerException = new JavaException(stackTrace, innerException);
+            // Set JavaException as inner only if there is no InnerException.
+            if (innerException == null && !string.IsNullOrEmpty(stackTrace))
+                innerException = new JavaException(stackTrace);
 
             ExceptionFactoryDelegate ctor;
 
