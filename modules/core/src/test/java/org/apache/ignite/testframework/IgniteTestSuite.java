@@ -94,16 +94,6 @@ public class IgniteTestSuite extends TestSuite {
 
     /** {@inheritDoc} */
     @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        addTestSuite(testClass, false);
-    }
-
-    /**
-     * Add test class to the suite.
-     *
-     * @param testClass Test class.
-     * @param ignoredOnly Ignore only flag.
-     */
-    public void addTestSuite(Class<? extends TestCase> testClass, boolean ignoredOnly) {
         addTest(new IgniteTestSuite(testClass, ignoredOnly));
     }
 
@@ -147,45 +137,56 @@ public class IgniteTestSuite extends TestSuite {
     }
 
     /**
-     * @param method test method
-     * @param names test name list
-     * @param theClass test class
+     * Add test method.
+     *
+     * @param m Test method.
+     * @param names Test name list.
+     * @param theClass Test class.
+     * @return Whether test method was added.
      */
-    private boolean addTestMethod(Method method, List<String> names, Class<?> theClass) {
-        String name = method.getName();
+    private boolean addTestMethod(Method m, List<String> names, Class<?> theClass) {
+        String name = m.getName();
 
-        if(!names.contains(name) && canAddMethod(method)) {
-            if(!Modifier.isPublic(method.getModifiers()))
-                addTest(warning("Test method isn\'t public: " + method.getName() + "(" +
-                    theClass.getCanonicalName() + ")"));
-            else {
-                names.add(name);
+        if (names.contains(name))
+            return false;
 
-                addTest(createTest(theClass, name));
+        if (!isPublicTestMethod(m)) {
+            if (isTestMethod(m))
+                addTest(warning("Test method isn't public: " + m.getName() + "(" + theClass.getCanonicalName() + ")"));
 
-                return true;
-            }
+            return false;
         }
+
+        names.add(name);
+
+        if (m.isAnnotationPresent(IgniteIgnore.class) == ignoredOnly) {
+            addTest(createTest(theClass, name));
+
+            return true;
+        }
+
         return false;
     }
 
     /**
-     * Check whether method should be ignored.
+     * Check whether this is a test method.
      *
-     * @param method Method.
-     * @return {@code True} if it should be ignored.
+     * @param m Method.
+     * @return {@code True} if this is a test method.
      */
-    protected boolean canAddMethod(Method method) {
-        boolean res = method.getParameterTypes().length == 0 && method.getName().startsWith("test")
-            && method.getReturnType().equals(Void.TYPE);
+    private static boolean isTestMethod(Method m) {
+        return m.getParameterTypes().length == 0 &&
+            m.getName().startsWith("test") &&
+            m.getReturnType().equals(Void.TYPE);
+    }
 
-        if (res) {
-            // If method signature and name matches check if it is ignored or not.
-            boolean hasIgnore = method.isAnnotationPresent(IgniteIgnore.class);
-
-            res = hasIgnore == ignoredOnly;
-        }
-
-        return res;
+    /**
+     * Check whether this is a public test method.
+     *
+     * @param m Method.
+     * @return {@code True} if this is a public test method.
+     */
+    private static boolean isPublicTestMethod(Method m) {
+        return isTestMethod(m) && Modifier.isPublic(m.getModifiers());
     }
 }
