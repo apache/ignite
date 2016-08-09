@@ -17,6 +17,7 @@
 
 package org.apache.ignite.hadoop.fs;
 
+import java.nio.file.Files;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -202,15 +203,24 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
-        // TODO: IGNITE-3638.
-        // Delegate to the secondary file system.
         try {
-            if (!fileSystemForUser().rename(convert(src), convert(dest)))
+            File srcFile = fileForPath(src);
+            File destFile = fileForPath(dest);
+
+            if (!srcFile.exists())
+                throw new IOException("File not found: " + srcFile);
+
+            if (srcFile.isDirectory() && destFile.isFile())
+                throw new IOException("Failed rename directory to existing file: [src=" + src + ", dest=" + dest + ']');
+
+            if (destFile.isDirectory())
+                Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
+            else if(!srcFile.renameTo(destFile))
                 throw new IgfsException("Failed to rename (secondary file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to rename file [src=" + src + ", dest=" + dest + ']');
+            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest="+ dest + ']');
         }
     }
 
