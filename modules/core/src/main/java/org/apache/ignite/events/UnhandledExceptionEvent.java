@@ -25,6 +25,9 @@ import org.apache.ignite.events.EventAdapter;
  */
 public class UnhandledExceptionEvent extends EventAdapter {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Exception ex;
 
     /** {@inheritDoc} */
