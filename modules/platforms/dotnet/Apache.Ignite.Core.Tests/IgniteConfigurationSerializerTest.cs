@@ -22,17 +22,23 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Xml;
+    using System.Xml.Linq;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -54,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
@@ -62,9 +68,10 @@ namespace Apache.Ignite.Core.Tests
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                             </binaryConfiguration>
-                            <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0'>
+                            <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0' localAddress='192.168.1.1' localPort='6655'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
                             </discoverySpi>
+                            <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
@@ -88,6 +95,11 @@ namespace Apache.Ignite.Core.Tests
                                             </indexes>
                                         </queryEntity>
                                     </queryEntities>
+                                    <evictionPolicy type='LruEvictionPolicy' batchSize='1' maxSize='2' maxMemorySize='3' />
+                                    <nearConfiguration nearStartSize='7'>
+                                        <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
+                                    </nearConfiguration>
+                                    <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -100,9 +112,8 @@ namespace Apache.Ignite.Core.Tests
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                         </igniteConfig>";
-            var reader = XmlReader.Create(new StringReader(xml));
 
-            var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
+            var cfg = IgniteConfiguration.FromXml(xml);
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
@@ -111,6 +122,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
+            Assert.AreEqual("192.168.1.1", ((TcpDiscoverySpi)cfg.DiscoverySpi).LocalAddress);
+            Assert.AreEqual(6655, ((TcpDiscoverySpi)cfg.DiscoverySpi).LocalPort);
             Assert.AreEqual(7,
                 ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
@@ -121,6 +134,7 @@ namespace Apache.Ignite.Core.Tests
                 cfg.BinaryConfiguration.Types.Single());
             Assert.IsFalse(cfg.BinaryConfiguration.CompactFooter);
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
+            Assert.AreEqual(@"c:\myconfig.xml", cfg.SpringConfigUrl);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -141,6 +155,27 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
 
+            var nearCfg = cacheCfg.NearConfiguration;
+            Assert.IsNotNull(nearCfg);
+            Assert.AreEqual(7, nearCfg.NearStartSize);
+
+            var plc = nearCfg.EvictionPolicy as FifoEvictionPolicy;
+            Assert.IsNotNull(plc);
+            Assert.AreEqual(10, plc.BatchSize);
+            Assert.AreEqual(20, plc.MaxSize);
+            Assert.AreEqual(30, plc.MaxMemorySize);
+
+            var plc2 = cacheCfg.EvictionPolicy as LruEvictionPolicy;
+            Assert.IsNotNull(plc2);
+            Assert.AreEqual(1, plc2.BatchSize);
+            Assert.AreEqual(2, plc2.MaxSize);
+            Assert.AreEqual(3, plc2.MaxMemorySize);
+
+            var af = cacheCfg.AffinityFunction as RendezvousAffinityFunction;
+            Assert.IsNotNull(af);
+            Assert.AreEqual(99, af.Partitions);
+            Assert.IsTrue(af.ExcludeNeighbors);
+
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
 
             var atomicCfg = cfg.AtomicConfiguration;
@@ -154,6 +189,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(0,1,2), tx.DefaultTimeout);
             Assert.AreEqual(15, tx.PessimisticTransactionLogSize);
             Assert.AreEqual(TimeSpan.FromSeconds(33), tx.PessimisticTransactionLogLinger);
+
+            var comm = cfg.CommunicationSpi as TcpCommunicationSpi;
+            Assert.IsNotNull(comm);
+            Assert.AreEqual(33, comm.AckSendThreshold);
+            Assert.AreEqual(new TimeSpan(0, 1, 2), comm.IdleConnectionTimeout);
         }
 
         /// <summary>
@@ -173,6 +213,53 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all properties are present in the schema.
+        /// </summary>
+        [Test]
+        public void TestAllPropertiesArePresentInSchema()
+        {
+            // ReSharper disable once PossibleNullReferenceException
+            var schema = XDocument.Load("IgniteConfigurationSection.xsd")
+                    .Root.Elements()
+                    .Single(x => x.Attribute("name").Value == "igniteConfiguration");
+
+            var type = typeof(IgniteConfiguration);
+
+            CheckPropertyIsPresentInSchema(type, schema);
+        }
+
+        /// <summary>
+        /// Checks the property is present in schema.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void CheckPropertyIsPresentInSchema(Type type, XElement schema)
+        {
+            Func<string, string> toLowerCamel = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
+
+            foreach (var prop in type.GetProperties())
+            {
+                var propType = prop.PropertyType;
+
+                var isCollection = propType.IsGenericType &&
+                                   propType.GetGenericTypeDefinition() == typeof(ICollection<>);
+
+                if (isCollection)
+                    propType = propType.GetGenericArguments().First();
+
+                var propName = toLowerCamel(prop.Name);
+
+                Assert.IsTrue(schema.Descendants().Select(x => x.Attribute("name"))
+                    .Any(x => x != null && x.Value == propName),
+                    "Property is missing in XML schema: " + propName);
+
+                var isComplexProp = propType.Namespace != null && propType.Namespace.StartsWith("Apache.Ignite.Core");
+
+                if (isComplexProp)
+                    CheckPropertyIsPresentInSchema(propType, schema);
+            }
+        }
+
+        /// <summary>
         /// Tests the schema validation.
         /// </summary>
         [Test]
@@ -189,6 +276,132 @@ namespace Apache.Ignite.Core.Tests
                   </igniteConfiguration>";
 
             Assert.Throws<XmlSchemaValidationException>(() => CheckSchemaValidation(invalidXml));
+        }
+
+        /// <summary>
+        /// Tests the XML conversion.
+        /// </summary>
+        [Test]
+        public void TestToXml()
+        {
+            // Empty config
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteConfiguration " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection\" />",
+                new IgniteConfiguration().ToXml());
+
+            // Some properties
+            var cfg = new IgniteConfiguration
+            {
+                GridName = "myGrid",
+                ClientMode = true,
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("myCache")
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity(typeof(int)),
+                            new QueryEntity(typeof(int), typeof(string))
+                        }
+                    }
+                },
+                IncludedEventTypes = new[]
+                {
+                    EventType.CacheEntryCreated,
+                    EventType.CacheNodesLeft
+                }
+            };
+
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+  <cacheConfiguration>
+    <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+      <queryEntities>
+        <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+        <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+      </queryEntities>
+    </cacheConfiguration>
+  </cacheConfiguration>
+  <includedEventTypes>
+    <int>CacheEntryCreated</int>
+    <int>CacheNodesLeft</int>
+  </includedEventTypes>
+</igniteConfiguration>"), cfg.ToXml());
+
+            // Custom section name and indent
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = " "
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                cfg.ToXml(xmlWriter, "igCfg");
+            }
+
+            Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+ <cacheConfiguration>
+  <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+   <queryEntities>
+    <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
+    <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+   </queryEntities>
+  </cacheConfiguration>
+ </cacheConfiguration>
+ <includedEventTypes>
+  <int>CacheEntryCreated</int>
+  <int>CacheNodesLeft</int>
+ </includedEventTypes>
+</igCfg>"), sb.ToString());
+        }
+
+        /// <summary>
+        /// Tests the deserialization.
+        /// </summary>
+        [Test]
+        public void TestFromXml()
+        {
+            // Empty section.
+            var cfg = IgniteConfiguration.FromXml("<x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
+            // Empty section with XML header.
+            cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
+            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+
+            // Simple test.
+            cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
+            AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
+
+            // Invalid xml.
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                IgniteConfiguration.FromXml(@"<igCfg foo=""bar"" />"));
+
+            Assert.AreEqual("Invalid IgniteConfiguration attribute 'foo=bar', there is no such property " +
+                            "on 'Apache.Ignite.Core.IgniteConfiguration'", ex.Message);
+
+            // Xml reader.
+            using (var xmlReader = XmlReader.Create(
+                new StringReader(@"<igCfg gridName=""myGrid"" clientMode=""true"" />")))
+            {
+                cfg = IgniteConfiguration.FromXml(xmlReader);
+            }
+            AssertReflectionEqual(new IgniteConfiguration { GridName = "myGrid", ClientMode = true }, cfg);
+        }
+
+        /// <summary>
+        /// Ensures windows-style \r\n line endings in a string literal.
+        /// Git settings may cause string literals in both styles.
+        /// </summary>
+        private static string FixLineEndings(string s)
+        {
+            return s.Split('\n').Select(x => x.TrimEnd('\r'))
+                .Aggregate((acc, x) => string.Format("{0}\r\n{1}", acc, x));
         }
 
         /// <summary>
@@ -214,7 +427,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var document = new XmlDocument();
 
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection", 
+            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
                 XmlReader.Create("IgniteConfigurationSection.xsd"));
 
             document.Load(new StringReader(xml));
@@ -238,20 +451,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
         {
-            var sb = new StringBuilder();
+            var xml = cfg.ToXml();
 
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter, "igniteConfig");
-            }
-
-            var xml = sb.ToString();
-
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
-            {
-                xmlReader.MoveToContent();
-                return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
-            }
+            return IgniteConfiguration.FromXml(xml);
         }
 
         /// <summary>
@@ -326,6 +528,14 @@ namespace Apache.Ignite.Core.Tests
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
                             Serializer = new TestSerializer()
+                        },
+                        new BinaryTypeConfiguration
+                        {
+                            IsEnum = false,
+                            KeepDeserialized = false,
+                            AffinityKeyFieldName = "affKeyFieldName",
+                            TypeName = "typeName2",
+                            Serializer = new BinaryReflectiveSerializer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
@@ -343,8 +553,8 @@ namespace Apache.Ignite.Core.Tests
                         Backups = 15,
                         CacheMode = CacheMode.Replicated,
                         CacheStoreFactory = new TestCacheStoreFactory(),
-                        CopyOnRead = true,
-                        EagerTtl = true,
+                        CopyOnRead = false,
+                        EagerTtl = false,
                         EnableSwap = true,
                         EvictSynchronized = true,
                         EvictSynchronizedConcurrencyLevel = 13,
@@ -379,7 +589,7 @@ namespace Apache.Ignite.Core.Tests
                                 ValueType = typeof (long)
                             },
                         },
-                        ReadFromBackup = true,
+                        ReadFromBackup = false,
                         RebalanceBatchSize = 33,
                         RebalanceDelay = TimeSpan.MaxValue,
                         RebalanceMode = CacheRebalanceMode.Sync,
@@ -390,10 +600,27 @@ namespace Apache.Ignite.Core.Tests
                         StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
-                        WriteBehindFlushFrequency = TimeSpan.FromSeconds(5),
+                        WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
-                        WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync
+                        WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
+                        NearConfiguration = new NearCacheConfiguration
+                        {
+                            NearStartSize = 5,
+                            EvictionPolicy = new FifoEvictionPolicy
+                            {
+                                BatchSize = 19, MaxMemorySize = 1024, MaxSize = 555
+                            }
+                        },
+                        EvictionPolicy = new LruEvictionPolicy
+                        {
+                            BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                        },
+                        AffinityFunction = new FairAffinityFunction
+                        {
+                            ExcludeNeighbors = true,
+                            Partitions = 48
+                        },
                     }
                 },
                 ClientMode = true,
@@ -413,7 +640,20 @@ namespace Apache.Ignite.Core.Tests
                         ResponseTimeout = TimeSpan.FromDays(1),
                         LocalAddress = "127.0.0.2",
                         Endpoints = new[] {"", "abc"}
-                    }
+                    },
+                    ClientReconnectDisabled = true,
+                    ForceServerMode = true,
+                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
+                    IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
+                    LocalAddress = "127.0.0.1",
+                    LocalPort = 49900,
+                    LocalPortRange = 13,
+                    MaxMissedClientHeartbeats = 9,
+                    MaxMissedHeartbeats = 7,
+                    ReconnectCount = 11,
+                    StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
+                    ThreadPriority = 6,
+                    TopologyHistorySize = 1234567
                 },
                 IgniteHome = "igniteHome",
                 IncludedEventTypes = EventType.CacheQueryAll,
@@ -445,7 +685,29 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTimeout = TimeSpan.FromDays(2),
                     DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(3)
-                }
+                },
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    LocalPort = 47501,
+                    MaxConnectTimeout = TimeSpan.FromSeconds(34),
+                    MessageQueueLimit = 15,
+                    ConnectTimeout = TimeSpan.FromSeconds(17),
+                    IdleConnectionTimeout = TimeSpan.FromSeconds(19),
+                    SelectorsCount = 8,
+                    ReconnectCount = 33,
+                    SocketReceiveBufferSize = 512,
+                    AckSendThreshold = 99,
+                    DirectBuffer = false,
+                    DirectSendBuffer = true,
+                    LocalPortRange = 45,
+                    LocalAddress = "127.0.0.1",
+                    TcpNoDelay = false,
+                    SlowClientQueueLimit = 98,
+                    SocketSendBufferSize = 2045,
+                    UnacknowledgedMessagesBufferSize = 3450
+                },
+                IsLateAffinityAssignment = false,
+                SpringConfigUrl = "test",
             };
         }
 
@@ -546,21 +808,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestSerializer : IBinarySerializer
         {
-            /// <summary>
-            /// Write portalbe object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="writer">Poratble writer.</param>
+            /** <inheritdoc /> */
             public void WriteBinary(object obj, IBinaryWriter writer)
             {
                 // No-op.
             }
 
-            /// <summary>
-            /// Read binary object.
-            /// </summary>
-            /// <param name="obj">Instantiated empty object.</param>
-            /// <param name="reader">Poratble reader.</param>
+            /** <inheritdoc /> */
             public void ReadBinary(object obj, IBinaryReader reader)
             {
                 // No-op.

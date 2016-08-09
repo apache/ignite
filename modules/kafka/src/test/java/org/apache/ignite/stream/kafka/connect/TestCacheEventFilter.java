@@ -24,8 +24,8 @@ import org.apache.ignite.lang.IgnitePredicate;
  * Test user-defined filter.
  */
 class TestCacheEventFilter implements IgnitePredicate<CacheEvent> {
-
-    @Override public boolean apply(CacheEvent event) {
-        return ((String)event.key()).startsWith("conditioned_");
+    /** {@inheritDoc} */
+    @Override public boolean apply(CacheEvent evt) {
+        return ((String)evt.key()).startsWith("conditioned_");
     }
 }

@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::TextQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_TEXT
-#define _IGNITE_CACHE_QUERY_TEXT
+#ifndef _IGNITE_CACHE_QUERY_QUERY_TEXT
+#define _IGNITE_CACHE_QUERY_QUERY_TEXT
 
 #include <stdint.h>
 #include <string>
@@ -162,4 +162,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_TEXT

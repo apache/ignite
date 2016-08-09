@@ -104,6 +104,11 @@ import org.apache.ignite.logger.java.JavaLogger;
  *          can make significant performance and network optimizations.
  *          Default value is {@code false}.
  *     </li>
+ *     <li>
+ *         {@code distributedJoins} - enables support of distributed joins feature. This flag does not make sense in
+ *         combination with {@code local} and/or {@code collocated} flags with {@code true} value or in case of querying
+ *         of local cache. Default value is {@code false}.
+ *     </li>
  * </ul>
  *
  * <h2 class="header">Configuration of Ignite Java client based connection</h2>
@@ -284,6 +289,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Collocated parameter name. */
     private static final String PARAM_COLLOCATED = "collocated";
 
+    /** Distributed joins parameter name. */
+    private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -301,6 +309,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Collocated property name. */
     public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Distributed joins property name. */
+    public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -366,7 +377,8 @@ public class IgniteJdbcDriver implements Driver {
             new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
             new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
             new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
-            new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), "")
+            new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
+            new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)
@@ -461,7 +473,7 @@ public class IgniteJdbcDriver implements Driver {
 
         if (url.startsWith(URL_PREFIX) && url.length() > URL_PREFIX.length())
             return parseJdbcUrl(url, props);
-        else if (url.startsWith(CFG_URL_PREFIX) && url.length() > CFG_URL_PREFIX.length())
+        else if (url.startsWith(CFG_URL_PREFIX) && url.length() >= CFG_URL_PREFIX.length())
             return parseJdbcConfigUrl(url, props);
 
         return false;

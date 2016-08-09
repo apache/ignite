@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_HANDLE_REGISTRY
-#define _IGNITE_HANDLE_REGISTRY
+#ifndef _IGNITE_IMPL_HANDLE_REGISTRY
+#define _IGNITE_IMPL_HANDLE_REGISTRY
 
 #include <map>
 #include <stdint.h>
@@ -199,4 +199,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_HANDLE_REGISTRY

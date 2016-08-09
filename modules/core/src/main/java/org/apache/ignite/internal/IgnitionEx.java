@@ -1689,6 +1689,9 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
+            // Pre-start all threads to avoid HadoopClassLoader leaks.
+            ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
+
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
@@ -2161,6 +2164,7 @@ public class IgnitionEx {
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
             cache.setStartSize(300);
             cache.setRebalanceOrder(-2);//Prior to other system caches.
+            cache.setCopyOnRead(false);
 
             return cache;
         }
@@ -2182,6 +2186,7 @@ public class IgnitionEx {
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
             cache.setRebalanceOrder(-2); //Prior to user caches.
+            cache.setCopyOnRead(false);
 
             return cache;
         }

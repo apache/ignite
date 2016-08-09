@@ -140,7 +140,7 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
     }
 
     /**
-     * @return New owner node ID.
+     * @param id New owner node ID.
      */
     public void setId(UUID id) {
         this.id = id;

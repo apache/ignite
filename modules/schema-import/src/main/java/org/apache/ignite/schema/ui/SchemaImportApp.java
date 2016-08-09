@@ -27,11 +27,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,6 +50,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -90,34 +88,7 @@ import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.PojoField;
 import org.apache.ignite.schema.model.SchemaDescriptor;
 import org.apache.ignite.schema.parser.DatabaseMetadataParser;
-
-import static javafx.embed.swing.SwingFXUtils.fromFXImage;
-import static org.apache.ignite.schema.ui.Controls.booleanColumn;
-import static org.apache.ignite.schema.ui.Controls.borderPane;
-import static org.apache.ignite.schema.ui.Controls.button;
-import static org.apache.ignite.schema.ui.Controls.buttonsPane;
-import static org.apache.ignite.schema.ui.Controls.checkBox;
-import static org.apache.ignite.schema.ui.Controls.comboBox;
-import static org.apache.ignite.schema.ui.Controls.customColumn;
-import static org.apache.ignite.schema.ui.Controls.hBox;
-import static org.apache.ignite.schema.ui.Controls.image;
-import static org.apache.ignite.schema.ui.Controls.imageView;
-import static org.apache.ignite.schema.ui.Controls.label;
-import static org.apache.ignite.schema.ui.Controls.list;
-import static org.apache.ignite.schema.ui.Controls.paneEx;
-import static org.apache.ignite.schema.ui.Controls.passwordField;
-import static org.apache.ignite.schema.ui.Controls.progressIndicator;
-import static org.apache.ignite.schema.ui.Controls.scene;
-import static org.apache.ignite.schema.ui.Controls.splitPane;
-import static org.apache.ignite.schema.ui.Controls.stackPane;
-import static org.apache.ignite.schema.ui.Controls.tableColumn;
-import static org.apache.ignite.schema.ui.Controls.tableView;
-import static org.apache.ignite.schema.ui.Controls.text;
-import static org.apache.ignite.schema.ui.Controls.textColumn;
-import static org.apache.ignite.schema.ui.Controls.textField;
-import static org.apache.ignite.schema.ui.Controls.titledPane;
-import static org.apache.ignite.schema.ui.Controls.tooltip;
-import static org.apache.ignite.schema.ui.Controls.vBox;
+import org.apache.ignite.schema.parser.DbMetadataReader;
 
 /**
  * Schema Import utility application.
@@ -127,53 +98,62 @@ public class SchemaImportApp extends Application {
     /** Logger. */
     private static final Logger log = Logger.getLogger(SchemaImportApp.class.getName());
 
+    /** */
+    private static final String PREF_WINDOW_X = "window.x";
+
+    /** */
+    private static final String PREF_WINDOW_Y = "window.y";
+
+    /** */
+    private static final String PREF_WINDOW_WIDTH = "window.width";
+
+    /** */
+    private static final String PREF_WINDOW_HEIGHT = "window.height";
+
+    /** */
+    private static final String PREF_JDBC_DB_PRESET = "jdbc.db.preset";
+
+    /** */
+    private static final String PREF_JDBC_DRIVER_JAR = "jdbc.driver.jar";
+
+    /** */
+    private static final String PREF_JDBC_DRIVER_CLASS = "jdbc.driver.class";
+
+    /** */
+    private static final String PREF_JDBC_URL = "jdbc.url";
+
+    /** */
+    private static final String PREF_JDBC_USER = "jdbc.user";
+
+    /** */
+    private static final String PREF_OUT_FOLDER = "out.folder";
+
+    /** */
+    private static final String PREF_POJO_PACKAGE = "pojo.package";
+
+    /** */
+    private static final String PREF_POJO_INCLUDE = "pojo.include";
+
+    /** */
+    private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
+
+    /** */
+    private static final String PREF_GENERATE_ALIASES = "sql.aliases";
+
+    /** */
+    private static final String PREF_XML_SINGLE = "xml.single";
+
+    /** */
+    private static final String PREF_NAMING_PATTERN = "naming.pattern";
+
+    /** */
+    private static final String PREF_NAMING_REPLACE = "naming.replace";
+
+    /** Empty POJO fields model. */
+    private static final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
+
     /** Ability to use xdg-open utility flag. */
     private static final boolean HAS_XDG_OPEN = U.isUnix() && new File("/usr/bin/xdg-open").canExecute();
-
-    /** Presets for database settings. */
-    private static class Preset {
-        /** Name in preferences. */
-        private String pref;
-
-        /** RDBMS name to show on screen. */
-        private String name;
-
-        /** Path to JDBC driver jar. */
-        private String jar;
-
-        /** JDBC driver class name. */
-        private String drv;
-
-        /** JDBC URL. */
-        private String url;
-
-        /** User name. */
-        private String user;
-
-        /**
-         * Preset constructor.
-         *
-         * @param pref Name in preferences.
-         * @param name RDBMS name to show on screen.
-         * @param jar Path to JDBC driver jar..
-         * @param drv JDBC driver class name.
-         * @param url JDBC URL.
-         * @param user User name.
-         */
-        Preset(String pref, String name, String jar, String drv, String url, String user) {
-            this.pref = pref;
-            this.name = name;
-            this.jar = jar;
-            this.drv = drv;
-            this.url = url;
-            this.user = user;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return name;
-        }
-    }
 
     /** Default presets for popular databases. */
     private final Preset[] presets = {
@@ -190,47 +170,6 @@ public class SchemaImportApp extends Application {
             "jdbc:postgresql://[host]:[port]/[database]", "sa"),
         new Preset("custom", "Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa")
     };
-
-    /** */
-    private static final String PREF_WINDOW_X = "window.x";
-    /** */
-    private static final String PREF_WINDOW_Y = "window.y";
-    /** */
-    private static final String PREF_WINDOW_WIDTH = "window.width";
-    /** */
-    private static final String PREF_WINDOW_HEIGHT = "window.height";
-
-    /** */
-    private static final String PREF_JDBC_DB_PRESET = "jdbc.db.preset";
-    /** */
-    private static final String PREF_JDBC_DRIVER_JAR = "jdbc.driver.jar";
-    /** */
-    private static final String PREF_JDBC_DRIVER_CLASS = "jdbc.driver.class";
-    /** */
-    private static final String PREF_JDBC_URL = "jdbc.url";
-    /** */
-    private static final String PREF_JDBC_USER = "jdbc.user";
-
-    /** */
-    private static final String PREF_OUT_FOLDER = "out.folder";
-
-    /** */
-    private static final String PREF_POJO_PACKAGE = "pojo.package";
-    /** */
-    private static final String PREF_POJO_INCLUDE = "pojo.include";
-    /** */
-    private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
-
-    /** */
-    private static final String PREF_GENERATE_ALIASES = "sql.aliases";
-
-    /** */
-    private static final String PREF_XML_SINGLE = "xml.single";
-
-    /** */
-    private static final String PREF_NAMING_PATTERN = "naming.pattern";
-    /** */
-    private static final String PREF_NAMING_REPLACE = "naming.replace";
 
     /** */
     private Stage owner;
@@ -340,20 +279,15 @@ public class SchemaImportApp extends Application {
     /** Currently selected POJO. */
     private PojoDescriptor curPojo;
 
-    /** */
-    private final Map<String, Driver> drivers = new HashMap<>();
-
     /** Application preferences. */
     private final Properties prefs = new Properties();
 
     /** File path for storing on local file system. */
     private final File prefsFile = new File(System.getProperty("user.home"), ".ignite-schema-import");
 
-    /** Empty POJO fields model. */
-    private static final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
-
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        /** {@inheritDoc} */
         @Override public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "ignite-schema-import-worker");
 
@@ -362,6 +296,52 @@ public class SchemaImportApp extends Application {
             return t;
         }
     });
+
+    /**
+     * Schema Import utility launcher.
+     *
+     * @param args Command line arguments passed to the application.
+     */
+    public static void main(String[] args) {
+        // Workaround for JavaFX ugly text AA.
+        System.setProperty("prism.lcdtext", "false");
+        System.setProperty("prism.text", "t2k");
+
+        // Workaround for AWT + JavaFX: we should initialize AWT before JavaFX.
+        java.awt.Toolkit.getDefaultToolkit();
+
+        // Workaround for JavaFX + Mac OS dock icon.
+        if (System.getProperty("os.name").toLowerCase().contains("mac os")) {
+            System.setProperty("javafx.macosx.embedded", "true");
+
+            try {
+                Class<?> appCls = Class.forName("com.apple.eawt.Application");
+
+                Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
+
+                appCls.getDeclaredMethod("setDockIconImage", java.awt.Image.class)
+                    .invoke(osxApp, SwingFXUtils.fromFXImage(Controls.image("ignite", 128), null));
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            // Workaround for JDK 7/JavaFX 2 application on Mac OSX El Capitan.
+            try {
+                Class<?> fontFinderCls = Class.forName("com.sun.t2k.MacFontFinder");
+
+                Field psNameToPathMap = fontFinderCls.getDeclaredField("psNameToPathMap");
+
+                psNameToPathMap.setAccessible(true);
+                psNameToPathMap.set(null, new HashMap<String, String>());
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        launch(args);
+    }
 
     /**
      * Lock UI before start long task.
@@ -431,7 +411,7 @@ public class SchemaImportApp extends Application {
         if (!pwd.isEmpty())
             jdbcInfo.put("password", pwd);
 
-        return connect(jdbcDrvJarPath, jdbcDrvCls, jdbcUrl, jdbcInfo);
+        return DbMetadataReader.getInstance().connect(jdbcDrvJarPath, jdbcDrvCls, jdbcUrl, jdbcInfo);
     }
 
     /**
@@ -497,7 +477,7 @@ public class SchemaImportApp extends Application {
 
                     prevBtn.setDisable(false);
                     nextBtn.setText("Generate");
-                    tooltip(nextBtn, "Generate XML and POJO files");
+                    Controls.tooltip(nextBtn, "Generate XML and POJO files");
                 }
                 finally {
                     unlockUI(connLayerPnl, connPnl, nextBtn);
@@ -610,9 +590,9 @@ public class SchemaImportApp extends Application {
 
         final File destFolder = new File(outFolder);
 
-        final boolean includeKeys = pojoIncludeKeysCh.isSelected();
-
         final boolean constructor = pojoConstructorCh.isSelected();
+
+        final boolean includeKeys = pojoIncludeKeysCh.isSelected();
 
         final boolean generateAliases = generateAliasesCh.isSelected();
 
@@ -911,15 +891,16 @@ public class SchemaImportApp extends Application {
      * @return Header pane with title label.
      */
     private BorderPane createHeaderPane() {
-        dbIcon = hBox(0, true, imageView("data_connection", 48));
-        genIcon = hBox(0, true, imageView("text_tree", 48));
+        dbIcon = Controls.hBox(0, true, Controls.imageView("data_connection", 48));
+        genIcon = Controls.hBox(0, true, Controls.imageView("text_tree", 48));
 
-        titleLb = label("");
+        titleLb = Controls.label("");
         titleLb.setId("banner");
 
-        subTitleLb = label("");
+        subTitleLb = Controls.label("");
 
-        BorderPane bp = borderPane(null, vBox(5, titleLb, subTitleLb), null, dbIcon, hBox(0, true, imageView("ignite", 48)));
+        BorderPane bp = Controls.borderPane(null, Controls.vBox(5, titleLb, subTitleLb), null, dbIcon,
+            Controls.hBox(0, true, Controls.imageView("ignite", 48)));
         bp.setId("banner");
 
         return bp;
@@ -929,19 +910,19 @@ public class SchemaImportApp extends Application {
      * @return Panel with control buttons.
      */
     private Pane createButtonsPane() {
-        prevBtn = button("Prev", "Go to \"Database connection\" page", new EventHandler<ActionEvent>() {
+        prevBtn = Controls.button("Prev", "Go to \"Database connection\" page", new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent evt) {
                 prev();
             }
         });
 
-        nextBtn = button("Next", "Go to \"POJO and XML generation\" page", new EventHandler<ActionEvent>() {
+        nextBtn = Controls.button("Next", "Go to \"POJO and XML generation\" page", new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent evt) {
                 next();
             }
         });
 
-        return buttonsPane(Pos.BOTTOM_RIGHT, true, prevBtn, nextBtn);
+        return Controls.buttonsPane(Pos.BOTTOM_RIGHT, true, prevBtn, nextBtn);
     }
 
     /**
@@ -972,7 +953,7 @@ public class SchemaImportApp extends Application {
 
         prevBtn.setDisable(true);
         nextBtn.setText("Next");
-        tooltip(nextBtn, "Go to \"XML and POJO generation\" page");
+        Controls.tooltip(nextBtn, "Go to \"XML and POJO generation\" page");
     }
 
     /**
@@ -1015,57 +996,12 @@ public class SchemaImportApp extends Application {
     }
 
     /**
-     * Connect to database.
-     *
-     * @param jdbcDrvJarPath Path to JDBC driver.
-     * @param jdbcDrvCls JDBC class name.
-     * @param jdbcUrl JDBC connection URL.
-     * @param jdbcInfo Connection properties.
-     * @return Connection to database.
-     * @throws SQLException if connection failed.
-     */
-    private Connection connect(String jdbcDrvJarPath, String jdbcDrvCls, String jdbcUrl, Properties jdbcInfo)
-        throws SQLException {
-        Driver drv = drivers.get(jdbcDrvCls);
-
-        if (drv == null) {
-            if (jdbcDrvJarPath.isEmpty())
-                throw new IllegalStateException("Driver jar file name is not specified.");
-
-            File drvJar = new File(jdbcDrvJarPath);
-
-            if (!drvJar.exists())
-                throw new IllegalStateException("Driver jar file is not found.");
-
-            try {
-                URL u = new URL("jar:" + drvJar.toURI() + "!/");
-
-                URLClassLoader ucl = URLClassLoader.newInstance(new URL[] {u});
-
-                drv = (Driver)Class.forName(jdbcDrvCls, true, ucl).newInstance();
-
-                drivers.put(jdbcDrvCls, drv);
-            }
-            catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        Connection conn = drv.connect(jdbcUrl, jdbcInfo);
-
-        if (conn == null)
-            throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");
-
-        return conn;
-    }
-
-    /**
      * Create connection pane with controls.
      *
      * @return Pane with connection controls.
      */
     private Pane createConnectionPane() {
-        connPnl = paneEx(10, 10, 0, 10);
+        connPnl = Controls.paneEx(10, 10, 0, 10);
 
         connPnl.addColumn();
         connPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
@@ -1074,18 +1010,18 @@ public class SchemaImportApp extends Application {
         connPnl.addRows(9);
         connPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
 
-        connPnl.add(text("This utility is designed to automatically generate configuration XML files and" +
+        connPnl.add(Controls.text("This utility is designed to automatically generate configuration XML files and" +
             " POJO classes from database schema information.", 550), 3);
 
         connPnl.wrap();
 
-        GridPaneEx presetPnl = paneEx(0, 0, 0, 0);
+        GridPaneEx presetPnl = Controls.paneEx(0, 0, 0, 0);
         presetPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         presetPnl.addColumn();
 
-        rdbmsCb = presetPnl.add(comboBox("Select database server to get predefined settings", presets));
+        rdbmsCb = presetPnl.add(Controls.comboBox("Select database server to get predefined settings", presets));
 
-        presetPnl.add(button("Save preset", "Save current settings in preferences", new EventHandler<ActionEvent>() {
+        presetPnl.add(Controls.button("Save preset", "Save current settings in preferences", new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent evt) {
                 Preset preset = rdbmsCb.getSelectionModel().getSelectedItem();
 
@@ -1093,12 +1029,12 @@ public class SchemaImportApp extends Application {
             }
         }));
 
-        connPnl.add(label("DB Preset:"));
+        connPnl.add(Controls.label("DB Preset:"));
         connPnl.add(presetPnl, 2);
 
-        jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
+        jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", Controls.textField("Path to driver jar"));
 
-        connPnl.add(button("...", "Select JDBC driver jar or zip", new EventHandler<ActionEvent>() {
+        connPnl.add(Controls.button("...", "Select JDBC driver jar or zip", new EventHandler<ActionEvent>() {
             /** {@inheritDoc} */
             @Override public void handle(ActionEvent evt) {
                 FileChooser fc = new FileChooser();
@@ -1126,9 +1062,9 @@ public class SchemaImportApp extends Application {
             }
         }));
 
-        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", textField("Enter class name for JDBC driver"), 2);
+        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", Controls.textField("Enter class name for JDBC driver"), 2);
 
-        jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
+        jdbcUrlTf = connPnl.addLabeled("JDBC URL:", Controls.textField("JDBC URL of the database connection string"), 2);
 
         rdbmsCb.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Preset>() {
             @Override public void changed(ObservableValue<? extends Preset> val, Preset oldVal, Preset newVal) {
@@ -1139,34 +1075,34 @@ public class SchemaImportApp extends Application {
             }
         });
 
-        userTf = connPnl.addLabeled("User:", textField("User name"), 2);
+        userTf = connPnl.addLabeled("User:", Controls.textField("User name"), 2);
 
-        pwdTf = connPnl.addLabeled("Password:", passwordField("User password"), 2);
+        pwdTf = connPnl.addLabeled("Password:", Controls.passwordField("User password"), 2);
 
-        parseCb = connPnl.addLabeled("Parse:", comboBox("Type of tables to parse", "Tables only", "Tables and Views"), 2);
+        parseCb = connPnl.addLabeled("Parse:", Controls.comboBox("Type of tables to parse", "Tables only", "Tables and Views"), 2);
 
-        GridPaneEx schemaPnl = paneEx(5, 5, 5, 5);
+        GridPaneEx schemaPnl = Controls.paneEx(5, 5, 5, 5);
         schemaPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         schemaPnl.addColumn();
 
-        schemaLst = schemaPnl.add(list("Select schemas to load", new SchemaCell()));
+        schemaLst = schemaPnl.add(Controls.list("Select schemas to load", new SchemaCell()));
 
         schemaPnl.wrap();
 
-        schemaPnl.add(button("Load schemas", "Load schemas for specified database", new EventHandler<ActionEvent>() {
+        schemaPnl.add(Controls.button("Load schemas", "Load schemas for specified database", new EventHandler<ActionEvent>() {
             /** {@inheritDoc} */
             @Override public void handle(ActionEvent evt) {
                 loadSchemas();
             }
         }));
 
-        TitledPane titledPnl = connPnl.add(titledPane("Schemas", schemaPnl, false), 3);
+        TitledPane titledPnl = connPnl.add(Controls.titledPane("Schemas", schemaPnl, false), 3);
 
         titledPnl.setExpanded(true);
 
         GridPaneEx.setValignment(titledPnl, VPos.TOP);
 
-        connLayerPnl = stackPane(connPnl);
+        connLayerPnl = Controls.stackPane(connPnl);
 
         return connLayerPnl;
     }
@@ -1230,7 +1166,7 @@ public class SchemaImportApp extends Application {
      * Create generate pane with controls.
      */
     private void createGeneratePane() {
-        genPnl = paneEx(10, 10, 0, 10);
+        genPnl = Controls.paneEx(10, 10, 0, 10);
 
         genPnl.addColumn();
         genPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
@@ -1239,10 +1175,10 @@ public class SchemaImportApp extends Application {
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         genPnl.addRows(8);
 
-        TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
+        TableColumn<PojoDescriptor, Boolean> useCol = Controls.customColumn("Schema / Table", "use",
             "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
 
-        TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class Name", "keyClassName", "Key class name",
+        TableColumn<PojoDescriptor, String> keyClsCol = Controls.textColumn("Key Class Name", "keyClassName", "Key class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
                     boolean valid = checkClassName(rowVal, newVal, true);
@@ -1254,8 +1190,8 @@ public class SchemaImportApp extends Application {
                 }
             });
 
-        TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class Name", "valueClassName", "Value class name",
-            new TextColumnValidator<PojoDescriptor>() {
+        TableColumn<PojoDescriptor, String> valClsCol = Controls.textColumn("Value Class Name", "valueClassName",
+            "Value class name", new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
                     boolean valid = checkClassName(rowVal, newVal, false);
 
@@ -1266,26 +1202,26 @@ public class SchemaImportApp extends Application {
                 }
             });
 
-        pojosTbl = tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
+        pojosTbl = Controls.tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
 
-        TableColumn<PojoField, Boolean> useFldCol = customColumn("Use", "use",
+        TableColumn<PojoField, Boolean> useFldCol = Controls.customColumn("Use", "use",
             "Check to use this field for XML and POJO generation\n" +
             "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
         useFldCol.setMinWidth(50);
         useFldCol.setMaxWidth(50);
 
-        TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
+        TableColumn<PojoField, Boolean> keyCol = Controls.booleanColumn("Key", "key",
             "Check to include this field into key object");
 
-        TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
+        TableColumn<PojoField, Boolean> akCol = Controls.booleanColumn("AK", "affinityKey",
             "Check to annotate key filed with @AffinityKeyMapped annotation in generated POJO class\n" +
             "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
 
-        TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
+        TableColumn<PojoField, String> dbNameCol = Controls.tableColumn("DB Name", "dbName", "Field name in database");
 
-        TableColumn<PojoField, String> dbTypeNameCol = tableColumn("DB Type", "dbTypeName", "Field type in database");
+        TableColumn<PojoField, String> dbTypeNameCol = Controls.tableColumn("DB Type", "dbTypeName", "Field type in database");
 
-        TableColumn<PojoField, String> javaNameCol = textColumn("Java Name", "javaName", "Field name in POJO class",
+        TableColumn<PojoField, String> javaNameCol = Controls.textColumn("Java Name", "javaName", "Field name in POJO class",
             new TextColumnValidator<PojoField>() {
                 @Override public boolean valid(PojoField rowVal, String newVal) {
                     if (newVal.trim().isEmpty()) {
@@ -1307,25 +1243,25 @@ public class SchemaImportApp extends Application {
                 }
             });
 
-        TableColumn<PojoField, String> javaTypeNameCol = customColumn("Java Type", "javaTypeName",
+        TableColumn<PojoField, String> javaTypeNameCol = Controls.customColumn("Java Type", "javaTypeName",
             "Field java type in POJO class", JavaTypeCell.cellFactory());
 
-        fieldsTbl = tableView("Select table to see table columns",
+        fieldsTbl = Controls.tableView("Select table to see table columns",
             useFldCol, keyCol, akCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
 
-        genPnl.add(splitPane(pojosTbl, fieldsTbl, 0.6), 3);
+        genPnl.add(Controls.splitPane(pojosTbl, fieldsTbl, 0.6), 3);
 
-        final GridPaneEx keyValPnl = paneEx(0, 0, 0, 0);
+        final GridPaneEx keyValPnl = Controls.paneEx(0, 0, 0, 0);
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         keyValPnl.addColumn();
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         keyValPnl.addColumn();
 
-        pkgTf = genPnl.addLabeled("Package:", textField("Package that will be used for POJOs generation"), 2);
+        pkgTf = genPnl.addLabeled("Package:", Controls.textField("Package that will be used for POJOs generation"), 2);
 
-        outFolderTf = genPnl.addLabeled("Output Folder:", textField("Output folder for XML and POJOs files"));
+        outFolderTf = genPnl.addLabeled("Output Folder:", Controls.textField("Output folder for XML and POJOs files"));
 
-        genPnl.add(button("...", "Select output folder", new EventHandler<ActionEvent>() {
+        genPnl.add(Controls.button("...", "Select output folder", new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent evt) {
                 DirectoryChooser dc = new DirectoryChooser();
 
@@ -1346,33 +1282,33 @@ public class SchemaImportApp extends Application {
             }
         }));
 
-        pojoIncludeKeysCh = genPnl.add(checkBox("Include key fields into value POJOs",
+        pojoIncludeKeysCh = genPnl.add(Controls.checkBox("Include key fields into value POJOs",
             "If selected then include key fields into value object", true), 3);
 
-        pojoConstructorCh = genPnl.add(checkBox("Generate constructors for POJOs",
+        pojoConstructorCh = genPnl.add(Controls.checkBox("Generate constructors for POJOs",
             "If selected then generate empty and full constructors for POJOs", false), 3);
 
-        generateAliasesCh = genPnl.add(checkBox("Generate aliases for SQL fields",
+        generateAliasesCh = genPnl.add(Controls.checkBox("Generate aliases for SQL fields",
             "If selected then generate aliases for SQL fields with db names", true), 3);
 
-        xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
+        xmlSingleFileCh = genPnl.add(Controls.checkBox("Write all configurations to a single XML file",
             "If selected then all configurations will be saved into the file 'ignite-type-metadata.xml'", true), 3);
 
-        GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
+        GridPaneEx regexPnl = Controls.paneEx(5, 5, 5, 5);
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
 
-        regexTf = regexPnl.addLabeled("  Regexp:", textField("Regular expression. For example: (\\w+)"));
+        regexTf = regexPnl.addLabeled("  Regexp:", Controls.textField("Regular expression. For example: (\\w+)"));
 
-        replaceTf = regexPnl.addLabeled("  Replace with:", textField("Replace text. For example: $1_SomeText"));
+        replaceTf = regexPnl.addLabeled("  Replace with:", Controls.textField("Replace text. For example: $1_SomeText"));
 
-        final ComboBox<String> replaceCb = regexPnl.addLabeled("  Replace:", comboBox("Replacement target",
+        final ComboBox<String> replaceCb = regexPnl.addLabeled("  Replace:", Controls.comboBox("Replacement target",
             "Key class names", "Value class names", "Java names"));
 
-        regexPnl.add(buttonsPane(Pos.CENTER_LEFT, false,
-            button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
+        regexPnl.add(Controls.buttonsPane(Pos.CENTER_LEFT, false,
+            Controls.button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
                     " with the given replacement",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
@@ -1429,49 +1365,50 @@ public class SchemaImportApp extends Application {
                         }
                     }
                 }),
-            button("Reset Selected", "Revert changes for selected items to initial auto-generated values", new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent evt) {
-                    String sel = replaceCb.getSelectionModel().getSelectedItem();
+            Controls.button("Reset Selected", "Revert changes for selected items to initial auto-generated values",
+                new EventHandler<ActionEvent>() {
+                    @Override public void handle(ActionEvent evt) {
+                        String sel = replaceCb.getSelectionModel().getSelectedItem();
 
-                    boolean isFields = "Java names".equals(sel) && curTbl == fieldsTbl;
+                        boolean isFields = "Java names".equals(sel) && curTbl == fieldsTbl;
 
-                    String src = isFields ? "fields" : "tables";
+                        String src = isFields ? "fields" : "tables";
 
-                    String target = "\"" + sel + "\"";
+                        String target = "\"" + sel + "\"";
 
-                    Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
+                        Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
 
-                    Collection<PojoField> selFields = fieldsTbl.getSelectionModel().getSelectedItems();
+                        Collection<PojoField> selFields = fieldsTbl.getSelectionModel().getSelectedItems();
 
-                    boolean isEmpty = isFields ? selFields.isEmpty() : selPojos.isEmpty();
+                        boolean isEmpty = isFields ? selFields.isEmpty() : selPojos.isEmpty();
 
-                    if (isEmpty) {
-                        MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
+                        if (isEmpty) {
+                            MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
 
-                        return;
+                            return;
+                        }
+
+                        if (!MessageBox.confirmDialog(owner,
+                            "Are you sure you want to revert " + target + " for all selected " + src + "?"))
+                            return;
+
+                        switch (replaceCb.getSelectionModel().getSelectedIndex()) {
+                            case 0:
+                                revertKeyClassNames(selPojos);
+                                break;
+
+                            case 1:
+                                revertValueClassNames(selPojos);
+                                break;
+
+                            default:
+                                if (isFields)
+                                    revertFieldsJavaNames(selFields);
+                                else
+                                    revertPojosJavaNames(selPojos);
+                        }
                     }
-
-                    if (!MessageBox.confirmDialog(owner,
-                        "Are you sure you want to revert " + target + " for all selected " + src + "?"))
-                        return;
-
-                    switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                        case 0:
-                            revertKeyClassNames(selPojos);
-                            break;
-
-                        case 1:
-                            revertValueClassNames(selPojos);
-                            break;
-
-                        default:
-                            if (isFields)
-                                revertFieldsJavaNames(selFields);
-                            else
-                                revertPojosJavaNames(selPojos);
-                    }
-                }
-            })
+                })
         ), 2).setPadding(new Insets(0, 0, 0, 10));
 
         pojosTbl.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<PojoDescriptor>() {
@@ -1525,10 +1462,10 @@ public class SchemaImportApp extends Application {
             }
         });
 
-        genPnl.add(titledPane("Rename \"Key class name\", \"Value class name\" or  \"Java name\" for selected tables",
+        genPnl.add(Controls.titledPane("Rename \"Key class name\", \"Value class name\" or  \"Java name\" for selected tables",
             regexPnl, true), 3);
 
-        genLayerPnl = stackPane(genPnl);
+        genLayerPnl = Controls.stackPane(genPnl);
     }
 
     /**
@@ -1790,21 +1727,21 @@ public class SchemaImportApp extends Application {
         primaryStage.setTitle("Apache Ignite Auto Schema Import Utility");
 
         primaryStage.getIcons().addAll(
-            image("ignite", 16),
-            image("ignite", 24),
-            image("ignite", 32),
-            image("ignite", 48),
-            image("ignite", 64),
-            image("ignite", 128));
+            Controls.image("ignite", 16),
+            Controls.image("ignite", 24),
+            Controls.image("ignite", 32),
+            Controls.image("ignite", 48),
+            Controls.image("ignite", 64),
+            Controls.image("ignite", 128));
 
-        pi = progressIndicator(50);
+        pi = Controls.progressIndicator(50);
 
         createGeneratePane();
 
         hdrPane = createHeaderPane();
-        rootPane = borderPane(hdrPane, createConnectionPane(), createButtonsPane(), null, null);
+        rootPane = Controls.borderPane(hdrPane, createConnectionPane(), createButtonsPane(), null, null);
 
-        primaryStage.setScene(scene(rootPane));
+        primaryStage.setScene(Controls.scene(rootPane));
 
         primaryStage.setWidth(650);
         primaryStage.setMinWidth(650);
@@ -1924,50 +1861,49 @@ public class SchemaImportApp extends Application {
         savePreferences();
     }
 
-    /**
-     * Schema Import utility launcher.
-     *
-     * @param args Command line arguments passed to the application.
-     */
-    public static void main(String[] args) {
-        // Workaround for JavaFX ugly text AA.
-        System.setProperty("prism.lcdtext", "false");
-        System.setProperty("prism.text", "t2k");
+    /** Presets for database settings. */
+    private static class Preset {
+        /** Name in preferences. */
+        private String pref;
 
-        // Workaround for AWT + JavaFX: we should initialize AWT before JavaFX.
-        java.awt.Toolkit.getDefaultToolkit();
+        /** RDBMS name to show on screen. */
+        private String name;
 
-        // Workaround for JavaFX + Mac OS dock icon.
-        if (System.getProperty("os.name").toLowerCase().contains("mac os")) {
-            System.setProperty("javafx.macosx.embedded", "true");
+        /** Path to JDBC driver jar. */
+        private String jar;
 
-            try {
-                Class<?> appCls = Class.forName("com.apple.eawt.Application");
+        /** JDBC driver class name. */
+        private String drv;
 
-                Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
+        /** JDBC URL. */
+        private String url;
 
-                appCls.getDeclaredMethod("setDockIconImage", java.awt.Image.class)
-                    .invoke(osxApp, fromFXImage(image("ignite", 128), null));
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
+        /** User name. */
+        private String user;
 
-            // Workaround for JDK 7/JavaFX 2 application on Mac OSX El Capitan.
-            try {
-                Class<?> fontFinderCls = Class.forName("com.sun.t2k.MacFontFinder");
-
-                Field psNameToPathMap = fontFinderCls.getDeclaredField("psNameToPathMap");
-
-                psNameToPathMap.setAccessible(true);
-                psNameToPathMap.set(null, new HashMap<String, String>());
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
+        /**
+         * Preset constructor.
+         *
+         * @param pref Name in preferences.
+         * @param name RDBMS name to show on screen.
+         * @param jar Path to JDBC driver jar..
+         * @param drv JDBC driver class name.
+         * @param url JDBC URL.
+         * @param user User name.
+         */
+        Preset(String pref, String name, String jar, String drv, String url, String user) {
+            this.pref = pref;
+            this.name = name;
+            this.jar = jar;
+            this.drv = drv;
+            this.url = url;
+            this.user = user;
         }
 
-        launch(args);
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return name;
+        }
     }
 
     /**
@@ -2065,6 +2001,12 @@ public class SchemaImportApp extends Application {
      * Special table cell to select schema or table.
      */
     private static class PojoDescriptorCell extends TableCell<PojoDescriptor, Boolean> {
+        /** Previous POJO bound to cell. */
+        private PojoDescriptor prevPojo;
+
+        /** Previous cell graphic. */
+        private Pane prevGraphic;
+
         /**
          * Creates a ComboBox cell factory for use in TableColumn controls.
          *
@@ -2077,12 +2019,6 @@ public class SchemaImportApp extends Application {
                 }
             };
         }
-
-        /** Previous POJO bound to cell. */
-        private PojoDescriptor prevPojo;
-
-        /** Previous cell graphic. */
-        private Pane prevGraphic;
 
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
@@ -2126,6 +2062,12 @@ public class SchemaImportApp extends Application {
      * Special table cell to select &quot;used&quot; fields for code generation.
      */
     private static class PojoFieldUseCell extends TableCell<PojoField, Boolean> {
+        /** Previous POJO field bound to cell. */
+        private PojoField prevField;
+
+        /** Previous cell graphic. */
+        private CheckBox prevGraphic;
+
         /**
          * Creates a ComboBox cell factory for use in TableColumn controls.
          *
@@ -2138,12 +2080,6 @@ public class SchemaImportApp extends Application {
                 }
             };
         }
-
-        /** Previous POJO field bound to cell. */
-        private PojoField prevField;
-
-        /** Previous cell graphic. */
-        private CheckBox prevGraphic;
 
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {

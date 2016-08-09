@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -361,8 +362,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * will not be affected. Other properties will be added or overwritten. Passed properties with {@code null} values
      * will be removed from the stored properties or ignored if they don't exist in the file info.
      * <p>
-     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
-     * to the secondary file system:
+     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes with Hadoop secondary file system only the following properties will be updated:
      * <ul>
      * <li>{@code usrName} - file owner name;</li>
      * <li>{@code grpName} - file owner group;</li>
@@ -454,6 +454,14 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      */
     @Nullable public IgfsFile info(IgfsPath path) throws IgniteException;
+
+    /**
+     * Get mode for the given path.
+     *
+     * @param path Path.
+     * @return Mode used for this path.
+     */
+    public IgfsMode mode(IgfsPath path);
 
     /**
      * Gets used space in bytes.

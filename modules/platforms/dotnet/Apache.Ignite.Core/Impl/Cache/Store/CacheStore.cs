@@ -115,9 +115,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                     var className = reader.ReadString();
                     var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
-                    store = IgniteUtils.CreateInstance<ICacheStore>(className);
-
-                    IgniteUtils.SetProperties(store, propertyMap);
+                    store = IgniteUtils.CreateInstance<ICacheStore>(className, propertyMap);
                 }
 
 

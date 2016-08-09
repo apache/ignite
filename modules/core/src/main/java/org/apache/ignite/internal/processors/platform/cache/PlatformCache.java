@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -698,6 +699,21 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
     }
 
+    /**
+     * Writes an error to the writer either as a native exception, or as a couple of strings.
+     * @param writer Writer.
+     * @param ex Exception.
+     */
+    private static void writeError(BinaryRawWriterEx writer, Exception ex) {
+        if (ex.getCause() instanceof PlatformNativeException)
+            writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
+        else {
+            writer.writeObjectDetached(ex.getClass().getName());
+            writer.writeObjectDetached(ex.getMessage());
+            writer.writeObjectDetached(X.getFullStackTrace(ex));
+        }
+    }
+
     /** <inheritDoc /> */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)cache.future()).internalFuture();
@@ -922,7 +938,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         Object[] args = readQueryArgs(reader);
 
-        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc);
+        boolean distrJoins = reader.readBoolean();
+
+        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins);
     }
 
     /**
@@ -935,7 +953,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         Object[] args = readQueryArgs(reader);
 
-        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc);
+        boolean distrJoins = reader.readBoolean();
+        boolean enforceJoinOrder = reader.readBoolean();
+
+        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc)
+            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder);
     }
 
     /**

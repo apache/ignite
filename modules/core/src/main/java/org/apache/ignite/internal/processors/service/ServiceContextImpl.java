@@ -50,10 +50,6 @@ public class ServiceContextImpl implements ServiceContext {
     /** Affinity key. */
     private final Object affKey;
 
-    /** Service. */
-    @GridToStringExclude
-    private final Service svc;
-
     /** Executor service. */
     @GridToStringExclude
     private final ExecutorService exe;
@@ -61,25 +57,29 @@ public class ServiceContextImpl implements ServiceContext {
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
+    /** Service. */
+    @GridToStringExclude
+    private volatile Service svc;
+
     /** Cancelled flag. */
     private volatile boolean isCancelled;
-
 
     /**
      * @param name Service name.
      * @param execId Execution ID.
      * @param cacheName Cache name.
      * @param affKey Affinity key.
-     * @param svc Service.
      * @param exe Executor service.
      */
-    ServiceContextImpl(String name, UUID execId, String cacheName, Object affKey, Service svc,
+    ServiceContextImpl(String name,
+        UUID execId,
+        String cacheName,
+        Object affKey,
         ExecutorService exe) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
         this.affKey = affKey;
-        this.svc = svc;
         this.exe = exe;
     }
 
@@ -110,9 +110,16 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /**
-     * @return Service instance.
+     * @param svc Service instance.
      */
-    Service service() {
+    void service(Service svc) {
+        this.svc = svc;
+    }
+
+    /**
+     * @return Service instance or {@code null} if service initialization is not finished yet.
+     */
+    @Nullable Service service() {
         return svc;
     }
 
@@ -136,7 +143,7 @@ public class ServiceContextImpl implements ServiceContext {
 
                 mtd.setAccessible(true);
             }
-            catch (NoSuchMethodException e) {
+            catch (NoSuchMethodException ignored) {
                 mtd = NULL_METHOD;
             }
 

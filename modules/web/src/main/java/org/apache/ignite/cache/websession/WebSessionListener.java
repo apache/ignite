@@ -22,127 +22,24 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import javax.cache.CacheException;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Session listener for web sessions caching.
  */
 class WebSessionListener {
-    /** Filter. */
-    private final WebSessionFilter filter;
-
-    /** Maximum retries. */
-    private final int retries;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
     /**
-     * @param ignite Grid.
-     * @param filter Filter.
-     * @param retries Maximum retries.
+     * Creates new instance of attribute processor. Used for compatibility.
+     *
+     * @param updates Updates.
+     * @return New instance of attribute processor.
      */
-    WebSessionListener(Ignite ignite, WebSessionFilter filter, int retries) {
-        assert ignite != null;
-        assert filter != null;
-
-        this.filter = filter;
-        this.retries = retries > 0 ? retries : 1;
-
-        log = ignite.log();
-    }
-
-    /**
-     * @param sesId Session ID.
-     */
-    public void destroySession(String sesId) {
-        assert sesId != null;
-        for (int i = 0; i < retries; i++) {
-            try {
-                if (filter.getCache().remove(sesId) && log.isDebugEnabled())
-                    log.debug("Session destroyed: " + sesId);
-            }
-            catch (CacheException | IgniteException | IllegalStateException e) {
-                if (i == retries - 1) {
-                    U.warn(log, "Failed to remove session [sesId=" +
-                        sesId + ", retries=" + retries + ']');
-                }
-                else {
-                    U.warn(log, "Failed to remove session (will retry): " + sesId);
-
-                    filter.handleCacheOperationException(e);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param sesId Session ID.
-     * @param updates Updates list.
-     * @param maxInactiveInterval Max session inactive interval.
-     */
-    @SuppressWarnings("unchecked")
-    public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
-        assert sesId != null;
-        assert updates != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Session attributes updated [id=" + sesId + ", updates=" + updates + ']');
-
-        try {
-            for (int i = 0; i < retries; i++) {
-                try {
-                    IgniteCache<String, WebSession> cache0;
-
-                    if (maxInactiveInterval > 0) {
-                        long ttl = maxInactiveInterval * 1000;
-
-                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
-
-                        cache0 = filter.getCache().withExpiryPolicy(plc);
-                    }
-                    else
-                        cache0 = filter.getCache();
-
-                    cache0.invoke(sesId, new AttributesProcessor(updates));
-
-                    break;
-                }
-                catch (CacheException | IgniteException | IllegalStateException e) {
-                    if (i == retries - 1) {
-                        U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                            sesId + ", retries=" + retries + ']');
-                    }
-                    else {
-                        U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
-
-                        filter.handleCacheOperationException(e);
-                    }
-                }
-            }
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(WebSessionListener.class, this);
+    public static EntryProcessor<String, WebSession, Void> newAttributeProcessor(
+        final Collection<T2<String, Object>> updates) {
+        return new AttributesProcessor(updates);
     }
 
     /**

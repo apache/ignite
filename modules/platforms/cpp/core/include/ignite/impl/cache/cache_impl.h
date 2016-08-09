@@ -18,13 +18,13 @@
 #ifndef _IGNITE_CACHE_IMPL
 #define _IGNITE_CACHE_IMPL
 
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/cache/query/query_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/impl/cache/query/query_impl.h>
+
+#include <ignite/impl/interop/interop_target.h>
 
 namespace ignite
 {    
@@ -35,7 +35,7 @@ namespace ignite
             /**
              * Cache implementation.
              */
-            class IGNITE_IMPORT_EXPORT CacheImpl
+            class IGNITE_IMPORT_EXPORT CacheImpl : private interop::InteropTarget
             {
             public:
                 /**
@@ -331,31 +331,7 @@ namespace ignite
                 /** Name. */
                 char* name; 
                 
-                /** Environment. */
-                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-                
-                /** Handle to Java object. */
-                jobject javaRef;                     
-
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
-
-                /**
-                 * Write data to memory.
-                 *
-                 * @param mem Memory.
-                 * @param inOp Input opeartion.
-                 * @param err Error.
-                 * @return Memory pointer.
-                 */
-                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError* err);
-
-                /**
-                 * Read data from memory.
-                 *
-                 * @param mem Memory.
-                 * @param outOp Output operation.
-                 */
-                void ReadFrom(interop::InteropMemory* mem, OutputOperation& outOp);
 
                 /**
                  * Internal cache size routine.
@@ -368,27 +344,6 @@ namespace ignite
                 int SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err);
 
                 /**
-                 * Internal out operation.
-                 *
-                 * @param opType Operation type.
-                 * @param inOp Input.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool OutOpInternal(const int32_t opType, InputOperation& inOp, IgniteError* err);
-
-                /**
-                 * Internal out-in operation.
-                 *
-                 * @param opType Operation type.
-                 * @param inOp Input.
-                 * @param outOp Output.
-                 * @param err Error.
-                 */
-                void OutInOpInternal(const int32_t opType, InputOperation& inOp, OutputOperation& outOp, 
-                    IgniteError* err);
-
-                /**
                  * Internal query execution routine.
                  *
                  * @param qry Query.
@@ -398,25 +353,25 @@ namespace ignite
                 template<typename T>
                 query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError* err)
                 {
-                    ignite::common::java::JniErrorInfo jniErr;
+                    ignite::jni::java::JniErrorInfo jniErr;
 
-                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
+                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
-                    binary::BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
                     ignite::binary::BinaryRawWriter rawWriter(&writer);
 
                     qry.Write(rawWriter);
 
                     out.Synchronize();
 
-                    jobject qryJavaRef = env.Get()->Context()->CacheOutOpQueryCursor(javaRef, typ, mem.Get()->PointerLong(), 
-                        &jniErr);
+                    jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpQueryCursor(GetTarget(),
+                        typ, mem.Get()->PointerLong(), &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == ignite::common::java::IGNITE_JNI_ERR_SUCCESS)
-                        return new query::QueryCursorImpl(env, qryJavaRef);
+                    if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
+                        return new query::QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
                     else
                         return NULL;
                 }

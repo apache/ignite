@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -752,6 +753,7 @@ public class PlatformUtils {
                 writer.writeBoolean(false);
                 writer.writeString(err.getClass().getName());
                 writer.writeString(err.getMessage());
+                writer.writeString(X.getFullStackTrace(err));
             }
             else {
                 writer.writeBoolean(true);
@@ -1007,6 +1009,16 @@ public class PlatformUtils {
                 throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
             }
         }
+    }
+
+    /**
+     * Gets the entire nested stack-trace of an throwable.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        return X.getFullStackTrace(throwable);
     }
 
     /**

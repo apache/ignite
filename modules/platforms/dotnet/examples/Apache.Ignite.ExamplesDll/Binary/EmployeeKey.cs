@@ -47,7 +47,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         [AffinityKeyMapped]
         [QuerySqlField(IsIndexed = true)]
         public int OrganizationId { get; private set; }
-        
+
         /// <summary>
         /// Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
         /// </summary>
@@ -82,7 +82,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// </returns>
         public override string ToString()
         {
-            return string.Format("{0} [id={1}, organizationId={2}]", typeof (EmployeeKey).Name, Id, OrganizationId);
+            return string.Format("{0} [id={1}, organizationId={2}]", typeof(EmployeeKey).Name, Id, OrganizationId);
         }
     }
 }
