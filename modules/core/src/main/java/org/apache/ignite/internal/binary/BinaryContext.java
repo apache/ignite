@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallab
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
@@ -160,6 +161,7 @@ public class BinaryContext {
 
         sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
         sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
 
         sysClss.add(IgfsClientAffinityCallable.class.getName());
         sysClss.add(IgfsClientDeleteCallable.class.getName());
