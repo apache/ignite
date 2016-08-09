@@ -426,10 +426,10 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<Boolean> fut = futs.get(i);
+            for (int i = 0; i < futuresSize(); i++) {
+                IgniteInternalFuture<Boolean> fut = futureGet(i);
 
                 if (!isMini(fut))
                     continue;
