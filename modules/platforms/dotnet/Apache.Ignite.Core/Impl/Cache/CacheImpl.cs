@@ -1209,7 +1209,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             var trace = Unmarshal<string>(inStream);
             var inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
 
-            return ExceptionUtils.GetException(_ignite, clsName, msg, trace, innerException: inner);
+            return ExceptionUtils.GetException(_ignite, clsName, msg, trace, reader, inner);
         }
 
         /// <summary>

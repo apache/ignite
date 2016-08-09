@@ -457,7 +457,13 @@ public class PlatformCache extends PlatformAbstractTarget {
         catch (Exception e) {
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = platformCtx.writer(out);
-            PlatformUtils.writeError(e, writer);
+
+            Exception err = convertException(e);
+
+            // TODO: Combine these methods?
+            PlatformUtils.writeError(err, writer);
+            PlatformUtils.writeErrorData(err, writer);
+
             out.synchronize();
 
             return ERROR;
