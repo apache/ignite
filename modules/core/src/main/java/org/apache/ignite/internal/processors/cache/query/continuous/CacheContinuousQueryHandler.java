@@ -336,8 +336,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         entryBufs = new ConcurrentHashMap<>();
 
-        if (ctx.discovery().node(nodeId) != null)
-            backupQueue = new ConcurrentLinkedDeque8<>();
+        backupQueue = new ConcurrentLinkedDeque8<>();
 
         ackBuf = new AcknowledgeBuffer();
 
