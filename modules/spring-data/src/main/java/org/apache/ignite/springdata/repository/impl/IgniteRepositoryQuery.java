@@ -67,7 +67,10 @@ class IgniteRepositoryQuery implements RepositoryQuery {
         SLICE_OF_VALUES,
 
         /** Slice of cache entries. */
-        SLICE_OF_CACHE_ENTRIES
+        SLICE_OF_CACHE_ENTRIES,
+
+        /** Slice of lists. */
+        SLICE_OF_LISTS
     }
 
     /** Type. */
@@ -132,18 +135,16 @@ class IgniteRepositoryQuery implements RepositoryQuery {
             if (isFieldQry) {
                 if (hasAssignableGenericReturnTypeFrom(ArrayList.class, mtd))
                     return ReturnStrategy.LIST_OF_LISTS;
-
-                return ReturnStrategy.LIST_OF_VALUES;
-            }
-            else {
-                if (hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
+            } else if (hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
                     return ReturnStrategy.LIST_OF_CACHE_ENTRIES;
 
-                return ReturnStrategy.LIST_OF_VALUES;
-            }
+            return ReturnStrategy.LIST_OF_VALUES;
         }
         else if (returnType == Slice.class) {
-            if (!isFieldQry && hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
+            if (isFieldQry) {
+                if (hasAssignableGenericReturnTypeFrom(ArrayList.class, mtd))
+                    return ReturnStrategy.SLICE_OF_LISTS;
+            } else if (hasAssignableGenericReturnTypeFrom(Cache.Entry.class, mtd))
                 return ReturnStrategy.SLICE_OF_CACHE_ENTRIES;
 
             return ReturnStrategy.SLICE_OF_VALUES;
@@ -210,6 +211,8 @@ class IgniteRepositoryQuery implements RepositoryQuery {
                         content.add(entry.get(0));
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+                case SLICE_OF_LISTS:
+                    return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
                 case LIST_OF_LISTS:
                     return qryCursor.getAll();
                 default:

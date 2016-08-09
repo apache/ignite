@@ -263,4 +263,17 @@ public class IgniteSpringDataTest extends TestCase {
         for (Cache.Entry<Integer, Person> entry : slice)
             assertFalse("lastName18".equals(entry.getValue().getSecondName()));
     }
+
+    /** */
+    public void testSliceOfLists() {
+        Slice<List> lists = repo2.querySliceOfList("^[a-z]+$", new PageRequest(0, 3));
+
+        assertEquals(3, lists.getSize());
+
+        for (List list : lists) {
+            assertEquals(2, list.size());
+
+            assertTrue(list.get(0) instanceof Integer);
+        }
+    }
 }
