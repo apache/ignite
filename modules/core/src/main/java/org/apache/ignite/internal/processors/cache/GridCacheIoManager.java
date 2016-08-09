@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.UnhandledExceptionEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -75,6 +77,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_UNHANDLED_EXCEPTION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -605,10 +608,33 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            default:
-                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]", msg.classError());
+            default: {
+                String shortMsg = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
+
+                IgniteCheckedException ex = new IgniteCheckedException(shortMsg, msg.classError());
+
+                registerUnhandledException(ctx, shortMsg, ex);
+
+                throw ex;
+            }
         }
+    }
+
+    /**
+     * @param ctx Grid cache context.
+     * @param shortMsg Short message.
+     * @param ex Original Exception.
+     */
+    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
+        ClusterNode node = ctx.discovery().localNode();
+
+        UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+
+        GridKernalContext cont = ctx.kernalContext();
+
+        cont.exceptionRegistry().onException(shortMsg, ex);
+
+        cont.event().record(evt);
     }
 
     /**
