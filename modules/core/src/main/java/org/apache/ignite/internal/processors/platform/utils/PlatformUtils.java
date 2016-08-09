@@ -585,6 +585,7 @@ public class PlatformUtils {
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
         writer.writeObjectDetached(ex.getMessage());
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
 
         PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
 
