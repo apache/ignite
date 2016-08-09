@@ -1208,9 +1208,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var msg = Unmarshal<string>(inStream);
             var trace = Unmarshal<string>(inStream);
             var inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
-                
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg, trace, 
-                innerException: inner));
+
+            return ExceptionUtils.GetException(_ignite, clsName, msg, trace, innerException: inner);
         }
 
         /// <summary>
