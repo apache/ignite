@@ -460,7 +460,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             Exception err = convertException(e);
 
-            // TODO: Combine these methods?
             PlatformUtils.writeError(err, writer);
             PlatformUtils.writeErrorData(err, writer);
 
