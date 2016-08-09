@@ -152,7 +152,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     const code = res.code;
 
                     if (code === 401)
-                        return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                        return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                     if (code !== 200)
                         return reject(new Error(error || 'Failed connect to node and execute REST command.'));
@@ -164,7 +164,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             return resolve(msg.response);
 
                         if (msg.successStatus === 2)
-                            return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                            return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                         reject(new Error(msg.error));
                     }
@@ -331,6 +331,27 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @param {Boolean} near true if near cache should be started.
+         * @param {String} cacheName Name for near cache.
+         * @param {String} cfg Cache XML configuration.
+         * @returns {Promise}
+         */
+        cacheStart(demo, nids, near, cacheName, cfg) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask$VisorCacheStartArg')
+                .addParam('p4', near)
+                .addParam('p5', cacheName)
+                .addParam('p6', cfg);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} nid Node id.
          * @param {String} cacheName Cache name.
          * @returns {Promise}
@@ -349,15 +370,81 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         /**
          * @param {Boolean} demo Is need run command on demo node.
          * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
          * @returns {Promise}
          */
-        ping(demo, nid) {
+        cacheResetMetrics(demo, nid, cacheName) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', 'null')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', cacheName);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheNames Cache names separated by comma.
+         * @returns {Promise}
+         */
+        cacheSwapBackups(demo, nid, cacheNames) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask')
+                .addParam('p3', 'java.util.Set')
+                .addParam('p4', 'java.lang.String')
+                .addParam('p5', cacheNames);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nids Node ids.
+         * @returns {Promise}
+         */
+        gc(demo, nids) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeGcTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} taskNid node that is not node we want to ping.
+         * @param {String} nid Id of the node to ping.
+         * @returns {Promise}
+         */
+        ping(demo, taskNid, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', taskNid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodePingTask')
                 .addParam('p3', 'java.util.UUID')
                 .addParam('p4', nid);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Id of the node to get thread dump.
+         * @returns {Promise}
+         */
+        threadDump(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.debug.VisorThreadDumpTask')
+                .addParam('p3', 'java.lang.Void');
 
             return this.executeRest(cmd);
         }
@@ -482,66 +569,74 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             return cb('You are using an older version of the agent. Please reload agent archive');
                     }
 
-                    mongo.Account.findOne({token: data.token}, (err, account) => {
-                        // TODO IGNITE-1379 send error to web master.
-                        if (err)
-                            cb('Failed to authorize user');
-                        else if (!account)
-                            cb('Invalid token, user not found');
-                        else {
+                    const tokens = data.tokens;
+
+                    mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
+                        .then((accounts) => {
+                            if (!accounts.length)
+                                return cb('Agent is failed to authenticate. Please check agent\'s token(s)');
+
                             const agent = new Agent(socket);
 
-                            socket.on('disconnect', () => {
-                                this._removeAgent(account._id, agent);
-                            });
+                            const accountIds = _.map(accounts, (account) => account._id);
 
-                            this._addAgent(account._id, agent);
+                            socket.on('disconnect', () => this._agentDisconnected(accountIds, agent));
+
+                            this._agentConnected(accountIds, agent);
+
+                            const missedTokens = _.difference(tokens, _.map(accounts, (account) => account.token));
+
+                            if (missedTokens.length) {
+                                agent._emit('agent:warning',
+                                    `Failed to authenticate with token(s): ${missedTokens.join(', ')}.`);
+                            }
 
                             cb();
-                        }
-                    });
+                        })
+                        // TODO IGNITE-1379 send error to web master.
+                        .catch((err) => cb('Agent is failed to authenticate. Please check agent\'s tokens'));
                 });
             });
         }
 
         /**
-         * @param {ObjectId} userId
-         * @param {Socket} user
-         * @returns {int} connected agent count.
+         * @param {ObjectId} accountId
+         * @param {Socket} socket
+         * @returns {int} Connected agent count.
          */
-        addAgentListener(userId, user) {
-            let users = this._browsers[userId];
+        addAgentListener(accountId, socket) {
+            let sockets = this._browsers[accountId];
 
-            if (!users)
-                this._browsers[userId] = users = [];
+            if (!sockets)
+                this._browsers[accountId] = sockets = [];
 
-            users.push(user);
+            sockets.push(socket);
 
-            const agents = this._agents[userId];
+            const agents = this._agents[accountId];
 
             return agents ? agents.length : 0;
         }
 
         /**
-         * @param {ObjectId} userId
-         * @param {Socket} user
+         * @param {ObjectId} accountId.
+         * @param {Socket} socket.
          * @returns {int} connected agent count.
          */
-        removeAgentListener(userId, user) {
-            const users = this._browsers[userId];
+        removeAgentListener(accountId, socket) {
+            const sockets = this._browsers[accountId];
 
-            _.remove(users, (_user) => _user === user);
+            _.pull(sockets, socket);
         }
 
         /**
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountId
          * @returns {Promise.<Agent>}
          */
-        findAgent(userId) {
+        findAgent(accountId) {
             if (!this._server)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const agents = this._agents[userId];
+            const agents = this._agents[accountId];
 
             if (!agents || agents.length === 0)
                 return Promise.reject(new Error('Failed to connect to agent'));
@@ -551,49 +646,66 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * Close connections for all user agents.
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountId
+         * @param {String} oldToken
          */
-        close(userId) {
+        close(accountId, oldToken) {
             if (!this._server)
                 return;
 
-            const agents = this._agents[userId];
+            const agentsForClose = this._agents[accountId];
 
-            this._agents[userId] = [];
+            const agentsForWarning = _.clone(agentsForClose);
 
-            for (const agent of agents)
-                agent._emit('agent:close', 'Security token was changed for user');
+            this._agents[accountId] = [];
+
+            _.forEach(this._agents, (sockets) => _.pullAll(agentsForClose, sockets));
+
+            _.pullAll(agentsForWarning, agentsForClose);
+
+            const msg = `Security token has been reset: ${oldToken}`;
+
+            _.forEach(agentsForWarning, (socket) => socket._emit('agent:warning', msg));
+
+            _.forEach(agentsForClose, (socket) => socket._emit('agent:close', msg));
+
+            _.forEach(this._browsers[accountId], (socket) => socket.emit('agent:count', {count: 0}));
         }
 
         /**
-         * @param userId
+         * @param {ObjectId} accountIds
          * @param {Agent} agent
          */
-        _removeAgent(userId, agent) {
-            const agents = this._agents[userId];
+        _agentConnected(accountIds, agent) {
+            _.forEach(accountIds, (accountId) => {
+                let agents = this._agents[accountId];
 
-            _.remove(agents, (_agent) => _agent === agent);
+                if (!agents)
+                    this._agents[accountId] = agents = [];
 
-            const users = this._browsers[userId];
+                agents.push(agent);
 
-            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
+                const sockets = this._browsers[accountId];
+
+                _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+            });
         }
 
         /**
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountIds
          * @param {Agent} agent
          */
-        _addAgent(userId, agent) {
-            let agents = this._agents[userId];
+        _agentDisconnected(accountIds, agent) {
+            _.forEach(accountIds, (accountId) => {
+                const agents = this._agents[accountId];
 
-            if (!agents)
-                this._agents[userId] = agents = [];
+                if (agents && agents.length)
+                    _.pull(agents, agent);
 
-            agents.push(agent);
+                const sockets = this._browsers[accountId];
 
-            const users = this._browsers[userId];
-
-            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
+                _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+            });
         }
     }
 

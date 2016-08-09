@@ -227,12 +227,6 @@ For details, see CC0 1.0 Universal (1.0), Public Domain Dedication,
 http://creativecommons.org/publicdomain/zero/1.0/
 
 ==============================================================================
-For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
-==============================================================================
-This product bundles JSR107 API and SPI which is available under a:
-JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
-
-==============================================================================
 For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
 ==============================================================================
 This product bundles JSch which is available under a:

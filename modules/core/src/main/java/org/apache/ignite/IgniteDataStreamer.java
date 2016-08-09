@@ -116,13 +116,12 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /**
      * Sets flag enabling overwriting existing values in cache.
      * Data streamer will perform better if this flag is disabled.
-     * <p>
-     * Should not be used when custom cache receiver set using {@link #receiver(StreamReceiver)} method.
-     * <p>
      * Note that when this flag is {@code false}, updates will not be propagated to the cache store
      * (i.e. {@link #skipStore()} flag will be set to {@code true} implicitly).
      * <p>
      * This flag is disabled by default (default is {@code false}).
+     * <p>
+     * The flag has no effect when custom cache receiver set using {@link #receiver(StreamReceiver)} method.
      *
      * @param allowOverwrite Flag value.
      * @throws CacheException If failed.

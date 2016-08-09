@@ -147,7 +147,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     /**
      * Populate cache and h2 database with test data.
      */
-    protected abstract void initCacheAndDbData() throws SQLException;
+    protected abstract void initCacheAndDbData() throws Exception;
 
     /**
      * @throws Exception If failed.

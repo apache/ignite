@@ -22,7 +22,10 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -68,6 +71,13 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
+            CheckDefaultValueAttributes(new RendezvousAffinityFunction());
+            CheckDefaultValueAttributes(new FairAffinityFunction());
+            CheckDefaultValueAttributes(new NearCacheConfiguration());
+            CheckDefaultValueAttributes(new FifoEvictionPolicy());
+            CheckDefaultValueAttributes(new LruEvictionPolicy());
+            CheckDefaultValueAttributes(new AtomicConfiguration());
+            CheckDefaultValueAttributes(new TransactionConfiguration());
         }
 
         /// <summary>
@@ -369,7 +379,7 @@ namespace Apache.Ignite.Core.Tests
                 var propValue = prop.GetValue(obj, null);
 
                 if (attr != null)
-                    Assert.AreEqual(attr.Value, propValue);
+                    Assert.AreEqual(attr.Value, propValue, string.Format("{0}.{1}", obj.GetType(), prop.Name));
                 else if (prop.PropertyType.IsValueType)
                     Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue);
                 else

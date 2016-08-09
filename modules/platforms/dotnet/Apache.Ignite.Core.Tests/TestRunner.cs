@@ -22,6 +22,8 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Cache.Affinity;
+    using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -46,15 +48,20 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(BinaryStringTest), "Test");
+            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
 
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            //TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
         }
 
         private static int TestOne(Type testClass, string method)
         {
-            string[] args = { "/run:" + testClass.FullName + "." + method, Assembly.GetAssembly(testClass).Location };
+            string[] args =
+            {
+                "/noshadow",
+                "/run:" + testClass.FullName + "." + method,
+                Assembly.GetAssembly(testClass).Location
+            };
 
             int returnCode = Runner.Main(args);
 
@@ -66,7 +73,11 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAll(Type testClass)
         {
-            string[] args = { "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location };
+            string[] args =
+            {
+                "/noshadow",
+                "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
+            };
 
             int returnCode = Runner.Main(args);
 
@@ -76,7 +87,11 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAllInAssembly()
         {
-            string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location };
+            string[] args =
+            {
+                "/noshadow",
+                Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
+            };
 
             int returnCode = Runner.Main(args);
 

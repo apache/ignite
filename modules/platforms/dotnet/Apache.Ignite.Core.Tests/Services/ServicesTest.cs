@@ -321,8 +321,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
-            Assert.AreEqual("Object of type 'System.Object' cannot be converted to type 'System.Int32'.",
-                ex.InnerException.Message);
+            Assert.AreEqual("Specified cast is not valid.", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -528,7 +527,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Basics
             Assert.IsTrue(svc.isInitialized());
-            Assert.IsTrue(svc.isExecuted());
+            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
             Assert.IsFalse(svc.isCancelled());
 
             // Primitives
@@ -685,6 +684,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
                 Assert.IsTrue(
+                    // ReSharper disable once AccessToForEachVariableInClosure
                     TestUtils.WaitForCondition(() => grid.GetServices()
                         .GetService<ITestIgniteService>(name) == null, 5000));
         }

@@ -48,29 +48,29 @@ mixin lbl(txt)
                     .details-row
                         .advanced-options
                             i.fa(
-                            ng-click='expandedToken = !expandedToken'
+                            ng-click='toggleToken()'
                             ng-class='expandedToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='expandedToken = !expandedToken') {{expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
+                            a(ng-click='toggleToken()') {{expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
                         div(ng-if='expandedToken')
                             +lbl('Security token:')
-                            label(ng-init='user.token = $root.user.token') {{user.token || 'No security token. Regenerate please.'}}
+                            label {{user.token || 'No security token. Regenerate please.'}}
                             i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
                             i.tipLabel.fa.fa-clipboard(ng-click-copy='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                             i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
                     .details-row
                         .advanced-options
                             i.fa(
-                            ng-click='expandedPassword = !expandedPassword'
+                            ng-click='togglePassword()'
                             ng-class='expandedPassword ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='expandedPassword = !expandedPassword') {{expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
+                            a(ng-click='togglePassword()') {{expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
                         div(ng-if='expandedPassword')
                             .details-row
                                 +lbl('New password:')
                                 .col-xs-5.col-sm-4
-                                    input.form-control(ng-init='user.password=null' type='password' ng-model='user.password' placeholder='New password')
+                                    input.form-control(type='password' ng-model='user.password' placeholder='New password')
                             .details-row
                                 +lbl('Confirm:')
                                 .col-xs-5.col-sm-4
-                                    input.form-control(ng-init='user.confirm=null' type='password' ng-model='user.confirm' match='user.password' placeholder='Confirm new password')
+                                    input.form-control(type='password' ng-model='user.confirm' match='user.password' placeholder='Confirm new password')
                 .col-xs-12.col-sm-12.details-row
                     a.btn.btn-primary(ng-disabled='!profileCouldBeSaved()' ng-click='profileCouldBeSaved() && saveUser()' bs-tooltip='' data-title='{{saveBtnTipText()}}' data-placement='bottom' data-trigger='hover') Save

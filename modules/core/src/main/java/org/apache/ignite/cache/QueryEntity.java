@@ -49,6 +49,24 @@ public class QueryEntity implements Serializable {
     private Map<String, QueryIndex> idxs = new HashMap<>();
 
     /**
+     * Creates an empty query entity.
+     */
+    public QueryEntity() {
+        // No-op constructor.
+    }
+
+    /**
+     * Creates a query entity with the given key and value types.
+     *
+     * @param keyType Key type.
+     * @param valType Value type.
+     */
+    public QueryEntity(String keyType, String valType) {
+        this.keyType = keyType;
+        this.valType = valType;
+    }
+
+    /**
      * Gets key type for this query pair.
      *
      * @return Key type.

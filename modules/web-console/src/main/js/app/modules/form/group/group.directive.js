@@ -50,10 +50,10 @@ export default ['igniteFormGroup', [() => {
         };
 
         const setAsDirty = () => {
-            if (JSON.stringify(scope.ngModel) !== JSON.stringify(parentFormCtrl.$defaults[name]))
-                ngModelCtrl.$setDirty();
-            else
+            if (_.isEqual(scope.ngModel, parentFormCtrl.$defaults[name]))
                 ngModelCtrl.$setPristine();
+            else
+                ngModelCtrl.$setDirty();
         };
 
         scope.$watch(() => parentFormCtrl.$pristine, setAsDefault);
