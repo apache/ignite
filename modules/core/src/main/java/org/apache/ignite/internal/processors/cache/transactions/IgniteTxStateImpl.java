@@ -322,7 +322,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean init(int txSize) {
         if (txMap == null) {
-            txMap = new ConcurrentLinkedHashMap<>(txSize > 0 ? txSize : 16);
+            txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
 
             readView = new IgniteTxMap(txMap, CU.reads());
             writeView = new IgniteTxMap(txMap, CU.writes());
