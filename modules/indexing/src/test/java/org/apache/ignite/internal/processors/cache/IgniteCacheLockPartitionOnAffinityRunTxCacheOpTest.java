@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
- * Reservations support.
+ * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310.
  */
-public interface GridReservable {
-    /**
-     * Reserves.
-     *
-     * @return {@code true} If reserved successfully.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean reserve() throws IgniteCheckedException;
-
-    /**
-     * Releases.
-     */
-    public void release();
+public class IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest
+    extends IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
 }
