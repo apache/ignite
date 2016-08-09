@@ -826,10 +826,8 @@ public class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        if (obj instanceof CacheObjectImpl)
-            writer.postWrite(userType, registered, 0, false);
-        else
-            writer.postWrite(userType, registered, obj.hashCode(), true);
+        writer.postWrite(userType, registered, obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
+            !(obj instanceof BinaryObjectEx && ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE)));
     }
 
     /**

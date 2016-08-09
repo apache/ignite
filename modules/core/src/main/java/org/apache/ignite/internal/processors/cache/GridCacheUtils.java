@@ -1170,6 +1170,7 @@ public class GridCacheUtils {
 
     /**
      * Validates that cache key object has overridden equals and hashCode methods.
+     * For binary built objects
      *
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
@@ -1183,7 +1184,8 @@ public class GridCacheUtils {
                 key.getClass().getName());
 
         if (U.isHashCodeEmpty(key))
-            throw new IllegalArgumentException("Binary cache key must have hash code set explicitly");
+            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
+                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

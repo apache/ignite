@@ -8524,12 +8524,8 @@ public abstract class IgniteUtils {
      * has {@link BinaryUtils#FLAG_EMPTY_HASH_CODE} set
      */
     public static boolean isHashCodeEmpty(Object obj) {
-        if (obj == null || !(obj instanceof BinaryObjectEx))
-            return false;
-
-        BinaryObjectEx binObj = (BinaryObjectEx)obj;
-
-        return binObj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
+        return obj != null && obj instanceof BinaryObjectEx &&
+            ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
     }
 
     /**
