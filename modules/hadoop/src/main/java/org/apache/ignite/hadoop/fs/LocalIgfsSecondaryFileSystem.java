@@ -18,6 +18,7 @@
 package org.apache.ignite.hadoop.fs;
 
 import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -429,76 +430,76 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
-        try {
-            // TODO: IGNITE-3650.
-            final FileStatus status = fileSystemForUser().getFileStatus(convert(path));
+        final java.nio.file.Path fsPath = fileForPath(path).toPath();
 
-            if (status == null)
-                return null;
+        if (!Files.exists(fsPath))
+            return  null;
 
-            final Map<String, String> props = properties(status);
+        final Map<String, String> props = properties(fsPath);
 
-            return new IgfsFile() {
-                @Override public IgfsPath path() {
-                    return path;
+        return new IgfsFile() {
+            @Override public IgfsPath path() {
+                return path;
+            }
+
+            @Override public boolean isFile() {
+                return Files.isRegularFile(fsPath);
+            }
+
+            @Override public boolean isDirectory() {
+                return Files.isDirectory(fsPath);
+            }
+
+            @Override public int blockSize() {
+                return isDirectory() ? 0 : blockSizeFS(fsPath);
+            }
+
+            @Override public long groupBlockSize() {
+                return blockSizeFS(fsPath);
+            }
+
+            @Override public long accessTime() {
+                return 0;
+            }
+
+            @Override public long modificationTime() {
+                try {
+                    return Files.getLastModifiedTime(fsPath).toMillis();
                 }
-
-                @Override public boolean isFile() {
-                    return status.isFile();
+                catch (IOException e) {
+                    throw handleSecondaryFsError(e, "Failed to get modification time [path=" + path + ']');
                 }
+            }
 
-                @Override public boolean isDirectory() {
-                    return status.isDirectory();
+            @Override public String property(String name) throws IllegalArgumentException {
+                String val = props.get(name);
+
+                if (val ==  null)
+                    throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
+
+                return val;
+            }
+
+            @Nullable @Override public String property(String name, @Nullable String dfltVal) {
+                String val = props.get(name);
+
+                return val == null ? dfltVal : val;
+            }
+
+            @Override public long length() {
+                try {
+                    return Files.size(fsPath);
                 }
-
-                @Override public int blockSize() {
-                    // By convention directory has blockSize == 0, while file has blockSize > 0:
-                    return isDirectory() ? 0 : (int)status.getBlockSize();
+                catch (IOException e) {
+                    throw handleSecondaryFsError(e, "Failed to get file length [path=" + path + ']');
                 }
+            }
 
-                @Override public long groupBlockSize() {
-                    return status.getBlockSize();
-                }
-
-                @Override public long accessTime() {
-                    return status.getAccessTime();
-                }
-
-                @Override public long modificationTime() {
-                    return status.getModificationTime();
-                }
-
-                @Override public String property(String name) throws IllegalArgumentException {
-                    String val = props.get(name);
-
-                    if (val ==  null)
-                        throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
-
-                    return val;
-                }
-
-                @Nullable @Override public String property(String name, @Nullable String dfltVal) {
-                    String val = props.get(name);
-
-                    return val == null ? dfltVal : val;
-                }
-
-                @Override public long length() {
-                    return status.getLen();
-                }
-
-                /** {@inheritDoc} */
-                @Override public Map<String, String> properties() {
-                    return props;
-                }
-            };
-        }
-        catch (FileNotFoundException ignore) {
-            return null;
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to get file status [path=" + path + "]");
-        }
+            /** {@inheritDoc} */
+            @Override public Map<String, String> properties() {
+                return props;
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -630,4 +631,28 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
     }
+
+    /**
+     * Get available IGFS properties from FS.
+     *
+     * @param path Path.
+     * @return IGFS attributes.
+     */
+    private static Map<String, String> properties(java.nio.file.Path path) {
+        HashMap<String, String> res = new HashMap<>(3);
+
+        return res;
+    }
+
+    /**
+     * Get block size for path.
+     *
+     * @param path Path.
+     * @return IGFS attributes.
+     */
+    private static int blockSizeFS(java.nio.file.Path path) {
+        // TODO: IGNITE-3664
+        return DFLT_BUF_SIZE;
+    }
+
 }
