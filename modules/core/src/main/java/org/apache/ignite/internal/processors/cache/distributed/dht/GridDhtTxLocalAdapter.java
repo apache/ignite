@@ -767,8 +767,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         // Commit to DB first. This way if there is a failure, transaction
         // won't be committed.
         try {
-            if (commit && !isRollbackOnly())
+            if (commit && !isRollbackOnly()) {
+                long start = System.currentTimeMillis();
                 userCommit();
+                long end = System.currentTimeMillis();
+
+                cctx.onUserCommit(end - start);
+            }
             else
                 userRollback();
         }
