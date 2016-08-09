@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinity
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerFailuresTest;
 
 /**
  * Test suite.
@@ -58,6 +59,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
+
+        suite.addTestSuite(DataStreamerFailuresTest.class);
 
         return suite;
     }
