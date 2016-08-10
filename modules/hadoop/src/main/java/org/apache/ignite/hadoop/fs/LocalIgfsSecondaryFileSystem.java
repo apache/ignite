@@ -17,8 +17,21 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import java.util.Collections;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -38,27 +51,11 @@ import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
-import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
-import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Secondary file system which delegates to local file system.
@@ -318,16 +315,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
-        File f = fileForPath(path);
+        File[] entries = listFiles0(path);
 
-        if (!f.exists())
-            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+        if (entries == null)
+            return Collections.emptyList();
 
-        if (f.isFile())
-            return Collections.singleton(path);
-
-        File[] entries = f.listFiles();
-        Collection<IgfsPath> res = new ArrayList<>(entries.length);
+        Collection<IgfsPath> res = new HashSet<>(entries.length);
 
         if (entries != null) {
             for (File entry : entries)
@@ -339,10 +332,20 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
-        Collection<IgfsPath> paths = listPaths(path);
-        Collection<IgfsFile> res = new ArrayList<>(paths.size());
-        for(IgfsPath p : paths)
-            res.add(info(p));
+        File[] entries = listFiles0(path);
+
+        if (entries == null)
+            return Collections.emptyList();
+
+        Collection<IgfsFile> res = new HashSet<>(entries.length);
+
+        if (entries != null) {
+            for (File entry : entries) {
+                IgfsFile igfsFile = info(pathForFile(entry));
+                if (igfsFile != null)
+                    res.add(igfsFile);
+            }
+        }
 
         return res;
     }
@@ -570,16 +573,22 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @throws IgfsException If failed.
      */
     private IgfsPath pathForFile(File f) throws IgfsException {
-        if (workDir == null)
-            return new IgfsPath(f.toString());
-        else {
-            java.nio.file.Path pathWorkdir = new File(workDir).toPath();
-            java.nio.file.Path path = f.toPath();
-            if (!path.startsWith(pathWorkdir))
+        String path = f.getAbsolutePath();
+
+        if (workDir != null) {
+            if (!path.startsWith(workDir))
                 throw new IgfsException("Path [" + f +"] is not located in the workDir [" + workDir + ']');
 
-            return new IgfsPath('/' + pathWorkdir.relativize(path).toString());
+            path = path.substring(workDir.length(), path.length());
         }
+
+        if (path.startsWith("//"))
+            path = path.substring(1, path.length());
+
+        if (path.charAt(0) != '/')
+            path = '/' + path;
+
+        return new IgfsPath(path);
     }
 
     /**
@@ -612,5 +621,23 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
+    }
+
+    /**
+     * Returns an array of File object. Under the specific path.
+     *
+     * @param path IGFS path.
+     * @return Array of File objects.
+     */
+    private File[] listFiles0(IgfsPath path) {
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+
+        if (f.isFile())
+            return null;
+
+        return f.listFiles();
     }
 }
