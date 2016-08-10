@@ -170,13 +170,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
-        try {
-            // TODO: IGNITE-3644.
-            return fileSystemForUser().exists(convert(path));
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to check file existence [path=" + path + "]");
-        }
+        return fileForPath(path).exists();
     }
 
     /** {@inheritDoc} */
