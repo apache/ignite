@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
@@ -33,6 +35,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -201,7 +204,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 File file = new File(workDir, fileName);
 
                 try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = in.getChannel().lock(0L, Long.MAX_VALUE, true);
+                    FileLock fileLock = tryChanelLock(in.getChannel());
 
                     assert fileLock != null : fileName;
 
@@ -235,8 +238,35 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /**
+     * Attempts to acquire an exclusive lock on this channel's file.
+     *
+     * @param chanel Chanel.
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+    private static FileLock tryChanelLock(FileChannel chanel) {
+        int counter = 0;
+
+        FileLock fileLock = null;
+
+        while(counter++ < 500 && fileLock == null) {
+            try {
+                fileLock = chanel.tryLock();
+
+                if (fileLock == null)
+                    Thread.sleep(5);
+            }
+            catch(OverlappingFileLockException ex) {
+                /** no-op **/
+            }
+            catch(Exception ex) {
+                throw new IgniteException(ex);
+            }
+        }
+        return fileLock;
+    }
+
+    /**
+    */
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
         /** */
         private final IgniteLogger log;
 
@@ -247,7 +277,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
          * @param log Logger.
          * @param workDir Work directory.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
         }
@@ -270,7 +300,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         File file = new File(workDir, fileName);
 
                         try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = out.getChannel().lock(0L, Long.MAX_VALUE, false);
+                            FileLock fileLock = tryChanelLock(out.getChannel());
 
                             assert fileLock != null : fileName;
 
