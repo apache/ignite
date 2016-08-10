@@ -1200,11 +1200,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     @Override public void onNodeLeft() {
         Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
-        if (backupQueue0 != null) {
+        if (backupQueue0 != null)
             backupQueue = null;
-
-            backupQueue0.clear();
-        }
     }
 
     /** {@inheritDoc} */
