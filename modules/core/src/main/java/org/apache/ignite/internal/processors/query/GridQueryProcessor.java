@@ -1531,7 +1531,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new BinaryProperty(prop, res, resType, member, key, alias);
+            res = new BinaryProperty(prop, res, resType, key, alias);
         }
 
         return res;
@@ -1761,7 +1761,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param pathStr Full path to property.
      * @param cls Properties hierarchy entry point (outermost class).
-     * @param resType
+     * @param resType Expected type of the member.
      * @return Member (field or property) at the end of properties hierarchy denoted by {@code pathStr}.
      */
     @Nullable private static Member deepFindMember(String pathStr, Class<?> cls, Class<?> resType) {
@@ -1978,9 +1978,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      */
     private class BinaryProperty extends GridQueryProperty {
-        /** Member */
-        private final Member member;
-
         /** Property name. */
         private String propName;
 
@@ -2011,14 +2008,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
-         * @param member
-         * @param key
+         * @param key {@code true} if key property, {@code false} otherwise.
          * @param alias Field alias.
          */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, Member member, boolean key, String alias) {
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, boolean key, String alias) {
             super(key);
             this.propName = propName;
-            this.member = member;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;

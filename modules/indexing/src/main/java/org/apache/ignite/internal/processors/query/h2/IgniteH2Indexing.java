@@ -960,9 +960,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query.
      *
-     * @param cctx
-     * @param conn Connection,.
-     * @param tbls
+     * @param cctx Cache context.
+     * @param conn Connection.
+     * @param tbls Tables (must be single element).
      * @param sql Sql query.
      * @param params Parameters.   @return Result.
      * @throws IgniteCheckedException If failed.
@@ -1008,12 +1008,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 
     /**
-     * @param cctx
-     * @param gridStmt
-     * @param desc
-     * @param params
-     * @return
-     * @throws IgniteCheckedException
+     * @param cctx Cache context.
+     * @param gridStmt Grid SQL statement.
+     * @param desc Table descriptor.
+     * @param params Query params.
+     * @return Number of items affected.
+     * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, TableDescriptor desc, Object[] params)
@@ -1762,7 +1762,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Gets table descriptor by type and space names.
+     * Gets table descriptor by its native identifier and schema name.
      *
      * @param h2TblId H2 table identifier.
      * @param schema Schema name.
