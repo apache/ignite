@@ -588,7 +588,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         if (workDir != null) {
             if (!path.startsWith(workDir))
-                throw new IgfsException("Path [" + f +"] is not located in the workDir [" + workDir + ']');
+                throw new IgfsException("Path is not located in the work directory [workDir=" + workDir +
+                    "path=" + path + ']');
 
             path = path.substring(workDir.length(), path.length());
         }
