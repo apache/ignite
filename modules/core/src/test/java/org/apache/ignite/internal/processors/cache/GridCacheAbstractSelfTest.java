@@ -17,21 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -51,11 +39,6 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.resources.CacheNameResource;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.resources.ServiceResource;
-import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -63,6 +46,16 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -148,7 +141,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
                     assertTrue(
                         "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                        + ", local entries " + entrySet(jcache(fi).localEntries()),
+                            + ", local entries " + entrySet(jcache(fi).localEntries()),
                         GridTestUtils.waitForCondition(
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
@@ -424,20 +417,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilter =
         new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return entry.getKey().contains("key");
-        }
-    };
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                return entry.getKey().contains("key");
+            }
+        };
 
     /**
      * Filters cache entry projections leaving only ones with keys not containing 'key'.
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilterInv =
         new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return !entry.getKey().contains("key");
-        }
-    };
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                return !entry.getKey().contains("key");
+            }
+        };
 
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
@@ -541,7 +534,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             return sum;
         }
     }
-
 
     /** */
     protected enum ResourceType {
@@ -647,8 +639,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static abstract class ResourceInjectionEntryProcessorBase<K,V>
-        implements EntryProcessor<K,V,Integer>, Serializable {
+    protected static abstract class ResourceInjectionEntryProcessorBase<K, V>
+        implements EntryProcessor<K, V, Integer>, Serializable {
         /** */
         protected transient ResourceInfoSet infoSet;
 

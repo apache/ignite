@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -40,20 +35,14 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.resources.CacheNameResource;
-import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.resources.LoadBalancerResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.resources.ServiceResource;
-import org.apache.ignite.resources.SpringApplicationContextResource;
-import org.apache.ignite.resources.SpringResource;
-import org.apache.ignite.resources.TaskContinuousMapperResource;
-import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.spi.IgniteSpi;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collection;
 
 /**
  * Processor for all Ignite and task/job resources.
@@ -106,7 +95,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
-                            springCtxInjector;
+            springCtxInjector;
     }
 
     /** {@inheritDoc} */
@@ -244,8 +233,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to inject.
      */
     public void inject(Object obj, GridResourceIoc.AnnotationSet annSet, Object... params)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert obj != null;
 
         if (log.isDebugEnabled())
@@ -263,8 +251,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     private void inject(Object obj, GridResourceIoc.AnnotationSet annSet, @Nullable GridDeployment dep,
         @Nullable Class<?> depCls, Object... params)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
 
         assert clsDesc != null;
@@ -290,8 +277,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void cleanup(Object obj, GridResourceIoc.AnnotationSet annSet)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert obj != null;
 
         if (log.isDebugEnabled())
@@ -343,8 +329,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     private boolean inject(Object obj, GridResourceIoc.ResourceAnnotation ann, @Nullable GridDeployment dep,
         @Nullable Class<?> depCls, Object param)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
 
         assert clsDesc != null;
@@ -423,8 +408,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void inject(GridDeployment dep, ComputeTask<?, ?> task, GridTaskSessionImpl ses,
-        ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws IgniteCheckedException
-    {
+        ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + task);
 
@@ -451,8 +435,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      *
      * @param dep Class deployment.
      * @param target Object to check.
-     * @param annSet Annotations to find.
-     * * @return {@code true} if any annotation is presented, {@code false} if it's not.
+     * @param annSet Annotations to find. * @return {@code true} if any annotation is presented, {@code false} if it's
+     * not.
      */
     public boolean isAnnotationsPresent(GridDeployment dep, Object target, GridResourceIoc.AnnotationSet annSet) {
         return ioc.isAnnotationsPresent(dep, target, annSet);

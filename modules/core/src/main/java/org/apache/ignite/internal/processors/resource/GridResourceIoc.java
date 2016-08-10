@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
@@ -49,6 +38,17 @@ import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Resource container contains caches for classes used for injection.
@@ -107,8 +107,8 @@ public class GridResourceIoc {
      * @param injector Resource to inject.
      * @param dep Deployment.
      * @param depCls Deployment class.
-     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      * @return {@code True} if resource was injected.
+     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
     @SuppressWarnings("SimplifiableIfStatement")
     boolean inject(Object target,
@@ -116,8 +116,7 @@ public class GridResourceIoc {
         GridResourceInjector injector,
         @Nullable GridDeployment dep,
         @Nullable Class<?> depCls)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         return injectInternal(target, annCls, injector, dep, depCls, null);
     }
 
@@ -174,8 +173,8 @@ public class GridResourceIoc {
      * @param dep Deployment.
      * @param depCls Deployment class.
      * @param checkedObjs Set of already inspected objects to avoid indefinite recursion.
-     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      * @return {@code True} if resource was injected.
+     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
     private boolean injectInternal(Object target,
         Class<? extends Annotation> annCls,
@@ -183,8 +182,7 @@ public class GridResourceIoc {
         @Nullable GridDeployment dep,
         @Nullable Class<?> depCls,
         @Nullable Set<Object> checkedObjs)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         Class<?> targetCls = target.getClass();
 
         ClassDescriptor descr = descriptor(dep, targetCls);
@@ -216,8 +214,7 @@ public class GridResourceIoc {
      *
      * @param target Target object.
      * @param annSet Annotation classes to find on fields or methods of target object.
-     * @param dep Deployment.
-     * * @return {@code true} if any annotation is presented, {@code false} if it's not.
+     * @param dep Deployment. * @return {@code true} if any annotation is presented, {@code false} if it's not.
      */
     boolean isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
         assert target != null;
@@ -248,7 +245,7 @@ public class GridResourceIoc {
         X.println(">>>   taskMapSize: " + taskMap.size());
 
         Map<Class<?>, ClassDescriptor> map = clsDescs.get();
-        X.println(">>>   classDescriptorsCacheSize: " + (map == null ? 0 : map.size()) );
+        X.println(">>>   classDescriptorsCacheSize: " + (map == null ? 0 : map.size()));
     }
 
     /**
@@ -267,12 +264,10 @@ public class GridResourceIoc {
         /** */
         private final T2<GridResourceField[], GridResourceMethod[]>[] annArr;
 
-
         /**
          * @param cls Class.
          */
-        @SuppressWarnings("unchecked")
-        ClassDescriptor(Class<?> cls) {
+        @SuppressWarnings("unchecked") ClassDescriptor(Class<?> cls) {
             Map<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> annMap
                 = new HashMap<>();
 
@@ -376,7 +371,8 @@ public class GridResourceIoc {
         /**
          * @return Fields.
          */
-        @Nullable public T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(Class<? extends Annotation> annCls) {
+        @Nullable public T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(
+            Class<? extends Annotation> annCls) {
             return annMap.get(annCls);
         }
 
@@ -386,11 +382,11 @@ public class GridResourceIoc {
          */
         int isAnnotated(AnnotationSet set) {
             return recursiveFields.length > 0 ? ~(-1 << set.annotations.length) :
-                    (containsAnnSets == null ? 0 : containsAnnSets[set.ordinal()]);
+                (containsAnnSets == null ? 0 : containsAnnSets[set.ordinal()]);
         }
 
         /**
-         * @param ann  Annotation.
+         * @param ann Annotation.
          * @return {@code True} if annotation is presented.
          */
         boolean isAnnotated(ResourceAnnotation ann) {
@@ -404,8 +400,8 @@ public class GridResourceIoc {
          * @param dep Deployment.
          * @param depCls Deployment class.
          * @param checkedObjs Set of already inspected objects to avoid indefinite recursion.
-         * @throws IgniteCheckedException Thrown in case of any errors during injection.
          * @return {@code True} if resource was injected.
+         * @throws IgniteCheckedException Thrown in case of any errors during injection.
          */
         boolean injectInternal(Object target,
             Class<? extends Annotation> annCls,
@@ -414,8 +410,7 @@ public class GridResourceIoc {
             @Nullable GridDeployment dep,
             @Nullable Class<?> depCls,
             @Nullable Set<Object> checkedObjs)
-            throws IgniteCheckedException
-        {
+            throws IgniteCheckedException {
             if (recursiveFields.length == 0 && annotatedMembers == null)
                 return false;
 
@@ -436,7 +431,7 @@ public class GridResourceIoc {
 
                         ClassDescriptor desc = descriptor(dep, obj.getClass());
                         injected |= desc.injectInternal(obj, annCls, desc.annotatedMembers(annCls),
-                                                                    injector, dep, depCls, checkedObjs);
+                            injector, dep, depCls, checkedObjs);
                     }
                 }
                 catch (IllegalAccessException e) {
@@ -466,18 +461,17 @@ public class GridResourceIoc {
          * @param target Target object.
          * @param ann Setter annotation.
          * @param injector Resource to inject.
-         * @throws IgniteCheckedException Thrown in case of any errors during injection.
          * @return {@code True} if resource was injected.
+         * @throws IgniteCheckedException Thrown in case of any errors during injection.
          */
         public boolean inject(Object target,
             ResourceAnnotation ann,
             GridResourceInjector injector,
             @Nullable GridDeployment dep,
             @Nullable Class<?> depCls)
-            throws IgniteCheckedException
-        {
+            throws IgniteCheckedException {
             return injectInternal(target, ann.clazz, annArr == null ? null : annArr[ann.ordinal()],
-                                                                            injector, dep, depCls, null);
+                injector, dep, depCls, null);
         }
     }
 
