@@ -17,8 +17,20 @@
 
 package org.apache.ignite.hadoop.fs;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -46,19 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Secondary file system which delegates to local file system.
@@ -430,76 +429,32 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
-        final java.nio.file.Path fsPath = fileForPath(path).toPath();
+        File f = fileForPath(path);
 
-        if (!Files.exists(fsPath))
+        if (!f.exists())
             return  null;
 
-        final Map<String, String> props = properties(fsPath);
+        java.nio.file.Path localPath = f.toPath();
 
-        return new IgfsFile() {
-            @Override public IgfsPath path() {
-                return path;
-            }
+        long modificationTime = -1;
+        try {
+            modificationTime = Files.getLastModifiedTime(localPath).toMillis();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed to get modification time [path=" + path + ']', e);
+        }
 
-            @Override public boolean isFile() {
-                return Files.isRegularFile(fsPath);
-            }
+        long length = -1;
+        try {
+            length = Files.size(localPath);
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed to get file length [path=" + path + ']', e);
+        }
 
-            @Override public boolean isDirectory() {
-                return Files.isDirectory(fsPath);
-            }
-
-            @Override public int blockSize() {
-                return isDirectory() ? 0 : blockSizeFS(fsPath);
-            }
-
-            @Override public long groupBlockSize() {
-                return blockSizeFS(fsPath);
-            }
-
-            @Override public long accessTime() {
-                return 0;
-            }
-
-            @Override public long modificationTime() {
-                try {
-                    return Files.getLastModifiedTime(fsPath).toMillis();
-                }
-                catch (IOException e) {
-                    throw handleSecondaryFsError(e, "Failed to get modification time [path=" + path + ']');
-                }
-            }
-
-            @Override public String property(String name) throws IllegalArgumentException {
-                String val = props.get(name);
-
-                if (val ==  null)
-                    throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
-
-                return val;
-            }
-
-            @Nullable @Override public String property(String name, @Nullable String dfltVal) {
-                String val = props.get(name);
-
-                return val == null ? dfltVal : val;
-            }
-
-            @Override public long length() {
-                try {
-                    return Files.size(fsPath);
-                }
-                catch (IOException e) {
-                    throw handleSecondaryFsError(e, "Failed to get file length [path=" + path + ']');
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, String> properties() {
-                return props;
-            }
-        };
+        boolean isDir = Files.isDirectory(localPath);
+        return new LocalFileSystemIgfsFile(path, Files.isRegularFile(localPath), isDir,
+            isDir ? 0 : blockSizeFS(localPath), modificationTime, length, Collections.<String, String>emptyMap());
     }
 
     /** {@inheritDoc} */
@@ -633,18 +588,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /**
-     * Get available IGFS properties from FS.
-     *
-     * @param path Path.
-     * @return IGFS attributes.
-     */
-    private static Map<String, String> properties(java.nio.file.Path path) {
-        HashMap<String, String> res = new HashMap<>(3);
-
-        return res;
-    }
-
-    /**
      * Get block size for path.
      *
      * @param path Path.
@@ -652,7 +595,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      */
     private static int blockSizeFS(java.nio.file.Path path) {
         // TODO: IGNITE-3664
-        return DFLT_BUF_SIZE;
+        return 8 * 1024;
     }
-
 }
