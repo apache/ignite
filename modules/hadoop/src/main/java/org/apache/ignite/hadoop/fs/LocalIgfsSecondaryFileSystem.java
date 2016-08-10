@@ -411,16 +411,19 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         // TODO: IGNITE-3648.
-        // TODO: IGNITE-3649.
         try {
             File file = fileForPath(path);
 
             boolean exists = file.exists();
 
-            if (!exists)
-                throw new IOException("File not found.");
-
-            return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+            if (exists)
+                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+            else {
+                if (create)
+                    return create0(path, false, bufSize);
+                else
+                    throw new IOException("File not found: " + path);
+            }
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ']');
