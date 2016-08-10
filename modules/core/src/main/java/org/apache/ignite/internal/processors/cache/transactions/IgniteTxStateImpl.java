@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -322,7 +323,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean init(int txSize) {
         if (txMap == null) {
-            txMap = new ConcurrentLinkedHashMap<>(txSize > 0 ? txSize : 16);
+            txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
 
             readView = new IgniteTxMap(txMap, CU.reads());
             writeView = new IgniteTxMap(txMap, CU.writes());
@@ -341,6 +342,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
         return txMap == null ? Collections.<IgniteTxEntry>emptySet() : txMap.values();
+    }
+
+    /**
+     * @return All entries. Returned collection is copy of internal collection.
+     */
+    public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
+        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new HashSet<>(txMap.values());
     }
 
     /** {@inheritDoc} */
@@ -389,7 +397,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEntry(IgniteTxEntry entry) {
+    @Override public synchronized void addEntry(IgniteTxEntry entry) {
         txMap.put(entry.txKey(), entry);
     }
 
