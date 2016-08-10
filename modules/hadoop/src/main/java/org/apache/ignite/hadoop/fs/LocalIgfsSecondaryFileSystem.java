@@ -197,16 +197,16 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
+        File srcFile = fileForPath(src);
+        File destFile = fileForPath(dest);
+
+        if (!srcFile.exists())
+            throw new IgfsPathNotFoundException("Failed rename. Source path not found: " + srcFile);
+
+        if (srcFile.isDirectory() && destFile.isFile())
+            throw new IgfsPathNotFoundException("Failed rename directory to existing file: [src=" + src + ", dest=" + dest + ']');
+
         try {
-            File srcFile = fileForPath(src);
-            File destFile = fileForPath(dest);
-
-            if (!srcFile.exists())
-                throw new IOException("File not found: " + srcFile);
-
-            if (srcFile.isDirectory() && destFile.isFile())
-                throw new IOException("Failed rename directory to existing file: [src=" + src + ", dest=" + dest + ']');
-
             if (destFile.isDirectory())
                 Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
             else if(!srcFile.renameTo(destFile))
@@ -221,28 +221,22 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public boolean delete(IgfsPath path, boolean recursive) {
-        try {
-            File f = fileForPath(path);
+        File f = fileForPath(path);
 
-            // TODO: IGNITE-3642.
-            if (!recursive || !f.isDirectory())
-                return f.delete();
-            else
-                return deleteDirectory(f);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
-        }
+        // TODO: IGNITE-3642.
+        if (!recursive || !f.isDirectory())
+            return f.delete();
+        else
+            return deleteDirectory(f);
     }
 
     /**
      * Delete directory recursively.
      *
      * @param dir Directory.
-     * @throws IOException If fails.
      * @return {@code true} if successful.
      */
-    private boolean deleteDirectory(File dir) throws IOException {
+    private boolean deleteDirectory(File dir) {
         File[] entries = dir.listFiles();
 
         if (entries != null) {
@@ -251,7 +245,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                     deleteDirectory(entry);
                 else if (entry.isFile()) {
                     if (!entry.delete())
-                        throw new IOException("Cannot remove file: " + entry);
+                        return false;
                 }
                 else
                     // TODO: IGNITE-3642.
@@ -260,7 +254,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
 
         if (!dir.delete())
-            throw new IOException("Cannot remove directory: " + dir);
+            return false;
 
         return true;
     }
@@ -405,22 +399,23 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         // TODO: IGNITE-3648.
-        try {
-            File file = fileForPath(path);
+        File file = fileForPath(path);
 
-            boolean exists = file.exists();
+        boolean exists = file.exists();
 
-            if (exists)
+        if (exists) {
+            try {
                 return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
-            else {
-                if (create)
-                    return create0(path, false, bufSize);
-                else
-                    throw new IOException("File not found: " + path);
+            }
+            catch (FileNotFoundException e) {
+                throw new IgfsPathNotFoundException("Failed append. File not found [path=" + path + ']', e);
             }
         }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ']');
+        else {
+            if (create)
+                return create0(path, false, bufSize);
+            else
+                throw new IgfsPathNotFoundException("Failed append. File not found [path=" + path + ']');
         }
     }
 
@@ -605,26 +600,28 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @return Output stream.
      */
     private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+        File file = fileForPath(path);
+
+        boolean exists = file.exists();
+
+        if (exists) {
+            if (!overwrite)
+                throw new IgfsException("Failed create. File already exists [path=" + path +']');
+        }
+        else {
+            File parent = file.getParentFile();
+
+            if (!mkdirs0(parent))
+                throw new IgfsException("Failed create. Cannot to create parent directory [path=" + path + ", parent=" +
+                    parent +']');
+        }
+
         try {
-            File file = fileForPath(path);
-
-            boolean exists = file.exists();
-
-            if (exists) {
-                if (!overwrite)
-                    throw new IOException("File already exists.");
-            }
-            else {
-                File parent = file.getParentFile();
-
-                if (!mkdirs0(parent))
-                    throw new IOException("Failed to create parent directory: " + parent);
-            }
-
             return new BufferedOutputStream(new FileOutputStream(file), bufSize);
         }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
+        catch (FileNotFoundException e) {
+            throw new IgfsPathNotFoundException("Failed to create file [path=" + path +
+                ", overwrite=" + overwrite + ']', e);
         }
     }
 }
