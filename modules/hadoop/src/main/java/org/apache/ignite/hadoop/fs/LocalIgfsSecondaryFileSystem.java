@@ -518,6 +518,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         if (fsFactory instanceof LifecycleAware)
             ((LifecycleAware) fsFactory).start();
+
+        workDir = new File(workDir).getAbsolutePath();
+
+        assert !workDir.endsWith("/") : workDir;
     }
 
     /** {@inheritDoc} */
@@ -572,8 +576,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     private File fileForPath(IgfsPath path) {
         if (workDir == null)
             return new File(path.toString());
-        else
-            return new File(workDir, path.toString());
+        else {
+            if ("/".equals(path.toString()))
+                return new File(workDir);
+            else
+                return new File(workDir, path.toString());
+        }
     }
 
     /**
@@ -592,13 +600,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                     "path=" + path + ']');
 
             path = path.substring(workDir.length(), path.length());
+
+            assert !path.startsWith("/") : "Path is not located in the work directory [workDir=" + workDir +
+                "path=" + f + ']';
         }
-
-        if (path.startsWith("//"))
-            path = path.substring(1, path.length());
-
-        if (path.charAt(0) != '/')
-            path = '/' + path;
 
         return new IgfsPath(path);
     }
