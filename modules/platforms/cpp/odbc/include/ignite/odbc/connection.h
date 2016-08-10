@@ -41,15 +41,6 @@ namespace ignite
         {
             friend class Environment;
         public:
-            /** ODBC communication protocol version. */
-            enum { PROTOCOL_VERSION = 1 };
-
-            /**
-             * Apache Ignite version when the current ODBC communication
-             * protocol version has been introduced.
-             */
-            static const std::string PROTOCOL_VERSION_SINCE;
-
             /**
              * Destructor.
              */
@@ -261,6 +252,13 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult MakeRequestHandshake();
+
+            /**
+             * Perform configure request.
+             *
+             * @return Operation result.
+             */
+            SqlResult MakeRequestConfigure();
 
             /**
              * Constructor.

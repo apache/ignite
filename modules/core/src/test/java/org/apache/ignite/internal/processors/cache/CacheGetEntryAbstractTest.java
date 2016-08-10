@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -52,6 +53,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Test getEntry and getEntries methods.
@@ -247,11 +249,46 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
                 testConcurrentTx(cache, PESSIMISTIC, REPEATABLE_READ, oneEntry);
                 testConcurrentTx(cache, PESSIMISTIC, READ_COMMITTED, oneEntry);
+
+                testConcurrentOptimisticTxGet(cache, REPEATABLE_READ);
+                testConcurrentOptimisticTxGet(cache, READ_COMMITTED);
+                testConcurrentOptimisticTxGet(cache, SERIALIZABLE);
             }
         }
         finally {
             cache.destroy();
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param txIsolation Transaction isolation.
+     * @throws Exception If failed.
+     */
+    private void testConcurrentOptimisticTxGet(final IgniteCache<Integer, TestValue> cache,
+        final TransactionIsolation txIsolation) throws Exception {
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                final int key = 42;
+
+                IgniteTransactions txs = grid(0).transactions();
+
+                cache.put(key, new TestValue(key));
+
+                long stopTime = System.currentTimeMillis() + 3000;
+
+                while (System.currentTimeMillis() < stopTime) {
+                    try (Transaction tx = txs.txStart(OPTIMISTIC, txIsolation)) {
+                        cache.get(key);
+
+                        tx.commit();
+                    }
+                    catch (TransactionOptimisticException e) {
+                        fail("Should not throw optimistic exception in only read TX. Tx isolation: " + txIsolation);
+                    }
+                }
+            }
+        }, 10, "tx-thread");
     }
 
     /**

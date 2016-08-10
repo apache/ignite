@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,118 +17,20 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Tests report builder
+# -----------------------------------------------------------------------------------------------
+# Script is used to analyze load tests logs collected from all 'Tests' cluster nodes and build
+# summary report
+# -----------------------------------------------------------------------------------------------
+
 #profile=/home/ignite/.bash_profile
 profile=/root/.bash_profile
 
 . $profile
+. /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "test"
 
-validate()
-{
-    if [ -z "$TESTS_TYPE" ]; then
-        terminate "Tests type 'ignite' or 'cassandra' should be specified"
-    fi
-
-    if [ "$TESTS_TYPE" != "ignite" ] && [ "$TESTS_TYPE" != "cassandra" ]; then
-        terminate "Incorrect tests type specified: $TESTS_TYPE"
-    fi
-
-    if [ -z "$S3_TESTS_SUCCESS_URL" ]; then
-        terminate "Tests success URL doesn't specified"
-    fi
-
-    if [[ "$S3_TESTS_SUCCESS_URL" != */ ]]; then
-        S3_TESTS_SUCCESS_URL=${S3_TESTS_SUCCESS_URL}/
-    fi
-
-    if [ -z "$S3_TESTS_FAILURE_URL" ]; then
-        terminate "Tests failure URL doesn't specified"
-    fi
-
-    if [[ "$S3_TESTS_FAILURE_URL" != */ ]]; then
-        S3_TESTS_FAILURE_URL=${S3_TESTS_FAILURE_URL}/
-    fi
-
-    if [ -z "$S3_TESTS_RUNNING_URL" ]; then
-        terminate "Tests running URL doesn't specified"
-    fi
-
-    if [[ "$S3_TESTS_RUNNING_URL" != */ ]]; then
-        S3_TESTS_RUNNING_URL=${S3_TESTS_RUNNING_URL}/
-    fi
-
-    if [ -z "$S3_TESTS_WAITING_URL" ]; then
-        terminate "Tests waiting URL doesn't specified"
-    fi
-
-    if [[ "$S3_TESTS_WAITING_URL" != */ ]]; then
-        S3_TESTS_WAITING_URL=${S3_TESTS_WAITING_URL}/
-    fi
-
-    if [ -z "$S3_IGNITE_SUCCESS_URL" ]; then
-        terminate "Ignite success URL doesn't specified"
-    fi
-
-    if [[ "$S3_IGNITE_SUCCESS_URL" != */ ]]; then
-        S3_IGNITE_SUCCESS_URL=${S3_IGNITE_SUCCESS_URL}/
-    fi
-
-    if [ -z "$S3_IGNITE_FAILURE_URL" ]; then
-        terminate "Ignite failure URL doesn't specified"
-    fi
-
-    if [[ "$S3_IGNITE_FAILURE_URL" != */ ]]; then
-        S3_IGNITE_FAILURE_URL=${S3_IGNITE_FAILURE_URL}/
-    fi
-
-    if [ -z "$S3_CASSANDRA_SUCCESS_URL" ]; then
-        terminate "Cassandra success URL doesn't specified"
-    fi
-
-    if [[ "$S3_CASSANDRA_SUCCESS_URL" != */ ]]; then
-        S3_CASSANDRA_SUCCESS_URL=${S3_CASSANDRA_SUCCESS_URL}/
-    fi
-
-    if [ -z "$S3_CASSANDRA_FAILURE_URL" ]; then
-        terminate "Cassandra failure URL doesn't specified"
-    fi
-
-    if [[ "$S3_CASSANDRA_FAILURE_URL" != */ ]]; then
-        S3_CASSANDRA_FAILURE_URL=${S3_CASSANDRA_FAILURE_URL}/
-    fi
-
-    if [ -z "$S3_TEST_NODES_DISCOVERY_URL" ]; then
-        terminate "Tests S3 discovery URL doesn't specified"
-    fi
-
-    if [[ "$S3_TEST_NODES_DISCOVERY_URL" != */ ]]; then
-        S3_TEST_NODES_DISCOVERY_URL=${S3_TEST_NODES_DISCOVERY_URL}/
-    fi
-
-    if [ -z "$S3_CASSANDRA_NODES_DISCOVERY_URL" ]; then
-        terminate "Cassandra S3 discovery URL doesn't specified"
-    fi
-
-    if [[ "$S3_CASSANDRA_NODES_DISCOVERY_URL" != */ ]]; then
-        S3_CASSANDRA_NODES_DISCOVERY_URL=${S3_CASSANDRA_NODES_DISCOVERY_URL}/
-    fi
-
-    if [ -z "$S3_IGNITE_NODES_DISCOVERY_URL" ]; then
-        terminate "Ignite S3 discovery URL doesn't specified"
-    fi
-
-    if [[ "$S3_CASSANDRA_NODES_DISCOVERY_URL" != */ ]]; then
-        S3_CASSANDRA_NODES_DISCOVERY_URL=${S3_CASSANDRA_NODES_DISCOVERY_URL}/
-    fi
-
-    if [ -z "$S3_IGNITE_NODES_DISCOVERY_URL" ]; then
-        terminate "Ignite S3 discovery URL doesn't specified"
-    fi
-
-    if [[ "$S3_IGNITE_NODES_DISCOVERY_URL" != */ ]]; then
-        S3_IGNITE_NODES_DISCOVERY_URL=${S3_IGNITE_NODES_DISCOVERY_URL}/
-    fi
-}
-
+# Building tests summary report
 reportTestsSummary()
 {
     echo "[INFO] Preparing tests results summary"
@@ -145,8 +47,8 @@ reportTestsSummary()
     mkdir -p $SUCCEED_NODES_DIR
     mkdir -p $FAILED_NODES_DIR
 
-    aws s3 ls $S3_TESTS_SUCCESS_URL | sed -r "s/PRE //g" | sed -r "s/ //g" | sed -r "s/\///g" > $SUCCEED_NODES_FILE
-    aws s3 ls $S3_TESTS_FAILURE_URL | sed -r "s/PRE //g" | sed -r "s/ //g" | sed -r "s/\///g" > $FAILED_NODES_FILE
+    aws s3 ls $S3_TESTS_SUCCESS | sed -r "s/PRE //g" | sed -r "s/ //g" | sed -r "s/\///g" > $SUCCEED_NODES_FILE
+    aws s3 ls $S3_TESTS_FAILURE | sed -r "s/PRE //g" | sed -r "s/ //g" | sed -r "s/\///g" > $FAILED_NODES_FILE
 
     succeedCount=$(cat $SUCCEED_NODES_FILE | wc -l)
     failedCount=$(cat $FAILED_NODES_FILE | wc -l)
@@ -164,7 +66,7 @@ reportTestsSummary()
         cat $SUCCEED_NODES_FILE >> $REPORT_FILE
         echo "----------------------------------------------------------------------------------------------" >> $REPORT_FILE
 
-        aws s3 sync --delete $S3_TESTS_SUCCESS_URL $SUCCEED_NODES_DIR
+        aws s3 sync --delete $S3_TESTS_SUCCESS $SUCCEED_NODES_DIR
         if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to get succeed tests details"
         else
@@ -178,7 +80,7 @@ reportTestsSummary()
         cat $FAILED_NODES_FILE >> $REPORT_FILE
         echo "----------------------------------------------------------------------------------------------" >> $REPORT_FILE
 
-        aws sync --delete $S3_TESTS_FAILURE_URL $FAILED_NODES_DIR
+        aws sync --delete $S3_TESTS_FAILURE $FAILED_NODES_DIR
         if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to get failed tests details"
         else
@@ -204,34 +106,35 @@ reportTestsSummary()
         return 1
     fi
 
-    aws s3 cp --sse AES256 $HOME/tests-summary.zip $S3_TESTS_SUMMARY_URL
+    aws s3 cp --sse AES256 $HOME/tests-summary.zip $S3_TESTS_SUMMARY
     if [ $? -ne 0 ]; then
         echo "-------------------------------------------------------------------------------------"
-        echo "[ERROR] Failed to uploat tests summary archive to: $S3_TESTS_SUMMARY_URL"
+        echo "[ERROR] Failed to uploat tests summary archive to: $S3_TESTS_SUMMARY"
         echo "-------------------------------------------------------------------------------------"
     else
         echo "-------------------------------------------------------------------------------------"
-        echo "[INFO] Tests results summary uploaded to: $S3_TESTS_SUMMARY_URL"
+        echo "[INFO] Tests results summary uploaded to: $S3_TESTS_SUMMARY"
         echo "-------------------------------------------------------------------------------------"
     fi
 
     rm -f $HOME/tests-summary.zip
 }
 
+# Creates report for succeed tests
 reportSucceedTestsStatistics()
 {
-    writeMsg=0
-    writeErrors=0
-    writeSpeed=0
-    blkWriteMsg=0
-    blkWriteErrors=0
-    blkWriteSpeed=0
-    readMsg=0
-    readErrors=0
-    readSpeed=0
-    blkReadMsg=0
-    blkReadErrors=0
-    blkReadSpeed=0
+    writeMsg="0"
+    writeErrors="0"
+    writeSpeed="0"
+    blkWriteMsg="0"
+    blkWriteErrors="0"
+    blkWriteSpeed="0"
+    readMsg="0"
+    readErrors="0"
+    readSpeed="0"
+    blkReadMsg="0"
+    blkReadErrors="0"
+    blkReadSpeed="0"
 
     writeErrNodes=
     blkWriteErrNodes=
@@ -271,7 +174,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^WRITE messages" | sed -r "s/WRITE messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            writeMsg=$(( $writeMsg+$cnt ))
+            writeMsg=$(bc <<< "$writeMsg + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] WRITE messages: $cnt"
             else
@@ -292,7 +195,7 @@ reportSucceedTestsStatistics()
         cnt=$(cat $logFile | grep "^WRITE errors" | sed -r "s/WRITE errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
             echo "[INFO] WRITE errors: $cnt"
-            writeErrors=$(( $writeErrors+$cnt ))
+            writeErrors=$(bc <<< "$writeErrors + $cnt")
             if [ $cnt -ne 0 ]; then
                 if [ -n "$writeErrNodes" ]; then
                     writeErrNodes="${writeErrNodes}, "
@@ -309,7 +212,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^WRITE speed" | sed -r "s/WRITE speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            writeSpeed=$(( $writeSpeed+$cnt ))
+            writeSpeed=$(bc <<< "$writeSpeed + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] WRITE speed: $cnt msg/sec"
             else
@@ -329,7 +232,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE messages" | sed -r "s/BULK_WRITE messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteMsg=$(( $blkWriteMsg+$cnt ))
+            blkWriteMsg=$(bc <<< "$blkWriteMsg + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_WRITE messages: $cnt"
             else
@@ -349,7 +252,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE errors" | sed -r "s/BULK_WRITE errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteErrors=$(( $blkWriteErrors+$cnt ))
+            blkWriteErrors=$(bc <<< "$blkWriteErrors + $cnt")
             echo "[INFO] BULK_WRITE errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$blkWriteErrNodes" ]; then
@@ -367,7 +270,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE speed" | sed -r "s/BULK_WRITE speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteSpeed=$(( $blkWriteSpeed+$cnt ))
+            blkWriteSpeed=$(bc <<< "$blkWriteSpeed + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_WRITE speed: $cnt msg/sec"
             else
@@ -387,7 +290,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ messages" | sed -r "s/READ messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            readMsg=$(( $readMsg+$cnt ))
+            readMsg=$(bc <<< "$readMsg + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] READ messages: $cnt"
             else
@@ -407,7 +310,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ errors" | sed -r "s/READ errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            readErrors=$(( $readErrors+$cnt ))
+            readErrors=$(bc <<< "$readErrors + $cnt")
             echo "[INFO] READ errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$readErrNodes" ]; then
@@ -425,7 +328,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ speed" | sed -r "s/READ speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            readSpeed=$(( $readSpeed+$cnt ))
+            readSpeed=$(bc <<< "$readSpeed + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] READ speed: $cnt msg/sec"
             else
@@ -445,7 +348,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ messages" | sed -r "s/BULK_READ messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadMsg=$(( $blkReadMsg+$cnt ))
+            blkReadMsg=$(bc <<< "$blkReadMsg + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_READ messages: $cnt"
             else
@@ -465,7 +368,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ errors" | sed -r "s/BULK_READ errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadErrors=$(( $blkReadErrors+$cnt ))
+            blkReadErrors=$(bc <<< "$blkReadErrors + $cnt")
             echo "[INFO] BULK_READ errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$blkReadErrNodes" ]; then
@@ -483,7 +386,7 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ speed" | sed -r "s/BULK_READ speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadSpeed=$(( $blkReadSpeed+$cnt ))
+            blkReadSpeed=$(bc <<< "$blkReadSpeed + $cnt")
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_READ speed: $cnt msg/sec"
             else
@@ -565,6 +468,7 @@ reportSucceedTestsStatistics()
     rm -f $tmpFile
 }
 
+# Creates report for failed tests
 reportFailedTestsDetailes()
 {
     for dir in $2/*
@@ -586,5 +490,10 @@ reportFailedTestsDetailes()
     done
 }
 
-validate
+#######################################################################################################
+
+if [ "$TESTS_TYPE" != "ignite" ] && [ "$TESTS_TYPE" != "cassandra" ]; then
+    terminate "Incorrect tests type specified: $TESTS_TYPE"
+fi
+
 reportTestsSummary

@@ -54,6 +54,12 @@ public class OdbcRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
+    /** Distributed joins flag. */
+    private boolean distributedJoins = false;
+
+    /** Enforce join order flag. */
+    private boolean enforceJoinOrder = false;
+
     /**
      * Constructor.
      *
@@ -115,16 +121,23 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        OdbcHandshakeResult res;
+        OdbcProtocolVersion version = req.version();
 
-        if (req.version() == OdbcMessageParser.PROTO_VER)
-            res = new OdbcHandshakeResult(true, null, null);
-        else {
+        if (version.isUnknown()) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+
+            return new OdbcResponse(res);
+        }
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
+
+        if (version.isDistributedJoinsSupported()) {
+            distributedJoins = req.distributedJoins();
+            enforceJoinOrder = req.enforceJoinOrder();
         }
 
         return new OdbcResponse(res);
@@ -150,6 +163,9 @@ public class OdbcRequestHandler {
             SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
 
             qry.setArgs(req.arguments());
+
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
 
             IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
