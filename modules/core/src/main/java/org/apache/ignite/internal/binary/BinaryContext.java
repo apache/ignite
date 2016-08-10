@@ -1252,6 +1252,17 @@ public class BinaryContext {
     }
 
     /**
+     * Unregister all binary schemas.
+     */
+    public void binarySchemesUnregister() {
+        if (schemas != null) {
+            synchronized (this) {
+                schemas = null;
+            }
+        }
+    }
+
+    /**
      * Returns instance of {@link OptimizedMarshaller}.
      *
      * @return Optimized marshaller.
