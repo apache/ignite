@@ -924,7 +924,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public IgfsInputStreamAdapter open(final IgfsPath path, final int bufSize,
         final int seqReadsBeforePrefetch) {
         A.notNull(path, "path");
-        A.ensure(bufSize >= 0, "bufSize >= 0");
+        A.ensure(bufSize >= 0 || bufSize == IgfsFile.UNKNOWN_BLOCK_SIZE, "bufSize >= 0");
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
         return safeOp(new Callable<IgfsInputStreamAdapter>() {

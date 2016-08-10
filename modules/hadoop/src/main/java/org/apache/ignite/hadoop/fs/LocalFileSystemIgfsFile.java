@@ -1,6 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.hadoop.fs;
 
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -10,12 +26,25 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of the IfgsFile interface for the local filesystem.
  */
 public class LocalFileSystemIgfsFile implements IgfsFile {
+    /** Path. */
     private final IgfsPath path;
+
+    /** Is file. */
     private final boolean isFile;
+
+    /** Is directory. */
     private final boolean isDirectory;
+
+    /** Block size. */
     private final int blockSize;
+
+    /** Modification time. */
     private final long modificationTime;
+
+    /** Length. */
     private final long length;
+
+    /** Properties. */
     private final Map<String, String> props;
 
     /**
@@ -29,6 +58,13 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
      */
     public LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDirectory, int blockSize,
         long modificationTime, long length, Map<String, String> props) {
+
+        if (isDirectory)
+            assert blockSize == 0 : "blockSize must be 0 for dirs. [blockSize=" + blockSize +']';
+
+        if (isDirectory)
+            assert length == 0 : "length must be 0 for dirs. [length=" + length +']';
+
         this.path = path;
         this.isFile = isFile;
         this.isDirectory = isDirectory;

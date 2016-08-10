@@ -28,7 +28,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.hadoop.fs.FileStatus;
@@ -215,12 +214,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             if (destFile.isDirectory())
                 Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
-            else if(!srcFile.renameTo(destFile))
+            else if (!srcFile.renameTo(destFile))
                 throw new IgfsException("Failed to rename (secondary file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest="+ dest + ']');
+            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest=" + dest + ']');
         }
     }
 
@@ -245,8 +244,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Delete directory recursively.
      *
      * @param dir Directory.
-     * @throws IOException If fails.
      * @return {@code true} if successful.
+     * @throws IOException If fails.
      */
     private boolean deleteDirectory(File dir) throws IOException {
         File[] entries = dir.listFiles();
@@ -407,6 +406,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         // TODO: IGNITE-3648.
         return create0(path, overwrite, bufSize);
     }
+
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
@@ -432,29 +432,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         File f = fileForPath(path);
 
         if (!f.exists())
-            return  null;
+            return null;
 
-        java.nio.file.Path localPath = f.toPath();
-
-        long modificationTime = -1;
-        try {
-            modificationTime = Files.getLastModifiedTime(localPath).toMillis();
-        }
-        catch (IOException e) {
-            throw new IgfsException("Failed to get modification time [path=" + path + ']', e);
-        }
-
-        long length = -1;
-        try {
-            length = Files.size(localPath);
-        }
-        catch (IOException e) {
-            throw new IgfsException("Failed to get file length [path=" + path + ']', e);
-        }
-
-        boolean isDir = Files.isDirectory(localPath);
-        return new LocalFileSystemIgfsFile(path, Files.isRegularFile(localPath), isDir,
-            isDir ? 0 : blockSizeFS(localPath), modificationTime, length, Collections.<String, String>emptyMap());
+        boolean isDir = f.isDirectory();
+        return new LocalFileSystemIgfsFile(path, f.isFile(), isDir,
+            isDir ? 0 : IgfsFile.UNKNOWN_BLOCK_SIZE, f.lastModified(),
+            isDir ? 0 : f.length(), null);
     }
 
     /** {@inheritDoc} */
@@ -472,6 +455,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /**
      * Gets the FileSystem for the current context user.
+     *
      * @return the FileSystem instance, never null.
      */
     private FileSystem fileSystemForUser() {
@@ -496,13 +480,13 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             fsFactory = new CachingHadoopFileSystemFactory();
 
         if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware) fsFactory).start();
+            ((LifecycleAware)fsFactory).start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         if (fsFactory instanceof LifecycleAware)
-             ((LifecycleAware)fsFactory).stop();
+            ((LifecycleAware)fsFactory).stop();
     }
 
     /**
@@ -585,16 +569,5 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
-    }
-
-    /**
-     * Get block size for path.
-     *
-     * @param path Path.
-     * @return IGFS attributes.
-     */
-    private static int blockSizeFS(java.nio.file.Path path) {
-        // TODO: IGNITE-3664
-        return 8 * 1024;
     }
 }

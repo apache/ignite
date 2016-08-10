@@ -66,6 +66,9 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
     /** Last modification time. */
     private long modificationTime;
 
+    /** The path is a file. */
+    private boolean isFile;
+
     /** Properties. */
     private Map<String, String> props;
 
@@ -81,6 +84,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
      * which is specified separately.
      *
      * @param igfsFile The file to copy.
+     * @param grpBlockSize Group block size.
      */
     public IgfsFileImpl(IgfsFile igfsFile, long grpBlockSize) {
         A.notNull(igfsFile, "igfsFile");
@@ -97,12 +101,15 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
 
         this.accessTime = igfsFile.accessTime();
         this.modificationTime = igfsFile.modificationTime();
+        this.isFile = igfsFile.isFile();
     }
 
     /**
      * Constructs directory info.
      *
      * @param path Path.
+     * @param info Entry info.
+     * @param globalGrpBlockSize Global group block size.
      */
     public IgfsFileImpl(IgfsPath path, IgfsEntryInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
@@ -112,6 +119,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         fileId = info.id();
 
         if (info.isFile()) {
+            isFile = true;
             blockSize = info.blockSize();
 
             assert blockSize > 0; // By contract file must have blockSize > 0, while directory's blockSize == 0.
@@ -145,7 +153,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
 
     /** {@inheritDoc} */
     @Override public boolean isFile() {
-        return blockSize > 0;
+        return isFile;
     }
 
     /** {@inheritDoc} */
@@ -214,6 +222,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         U.writeStringMap(out, props);
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
+        out.writeBoolean(isFile);
     }
 
     /**
@@ -232,6 +241,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         props = U.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
+        isFile = in.readBoolean();
     }
 
     /** {@inheritDoc} */
@@ -245,6 +255,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         IgfsUtils.writeProperties(rawWriter, props);
         rawWriter.writeLong(accessTime);
         rawWriter.writeLong(modificationTime);
+        rawWriter.writeBoolean(isFile);
     }
 
     /** {@inheritDoc} */
@@ -258,6 +269,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         props = IgfsUtils.readProperties(rawReader);
         accessTime = rawReader.readLong();
         modificationTime = rawReader.readLong();
+        isFile = rawReader.readBoolean();
     }
 
     /** {@inheritDoc} */

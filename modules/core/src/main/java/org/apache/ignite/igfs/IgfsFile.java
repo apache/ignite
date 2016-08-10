@@ -31,6 +31,10 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  */
 public interface IgfsFile {
+
+    /** Unknown block size. */
+    public int UNKNOWN_BLOCK_SIZE = -1;
+
     /**
      * Gets path to file.
      *
