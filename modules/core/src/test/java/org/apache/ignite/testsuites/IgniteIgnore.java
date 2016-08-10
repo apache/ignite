@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
+package org.apache.ignite.testsuites;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Affinity mapped task.
+ * Annotation which indicates that the test is ignored.
  */
-public interface AffinityTask {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface IgniteIgnore {
     /**
-     * @return Affinity key.
+     * The optional reason why the test is ignored.
      */
-    @Deprecated
-    @Nullable public Object affinityKey();
-
-    /**
-     * @return Partition.
-     */
-    public int partition();
-
-    /**
-     * @return Affinity cache name.
-     */
-    @Nullable public Collection<String> affinityCacheNames();
-
-    /**
-     * @return Affinity topology version.
-     */
-    @Nullable public AffinityTopologyVersion topologyVersion();
+    String value() default "";
 }
