@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -38,6 +39,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -618,8 +620,14 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * Transform closure.
      */
     private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
+        /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            assert ignite != null;
+
             e.setValue(e.getValue() + 1);
 
             return null;

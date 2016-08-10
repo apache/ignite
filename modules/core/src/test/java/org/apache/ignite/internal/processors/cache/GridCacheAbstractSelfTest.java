@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -42,6 +51,11 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -525,6 +539,128 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer reduce() {
             return sum;
+        }
+    }
+
+
+    /** */
+    protected enum ResourceType {
+        /** */
+        IGNITE_INSTANCE,
+
+        /** */
+        CACHE_NAME,
+
+        /** */
+        SPRING_APPLICATION_CONTEXT,
+
+        /** */
+        LOGGER,
+
+        /** */
+        SERVICE,
+
+        /** */
+        SPRING_BEAN,
+
+    }
+
+    /**
+     *
+     */
+    protected static class ResourceInfoSet {
+        /** */
+        int val;
+
+        /** */
+        public ResourceInfoSet() {
+            this(0);
+        }
+
+        /** */
+        public ResourceInfoSet(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @param val Value.
+         */
+        public static ResourceInfoSet valueOf(int val) {
+            return new ResourceInfoSet(val);
+        }
+
+        /** */
+        public int getValue() {
+            return val;
+        }
+
+        /**
+         * @param type Type.
+         * @param injected Injected.
+         */
+        public ResourceInfoSet set(ResourceType type, boolean injected) {
+            int mask = 1 << type.ordinal();
+
+            if (injected)
+                val |= mask;
+            else
+                val &= ~mask;
+
+            return this;
+        }
+
+        /**
+         * @see {@link #set(ResourceType, boolean)}
+         */
+        public ResourceInfoSet set(ResourceType type, Object toCheck) {
+            return set(type, toCheck != null);
+        }
+
+        /**
+         * @return collection of not injected resources
+         */
+        public Collection<ResourceType> notInjected(Collection<ResourceType> exp) {
+            ArrayList<ResourceType> res = null;
+
+            for (ResourceType type : exp) {
+                int mask = 1 << type.ordinal();
+
+                if ((this.val & mask) == 0) {
+                    if (res == null)
+                        res = new ArrayList<>();
+
+                    res.add(type);
+                }
+            }
+
+            return res == null ? Collections.<ResourceType>emptyList() : res;
+        }
+
+        /**
+         * @param type resource type.
+         */
+        public boolean isSet(ResourceType type) {
+            return (this.val & (1 << type.ordinal())) != 0;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static abstract class ResourceInjectionEntryProcessorBase<K,V>
+        implements EntryProcessor<K,V,Integer>, Serializable {
+        /** */
+        protected transient ResourceInfoSet infoSet;
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<K, V> e, Object... args) {
+            return infoSet == null ? null : infoSet.getValue();
+        }
+
+        /** */
+        protected void checkSet() {
+            if (infoSet == null)
+                infoSet = new ResourceInfoSet();
         }
     }
 
