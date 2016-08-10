@@ -478,7 +478,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
 
-            @Override public void nodeLeftTopology(UUID nodeId0) {
+            @Override public void onNodeLeft(UUID nodeId0) {
                 Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
                 if (backupQueue0 == null)

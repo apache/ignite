@@ -80,8 +80,8 @@ import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.QUERY_MSG_VER_2_SINCE;
 
@@ -156,7 +156,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     UUID nodeId = discoEvt.eventNode().id();
 
                     for (CacheContinuousQueryListener lsnr : lsnrs.values())
-                        lsnr.nodeLeftTopology(nodeId);
+                        lsnr.onNodeLeft(nodeId);
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);

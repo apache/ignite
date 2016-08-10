@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridCodegenConverter;
