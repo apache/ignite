@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteCheckedException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Reservations support.
+ * Annotation which indicates that the test is ignored.
  */
-public interface GridReservable {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface IgniteIgnore {
     /**
-     * Reserves.
-     *
-     * @return {@code true} If reserved successfully.
-     * @throws IgniteCheckedException If failed.
+     * The optional reason why the test is ignored.
      */
-    public boolean reserve() throws IgniteCheckedException;
-
-    /**
-     * Releases.
-     */
-    public void release();
+    String value() default "";
 }

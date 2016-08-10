@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.cache.spring;
 
-import org.apache.ignite.IgniteCheckedException;
+import java.lang.reflect.Method;
+import org.springframework.cache.interceptor.KeyGenerator;
 
 /**
- * Reservations support.
+ * Key generator.
  */
-public interface GridReservable {
-    /**
-     * Reserves.
-     *
-     * @return {@code true} If reserved successfully.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean reserve() throws IgniteCheckedException;
+public class GridSpringCacheTestKeyGenerator implements KeyGenerator {
+    /** {@inheritDoc} */
+    @Override public Object generate(Object target, Method mtd, Object... params) {
+        assert params != null;
+        assert params.length > 0;
 
-    /**
-     * Releases.
-     */
-    public void release();
+        if (params.length == 1)
+            return params[0];
+        else {
+            assert params.length == 2;
+
+            return new GridSpringCacheTestKey((Integer)params[0], (String)params[1]);
+        }
+    }
 }

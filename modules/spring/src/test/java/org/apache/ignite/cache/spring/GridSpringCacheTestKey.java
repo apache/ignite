@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
 
