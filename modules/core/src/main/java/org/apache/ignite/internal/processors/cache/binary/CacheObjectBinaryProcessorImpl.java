@@ -105,7 +105,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
 /**
  * Binary processor implementation.
@@ -150,12 +150,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private IgniteBinary binaries;
 
     /** Listener removes all registred binary schemas after the local client reconnected. */
-    private final GridLocalEventListener clientReconnectLsnr = new GridLocalEventListener() {
-        /**
-         * @param evt local grid event.
-         */
+    private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
-            binaryContext().binarySchemesUnregister();
+            binaryContext().unregisterBinarySchemas();
         }
     };
 
@@ -179,7 +176,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (ctx.clientNode())
-                ctx.event().addLocalEventListener(clientReconnectLsnr, EVT_CLIENT_NODE_RECONNECTED);
+                ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
@@ -267,10 +264,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.clientNode())
-            ctx.event().removeLocalEventListener(clientReconnectLsnr);
+            ctx.event().removeLocalEventListener(clientDisconLsnr);
     }
 
     /** {@inheritDoc} */
