@@ -2278,6 +2278,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         rdcQryExec.onDisconnected(reconnectFut);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isQuery(SqlFieldsQuery qry, String spaceName) throws IgniteCheckedException {
+        Connection conn = connectionForSpace(spaceName);
+
+        try {
+            JdbcPreparedStatement stmt = (JdbcPreparedStatement)prepareStatement(conn, qry.getSql(), true);
+
+            Prepared prep = GridSqlQueryParser.prepared(stmt);
+
+            return prep.isQuery();
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteCheckedException(e);
+        }
+    }
+
     /**
      * Key for cached two-step query.
      */

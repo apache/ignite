@@ -218,4 +218,12 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * Check if given {@link SqlFieldsQuery} corresponds to query or update operation.
+     * @param qry query to check.
+     * @return {@code true} if {@code qry} is a query, false if it's an update operation.
+     * @throws IgniteCheckedException if failed.
+     */
+    public boolean isQuery(SqlFieldsQuery qry, String spaceName) throws IgniteCheckedException;
 }

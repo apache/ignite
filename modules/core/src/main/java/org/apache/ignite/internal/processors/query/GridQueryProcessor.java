@@ -1696,39 +1696,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
-     * @param clo Closure.
-     * @param complete Complete.
+     * Check if given {@link SqlFieldsQuery} corresponds to query or update operation.
+     * @param qry query to check.
+     * @return {@code true} if {@code qry} is a query, false if it's an update operation.
+     * @throws IgniteCheckedException if failed.
      */
-    public int executeUpdate(GridCacheContext<?, ?> cctx, IgniteOutClosureX<Integer> clo, boolean complete)
-        throws IgniteCheckedException {
-        final long startTime = U.currentTimeMillis();
-
-        Throwable err = null;
-
-        Integer res = null;
-
-        try {
-            res = clo.apply();
-
-            return res;
-        }
-        catch (GridClosureException e) {
-            err = e.unwrap();
-
-            throw (IgniteCheckedException)err;
-        }
-        catch (Exception e) {
-            err = e;
-
-            throw new IgniteCheckedException(e);
-        }
-        finally {
-            cctx.queries().onExecuted(err != null);
-
-            if (complete && err == null)
-                onCompleted(cctx, res, null, startTime, U.currentTimeMillis() - startTime, log);
-        }
+    public boolean isQuery(GridCacheContext ctx, SqlFieldsQuery qry) throws IgniteCheckedException {
+        return idx.isQuery(qry, ctx.name());
     }
 
     /**

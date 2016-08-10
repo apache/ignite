@@ -694,7 +694,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
-                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                boolean isQry = ctx.kernalContext().query().isQuery(ctx, p);
+
+                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal() && isQry)
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
