@@ -90,9 +90,6 @@ public abstract class PageIO {
     public static final short T_METASTORE_LEAF = 12;
 
     /** */
-    public static final short T_CHECKPOINT_META = 14;
-
-    /** */
     private final int ver;
 
     /** */
