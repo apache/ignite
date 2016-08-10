@@ -478,19 +478,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
 
-            @Override public void onNodeLeft(UUID nodeId0) {
-                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
-
-                if (backupQueue0 == null)
-                    return;
-
-                if (nodeId.equals(nodeId0)) {
-                    backupQueue = null;
-
-                    backupQueue0.clear();
-                }
-            }
-
             @Override public void acknowledgeBackupOnTimeout(GridKernalContext ctx) {
                 sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
             }
@@ -1206,6 +1193,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     return e;
                 }
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNodeLeft() {
+        Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+        if (backupQueue0 != null) {
+            backupQueue = null;
+
+            backupQueue0.clear();
         }
     }
 

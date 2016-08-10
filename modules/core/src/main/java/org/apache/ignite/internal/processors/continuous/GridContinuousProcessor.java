@@ -175,8 +175,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     UUID routineId = e.getKey();
                     RemoteRoutineInfo info = e.getValue();
 
-                    if (info.autoUnsubscribe && nodeId.equals(info.nodeId))
-                        unregisterRemote(routineId);
+                    if (nodeId.equals(info.nodeId)) {
+                        if (info.autoUnsubscribe)
+                            unregisterRemote(routineId);
+
+                        if (info.hnd.isQuery())
+                            info.hnd.onNodeLeft();
+                    }
                 }
 
                 for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {

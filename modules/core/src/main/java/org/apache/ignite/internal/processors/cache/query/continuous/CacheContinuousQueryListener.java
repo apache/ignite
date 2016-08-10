@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
@@ -63,13 +62,6 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param topVer Topology version.
      */
     public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer);
-
-    /**
-     * Node left.
-     *
-     * @param nodeId Node id.
-     */
-    public void onNodeLeft(UUID nodeId);
 
     /**
      * @param ctx Context.
