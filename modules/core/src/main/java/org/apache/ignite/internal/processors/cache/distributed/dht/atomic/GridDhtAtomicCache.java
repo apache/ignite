@@ -1553,6 +1553,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
             try {
+                ctx.shared().wal().beginUpdate();
+
                 GridDhtPartitionTopology top = topology();
 
                 top.readLock();
@@ -2985,6 +2987,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.shared().database().checkpointReadLock();
 
         try {
+            ctx.shared().wal().beginUpdate();
+
             for (int i = 0; i < req.size(); i++) {
                 KeyCacheObject key = req.key(i);
 

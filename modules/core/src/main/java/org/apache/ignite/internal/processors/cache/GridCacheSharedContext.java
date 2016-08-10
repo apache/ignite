@@ -163,12 +163,18 @@ public class GridCacheSharedContext<K, V> {
 
     public AtomicLong fsyncStats = new AtomicLong();
 
+    public AtomicLong fsyncWaitStats = new AtomicLong();
+
     public AtomicLong realFsyncStats = new AtomicLong();
 
     public AtomicLong userCommitStats = new AtomicLong();
 
     public void onWalFsync(long duration) {
         updateDuration(duration, fsyncStats);
+    }
+
+    public void onFsyncWait(long duration) {
+        updateDuration(duration, fsyncWaitStats);
     }
 
     public void onFileFsync(long duration) {

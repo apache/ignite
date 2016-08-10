@@ -28,6 +28,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapter
     implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
+    @Override public void beginUpdate() {
+
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isAlwaysWriteFullPages() {
         return true;
     }

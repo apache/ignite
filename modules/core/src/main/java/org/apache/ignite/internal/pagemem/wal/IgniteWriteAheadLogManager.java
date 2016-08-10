@@ -26,6 +26,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
  *
  */
 public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
+    public void beginUpdate();
+
     /**
      * @return {@code true} If we have to always write full pages.
      */

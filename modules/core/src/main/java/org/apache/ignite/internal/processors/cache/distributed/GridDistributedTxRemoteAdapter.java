@@ -463,8 +463,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        if (!near() && cctx.wal() != null)
+                        if (!near() && cctx.wal() != null) {
+                            cctx.wal().beginUpdate();
                             ptr = cctx.wal().log(DataRecord.fromTransaction(this));
+                        }
 
                         batchStoreCommit(writeMap().values());
 

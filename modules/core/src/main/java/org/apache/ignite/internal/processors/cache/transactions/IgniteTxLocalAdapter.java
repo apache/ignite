@@ -659,8 +659,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null && !writeEntries().isEmpty())
+                if (cctx.wal() != null && !writeEntries().isEmpty()) {
+                    cctx.wal().beginUpdate();
                     ptr = cctx.wal().log(DataRecord.fromTransaction(this));
+                }
 
                 cctx.tm().txContext(this);
 
