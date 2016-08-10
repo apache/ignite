@@ -42,8 +42,6 @@ public class DataRecord extends WALRecord {
      * @return WAL data record.
      */
     public static DataRecord fromTransaction(IgniteInternalTx tx) {
-        DataRecord rec = new DataRecord();
-
         Collection<IgniteTxEntry> writes = tx.writeEntries();
 
         List<DataEntry> entries = new ArrayList<>(writes.size());
@@ -51,9 +49,7 @@ public class DataRecord extends WALRecord {
         for (IgniteTxEntry write : writes)
             entries.add(DataEntry.fromTxEntry(write, tx));
 
-        rec.writeEntries = entries;
-
-        return rec;
+        return new DataRecord(entries);
     }
 
     /**
