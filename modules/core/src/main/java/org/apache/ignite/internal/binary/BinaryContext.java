@@ -1255,11 +1255,7 @@ public class BinaryContext {
      * Unregister all binary schemas.
      */
     public void binarySchemesUnregister() {
-        if (schemas != null) {
-            synchronized (this) {
-                schemas = null;
-            }
-        }
+        schemas = null;
     }
 
     /**
