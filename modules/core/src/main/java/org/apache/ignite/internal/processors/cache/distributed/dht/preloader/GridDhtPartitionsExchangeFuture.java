@@ -481,6 +481,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             updateTopologies(crdNode);
 
+            if (!F.isEmpty(reqs)) {
+                boolean hasStop = false;
+
+                for (DynamicCacheChangeRequest req : reqs) {
+                    if (req.stop()) {
+                        hasStop = true;
+
+                        break;
+                    }
+                }
+
+                if (hasStop) {
+                    cctx.cache().context().database().beforeCachesStop();
+                }
+            }
+
             cctx.database().checkpointReadLock();
 
             IgniteInternalFuture backupInitFut = null;

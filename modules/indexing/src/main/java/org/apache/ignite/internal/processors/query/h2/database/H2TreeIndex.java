@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -185,7 +186,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
-        // No-op.
+        try {
+            tree.destroy();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

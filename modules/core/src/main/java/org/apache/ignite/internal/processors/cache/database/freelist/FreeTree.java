@@ -96,4 +96,19 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
 
         return row;
     }
+
+    /** {@inheritDoc} */
+    @Override public long destroy() throws IgniteCheckedException {
+        if (!markDestroyed())
+            return 0;
+
+        DestroyBag bag = new DestroyBag();
+
+        long pagesCnt = destroy(bag);
+
+        for (long pageId = bag.pollFreePage(); pageId != 0; pageId = bag.pollFreePage())
+            pageMem.freePage(getCacheId(), pageId);
+
+        return pagesCnt;
+    }
 }
