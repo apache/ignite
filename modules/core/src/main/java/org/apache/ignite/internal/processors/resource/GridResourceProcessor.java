@@ -197,7 +197,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         obj = unwrapTarget(obj);
 
-        inject(obj, GridResourceIoc.ResourceAnnotation.CACHE_NAME, null, null, null);
+        inject(obj, GridResourceIoc.ResourceAnnotation.CACHE_NAME, null, null, cacheName);
     }
 
     /**
@@ -394,7 +394,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private void injectToJob(GridDeployment dep, Class<?> taskCls, Object job, ComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws IgniteCheckedException {
 
-        inject(job, GridResourceIoc.AnnotationSet.TASK, dep, taskCls, ses, jobCtx);
+        inject(job, GridResourceIoc.AnnotationSet.JOB, dep, taskCls, ses, jobCtx);
     }
 
     /**
@@ -435,8 +435,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      *
      * @param dep Class deployment.
      * @param target Object to check.
-     * @param annSet Annotations to find. * @return {@code true} if any annotation is presented, {@code false} if it's
-     * not.
+     * @param annSet Annotations to find.
+     * @return {@code true} if any annotation is presented, {@code false} if it's not.
      */
     public boolean isAnnotationsPresent(GridDeployment dep, Object target, GridResourceIoc.AnnotationSet annSet) {
         return ioc.isAnnotationsPresent(dep, target, annSet);
