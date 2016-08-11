@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAndSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
@@ -78,6 +79,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
         suite.addTestSuite(CacheOperationsWithExpirationTest.class);
         suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
+
+        suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
 
         return suite;
     }
