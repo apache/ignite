@@ -1120,6 +1120,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRootPropertiesPersistAfterFormat() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
             // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
             // an arbitrary named property is just ignored:
@@ -2114,7 +2117,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             try {
                 os = igfs.append(FILE, false);
 
-                igfs.update(FILE, props);
+                if (permissionsSupported())
+                    igfs.update(FILE, props);
 
                 os.close();
             } finally {

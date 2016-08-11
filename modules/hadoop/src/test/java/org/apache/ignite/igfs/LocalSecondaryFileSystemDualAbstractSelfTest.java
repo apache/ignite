@@ -32,7 +32,9 @@ public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsD
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
 
-    /** Constructor. */
+    /** Constructor.
+     * @param mode IGFS mode.
+     */
     public LocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
     }
@@ -59,7 +61,7 @@ public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsD
 
     /** {@inheritDoc} */
     @Override protected boolean appendSupported() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
