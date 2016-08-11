@@ -645,6 +645,9 @@ public class GridSqlQuerySplitter {
         if (stmt instanceof GridSqlMerge)
             return findParams((GridSqlMerge)stmt, params, target, paramIdxs);
 
+        if (stmt instanceof GridSqlInsert)
+            return findParams((GridSqlInsert)stmt, params, target, paramIdxs);
+
         return target;
     }
 
@@ -744,6 +747,28 @@ public class GridSqlQuerySplitter {
      * @return Extracted parameters list.
      */
     private static List<Object> findParams(GridSqlMerge stmt, Object[] params, ArrayList<Object> target,
+                                           IntArray paramIdxs) {
+        if (params.length == 0)
+            return target;
+
+        for (GridSqlElement el : stmt.columns())
+            findParams(el, params, target, paramIdxs);
+
+        for (GridSqlElement[] row : stmt.rows())
+            for (GridSqlElement el : row)
+                findParams(el, params, target, paramIdxs);
+
+        return target;
+    }
+
+    /**
+     * @param stmt Statement.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlInsert stmt, Object[] params, ArrayList<Object> target,
                                            IntArray paramIdxs) {
         if (params.length == 0)
             return target;

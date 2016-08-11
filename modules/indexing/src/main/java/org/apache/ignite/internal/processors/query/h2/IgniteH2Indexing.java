@@ -54,6 +54,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -104,6 +108,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
@@ -981,6 +986,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         switch (commandType(stmt)) {
             case CommandInterface.MERGE:
                 break;
+            case CommandInterface.INSERT:
+                break;
             default:
                 throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
         }
@@ -1002,10 +1009,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (gridStmt instanceof GridSqlMerge)
             return doMerge(cctx, (GridSqlMerge)gridStmt, desc, params);
 
+        if (gridStmt instanceof GridSqlInsert)
+            return doInsert(cctx, (GridSqlInsert)gridStmt, desc, params);
+
         throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
             gridStmt.getClass() + ']');
     }
-
 
     /**
      * @param cctx Cache context.
@@ -1047,6 +1056,65 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 rows.put(t.getKey(), t.getValue());
             }
             cctx.cache().putAll(rows);
+            return rows.size();
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param ins Insert statement.
+     * @param desc Table descriptor.
+     * @param params Query params.
+     * @return Number of items affected.
+     * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
+     */
+    @SuppressWarnings("unchecked")
+    private int doInsert(GridCacheContext cctx, GridSqlInsert ins, TableDescriptor desc, Object[] params)
+        throws IgniteCheckedException {
+        A.ensure(!F.isEmpty(ins.rows()) && ins.query() == null, "SQL INSERT from SELECT is not supported");
+
+        GridSqlColumn[] cols = ins.columns();
+
+        if (marshaller instanceof BinaryMarshaller) {
+            A.ensure(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor,
+                "Expected binary cache object processor when using binary marshaller");
+
+            CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
+
+            if (desc.type().keyClass() == Object.class)
+                binProc.registerType(desc.type().origKeyClass());
+
+            if (desc.type().valueClass() == Object.class)
+                binProc.registerType(desc.type().origValueClass());
+        }
+
+        if (ins.rows().size() == 1) {
+            IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, ins.rows().get(0), params);
+            if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
+                return 1;
+            else
+                throw new IgniteCheckedException("Duplicate key during INSERT [key=" + t.getKey());
+        }
+        else {
+            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>(ins.rows().size());
+
+            for (GridSqlElement[] row : ins.rows()) {
+                final IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, row, params);
+
+                rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
+            }
+
+            Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
+
+            if (res == null)
+                return rows.size();
+
+            if (!res.isEmpty()) {
+                Object[] errKeys = res.keySet().toArray();
+
+                throw new IgniteCheckedException("Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']');
+            }
+
             return rows.size();
         }
     }
@@ -1152,8 +1220,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        A.notNull(key, "Key for MERGE must not be null");
-        A.notNull(val, "Value for MERGE must not be null");
+        A.notNull(key, "Key for INSERT or MERGE must not be null");
+        A.notNull(val, "Value for INSERT or MERGE must not be null");
 
         return new IgniteBiTuple<>(key, val);
     }
@@ -3329,6 +3397,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          */
         private void updateLastUsage() {
             lastUsage = U.currentTimeMillis();
+        }
+    }
+
+    /** */
+    private final static class InsertEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
+        /** Value to set. */
+        private final Object val;
+
+        /** */
+        private InsertEntryProcessor(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            if (entry.getValue() != null)
+                return false;
+
+            entry.setValue(val);
+            return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
         }
     }
 }
