@@ -30,6 +30,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -247,7 +248,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         FileLock fileLock = null;
 
-        while(counter++ < 500 && fileLock == null) {
+        while(counter++ < 300 && fileLock == null) {
             try {
                 fileLock = chanel.tryLock();
 
@@ -273,6 +274,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         /** */
         private final File workDir;
 
+        public static AtomicInteger counter = new AtomicInteger(); // used for testing only, will be removed
+
         /**
          * @param log Logger.
          * @param workDir Work directory.
@@ -285,6 +288,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
             throws CacheEntryListenerException {
+            counter.incrementAndGet();
+
             for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts) {
                 assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
                     "Received cache entry update for system marshaller cache: " + evt;
