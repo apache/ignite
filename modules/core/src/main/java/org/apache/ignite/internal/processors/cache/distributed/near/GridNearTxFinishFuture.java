@@ -390,6 +390,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             fut.getClass() == CheckRemoteTxMiniFuture.class;
     }
 
+    /**
+     * @param err Error.
+     */
     void finish(IgniteCheckedException err) {
         this.err = err;
 

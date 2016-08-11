@@ -17,24 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.NotSerializableException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.CacheQueryEntryEvent;
-import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -46,37 +40,25 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.event.*;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static javax.cache.event.EventType.CREATED;
-import static javax.cache.event.EventType.REMOVED;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
  */
 public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTest {
+    /** */
+    private static final int EXPECTED_VALUE = 42;
+
+    /** */
+    private static final int WRONG_VALUE = -1;
+
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -85,6 +67,9 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
 
     /** */
     public static final int ITERATION_CNT = 1;
+
+    /** */
+    public static final int KEYS = 10;
 
     /** */
     private boolean client;
@@ -130,39 +115,197 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testInvoke() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
+    public void testPessimisticOnePhaseCommit() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
 
-        doTestInvokeTest(ccfg);
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticOnePhaseCommitFullSync() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimistic() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticFullSync() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommit() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommitFullSync() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimistic() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticFullSync() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
     }
 
     /**
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void doTestInvokeTest(CacheConfiguration ccfg) throws Exception {
+    private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws Exception {
         IgniteEx cln = grid(getServerNodeCount());
-        IgniteCache clnCache = cln.createCache(ccfg);
+
+        final IgniteCache clnCache = cln.createCache(ccfg);
+
+        putKeys(clnCache, EXPECTED_VALUE);
 
         try {
+            // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (Transaction tx = cln.transactions().txStart(TransactionConcurrency.PESSIMISTIC, REPEATABLE_READ)) {
-                    try {
-                        clnCache.invoke(1, new NonSerialazibleEntryProcessor());
+                try (final Transaction tx = cln.transactions().txStart(txConcurrency, txIsolation)) {
+                    putKeys(clnCache, WRONG_VALUE);
 
-                        tx.commit();
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
+                    clnCache.invoke(KEYS, new NonSerialazibleEntryProcessor());
 
-                        //tx.rollback();
-                    }
+                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            tx.commit();
+
+                            return null;
+                        }
+                    }, NotSerializableException.class);
                 }
+
+                checkKeys(clnCache, EXPECTED_VALUE);
             }
+
+            // From affinity node.
+            Ignite grid = grid(ThreadLocalRandom.current().nextInt(NODES));
+
+            final IgniteCache cache = grid.cache(ccfg.getName());
+
+            // Explicit tx.
+            for (int i = 0; i < ITERATION_CNT; i++) {
+                try (final Transaction tx = grid.transactions().txStart(txConcurrency, txIsolation)) {
+                    putKeys(cache, WRONG_VALUE);
+
+                    cache.invoke(KEYS, new NonSerialazibleEntryProcessor());
+
+                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            tx.commit();
+
+                            return null;
+                        }
+                    }, NotSerializableException.class);
+                }
+
+                checkKeys(cache, EXPECTED_VALUE);
+            }
+
+            // Implicit tx.
+            for (int i = 0; i < ITERATION_CNT; i++) {
+                GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        clnCache.invoke(KEYS, new NonSerialazibleEntryProcessor());
+
+                        return null;
+                    }
+                }, NotSerializableException.class);
+            }
+
+            checkKeys(clnCache, EXPECTED_VALUE);
         }
         finally {
             grid(0).destroyCache(ccfg.getName());
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param val Value.
+     */
+    private void putKeys(IgniteCache cache, int val) {
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, val);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param expVal Expected value.
+     */
+    private void checkKeys(IgniteCache cache, int expVal) {
+        for (int i = 0; i < KEYS; i++)
+            assertEquals(expVal, cache.get(i));
     }
 
     /**
@@ -186,49 +329,5 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
 
             return null;
         }
-    }
-
-    public static void main(String[] args) {
-        try (
-                Ignite server = Ignition.start(config(false));
-                Ignite client = Ignition.start(config(true))
-        ) {
-            CacheConfiguration<Integer, Integer> cacheConfig = new CacheConfiguration<>("test-cache");
-
-            cacheConfig.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-            IgniteCache<Integer, Integer> cache = client.createCache(cacheConfig);
-
-            for (int i = 0; i < 10; i++) {
-                try (Transaction tx = client.transactions().txStart()) {
-                    try {
-                        cache.invoke(1, new EntryProcessor<Integer, Integer, Boolean>() {
-                            @Override public Boolean process(MutableEntry<Integer, Integer> entry, Object... args) {
-                                return Boolean.TRUE;
-                            }
-                        });
-
-                        tx.commit();
-
-                        System.out.println("Commit #" + i);
-                    }
-                    catch (RuntimeException e) {
-                        tx.rollback();
-
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    }
-
-    private static IgniteConfiguration config(boolean client) {
-        IgniteConfiguration config = new IgniteConfiguration();
-
-        config.setClientMode(client);
-        config.setGridName(client ? "client" : "server");
-        config.setMarshaller(new OptimizedMarshaller());
-
-        return config;
     }
 }
