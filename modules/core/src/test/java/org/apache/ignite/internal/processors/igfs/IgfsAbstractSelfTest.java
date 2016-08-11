@@ -245,6 +245,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Relaxed consistency flag.
+     */
+    protected boolean initializeDefaultPathModes() {
+        return false;
+    }
+
+    /**
      * @return Client flag.
      */
     protected boolean client() {
@@ -368,6 +375,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
+
+        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -1071,17 +1080,36 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRootPropertiesPersistAfterFormat() throws Exception {
-        igfs.update(new IgfsPath("/"), Collections.singletonMap("foo", "moo"));
+        if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+            // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
+            // an arbitrary named property is just ignored:
+            checkRootPropertyUpdate("foo", "moo", null);
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+        else {
+            checkRootPropertyUpdate("foo", "moo", "moo");
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
+        final IgfsPath rootPath = new IgfsPath("/");
+
+        igfs.update(rootPath, Collections.singletonMap(prop, setVal));
 
         igfs.format();
 
-        IgfsFile file = igfs.info(new IgfsPath("/"));
+        IgfsFile file = igfs.info(rootPath);
 
         assert file != null;
 
         Map<String,String> props = file.properties();
 
-        assertEquals("moo", props.get("foo"));
+        assertEquals(expGetVal, props.get(prop));
     }
 
     /**

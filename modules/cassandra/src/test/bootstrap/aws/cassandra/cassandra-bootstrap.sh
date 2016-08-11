@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,41 +17,31 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Bootstrap script to spin up Cassandra cluster
+# -----------------------------------------------------------------------------------------------
+
+# URL to download AWS CLI tools
 AWS_CLI_DOWNLOAD_URL=https://s3.amazonaws.com/aws-cli/awscli-bundle.zip
 
-S3_ROOT=s3://bucket/folder
-S3_DOWNLOADS=$S3_ROOT/test
-S3_SYSTEM=$S3_ROOT/test1
+# URL to download JDK
+JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-linux-x64.tar.gz
 
-CASSANDRA_DOWNLOAD_URL=http://www-eu.apache.org/dist/cassandra/3.5/apache-cassandra-3.5-bin.tar.gz
-CASSANDRA_TARBALL=apache-cassandra-3.5-bin.tar.gz
-CASSANDRA_UNTAR_DIR=apache-cassandra-3.5
+# URL to download Ignite-Cassandra tests package - you should previously package and upload it to this place
+TESTS_PACKAGE_DONLOAD_URL=s3://<bucket>/<folder>/ignite-cassandra-tests-<version>.zip
 
-TESTS_PACKAGE_DONLOAD_URL=$S3_DOWNLOADS/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
-TESTS_PACKAGE_ZIP=ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
-TESTS_PACKAGE_UNZIP_DIR=ignite-cassandra-tests
-
-S3_LOGS_URL=$S3_SYSTEM/logs/c-logs
-S3_LOGS_TRIGGER_URL=$S3_SYSTEM/logs-trigger
-S3_BOOTSTRAP_SUCCESS_URL=$S3_SYSTEM/c-success
-S3_BOOTSTRAP_FAILURE_URL=$S3_SYSTEM/c-failure
-S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_SYSTEM/c-discovery
-S3_CASSANDRA_FIRST_NODE_LOCK_URL=$S3_SYSTEM/c-first-node-lock
-S3_CASSANDRA_NODES_JOIN_LOCK_URL=$S3_SYSTEM/c-join-lock
-
-INSTANCE_REGION=us-west-2
-INSTANCE_NAME_TAG=CASSANDRA-SERVER
-INSTANCE_OWNER_TAG=ignite@apache.org
-INSTANCE_PROJECT_TAG=ignite
-
+# Terminates script execution and upload logs to S3
 terminate()
 {
-    if [[ "$S3_BOOTSTRAP_SUCCESS_URL" != */ ]]; then
-        S3_BOOTSTRAP_SUCCESS_URL=${S3_BOOTSTRAP_SUCCESS_URL}/
+    SUCCESS_URL=$S3_CASSANDRA_BOOTSTRAP_SUCCESS
+    FAILURE_URL=$S3_CASSANDRA_BOOTSTRAP_FAILURE
+
+    if [ -n "$SUCCESS_URL" ] && [[ "$SUCCESS_URL" != */ ]]; then
+        SUCCESS_URL=${SUCCESS_URL}/
     fi
 
-    if [[ "$S3_BOOTSTRAP_FAILURE_URL" != */ ]]; then
-        S3_BOOTSTRAP_FAILURE_URL=${S3_BOOTSTRAP_FAILURE_URL}/
+    if [ -n "$FAILURE_URL" ] && [[ "$FAILURE_URL" != */ ]]; then
+        FAILURE_URL=${FAILURE_URL}/
     fi
 
     host_name=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -63,13 +53,23 @@ terminate()
         echo "[ERROR] Cassandra node bootstrap failed"
         echo "[ERROR]-----------------------------------------------------"
         msg=$1
-        reportFolder=${S3_BOOTSTRAP_FAILURE_URL}${host_name}
+
+        if [ -z "$FAILURE_URL" ]; then
+            exit 1
+        fi
+
+        reportFolder=${FAILURE_URL}${host_name}
         reportFile=$reportFolder/__error__
     else
         echo "[INFO]-----------------------------------------------------"
         echo "[INFO] Cassandra node bootstrap successfully completed"
         echo "[INFO]-----------------------------------------------------"
-        reportFolder=${S3_BOOTSTRAP_SUCCESS_URL}${host_name}
+
+        if [ -z "$SUCCESS_URL" ]; then
+            exit 0
+        fi
+
+        reportFolder=${SUCCESS_URL}${host_name}
         reportFile=$reportFolder/__success__
     fi
 
@@ -77,7 +77,7 @@ terminate()
 
     aws s3 rm --recursive $reportFolder
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed drop report folder: $reportFolder"
+        echo "[ERROR] Failed to drop report folder: $reportFolder"
     fi
 
     aws s3 cp --sse AES256 /opt/bootstrap-result $reportFile
@@ -94,165 +94,67 @@ terminate()
     exit 0
 }
 
-tagInstance()
-{
-    export EC2_HOME=/opt/aws/apitools/ec2
-    export JAVA_HOME=/opt/jdk1.8.0_77
-    export PATH=$JAVA_HOME/bin:$EC2_HOME/bin:$PATH
-
-    INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-    if [ $? -ne 0 ]; then
-        terminate "Failed to get instance metadata to tag it"
-    fi
-
-    if [ -n "$INSTANCE_NAME_TAG" ]; then
-        ec2-create-tags $INSTANCE_ID --tag Name=${INSTANCE_NAME_TAG} --region $INSTANCE_REGION
-        if [ $code -ne 0 ]; then
-            terminate "Failed to tag EC2 instance with: Name=${INSTANCE_NAME_TAG}"
-        fi
-    fi
-
-    if [ -n "$INSTANCE_OWNER_TAG" ]; then
-        ec2-create-tags $INSTANCE_ID --tag owner=${INSTANCE_OWNER_TAG} --region $INSTANCE_REGION
-        if [ $code -ne 0 ]; then
-            terminate "Failed to tag EC2 instance with: owner=${INSTANCE_OWNER_TAG}"
-        fi
-    fi
-
-    if [ -n "$INSTANCE_PROJECT_TAG" ]; then
-        ec2-create-tags $INSTANCE_ID --tag project=${INSTANCE_PROJECT_TAG} --region $INSTANCE_REGION
-        if [ $code -ne 0 ]; then
-            terminate "Failed to tag EC2 instance with: project=${INSTANCE_PROJECT_TAG}"
-        fi
-    fi
-}
-
+# Downloads specified package
 downloadPackage()
 {
     echo "[INFO] Downloading $3 package from $1 into $2"
 
-    if [[ "$1" == s3* ]]; then
-        aws s3 cp $1 $2
-
-        if [ $? -ne 0 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+    for i in 0 9;
+    do
+        if [[ "$1" == s3* ]]; then
             aws s3 cp $1 $2
-
-            if [ $? -ne 0 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                aws s3 cp $1 $2
-
-                if [ $? -ne 0 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
-        fi
-    else
-        curl "$1" -o "$2"
-
-        if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+            code=$?
+        else
             curl "$1" -o "$2"
-
-            if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                curl "$1" -o "$2"
-
-                if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
+            code=$?
         fi
-    fi
 
-    echo "[INFO] $3 package successfully downloaded from $1 into $2"
+        if [ $code -eq 0 ]; then
+            echo "[INFO] $3 package successfully downloaded from $1 into $2"
+            return 0
+        fi
+
+        echo "[WARN] Failed to download $3 package from $i attempt, sleeping extra 5sec"
+        sleep 5s
+    done
+
+    terminate "All 10 attempts to download $3 package from $1 are failed"
 }
 
-if [[ "$S3_CASSANDRA_NODES_DISCOVERY_URL" != */ ]]; then
-    S3_CASSANDRA_NODES_DISCOVERY_URL=${S3_CASSANDRA_NODES_DISCOVERY_URL}/
-fi
+# Downloads and setup JDK
+setupJava()
+{
+    rm -Rf /opt/java /opt/jdk.tar.gz
 
-echo "[INFO]-----------------------------------------------------------------"
-echo "[INFO] Bootstrapping Cassandra node"
-echo "[INFO]-----------------------------------------------------------------"
-echo "[INFO] Cassandra download URL: $CASSANDRA_DOWNLOAD_URL"
-echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
-echo "[INFO] Logs URL: $S3_LOGS_URL"
-echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
-echo "[INFO] Cassandra nodes discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
-echo "[INFO] Cassandra first node lock URL: $S3_CASSANDRA_FIRST_NODE_LOCK_URL"
-echo "[INFO] Cassandra nodes join lock URL: $S3_CASSANDRA_NODES_JOIN_LOCK_URL"
-echo "[INFO] Bootsrap success URL: $S3_BOOTSTRAP_SUCCESS_URL"
-echo "[INFO] Bootsrap failure URL: $S3_BOOTSTRAP_FAILURE_URL"
-echo "[INFO]-----------------------------------------------------------------"
+    echo "[INFO] Downloading 'jdk'"
+    wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "$JDK_DOWNLOAD_URL" -O /opt/jdk.tar.gz
+    if [ $? -ne 0 ]; then
+        terminate "Failed to download 'jdk'"
+    fi
 
-echo "[INFO] Installing 'wget' package"
-yum -y install wget
-if [ $? -ne 0 ]; then
-    terminate "Failed to install 'wget' package"
-fi
+    echo "[INFO] Untaring 'jdk'"
+    tar -xvzf /opt/jdk.tar.gz -C /opt
+    if [ $? -ne 0 ]; then
+        terminate "Failed to untar 'jdk'"
+    fi
 
-echo "[INFO] Installing 'net-tools' package"
-yum -y install net-tools
-if [ $? -ne 0 ]; then
-    terminate "Failed to install 'net-tools' package"
-fi
+    rm -Rf /opt/jdk.tar.gz
 
-echo "[INFO] Installing 'python' package"
-yum -y install python
-if [ $? -ne 0 ]; then
-    terminate "Failed to install 'python' package"
-fi
+    unzipDir=$(ls /opt | grep "jdk")
+    if [ "$unzipDir" != "java" ]; then
+        mv /opt/$unzipDir /opt/java
+    fi
+}
 
-echo "[INFO] Installing 'unzip' package"
-yum -y install unzip
-if [ $? -ne 0 ]; then
-    terminate "Failed to install 'unzip' package"
-fi
+# Downloads and setup AWS CLI
+setupAWSCLI()
+{
+    echo "[INFO] Installing 'awscli'"
+    pip install --upgrade awscli
+    if [ $? -eq 0 ]; then
+        return 0
+    fi
 
-rm -Rf /opt/jdk1.8.0_77 /opt/jdk-8u77-linux-x64.tar.gz
-
-echo "[INFO] Downloading 'jdk-8u77'"
-wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-linux-x64.tar.gz" -O /opt/jdk-8u77-linux-x64.tar.gz
-if [ $? -ne 0 ]; then
-    terminate "Failed to download 'jdk-8u77'"
-fi
-
-echo "[INFO] Unzipping 'jdk-8u77'"
-tar -xvzf /opt/jdk-8u77-linux-x64.tar.gz -C /opt
-if [ $? -ne 0 ]; then
-    terminate "Failed to untar 'jdk-8u77'"
-fi
-
-rm -Rf /opt/jdk-8u77-linux-x64.tar.gz
-
-downloadPackage "https://bootstrap.pypa.io/get-pip.py" "/opt/get-pip.py" "get-pip.py"
-
-echo "[INFO] Installing 'pip'"
-python /opt/get-pip.py
-if [ $? -ne 0 ]; then
-    terminate "Failed to install 'pip'"
-fi
-
-echo "[INFO] Installing 'awscli'"
-pip install --upgrade awscli
-if [ $? -ne 0 ]; then
     echo "[ERROR] Failed to install 'awscli' using pip"
     echo "[INFO] Trying to install awscli using zip archive"
     echo "[INFO] Downloading awscli zip"
@@ -274,100 +176,161 @@ if [ $? -ne 0 ]; then
     fi
 
     echo "[INFO] Successfully installed awscli from zip archive"
-fi
+}
 
-tagInstance
-
-echo "[INFO] Creating 'cassandra' group"
-exists=$(cat /etc/group | grep cassandra)
-if [ -z "$exists" ]; then
-    groupadd cassandra
+# Setup all the pre-requisites (packages, settings and etc.)
+setupPreRequisites()
+{
+    echo "[INFO] Installing 'wget' package"
+    yum -y install wget
     if [ $? -ne 0 ]; then
-        terminate "Failed to create 'cassandra' group"
+        terminate "Failed to install 'wget' package"
     fi
-fi
 
-echo "[INFO] Creating 'cassandra' user"
-exists=$(cat /etc/passwd | grep cassandra)
-if [ -z "$exists" ]; then
-    useradd -g cassandra cassandra
+    echo "[INFO] Installing 'net-tools' package"
+    yum -y install net-tools
     if [ $? -ne 0 ]; then
-        terminate "Failed to create 'cassandra' user"
+        terminate "Failed to install 'net-tools' package"
     fi
-fi
 
-rm -Rf /storage/cassandra /opt/cassandra /opt/$CASSANDRA_TARBALL
+    echo "[INFO] Installing 'python' package"
+    yum -y install python
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install 'python' package"
+    fi
 
-echo "[INFO] Creating '/storage/cassandra' storage"
-mkdir -p /storage/cassandra
-chown -R cassandra:cassandra /storage/cassandra
-if [ $? -ne 0 ]; then
-    terminate "Failed to setup Cassandra storage dir: /storage/cassandra"
-fi
+    echo "[INFO] Installing 'unzip' package"
+    yum -y install unzip
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install 'unzip' package"
+    fi
 
-downloadPackage "$CASSANDRA_DOWNLOAD_URL" "/opt/$CASSANDRA_TARBALL" "Cassandra"
+    downloadPackage "https://bootstrap.pypa.io/get-pip.py" "/opt/get-pip.py" "get-pip.py"
 
-echo "[INFO] Unzipping Cassandra package"
-tar -xvzf /opt/$CASSANDRA_TARBALL -C /opt
-if [ $? -ne 0 ]; then
-    terminate "Failed to untar Cassandra package"
-fi
+    echo "[INFO] Installing 'pip'"
+    python /opt/get-pip.py
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install 'pip'"
+    fi
+}
 
-rm -f /opt/$CASSANDRA_TARBALL /opt/cassandra
-mv /opt/$CASSANDRA_UNTAR_DIR /opt/cassandra
-chown -R cassandra:cassandra /opt/cassandra
+# Downloads and setup tests package
+setupTestsPackage()
+{
+    downloadPackage "$TESTS_PACKAGE_DONLOAD_URL" "/opt/ignite-cassandra-tests.zip" "Tests"
 
-downloadPackage "$TESTS_PACKAGE_DONLOAD_URL" "/opt/$TESTS_PACKAGE_ZIP" "Tests"
+    rm -Rf /opt/ignite-cassandra-tests
 
-unzip /opt/$TESTS_PACKAGE_ZIP -d /opt
-if [ $? -ne 0 ]; then
-    terminate "Failed to unzip tests package: $TESTS_PACKAGE_DONLOAD_URL"
-fi
+    unzip /opt/ignite-cassandra-tests.zip -d /opt
+    if [ $? -ne 0 ]; then
+        terminate "Failed to unzip tests package"
+    fi
 
-chown -R cassandra:cassandra /opt/$TESTS_PACKAGE_UNZIP_DIR
-find /opt/$TESTS_PACKAGE_UNZIP_DIR -type f -name "*.sh" -exec chmod ug+x {} \;
+    rm -f /opt/ignite-cassandra-tests.zip
 
-if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-env.sh" ]; then
-    terminate "There are no cassandra-env.sh in tests package"
-fi
+    unzipDir=$(ls /opt | grep "ignite-cassandra")
+    if [ "$unzipDir" != "ignite-cassandra-tests" ]; then
+        mv /opt/$unzipDir /opt/ignite-cassandra-tests
+    fi
 
-if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-start.sh" ]; then
-    terminate "There are no cassandra-start.sh in tests package"
-fi
+    find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
-if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-template.yaml" ]; then
-    terminate "There are no cassandra-start.sh in tests package"
-fi
+    . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "cassandra"
 
-if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh" ]; then
-    terminate "There are no logs-collector.sh in tests package"
-fi
+    setupNTP
 
-mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-start.sh /opt
-mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-env.sh /opt/cassandra/conf
-mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-template.yaml /opt/cassandra/conf
-mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh /opt
-rm -Rf /opt/$TESTS_PACKAGE_UNZIP_DIR
-chown -R cassandra:cassandra /opt/cassandra /opt/cassandra-start.sh /opt/logs-collector.sh
+    echo "[INFO] Starting logs collector daemon"
 
-#profile=/home/cassandra/.bash_profile
-profile=/root/.bash_profile
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "$S3_LOGS_TRIGGER" "$S3_CASSANDRA_LOGS/$HOST_NAME" "/opt/cassandra/logs" "/opt/cassandra/cassandra-start.log" > /opt/logs-collector.log &
 
-echo "export JAVA_HOME=/opt/jdk1.8.0_77" >> $profile
-echo "export CASSANDRA_HOME=/opt/cassandra" >> $profile
-echo "export PATH=\$JAVA_HOME/bin:\$CASSANDRA_HOME/bin:\$PATH" >> $profile
-echo "export S3_BOOTSTRAP_SUCCESS_URL=$S3_BOOTSTRAP_SUCCESS_URL" >> $profile
-echo "export S3_BOOTSTRAP_FAILURE_URL=$S3_BOOTSTRAP_FAILURE_URL" >> $profile
-echo "export S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_CASSANDRA_NODES_DISCOVERY_URL" >> $profile
-echo "export S3_CASSANDRA_NODES_JOIN_LOCK_URL=$S3_CASSANDRA_NODES_JOIN_LOCK_URL" >> $profile
-echo "export S3_CASSANDRA_FIRST_NODE_LOCK_URL=$S3_CASSANDRA_FIRST_NODE_LOCK_URL" >> $profile
+    echo "[INFO] Logs collector daemon started: $!"
 
-HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+    echo "----------------------------------------------------------------------------------------"
+    printInstanceInfo
+    echo "----------------------------------------------------------------------------------------"
+    tagInstance
+    bootstrapGangliaAgent "cassandra" 8641
+}
 
-/opt/logs-collector.sh "/opt/cassandra/logs" "$S3_LOGS_URL/$HOST_NAME" "$S3_LOGS_TRIGGER_URL" > /opt/cassandra/logs-collector.log &
+# Downloads Cassandra package
+downloadCassandra()
+{
+    downloadPackage "$CASSANDRA_DOWNLOAD_URL" "/opt/apache-cassandra.tar.gz" "Cassandra"
 
-cmd="/opt/cassandra-start.sh"
+    rm -Rf /opt/cassandra
 
-#sudo -u cassandra -g cassandra sh -c "$cmd | tee /opt/cassandra/start.log"
+    echo "[INFO] Untaring Cassandra package"
+    tar -xvzf /opt/apache-cassandra.tar.gz -C /opt
+    if [ $? -ne 0 ]; then
+        terminate "Failed to untar Cassandra package"
+    fi
 
-$cmd | tee /opt/cassandra/start.log
+    rm -f /opt/apache-cassandra.tar.gz
+
+    unzipDir=$(ls /opt | grep "cassandra" | grep "apache")
+    if [ "$unzipDir" != "cassandra" ]; then
+        mv /opt/$unzipDir /opt/cassandra
+    fi
+}
+
+# Setups Cassandra
+setupCassandra()
+{
+    echo "[INFO] Creating 'cassandra' group"
+    exists=$(cat /etc/group | grep cassandra)
+    if [ -z "$exists" ]; then
+        groupadd cassandra
+        if [ $? -ne 0 ]; then
+            terminate "Failed to create 'cassandra' group"
+        fi
+    fi
+
+    echo "[INFO] Creating 'cassandra' user"
+    exists=$(cat /etc/passwd | grep cassandra)
+    if [ -z "$exists" ]; then
+        useradd -g cassandra cassandra
+        if [ $? -ne 0 ]; then
+            terminate "Failed to create 'cassandra' user"
+        fi
+    fi
+
+    rm -f /opt/cassandra/conf/cassandra-env.sh /opt/cassandra/conf/cassandra-template.yaml
+
+    cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-env.sh /opt/cassandra/conf
+    cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-template.yaml /opt/cassandra/conf
+
+    chown -R cassandra:cassandra /opt/cassandra /opt/ignite-cassandra-tests
+
+    createCassandraStorageLayout
+
+    cat /opt/cassandra/conf/cassandra-template.yaml | sed -r "s/\\\$\{CASSANDRA_DATA_DIR\}/$CASSANDRA_DATA_DIR/g" > /opt/cassandra/conf/cassandra-template-1.yaml
+    cat /opt/cassandra/conf/cassandra-template-1.yaml | sed -r "s/\\\$\{CASSANDRA_COMMITLOG_DIR\}/$CASSANDRA_COMMITLOG_DIR/g" > /opt/cassandra/conf/cassandra-template-2.yaml
+    cat /opt/cassandra/conf/cassandra-template-2.yaml | sed -r "s/\\\$\{CASSANDRA_CACHES_DIR\}/$CASSANDRA_CACHES_DIR/g" > /opt/cassandra/conf/cassandra-template-3.yaml
+
+    rm -f /opt/cassandra/conf/cassandra-template.yaml /opt/cassandra/conf/cassandra-template-1.yaml /opt/cassandra/conf/cassandra-template-2.yaml
+    mv /opt/cassandra/conf/cassandra-template-3.yaml /opt/cassandra/conf/cassandra-template.yaml
+
+    echo "export JAVA_HOME=/opt/java" >> $1
+    echo "export CASSANDRA_HOME=/opt/cassandra" >> $1
+    echo "export PATH=\$JAVA_HOME/bin:\$CASSANDRA_HOME/bin:\$PATH" >> $1
+}
+
+###################################################################################################################
+
+echo "[INFO]-----------------------------------------------------------------"
+echo "[INFO] Bootstrapping Cassandra node"
+echo "[INFO]-----------------------------------------------------------------"
+
+setupPreRequisites
+setupJava
+setupAWSCLI
+setupTestsPackage
+downloadCassandra
+setupCassandra "/root/.bash_profile"
+
+cmd="/opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-start.sh"
+
+#sudo -u cassandra -g cassandra sh -c "$cmd | tee /opt/cassandra/cassandra-start.log"
+
+$cmd | tee /opt/cassandra/cassandra-start.log

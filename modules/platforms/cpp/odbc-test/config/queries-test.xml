@@ -41,17 +41,18 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache"/>
                     <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
             
                     <!-- Configure type metadata to enable queries. -->
-                    <property name="typeMetadata">
-                        <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="keyType" value="java.lang.Long"/>
-                                <property name="valueType" value="TestType"/>
-                                <property name="queryFields">
-                                    <map>
+					<property name="queryEntities">
+						<list>
+							<bean class="org.apache.ignite.cache.QueryEntity">
+								<property name="keyType" value="java.lang.Long"/>
+								<property name="valueType" value="TestType"/>
+
+								<property name="fields">
+									<map>
                                         <entry key="i8Field" value="java.lang.Byte"/>
                                         <entry key="i16Field" value="java.lang.Short"/>
                                         <entry key="i32Field" value="java.lang.Integer"/>
@@ -63,11 +64,22 @@
                                         <entry key="guidField" value="java.util.UUID"/>
                                         <entry key="dateField" value="java.util.Date"/>
                                         <entry key="timestampField" value="java.sql.Timestamp"/>
-                                    </map>
-                                </property>
-                            </bean>
-                        </list>
-                    </property>
+									</map>
+								</property>
+
+								<property name="indexes">
+									<list>
+										<bean class="org.apache.ignite.cache.QueryIndex">
+											<constructor-arg value="i32Field"/>
+										</bean>
+										<bean class="org.apache.ignite.cache.QueryIndex">
+											<constructor-arg value="i64Field"/>
+										</bean>
+									</list>
+								</property>
+							</bean>
+						</list>
+					</property>
                 </bean>
             </list>
         </property>
@@ -81,12 +93,11 @@
                         instead os static IP based discovery.
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
