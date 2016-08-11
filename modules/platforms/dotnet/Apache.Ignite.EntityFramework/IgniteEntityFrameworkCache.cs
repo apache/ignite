@@ -169,7 +169,7 @@ namespace Apache.Ignite.EntityFramework
         private ITransaction TxStart()
         {
             return _cache.Ignite.GetTransactions()
-                .TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead);
+                .TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.RepeatableRead);
         }
 
         /// <summary>
