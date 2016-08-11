@@ -18,8 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -630,8 +636,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         IgniteInternalFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
-
-        System.out.println("Keys :" + Arrays.toString(req.keys().toArray()));
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.

@@ -81,10 +81,10 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int NODES = 2;
+    private static final int NODES = 3;
 
     /** */
-    public static final int ITERATION_CNT = 100;
+    public static final int ITERATION_CNT = 1;
 
     /** */
     private boolean client;
@@ -131,11 +131,15 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
 
         doTestInvokeTest(ccfg);
     }
 
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
     private void doTestInvokeTest(CacheConfiguration ccfg) throws Exception {
         IgniteEx cln = grid(getServerNodeCount());
         IgniteCache clnCache = cln.createCache(ccfg);
@@ -147,14 +151,14 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
                         clnCache.invoke(1, new NonSerialazibleEntryProcessor());
 
                         tx.commit();
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         e.printStackTrace();
 
-                        tx.rollback();
+                        //tx.rollback();
                     }
                 }
             }
-
         }
         finally {
             grid(0).destroyCache(ccfg.getName());
@@ -167,8 +171,8 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
     private CacheConfiguration cacheConfiguration(CacheWriteSynchronizationMode wrMode, int backup) {
         return new CacheConfiguration("test-cache-" + wrMode + "-" + backup)
             .setAtomicityMode(TRANSACTIONAL)
-            .setWriteSynchronizationMode(FULL_SYNC);
-            //.setBackups(backup);
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setBackups(backup);
     }
 
     /**
