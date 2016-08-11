@@ -111,11 +111,17 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
 
     /** {@inheritDoc} */
     @Override public String property(String name) throws IllegalArgumentException {
+        if (props == null)
+            return null;
+
         return props.get(name);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String property(String name, @Nullable String dfltVal) {
+        if (props == null)
+            return null;
+
         String res = props.get(name);
         if (res == null)
             return dfltVal;
