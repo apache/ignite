@@ -43,8 +43,11 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     public class QueryExample
     {
-        /// <summary>Cache name.</summary>
-        private const string CacheName = "dotnet_cache_query";
+        /// <summary>Organization cache name.</summary>
+        private const string OrganizationCacheName = "dotnet_cache_query_organization";
+
+        /// <summary>Employee cache name.</summary>
+        private const string EmployeeCacheName = "dotnet_cache_query_employee";
 
         [STAThread]
         public static void Main()
@@ -54,24 +57,27 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");
 
-                var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
+                var employeeCache = ignite.GetOrCreateCache<EmployeeKey, Employee>(new CacheConfiguration
                 {
-                    Name = CacheName,
+                    Name = EmployeeCacheName,
                     QueryEntities = new[]
                     {
-                        new QueryEntity(typeof(int), typeof(Organization)),
                         new QueryEntity(typeof(EmployeeKey), typeof(Employee))
                     }
                 });
 
-                // Clean up caches on all nodes before run.
-                cache.Clear();
+                var organizationCache = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration
+                {
+                    Name = OrganizationCacheName,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(Organization))
+                    }
+                });
 
                 // Populate cache with sample data entries.
-                PopulateCache(cache);
-
-                // Create cache that will work with specific types.
-                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(CacheName);
+                PopulateCache(employeeCache);
+                PopulateCache(organizationCache);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);
@@ -119,7 +125,7 @@ namespace Apache.Ignite.Examples.Datagrid
             const string orgName = "Apache";
 
             var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, Organization " +
+                "from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName));
 
             Console.WriteLine();
@@ -163,7 +169,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Populate cache with data for this example.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void PopulateCache(ICache<object, object> cache)
+        private static void PopulateCache(ICache<int, Organization> cache)
         {
             cache.Put(1, new Organization(
                 "Apache",
@@ -178,7 +184,14 @@ namespace Apache.Ignite.Examples.Datagrid
                 OrganizationType.Private,
                 DateTime.Now
             ));
+        }
 
+        /// <summary>
+        /// Populate cache with data for this example.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        private static void PopulateCache(ICache<EmployeeKey, Employee> cache)
+        {
             cache.Put(new EmployeeKey(1, 1), new Employee(
                 "James Wilson",
                 12500,
