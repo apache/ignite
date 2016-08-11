@@ -50,6 +50,10 @@ import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualSyncSelf
 import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest;
 import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
 import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualAsyncClientSelfTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualAsyncSelfTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualSyncClientSelfTest;
+import org.apache.ignite.igfs.LocalSecondaryFileSystemDualSyncSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoaderTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommandLineTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultMapReducePlannerSelfTest;
@@ -131,6 +135,12 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualAsyncSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualSyncClientSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LocalSecondaryFileSystemDualAsyncClientSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
+import java.nio.file.Files;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -25,9 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -36,149 +34,60 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
-import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
- * Secondary file system which delegates calls to an instance of Hadoop {@link FileSystem}.
- * <p>
- * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
+ * Secondary file system which delegates to local file system.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware,
-    HadoopPayloadAware {
+public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
+    /** Default buffer size. */
+    // TODO: IGNITE-3643.
+    public static final int DFLT_BUF_SIZE = 8 * 1024;
+
     /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName;
+    private String dfltUsrName = IgfsUtils.fixUserName(null);
 
     /** Factory. */
     private HadoopFileSystemFactory fsFactory;
 
-    /**
-     * Default constructor for Spring.
-     */
-    public IgniteHadoopIgfsSecondaryFileSystem() {
-        // No-op.
-    }
+    /** Path that will be added to each passed path. */
+    private String workDir;
+
+    /** Buffer size. */
+    private int bufSize = DFLT_BUF_SIZE;
 
     /**
-     * Simple constructor that is to be used by default.
-     *
-     * @param uri URI of file system.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
+     * Default constructor.
      */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
-        this(uri, null, null);
-    }
+    public LocalIgfsSecondaryFileSystem() {
+        CachingHadoopFileSystemFactory fsFactory0 = new CachingHadoopFileSystemFactory();
 
-    /**
-     * Constructor.
-     *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath)
-        throws IgniteCheckedException {
-        this(uri, cfgPath, null);
-    }
+        fsFactory0.setUri("file:///");
 
-    /**
-     * Constructor.
-     *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @param userName User name.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
-        @Nullable String userName) throws IgniteCheckedException {
-        setDefaultUserName(userName);
-
-        CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
-
-        fac.setUri(uri);
-
-        if (cfgPath != null)
-            fac.setConfigPaths(cfgPath);
-
-        setFileSystemFactory(fac);
-    }
-
-    /**
-     * Gets default user name.
-     * <p>
-     * Defines user name which will be used during file system invocation in case no user name is defined explicitly
-     * through {@link FileSystem#get(URI, Configuration, String)}.
-     * <p>
-     * Also this name will be used if you manipulate {@link IgniteFileSystem} directly and do not set user name
-     * explicitly using {@link IgfsUserContext#doAs(String, IgniteOutClosure)} or
-     * {@link IgfsUserContext#doAs(String, Callable)} methods.
-     * <p>
-     * If not set value of system property {@code "user.name"} will be used. If this property is not set either,
-     * {@code "anonymous"} will be used.
-     *
-     * @return Default user name.
-     */
-    @Nullable public String getDefaultUserName() {
-        return dfltUsrName;
-    }
-
-    /**
-     * Sets default user name. See {@link #getDefaultUserName()} for details.
-     *
-     * @param dfltUsrName Default user name.
-     */
-    public void setDefaultUserName(@Nullable String dfltUsrName) {
-        this.dfltUsrName = dfltUsrName;
-    }
-
-    /**
-     * Gets secondary file system factory.
-     * <p>
-     * This factory will be used whenever a call to a target {@link FileSystem} is required.
-     * <p>
-     * If not set, {@link CachingHadoopFileSystemFactory} will be used.
-     *
-     * @return Secondary file system factory.
-     */
-    public HadoopFileSystemFactory getFileSystemFactory() {
-        return fsFactory;
-    }
-
-    /**
-     * Sets secondary file system factory. See {@link #getFileSystemFactory()} for details.
-     *
-     * @param factory Secondary file system factory.
-     */
-    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
-        this.fsFactory = factory;
+        fsFactory = fsFactory0;
     }
 
     /**
@@ -190,7 +99,21 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     private Path convert(IgfsPath path) {
         URI uri = fileSystemForUser().getUri();
 
-        return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
+        return new Path(uri.getScheme(), uri.getAuthority(), addParent(path.toString()));
+    }
+
+    /**
+     * @param path Path to which parrent should be added.
+     * @return Path with added root.
+     */
+    private String addParent(String path) {
+        if (path.startsWith("/"))
+            path = path.substring(1, path.length());
+
+        if (workDir == null)
+            return path;
+        else
+            return GridFilenameUtils.concat(workDir, path);
     }
 
     /**
@@ -207,6 +130,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */
@@ -246,16 +170,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
-        try {
-            return fileSystemForUser().exists(convert(path));
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to check file existence [path=" + path + "]");
-        }
+        return fileForPath(path).exists();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+        // TODO: IGNITE-3645.
         HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         final FileSystem fileSys = fileSystemForUser();
@@ -277,52 +197,122 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void rename(IgfsPath src, IgfsPath dest) {
-        // Delegate to the secondary file system.
         try {
-            if (!fileSystemForUser().rename(convert(src), convert(dest)))
+            File srcFile = fileForPath(src);
+            File destFile = fileForPath(dest);
+
+            if (!srcFile.exists())
+                throw new IOException("File not found: " + srcFile);
+
+            if (srcFile.isDirectory() && destFile.isFile())
+                throw new IOException("Failed rename directory to existing file: [src=" + src + ", dest=" + dest + ']');
+
+            if (destFile.isDirectory())
+                Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
+            else if(!srcFile.renameTo(destFile))
                 throw new IgfsException("Failed to rename (secondary file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to rename file [src=" + src + ", dest=" + dest + ']');
+            throw handleSecondaryFsError(e, "Failed to rename [src=" + src + ", dest="+ dest + ']');
         }
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         try {
-            return fileSystemForUser().delete(convert(path), recursive);
+            File f = fileForPath(path);
+
+            // TODO: IGNITE-3642.
+            if (!recursive || !f.isDirectory())
+                return f.delete();
+            else
+                return deleteDirectory(f);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
         }
     }
 
+    /**
+     * Delete directory recursively.
+     *
+     * @param dir Directory.
+     * @throws IOException If fails.
+     * @return {@code true} if successful.
+     */
+    private boolean deleteDirectory(File dir) throws IOException {
+        File[] entries = dir.listFiles();
+
+        if (entries != null) {
+            for (File entry : entries) {
+                if (entry.isDirectory())
+                    deleteDirectory(entry);
+                else if (entry.isFile()) {
+                    if (!entry.delete())
+                        throw new IOException("Cannot remove file: " + entry);
+                }
+                else
+                    // TODO: IGNITE-3642.
+                    throw new UnsupportedOperationException("Symlink deletion is not supported: " + entry);
+            }
+        }
+
+        if (!dir.delete())
+            throw new IOException("Cannot remove directory: " + dir);
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path) {
-        try {
-            if (!fileSystemForUser().mkdirs(convert(path)))
-                throw new IgniteException("Failed to make directories [path=" + path + "]");
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + "]");
-        }
+        if (!mkdirs0(fileForPath(path)))
+            throw new IgniteException("Failed to make directories [path=" + path + "]");
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-        try {
-            if (!fileSystemForUser().mkdirs(convert(path), new HadoopIgfsProperties(props).permission()))
-                throw new IgniteException("Failed to make directories [path=" + path + ", props=" + props + "]");
+        // TODO: IGNITE-3641.
+        mkdirs(path);
+    }
+
+    /**
+     * Create directories.
+     *
+     * @param dir Directory.
+     * @return Result.
+     */
+    private boolean mkdirs0(@Nullable File dir) {
+        if (dir == null)
+            return true; // Nothing to create.
+
+        if (dir.exists()) {
+            if (dir.isDirectory())
+                return true; // Already exists, so no-op.
+            else
+                // TODO: IGNITE-3646.
+                return false;
         }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + ", props=" + props + "]");
+        else {
+            File parentDir = dir.getParentFile();
+
+            if (!mkdirs0(parentDir)) // Create parent first.
+                return false;
+
+            boolean res = dir.mkdir();
+
+            if (!res)
+                res = dir.exists(); // Tolerate concurrent creation.
+
+            return res;
         }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
         try {
+            // TODO: IGNITE-3647.
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -346,6 +336,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
         try {
+            // TODO: IGNITE-3647.
             FileStatus[] statuses = fileSystemForUser().listStatus(convert(path));
 
             if (statuses == null)
@@ -389,50 +380,54 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize) {
-        return new HadoopIgfsSecondaryFileSystemPositionedReadable(fileSystemForUser(), convert(path), bufSize);
+        try {
+            FileInputStream in = new FileInputStream(fileForPath(path));
+
+            return new LocalIgfsSecondaryFileSystemPositionedReadable(in, bufSize);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed to open file for read: " + path);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        try {
-            return fileSystemForUser().create(convert(path), overwrite);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
-        }
+        return create0(path, overwrite, bufSize);
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        HadoopIgfsProperties props0 =
-            new HadoopIgfsProperties(props != null ? props : Collections.<String, String>emptyMap());
-
-        try {
-            return fileSystemForUser().create(convert(path), props0.permission(), overwrite, bufSize,
-                (short) replication, blockSize, null);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", props=" + props +
-                ", overwrite=" + overwrite + ", bufSize=" + bufSize + ", replication=" + replication +
-                ", blockSize=" + blockSize + "]");
-        }
+        // TODO: IGNITE-3648.
+        return create0(path, overwrite, bufSize);
     }
-
     /** {@inheritDoc} */
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
+        // TODO: IGNITE-3648.
         try {
-            return fileSystemForUser().append(convert(path), bufSize);
+            File file = fileForPath(path);
+
+            boolean exists = file.exists();
+
+            if (exists)
+                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+            else {
+                if (create)
+                    return create0(path, false, bufSize);
+                else
+                    throw new IOException("File not found: " + path);
+            }
         }
         catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ", bufSize=" + bufSize + "]");
+            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ']');
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
         try {
+            // TODO: IGNITE-3650.
             final FileStatus status = fileSystemForUser().getFileStatus(convert(path));
 
             if (status == null)
@@ -506,6 +501,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         try {
+            // TODO: IGNITE-3651.
             // We don't use FileSystem#getUsed() since it counts only the files
             // in the filesystem root, not all the files recursively.
             return fileSystemForUser().getContentSummary(new Path("/")).getSpaceConsumed();
@@ -513,27 +509,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
-        try {
-            // We don't use FileSystem#getUsed() since it counts only the files
-            // in the filesystem root, not all the files recursively.
-            fileSystemForUser().setTimes(convert(path), modificationTime, accessTime);
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed set times for path: " + path);
-        }
-    }
-
-    /**
-     * Gets the underlying {@link FileSystem}.
-     * This method is used solely for testing.
-     * @return the underlying Hadoop {@link FileSystem}.
-     */
-    public FileSystem fileSystem() {
-        return fileSystemForUser();
     }
 
     /**
@@ -558,8 +533,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        dfltUsrName = IgfsUtils.fixUserName(dfltUsrName);
-
         if (fsFactory == null)
             fsFactory = new CachingHadoopFileSystemFactory();
 
@@ -570,11 +543,88 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware)fsFactory).stop();
+             ((LifecycleAware)fsFactory).stop();
     }
 
-    /** {@inheritDoc} */
-    @Override public HadoopFileSystemFactory getPayload() {
-        return fsFactory;
+    /**
+     * Get work directory.
+     *
+     * @return Work directory.
+     */
+    public String getWorkDirectory() {
+        // TODO: IGNITE-3652.
+        return workDir;
+    }
+
+    /**
+     * Set work directory.
+     *
+     * @param workDir Work directory.
+     */
+    public void setWorkDirectory(final String workDir) {
+        this.workDir = workDir;
+    }
+
+    /**
+     * Get buffer size.
+     *
+     * @return Buffer size.
+     */
+    public int getBufferSize() {
+        return bufSize;
+    }
+
+    /**
+     * Set buffer size.
+     *
+     * @param bufSize Buffer size.
+     */
+    public void setBufferSize(int bufSize) {
+        this.bufSize = bufSize;
+    }
+
+    /**
+     * Create file for IGFS path.
+     *
+     * @param path IGFS path.
+     * @return File object.
+     */
+    private File fileForPath(IgfsPath path) {
+        if (workDir == null)
+            return new File(path.toString());
+        else
+            return new File(workDir, path.toString());
+    }
+
+    /**
+     * Internal create routine.
+     *
+     * @param path Path.
+     * @param overwrite Overwirte flag.
+     * @param bufSize Buffer size.
+     * @return Output stream.
+     */
+    private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+        try {
+            File file = fileForPath(path);
+
+            boolean exists = file.exists();
+
+            if (exists) {
+                if (!overwrite)
+                    throw new IOException("File already exists.");
+            }
+            else {
+                File parent = file.getParentFile();
+
+                if (!mkdirs0(parent))
+                    throw new IOException("Failed to create parent directory: " + parent);
+            }
+
+            return new BufferedOutputStream(new FileOutputStream(file), bufSize);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
+        }
     }
 }
