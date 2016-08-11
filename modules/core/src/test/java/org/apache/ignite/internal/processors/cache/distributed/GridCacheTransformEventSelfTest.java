@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,6 +29,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -45,6 +37,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -98,7 +100,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Caches. */
     private IgniteCache<Integer, Integer>[] caches;
 
-    /** Recorded events.*/
+    /** Recorded events. */
     private ConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
@@ -492,7 +494,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param txConcurrency TX concurrency.
      * @param txIsolation TX isolation.
-     *
      * @throws Exception If failed.
      */
     private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
@@ -618,8 +619,14 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * Transform closure.
      */
     private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
+        /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            assert ignite != null;
+
             e.setValue(e.getValue() + 1);
 
             return null;
