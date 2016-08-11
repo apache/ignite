@@ -101,7 +101,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private boolean commit;
 
     /** Error. */
-    private volatile IgniteCheckedException err;
+    private volatile Throwable err;
 
     /** Node mappings. */
     private IgniteTxMappings mappings;
@@ -393,7 +393,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * @param err Error.
      */
-    void finish(IgniteCheckedException err) {
+    void finish(Throwable err) {
         this.err = err;
 
         finish(false);
