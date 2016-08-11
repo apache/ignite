@@ -287,6 +287,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Whether operation with opened I/O stream do not fail after the file is deleted.
+     */
+    protected boolean isStreamOpsAllowAfterDelete() {
+        return false;
+    }
+
+    /**
      * @return Whether times are supported.
      */
     protected boolean timesSupported() {

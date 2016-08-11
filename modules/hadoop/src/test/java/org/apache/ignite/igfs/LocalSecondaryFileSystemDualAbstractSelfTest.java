@@ -76,4 +76,9 @@ public abstract class LocalSecondaryFileSystemDualAbstractSelfTest extends IgfsD
     @Override protected boolean timesSupported() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isStreamOpsAllowAfterDelete() {
+        return true;
+    }
 }

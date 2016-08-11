@@ -1225,6 +1225,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         final IgfsInputStream in0 = in;
 
+        if (isStreamOpsAllowAfterDelete())
+            return;
+
         // Try reading the second block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override
