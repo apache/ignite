@@ -52,9 +52,6 @@ namespace Apache.Ignite.Core
     public static class Ignition
     {
         /** */
-        internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
-
-        /** */
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
@@ -157,10 +154,48 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration(string sectionName, string configPath)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+            IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
+
+            var fileMap = GetConfigMap(configPath);
+            var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+
+            var section = config.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} with name '{1}' in file '{2}'",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration file map.
+        /// </summary>
+        private static ExeConfigurationFileMap GetConfigMap(string fileName)
+        {
+            var fullFileName = Path.GetFullPath(fileName);
+
+            if (!File.Exists(fullFileName))
+                throw new ConfigurationErrorsException("Specified config file does not exist: " + fileName);
+
+            return new ExeConfigurationFileMap { ExeConfigFilename = fullFileName };
+        }
+
+        /// <summary>
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public unsafe static IIgnite Start(IgniteConfiguration cfg)
+        public static unsafe IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
@@ -178,10 +213,6 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfg.GridName;
 
-                var cfgPath = cfg.SpringConfigUrl == null 
-                    ? null 
-                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
-
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
@@ -190,7 +221,7 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
@@ -312,7 +343,7 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream, 
+        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream,
             HandleRegistry handleRegistry)
         {
             IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>

@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallab
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
@@ -160,6 +161,7 @@ public class BinaryContext {
 
         sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
         sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
 
         sysClss.add(IgfsClientAffinityCallable.class.getName());
         sysClss.add(IgfsClientDeleteCallable.class.getName());
@@ -1127,13 +1129,17 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                false
+                true
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
+
+            // Registering in order to support the interoperability between Java, C++ and .Net.
+            // https://issues.apache.org/jira/browse/IGNITE-3455
+            predefinedTypes.put(id, desc);
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));

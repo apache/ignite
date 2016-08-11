@@ -64,7 +64,8 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
         try {
             platformCtx.kernalContext().resource().injectGeneric(baseFunc);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
     }
@@ -75,6 +76,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
             return baseFunc.partition(reader.readObjectDetached());
         else if (type == OP_REMOVE_NODE) {
             baseFunc.removeNode(reader.readUuid());
+
             return 0;
         }
 
@@ -88,7 +90,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
             if (affCtx == null)
                 throw new IgniteException("Thread-local AffinityFunctionContext is null. " +
-                        "This may indicate an unsupported call to the base AffinityFunction");
+                        "This may indicate an unsupported call to the base AffinityFunction.");
 
             final List<List<ClusterNode>> partitions = baseFunc.assignPartitions(affCtx);
 
@@ -99,8 +101,6 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
         super.processOutStream(type, writer);
     }
-
-
 
     /**
      * Sets the context for current operation.

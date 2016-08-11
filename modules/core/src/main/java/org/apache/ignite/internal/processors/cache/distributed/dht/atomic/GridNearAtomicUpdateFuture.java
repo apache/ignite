@@ -883,7 +883,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (val == null && op != GridCacheOperation.DELETE)
                 continue;
 
-            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
+            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
             if (remapKeys != null && !remapKeys.contains(cacheKey))
                 continue;
@@ -1000,7 +1000,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (val == null && op != GridCacheOperation.DELETE)
             throw new NullPointerException("Null value.");
 
-        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
+        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
         if (op != TRANSFORM)
             val = cctx.toCacheObject(val);

@@ -49,7 +49,7 @@ form.panel.panel-default(name='general' novalidate)
                         </ul>')
                 .settings-row(data-ng-show='#{model}.cacheMode === "PARTITIONED"')
                     +number('Backups:', model + '.backups', 'backups', 'true', '0', '0', 'Number of nodes used to back up single partition for partitioned cache')
-                .settings-row(data-ng-show='#{model}.backups && #{model}.cacheMode !== "LOCAL"')
+                .settings-row(data-ng-show='#{model}.cacheMode === "PARTITIONED" && #{model}.backups')
                     +checkbox('Read from backup', model + '.readFromBackup', 'readFromBackup',
                         'Flag indicating whether data can be read from backup<br/>\
                         If not set then always get data from primary node (never from backup)')

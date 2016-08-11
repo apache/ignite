@@ -250,7 +250,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     public void testDefaultFoldersNonPrimary() throws Exception {
         setSecondaryFs = true;
 
-        mode = PRIMARY;
+        mode = DUAL_ASYNC;
 
         startUp();
 
@@ -258,43 +258,45 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         checkMode("/ignite/proxy/", PROXY);
         checkMode("/ignite/proxy/subfolder", PROXY);
         checkMode("/ignite/proxy/folder/file.txt", PROXY);
-        checkMode("/ignite/proxyx", PRIMARY);
-        checkMode("/ignite/proxyx/", PRIMARY);
-        checkMode("/ignite/proxyx/subfolder", PRIMARY);
-        checkMode("/ignite/proxyx/folder/file.txt", PRIMARY);
+        checkMode("/ignite/proxyx", mode);
+        checkMode("/ignite/proxyx/", mode);
+        checkMode("/ignite/proxyx/subfolder", mode);
+        checkMode("/ignite/proxyx/folder/file.txt", mode);
 
-        checkMode("/userdir/ignite/proxy", PRIMARY);
-        checkMode("/userdir/ignite/proxy/", PRIMARY);
-        checkMode("/userdir/ignite/proxy/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/proxy/folder/file.txt", PRIMARY);
+        checkMode("/userdir/ignite/proxy", mode);
+        checkMode("/userdir/ignite/proxy/", mode);
+        checkMode("/userdir/ignite/proxy/subfolder", mode);
+        checkMode("/userdir/ignite/proxy/folder/file.txt", mode);
 
         checkMode("/ignite/sync", DUAL_SYNC);
         checkMode("/ignite/sync/", DUAL_SYNC);
         checkMode("/ignite/sync/subfolder", DUAL_SYNC);
         checkMode("/ignite/sync/folder/file.txt", DUAL_SYNC);
-        checkMode("/ignite/syncx", PRIMARY);
-        checkMode("/ignite/syncx/", PRIMARY);
-        checkMode("/ignite/syncx/subfolder", PRIMARY);
-        checkMode("/ignite/syncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/ignite/sync", PRIMARY);
-        checkMode("/userdir/ignite/sync/", PRIMARY);
-        checkMode("/userdir/ignite/sync/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/sync/folder/file.txt", PRIMARY);
+        checkMode("/ignite/syncx", mode);
+        checkMode("/ignite/syncx/", mode);
+        checkMode("/ignite/syncx/subfolder", mode);
+        checkMode("/ignite/syncx/folder/file.txt", mode);
+
+        checkMode("/userdir/ignite/sync", mode);
+        checkMode("/userdir/ignite/sync/", mode);
+        checkMode("/userdir/ignite/sync/subfolder", mode);
+        checkMode("/userdir/ignite/sync/folder/file.txt", mode);
 
         checkMode("/ignite/async", DUAL_ASYNC);
         checkMode("/ignite/async/", DUAL_ASYNC);
         checkMode("/ignite/async/subfolder", DUAL_ASYNC);
         checkMode("/ignite/async/folder/file.txt", DUAL_ASYNC);
-        checkMode("/ignite/asyncx", PRIMARY);
-        checkMode("/ignite/asyncx/", PRIMARY);
-        checkMode("/ignite/asyncx/subfolder", PRIMARY);
-        checkMode("/ignite/asyncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/ignite/async", PRIMARY);
-        checkMode("/userdir/ignite/async/", PRIMARY);
-        checkMode("/userdir/ignite/async/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/async/folder/file.txt", PRIMARY);
+        checkMode("/ignite/asyncx", mode);
+        checkMode("/ignite/asyncx/", mode);
+        checkMode("/ignite/asyncx/subfolder", mode);
+        checkMode("/ignite/asyncx/folder/file.txt", mode);
+
+        checkMode("/userdir/ignite/async", mode);
+        checkMode("/userdir/ignite/async/", mode);
+        checkMode("/userdir/ignite/async/subfolder", mode);
+        checkMode("/userdir/ignite/async/folder/file.txt", mode);
     }
 
     /**
@@ -333,8 +335,11 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         mode = DUAL_ASYNC;
 
-        pathModes(F.t("/ignite/primary", PROXY), F.t("/ignite/proxy", DUAL_SYNC),
-            F.t("/ignite/sync", DUAL_ASYNC), F.t("/ignite/async", PRIMARY));
+        pathModes(
+            F.t("/ignite/primary", PROXY),
+            F.t("/ignite/proxy", DUAL_SYNC),
+            F.t("/ignite/sync", DUAL_ASYNC),
+            F.t("/ignite/async", PRIMARY));
 
         startUp();
 
@@ -487,8 +492,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPropagationDualAsync() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-822");
-
         mode = DUAL_ASYNC;
 
         checkPropagation();

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import javax.cache.CacheException;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
@@ -59,61 +60,74 @@ public class GridThreadLocalTable extends Table {
     /**
      * @param t Table or {@code null} to reset existing.
      */
-    public void setInnerTable(Table t) {
+    public void innerTable(Table t) {
         if (t == null)
             tbl.remove();
         else
             tbl.set(t);
     }
 
+    /**
+     * @return Inner table.
+     */
+    private Table innerTable() {
+        Table t = tbl.get();
+
+        if (t == null)
+            throw new CacheException("Table `" + getName() + "` can be accessed only within Ignite query context.");
+
+        return t;
+    }
+
     /** {@inheritDoc} */
     @Override public Index getPrimaryKey() {
-        return tbl.get().getPrimaryKey();
+        return innerTable().getPrimaryKey();
     }
 
     /** {@inheritDoc} */
     @Override public Column getRowIdColumn() {
-        return tbl.get().getRowIdColumn();
+        return innerTable().getRowIdColumn();
     }
 
     /** {@inheritDoc} */
-    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return tbl.get().getBestPlanItem(session, masks, filter, sortOrder);
+    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder);
     }
 
     /** {@inheritDoc} */
     @Override public Value getDefaultValue(Session session, Column column) {
-        return tbl.get().getDefaultValue(session, column);
+        return innerTable().getDefaultValue(session, column);
     }
 
     /** {@inheritDoc} */
     @Override public SearchRow getTemplateSimpleRow(boolean singleColumn) {
-        return tbl.get().getTemplateSimpleRow(singleColumn);
+        return innerTable().getTemplateSimpleRow(singleColumn);
     }
 
     /** {@inheritDoc} */
     @Override public Row getTemplateRow() {
-        return tbl.get().getTemplateRow();
+        return innerTable().getTemplateRow();
     }
 
     /** {@inheritDoc} */
     @Override public Column getColumn(String columnName) {
-        return tbl.get().getColumn(columnName);
+        return innerTable().getColumn(columnName);
     }
 
     /** {@inheritDoc} */
     @Override public Column getColumn(int index) {
-        return tbl.get().getColumn(index);
+        return innerTable().getColumn(index);
     }
 
     /** {@inheritDoc} */
     @Override public Index getIndexForColumn(Column column) {
-        return tbl.get().getIndexForColumn(column);
+        return innerTable().getIndexForColumn(column);
     }
 
     /** {@inheritDoc} */
     @Override public Column[] getColumns() {
-        return tbl.get().getColumns();
+        return innerTable().getColumns();
     }
 
     /** {@inheritDoc} */
@@ -122,8 +136,8 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(Session session, boolean exclusive, boolean force) {
-        tbl.get().lock(session, exclusive, force);
+    @Override public boolean lock(Session session, boolean exclusive, boolean force) {
+        return innerTable().lock(session, exclusive, force);
     }
 
     /** {@inheritDoc} */
@@ -133,33 +147,33 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session s) {
-        tbl.get().unlock(s);
+        innerTable().unlock(s);
     }
 
     /** {@inheritDoc} */
     @Override public Index addIndex(Session session, String indexName, int indexId, IndexColumn[] cols,
         IndexType indexType, boolean create, String indexComment) {
-        return tbl.get().addIndex(session, indexName, indexId, cols, indexType, create, indexComment);
+        return innerTable().addIndex(session, indexName, indexId, cols, indexType, create, indexComment);
     }
 
     /** {@inheritDoc} */
     @Override public void removeRow(Session session, Row row) {
-        tbl.get().removeRow(session, row);
+        innerTable().removeRow(session, row);
     }
 
     /** {@inheritDoc} */
     @Override public void truncate(Session session) {
-        tbl.get().truncate(session);
+        innerTable().truncate(session);
     }
 
     /** {@inheritDoc} */
     @Override public void addRow(Session session, Row row) {
-        tbl.get().addRow(session, row);
+        innerTable().addRow(session, row);
     }
 
     /** {@inheritDoc} */
     @Override public void checkSupportAlter() {
-        tbl.get().checkSupportAlter();
+        innerTable().checkSupportAlter();
     }
 
     /** {@inheritDoc} */
@@ -169,22 +183,22 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public Index getUniqueIndex() {
-        return tbl.get().getUniqueIndex();
+        return innerTable().getUniqueIndex();
     }
 
     /** {@inheritDoc} */
     @Override public Index getScanIndex(Session session) {
-        return tbl.get().getScanIndex(session);
+        return innerTable().getScanIndex(session);
     }
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        return tbl.get().getIndexes();
+        return innerTable().getIndexes();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLockedExclusively() {
-        return tbl.get().isLockedExclusively();
+        return innerTable().isLockedExclusively();
     }
 
     /** {@inheritDoc} */
@@ -194,12 +208,12 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public boolean isDeterministic() {
-        return tbl.get().isDeterministic();
+        return innerTable().isDeterministic();
     }
 
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
-        return tbl.get().canGetRowCount();
+        return innerTable().canGetRowCount();
     }
 
     /** {@inheritDoc} */
@@ -209,7 +223,7 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
-        return tbl.get().getRowCount(session);
+        return innerTable().getRowCount(session);
     }
 
     /** {@inheritDoc} */

@@ -977,6 +977,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 WriteQueryArgs(writer, qry.Arguments);
 
+                writer.WriteBoolean(qry.EnableDistributedJoins);
+                writer.WriteBoolean(qry.EnforceJoinOrder);
+
                 FinishMarshal(writer);
 
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
@@ -1215,8 +1218,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return new CacheEntryProcessorException((Exception) item);
 
             var msg = Unmarshal<string>(inStream);
+            var trace = Unmarshal<string>(inStream);
                 
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg));
+            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg, trace));
         }
 
         /// <summary>

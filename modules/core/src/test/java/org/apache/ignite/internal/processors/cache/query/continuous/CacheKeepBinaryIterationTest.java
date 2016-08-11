@@ -29,11 +29,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -221,11 +219,11 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     /**
      * @param ccfg Cache configuration.
      */
-    private void doTestScanQuery(CacheConfiguration<Object, Object> ccfg, boolean keepBinary,
-        boolean primitives) throws IgniteInterruptedCheckedException {
+    private void doTestScanQuery(final CacheConfiguration<Object, Object> ccfg, boolean keepBinary,
+        boolean primitives) throws Exception {
         IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
 
-        assertTrue(cache.size() == 0);
+        assertEquals(0, cache.size());
 
         try {
             for (int i = 0; i < KEYS; i++)
@@ -272,24 +270,25 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            cache.removeAll();
+            if (ccfg.getEvictionPolicy() != null) { // TODO: IGNITE-3462. Fixes evictionPolicy issues at cache destroy.
+                stopAllGrids();
 
-            if (ccfg.getEvictionPolicy() != null)
-                U.sleep(1000); // Fixes evictionPolicy issues at cache destroy.
-
-            grid(0).destroyCache(ccfg.getName());
+                startGridsMultiThreaded(getServerNodeCount());
+            }
+            else
+                grid(0).destroyCache(ccfg.getName());
         }
     }
 
     /**
      * @param ccfg Cache configuration.
      */
-    private void doTestLocalEntries(CacheConfiguration<Object, Object> ccfg,
+    private void doTestLocalEntries(final CacheConfiguration<Object, Object> ccfg,
         boolean keepBinary,
-        boolean primitives) throws IgniteInterruptedCheckedException {
+        boolean primitives) throws Exception {
         IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
 
-        assertTrue(cache.size() == 0);
+        assertEquals(0, cache.size());
 
         try {
             for (int i = 0; i < KEYS; i++)
@@ -341,12 +340,13 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            cache.removeAll();
+            if (ccfg.getEvictionPolicy() != null) { // TODO: IGNITE-3462. Fixes evictionPolicy issues at cache destroy.
+                stopAllGrids();
 
-            if (ccfg.getEvictionPolicy() != null)
-                U.sleep(1000); // Fixes evictionPolicy issues at cache destroy.
-
-            grid(0).destroyCache(ccfg.getName());
+                startGridsMultiThreaded(getServerNodeCount());
+            }
+            else
+                grid(0).destroyCache(ccfg.getName());
         }
     }
 
