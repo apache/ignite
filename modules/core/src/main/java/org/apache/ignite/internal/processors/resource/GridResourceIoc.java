@@ -43,6 +43,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +215,8 @@ public class GridResourceIoc {
      *
      * @param target Target object.
      * @param annSet Annotation classes to find on fields or methods of target object.
-     * @param dep Deployment. * @return {@code true} if any annotation is presented, {@code false} if it's not.
+     * @param dep Deployment.
+     * @return {@code true} if any annotation is presented, {@code false} if it's not.
      */
     boolean isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
         assert target != null;
@@ -254,14 +256,14 @@ public class GridResourceIoc {
     class ClassDescriptor {
         /** */
         private final Field[] recursiveFields;
-
         /** */
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
-        /** */
+        /** Uses as enum-map with enum {@link AnnotationSet} member as key,
+         * and bitmap as a result of matching found annotations with enum set {@link ResourceAnnotation} as value. */
         private final int[] containsAnnSets;
 
-        /** */
+        /** Uses as enum-map with enum {@link ResourceAnnotation} member as a keys. */
         private final T2<GridResourceField[], GridResourceMethod[]>[] annArr;
 
         /**
@@ -336,26 +338,31 @@ public class GridResourceIoc {
 
             T2<GridResourceField[], GridResourceMethod[]>[] annArr = null;
             if (annMap.isEmpty())
-                this.containsAnnSets = null;
+                containsAnnSets = null;
             else {
                 AnnotationSet[] sets = AnnotationSet.values();
 
-                this.containsAnnSets = new int[sets.length];
+                containsAnnSets = new int[sets.length];
 
                 for (int i = 0; i < sets.length; i++) {
                     int res = 0, mask = 1;
+
                     for (ResourceAnnotation ann : sets[i].annotations) {
                         T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
+
                         if (member != null) {
                             if (annArr == null)
                                 annArr = new T2[ResourceAnnotation.values().length];
+
                             annArr[ann.ordinal()] = member;
+
                             res |= mask;
                         }
+
                         mask <<= 1;
                     }
 
-                    this.containsAnnSets[i] = res;
+                    containsAnnSets[i] = res;
                 }
             }
             this.annArr = annArr;
@@ -377,8 +384,8 @@ public class GridResourceIoc {
         }
 
         /**
-         * @param set Set.
-         * @return {@code True} if any annotation is presented.
+         * @param set annotation set.
+         * @return {@code Bitmask} > 0 if any annotation is presented, otherwise return 0;
          */
         int isAnnotated(AnnotationSet set) {
             return recursiveFields.length > 0 ? ~(-1 << set.annotations.length) :
