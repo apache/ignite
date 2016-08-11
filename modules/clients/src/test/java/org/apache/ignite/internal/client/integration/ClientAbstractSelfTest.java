@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,12 +33,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import junit.framework.Assert;
-import net.sf.json.JSON;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONSerializer;
-import net.sf.json.JsonConfig;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.compute.ComputeJob;
@@ -245,8 +247,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
         clientCfg.setMessageInterceptor(new ConnectorMessageInterceptor() {
-            @Override
-            public Object onReceive(@Nullable Object obj) {
+            /** {@inheritDoc} */
+            @Override public Object onReceive(@Nullable Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
 
@@ -254,8 +256,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
                     obj + INTERCEPTED_SUF : obj;
             }
 
-            @Override
-            public Object onSend(Object obj) {
+            /** {@inheritDoc} */
+            @Override public Object onSend(Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
 
@@ -326,7 +328,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
 
         cfg.setProtocol(protocol());
-        cfg.setServers(Arrays.asList(serverAddress()));
+        cfg.setServers(Collections.singleton(serverAddress()));
 
         // Setting custom executor, to avoid failures on client shutdown.
         // And applying custom naming scheme to ease debugging.
@@ -384,9 +386,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         futs.put("put", data.putAsync("key", "val"));
         futs.put("putAll", data.putAllAsync(F.asMap("key", "val")));
         futs.put("get", data.getAsync("key"));
-        futs.put("getAll", data.getAllAsync(Arrays.asList("key")));
+        futs.put("getAll", data.getAllAsync(Collections.singletonList("key")));
         futs.put("remove", data.removeAsync("key"));
-        futs.put("removeAll", data.removeAllAsync(Arrays.asList("key")));
+        futs.put("removeAll", data.removeAllAsync(Collections.singletonList("key")));
         futs.put("replace", data.replaceAsync("key", "val"));
         futs.put("cas", data.casAsync("key", "val", "val2"));
         futs.put("metrics", data.metricsAsync());
@@ -494,8 +496,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         GridClientCompute compute = client.compute();
 
-        Assert.assertEquals(new Integer(17), compute.execute(taskName, taskArg));
-        Assert.assertEquals(new Integer(17), compute.executeAsync(taskName, taskArg).get());
+        assertEquals(Integer.valueOf(17), compute.execute(taskName, taskArg));
+        assertEquals(Integer.valueOf(17), compute.executeAsync(taskName, taskArg).get());
     }
 
     /**
@@ -564,13 +566,13 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Test task.
      */
-    private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
+    private static class TestTask extends ComputeTaskSplitAdapter<List<String>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list) {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<String> list) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
-                for (final Object val : list)
+                for (final String val : list)
                     jobs.add(new ComputeJobAdapter() {
                         @Override public Object execute() {
                             try {
@@ -580,7 +582,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
                                 Thread.currentThread().interrupt();
                             }
 
-                            return val == null ? 0 : val.toString().length();
+                            return val == null ? 0 : val.length();
                         }
                     });
 
@@ -601,20 +603,20 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Test task that sleeps 5 seconds.
      */
-    private static class SleepTestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
+    private static class SleepTestTask extends ComputeTaskSplitAdapter<List<String>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<String> list)
             {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
-                for (final Object val : list)
+                for (final String val : list)
                     jobs.add(new ComputeJobAdapter() {
                         @Override public Object execute() {
                             try {
                                 Thread.sleep(5000);
 
-                                return val == null ? 0 : val.toString().length();
+                                return val == null ? 0 : val.length();
                             }
                             catch (InterruptedException ignored) {
                                 return -1;
@@ -636,10 +638,14 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** JSON to java mapper. */
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
     /**
      * Http test task with restriction to string arguments only.
      */
     protected static class HttpTestTask extends ComputeTaskSplitAdapter<String, Integer> {
+        /** */
         private final TestTask delegate = new TestTask();
 
         /** {@inheritDoc} */
@@ -648,11 +654,23 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
 
-            JSON json = JSONSerializer.toJSON(arg);
+            try {
+                JsonNode json = JSON_MAPPER.readTree(arg);
 
-            List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
+                List<String> list = null;
 
-            return delegate.split(gridSize, list);
+                if (json.isArray()) {
+                    list = new ArrayList<>();
+
+                    for (JsonNode child : json)
+                        list.add(child.asText());
+                }
+
+                return delegate.split(gridSize, list);
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -665,16 +683,29 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * Http wrapper for sleep task.
      */
     protected static class SleepHttpTestTask extends ComputeTaskSplitAdapter<String, Integer> {
+        /** */
         private final SleepTestTask delegate = new SleepTestTask();
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
-            JSON json = JSONSerializer.toJSON(arg);
+            try {
+                JsonNode json = JSON_MAPPER.readTree(arg);
 
-            List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
+                List<String> list = null;
 
-            return delegate.split(gridSize, list);
+                if (json.isArray()) {
+                    list = new ArrayList<>();
+
+                    for (JsonNode child : json)
+                        list.add(child.asText());
+                }
+
+                return delegate.split(gridSize, list);
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -692,9 +723,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-            for (Map.Entry e : map.entrySet()) {
+            for (Map.Entry e : map.entrySet())
                 clo.apply(e.getKey(), e.getValue());
-            }
         }
 
         /** {@inheritDoc} */
@@ -703,7 +733,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(Cache.Entry<?, ?> e) {
             map.put(e.getKey(), e.getValue());
         }
 

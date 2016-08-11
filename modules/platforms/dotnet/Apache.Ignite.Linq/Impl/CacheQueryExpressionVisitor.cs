@@ -248,7 +248,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = Aliases.GetTableAlias(ExpressionWalker.GetCacheQueryable(expression));
+            var tableName = Aliases.GetTableAlias(expression);
 
             ResultBuilder.AppendFormat(format, tableName);
 
@@ -283,7 +283,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var fieldName = GetFieldName(expression, queryable);
 
-                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
+                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
                 AppendParameter(RegisterEvaluatedParameter(expression));

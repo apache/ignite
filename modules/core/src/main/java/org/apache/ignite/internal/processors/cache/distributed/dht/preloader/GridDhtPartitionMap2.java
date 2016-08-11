@@ -197,6 +197,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
+
         top = topVer;
 
         return old;
@@ -232,7 +233,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
             int ordinal = entry.getValue().ordinal();
 
             assert ordinal == (ordinal & 0xFF);
-            assert entry.getKey() >= 0 && entry.getKey() <= CacheConfiguration.MAX_PARTS_COUNT;
+            assert entry.getKey() >= 0 && entry.getKey() <= CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
 
             out.write(ordinal);
             out.writeShort((short)(int)entry.getKey());

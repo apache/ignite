@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.websession;
 
-import java.io.BufferedReader;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Serializable;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +46,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -87,6 +83,13 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     public void testSingleRequest() throws Exception {
         testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSessionRenewalDuringLogin() throws Exception {
+        testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }
 
     /**
@@ -289,6 +292,171 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopServer(srv);
+        }
+    }
+
+    /**
+     * Tests session renewal during login. Checks modification attribute in cache.
+     *
+     * @param cfg Configuration.
+     * @throws Exception If failed.
+     */
+    private void testSessionRenewalDuringLogin(String cfg) throws Exception {
+        Server srv = null;
+        String sesId = null;
+        try {
+            srv = startServerWithLoginService(TEST_JETTY_PORT, cfg, null, new SessionLoginServlet());
+
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test").openConnection();
+
+            conn.connect();
+
+            String sesIdCookie1 = getSessionIdFromCookie(conn);
+
+            X.println(">>>", "Initial session Cookie: " + sesIdCookie1, ">>>");
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                sesId = rdr.readLine();
+
+                if (!keepBinary()) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    HttpSession ses = cache.get(sesId);
+
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId);
+
+                    assertNotNull(entity);
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+                }
+            }
+
+            URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
+
+            HttpURLConnection con = (HttpURLConnection) conn2;
+
+            con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
+
+            con.setRequestMethod("POST");
+
+            con.setDoOutput(true);
+
+            String sesIdCookie2 = getSessionIdFromCookie(con);
+
+            X.println(">>>", "Logged In session Cookie: " + sesIdCookie2, ">>>");
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+                String sesId2 = rdr.readLine();
+
+                if (!keepBinary()) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    HttpSession ses = cache.get(sesId2);
+
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId2);
+
+                    assertNotNull(entity);
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+
+                }
+
+            }
+
+            URLConnection conn3 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/simple").openConnection();
+
+            conn3.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie2);
+
+            conn3.connect();
+
+            String sesIdCookie3 = getSessionIdFromCookie(conn3);
+
+            X.println(">>>", "Post Logged In session Cookie: " + sesIdCookie3, ">>>");
+
+            assertEquals(sesIdCookie2, sesIdCookie3);
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn3.getInputStream()))) {
+                String sesId3 = rdr.readLine();
+
+                if (!keepBinary()) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+                    HttpSession session = cache.get(sesId3);
+
+                    assertNotNull(session);
+
+                    assertNotNull(cache);
+
+                    HttpSession ses = cache.get(sesId3);
+
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId3);
+
+                    assertNotNull(entity);
+
+                    assertNotNull(cache.get(sesId3));
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+                }
+            }
+        }
+        finally {
+            stopServerWithLoginService(srv);
         }
     }
 
@@ -668,6 +836,35 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Starts server with Login Service and create a realm file.
+     *
+     * @param port Port number.
+     * @param cfg Configuration.
+     * @param gridName Grid name.
+     * @param servlet Servlet.
+     * @return Server.
+     * @throws Exception In case of error.
+     */
+    private Server startServerWithLoginService(int port, @Nullable String cfg, @Nullable String gridName, HttpServlet servlet)
+            throws Exception {
+        Server srv = new Server(port);
+
+        WebAppContext ctx = getWebContext(cfg, gridName, keepBinary(), servlet);
+
+        HashLoginService hashLoginService = new HashLoginService();
+        hashLoginService.setName("Test Realm");
+        createRealm();
+        hashLoginService.setConfig("/tmp/realm.properties");
+        ctx.getSecurityHandler().setLoginService(hashLoginService);
+
+        srv.setHandler(ctx);
+
+        srv.start();
+
+        return srv;
+    }
+
+    /**
      * Stops server.
      *
      * @param srv Server.
@@ -676,6 +873,60 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     private void stopServer(@Nullable Server srv) throws Exception {
         if (srv != null)
             srv.stop();
+    }
+
+    /**
+     * Stops server and delete realm file.
+     *
+     * @param srv Server.
+     * @throws Exception In case of error.
+     */
+    private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
+        if (srv != null){
+            srv.stop();
+            File realmFile = new File("/tmp/realm.properties");
+            realmFile.delete();
+        }
+    }
+
+    /** Creates a realm file to store test user credentials */
+    private void createRealm() throws Exception{
+        File realmFile = new File("/tmp/realm.properties");
+        FileWriter fileWriter = new FileWriter(realmFile);
+        fileWriter.append("admin:admin");
+        fileWriter.flush();
+        fileWriter.close();
+    }
+
+    /**
+     * Retrieves HttpSession sessionId from Cookie
+     *
+     * @param conn URLConnection
+     * @return sesId
+     */
+    private String getSessionIdFromCookie(URLConnection conn) {
+        String sessionCookieValue = null;
+        String sesId = null;
+        Map<String, List<String>> headerFields = conn.getHeaderFields();
+        Set<String> headerFieldsSet = headerFields.keySet();
+        Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+
+        while (hearerFieldsIter.hasNext()) {
+            String headerFieldKey = hearerFieldsIter.next();
+
+            if ("Set-Cookie".equalsIgnoreCase(headerFieldKey)) {
+                List<String> headerFieldValue = headerFields.get(headerFieldKey);
+
+                for (String headerValue : headerFieldValue) {
+                    String[] fields = headerValue.split(";");
+                    sessionCookieValue = fields[0];
+                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=")+1,
+                            sessionCookieValue.length());
+                }
+            }
+        }
+
+        return sesId;
     }
 
     /**
@@ -827,6 +1078,67 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             }
             else
                 throw new ServletException("Nonexisting path: " + req.getPathInfo());
+        }
+    }
+
+    /**
+     * Test session behavior on id change.
+     */
+    private static class SessionLoginServlet extends HttpServlet {
+        /** {@inheritDoc} */
+        @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
+                throws ServletException, IOException {
+
+            if (req.getPathInfo().equals("/test")) {
+                HttpSession ses = req.getSession(true);
+                assertNotNull(ses);
+                ses.setAttribute("checkCnt", 0);
+                ses.setAttribute("key1", "val1");
+                ses.setAttribute("key2", "val2");
+                ses.setAttribute("mkey", new TestObj());
+
+                Profile p = (Profile) ses.getAttribute("profile");
+
+                if (p == null) {
+                    p = new Profile();
+                    ses.setAttribute("profile", p);
+                }
+
+                p.setMarker(req.getParameter("marker"));
+
+                X.println(">>>", "Request session test: " + ses.getId(), ">>>");
+
+                res.getWriter().write(ses.getId());
+
+                res.getWriter().flush();
+
+            } else if (req.getPathInfo().equals("/simple")) {
+                HttpSession session = req.getSession();
+                X.println(">>>", "Request session simple: " + session.getId(), ">>>");
+
+                res.getWriter().write(session.getId());
+
+                res.getWriter().flush();
+            }
+        }
+        /** {@inheritDoc} */
+        @Override protected void doPost(HttpServletRequest req, HttpServletResponse res)
+                throws ServletException, IOException {
+            if (req.getPathInfo().equals("/login")) {
+                try {
+                    req.login("admin", "admin");
+                } catch (Exception e) {
+                    X.printerrln("Login failed due to exception.", e);
+                }
+
+                HttpSession session = req.getSession();
+
+                X.println(">>>", "Logged In session: " + session.getId(), ">>>");
+
+                res.getWriter().write(session.getId());
+
+                res.getWriter().flush();
+            }
         }
     }
 

@@ -39,6 +39,7 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;
@@ -283,10 +284,16 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
                     assertTrue(String.format("+++ Fail on %s field", fieldName),
                         ((Comparable<BigDecimal>)val).compareTo((BigDecimal)res) == 0);
                 }
+                else if (val instanceof java.sql.Date)
+                    assertEquals(String.format("+++ Fail on %s field", fieldName),
+                        val.toString(), df.collect()[0].get(0).toString());
                 else if (val.getClass().isArray())
                     assertTrue(String.format("+++ Fail on %s field", fieldName), 1 <= df.count());
-                else
+                else {
+                    assertTrue(String.format("+++ Fail on %s field", fieldName), df.collect().length > 0);
+                    assertTrue(String.format("+++ Fail on %s field", fieldName), df.collect()[0].size() > 0);
                     assertEquals(String.format("+++ Fail on %s field", fieldName), val, df.collect()[0].get(0));
+                }
 
                 info(String.format("+++ Query on the filed: %s : %s passed", fieldName, f.getType().getSimpleName()));
             }

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './deployment.jade!';
+import templateUrl from './deployment.jade';
 
 export default ['igniteConfigurationClustersDeployment', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
