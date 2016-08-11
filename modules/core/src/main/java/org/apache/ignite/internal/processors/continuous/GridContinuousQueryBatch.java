@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
+package org.apache.ignite.internal.processors.continuous;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
 
 /**
- * Affinity mapped task.
+ * Continuous routine batch adapter.
  */
-public interface AffinityTask {
-    /**
-     * @return Affinity key.
-     */
-    @Deprecated
-    @Nullable public Object affinityKey();
+public class GridContinuousQueryBatch extends GridContinuousBatchAdapter {
+    /** Entries size included filtered entries. */
+    private final AtomicInteger size = new AtomicInteger();
+
+    /** {@inheritDoc} */
+    @Override public void add(Object obj) {
+        assert obj != null;
+        assert obj instanceof CacheContinuousQueryEntry;
+
+        super.add(obj);
+
+        size.addAndGet(((CacheContinuousQueryEntry)obj).size());
+    }
 
     /**
-     * @return Partition.
+     * @return Entries count.
      */
-    public int partition();
-
-    /**
-     * @return Affinity cache name.
-     */
-    @Nullable public Collection<String> affinityCacheNames();
-
-    /**
-     * @return Affinity topology version.
-     */
-    @Nullable public AffinityTopologyVersion topologyVersion();
+    public int entriesCount() {
+        return size.get();
+    }
 }

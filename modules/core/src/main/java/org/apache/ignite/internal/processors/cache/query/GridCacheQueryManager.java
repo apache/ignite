@@ -804,7 +804,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final ExpiryPolicy plc = cctx.expiry();
 
-            final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
+
+            if (topVer == null)
+                topVer = cctx.affinity().affinityTopologyVersion();
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
@@ -893,7 +896,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Integer part = qry.partition();
 
-        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups) :
+        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups, topVer) :
             cctx.swap().rawSwapIterator(part);
 
         if (expPlc != null)
@@ -936,8 +939,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
                 final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
-                    backups,
-                    cache.context().keepBinary());
+                    backups, cache.context().keepBinary(), topVer);
 
                 return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
                     /** */

@@ -15,34 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
+package org.apache.ignite.cache.spring;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
+import java.lang.reflect.Method;
+import org.springframework.cache.interceptor.KeyGenerator;
 
 /**
- * Affinity mapped task.
+ * Key generator.
  */
-public interface AffinityTask {
-    /**
-     * @return Affinity key.
-     */
-    @Deprecated
-    @Nullable public Object affinityKey();
+public class GridSpringCacheTestKeyGenerator implements KeyGenerator {
+    /** {@inheritDoc} */
+    @Override public Object generate(Object target, Method mtd, Object... params) {
+        assert params != null;
+        assert params.length > 0;
 
-    /**
-     * @return Partition.
-     */
-    public int partition();
+        if (params.length == 1)
+            return params[0];
+        else {
+            assert params.length == 2;
 
-    /**
-     * @return Affinity cache name.
-     */
-    @Nullable public Collection<String> affinityCacheNames();
-
-    /**
-     * @return Affinity topology version.
-     */
-    @Nullable public AffinityTopologyVersion topologyVersion();
+            return new GridSpringCacheTestKey((Integer)params[0], (String)params[1]);
+        }
+    }
 }

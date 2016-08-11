@@ -15,11 +15,10 @@
  *  limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.TestInjectionLifecycleBean;
-import org.apache.ignite.cache.spring.SpringCacheManager;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
