@@ -17,13 +17,74 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
+    using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Store;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="CacheStoreAdapter"/>.
     /// </summary>
     public class CacheStoreAdapterTest
     {
-        // TODO
+        /// <summary>
+        /// Tests the load write delete.
+        /// </summary>
+        [Test]
+        public void TestLoadWriteDelete()
+        {
+            var store = new Store();
+
+            store.LoadCache(null);
+            Assert.IsEmpty(store.Map);
+
+            var data = Enumerable.Range(1, 5).ToDictionary(x => x, x => x.ToString());
+
+            // Write.
+            store.WriteAll(data);
+            Assert.AreEqual(data, store.Map);
+
+            // Load.
+            CollectionAssert.AreEqual(data, store.LoadAll(data.Keys));
+            CollectionAssert.AreEqual(data.Where(x => x.Key < 3).ToDictionary(x => x.Key, x => x.Value),
+                store.LoadAll(data.Keys.Where(x => x < 3).ToList()));
+
+            // Delete.
+            var removed = new[] {3, 5};
+
+            foreach (var key in removed)
+                data.Remove(key);
+
+            store.DeleteAll(removed);
+            CollectionAssert.AreEqual(data, store.LoadAll(data.Keys));
+        }
+
+        /// <summary>
+        /// Test store.
+        /// </summary>
+        private class Store : CacheStoreAdapter
+        {
+            /** */
+            public readonly Dictionary<object, object> Map = new Dictionary<object, object>();
+
+            /** <inheritdoc /> */
+            public override object Load(object key)
+            {
+                object res;
+                return Map.TryGetValue(key, out res) ? res : null;
+            }
+
+            /** <inheritdoc /> */
+            public override void Write(object key, object val)
+            {
+                Map[key] = val;
+            }
+
+            /** <inheritdoc /> */
+            public override void Delete(object key)
+            {
+                Map.Remove(key);
+            }
+        }
     }
 }
