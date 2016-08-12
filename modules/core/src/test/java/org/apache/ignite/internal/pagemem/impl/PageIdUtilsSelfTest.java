@@ -46,35 +46,20 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLinkConstruction() throws Exception {
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.linkFromBytesOffset(0xFFFFFFFFFFFFFL, 0));
-        assertEquals(0x001FFFFFFFFFFFFFL, PageIdUtils.linkFromBytesOffset(0xFFFFFFFFFFFFFL, 8));
+        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 0));
+        assertEquals(0x001FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 1));
 
-        assertEquals(0x0000000000000000L, PageIdUtils.linkFromBytesOffset(0, 0));
-        assertEquals(0x0010000000000000L, PageIdUtils.linkFromBytesOffset(0, 8));
+        assertEquals(0x0000000000000000L, PageIdUtils.link(0, 0));
+        assertEquals(0x0010000000000000L, PageIdUtils.link(0, 1));
 
-        assertEquals(0x8000000000000000L, PageIdUtils.linkFromBytesOffset(0, 16384));
-        assertEquals(0x800FFFFFFFFFFFFFL, PageIdUtils.linkFromBytesOffset(0xFFFFFFFFFFFFFL, 16384));
+        assertEquals(0x8000000000000000L, PageIdUtils.link(0, 2048));
+        assertEquals(0x800FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 2048));
 
-        assertEquals(0x8010000000000000L, PageIdUtils.linkFromBytesOffset(0, 16392));
-        assertEquals(0x801FFFFFFFFFFFFFL, PageIdUtils.linkFromBytesOffset(0xFFFFFFFFFFFFFL, 16392));
+        assertEquals(0x8010000000000000L, PageIdUtils.link(0, 2049));
+        assertEquals(0x801FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 2049));
 
-        assertEquals(0xFFF0000000000000L, PageIdUtils.linkFromBytesOffset(0, 32760));
-        assertEquals(0xFFFFFFFFFFFFFFFFL, PageIdUtils.linkFromBytesOffset(0xFFFFFFFFFFFFFL, 32760));
-
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.linkFromDwordOffset(0xFFFFFFFFFFFFFL, 0));
-        assertEquals(0x001FFFFFFFFFFFFFL, PageIdUtils.linkFromDwordOffset(0xFFFFFFFFFFFFFL, 1));
-
-        assertEquals(0x0000000000000000L, PageIdUtils.linkFromDwordOffset(0, 0));
-        assertEquals(0x0010000000000000L, PageIdUtils.linkFromDwordOffset(0, 1));
-
-        assertEquals(0x8000000000000000L, PageIdUtils.linkFromDwordOffset(0, 2048));
-        assertEquals(0x800FFFFFFFFFFFFFL, PageIdUtils.linkFromDwordOffset(0xFFFFFFFFFFFFFL, 2048));
-
-        assertEquals(0x8010000000000000L, PageIdUtils.linkFromDwordOffset(0, 2049));
-        assertEquals(0x801FFFFFFFFFFFFFL, PageIdUtils.linkFromDwordOffset(0xFFFFFFFFFFFFFL, 2049));
-
-        assertEquals(0xFFF0000000000000L, PageIdUtils.linkFromDwordOffset(0, 4095));
-        assertEquals(0xFFFFFFFFFFFFFFFFL, PageIdUtils.linkFromDwordOffset(0xFFFFFFFFFFFFFL, 4095));
+        assertEquals(0xFFF0000000000000L, PageIdUtils.link(0, 4095));
+        assertEquals(0xFFFFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 4095));
     }
 
     /**
@@ -117,20 +102,20 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(32760, PageIdUtils.bytesOffset(0xFFF0000000000000L));
         assertEquals(32760, PageIdUtils.bytesOffset(0xFFFFFFFFFFFFFFFFL));
 
-        assertEquals(0, PageIdUtils.dwordsOffset(0x000FFFFFFFFFFFFFL));
-        assertEquals(1, PageIdUtils.dwordsOffset(0x001FFFFFFFFFFFFFL));
+        assertEquals(0, PageIdUtils.itemId(0x000FFFFFFFFFFFFFL));
+        assertEquals(1, PageIdUtils.itemId(0x001FFFFFFFFFFFFFL));
 
-        assertEquals(0, PageIdUtils.dwordsOffset(0x0000000000000000L));
-        assertEquals(1, PageIdUtils.dwordsOffset(0x0010000000000000L));
+        assertEquals(0, PageIdUtils.itemId(0x0000000000000000L));
+        assertEquals(1, PageIdUtils.itemId(0x0010000000000000L));
 
-        assertEquals(2048, PageIdUtils.dwordsOffset(0x8000000000000000L));
-        assertEquals(2048, PageIdUtils.dwordsOffset(0x800FFFFFFFFFFFFFL));
+        assertEquals(2048, PageIdUtils.itemId(0x8000000000000000L));
+        assertEquals(2048, PageIdUtils.itemId(0x800FFFFFFFFFFFFFL));
 
-        assertEquals(2049, PageIdUtils.dwordsOffset(0x8010000000000000L));
-        assertEquals(2049, PageIdUtils.dwordsOffset(0x801FFFFFFFFFFFFFL));
+        assertEquals(2049, PageIdUtils.itemId(0x8010000000000000L));
+        assertEquals(2049, PageIdUtils.itemId(0x801FFFFFFFFFFFFFL));
 
-        assertEquals(4095, PageIdUtils.dwordsOffset(0xFFF0000000000000L));
-        assertEquals(4095, PageIdUtils.dwordsOffset(0xFFFFFFFFFFFFFFFFL));
+        assertEquals(4095, PageIdUtils.itemId(0xFFF0000000000000L));
+        assertEquals(4095, PageIdUtils.itemId(0xFFFFFFFFFFFFFFFFL));
     }
 
     /**
@@ -170,8 +155,8 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
 
             long pageId = PageIdUtils.pageId(partId, PageMemory.FLAG_DATA, pageNum);
 
-            long link1 = PageIdUtils.linkFromDwordOffset(pageId, offset);
-            long link2 = PageIdUtils.linkFromDwordOffset(pageId, 0);
+            long link1 = PageIdUtils.link(pageId, offset);
+            long link2 = PageIdUtils.link(pageId, 0);
 
             assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
         }
@@ -185,8 +170,8 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
             long pageId1 = PageIdUtils.pageId(partId, PageMemory.FLAG_IDX, pageNum);
             long pageId2 = PageIdUtils.pageId(1, PageMemory.FLAG_IDX, pageNum);
 
-            long link1 = PageIdUtils.linkFromDwordOffset(pageId1, offset);
-            long link2 = PageIdUtils.linkFromDwordOffset(pageId2, 0);
+            long link1 = PageIdUtils.link(pageId1, offset);
+            long link2 = PageIdUtils.link(pageId2, 0);
 
             assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
         }
@@ -211,12 +196,12 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
             assertEquals(msg, pageId, PageIdUtils.pageId(pageId));
             assertEquals(msg, fileId, PageIdUtils.fileId(pageId));
             assertEquals(msg, 0, PageIdUtils.bytesOffset(pageId));
-            assertEquals(msg, 0, PageIdUtils.dwordsOffset(pageId));
+            assertEquals(msg, 0, PageIdUtils.itemId(pageId));
 
-            long link = PageIdUtils.linkFromDwordOffset(pageId, offset);
+            long link = PageIdUtils.link(pageId, offset);
 
             assertEquals(msg, pageId, PageIdUtils.pageId(link));
-            assertEquals(msg, offset, PageIdUtils.dwordsOffset(link));
+            assertEquals(msg, offset, PageIdUtils.itemId(link));
             assertEquals(msg, offset * 8, PageIdUtils.bytesOffset(link));
             assertEquals(msg, pageId, PageIdUtils.pageId(link));
             assertEquals(msg, fileId, PageIdUtils.fileId(link));

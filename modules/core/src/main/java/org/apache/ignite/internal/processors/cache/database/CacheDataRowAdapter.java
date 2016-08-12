@@ -28,11 +28,12 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
@@ -76,7 +77,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        long nextLink = 0;
+        long nextLink;
         IncompleteObject<?> incomplete = null;
 
         try (Page page = page(pageId(link), cctx)) {
@@ -85,28 +86,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
             try {
                 DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-                int dataOff = io.getDataOffset(buf, dwordsOffset(link));
-
-                nextLink = io.getNextFragmentLink(buf, dataOff);
+                nextLink = io.setPositionAndLimitOnPayload(buf, itemId(link));
 
                 if (nextLink == 0) {
-                    buf.position(dataOff);
-
-                    // Skip entry size.
-                    buf.getShort();
-
+                    // Read the whole row at once.
                     key = coctx.processor().toKeyCacheObject(coctx, buf);
 
                     if (!keyOnly) {
                         val = coctx.processor().toCacheObject(coctx, buf);
-
-                        ver = readVersion(buf);
+                        ver = CacheVersionIO.read(buf);
                     }
                 }
                 else {
                     // Read the first chunk of multi-page entry.
-                    io.setPositionAndLimitOnFragment(buf, dataOff);
-
                     incomplete = readIncompleteKey(coctx, buf, null);
 
                     if (key != null) {
@@ -135,11 +127,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     DataPageIO io = DataPageIO.VERSIONS.forPage(b);
 
-                    final int off = io.getDataOffset(b, dwordsOffset(nextLink));
-
-                    nextLink = io.getNextFragmentLink(b, off);
-
-                    io.setPositionAndLimitOnFragment(b, off);
+                    nextLink = io.setPositionAndLimitOnPayload(b, itemId(nextLink));
 
                     // Read key.
                     if (key == null) {
@@ -233,11 +221,18 @@ public class CacheDataRowAdapter implements CacheDataRow {
     private IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
         IncompleteObject<?> incomplete
-    ) {
+    ) throws IgniteCheckedException {
         if (incomplete == null) {
-            // If the whole version is on a single page, just read it.
-            if (buf.remaining() >= DataPageIO.VER_SIZE) {
-                ver = readVersion(buf);
+            int remaining = buf.remaining();
+
+            if (remaining == 0)
+                return null;
+
+            int size = CacheVersionIO.readSize(buf);
+
+            if (remaining >= size) {
+                // If the whole version is on a single page, just read it.
+                ver = CacheVersionIO.read(buf);
 
                 assert !buf.hasRemaining(): buf.remaining();
                 assert ver != null;
@@ -246,7 +241,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             // We have to read multipart version.
-            incomplete = new IncompleteObject<>(new byte[DataPageIO.VER_SIZE]);
+            incomplete = new IncompleteObject<>(new byte[size]);
         }
 
         incomplete.readData(buf);
@@ -256,7 +251,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             verBuf.order(buf.order());
 
-            ver = readVersion(verBuf);
+            ver = CacheVersionIO.read(verBuf);
 
             assert ver != null;
         }
@@ -312,19 +307,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheDataRowAdapter.class, this);
-    }
-
-    /**
-     * @param buf Buffer.
-     * @return Version.
-     */
-    private GridCacheVersion readVersion(final ByteBuffer buf) {
-        int topVer = buf.getInt();
-        int nodeOrderDrId = buf.getInt();
-        long globalTime = buf.getLong();
-        long order = buf.getLong();
-
-        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
     }
 
     /**

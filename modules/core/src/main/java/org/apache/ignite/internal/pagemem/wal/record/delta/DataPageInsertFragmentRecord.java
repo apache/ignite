@@ -17,60 +17,44 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.freelist.FragmentContext;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-
-import java.nio.ByteBuffer;
 
 /**
  * Insert fragment to data page record.
  */
 public class DataPageInsertFragmentRecord extends PageDeltaRecord {
-    /** Total written entry bytes from the entry end. */
-    private final int written;
-
     /** Link to the last entry fragment. */
     private final long lastLink;
 
     /** Actual fragment data. */
-    private final byte[] fragmentData;
+    private final byte[] payload;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param written Total written entry bytes from the entry end.
+     * @param payload Fragment payload.
      * @param lastLink Link to the last entry fragment.
-     * @param fragmentData Actual fragment data.
      */
     public DataPageInsertFragmentRecord(
         final int cacheId,
         final long pageId,
-        final int written,
-        final long lastLink,
-        final byte[] fragmentData
-        ) {
+        final byte[] payload,
+        final long lastLink
+    ) {
         super(cacheId, pageId);
 
-        this.written = written;
         this.lastLink = lastLink;
-        this.fragmentData = fragmentData;
+        this.payload = payload;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(final GridCacheContext<?, ?> cctx,
-        final ByteBuffer buf) throws IgniteCheckedException {
-        final DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+    @Override public void applyDelta(GridCacheContext<?, ?> cctx, ByteBuffer buf) throws IgniteCheckedException {
+        DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-        final FragmentContext fctx = new FragmentContext();
-
-        fctx.rowBuffer(ByteBuffer.wrap(fragmentData));
-        fctx.pageBuffer(buf);
-        fctx.written(written);
-        fctx.lastLink(lastLink);
-
-        io.addRowFragment(fctx);
+        io.addRowFragment(cctx.cacheObjectContext(), buf, payload, lastLink);
     }
 
     /** {@inheritDoc} */
@@ -79,24 +63,17 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     }
 
     /**
-     * @return Fragment data size.
+     * @return Fragment payload size.
      */
-    public int fragmentDataSize() {
-        return fragmentData.length;
+    public int payloadSize() {
+        return payload.length;
     }
 
     /**
-     * @return Actual fragment data.
+     * @return Fragment payload.
      */
-    public byte[] fragmentData() {
-        return fragmentData;
-    }
-
-    /**
-     * @return Total written entry bytes from the entry end.
-     */
-    public int written() {
-        return written;
+    public byte[] payload() {
+        return payload;
     }
 
     /**

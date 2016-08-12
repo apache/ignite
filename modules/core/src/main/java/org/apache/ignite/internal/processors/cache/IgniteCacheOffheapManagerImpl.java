@@ -855,12 +855,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override protected int compare(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx, KeySearchRow row)
             throws IgniteCheckedException {
-            KeySearchRow row0 = io.getLookupRow(this, buf, idx);
+            int hash = ((RowLinkIO)io).getHash(buf, idx);
 
-            int cmp = Integer.compare(row0.hash, row.hash);
+            int cmp = Integer.compare(hash, row.hash);
 
             if (cmp != 0)
                 return cmp;
+
+            KeySearchRow row0 = io.getLookupRow(this, buf, idx);
 
             return compareKeys(row0.key(), row.key());
         }

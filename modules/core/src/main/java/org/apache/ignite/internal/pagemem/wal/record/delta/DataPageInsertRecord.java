@@ -41,10 +41,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
     private GridCacheVersion ver;
 
     /** */
-    private int itemId;
-
-    /** */
-    private int entrySize;
+    private int rowSize;
 
     /**
      * @param cacheId Cache ID.
@@ -52,8 +49,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
      * @param key Key.
      * @param val value.
      * @param ver version.
-     * @param itemId Item ID.
-     * @param entrySize Entry size.
+     * @param rowSize Row size.
      */
     public DataPageInsertRecord(
         int cacheId,
@@ -61,16 +57,14 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
-        int itemId,
-        int entrySize
+        int rowSize
     ) {
         super(cacheId, pageId);
 
         this.key = key;
         this.val = val;
         this.ver = ver;
-        this.itemId = itemId;
-        this.entrySize = entrySize;
+        this.rowSize = rowSize;
     }
 
     /**
@@ -95,17 +89,10 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
     }
 
     /**
-     * @return Item ID.
+     * @return Row size in bytes.
      */
-    public int itemId() {
-        return itemId;
-    }
-
-    /**
-     * @return Entry size.
-     */
-    public int entrySize() {
-        return entrySize;
+    public int rowSize() {
+        return rowSize;
     }
 
     /** {@inheritDoc} */
@@ -115,10 +102,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        int itemId = io.addRow(coctx, buf, this, entrySize);
-
-        if (itemId != this.itemId)
-            throw new DeltaApplicationException("Unexpected itemId: " + itemId);
+        io.addRow(coctx, buf, this, rowSize);
     }
 
     /** {@inheritDoc} */
@@ -138,6 +122,6 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
 
     /** {@inheritDoc} */
     @Override public void link(final long link) {
-        throw new UnsupportedOperationException();
+        // No-op.
     }
 }

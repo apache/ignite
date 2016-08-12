@@ -43,13 +43,22 @@ public abstract class PageIO {
     private static final int VER_OFF = TYPE_OFF + 2;
 
     /** */
-    private static final int PAGE_ID_OFF = VER_OFF + 2;
+    private static final int CRC_OFF = VER_OFF + 2;
 
     /** */
-    private static final int CRC_OFF = PAGE_ID_OFF + 8;
+    private static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
-    public static final int COMMON_HEADER_END = 32; // type(2) + ver(2) + pageId(8) + crc(4) + reserved(16)
+    private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_1_OFF + 8;
+
+    /** */
+    private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
+
+    /** */
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
 
     /* All the page types. */
 
@@ -215,6 +224,10 @@ public abstract class PageIO {
         setType(buf, getType());
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
+
+        buf.putLong(RESERVED_1_OFF, 0L);
+        buf.putLong(RESERVED_2_OFF, 0L);
+        buf.putLong(RESERVED_3_OFF, 0L);
     }
 
     /** {@inheritDoc} */

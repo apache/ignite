@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -92,7 +91,6 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         FreeItem row = io.getLookupRow(this, buf, idx);
 
         assert row.pageId() != 0;
-        assert row.cacheId() == getCacheId();
 
         return row;
     }

@@ -82,6 +82,6 @@ public class FreeInnerIO extends BPlusInnerIO<FreeItem> implements FreeIO {
 
         long pageId = PageIdUtils.pageId(((FreeTree)tree).getPartId(), PageIdAllocator.FLAG_DATA, pageIdx);
 
-        return new FreeItem(freeSpace, pageId, tree.getCacheId());
+        return new FreeItem(freeSpace, pageId);
     }
 }
