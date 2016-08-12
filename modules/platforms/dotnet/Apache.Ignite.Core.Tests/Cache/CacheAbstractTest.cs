@@ -1890,7 +1890,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-835")]
         public void TestLock()
         {
             if (!LockingEnabled())
