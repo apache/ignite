@@ -21,9 +21,9 @@ import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 
@@ -33,10 +33,21 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
+    /** */
+    private static IgniteCache<Integer, Organization> pCache;
+
     /** {@inheritDoc} */
-    @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        if (mode == PARTITIONED)
-            cc.setIndexedTypes(Integer.class, Organization.class);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCacheConfiguration(cacheConfiguration("orgCache", PARTITIONED, Integer.class, Organization.class));
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void createCaches() {
+        pCache = ignite.cache("orgCache");
     }
 
     /** {@inheritDoc} */

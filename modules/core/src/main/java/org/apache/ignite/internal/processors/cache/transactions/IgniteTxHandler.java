@@ -1388,11 +1388,9 @@ public class IgniteTxHandler {
                                     CacheObject val = cached.innerGet(
                                         /*ver*/null,
                                         tx,
-                                        /*readSwap*/true,
                                         /*readThrough*/false,
                                         /*updateMetrics*/false,
                                         /*evt*/false,
-                                        /*tmp*/false,
                                         tx.subjectId(),
                                         /*transformClo*/null,
                                         tx.resolveTaskName(),

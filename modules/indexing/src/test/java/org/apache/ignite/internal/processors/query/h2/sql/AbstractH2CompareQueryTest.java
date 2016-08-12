@@ -82,15 +82,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return Cache configurations.
-     */
-    protected CacheConfiguration[] cacheConfigurations() {
-        return new CacheConfiguration[] {
-            createCache("part", CacheMode.PARTITIONED),
-            createCache("repl", CacheMode.REPLICATED)};
-    }
-
-    /**
      * Creates new cache configuration.
      *
      * @param name Cache name.
@@ -190,19 +181,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
         conn.setAutoCommit(autocommit);
 
         return conn;
-    }
-
-    /**
-     * Execute given sql query on h2 database and on partitioned ignite cache and compare results.
-     *
-     * @param sql SQL query.
-     * @param args SQL arguments.
-     * then results will compare as ordered queries.
-     * @return Result set after SQL query execution.
-     * @throws SQLException If exception.
-     */
-    protected final List<List<?>> compareQueryRes0(String sql, @Nullable Object... args) throws SQLException {
-        return compareQueryRes0(pCache, sql, args, Ordering.RANDOM);
     }
 
     /**

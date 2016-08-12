@@ -1423,8 +1423,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (ttl == CU.TTL_ZERO)
                 op = GridCacheOperation.DELETE;
 
-            boolean hasValPtr = false;
-
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
                 // Detach value before index update.
@@ -1606,7 +1604,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 unswap(retval, false);
 
             // Prepare old value.
-            oldVal = needVal ? rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : val;
+            oldVal = val;
 
             // Possibly read value from store.
             boolean readFromStore = false;
@@ -1639,10 +1637,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     initExpireTime = CU.EXPIRE_TIME_ETERNAL;
                 }
 
-                if (oldVal != null)
-                    updateIndex(oldVal, initExpireTime, ver, null);
-                else
-                    clearIndex(null);
+                storeValue(oldVal, initExpireTime, ver);
 
                 update(oldVal, initExpireTime, initTtl, ver, true);
 
@@ -2008,8 +2003,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert newExpireTime != CU.EXPIRE_TIME_CALCULATE && newExpireTime >= 0;
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
-
-            boolean hasValPtr = false;
 
             // Actual update.
             if (op == GridCacheOperation.UPDATE) {

@@ -333,8 +333,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                             ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED &&
                             ccfg.getNearConfiguration() != null) ||
                         (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED) ||
-                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED) ||
-                        (mode == CachePeekMode.SWAP && ccfg.isSwapEnabled()))
+                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED))
                         assertTrue("Zero result at mode: " + mode, size > 0);
                 }
             }

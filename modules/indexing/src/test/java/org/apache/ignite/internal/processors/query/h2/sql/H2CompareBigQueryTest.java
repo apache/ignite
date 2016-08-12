@@ -84,13 +84,13 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     private static IgniteCache<Integer, CustOrder> cacheCustOrd;
 
     /** Cache repl ord. */
-    private static IgniteCache<AffinityKey, ReplaceOrder> cacheReplOrd;
+    private static IgniteCache<Object, ReplaceOrder> cacheReplOrd;
 
     /** Cache ord parameter. */
-    private static IgniteCache<AffinityKey, OrderParams> cacheOrdParam;
+    private static IgniteCache<Object, OrderParams> cacheOrdParam;
 
     /** Cache cancel. */
-    private static IgniteCache<AffinityKey, Cancel> cacheCancel;
+    private static IgniteCache<Object, Cancel> cacheCancel;
 
     /** Cache execute. */
     private static IgniteCache<Integer, Exec> cacheExec;
@@ -210,7 +210,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
                 add(op);
 
-                pCache.put(op.key(useColocatedData()), op);
+                cacheOrdParam.put(op.key(useColocatedData()), op);
 
                 insertInDb(op);
             }
@@ -224,7 +224,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
                     add(replace);
 
-                    pCache.put(replace.key(useColocatedData()), replace);
+                    cacheReplOrd.put(replace.key(useColocatedData()), replace);
 
                     insertInDb(replace);
                 }
@@ -239,7 +239,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
                     add(c);
 
-                    pCache.put(c.key(useColocatedData()), c);
+                    cacheCancel.put(c.key(useColocatedData()), c);
 
                     insertInDb(c);
                 }
@@ -280,7 +280,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception If failed.
      */
     public void testBigQuery() throws Exception {
-        List<List<?>> res = compareQueryRes0(cacheCustOrd, pCache, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
+        List<List<?>> res = compareQueryRes0(cacheCustOrd, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
 
         assertTrue(!res.isEmpty()); // Ensure we set good testing data at database.
     }

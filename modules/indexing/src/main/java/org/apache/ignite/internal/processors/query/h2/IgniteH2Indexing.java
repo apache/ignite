@@ -93,7 +93,6 @@ import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -117,7 +116,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1894,8 +1892,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
-        for (Schema schema : schemas.values())
-            schema.onDrop();
+        if (!ctx.cache().context().database().persistenceEnabled()) {
+            for (Schema schema : schemas.values())
+                schema.onDrop();
+        }
 
         for (Connection c : conns)
             U.close(c, log);
@@ -2538,8 +2538,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param name Index name,
          * @param tbl Table.
          * @param pk Primary key flag.
-         * @param keyCol Key column.
-         * @param valCol Value column.
          * @param cols Columns.
          * @return Index.
          */
@@ -2548,9 +2546,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String name,
             GridH2Table tbl,
             boolean pk,
-            int keyCol,
-            int valCol,
-            IndexColumn... cols
+            List<IndexColumn> cols
         ) {
             try {
                 GridCacheSharedContext<Object,Object> scctx = ctx.cache().context();
@@ -2558,9 +2554,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridCacheContext cctx = scctx.cacheContext(cacheId);
 
                 if (cctx.affinityNode() && cctx.offheapIndex())
-                    return createIndex(cctx, name, tbl, pk, keyCol, valCol, cols);
+                    return createIndex(cctx, name, tbl, pk, cols);
 
-                return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
+                return new GridH2TreeIndex(name, tbl, pk, cols);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2571,8 +2567,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param name Index name.
          * @param tbl Table.
          * @param pk Primary key flag.
-         * @param keyCol Key column.
-         * @param valCol Value column.
          * @param cols Columns.
          * @return Index.
          */
@@ -2581,17 +2575,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String name,
             GridH2Table tbl,
             boolean pk,
-            int keyCol,
-            int valCol,
-            IndexColumn[] cols
+            List<IndexColumn> cols
         ) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
             H2TreeIndex idx = new H2TreeIndex(
                 cctx,
-                keyCol,
-                valCol,
                 tbl,
                 name,
                 pk,
@@ -2792,7 +2782,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final String schemaName;
 
         /** */
-        private final GridUnsafeMemory offheap;
+        private final GridUnsafeMemory offheap = null;
 
         /** */
         private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap8<>();

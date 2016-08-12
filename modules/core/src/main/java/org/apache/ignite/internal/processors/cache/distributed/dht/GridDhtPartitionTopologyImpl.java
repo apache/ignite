@@ -678,7 +678,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
-            locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
+            locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
             if (cctx.shared().pageStore() != null) {
                 try {

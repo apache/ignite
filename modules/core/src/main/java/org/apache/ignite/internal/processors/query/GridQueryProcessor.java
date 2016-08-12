@@ -679,7 +679,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return false;
 
         if (!busyLock.enterBusy())
-            return;
+            return false;
 
         try {
             if (coctx == null)

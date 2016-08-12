@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -81,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -106,9 +103,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
 public class GridReduceQueryExecutor {
     /** Thread pool to process query messages. */
     public static final byte QUERY_POOL = GridIoPolicy.SYSTEM_POOL;
-
-    /** */
-    private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
     /** */
     private GridKernalContext ctx;
@@ -581,33 +575,19 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                IgniteProductVersion minNodeVer = cctx.shared().exchange().minimumNodeVersion(topVer);
-
-                final boolean oldStyle = minNodeVer.compareToIgnoreTimestamp(DISTRIBUTED_JOIN_SINCE) < 0;
                 final boolean distributedJoins = qry.distributedJoins();
 
-                if (oldStyle && distributedJoins)
-                    throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
-
                 if (send(nodes,
-                    oldStyle ?
-                        new GridQueryRequest(qryReqId,
-                            r.pageSize,
-                            space,
-                            mapQrys,
-                            topVer,
-                            extraSpaces(space, qry.spaces()),
-                            null) :
-                        new GridH2QueryRequest()
-                            .requestId(qryReqId)
-                            .topologyVersion(topVer)
-                            .pageSize(r.pageSize)
-                            .caches(qry.caches())
-                            .tables(distributedJoins ? qry.tables() : null)
-                            .partitions(convert(partsMap))
-                            .queries(mapQrys)
-                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
-                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
+                    new GridH2QueryRequest()
+                        .requestId(qryReqId)
+                        .topologyVersion(topVer)
+                        .pageSize(r.pageSize)
+                        .caches(qry.caches())
+                        .tables(distributedJoins ? qry.tables() : null)
+                        .partitions(convert(partsMap))
+                        .queries(mapQrys)
+                        .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
+                    null,
                     distributedJoins)
                 ) {
                     awaitAllReplies(r, nodes);
@@ -1126,26 +1106,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param msg Message to copy.
-     * @param node Node.
-     * @param partsMap Partitions map.
-     * @return Copy of message with partitions set.
-     */
-    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> partsMap) {
-        assert partsMap != null;
-
-        GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
-
-        IntArray parts = partsMap.get(node);
-
-        assert parts != null : node;
-
-        res.partitions(toArray(parts));
-
-        return res;
-    }
-
-    /**
      * @param ints Ints.
      * @return Array.
      */
@@ -1330,26 +1290,6 @@ public class GridReduceQueryExecutor {
             Collections.addAll(res, row);
 
             return res;
-        }
-    }
-
-    /**
-     *
-     */
-    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode,Message,Message> {
-        /** */
-        private final Map<ClusterNode,IntArray> partsMap;
-
-        /**
-         * @param partsMap Partitions map.
-         */
-        private ExplicitPartitionsSpecializer(Map<ClusterNode,IntArray> partsMap) {
-            this.partsMap = partsMap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Message apply(ClusterNode n, Message msg) {
-            return copy(msg, n, partsMap);
         }
     }
 }

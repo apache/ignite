@@ -1019,7 +1019,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
         boolean keepBinary = ctx.keepBinary();
 
-        return new EntrySet(map.entrySet(filter, keepBinary));
+        return new EntrySet(map.entrySet(filter), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -4020,6 +4020,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * @return Distributed ignite cache iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Cache.Entry<K, V>> igniteIterator(boolean keepBinary) throws IgniteCheckedException {
+        return igniteIterator(keepBinary, null);
+    }
+
+    /**
      * @param keepBinary Keep binary flag.
      * @param p Optional predicate.
      * @return Distributed ignite cache iterator.
@@ -4830,7 +4838,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*readThrough*/false,
             /*metrics*/false,
             /*evt*/false,
-            /*tmp*/false,
             /*subjId*/null,
             /*transformClo*/null,
             /*taskName*/null,

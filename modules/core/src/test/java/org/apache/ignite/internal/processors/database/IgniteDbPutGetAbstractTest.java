@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -95,6 +97,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
 
@@ -104,6 +107,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg, ccfg2);
 
@@ -135,6 +139,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         BPlusTree.rnd = null;
 
         stopAllGrids();
+
+        deleteRecursively(U.resolveWorkDirectory("db", false));
     }
 
     public void testGradualRandomPutAllRemoveAll() {

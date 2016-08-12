@@ -238,7 +238,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                         "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
 
-                                cofigureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+                                configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
                             }
                         }
                         catch (ClassNotFoundException e) {

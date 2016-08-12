@@ -1430,7 +1430,9 @@ public abstract class BPlusTree<L, T extends L> {
             for (; ; ) { // Go down with retries.
                 p.init();
 
-                switch (putDown(p, p.rootId, 0L, p.rootLvl)) {
+                Result result = putDown(p, p.rootId, 0L, p.rootLvl);
+
+                switch (result) {
                     case RETRY:
                     case RETRY_ROOT:
                         checkInterrupted();
@@ -1438,7 +1440,7 @@ public abstract class BPlusTree<L, T extends L> {
                         continue;
 
                     default:
-                        assert p.isFinished();
+                        assert p.isFinished() : result;
 
                         return p.oldRow;
                 }

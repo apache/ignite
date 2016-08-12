@@ -20,9 +20,6 @@ package org.apache.ignite.internal.visor.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -46,26 +43,7 @@ public class VisorCacheV4 extends VisorCacheV2 {
 
     /** {@inheritDoc} */
     @Override public VisorCache from(IgniteEx ignite, String cacheName, int sample) throws IgniteCheckedException {
-        VisorCache c = super.from(ignite, cacheName, sample);
-
-        if (c != null && c instanceof VisorCacheV4) {
-            VisorCacheV4 cacheV4 = (VisorCacheV4)c;
-
-            GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
-
-            // Process only started caches.
-            if (ca != null && ca.context().started()) {
-                GridCacheSwapManager swap = ca.context().swap();
-
-                cacheV4.offHeapPrimaryEntriesCnt = swap.offheapEntriesCount(true, false, AffinityTopologyVersion.NONE);
-                cacheV4.offHeapBackupEntriesCnt = swap.offheapEntriesCount(false, true, AffinityTopologyVersion.NONE);
-
-                cacheV4.swapPrimaryEntriesCnt = swap.swapEntriesCount(true, false, AffinityTopologyVersion.NONE);
-                cacheV4.swapBackupEntriesCnt = swap.swapEntriesCount(false, true, AffinityTopologyVersion.NONE);
-            }
-        }
-
-        return c;
+        return super.from(ignite, cacheName, sample);
     }
 
     /** {@inheritDoc} */

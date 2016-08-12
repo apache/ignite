@@ -990,31 +990,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
     /**
      * @param nodeIdx Node index.
-     * @param part Cache partition
-     * @return Tuple with number of primary and backup keys (one or both will be zero).
-     */
-    private T2<Integer, Integer> swapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
-        GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache().context();
-        // Swap and offheap are disabled for near cache.
-        GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
-        //First count entries...
-        int cnt = (int)swapMgr.swapEntriesCount(part);
-
-        GridCacheAffinityManager affinity = ctx.affinity();
-        AffinityTopologyVersion topVer = affinity.affinityTopologyVersion();
-
-        //And then find out whether they are primary or backup ones.
-        int primaryCnt = 0;
-        int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
-            primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
-            backupCnt = cnt;
-        return new T2<>(primaryCnt, backupCnt);
-    }
-
-    /**
-     * @param nodeIdx Node index.
      * @return Tuple with primary and backup keys.
      */
     private T2<List<Integer>, List<Integer>> offheapKeys(int nodeIdx) {
@@ -1068,9 +1043,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     private T2<Integer, Integer> offheapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
         GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache().context();
         // Swap and offheap are disabled for near cache.
-        GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+        IgniteCacheOffheapManager offheapManager = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
         //First count entries...
-        int cnt = (int)swapMgr.offheapEntriesCount(part);
+        int cnt = (int)offheapManager.entriesCount(part);
 
         GridCacheAffinityManager affinity = ctx.affinity();
         AffinityTopologyVersion topVer = affinity.affinityTopologyVersion();
@@ -1232,31 +1207,20 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             int totalKeys = 200;
 
-            T2<Integer, Integer> swapKeys = swapKeysCount(nodeIdx, part);
-
             T2<Integer, Integer> offheapKeys = offheapKeysCount(nodeIdx, part);
 
-            int totalSwap = swapKeys.get1() + swapKeys.get2();
             int totalOffheap = offheapKeys.get1() + offheapKeys.get2();
 
-            log.info("Local keys [total=" + totalKeys + ", offheap=" + offheapKeys + ", swap=" + swapKeys + ']');
+            log.info("Local keys [total=" + totalKeys + ", offheap=" + offheapKeys + ']');
 
-            assertTrue(totalSwap + totalOffheap < totalKeys);
+            assertTrue(totalOffheap < totalKeys);
 
             assertEquals(primaryKeys.size(), cache0.localSize());
             assertEquals(totalKeys, cache0.localSize(ALL));
             assertEquals(totalOffheap, cache0.localSizeLong(part, PRIMARY, BACKUP, NEAR, OFFHEAP));
-            assertEquals(totalSwap, cache0.localSizeLong(part, PRIMARY, BACKUP, NEAR, SWAP));
-            assertEquals((long)swapKeys.get1(), cache0.localSizeLong(part, SWAP, PRIMARY));
-            assertEquals((long)swapKeys.get2(), cache0.localSizeLong(part, SWAP, BACKUP));
 
             assertEquals((long)offheapKeys.get1(), cache0.localSizeLong(part, OFFHEAP, PRIMARY));
             assertEquals((long)offheapKeys.get2(), cache0.localSizeLong(part, OFFHEAP, BACKUP));
-
-            assertEquals(swapKeys.get1() + offheapKeys.get1(), cache0.localSizeLong(part, SWAP, OFFHEAP, PRIMARY));
-            assertEquals(swapKeys.get2() + offheapKeys.get2(), cache0.localSizeLong(part, SWAP, OFFHEAP, BACKUP));
-
-            assertEquals(totalSwap + totalOffheap, cache0.localSizeLong(part, PRIMARY, BACKUP, NEAR, SWAP, OFFHEAP));
 
             int globalParitionSwapPrimary = 0;
             int globalPartSwapBackup = 0;
@@ -1265,11 +1229,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             int globalPartOffheapBackup = 0;
 
             for (int i = 0; i < gridCount(); i++) {
-                T2<Integer, Integer> swap = swapKeysCount(i, part);
-
-                globalParitionSwapPrimary += swap.get1();
-                globalPartSwapBackup += swap.get2();
-
                 T2<Integer, Integer> offheap = offheapKeysCount(i, part);
 
                 globalPartOffheapPrimary += offheap.get1();

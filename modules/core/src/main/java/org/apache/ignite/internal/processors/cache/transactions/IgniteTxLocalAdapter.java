@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -652,16 +653,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
-            batchStoreCommit(writeMap().values());
+            batchStoreCommit(writeEntries());
 
             WALPointer ptr = null;
 
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null && !writeEntries().isEmpty())
-                    ptr = cctx.wal().log(DataRecord.fromTransaction(this));
-
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
@@ -801,6 +799,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
+
+                                    if (cctx.wal() != null && !writeEntries().isEmpty())
+                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                            cacheCtx.cacheId(),
+                                            txEntry.key(),
+                                            val,
+                                            op,
+                                            nearXidVersion(),
+                                            writeVersion(),
+                                            txEntry.key().partition(),
+                                            txEntry.updateCounter())));
 
                                     if (op == CREATE || op == UPDATE) {
                                         GridCacheUpdateTxResult updRes = cached.innerSet(

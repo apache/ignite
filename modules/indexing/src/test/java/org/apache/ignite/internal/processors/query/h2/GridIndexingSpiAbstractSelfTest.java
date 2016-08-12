@@ -666,6 +666,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public KeyCacheObject copy(int part) {
+            return this;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             throw new UnsupportedOperationException();
         }
