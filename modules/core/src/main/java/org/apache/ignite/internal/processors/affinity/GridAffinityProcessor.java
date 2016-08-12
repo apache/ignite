@@ -195,6 +195,24 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Maps partition to a node.
+     *
+     * @param cacheName Cache name.
+     * @param partId partition.
+     * @param topVer Affinity topology version.
+     * @return Picked node.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public ClusterNode mapPartitionToNode(@Nullable String cacheName, int partId,
+        AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        AffinityInfo affInfo = affinityCache(cacheName, topVer);
+
+        return affInfo != null ? F.first(affInfo.assignment().get(partId)) : null;
+    }
+
+
+    /**
      * Maps keys to nodes for given cache.
      *
      * @param cacheName Cache name.
