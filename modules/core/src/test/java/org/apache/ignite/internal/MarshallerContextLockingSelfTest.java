@@ -121,32 +121,36 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
          */
         public boolean contains(String str) {
 
-            for(String text: logs) {
+            for(String text: logs)
                 if (text != null && text.contains(str))
                     return true;
-            }
+
             return false;
         }
 
         @Override public void warning(String msg) {
             super.warning(msg);
+
             logs.add(msg);
         }
 
         @Override public void warning(String msg, @Nullable Throwable e) {
             super.warning(msg, e);
+
             logs.add(msg);
         }
 
         /** {@inheritDoc} */
         @Override public void error(String msg) {
             super.error(msg);
+
             logs.add(msg);
         }
 
         /** {@inheritDoc} */
         @Override public void error(String msg, @Nullable Throwable e) {
             super.error(msg, e);
+
             logs.add(msg);
         }
     }
