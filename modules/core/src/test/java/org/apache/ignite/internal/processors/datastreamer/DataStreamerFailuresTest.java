@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
@@ -72,7 +89,7 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
 
             IgniteFuture[] futures = loadData(ignite1);
 
-            checkFeatures(futures);
+            checkFailAddData(futures);
         }
         finally {
             stopAllGrids();
@@ -93,15 +110,64 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
 
             IgniteFuture[] futures = loadData(client);
 
-            checkFeatures(futures);
+            checkFailAddData(futures);
         }
         finally {
             stopAllGrids();
         }
     }
 
-    private void checkFeatures(IgniteFuture[] futures) {
-        boolean thrown = false;
+    /**
+     * Data loading failed, because server node broken.
+     */
+    public void testServerBrokenPerLoad() throws Exception {
+        try {
+            Ignite ignite1 = startGrid(0);
+            Ignite ignite2 = startGrid(1);
+            Ignite client = startGrid(CLIENT_ID);
+
+            checkTopology(3);
+
+            boolean thrown = false;
+
+            IgniteDataStreamer ldr = client.dataStreamer(CACHE_NAME);
+
+            try {
+                ldr.receiver(new TestDataReceiver());
+                ldr.perNodeBufferSize(ENTRY_AMOUNT/6);
+                ldr.perNodeParallelOperations(1);
+                ((DataStreamerImpl)ldr).maxRemapCount(0);
+
+                for (int i = 0; i < ENTRY_AMOUNT; i++) {
+                    if (i > ENTRY_AMOUNT/3)
+                        stopAllServers(true);
+
+                    ldr.addData(i, i);
+                }
+            }
+            catch (Error e) {
+                thrown = true;
+            }
+            finally {
+                try {
+                    ldr.close();
+                } catch (Error e) {
+                    thrown = true;
+                }
+            }
+
+            assertTrue(thrown);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param futures Futures.
+     */
+    private void checkFailAddData(IgniteFuture[] futures) {
+        boolean thrownNotTimeout = false;
 
         for (int i = 0; i < ENTRY_AMOUNT; i++) {
             try {
@@ -110,21 +176,16 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
                 }
                 catch (IgniteFutureTimeoutException e) {
                     info("Check future with id " + i + " timeout");
-                    info("Check again " + i);
-                    try {
-                        futures[i].get(10 * TIMEOUT);
-                    }
-                    catch (IgniteFutureTimeoutException e1) {
-                        info("Timeout future " + i);
-                    }
+
+                    thrownNotTimeout = false;
                 }
             }
             catch (CacheException e) {
-                thrown = true;
+                thrownNotTimeout = true;
             }
         }
 
-        assertTrue(thrown);
+        assertTrue(thrownNotTimeout);
     }
 
     /**
@@ -163,9 +224,6 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
      * Test receiver for timeout expiration emulation.
      */
     private static class TestDataReceiver implements StreamReceiver {
-
-        /** Is first. */
-        boolean isFirst = true;
 
         /** {@inheritDoc} */
         @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
