@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory stream for big endian platforms.
     /// </summary>
-    [ExcludeFromCodeCoverage]
     internal class PlatformBigEndianMemoryStream : PlatformMemoryStream
     {
         /// <summary>
