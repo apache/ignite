@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
@@ -991,10 +990,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 key1 = PrimaryKeyForCache(Cache(1));
             }
 
-            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
-
             // Test zero expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -3301,7 +3298,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return true;
         }
 
-        protected virtual bool LockingEnabled()
+        protected bool LockingEnabled()
         {
             return TxEnabled();
         }
