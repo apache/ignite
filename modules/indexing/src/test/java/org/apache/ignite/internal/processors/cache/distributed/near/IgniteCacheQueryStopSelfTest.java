@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.QueryCancelledException;
+import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -202,7 +202,7 @@ public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
 
-                assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+                assertTrue("Must throw correct exception", ex.getCause() instanceof GridH2QueryCancelledException);
             }
 
             Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutMillis, timeUnit) + 3_000);

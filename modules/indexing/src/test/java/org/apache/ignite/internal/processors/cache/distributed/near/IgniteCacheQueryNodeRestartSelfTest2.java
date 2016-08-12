@@ -36,7 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.h2.QueryCancelledException;
+import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -188,7 +188,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
-        int duration = 90  * 1000;
+        int duration = 90 * 1000;
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
@@ -204,6 +204,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         Thread.sleep(3000);
 
+        // TODO FIXME The comparison might fail if node left on test shutdown.
         assertEquals(pRes, grid(0).cache("pu").query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
 
         final List<List<?>> rRes = grid(0).cache("co").query(new SqlFieldsQuery(REPLICATED_QRY)).getAll();
@@ -229,11 +230,11 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
                     try {
                         if (rnd.nextBoolean()) { // Partitioned query.
-                            IgniteCache<?, ?> cache = grid(g).cache("pu");
+                            IgniteCache<?,?> cache = grid(g).cache("pu");
 
                             SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 
-                            boolean smallPageSize = true; //rnd.nextBoolean();
+                            boolean smallPageSize = rnd.nextBoolean();
 
                             if (smallPageSize)
                                 qry.setPageSize(3);
@@ -245,11 +246,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 if (e.getCause() instanceof IgniteInterruptedCheckedException)
                                     continue;
 
-                                if (e.getCause() instanceof QueryCancelledException) {
-                                    System.out.println("Retry is expected");
-
-                                    System.exit(0);
-                                }
+                                if (e.getCause() instanceof GridH2QueryCancelledException)
+                                    fail("Retry is expected");
 
                                 if (!smallPageSize)
                                     e.printStackTrace();
@@ -277,6 +275,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                     }
                                 }
 
+                                // Interruptions are expected here.
                                 if (failedOnInterruption)
                                     continue;
 
@@ -292,6 +291,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
                     } finally {
+                        // Need to clear lock in final handler to avoid endless loop if exception is thrown.
                         locks.set(g, 0);
 
                         int c = qryCnt.incrementAndGet();
@@ -352,18 +352,15 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         restartsDone.set(true);
 
-        try {
-            fut2.get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
-            fut2.cancel();
-        }
+        fut2.get();
 
         info("Restarts stopped.");
 
         qrysDone.set(true);
 
+        // Query thread can stuck in next page waiting loop because all nodes are left.
         try {
-            fut1.get(10_000);
+            fut1.get(5_000);
         } catch (IgniteFutureTimeoutCheckedException e) {
             fut1.cancel();
         }

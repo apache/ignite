@@ -830,7 +830,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
+            stmt = prepareStatement(conn, sql, false);
 
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
@@ -863,7 +863,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
                 }))
-                    throw new QueryCancelledException();
+                    throw new GridH2QueryCancelledException();
             }
 
             return stmt.executeQuery();
@@ -871,7 +871,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             // Throw special exception.
             if (e.getMessage().contains("Statement was canceled or the session timed out"))
-                throw new QueryCancelledException();
+                throw new GridH2QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
