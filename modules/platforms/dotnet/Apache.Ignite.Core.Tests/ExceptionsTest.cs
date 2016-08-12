@@ -133,11 +133,30 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(type.IsSerializable, "Exception is not serializable: " + type);
 
+                // Default ctor.
                 var defCtor = type.GetConstructor(new Type[0]);
                 Assert.IsNotNull(defCtor);
 
-                var ex = (Exception)defCtor.Invoke(new object[0]);
+                var ex = (Exception) defCtor.Invoke(new object[0]);
                 Assert.AreEqual(string.Format("Exception of type '{0}' was thrown.", type.FullName), ex.Message);
+
+                // Message ctor.
+                var msgCtor = type.GetConstructor(new[] {typeof(string)});
+                Assert.IsNotNull(msgCtor);
+
+                ex = (Exception) msgCtor.Invoke(new object[] {"myMessage"});
+                Assert.AreEqual("myMessage", ex.Message);
+
+
+                // Message+cause ctor.
+                var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
+                Assert.IsNotNull(msgCauseCtor);
+
+                ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
+                Assert.AreEqual("myMessage", ex.Message);
+                Assert.AreEqual("innerEx", ex.InnerException.Message);
+
+                // Serialization.
             }
         }
 
