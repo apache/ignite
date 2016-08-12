@@ -122,6 +122,26 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all exceptions have mandatory constructors and are serializable.
+        /// </summary>
+        [Test]
+        public void TestAllExceptionsConstructors()
+        {
+            var types = typeof(IIgnite).Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Exception)));
+
+            foreach (var type in types)
+            {
+                Assert.IsTrue(type.IsSerializable, "Exception is not serializable: " + type);
+
+                var defCtor = type.GetConstructor(new Type[0]);
+                Assert.IsNotNull(defCtor);
+
+                var ex = (Exception)defCtor.Invoke(new object[0]);
+                Assert.AreEqual(string.Format("Exception of type '{0}' was thrown.", type.FullName), ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException serialization.
         /// </summary>
         private static void TestPartialUpdateExceptionSerialization(Exception ex)
