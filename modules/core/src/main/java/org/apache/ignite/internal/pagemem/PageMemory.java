@@ -55,4 +55,11 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Page size with system overhead, in bytes.
      */
     public int systemPageSize();
+
+    /**
+     * Clears all entries for a provided cache ID.
+     *
+     * @param cacheId Cache ID.
+     */
+    public void clear(int cacheId);
 }

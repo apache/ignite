@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -49,7 +52,7 @@ public class FreeList {
     private static final Integer COMPLETE = Integer.MAX_VALUE;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final PageMemory pageMem;
@@ -61,7 +64,7 @@ public class FreeList {
     private final IgniteWriteAheadLogManager wal;
 
     /** */
-    private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<Integer, GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow = new PageHandler<CacheDataRow, Integer>() {
@@ -171,7 +174,7 @@ public class FreeList {
      * @param reuseList Reuse list.
      * @param cctx Cache context.
      */
-    public FreeList(GridCacheContext<?,?> cctx, ReuseList reuseList) {
+    public FreeList(GridCacheContext<?, ?> cctx, ReuseList reuseList) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -205,7 +208,7 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     private FreeTree tree(Integer partId) throws IgniteCheckedException {
-        assert partId >= 0 && partId < Short.MAX_VALUE: partId;
+        assert partId >= 0 && partId < Short.MAX_VALUE : partId;
 
         GridFutureAdapter<FreeTree> fut = trees.get(partId);
 
@@ -276,7 +279,7 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     public void insertRow(CacheDataRow row) throws IgniteCheckedException {
-        assert row.link() == 0: row.link();
+        assert row.link() == 0 : row.link();
 
         final int rowSize = getRowSize(cctx.cacheObjectContext(), row);
 
@@ -309,6 +312,38 @@ public class FreeList {
             }
         }
         while (written != COMPLETE);
+    }
+
+    /**
+     * @return Pages currently stored in this FreeList.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Collection<Long> pages() throws IgniteCheckedException {
+        Collection<Long> result = new ArrayList<>();
+
+        for (GridFutureAdapter<FreeTree> fut : trees.values()) {
+            FreeTree tree = fut.get();
+
+            GridCursor<FreeItem> cursor = tree.find(null, null);
+
+            while (cursor.next()) {
+                result.add(cursor.get().pageId());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Destroys this FreeList.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroy() throws IgniteCheckedException {
+        for (GridFutureAdapter<FreeTree> fut : trees.values()) {
+            FreeTree tree = fut.get();
+
+            tree.destroy();
+        }
     }
 
     /**
