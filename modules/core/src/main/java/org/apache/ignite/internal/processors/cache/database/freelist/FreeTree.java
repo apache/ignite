@@ -54,7 +54,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         int partId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        FullPageId metaPageId,
+        long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
@@ -95,5 +95,20 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         assert row.cacheId() == getCacheId();
 
         return row;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long destroy() throws IgniteCheckedException {
+        if (!markDestroyed())
+            return 0;
+
+        DestroyBag bag = new DestroyBag();
+
+        long pagesCnt = destroy(bag);
+
+        for (long pageId = bag.pollFreePage(); pageId != 0; pageId = bag.pollFreePage())
+            pageMem.freePage(getCacheId(), pageId);
+
+        return pagesCnt;
     }
 }

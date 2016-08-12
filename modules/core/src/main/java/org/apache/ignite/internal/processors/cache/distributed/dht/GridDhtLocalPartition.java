@@ -600,6 +600,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             cctx.dataStructures().onPartitionEvicted(id);
 
+            destroyCacheDataStore();
+
             rent.onDone();
 
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
@@ -661,11 +663,25 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             cctx.dataStructures().onPartitionEvicted(id);
 
+            destroyCacheDataStore();
+
             rent.onDone();
 
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
 
             clearDeferredDeletes();
+        }
+    }
+
+    /**
+     * Release created data store for this partition.
+     */
+    private void destroyCacheDataStore() {
+        try {
+            dataStore().destroy();
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
         }
     }
 

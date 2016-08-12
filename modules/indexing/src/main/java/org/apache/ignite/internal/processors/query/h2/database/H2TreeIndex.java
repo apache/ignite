@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -79,14 +80,14 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = BPlusTree.treeName(name, cctx.cacheId(), "H2Tree");
+        name = BPlusTree.treeName(name, "H2Tree");
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        RootPage page = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), name);
+        RootPage page = cctx.offheap().meta().getOrAllocateForTree(name);
 
         tree = new H2Tree(name, cctx.offheap().reuseList(), cctx.cacheId(),
-            dbMgr.pageMemory(), cctx.shared().wal(), tbl.rowFactory(), page.pageId(), page.isAllocated()) {
+            dbMgr.pageMemory(), cctx.shared().wal(), tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
             @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                 throws IgniteCheckedException {
                 return compareRows(getRow(io, buf, idx), row);
@@ -185,7 +186,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
-        // No-op.
+        try {
+            tree.destroy();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -43,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  */
 public class FreeList {
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final PageMemory pageMem;
@@ -55,7 +58,7 @@ public class FreeList {
     private final IgniteWriteAheadLogManager wal;
 
     /** */
-    private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<Integer, GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
     private final PageHandler<CacheDataRow, Void> writeRow = new PageHandler<CacheDataRow, Void>() {
@@ -87,12 +90,13 @@ public class FreeList {
 
     /** */
     private final PageHandler<FreeTree, Void> removeRow = new PageHandler<FreeTree, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, FreeTree tree,
+            int itemId) throws IgniteCheckedException {
             assert tree != null;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            assert DataPageIO.check(itemId): itemId;
+            assert DataPageIO.check(itemId) : itemId;
 
             int oldFreeSpace = io.getFreeSpace(buf);
 
@@ -123,7 +127,7 @@ public class FreeList {
      * @param reuseList Reuse list.
      * @param cctx Cache context.
      */
-    public FreeList(GridCacheContext<?,?> cctx, ReuseList reuseList) {
+    public FreeList(GridCacheContext<?, ?> cctx, ReuseList reuseList) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -146,7 +150,7 @@ public class FreeList {
     private FreeItem take(FreeTree tree, FreeItem lookupItem) throws IgniteCheckedException {
         FreeItem res = tree.removeCeil(lookupItem, null);
 
-        assert res == null || (res.pageId() != 0 && res.cacheId() == cctx.cacheId()): res;
+        assert res == null || (res.pageId() != 0 && res.cacheId() == cctx.cacheId()) : res;
 
         return res;
     }
@@ -157,7 +161,7 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     private FreeTree tree(Integer partId) throws IgniteCheckedException {
-        assert partId >= 0 && partId < Short.MAX_VALUE: partId;
+        assert partId >= 0 && partId < Short.MAX_VALUE : partId;
 
         GridFutureAdapter<FreeTree> fut = trees.get(partId);
 
@@ -168,13 +172,12 @@ public class FreeList {
                 fut = trees.get(partId);
             else {
                 // Index name will be the same across restarts.
-                String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
+                String idxName = BPlusTree.treeName("p" + partId, "Free");
 
-                final RootPage rootPage = cctx.shared().database().meta()
-                    .getOrAllocateForTree(cctx.cacheId(), idxName);
+                final RootPage rootPage = cctx.offheap().meta().getOrAllocateForTree(idxName);
 
                 fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, wal,
-                    rootPage.pageId(), rootPage.isAllocated()));
+                    rootPage.pageId().pageId(), rootPage.isAllocated()));
             }
         }
 
@@ -204,11 +207,11 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     public void insertRow(CacheDataRow row) throws IgniteCheckedException {
-        assert row.link() == 0: row.link();
+        assert row.link() == 0 : row.link();
 
         int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key(), row.value());
 
-        assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
+        assert entrySize > 0 && entrySize < Short.MAX_VALUE : entrySize;
 
         FreeTree tree = tree(row.partition());
 
@@ -238,6 +241,38 @@ public class FreeList {
             }
             else
                 writePage(page.id(), page, writeRow, row, entrySize);
+        }
+    }
+
+    /**
+     * @return Pages currently stored in this FreeList.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Collection<Long> pages() throws IgniteCheckedException {
+        Collection<Long> result = new ArrayList<>();
+
+        for (GridFutureAdapter<FreeTree> fut : trees.values()) {
+            FreeTree tree = fut.get();
+
+            GridCursor<FreeItem> cursor = tree.find(null, null);
+
+            while (cursor.next()) {
+                result.add(cursor.get().pageId());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Destroys this FreeList.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroy() throws IgniteCheckedException {
+        for (GridFutureAdapter<FreeTree> fut : trees.values()) {
+            FreeTree tree = fut.get();
+
+            tree.destroy();
         }
     }
 

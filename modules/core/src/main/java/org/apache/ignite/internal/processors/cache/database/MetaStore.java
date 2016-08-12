@@ -26,21 +26,26 @@ public interface MetaStore {
     /**
      * Get or allocate initial page for an index.
      *
-     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @return {@link RootPage} that keeps pageId, allocated flag that shows whether the page
      *      was newly allocated, and rootId that is counter which increments each time new page allocated.
      * @throws IgniteCheckedException
      */
-    public RootPage getOrAllocateForTree(int cacheId, String idxName) throws IgniteCheckedException;
+    public RootPage getOrAllocateForTree(String idxName) throws IgniteCheckedException;
 
     /**
      * Deallocate index page and remove from tree.
      *
-     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @return Root ID or -1 if no page was removed.
      * @throws IgniteCheckedException
      */
-    public RootPage dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
+    public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
+
+    /**
+     * Destroy this meta store.
+     *
+     * @throws IgniteCheckedException
+     */
+    public void destroy() throws IgniteCheckedException;
 }

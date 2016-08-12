@@ -18,17 +18,24 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  *
@@ -36,9 +43,6 @@ import java.io.File;
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
     /** */
     protected PageMemory pageMem;
-
-    /** */
-    protected MetadataStorage meta;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -51,8 +55,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             pageMem = initMemory(dbCfg);
 
             pageMem.start();
-
-            meta = new MetadataStorage(pageMem, cctx.wal());
         }
     }
 
@@ -63,17 +65,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public boolean persistenceEnabled() {
+        return false;
+    }
+
+    /**
      * @return Page memory instance.
      */
     public PageMemory pageMemory() {
         return pageMem;
-    }
-
-    /**
-     * @return Metadata storage.
-     */
-    public MetadataStorage meta() {
-        return meta;
     }
 
     /**
@@ -91,10 +93,58 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    @Nullable public IgniteInternalFuture wakeupForCheckpoint() {
+        return null;
+    }
+
+    /**
+     * Waits until current state is checkpointed.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void waitForCheckpoint() throws IgniteCheckedException {
+        // No-op
+    }
+
+    /**
+     *
+     */
+    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId,
+        Collection<String> cacheNames) {
+        return null;
+    }
+
+    public void submitBackupFuture(BackupFuture backupFuture) {
+        backupFuture.initFut().onDone(new IgniteCheckedException("Backup is not supported"));
+        backupFuture.onDone(new IgniteCheckedException("Backup is not supported"));
+        // No-op.
+    }
+
+    /**
      * @param discoEvt Before exchange for the given discovery event.
      */
     public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
         // No-op.
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void beforeCachesStop() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @param backupMsg Backup message.
+     * @param initiator Initiator node.
+     * @return Backup init future or {@code null} if backup is not available.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public IgniteInternalFuture startBackup(BackupMessage backupMsg, ClusterNode initiator)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /**
@@ -149,4 +199,5 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
-    }}
+    }
+}

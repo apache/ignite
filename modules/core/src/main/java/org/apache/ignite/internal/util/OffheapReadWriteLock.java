@@ -63,7 +63,7 @@ public class OffheapReadWriteLock {
      */
     public OffheapReadWriteLock(int concLvl) {
         if ((concLvl & concLvl - 1) != 0)
-            throw new IllegalArgumentException("Concurrency level myst be a power of 2: " + concLvl);
+            throw new IllegalArgumentException("Concurrency level must be a power of 2: " + concLvl);
 
         monitorsMask = concLvl - 1;
 
@@ -204,6 +204,22 @@ public class OffheapReadWriteLock {
         finally {
             lockObj.unlock();
         }
+    }
+
+    /**
+     * @param lock Lock to check.
+     * @return {@code True} if write lock is held by any thread for the given offheap RW lock.
+     */
+    public boolean isWriteLocked(long lock) {
+        return lockCount(GridUnsafe.getLongVolatile(null, lock)) == -1;
+    }
+
+    /**
+     * @param lock Lock to check.
+     * @return {@code True} if at least one read lock is held by any thread for the given offheap RW lock.
+     */
+    public boolean isReadLocked(long lock) {
+        return lockCount(GridUnsafe.getLongVolatile(null, lock)) > 0;
     }
 
     /**

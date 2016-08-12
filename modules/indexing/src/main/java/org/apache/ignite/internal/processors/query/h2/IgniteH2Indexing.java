@@ -1753,6 +1753,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
             }
 
+            for (TableDescriptor tblDesc : rmv.tbls.values())
+                for (Index idx : tblDesc.tbl.getIndexes())
+                    idx.close(null);
+
             for (Iterator<Map.Entry<T3<String, String, Boolean>, TwoStepCachedQuery>> it = twoStepCache.entrySet().iterator();
                  it.hasNext();) {
                 Map.Entry<T3<String, String, Boolean>, TwoStepCachedQuery> e = it.next();
