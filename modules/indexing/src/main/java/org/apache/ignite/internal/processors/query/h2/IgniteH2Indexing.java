@@ -1655,6 +1655,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
+        mapQryExec.onStop();
+
         for (Schema schema : schemas.values()) {
             for (TableDescriptor desc : schema.tbls.values()) {
                 desc.tbl.close();

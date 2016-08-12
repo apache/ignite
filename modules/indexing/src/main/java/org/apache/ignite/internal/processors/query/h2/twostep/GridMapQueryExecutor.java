@@ -41,6 +41,7 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -632,6 +633,18 @@ public class GridMapQueryExecutor {
         for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
             if (F.eq(grpKey.get1(), cacheName))
                 reservations.remove(grpKey);
+        }
+    }
+
+    /**
+     * Terminates running queries on node stop.
+     */
+    public void onStop() {
+        Collection<ConcurrentMap<Long, QueryResults>> values = qryRess.values();
+
+        for (ConcurrentMap<Long, QueryResults> value : values) {
+            for (QueryResults results : value.values())
+                results.cancel();
         }
     }
 
