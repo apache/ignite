@@ -147,6 +147,15 @@ namespace Apache.Ignite.Core.Tests
                 ex = (Exception) msgCtor.Invoke(new object[] {"myMessage"});
                 Assert.AreEqual("myMessage", ex.Message);
 
+                // Serialization.
+                var stream = new MemoryStream();
+                var formatter = new BinaryFormatter();
+
+                formatter.Serialize(stream, ex);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                ex = (Exception) formatter.Deserialize(stream);
+                Assert.AreEqual("myMessage", ex.Message);
 
                 // Message+cause ctor.
                 var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
@@ -155,8 +164,6 @@ namespace Apache.Ignite.Core.Tests
                 ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
                 Assert.AreEqual("myMessage", ex.Message);
                 Assert.AreEqual("innerEx", ex.InnerException.Message);
-
-                // Serialization.
             }
         }
 
