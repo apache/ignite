@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -32,8 +30,8 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -61,6 +59,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -376,8 +375,7 @@ public class IgfsUtils {
                         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
-                            ccfg.getAffinityMapper() == null)
+                        if (igfsCfg.isColocateMetadata() && ccfg.getAffinityMapper() == null)
                             ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
 
                         return;
@@ -740,6 +738,40 @@ public class IgfsUtils {
             path.readRawBinary(reader);
 
             return path;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Write IgfsFileAffinityRange.
+     *
+     * @param writer Writer
+     * @param affRange affinity range.
+     */
+    public static void writeFileAffinityRange(BinaryRawWriter writer, @Nullable IgfsFileAffinityRange affRange) {
+        if (affRange != null) {
+            writer.writeBoolean(true);
+
+            affRange.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IgfsFileAffinityRange.
+     *
+     * @param reader Reader.
+     * @return File affinity range.
+     */
+    public static IgfsFileAffinityRange readFileAffinityRange(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsFileAffinityRange affRange = new IgfsFileAffinityRange();
+
+            affRange.readRawBinary(reader);
+
+            return affRange;
         }
         else
             return null;
