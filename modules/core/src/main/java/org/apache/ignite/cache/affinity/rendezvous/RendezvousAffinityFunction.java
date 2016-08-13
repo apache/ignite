@@ -81,7 +81,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final String NULL_AFFINITY_KEY_ERR_MSG = "Failed to get value for NULL affinity key.";
+    public static final String NULL_AFFINITY_KEY_ERR_MSG = "Null key is passed for a partition calculation. Make sure that an affinity key that is used is initialized properly.";
 
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
@@ -469,7 +469,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
         if (key == null)
-            throw new IgniteException(NULL_AFFINITY_KEY_ERR_MSG);
+            throw new IllegalArgumentException(NULL_AFFINITY_KEY_ERR_MSG);
 
         return U.safeAbs(key.hashCode() % parts);
     }

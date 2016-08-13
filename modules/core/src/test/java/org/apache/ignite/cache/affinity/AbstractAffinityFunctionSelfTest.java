@@ -25,11 +25,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.model.Person;
+import org.apache.ignite.cache.affinity.model.Organization;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -39,6 +49,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstractTest {
     /** MAC prefix. */
     private static final String MAC_PREF = "MAC";
+
+    /** Organizations cache name. */
+    private static final String ORG_CACHE = "ORG_CACHE";
+
+    /** Persons collocated with Organizations cache name. */
+    private static final String COLLOCATED_PERSON_CACHE = "COLLOCATED_PERSON_CACHE";
 
     /**
      * Returns affinity function.
@@ -101,6 +117,70 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      */
     public void testRandomReassignmentThreeBackups() throws Exception {
         checkRandomReassignment(3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNullKeyForPartitionCalculation() throws Exception {
+        Ignite ignt = Ignition.start(new IgniteConfiguration());
+
+        AffinityFunction aff = affinityFunction();
+
+        CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
+
+        orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
+        orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
+
+        CacheConfiguration<AffinityKey<Long>, Person> colPersonCacheCfg = new CacheConfiguration<>(COLLOCATED_PERSON_CACHE);
+
+        colPersonCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
+        colPersonCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
+        colPersonCacheCfg.setAffinity(aff);
+
+        try (
+            IgniteCache<Long, Organization> orgCache = ignt.getOrCreateCache(orgCacheCfg);
+            IgniteCache<AffinityKey<Long>, Person> colPersonCache = ignt.getOrCreateCache(colPersonCacheCfg);
+        ) {
+            // Clear cache before running the example.
+            orgCache.clear();
+
+            // Organizations.
+            Organization org1 = new Organization("ApacheIgnite");
+
+            Organization org2 = new Organization("Other");
+
+            orgCache.put(org1.id(), org1);
+
+            orgCache.put(org2.id(), org2);
+
+            // Clear caches before running the example.
+            colPersonCache.clear();
+
+            // People.
+            Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
+            Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
+            Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
+            Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
+
+            // Note that in this test we use custom affinity key for Person objects
+            // to ensure that all persons are collocated with their organizations.
+            colPersonCache.put(p1.key(), p1);
+            colPersonCache.put(p2.key(), p2);
+            colPersonCache.put(p3.key(), p3);
+            colPersonCache.put(p4.key(), p4);
+
+            try {
+                colPersonCache.get(new AffinityKey<>(p1.id));
+                fail("Should throw IllegalArgumentException due to NULL affinity key.");
+            } catch (IllegalArgumentException e) {
+                X.printerr("Unable to get value p1 due to NULL affinity key.");
+            }
+        } finally {
+            // Distributed cache could be removed from cluster only by #destroyCache() call.
+            ignt.destroyCache(COLLOCATED_PERSON_CACHE);
+            ignt.destroyCache(ORG_CACHE);
+        }
     }
 
     /**

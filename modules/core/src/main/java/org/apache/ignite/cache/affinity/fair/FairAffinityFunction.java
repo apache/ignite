@@ -80,6 +80,9 @@ public class FairAffinityFunction implements AffinityFunction {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public static final String NULL_AFFINITY_KEY_ERR_MSG = "Null key is passed for a partition calculation. Make sure that an affinity key that is used is initialized properly.";
+
     /** Ascending comparator. */
     private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator();
 
@@ -354,6 +357,9 @@ public class FairAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException(NULL_AFFINITY_KEY_ERR_MSG);
+
         return U.safeAbs(hash(key.hashCode())) % parts;
     }
 
