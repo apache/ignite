@@ -271,7 +271,7 @@ public class FreeList {
         int keyLen = row.key().valueBytesLength(coctx);
         int valLen = row.value().valueBytesLength(coctx);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version());
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false);
     }
 
     /**

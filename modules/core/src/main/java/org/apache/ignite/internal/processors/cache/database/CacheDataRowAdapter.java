@@ -94,7 +94,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     if (!keyOnly) {
                         val = coctx.processor().toCacheObject(coctx, buf);
-                        ver = CacheVersionIO.read(buf);
+                        ver = CacheVersionIO.read(buf, false);
                     }
                 }
                 else {
@@ -228,11 +228,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
             if (remaining == 0)
                 return null;
 
-            int size = CacheVersionIO.readSize(buf);
+            int size = CacheVersionIO.readSize(buf, false);
 
             if (remaining >= size) {
                 // If the whole version is on a single page, just read it.
-                ver = CacheVersionIO.read(buf);
+                ver = CacheVersionIO.read(buf, false);
 
                 assert !buf.hasRemaining(): buf.remaining();
                 assert ver != null;
@@ -251,7 +251,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             verBuf.order(buf.order());
 
-            ver = CacheVersionIO.read(verBuf);
+            ver = CacheVersionIO.read(verBuf, false);
 
             assert ver != null;
         }

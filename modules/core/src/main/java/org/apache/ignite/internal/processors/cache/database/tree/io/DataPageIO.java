@@ -949,7 +949,7 @@ public class DataPageIO extends PageIO {
 
             case VERSION:
                 prevLen = keySize + valSize;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version());
+                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false);
 
                 break;
 
@@ -982,13 +982,13 @@ public class DataPageIO extends PageIO {
      * @param prevLen previous length.
      */
     private void writeVersionFragment(ByteBuffer buf, GridCacheVersion ver, int rowOff, int len, int prevLen) {
-        int verSize = CacheVersionIO.size(ver);
+        int verSize = CacheVersionIO.size(ver, false);
 
         assert len <= verSize: len;
 
         if (verSize == len) {
             // Here we can write version directly.
-            CacheVersionIO.write(buf, ver);
+            CacheVersionIO.write(buf, ver, false);
         }
         else {
             // We are in the middle of cache version.
@@ -996,7 +996,7 @@ public class DataPageIO extends PageIO {
 
             verBuf.order(buf.order());
 
-            CacheVersionIO.write(verBuf, ver);
+            CacheVersionIO.write(verBuf, ver, false);
 
             buf.put(verBuf.array(), rowOff - prevLen, len);
         }
@@ -1165,7 +1165,7 @@ public class DataPageIO extends PageIO {
 
             assert ok;
 
-            CacheVersionIO.write(buf, row.version());
+            CacheVersionIO.write(buf, row.version(), false);
         }
         finally {
             buf.position(0);
