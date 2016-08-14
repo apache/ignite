@@ -100,11 +100,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         }
 
                         first = false;
-
-                        incomplete = readFirstFragment(coctx, buf, keyOnly);
                     }
-                    else
-                        incomplete = readNextFragment(coctx, buf, keyOnly, incomplete);
+
+                    incomplete = readFragment(coctx, buf, keyOnly, incomplete);
 
                     if (keyOnly && key != null)
                         return;
@@ -124,7 +122,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param incomplete Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteObject<?> readNextFragment(
+    private IncompleteObject<?> readFragment(
         CacheObjectContext coctx,
         ByteBuffer buf,
         boolean keyOnly,
@@ -153,26 +151,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         // Read version.
         if (ver == null)
             incomplete = readIncompleteVersion(buf, incomplete);
-
-        return incomplete;
-    }
-
-    /**
-     * @param coctx Cache object context.
-     * @param buf Buffer.
-     * @param keyOnly {@code true} If need to read only key object.
-     * @throws IgniteCheckedException If failed.
-     */
-    private IncompleteObject<?> readFirstFragment(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly)
-        throws IgniteCheckedException {
-        IncompleteObject<?> incomplete = readIncompleteKey(coctx, buf, null);
-
-        if (!keyOnly && key != null) {
-            incomplete = readIncompleteValue(coctx, buf, null);
-
-            if (val != null)
-                incomplete = readIncompleteVersion(buf, null);
-        }
 
         return incomplete;
     }
