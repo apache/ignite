@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jsr166.ConcurrentHashMap8;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
@@ -114,6 +113,7 @@ public class FreeList {
         ) throws IgniteCheckedException {
             io.addRow(coctx, buf, row, rowSize);
 
+            // TODO This record must contain only a reference to a logical WAL record with the actual data.
             if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
                     row.key(), row.value(), row.version(), rowSize));
@@ -148,31 +148,18 @@ public class FreeList {
 
             assert payloadSize > 0: payloadSize;
 
-            written += payloadSize;
-
             if (isWalDeltaRecordNeeded(wal, page)) {
-                if (written == rowSize) {
-                    // This is the head, we need to write a record here.
-                    byte[] payload = new byte[payloadSize];
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                byte[] payload = new byte[payloadSize];
 
-                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
-                    buf.get(payload);
-                    buf.position(0);
+                io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+                buf.get(payload);
+                buf.position(0);
 
-                    wal.log(new DataPageInsertFragmentRecord(
-                        cctx.cacheId(),
-                        page.id(),
-                        payload,
-                        lastLink));
-                }
-                else {
-                    // Just mark page to store in WAL, because all fragments
-                    // except head fill page fully or at least by 90%.
-                    page.fullPageWalRecordPolicy(TRUE);
-                }
+                wal.log(new DataPageInsertFragmentRecord(cctx.cacheId(), page.id(), payload, lastLink));
             }
 
-            return written;
+            return written + payloadSize;
         }
     };
 
