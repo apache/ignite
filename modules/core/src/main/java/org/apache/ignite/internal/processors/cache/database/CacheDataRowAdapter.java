@@ -72,9 +72,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
-        assert cctx != null;
-        assert link != 0;
-        assert key == null;
+        assert cctx != null: "cctx";
+        assert link != 0: "link";
+        assert key == null: "key";
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
@@ -113,6 +113,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
         }
         while(nextLink != 0);
+
+        assert isReady(): "ready";
     }
 
     /**
@@ -164,11 +166,16 @@ public class CacheDataRowAdapter implements CacheDataRow {
     private void readFullRow(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly) throws IgniteCheckedException {
         key = coctx.processor().toKeyCacheObject(coctx, buf);
 
-        if (keyOnly)
+        if (keyOnly) {
+            assert key != null: "key";
+
             return;
+        }
 
         val = coctx.processor().toCacheObject(coctx, buf);
         ver = CacheVersionIO.read(buf, false);
+
+        assert isReady(): "ready";
     }
 
     /**
