@@ -26,6 +26,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 /**
  * Page handler.
  */
@@ -157,7 +160,8 @@ public abstract class PageHandler<X, R> {
     public static boolean isWalDeltaRecordNeeded(IgniteWriteAheadLogManager wal, Page page) {
         // If the page is clean, then it is either newly allocated or just after checkpoint.
         // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && page.isDirty();
+        return wal != null && !wal.isAlwaysWriteFullPages() && page.fullPageWalRecordPolicy() != TRUE &&
+            (page.fullPageWalRecordPolicy() == FALSE || page.isDirty());
     }
 
     /**

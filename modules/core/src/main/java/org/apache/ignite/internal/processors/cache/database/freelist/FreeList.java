@@ -168,7 +168,7 @@ public class FreeList {
                 else {
                     // Just mark page to store in WAL, because all fragments
                     // except head fill page fully or at least by 90%.
-                    page.fullPageWalRecord(TRUE);
+                    page.fullPageWalRecordPolicy(TRUE);
                 }
             }
 
