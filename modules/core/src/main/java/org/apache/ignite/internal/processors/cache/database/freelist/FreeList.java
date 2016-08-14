@@ -79,50 +79,9 @@ public class FreeList {
 
             assert freeSpace > 0: freeSpace;
 
-            if (freeSpace >= rowSize) {
-                // Write the full row in a single page.
-                io.addRow(coctx, buf, row, rowSize);
-
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
-                        row.key(), row.value(), row.version(), rowSize));
-
-                written = rowSize;
-            }
-            else {
-                // The full row does not fit into this page, need to write a fragment.
-
-                // Read last link before the fragment write, because it will be updated there.
-                long lastLink = row.link();
-
-                int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
-
-                assert payloadSize > 0: payloadSize;
-
-                written += payloadSize;
-
-                if (isWalDeltaRecordNeeded(wal, page)) {
-                    if (written == rowSize) {
-                        // This is the head, we need to write a record here.
-                        byte[] payload = new byte[payloadSize];
-
-                        io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
-                        buf.get(payload);
-                        buf.position(0);
-
-                        wal.log(new DataPageInsertFragmentRecord(
-                            cctx.cacheId(),
-                            page.id(),
-                            payload,
-                            lastLink));
-                    }
-                    else {
-                        // Just mark page to store in WAL, because all fragments
-                        // except head fill page fully or at least by 90%.
-                        page.forceFullPageWalRecord(true);
-                    }
-                }
-            }
+            // If the full row does not fit into this page write only a fragment.
+            written = freeSpace >= rowSize ? addRow(coctx, page, buf, io, row, rowSize):
+                addRowFragment(coctx, page, buf, io, row, written, rowSize);
 
             // Reread free space after update.
             freeSpace = io.getFreeSpace(buf);
@@ -132,6 +91,87 @@ public class FreeList {
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
+        }
+
+        /**
+         * @param coctx Cache object context.
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param row Row.
+         * @param rowSize Row size.
+         * @return Written size which is always equal to row size here.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRow(
+            CacheObjectContext coctx,
+            Page page,
+            ByteBuffer buf,
+            DataPageIO io,
+            CacheDataRow row,
+            int rowSize
+        ) throws IgniteCheckedException {
+            io.addRow(coctx, buf, row, rowSize);
+
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
+                    row.key(), row.value(), row.version(), rowSize));
+
+            return rowSize;
+        }
+
+        /**
+         * @param coctx Cache object context.
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param row Row.
+         * @param written Written size.
+         * @param rowSize Row size.
+         * @return Updated written size.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRowFragment(
+            CacheObjectContext coctx,
+            Page page,
+            ByteBuffer buf,
+            DataPageIO io,
+            CacheDataRow row,
+            int written,
+            int rowSize
+        ) throws IgniteCheckedException {
+            // Read last link before the fragment write, because it will be updated there.
+            long lastLink = row.link();
+
+            int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
+
+            assert payloadSize > 0: payloadSize;
+
+            written += payloadSize;
+
+            if (isWalDeltaRecordNeeded(wal, page)) {
+                if (written == rowSize) {
+                    // This is the head, we need to write a record here.
+                    byte[] payload = new byte[payloadSize];
+
+                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+                    buf.get(payload);
+                    buf.position(0);
+
+                    wal.log(new DataPageInsertFragmentRecord(
+                        cctx.cacheId(),
+                        page.id(),
+                        payload,
+                        lastLink));
+                }
+                else {
+                    // Just mark page to store in WAL, because all fragments
+                    // except head fill page fully or at least by 90%.
+                    page.forceFullPageWalRecord(true);
+                }
+            }
+
+            return written;
         }
     };
 

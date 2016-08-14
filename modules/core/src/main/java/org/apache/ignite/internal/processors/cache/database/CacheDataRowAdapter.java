@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
- * Assembles entry from data pages.
+ * Cache data row adapter.
  */
 public class CacheDataRowAdapter implements CacheDataRow {
     /** */
@@ -60,14 +60,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param link Link.
      */
     public CacheDataRowAdapter(long link) {
+        // Link can be 0 here.
         this.link = link;
     }
 
     /**
-     * Assemble row from data pages.
+     * Read row from data pages.
      *
      * @param cctx Cache context.
-     * @param keyOnly {@code True} if need read only key object.
+     * @param keyOnly {@code true} If need to read only key object.
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
@@ -77,90 +78,119 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        long nextLink;
+        long nextLink = link;
         IncompleteObject<?> incomplete = null;
+        boolean first = true;
 
-        try (Page page = page(pageId(link), cctx)) {
-            ByteBuffer buf = page.getForRead();
+        do {
+            try (Page page = page(pageId(nextLink), cctx)) {
+                ByteBuffer buf = page.getForRead();
 
-            try {
-                DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-                nextLink = io.setPositionAndLimitOnPayload(buf, itemId(link));
-
-                if (nextLink == 0) {
-                    // Read the whole row at once.
-                    key = coctx.processor().toKeyCacheObject(coctx, buf);
-
-                    if (!keyOnly) {
-                        val = coctx.processor().toCacheObject(coctx, buf);
-                        ver = CacheVersionIO.read(buf, false);
-                    }
-                }
-                else {
-                    // Read the first chunk of multi-page entry.
-                    incomplete = readIncompleteKey(coctx, buf, null);
-
-                    if (key != null) {
-                        if (keyOnly)
-                            return;
-
-                        incomplete = readIncompleteValue(coctx, buf, null);
-
-                        if (val != null)
-                            incomplete = readIncompleteVersion(buf, null);
-                    }
-                }
-            }
-            finally {
-                page.releaseRead();
-            }
-        }
-
-        // Read other chunks outside of the lock on first page.
-        while (nextLink != 0) {
-            assert !isReady();
-
-            try (final Page p = page(pageId(nextLink), cctx)) {
                 try {
-                    final ByteBuffer b = p.getForRead();
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(b);
+                    nextLink = io.setPositionAndLimitOnPayload(buf, itemId(nextLink));
 
-                    nextLink = io.setPositionAndLimitOnPayload(b, itemId(nextLink));
+                    if (first) {
+                        if (nextLink == 0) {
+                            // Fast path for a single page row.
+                            readFullRow(coctx, buf, keyOnly);
 
-                    // Read key.
-                    if (key == null) {
-                        incomplete = readIncompleteKey(coctx, b, (IncompleteCacheObject)incomplete);
-
-                        if (key == null)
-                            continue;
-
-                        if (keyOnly)
                             return;
+                        }
 
-                        incomplete = null;
+                        first = false;
+
+                        incomplete = readFirstFragment(coctx, buf, keyOnly);
                     }
+                    else
+                        incomplete = readNextFragment(coctx, buf, keyOnly, incomplete);
 
-                    // Read value.
-                    if (val == null) {
-                        incomplete = readIncompleteValue(coctx, b, (IncompleteCacheObject)incomplete);
-
-                        if (val == null)
-                            continue;
-
-                        incomplete = null;
-                    }
-
-                    // Read version.
-                    if (ver == null)
-                        incomplete = readIncompleteVersion(b, incomplete);
+                    if (keyOnly && key != null)
+                        return;
                 }
                 finally {
-                    p.releaseRead();
+                    page.releaseRead();
                 }
             }
         }
+        while(nextLink != 0);
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param keyOnly {@code true} If need to read only key object.
+     * @param incomplete Incomplete object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IncompleteObject<?> readNextFragment(
+        CacheObjectContext coctx,
+        ByteBuffer buf,
+        boolean keyOnly,
+        IncompleteObject<?> incomplete
+    ) throws IgniteCheckedException {
+        // Read key.
+        if (key == null) {
+            incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
+
+            if (key == null || keyOnly)
+                return incomplete;
+
+            incomplete = null;
+        }
+
+        // Read value.
+        if (val == null) {
+            incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
+
+            if (val == null)
+                return incomplete;
+
+            incomplete = null;
+        }
+
+        // Read version.
+        if (ver == null)
+            incomplete = readIncompleteVersion(buf, incomplete);
+
+        return incomplete;
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param keyOnly {@code true} If need to read only key object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IncompleteObject<?> readFirstFragment(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly)
+        throws IgniteCheckedException {
+        IncompleteObject<?> incomplete = readIncompleteKey(coctx, buf, null);
+
+        if (!keyOnly && key != null) {
+            incomplete = readIncompleteValue(coctx, buf, null);
+
+            if (val != null)
+                incomplete = readIncompleteVersion(buf, null);
+        }
+
+        return incomplete;
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param keyOnly {@code true} If need to read only key object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void readFullRow(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly) throws IgniteCheckedException {
+        key = coctx.processor().toKeyCacheObject(coctx, buf);
+
+        if (keyOnly)
+            return;
+
+        val = coctx.processor().toCacheObject(coctx, buf);
+        ver = CacheVersionIO.read(buf, false);
     }
 
     /**
