@@ -68,11 +68,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         "order by co.id, pr.id ";
 
     /** */
-    private static final String ETERNAL_QRY = "select pu1._val, pu2._val, pu3._val " +
-        "from \"pu\".Purchase pu1, \"pu\".Purchase pu2, \"pu\".Purchase pu3";
-
-    /** */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 6;
 
     /** */
     private static final int PERS_CNT = 600;
@@ -193,8 +189,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
      */
     public void testRestarts() throws Exception {
         int duration = 10 * 1000;
-        int qryThreadNum = 1;
-        int restartThreadsNum = 1; // 4 + 2 = 6 nodes
+        int qryThreadNum = 4;
+        int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
         final int logFreq = 10;
 
@@ -233,7 +229,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     while (!locks.compareAndSet(g, 0, 1));
 
                     try {
-                        if (false) { // Partitioned query.
+                        if (rnd.nextBoolean()) { // Partitioned query.
                             IgniteCache<?,?> cache = grid(g).cache("pu");
 
                             SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
@@ -292,7 +288,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                         } else { // Replicated query.
                             IgniteCache<?, ?> cache = grid(g).cache("co");
 
-                            cache.query(new SqlFieldsQuery(ETERNAL_QRY));
+                            assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
                     } finally {
                         // Need to clear lock in final handler to avoid endless loop if exception is thrown.

@@ -139,19 +139,19 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
-
-                if (nodeRess == null)
-                    return;
-
-                for (QueryResults ress : nodeRess.values())
-                    ress.cancel();
-            }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+//        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+//            @Override public void onEvent(final Event evt) {
+//                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+//
+//                ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
+//
+//                if (nodeRess == null)
+//                    return;
+//
+//                for (QueryResults ress : nodeRess.values())
+//                    ress.cancel();
+//            }
+//        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -633,18 +633,6 @@ public class GridMapQueryExecutor {
         for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
             if (F.eq(grpKey.get1(), cacheName))
                 reservations.remove(grpKey);
-        }
-    }
-
-    /**
-     * Terminates running queries on node stop.
-     */
-    public void onStop() {
-        Collection<ConcurrentMap<Long, QueryResults>> values = qryRess.values();
-
-        for (ConcurrentMap<Long, QueryResults> value : values) {
-            for (QueryResults results : value.values())
-                results.cancel();
         }
     }
 

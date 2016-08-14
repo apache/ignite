@@ -183,21 +183,22 @@ public class GridReduceQueryExecutor {
             }
         });
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                for (QueryRun r : runs.values()) {
-                    for (GridMergeIndex idx : r.idxs) {
-                        if (idx.hasSource(nodeId)) {
-                            handleNodeLeft(r, nodeId);
-
-                            break;
-                        }
-                    }
-                }
-            }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+//        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+//            @Override
+//            public void onEvent(final Event evt) {
+//                UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
+//
+//                for (QueryRun r : runs.values()) {
+//                    for (GridMergeIndex idx : r.idxs) {
+//                        if (idx.hasSource(nodeId)) {
+//                            handleNodeLeft(r, nodeId);
+//
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /**
@@ -686,9 +687,6 @@ public class GridReduceQueryExecutor {
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.conn);
 
-                if (e instanceof GridH2QueryCancelledException) // Implicitly stop remote queries.
-                    cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
-
                 if (e instanceof CacheException) {
                     if (e.getMessage().contains("Failed to fetch data from node") &&
                         (mapQrysCancel.get() == F.noop() || reduceQryCancel.get() == F.noop()))
@@ -710,6 +708,9 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
+                // Make sure any activity related to current attempt is terminated.
+                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
+
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
 

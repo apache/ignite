@@ -927,6 +927,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return rs;
         }
+        catch (GridH2QueryCancelledException e) {
+            onSqlException();
+
+            throw e;
+        }
         catch (SQLException e) {
             onSqlException();
 
@@ -1654,8 +1659,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Stopping cache query index...");
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
-
-        mapQryExec.onStop();
 
         for (Schema schema : schemas.values()) {
             for (TableDescriptor desc : schema.tbls.values()) {
