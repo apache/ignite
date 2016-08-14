@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jsr166.ConcurrentHashMap8;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
@@ -167,7 +168,7 @@ public class FreeList {
                 else {
                     // Just mark page to store in WAL, because all fragments
                     // except head fill page fully or at least by 90%.
-                    page.forceFullPageWalRecord(true);
+                    page.fullPageWalRecord(TRUE);
                 }
             }
 

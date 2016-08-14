@@ -101,7 +101,7 @@ public class PageNoStoreImpl implements Page {
     }
 
     /** {@inheritDoc} */
-    @Override public void forceFullPageWalRecord(boolean force) {
+    @Override public void fullPageWalRecord(Boolean write) {
         // No-op
     }
 
