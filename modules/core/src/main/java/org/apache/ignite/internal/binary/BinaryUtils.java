@@ -82,6 +82,9 @@ public class BinaryUtils {
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
+    /** Map from class to associated write replacer. */
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
+
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
@@ -117,6 +120,10 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
+
+    /** Whether to skip TreeMap/TreeSet wrapping. */
+    public static final boolean WRAP_TREES =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -244,6 +251,11 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+
+        if (wrapTrees()) {
+            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
+            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
+        }
     }
 
     /**
@@ -584,6 +596,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @return Whether tree structures should be wrapped.
+     */
+    public static boolean wrapTrees() {
+        return WRAP_TREES;
+    }
+
+    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -592,7 +611,7 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            cls == TreeMap.class ||
+            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap8.class ||
             cls == ConcurrentHashMap.class;
     }
@@ -611,7 +630,7 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (cls == TreeMap.class)
+        else if (!wrapTrees() && cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap8.class)
             return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
@@ -650,7 +669,7 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            cls == TreeSet.class ||
+            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class;
@@ -686,7 +705,7 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (cls == TreeSet.class)
+        else if (!wrapTrees() && cls == TreeSet.class)
             return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
@@ -2211,6 +2230,16 @@ public class BinaryUtils {
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
         return ctx.metadata(obj.typeId());
+    }
+
+    /**
+     * Get predefined write-replacer associated with class.
+     *
+     * @param cls Class.
+     * @return Write replacer.
+     */
+    public static BinaryWriteReplacer writeReplacer(Class cls) {
+        return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
     }
 
     /**
