@@ -95,8 +95,7 @@ public class FreeList {
                 // Read last link before the fragment write, because it will be updated there.
                 long lastLink = row.link();
 
-                //
-                int payloadSize = io.addRowFragment(coctx, buf, row, written , rowSize);
+                int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
 
                 assert payloadSize > 0: payloadSize;
 
@@ -166,6 +165,7 @@ public class FreeList {
                 assert old == null;
             }
 
+            // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
     };
