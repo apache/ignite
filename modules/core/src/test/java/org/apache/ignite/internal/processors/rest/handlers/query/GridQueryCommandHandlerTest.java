@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.query;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -42,6 +42,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         connCfg.setIdleQueryCursorCheckFrequency(1000);
         connCfg.setIdleQueryCursorTimeout(1000);
         grid().configuration().setConnectorConfiguration(connCfg);
+
     }
 
     /** {@inheritDoc} */
@@ -54,9 +55,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSupportedCommands() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        GridTestKernalContext ctx = newContext(cfg);
+        GridTestKernalContext ctx = newContext(grid().configuration());
         ctx.add(new GridTimeoutProcessor(ctx));
 
         QueryCommandHandler cmdHandler = new QueryCommandHandler(ctx);
@@ -75,9 +74,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUnsupportedCommands() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        GridTestKernalContext ctx = newContext(cfg);
+        GridTestKernalContext ctx = newContext(grid().configuration());
         ctx.add(new GridTimeoutProcessor(ctx));
 
         QueryCommandHandler cmdHandler = new QueryCommandHandler(ctx);
@@ -102,8 +99,8 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         req.command(GridRestCommand.EXECUTE_SQL_QUERY);
         req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getTypeName());
-        req.pageSize(null);
+        req.typeName(Integer.class.getName());
+        req.pageSize(10);
         req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
         req.arguments(arr);
         req.cacheName(null);
@@ -133,7 +130,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         req.command(GridRestCommand.EXECUTE_SQL_QUERY);
         req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getTypeName());
+        req.typeName(Integer.class.getName());
 
         req.pageSize(null);
         req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
@@ -141,12 +138,15 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         req.arguments(arr);
         req.cacheName(getName());
 
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
-        resp.get();
+        try {
+            IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+            resp.get();
 
-        assertEquals("Incorrect page size [pageSize=null]", resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
-        assertNull(resp.result().getResponse());
+            fail("Expected exception not thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            info("Got expected exception: " + e);
+        }
     }
 
     /**
@@ -166,7 +166,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         req.command(GridRestCommand.EXECUTE_SQL_QUERY);
         req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getTypeName());
+        req.typeName(Integer.class.getName());
         req.pageSize(null);
         req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
         req.arguments(arr);
