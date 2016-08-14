@@ -2071,6 +2071,9 @@ public abstract class BPlusTree<L, T extends L> {
                 ByteBuffer fwdBuf = fwd.getForWrite(); // Initial write, no need to check for concurrent modification.
 
                 try {
+                    // Never write full forward page, because it is known to be new.
+                    fwd.fullPageWalRecordPolicy(Boolean.FALSE);
+
                     boolean midShift = splitPage(io, page, buf, fwdId, fwd, fwdBuf, idx);
 
                     // Do insert.
@@ -2113,6 +2116,9 @@ public abstract class BPlusTree<L, T extends L> {
                             ByteBuffer newRootBuf = newRoot.getForWrite(); // Initial write, no concurrent modification.
 
                             try {
+                                // Never write full new root page, because it is known to be new.
+                                newRoot.fullPageWalRecordPolicy(Boolean.FALSE);
+
                                 long pageId = PageIO.getPageId(buf);
 
                                 inner(io).initNewRoot(newRootBuf, newRootId, pageId, moveUpRow, null, fwdId);
