@@ -130,12 +130,14 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
 
         ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg4.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
 
