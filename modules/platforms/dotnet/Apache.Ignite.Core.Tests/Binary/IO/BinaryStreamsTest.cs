@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Binary.IO
 {
+    using System;
+    using System.IO;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Memory;
     using NUnit.Framework;
@@ -32,7 +34,8 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestPlatformMemoryStream()
         {
-            TestStream(new PlatformMemoryStream(GetMemory()), false);
+            var stream = new PlatformMemoryStream(GetMemory());
+            TestStream(stream, false, () => stream.SynchronizeOutput());
         }
 
         /// <summary>
@@ -41,7 +44,8 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestPlatformBigEndianMemoryStream()
         {
-            TestStream(new PlatformBigEndianMemoryStream(GetMemory()), false);
+            var stream = new PlatformBigEndianMemoryStream(GetMemory());
+            TestStream(stream, false, () => stream.SynchronizeOutput());
         }
 
         /// <summary>
@@ -50,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestBinaryHeapStream()
         {
-            TestStream(new BinaryHeapStream(1), true);
+            TestStream(new BinaryHeapStream(1), true, () => { });
         }
 
         /// <summary>
@@ -64,15 +68,30 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         /// <summary>
         /// Tests the stream.
         /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <param name="sameArr">Same array flag.</param>
-        private static void TestStream(IBinaryStream stream, bool sameArr)
+        private static unsafe void TestStream(IBinaryStream stream, bool sameArr, Action flush)
         {
-            Assert.IsNotNull(stream);
-
+            // Arrays.
             Assert.AreEqual(sameArr, stream.IsSameArray(stream.GetArray()));
             Assert.IsFalse(stream.IsSameArray(new byte[1]));
             Assert.IsFalse(stream.IsSameArray(stream.GetArrayCopy()));
+
+            // Read-write.
+            byte* bytes = stackalloc byte[10];
+            *bytes = 1;
+            *(bytes + 1) = 2;
+
+            stream.Write(bytes, 2);
+            flush();
+
+            stream.Seek(0, SeekOrigin.Begin);
+            byte* bytes2 = stackalloc byte[2];
+            stream.Read(bytes2, 2);
+            Assert.AreEqual(1, *bytes2);
+            Assert.AreEqual(2, *(bytes2 + 1));
+
+
+
+            // Seek.
         }
     }
 }
