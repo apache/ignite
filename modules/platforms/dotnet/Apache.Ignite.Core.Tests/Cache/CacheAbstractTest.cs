@@ -1990,7 +1990,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// ENsure taht lock cannot be obtained by other threads.
+        /// Ensure that lock cannot be obtained by other threads.
         /// </summary>
         /// <param name="getLock">Get lock function.</param>
         /// <param name="sharedLock">Shared lock.</param>
