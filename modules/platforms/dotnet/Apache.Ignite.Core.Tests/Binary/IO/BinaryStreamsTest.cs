@@ -70,12 +70,14 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         /// </summary>
         private static unsafe void TestStream(IBinaryStream stream, bool sameArr, Action flush)
         {
+            Action seek = () => Assert.AreEqual(0, stream.Seek(0, SeekOrigin.Begin));
+
             // Arrays.
             Assert.AreEqual(sameArr, stream.IsSameArray(stream.GetArray()));
             Assert.IsFalse(stream.IsSameArray(new byte[1]));
             Assert.IsFalse(stream.IsSameArray(stream.GetArrayCopy()));
 
-            // Read-write.
+            // byte*
             byte* bytes = stackalloc byte[10];
             *bytes = 1;
             *(bytes + 1) = 2;
@@ -83,15 +85,19 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             stream.Write(bytes, 2);
             flush();
 
-            stream.Seek(0, SeekOrigin.Begin);
+            seek();
             byte* bytes2 = stackalloc byte[2];
             stream.Read(bytes2, 2);
             Assert.AreEqual(1, *bytes2);
             Assert.AreEqual(2, *(bytes2 + 1));
 
+            // byte[]
+            seek();
+            stream.Write(new byte[] {3, 4, 5}, 1, 2);
+            flush();
+            seek();
+            Assert.AreEqual(new byte[] {4,5}, stream.ReadByteArray(2));
 
-
-            // Seek.
         }
     }
 }
