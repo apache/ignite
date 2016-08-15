@@ -72,6 +72,15 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         {
             Action seek = () => Assert.AreEqual(0, stream.Seek(0, SeekOrigin.Begin));
 
+            Action<Action, Func<object>, object> check = (write, read, expectedResult) =>
+            {
+                seek();
+                write();
+                flush();
+                seek();
+                Assert.AreEqual(expectedResult, read());
+            };
+
             // Arrays.
             Assert.AreEqual(sameArr, stream.IsSameArray(stream.GetArray()));
             Assert.IsFalse(stream.IsSameArray(new byte[1]));
@@ -91,12 +100,12 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             Assert.AreEqual(1, *bytes2);
             Assert.AreEqual(2, *(bytes2 + 1));
 
-            // byte[]
-            seek();
-            stream.Write(new byte[] {3, 4, 5}, 1, 2);
-            flush();
-            seek();
-            Assert.AreEqual(new byte[] {4,5}, stream.ReadByteArray(2));
+            // Others.
+            check(() => stream.Write(new byte[] { 3, 4, 5 }, 1, 2), () => stream.ReadByteArray(2), new byte[] { 4, 5 });
+            check(() => stream.WriteBool(true), () => stream.ReadBool(), true);
+            check(() => stream.WriteBoolArray(new[] {true, false}), () => stream.ReadBoolArray(2), new[] {true, false});
+            check(() => stream.WriteByte(4), () => stream.ReadByte(), 4);
+            check(() => stream.WriteByteArray(new byte[] {4, 5, 6}), () => stream.ReadByteArray(3), new byte[] {4, 5, 6});
 
         }
     }
