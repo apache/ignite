@@ -2418,6 +2418,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var tx = Transactions.TxStart();
             
             Assert.AreEqual(TransactionState.Active, tx.State);
+            Assert.AreEqual(Thread.CurrentThread.ManagedThreadId, tx.ThreadId);
 
             tx.Rollback();
 
