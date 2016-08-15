@@ -97,8 +97,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     @GridToStringInclude
     private GridNearTxLocal tx;
 
-    /** Commit flag. */
+    /** Commit flag. This flag used only for one-phase commit transaction. */
     private boolean commit;
+
+    /** Error. */
+    private volatile Throwable err;
 
     /** Node mappings. */
     private IgniteTxMappings mappings;
@@ -313,6 +316,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
 
+            if (this.err != null)
+                err = this.err;
+
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
                     assert tx.onePhaseCommit();
@@ -385,10 +391,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /**
+     * @param err Error.
+     */
+    void finish(Throwable err) {
+        this.err = err;
+
+        finish(false);
+    }
+
+    /**
      * Initializes future.
+     *
+     * @param commit Commit flag.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void finish() {
+    void finish(boolean commit) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -403,15 +420,17 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
-                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null)) {
+                if ((tx.onePhaseCommit() && needFinishOnePhase())
+                    || (!tx.onePhaseCommit() && mappings != null)
+                    || (tx.pessimistic() && !commit) /* Need to release lock on primary nodes */) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
                         if (mapping != null)
-                            finish(mapping);
+                            finish(mapping, commit);
                     }
                     else
-                        finish(mappings.mappings());
+                        finish(mappings.mappings(), commit);
                 }
 
                 markInitialized();
@@ -605,17 +624,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /**
      * @param mappings Mappings.
+     * @param commit Commit flag.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(m);
+            finish(m, commit);
     }
 
     /**
      * @param m Mapping.
+     * @param commit Commit flag.
      */
-    private void finish(GridDistributedTxMapping m) {
+    private void finish(GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.node();
 
         assert !m.empty();
