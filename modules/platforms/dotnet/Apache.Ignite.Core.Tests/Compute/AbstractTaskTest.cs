@@ -169,12 +169,13 @@ namespace Apache.Ignite.Core.Tests.Compute
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = path,
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = _fork
-                        ? null
-                        : (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
-                }
+                BinaryConfiguration = _fork
+                    ? null
+                    : new BinaryConfiguration
+                    {
+                        TypeConfigurations =
+                            (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
+                    }
             };
         }
 
