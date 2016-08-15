@@ -1886,7 +1886,45 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
+        /// <summary>
+        /// Simple cache lock test (while <see cref="TestLock"/> is ignored).
+        /// </summary>
         [Test]
+        public void TestLockSimple()
+        {
+            if (!LockingEnabled())
+                return;
+
+            var cache = Cache();
+
+            const int key = 7;
+
+            Action<ICacheLock> checkLock = lck =>
+            {
+                using (lck)
+                {
+                    Assert.Throws<InvalidOperationException>(lck.Exit); // can't exit if not entered
+
+                    lck.Enter();
+
+                    Assert.IsTrue(cache.IsLocalLocked(key, true));
+                    Assert.IsTrue(cache.IsLocalLocked(key, false));
+
+                    lck.Exit();
+
+                    Assert.IsFalse(cache.IsLocalLocked(key, true));
+                    Assert.IsFalse(cache.IsLocalLocked(key, false));
+                }
+
+                Assert.Throws<ObjectDisposedException>(lck.Enter); // Can't enter disposed lock
+            };
+
+            checkLock(cache.Lock(key));
+            checkLock(cache.LockAll(new[] {key, 1, 2, 3}));
+        }
+
+        [Test]
+        [Ignore("IGNITE-835")]
         public void TestLock()
         {
             if (!LockingEnabled())
