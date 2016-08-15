@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 {
                     TypeConfigurations = _fork
                         ? null
-                        : GetBinaryTypeConfigurations().Select(t => new BinaryTypeConfiguration(t)).ToList()
+                        : (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
                 }
             };
         }
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Define binary types.
         /// </summary>
-        protected virtual ICollection<Type> GetBinaryTypeConfigurations()
+        protected virtual ICollection<Type> GetBinaryTypes()
         {
             return null;
         }

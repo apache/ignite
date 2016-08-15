@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
-        protected override ICollection<Type> GetBinaryTypeConfigurations()
+        protected override ICollection<Type> GetBinaryTypes()
         {
             return new []
             {
