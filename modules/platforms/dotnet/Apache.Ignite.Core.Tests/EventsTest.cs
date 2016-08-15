@@ -323,23 +323,18 @@ namespace Apache.Ignite.Core.Tests
 
             events.EnableLocal(eventType);
 
-            Func<IEventFilter<IEvent>, int[], Task<IEvent>> getWaitTask;
+            Func<IEventFilter<IEvent>, int[], Task<IEvent>> getWaitTask = (filter, types) =>
+            {
+                var task = async 
+                    ? events.WaitForLocalAsync(filter, types) 
+                    : Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
 
-            if (async)
-                getWaitTask = (filter, types) =>
-                {
-                    var task = events.WaitForLocalAsync(filter, types);
-                    GenerateTaskEvent();
-                    return task;
-                };
-            else
-                getWaitTask = (filter, types) =>
-                {
-                    var task = Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-                    Thread.Sleep(500); // allow task to start and begin waiting for events
-                    GenerateTaskEvent();
-                    return task;
-                };
+                Thread.Sleep(200); // allow task to start and begin waiting for events
+
+                GenerateTaskEvent();
+
+                return task;
+            };
 
             // No params
             var waitTask = getWaitTask(null, new int[0]);
