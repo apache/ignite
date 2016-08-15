@@ -533,6 +533,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, cacheEvent.SubjectId);
                 Assert.AreEqual("cloClsName", cacheEvent.ClosureClassName);
                 Assert.AreEqual("taskName", cacheEvent.TaskName);
+                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: IsNear="));
 
                 var qryExecEvent = EventReader.Read<CacheQueryExecutedEvent>(reader);
                 CheckEventBase(qryExecEvent);
@@ -542,6 +543,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("clause", qryExecEvent.Clause);
                 Assert.AreEqual(expectedGuid, qryExecEvent.SubjectId);
                 Assert.AreEqual("taskName", qryExecEvent.TaskName);
+                Assert.AreEqual(
+                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName", qryExecEvent.ToShortString());
 
                 var qryReadEvent = EventReader.Read<CacheQueryReadEvent>(reader);
                 CheckEventBase(qryReadEvent);
@@ -555,6 +559,10 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(2, qryReadEvent.Value);
                 Assert.AreEqual(3, qryReadEvent.OldValue);
                 Assert.AreEqual(4, qryReadEvent.Row);
+                Assert.AreEqual(
+                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName, Key=1, Value=2, " +
+                    "OldValue=3, Row=4", qryReadEvent.ToShortString());
 
                 var cacheRebalancingEvent = EventReader.Read<CacheRebalancingEvent>(reader);
                 CheckEventBase(cacheRebalancingEvent);
@@ -563,15 +571,19 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, cacheRebalancingEvent.DiscoveryNode);
                 Assert.AreEqual(2, cacheRebalancingEvent.DiscoveryEventType);
                 Assert.AreEqual(3, cacheRebalancingEvent.DiscoveryTimestamp);
-                
+                Assert.IsTrue(cacheRebalancingEvent.ToShortString().StartsWith(
+                    "SWAP_SPACE_CLEARED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
+
                 var checkpointEvent = EventReader.Read<CheckpointEvent>(reader);
                 CheckEventBase(checkpointEvent);
                 Assert.AreEqual("cpKey", checkpointEvent.Key);
-                
+                Assert.AreEqual("SWAP_SPACE_CLEARED: Key=cpKey", checkpointEvent.ToShortString());
+
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
                 Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
+                Assert.IsTrue(discoEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: EventNode=GridNode"));
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -581,10 +593,12 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, jobEvent.TaskNode);
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
+                Assert.IsTrue(jobEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
 
                 var spaceEvent = EventReader.Read<SwapSpaceEvent>(reader);
                 CheckEventBase(spaceEvent);
                 Assert.AreEqual("space", spaceEvent.Space);
+                Assert.IsTrue(spaceEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: Space=space"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
@@ -593,6 +607,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("taskClsName", taskEvent.TaskClassName);
                 Assert.AreEqual("taskName", taskEvent.TaskName);
                 Assert.AreEqual(expectedGridGuid, taskEvent.TaskSessionId);
+                Assert.IsTrue(taskEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
             }
         }
 
@@ -611,6 +626,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
                 "Invalid event timestamp: '{0}', current time: '{1}'", evt.Timestamp, DateTime.Now);
+
+            Assert.Greater(evt.LocalOrder, 0);
+
+            Console.WriteLine(evt.ToString());
         }
 
         /// <summary>
