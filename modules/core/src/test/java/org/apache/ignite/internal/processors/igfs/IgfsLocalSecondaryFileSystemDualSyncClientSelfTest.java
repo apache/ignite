@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.igfs;
+
 /**
- * <!-- Package description. -->
- * Contains APIs for IGFS secondary file system base on local file system.
+ * DUAL_SYNC mode.
  */
-package org.apache.ignite.igfs.secondary;
+public class IgfsLocalSecondaryFileSystemDualSyncClientSelfTest extends IgfsLocalSecondaryFileSystemDualSyncSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean client() {
+        return true;
+    }
+}
