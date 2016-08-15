@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.jetbrains.annotations.Nullable;
@@ -52,4 +53,9 @@ public interface PlatformConfigurationEx {
      * @return Available cache extensions.
      */
     @Nullable public Collection<PlatformCacheExtension> cacheExtensions();
+
+    /**
+     * @return Platform logger.
+     */
+    public PlatformLogger logger();
 }

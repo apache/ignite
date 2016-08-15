@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
@@ -389,6 +390,12 @@ namespace Apache.Ignite.Core.Impl
         public ICollection<string> GetCacheNames()
         {
             return _ignite.GetCacheNames();
+        }
+
+        /** <inheritdoc /> */
+        public ILogger Logger
+        {
+            get { return _ignite.Logger; }
         }
 
         /** <inheritdoc /> */

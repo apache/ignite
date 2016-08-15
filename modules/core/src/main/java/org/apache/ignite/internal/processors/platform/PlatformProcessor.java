@@ -255,4 +255,20 @@ public interface PlatformProcessor extends GridProcessor {
      */
     public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
 
+    /**
+     * Gets a value indicating whether Ignite logger has specified level enabled.
+     *
+     * @param level Log level.
+     */
+    public boolean loggerIsLevelEnabled(int level);
+
+    /**
+     * Logs to the Ignite logger.
+     *
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Error info.
+     */
+    public void loggerLog(int level, String message, String category, String errorInfo);
 }
