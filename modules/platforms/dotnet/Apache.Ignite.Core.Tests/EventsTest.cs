@@ -629,7 +629,8 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.Greater(evt.LocalOrder, 0);
 
-            Console.WriteLine(evt.ToString());
+            Assert.IsTrue(evt.ToString().Contains("[Name=SWAP_SPACE_CLEARED"));
+            Assert.IsTrue(evt.ToShortString().StartsWith("SWAP_SPACE_CLEARED"));
         }
 
         /// <summary>
