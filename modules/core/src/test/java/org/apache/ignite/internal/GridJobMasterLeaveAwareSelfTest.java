@@ -464,7 +464,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode node = F.first(prj.nodes());
 
-                comp.affinityRun(null, keyForNode(aff, node), new TestRunnable());
+                comp.affinityRun((String)null, keyForNode(aff, node), new TestRunnable());
 
                 return comp.future();
             }
@@ -483,7 +483,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode node = F.first(prj.nodes());
 
-                comp.affinityCall(null, keyForNode(aff, node), new TestCallable());
+                comp.affinityCall((String)null, keyForNode(aff, node), new TestCallable());
 
                 return comp.future();
             }

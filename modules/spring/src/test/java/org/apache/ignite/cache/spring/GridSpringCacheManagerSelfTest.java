@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -39,6 +41,20 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DYNAMIC_CACHE_NAME = "dynamicCache";
+
+    /** */
+    private static final Object NULL;
+
+    /**
+     */
+    static {
+        try {
+            NULL = U.field(SpringCache.class, "NULL");
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /** */
     private GridSpringCacheTestService svc;
@@ -82,7 +98,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/spring/spring-caching.xml");
+        BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching.xml");
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
         dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
@@ -120,6 +136,25 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSimpleKeyNullValue() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            assertNull(svc.simpleKeyNullValue(i));
+            assertNull(svc.simpleKeyNullValue(i));
+        }
+
+        assertEquals(3, svc.called());
+
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
+
+        assertEquals(3, c.size());
+
+        for (int i = 0; i < 3; i++)
+            assertEquals(NULL, c.get(i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testComplexKey() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "suffix" + i, svc.complexKey(i, "suffix" + i));
@@ -134,6 +169,25 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++)
             assertEquals("value" + i + "suffix" + i, c.get(new GridSpringCacheTestKey(i, "suffix" + i)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testComplexKeyNullValue() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            assertNull(svc.complexKeyNullValue(i, "suffix" + i));
+            assertNull(svc.complexKeyNullValue(i, "suffix" + i));
+        }
+
+        assertEquals(3, svc.called());
+
+        IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+
+        assertEquals(3, c.size());
+
+        for (int i = 0; i < 3; i++)
+            assertEquals(NULL, c.get(new GridSpringCacheTestKey(i, "suffix" + i)));
     }
 
     /**
@@ -160,6 +214,27 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSimpleKeyPutNullValue() throws Exception {
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
+
+        for (int i = 0; i < 3; i++) {
+            assertNull(svc.simpleKeyPutNullValue(i));
+
+            assertEquals(i + 1, c.size());
+            assertEquals(NULL, c.get(i));
+
+            assertNull(svc.simpleKeyPutNullValue(i));
+
+            assertEquals(i + 1, c.size());
+            assertEquals(NULL, c.get(i));
+        }
+
+        assertEquals(6, svc.called());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testComplexKeyPut() throws Exception {
         IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
@@ -173,6 +248,27 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
             assertEquals(i + 1, c.size());
             assertEquals("value" + i + "suffix" + i + "even", c.get(new GridSpringCacheTestKey(i, "suffix" + i)));
+        }
+
+        assertEquals(6, svc.called());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testComplexKeyPutNullValue() throws Exception {
+        IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+
+        for (int i = 0; i < 3; i++) {
+            assertNull(svc.complexKeyPutNullValue(i, "suffix" + i));
+
+            assertEquals(i + 1, c.size());
+            assertEquals(NULL, c.get(new GridSpringCacheTestKey(i, "suffix" + i)));
+
+            assertNull(svc.complexKeyPutNullValue(i, "suffix" + i));
+
+            assertEquals(i + 1, c.size());
+            assertEquals(NULL, c.get(new GridSpringCacheTestKey(i, "suffix" + i)));
         }
 
         assertEquals(6, svc.called());

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.cache.spring;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.cache.annotation.CacheEvict;
