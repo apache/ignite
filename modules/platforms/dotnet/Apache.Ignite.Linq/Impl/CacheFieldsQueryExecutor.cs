@@ -244,12 +244,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private SqlFieldsQuery GetFieldsQuery(string text, object[] args)
         {
-            return new SqlFieldsQuery(text, _local, args)
-            {
-                EnableDistributedJoins = _enableDistributedJoins,
-                PageSize = _pageSize,
-                EnforceJoinOrder = _enforceJoinOrder
-            };
+            return new SqlFieldsQuery(text, _local, args);
         }
 
         /** <inheritdoc /> */
