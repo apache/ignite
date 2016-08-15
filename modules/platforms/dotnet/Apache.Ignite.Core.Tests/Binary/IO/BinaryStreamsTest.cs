@@ -97,6 +97,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             flush();
 
             seek();
+            Assert.AreEqual(sameArr ? 256 : 2, stream.Remaining);
             byte* bytes2 = stackalloc byte[2];
             stream.Read(bytes2, 2);
             Assert.AreEqual(1, *bytes2);
