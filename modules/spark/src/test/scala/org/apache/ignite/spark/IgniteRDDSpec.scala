@@ -20,6 +20,7 @@ package org.apache.ignite.spark
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
+import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.IgniteRDDSpec._
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
@@ -96,13 +97,13 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                 val ic = new IgniteContext(sc, () ⇒ configuration("client", client = true))
 
                 // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
-                ic.fromCache(STR_STR_CACHE_NAME).saveValues(
+                ic.fromCache(UUID_STR_CACHE_NAME).saveValues(
                     sc.parallelize(0 to 10000, 2).map(i ⇒ "val" + i))
 
                 // Check cache contents.
                 val ignite = Ignition.ignite("grid-0")
 
-                val values = ignite.cache[String, String](STR_STR_CACHE_NAME).toList.map(e ⇒ e.getValue)
+                val values = ignite.cache[IgniteUuid, String](UUID_STR_CACHE_NAME).toList.map(e ⇒ e.getValue)
 
                 for (i ← 0 to 10000)
                     assert(values.contains("val" + i), "Value not found for index: " + i)
@@ -119,13 +120,13 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                 val ic = new IgniteContext(sc, () ⇒ configuration("client", client = true))
 
                 // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
-                ic.fromCache(STR_STR_CACHE_NAME).saveValues(
+                ic.fromCache(UUID_STR_CACHE_NAME).saveValues(
                     sc.parallelize(0 to 10000, 2), (i: Int, ic) ⇒ "val" + i)
 
                 // Check cache contents.
                 val ignite = Ignition.ignite("grid-0")
 
-                val values = ignite.cache[String, String](STR_STR_CACHE_NAME).toList.map(e ⇒ e.getValue)
+                val values = ignite.cache[IgniteUuid, String](UUID_STR_CACHE_NAME).toList.map(e ⇒ e.getValue)
 
                 for (i ← 0 to 10000)
                     assert(values.contains("val" + i), "Value not found for index: " + i)
@@ -361,6 +362,9 @@ object IgniteRDDSpec {
     /** Cache name for the pairs (String, String). */
     val STR_STR_CACHE_NAME = "StrStr"
 
+    /** Cache name for the pairs (String, String). */
+    val UUID_STR_CACHE_NAME = "UuidStr"
+
     /** Cache name for the pairs (String, Int). */
     val STR_INT_CACHE_NAME = "StrInt"
 
@@ -388,6 +392,7 @@ object IgniteRDDSpec {
 
         cfg.setCacheConfiguration(
             cacheConfiguration[String, String](STR_STR_CACHE_NAME),
+            cacheConfiguration[IgniteUuid, String](UUID_STR_CACHE_NAME),
             cacheConfiguration[String, Integer](STR_INT_CACHE_NAME),
             cacheConfiguration[String, Entity](ENTITY_CACHE_NAME),
             cacheConfiguration[Integer, WithObjectField](WITH_OBJECT_FIELD_CACHE_NAME))
