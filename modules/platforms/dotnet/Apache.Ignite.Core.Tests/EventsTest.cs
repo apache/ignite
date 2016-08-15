@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -28,7 +29,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
