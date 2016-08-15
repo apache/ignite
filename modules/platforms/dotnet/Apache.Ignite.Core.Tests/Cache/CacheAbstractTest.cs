@@ -2416,9 +2416,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 return;
 
             var tx = Transactions.TxStart();
-            
+
             Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.AreEqual(Thread.CurrentThread.ManagedThreadId, tx.ThreadId);
+
+            tx.AddMeta("myMeta", 42);
+            Assert.AreEqual(42, tx.Meta<int>("myMeta"));
+            Assert.AreEqual(42, tx.RemoveMeta<int>("myMeta"));
+
 
             tx.RollbackAsync().Wait();
 
