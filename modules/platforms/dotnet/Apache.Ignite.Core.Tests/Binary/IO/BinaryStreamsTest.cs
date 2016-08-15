@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
 {
     using System;
     using System.IO;
+    using System.Text;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Memory;
     using NUnit.Framework;
@@ -92,6 +93,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             *(bytes + 1) = 2;
 
             stream.Write(bytes, 2);
+            Assert.AreEqual(2, stream.Position);
             flush();
 
             seek();
@@ -101,7 +103,18 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             Assert.AreEqual(2, *(bytes2 + 1));
 
             // char*
-            // TODO
+            seek();
+            char* chars = stackalloc char[10];
+            *chars = 'a';
+            *(chars + 1) = 'b';
+
+            Assert.AreEqual(2, stream.WriteString(chars, 2, 2, Encoding.ASCII));
+            flush();
+
+            seek();
+            stream.Read(bytes2, 2);
+            Assert.AreEqual('a', *bytes2);
+            Assert.AreEqual('b', *(bytes2 + 1));
 
             // Others.
             check(() => stream.Write(new byte[] {3, 4, 5}, 1, 2), () => stream.ReadByteArray(2), new byte[] {4, 5});
