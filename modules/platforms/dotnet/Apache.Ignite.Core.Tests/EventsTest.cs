@@ -323,7 +323,7 @@ namespace Apache.Ignite.Core.Tests
 
             events.EnableLocal(eventType);
 
-            foreach (var getWaitTask in GetWaitTasks(events).Select(
+            var taskFuncs = GetWaitTasks(events).Select(
                 func => (Func<IEventFilter<IEvent>, int[], Task<IEvent>>) (
                     (filter, types) =>
                     {
@@ -334,8 +334,12 @@ namespace Apache.Ignite.Core.Tests
                         GenerateTaskEvent();
 
                         return task;
-                    })))
+                    })).ToArray();
+
+            for (int i = 0; i < taskFuncs.Length; i++)
             {
+                var getWaitTask = taskFuncs[i];
+
                 // No params
                 var waitTask = getWaitTask(null, new int[0]);
 
@@ -348,20 +352,23 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
                 Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-                // Filter
-                waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
+                if (i > 3)
+                {
+                    // Filter
+                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
 
-                Assert.IsTrue(waitTask.Wait(timeout));
-                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-                // Filter & types
-                waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
-                    new[] {EventType.TaskReduced});
+                    // Filter & types
+                    waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
+                        new[] {EventType.TaskReduced});
 
-                Assert.IsTrue(waitTask.Wait(timeout));
-                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                }
             }
         }
 
@@ -372,12 +379,13 @@ namespace Apache.Ignite.Core.Tests
         {
             yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
             yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
-
 
             yield return (filter, types) => events.WaitForLocalAsync(types);
             yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
+
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
+
             yield return (filter, types) => events.WaitForLocalAsync(filter, types);
             yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());
         }
