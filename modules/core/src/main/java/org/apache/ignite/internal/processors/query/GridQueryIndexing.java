@@ -232,4 +232,9 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * Cancels all executing queries.
+     */
+    public void cancelAllQueries();
 }

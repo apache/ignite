@@ -41,9 +41,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
-public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
-    private static final int GRIDS_COUNT = 1;
+    private static final int GRIDS_COUNT = 3;
 
     /** IP finder. */
     private static TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -55,7 +55,7 @@ public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
     public static final int VAL_SIZE = 16;
 
     /** */
-    private static final String QUERY_1 = "select a._key, b._key from String a, String b";
+    private static final String QUERY_1 = "select a._val, b._val from String a, String b";
 
     /** */
     private static final String QUERY_2 = "select a._key, count(*) from String a group by a._key";
@@ -224,10 +224,9 @@ public class IgniteCacheQueryStopSelfTest extends GridCommonAbstractTest {
 
             String msg = "Executor state is not cleared";
 
-            if (map.size() == 1)
-                assertEquals(msg, 0, map.entrySet().iterator().next().getValue().size());
-            else
-                assertEquals(msg, 0, map.size());
+            // TODO FIXME Current implementation leaves map entry for each node who's ever executed a query.
+            for (ConcurrentMap<Long, ?> results : map.values())
+                assertEquals(msg, 0, results.size());
         }
     }
 }

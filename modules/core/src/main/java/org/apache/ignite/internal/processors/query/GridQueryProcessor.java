@@ -431,14 +431,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
 
-        if (idx != null && cancel)
+        if (cancel && idx != null)
             try {
-                idx.stop();
-            } catch (IgniteCheckedException e) {
-                log.error("Cannot stop", e);
+                while (!busyLock.tryBlock(500))
+                    idx.cancelAllQueries();
+
+                return;
+            }
+            catch (InterruptedException e) {
+                U.warn(log, "Interrupted while waiting for active queries cancellation.");
+
+                Thread.currentThread().interrupt();
             }
 
         busyLock.block();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        if (idx != null)
+            idx.stop();
     }
 
     /** {@inheritDoc} */

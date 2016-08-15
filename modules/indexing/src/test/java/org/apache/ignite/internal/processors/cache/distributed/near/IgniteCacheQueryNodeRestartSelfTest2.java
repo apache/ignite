@@ -291,7 +291,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
                     } finally {
-                        // Need to clear lock in final handler to avoid endless loop if exception is thrown.
+                        // Clearing lock in final handler to avoid endless loop if exception is thrown.
                         locks.set(g, 0);
 
                         int c = qryCnt.incrementAndGet();

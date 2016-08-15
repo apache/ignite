@@ -857,6 +857,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     @Override public void apply() {
                         try {
                             stmt.cancel();
+                            stmt.close();
                         }
                         catch (SQLException e) {
                             throw new IgniteException("Failed to cancel the statement.", e);
@@ -2672,5 +2673,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private void updateLastUsage() {
             lastUsage = U.currentTimeMillis();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelAllQueries() {
+        for (Connection conn : conns)
+            U.close(conn, log);;
     }
 }
