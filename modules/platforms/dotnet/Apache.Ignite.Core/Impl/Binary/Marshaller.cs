@@ -576,6 +576,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             AddSystemType(BinaryUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
             AddSystemType(BinaryUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
+            AddSystemType(BinaryUtils.TypeIgniteProxy, w => new IgniteProxy());
             AddSystemType(BinaryUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
             AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
             AddSystemType(BinaryUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
@@ -593,10 +594,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, w => new AffinityKey(w), "affKey");
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, w => new ObjectInfoHolder(w));
-
-            // Add Ignite type with no-op serializer.
-            AddType(typeof(Ignite), BinaryUtils.TypeIgniteProxy, BinaryUtils.GetTypeName(typeof(Ignite)), false, 
-                false, null, null, new BinaryNoopSerializer(), null, false);
         }
     }
 }

@@ -71,6 +71,9 @@ namespace Apache.Ignite.Core.Impl
         /** Binary. */
         private readonly Binary.Binary _binary;
 
+        /** Cached proxy. */
+        private readonly IgniteProxy _proxy;
+
         /** Lifecycle beans. */
         private readonly IList<LifecycleBeanHolder> _lifecycleBeans;
 
@@ -122,6 +125,8 @@ namespace Apache.Ignite.Core.Impl
 
             _binary = new Binary.Binary(marsh);
 
+            _proxy = new IgniteProxy(this);
+
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
@@ -157,6 +162,15 @@ namespace Apache.Ignite.Core.Impl
         {
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
+        }
+
+        /// <summary>
+        /// Gets Ignite proxy.
+        /// </summary>
+        /// <returns>Proxy.</returns>
+        public IgniteProxy Proxy
+        {
+            get { return _proxy; }
         }
 
         /** <inheritdoc /> */

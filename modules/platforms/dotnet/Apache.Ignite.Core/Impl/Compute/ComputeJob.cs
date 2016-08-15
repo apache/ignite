@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(Job, (Ignite) ignite);
+            ResourceProcessor.Inject(Job, (IgniteProxy)ignite);
         }
 
         /// <summary>

@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (Ignite) ignite);
+            ResourceProcessor.Inject(_func, (IgniteProxy)ignite);
         }
     }
 
