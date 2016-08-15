@@ -2424,7 +2424,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(42, tx.Meta<int>("myMeta"));
             Assert.AreEqual(42, tx.RemoveMeta<int>("myMeta"));
 
-
             tx.RollbackAsync().Wait();
 
             Assert.AreEqual(TransactionState.RolledBack, tx.State);
