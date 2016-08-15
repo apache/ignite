@@ -89,17 +89,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="ignite">Grid.</param>
         public void InjectIgnite(object target, Ignite ignite)
         {
-            InjectIgnite(target, ignite.Proxy);
-        }
-
-        /// <summary>
-        /// Inject resources to the given object.
-        /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="igniteProxy">Grid proxy.</param>
-        public void InjectIgnite(object target, IgniteProxy igniteProxy)
-        {
-            Inject0(target, igniteProxy, _igniteInjectors);
+            Inject0(target, ignite, _igniteInjectors);
         }
 
         /// <summary>

@@ -751,7 +751,7 @@ namespace Apache.Ignite.Core
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
                 if (evt == LifecycleEventType.BeforeNodeStop && _ignite != null)
-                    ((IgniteProxy) _ignite).Target.BeforeNodeStop();
+                    ((Ignite) _ignite).BeforeNodeStop();
             }
         }
     }

@@ -1082,7 +1082,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
-                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction(_grid1));
 
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
@@ -1196,7 +1196,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
                 new BinaryTypeConfiguration(JavaBinaryCls),
                 new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest)),
+                new BinaryTypeConfiguration(typeof(ComputeAction))
             };
 
 
@@ -1318,7 +1319,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    [Serializable]
     class ComputeAction : IComputeAction
     {
         [InstanceResource]
@@ -1334,6 +1334,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         public ComputeAction()
         {
             // No-op.
+        }
+
+        public ComputeAction(IIgnite grid)
+        {
+            // Test injected grid serialization.
+            _grid = grid;
         }
 
         public ComputeAction(Guid id)
