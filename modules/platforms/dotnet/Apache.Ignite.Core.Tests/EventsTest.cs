@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the WaitForLocal.
         /// </summary>
         [Test]
-        public void TestWaitForLocal([Values(true, false)] bool async)
+        public void TestWaitForLocal()
         {
             var events = _grid1.GetEvents();
 
@@ -323,45 +323,63 @@ namespace Apache.Ignite.Core.Tests
 
             events.EnableLocal(eventType);
 
-            Func<IEventFilter<IEvent>, int[], Task<IEvent>> getWaitTask = (filter, types) =>
+            foreach (var getWaitTask in GetWaitTasks(events).Select(
+                func => (Func<IEventFilter<IEvent>, int[], Task<IEvent>>) (
+                    (filter, types) =>
+                    {
+                        var task = func(filter, types);
+
+                        Thread.Sleep(100); // allow task to start and begin waiting for events
+
+                        GenerateTaskEvent();
+
+                        return task;
+                    })))
             {
-                var task = async 
-                    ? events.WaitForLocalAsync(filter, types) 
-                    : Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
+                // No params
+                var waitTask = getWaitTask(null, new int[0]);
 
-                Thread.Sleep(200); // allow task to start and begin waiting for events
+                waitTask.Wait(timeout);
 
-                GenerateTaskEvent();
+                // Event types
+                waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
 
-                return task;
-            };
+                Assert.IsTrue(waitTask.Wait(timeout));
+                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-            // No params
-            var waitTask = getWaitTask(null, new int[0]);
+                // Filter
+                waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
 
-            waitTask.Wait(timeout);
+                Assert.IsTrue(waitTask.Wait(timeout));
+                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-            // Event types
-            waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
+                // Filter & types
+                waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
+                    new[] {EventType.TaskReduced});
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                Assert.IsTrue(waitTask.Wait(timeout));
+                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+            }
+        }
 
-            // Filter
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
+        /// <summary>
+        /// Gets the wait tasks for different overloads of WaitForLocal.
+        /// </summary>
+        private static IEnumerable<Func<IEventFilter<IEvent>, int[], Task<IEvent>>> GetWaitTasks(IEvents events)
+        {
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-            // Filter & types
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
-                new[] {EventType.TaskReduced});
-
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+            yield return (filter, types) => events.WaitForLocalAsync(types);
+            yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types);
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());
         }
 
         /// <summary>
