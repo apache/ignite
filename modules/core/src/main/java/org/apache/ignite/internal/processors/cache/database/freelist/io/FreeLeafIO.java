@@ -84,6 +84,6 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
 
         long pageId = PageIdUtils.pageId(((FreeTree)tree).getPartId(), PageIdAllocator.FLAG_DATA, pageIdx);
 
-        return new FreeItem(freeSpace, pageId, tree.getCacheId());
+        return new FreeItem(freeSpace, pageId);
     }
 }

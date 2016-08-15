@@ -41,4 +41,11 @@ public interface MetaStore {
      * @throws IgniteCheckedException
      */
     public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
+
+    /**
+     * Destroy this meta store.
+     *
+     * @throws IgniteCheckedException
+     */
+    public void destroy() throws IgniteCheckedException;
 }

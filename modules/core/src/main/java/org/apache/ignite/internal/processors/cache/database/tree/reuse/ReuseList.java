@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
@@ -38,7 +40,8 @@ public final class ReuseList {
      * @param initNew Init new flag.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long[] rooIds, boolean initNew) throws IgniteCheckedException {
+    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long[] rooIds,
+        boolean initNew) throws IgniteCheckedException {
         A.ensure(rooIds.length > 1, "Segments must be greater than 1.");
 
         trees = new ReuseTree[rooIds.length];
@@ -67,7 +70,7 @@ public final class ReuseList {
      * @param client Client.
      * @return Reuse tree.
      */
-    private ReuseTree tree(BPlusTree<?,?> client) {
+    private ReuseTree tree(BPlusTree<?, ?> client) {
         int treeIdx = BPlusTree.randomInt(trees.length);
 
         ReuseTree tree = trees[treeIdx];
@@ -93,7 +96,7 @@ public final class ReuseList {
      * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    public long take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+    public long take(BPlusTree<?, ?> client, ReuseBag bag) throws IgniteCheckedException {
         // Remove and return page at min possible position.
         Long pageId = tree(client).removeCeil(0L, bag);
 
@@ -118,5 +121,27 @@ public final class ReuseList {
             if (++i == trees.length)
                 i = 0;
         }
+    }
+
+    /**
+     * @param collector List to add pages.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void pages(GridLongList collector) throws IgniteCheckedException {
+        for (ReuseTree tree : trees) {
+            GridCursor<Long> cursor = tree.find(null, null);
+
+            while (cursor.next())
+                collector.add(cursor.get());
+        }
+    }
+
+    /**
+     * Destroys this Reuse List.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroy() throws IgniteCheckedException {
+        for (int i = 0; i < trees.length; i++)
+            trees[i].destroy();
     }
 }

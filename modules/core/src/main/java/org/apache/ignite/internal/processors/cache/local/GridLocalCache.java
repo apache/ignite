@@ -268,4 +268,9 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
 
         return size;
     }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return localSizeLong(peekModes);
+    }
 }

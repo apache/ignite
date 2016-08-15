@@ -148,7 +148,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize
-        ) {
+    ) {
         assert log != null || sharedCtx != null;
 
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
@@ -308,6 +308,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return sysPageSize;
     }
 
+    /** {@inheritDoc} */
+    @Override public void clear(int cacheId) {
+        cacheMetaPages.remove(cacheId);
+    }
+
     /** */
     private int nextRoundRobinIndex() {
         while (true) {
@@ -389,6 +394,22 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      */
     void writeUnlockPage(long absPtr) {
         rwLock.writeUnlock(absPtr + LOCK_OFFSET);
+    }
+
+    /**
+     * @param absPtr Absolute pointer to the page.
+     * @return {@code True} if write lock acquired for the page.
+     */
+    boolean isPageWriteLocked(long absPtr) {
+        return rwLock.isWriteLocked(absPtr + LOCK_OFFSET);
+    }
+
+    /**
+     * @param absPtr Absolute pointer to the page.
+     * @return {@code True} if read lock acquired for the page.
+     */
+    boolean isPageReadLocked(long absPtr) {
+        return rwLock.isReadLocked(absPtr + LOCK_OFFSET);
     }
 
     /**

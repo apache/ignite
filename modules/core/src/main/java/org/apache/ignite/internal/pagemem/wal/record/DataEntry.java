@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -59,6 +60,8 @@ public class DataEntry {
      */
     public static DataEntry fromTxEntry(IgniteTxEntry txEntry, IgniteInternalTx tx) {
         DataEntry de = new DataEntry();
+
+        assert txEntry.key().partition() >= 0 : txEntry.key();
 
         de.cacheId = txEntry.cacheId();
         de.key = txEntry.key();
@@ -160,5 +163,10 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataEntry.class, this);
     }
 }

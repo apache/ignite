@@ -257,6 +257,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
             ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
 
+        /** String mode environment variable. */
+        public const string IgniteBinaryMarshallerUseStringSerializationVer2 =
+            "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+        /** String mode. */
+        public static readonly bool UseStringSerializationVer2 =
+            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
+
         /// <summary>
         /// Default marshaller.
         /// </summary>
@@ -642,12 +650,177 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (char* chars = val)
             {
-                int byteCnt = Utf8.GetByteCount(chars, charCnt);
+                int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
                 stream.WriteInt(byteCnt);
 
                 stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
+        }
+
+        /// <summary>
+        /// Converts string to UTF8 bytes.
+        /// </summary>
+        /// <param name="chars">Chars.</param>
+        /// <param name="charCnt">Chars count.</param>
+        /// <param name="byteCnt">Bytes count.</param>
+        /// <param name="enc">Encoding.</param>
+        /// <param name="data">Data.</param>
+        /// <returns>Amount of bytes written.</returns>
+        public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        {
+            if (!UseStringSerializationVer2)
+                return enc.GetBytes(chars, charCnt, data, byteCnt);
+
+            int strLen = charCnt;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c, cnt;
+            // ReSharper restore TooWideLocalVariableScope
+
+            int position = 0;
+
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                c = *(chars + cnt);
+
+                if (c >= 0x0001 && c <= 0x007F)
+                    *(data + position++) = (byte)c;
+                else if (c > 0x07FF)
+                {
+                    *(data + position++) = (byte)(0xE0 | ((c >> 12) & 0x0F));
+                    *(data + position++) = (byte)(0x80 | ((c >> 6) & 0x3F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+                else
+                {
+                    *(data + position++) = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+            }
+
+            return position;
+        }
+
+        /// <summary>
+        /// Gets the UTF8 byte count.
+        /// </summary>
+        /// <param name="chars">The chars.</param>
+        /// <param name="strLen">Length of the string.</param>
+        /// <returns>UTF byte count.</returns>
+        private static unsafe int GetUtf8ByteCount(char* chars, int strLen)
+        {
+            int utfLen = 0;
+            int cnt;
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                var c = *(chars + cnt);
+
+                // ASCII
+                if (c >= 0x0001 && c <= 0x007F)
+                    utfLen++;
+                // Special symbols (surrogates)
+                else if (c > 0x07FF)
+                    utfLen += 3;
+                // The rest of the symbols.
+                else
+                    utfLen += 2;
+            }
+            return utfLen;
+        }
+
+        /// <summary>
+        /// Converts UTF8 bytes to string.
+        /// </summary>
+        /// <param name="arr">The bytes.</param>
+        /// <returns>Resulting string.</returns>
+        public static string Utf8BytesToString(byte[] arr)
+        {
+            if (!UseStringSerializationVer2)
+                return Utf8.GetString(arr);
+
+            int len = arr.Length, off = 0;
+            int c, charArrCnt = 0, total = len;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c2, c3;
+            // ReSharper restore TooWideLocalVariableScope
+            char[] res = new char[len];
+
+            // try reading ascii
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                if (c > 127)
+                    break;
+
+                off++;
+
+                res[charArrCnt++] = (char)c;
+            }
+
+            // read other
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                switch (c >> 4)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                        /* 0xxxxxxx*/
+                        off++;
+
+                        res[charArrCnt++] = (char)c;
+
+                        break;
+                    case 12:
+                    case 13:
+                        /* 110x xxxx   10xx xxxx*/
+                        off += 2;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 1];
+
+                        if ((c2 & 0xC0) != 0x80)
+                            throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                        res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                        break;
+                    case 14:
+                        /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                        off += 3;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 2];
+
+                        c3 = arr[off - 1];
+
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                            throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                            ((c2 & 0x3F) << 6) |
+                            ((c3 & 0x3F) << 0));
+
+                        break;
+                    default:
+                        /* 10xx xxxx,  1111 xxxx */
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+                }
+            }
+
+            return len == charArrCnt ? new string(res) : new string(res, 0, charArrCnt);
         }
 
         /**
@@ -659,7 +832,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             byte[] bytes = ReadByteArray(stream);
 
-            return bytes != null ? Utf8.GetString(bytes) : null;
+            return bytes != null ? Utf8BytesToString(bytes) : null;
         }
 
         /**
@@ -1673,7 +1846,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
+                                              reader.ReadString());
 
             return null;
         }

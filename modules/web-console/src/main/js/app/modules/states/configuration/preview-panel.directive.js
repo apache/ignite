@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import ace from 'ace';
+import ace from 'brace';
 
 export default ['previewPanel', ['$interval', '$timeout', ($interval, $timeout) => {
     let animation = {editor: null, stage: 0, start: 0, stop: 0};
     let prevContent = [];
 
-    const Range = ace.require('ace/range').Range;
+    const Range = ace.acequire('ace/range').Range;
 
     const _clearSelection = (editor) => {
         _.forEach(editor.session.getMarkers(false), (marker) => {

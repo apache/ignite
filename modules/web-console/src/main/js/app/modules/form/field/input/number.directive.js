@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import template from './number.jade!';
+import templateUrl from './number.jade';
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];
@@ -46,9 +46,8 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
     };
 
@@ -69,7 +68,7 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid
             value: '=ngModel'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['^form', '?^igniteFormField']

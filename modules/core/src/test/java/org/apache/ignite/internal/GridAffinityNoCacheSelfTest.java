@@ -267,6 +267,12 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
+            final CacheObjectContext ctx) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             throw new UnsupportedOperationException();
         }

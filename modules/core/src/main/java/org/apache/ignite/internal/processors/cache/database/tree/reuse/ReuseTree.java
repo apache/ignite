@@ -69,7 +69,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
     /** {@inheritDoc} */
     @Override protected long allocatePageForNew() throws IgniteCheckedException {
         // Do not call reuse list when allocating a new ReuseTree.
-        return allocatePage0();
+        return allocatePageNoReuse();
     }
 
     /**
@@ -88,5 +88,20 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
         assert io.isLeaf();
 
         return ((ReuseLeafIO)io).getPageId(buf, idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long destroy() throws IgniteCheckedException {
+        if (!markDestroyed())
+            return 0;
+
+        DestroyBag bag = new DestroyBag();
+
+        long pagesCnt = destroy(bag);
+
+        for (long pageId = bag.pollFreePage(); pageId != 0; pageId = bag.pollFreePage())
+            pageMem.freePage(getCacheId(), pageId);
+
+        return pagesCnt;
     }
 }

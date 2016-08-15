@@ -282,6 +282,29 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        long size = 0;
+
+        if (modes.near)
+            size += nearSize();
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.offheap) {
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+            IgniteCacheOffheapManager offheap = ctx.offheap();
+
+            if (ctx.affinity().primary(ctx.localNode(), partition, topVer) && modes.primary ||
+                ctx.affinity().backup(ctx.localNode(), partition, topVer) && modes.backup)
+                size += offheap.entriesCount(partition);
+        }
+
+        return size;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedCacheAdapter.class, this, "super", super.toString());
     }

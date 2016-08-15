@@ -376,6 +376,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 U.maskName(cc.getName()) + ']');
 
+        if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
+            throw new IgniteCheckedException("Cannot have more than " + CacheConfiguration.MAX_PARTITIONS_COUNT +
+                " partitions [cacheName=" + cc.getName() + ", partitions=" + cc.getAffinity().partitions() + ']');
+
         if (cc.getRebalanceMode() != CacheRebalanceMode.NONE)
             assertParameter(cc.getRebalanceBatchSize() > 0, "rebalanceBatchSize > 0");
 
@@ -394,9 +398,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
                 c.getMarshaller().getClass().getName() + ']');
 
-        if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTS_COUNT)
+        if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
             throw new IgniteCheckedException("Affinity function must return at most " +
-                CacheConfiguration.MAX_PARTS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
+                CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
                 ", affFunction=" + cc.getAffinity() + ", cacheName=" + cc.getName() + ']');
 
         if (cc.isWriteBehindEnabled()) {
@@ -435,10 +439,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
                 }
                 else {
-                    U.warn(log,
-                        "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
-                            "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
-                            "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
+                    U.warn(log, "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
+                        "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
+                        "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
                 }
             }
         }
@@ -690,9 +693,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        try {
-            ClusterNode locNode = ctx.discovery().localNode();
+        ClusterNode locNode = ctx.discovery().localNode();
 
+        try {
             if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
                 for (ClusterNode n : ctx.discovery().remoteNodes()) {
                     if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
@@ -784,16 +787,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
 
+        ctx.service().onUtilityCacheStarted();
+
         // Wait for caches in SYNC preload mode.
-        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-            GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cache != null) {
-                if (cfg.getRebalanceMode() == SYNC) {
-                    CacheMode cacheMode = cfg.getCacheMode();
+            IgnitePredicate filter = cfg.getNodeFilter();
 
-                    if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                        cache.preloader().syncFuture().get();
+            if (desc.locallyConfigured() || desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) {
+                GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+
+                if (cache != null) {
+                    if (cfg.getRebalanceMode() == SYNC) {
+                        CacheMode cacheMode = cfg.getCacheMode();
+
+                        if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                            cache.preloader().syncFuture().get();
+                    }
                 }
             }
         }
@@ -819,7 +830,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
             GridCacheSharedManager<?, ?> mgr = it.previous();
 
             mgr.stop(cancel);
@@ -884,7 +895,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
         for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
-            it.hasPrevious();) {
+            it.hasPrevious(); ) {
             GridCacheSharedManager<?, ?> mgr = it.previous();
 
             if (mgr != exch)
@@ -913,7 +924,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             List<GridCacheManager> mgrs = cache.context().managers();
 
-            for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+            for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
                 GridCacheManager mgr = it.previous();
 
                 mgr.onDisconnected(reconnectFut);
@@ -1064,6 +1075,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.stop();
 
+        ctx.kernalContext().query().onCacheStop(ctx);
+
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
 
@@ -1075,7 +1088,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 List<GridCacheManager> dhtMgrs = dhtManagers(dhtCtx);
 
-                for (ListIterator<GridCacheManager> it = dhtMgrs.listIterator(dhtMgrs.size()); it.hasPrevious();) {
+                for (ListIterator<GridCacheManager> it = dhtMgrs.listIterator(dhtMgrs.size()); it.hasPrevious(); ) {
                     GridCacheManager mgr = it.previous();
 
                     mgr.stop(cancel, destroy);
@@ -1088,14 +1101,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<GridCacheManager> excludes = dhtExcludes(ctx);
 
         // Reverse order.
-        for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+        for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
             GridCacheManager mgr = it.previous();
 
             if (!excludes.contains(mgr))
                 mgr.stop(cancel, destroy);
         }
 
-        ctx.kernalContext().query().onCacheStop(ctx);
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
@@ -1212,8 +1224,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheType cacheType,
         CacheObjectContext cacheObjCtx,
         boolean updatesAllowed)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert cfg != null;
 
         if (cfg.getCacheStoreFactory() instanceof GridCacheLoaderWriterStoreFactory) {

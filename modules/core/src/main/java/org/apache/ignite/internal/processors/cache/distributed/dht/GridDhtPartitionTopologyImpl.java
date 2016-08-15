@@ -23,16 +23,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -75,7 +79,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private final IgniteLogger log;
 
     /** */
-    private final GridDhtLocalPartition[] locParts;
+    private final AtomicReferenceArray<GridDhtLocalPartition> locParts;
 
     /** Node to partition map. */
     private GridDhtPartitionFullMap node2part;
@@ -112,6 +116,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /**
      * @param cctx Context.
+     * @param entryFactory Entry factory.
      */
     GridDhtPartitionTopologyImpl(GridCacheContext<?, ?> cctx, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
@@ -121,7 +126,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         log = cctx.logger(getClass());
 
-        locParts = new GridDhtLocalPartition[cctx.config().getAffinity().partitions()];
+        locParts = new AtomicReferenceArray<>(cctx.config().getAffinity().partitions());
     }
 
     /**
@@ -176,22 +181,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private boolean waitForRent() throws IgniteCheckedException {
         boolean changed = false;
 
-        GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[locParts.length];
+        final long longOpDumpTimeout =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
 
-        lock.readLock().lock();
-
-        try {
-            for (int i = 0; i < locParts.length; i++)
-                locPartsCopy[i] = locParts[i];
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        int dumpCnt = 0;
 
         GridDhtLocalPartition part;
 
-        for (int i = 0; i < locPartsCopy.length; i++) {
-            part = locPartsCopy[i];
+        for (int i = 0; i < locParts.length(); i++) {
+            part = locParts.get(i);
 
             if (part == null)
                 continue;
@@ -203,7 +201,33 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     log.debug("Waiting for renting partition: " + part);
 
                 // Wait for partition to empty out.
-                part.rent(true).get();
+                if (longOpDumpTimeout > 0) {
+                    while (true) {
+                        try {
+                            part.rent(true).get(longOpDumpTimeout);
+
+                            break;
+                        }
+                        catch (IgniteFutureTimeoutCheckedException e) {
+                            if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                                U.warn(log, "Failed to wait for partition eviction [" +
+                                    "topVer=" + topVer +
+                                    ", cache=" + cctx.name() +
+                                    ", part=" + part.id() +
+                                    ", partState=" + part.state() +
+                                    ", size=" + part.size() +
+                                    ", reservations=" + part.reservations() +
+                                    ", grpReservations=" + part.groupReserved() +
+                                    ", node=" + cctx.localNodeId() + "]");
+
+                                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                    U.dumpThreads(log);
+                            }
+                        }
+                    }
+                }
+                else
+                    part.rent(true).get();
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for renting partition: " + part);
@@ -214,14 +238,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++) {
-                part = locParts[i];
+            for (int i = 0; i < locParts.length(); i++) {
+                part = locParts.get(i);
 
                 if (part == null)
                     continue;
 
                 if (part.state() == EVICTED) {
-                    locParts[i] = null;
+                    locParts.set(i, null);
                     changed = true;
                 }
             }
@@ -255,7 +279,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         try {
             assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
-                ", exchId=" + exchId + ']';
+                ", exchId=" + exchId +
+                ", fut=" + exchFut + ']';
 
             this.stopping = stopping;
 
@@ -337,11 +362,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         assert topVer.equals(exchFut.topologyVersion()) :
             "Invalid topology [topVer=" + topVer +
                 ", cache=" + cctx.name() +
-                ", futVer=" + exchFut.topologyVersion() + ']';
+                ", futVer=" + exchFut.topologyVersion() +
+                ", fut=" + exchFut + ']';
         assert cctx.affinity().affinityTopologyVersion().equals(exchFut.topologyVersion()) :
             "Invalid affinity [topVer=" + cctx.affinity().affinityTopologyVersion() +
                 ", cache=" + cctx.name() +
-                ", futVer=" + exchFut.topologyVersion() + ']';
+                ", futVer=" + exchFut.topologyVersion() +
+                ", fut=" + exchFut + ']';
 
         List<List<ClusterNode>> aff = cctx.affinity().assignments(exchFut.topologyVersion());
 
@@ -648,10 +675,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private GridDhtLocalPartition createPartition(int p) {
         assert lock.isWriteLockedByCurrentThread();
 
-        GridDhtLocalPartition loc = locParts[p];
+        GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
-            locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
+            locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
             if (cctx.shared().pageStore() != null) {
                 try {
@@ -681,14 +708,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         boolean updateSeq) {
         GridDhtLocalPartition loc;
 
-        lock.readLock().lock();
-
-        try {
-            loc = locParts[p];
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        loc = locParts.get(p);
 
         if (loc != null && loc.state() != EVICTED)
             return loc;
@@ -701,12 +721,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
-            loc = locParts[p];
+            loc = locParts.get(p);
 
             boolean belongs = cctx.affinity().localNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
-                locParts[p] = loc = null;
+                locParts.set(p, loc = null);
 
                 if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
@@ -720,7 +740,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
-                locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
+                locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
                 if (updateSeq)
                     this.updateSeq.incrementAndGet();
@@ -753,20 +773,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         assert parts != null;
         assert parts.length > 0;
 
-        GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            GridDhtLocalPartition part = locParts.get(parts[i]);
 
-        lock.readLock().lock();
-
-        try {
-            for (int i = 0; i < parts.length; i++)
-                locPartsCopy[i] = locParts[parts[i]];
+            if (part != null)
+                part.release();
         }
-        finally {
-            lock.readLock().unlock();
-        }
-
-        for (int i = 0; i < parts.length; i++)
-            locPartsCopy[i].release();
     }
 
     /** {@inheritDoc} */
@@ -776,28 +788,24 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public List<GridDhtLocalPartition> localPartitions() {
-        LinkedList<GridDhtLocalPartition> list = new LinkedList<>();
+        List<GridDhtLocalPartition> list = new ArrayList<>(locParts.length());
 
-        lock.readLock().lock();
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
 
-        try {
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
-
-                if (part != null)
-                    list.add(part);
-            }
-
-            return list;
+            if (part != null)
+                list.add(part);
         }
-        finally {
-            lock.readLock().unlock();
-        }
+        return list;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
-        return localPartitions();
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return new Iterable<GridDhtLocalPartition>() {
+            @Override public Iterator<GridDhtLocalPartition> iterator() {
+                return new CurrentPartitionsIterator();
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -821,8 +829,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.readLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
 
                 if (part == null)
                     continue;
@@ -1034,8 +1042,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
 
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
 
                     if (part == null)
                         continue;
@@ -1174,8 +1182,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
 
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
 
                     if (part == null)
                         continue;
@@ -1279,8 +1287,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         UUID locId = cctx.nodeId();
 
-        for (int p = 0; p < locParts.length; p++) {
-            GridDhtLocalPartition part = locParts[p];
+        for (int p = 0; p < locParts.length(); p++) {
+            GridDhtLocalPartition part = locParts.get(p);
 
             if (part == null)
                 continue;
@@ -1509,8 +1517,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             Map<Integer, Long> res = new HashMap<>(cntrMap);
 
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
 
                 if (part == null)
                     continue;
@@ -1543,8 +1551,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.readLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
 
                 if (part == null)
                     continue;
@@ -1654,6 +1662,65 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         ", nodeId=" + nodeId + ']';
                 }
             }
+        }
+    }
+
+    /**
+     * Iterator over current local partitions.
+     */
+    private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
+        /** Next index. */
+        private int nextIdx;
+
+        /** Next partition. */
+        private GridDhtLocalPartition nextPart;
+
+        /**
+         * Constructor
+         */
+        private CurrentPartitionsIterator() {
+            advance();
+        }
+
+        /**
+         * Try to advance to next partition.
+         */
+        private void advance() {
+            while (nextIdx < locParts.length()) {
+                GridDhtLocalPartition part = locParts.get(nextIdx);
+
+                if (part != null) {
+                    nextPart = part;
+                    return;
+                }
+
+                nextIdx++;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return nextPart != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridDhtLocalPartition next() {
+            if (nextPart == null)
+                throw new NoSuchElementException();
+
+            GridDhtLocalPartition retVal = nextPart;
+
+            nextPart = null;
+            nextIdx++;
+
+            advance();
+
+            return retVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException("remove");
         }
     }
 }

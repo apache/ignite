@@ -111,6 +111,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
+    /** Optional affinity backups filter. The first node is a node being tested,
+     *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
+     *  is primary). */
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
+
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
 
@@ -182,7 +187,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
         IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts > 0, "parts > 0");
-        A.ensure(parts <= CacheConfiguration.MAX_PARTS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTS_COUNT);
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
@@ -218,7 +223,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Total number of partitions.
      */
     public void setPartitions(int parts) {
-        A.ensure(parts <= CacheConfiguration.MAX_PARTS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTS_COUNT);
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.parts = parts;
     }
@@ -280,9 +285,37 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
+     * @deprecated Use {@code affinityBackupFilter} instead.
      */
+    @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        return affinityBackupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param affinityBackupFilter Optional backup filter.
+     */
+    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        this.affinityBackupFilter = affinityBackupFilter;
     }
 
     /**
@@ -387,7 +420,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     if (!allNeighbors.contains(node))
                         res.add(node);
                 }
-                else if (backupFilter == null || backupFilter.apply(primary, node))
+                else if (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    res.add(next.get2());
+                else if (backupFilter != null && backupFilter.apply(primary, node))
+                    res.add(next.get2());
+                else if (affinityBackupFilter == null && backupFilter == null)
                     res.add(next.get2());
             }
         }

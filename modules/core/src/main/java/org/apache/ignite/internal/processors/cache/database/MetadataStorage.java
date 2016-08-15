@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -129,6 +131,11 @@ public class MetadataStorage implements MetaStore {
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void destroy() throws IgniteCheckedException {
+        metaTree.destroy();
+    }
+
     /**
      *
      */
@@ -139,7 +146,7 @@ public class MetadataStorage implements MetaStore {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
             final int cacheId,
@@ -148,17 +155,13 @@ public class MetadataStorage implements MetaStore {
             final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
-            final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
-            throws IgniteCheckedException {
+            final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
+            final boolean initNew
+        ) throws IgniteCheckedException {
             super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected long allocatePage0() throws IgniteCheckedException {
-            return pageMem.allocatePage(getCacheId(), 0, PageIdAllocator.FLAG_IDX);
         }
 
         /** {@inheritDoc} */
@@ -187,6 +190,26 @@ public class MetadataStorage implements MetaStore {
         @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final ByteBuffer buf,
             final int idx) throws IgniteCheckedException {
             return readRow(buf, ((IndexIO)io).getOffset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Iterable<Long> getFirstPageIds(ByteBuffer metaBuf) {
+            List<Long> result = new ArrayList<>();
+
+            final int pagesNum = metaBuf.getInt();
+
+            if (pagesNum > 0) {
+                assert pagesNum > 2 : "Must be at least 2 pages for reuse list";
+
+                result.add(metaBuf.getLong());
+
+                for (int i = 0; i < pagesNum - 1; i++) {
+                    result.add(metaBuf.getLong());
+                }
+
+            }
+
+            return result;
         }
     }
 
