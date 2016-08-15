@@ -26,9 +26,11 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -299,6 +301,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the record local.
+        /// </summary>
+        [Test]
+        public void TestRecordLocal()
+        {
+            Assert.Throws<NotImplementedException>(() => _grid1.GetEvents().RecordLocal(new MyEvent()));
+        }
+
+        /// <summary>
         /// Tests the WaitForLocal.
         /// </summary>
         [Test]
@@ -356,6 +367,15 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
             Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+        }
+
+        /// <summary>
+        /// Tests the wait for local overloads.
+        /// </summary>
+        [Test]
+        public void TestWaitForLocalOverloads()
+        {
+            
         }
 
         /*
@@ -855,6 +875,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
+        // ReSharper disable once UnusedMember.Global
         public bool Invoke(T evt)
         {
             throw new Exception("Invalid method");
@@ -952,6 +973,60 @@ namespace Apache.Ignite.Core.Tests
         public override string ToString()
         {
             return EventObjectType.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Custom event.
+    /// </summary>
+    public class MyEvent : IEvent
+    {
+        /** <inheritdoc /> */
+        public IgniteGuid Id
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public long LocalOrder
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public IClusterNode Node
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Message
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public int Type
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Name
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public DateTime Timestamp
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string ToShortString()
+        {
+            throw new NotImplementedException();
         }
     }
 }
