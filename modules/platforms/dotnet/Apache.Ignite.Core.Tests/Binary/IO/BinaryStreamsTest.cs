@@ -72,6 +72,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
 
             Assert.AreEqual(sameArr, stream.IsSameArray(stream.GetArray()));
             Assert.IsFalse(stream.IsSameArray(new byte[1]));
+            Assert.IsFalse(stream.IsSameArray(stream.GetArrayCopy()));
         }
     }
 }
