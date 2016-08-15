@@ -1914,6 +1914,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     Assert.IsFalse(cache.IsLocalLocked(key, true));
                     Assert.IsFalse(cache.IsLocalLocked(key, false));
+
+                    Assert.IsTrue(lck.TryEnter());
+
+                    Assert.IsTrue(cache.IsLocalLocked(key, true));
+                    Assert.IsTrue(cache.IsLocalLocked(key, false));
+
+                    lck.Exit();
                 }
 
                 Assert.Throws<ObjectDisposedException>(lck.Enter); // Can't enter disposed lock
