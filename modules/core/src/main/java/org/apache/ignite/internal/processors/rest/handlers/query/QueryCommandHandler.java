@@ -211,50 +211,42 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         return SUPPORTED_COMMANDS;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req != null;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
         assert req instanceof RestQueryRequest : "Invalid type of query request.";
 
-        try {
-            if (req.command() != CLOSE_SQL_QUERY) {
-                Integer pageSize = ((RestQueryRequest) req).pageSize();
+        if (req.command() != CLOSE_SQL_QUERY) {
+            Integer pageSize = ((RestQueryRequest) req).pageSize();
 
-                if (pageSize == null)
-                    throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"));
+            if (pageSize == null)
+                return new GridFinishedFuture<>(
+                        new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
+                );
+        }
+
+        switch (req.command()) {
+            case EXECUTE_SQL_QUERY:
+            case EXECUTE_SQL_FIELDS_QUERY:
+            case EXECUTE_SCAN_QUERY: {
+                return ctx.closure().callLocalSafe(
+                        new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
             }
 
-            switch (req.command()) {
-                case EXECUTE_SQL_QUERY:
-                case EXECUTE_SQL_FIELDS_QUERY:
-                case EXECUTE_SCAN_QUERY: {
-                    return ctx.closure().callLocalSafe(
-                            new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
-                }
-
-                case FETCH_SQL_QUERY: {
-                    return ctx.closure().callLocalSafe(
-                            new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
-                }
-
-                case CLOSE_SQL_QUERY: {
-                    return ctx.closure().callLocalSafe(
-                            new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
-                }
+            case FETCH_SQL_QUERY: {
+                return ctx.closure().callLocalSafe(
+                        new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
             }
-        } catch (IgniteException e) {
-            U.error(log, "Failed to execute query command: " + req, e);
 
-            return new GridFinishedFuture<>(e);
-        } catch (IgniteCheckedException e) {
-            U.error(log, "Failed to execute query command: " + req, e);
-
-            return new GridFinishedFuture<>(e);
-        } finally {
-            if (log.isDebugEnabled())
-                log.debug("Handled query REST request: " + req);
+            case CLOSE_SQL_QUERY: {
+                return ctx.closure().callLocalSafe(
+                        new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
+            }
         }
 
         return new GridFinishedFuture<>();
