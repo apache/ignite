@@ -17,26 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
-import org.apache.ignite.internal.pagemem.FullPageId;
-
 /**
  * Free list item.
  */
-public class FreeItem extends FullPageId {
+public final class FreeItem {
     /** */
     private short freeSpace;
+
+    /** */
+    private long pageId;
 
     /**
      * @param freeSpace Free space.
      * @param pageId  Page ID.
-     * @param cacheId Cache ID.
      */
-    public FreeItem(int freeSpace, long pageId, int cacheId) {
-        super(pageId, cacheId);
-
+    public FreeItem(int freeSpace, long pageId) {
         assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE: freeSpace;
 
         this.freeSpace = (short)freeSpace;
+        this.pageId = pageId;
     }
 
     /**
@@ -44,5 +43,12 @@ public class FreeItem extends FullPageId {
      */
     public short freeSpace() {
         return freeSpace;
+    }
+
+    /**
+     * @return Page ID.
+     */
+    public long pageId() {
+        return pageId;
     }
 }

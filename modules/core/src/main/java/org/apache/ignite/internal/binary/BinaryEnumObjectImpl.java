@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -258,18 +259,13 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        byte[] valBytes = valueBytes(ctx);
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    }
 
-        if (buf.remaining() < valBytes.length + 5)
-            return false;
-
-        int len = valBytes.length;
-
-        buf.putInt(len);
-        buf.put(cacheObjectType());
-        buf.put(valBytes);
-
-        return true;
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */

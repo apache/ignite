@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Database configuration used to configure database.
@@ -55,6 +56,8 @@ public class DatabaseConfiguration implements Serializable {
      * @param pageSize Page size.
      */
     public void setPageSize(int pageSize) {
+        A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+
         this.pageSize = pageSize;
     }
 

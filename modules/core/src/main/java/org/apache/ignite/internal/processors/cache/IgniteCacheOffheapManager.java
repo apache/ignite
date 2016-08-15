@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  *
@@ -72,7 +71,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Value tuple, if available.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -225,7 +224,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Value/version tuple.
          * @throws IgniteCheckedException If failed.
          */
-        public IgniteBiTuple<CacheObject, GridCacheVersion> find(KeyCacheObject key) throws IgniteCheckedException;
+        public CacheDataRow find(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.

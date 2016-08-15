@@ -26,12 +26,15 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -45,6 +48,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Free data page list.
  */
 public class FreeList {
+    /** */
+    private static final Integer COMPLETE = Integer.MAX_VALUE;
+
     /** */
     private final GridCacheContext<?, ?> cctx;
 
@@ -61,64 +67,134 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer, GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<CacheDataRow, Void> writeRow = new PageHandler<CacheDataRow, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
+    private final PageHandler<CacheDataRow, Integer> writeRow = new PageHandler<CacheDataRow, Integer>() {
+        @Override public Integer run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int written)
             throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
+            CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            assert idx >= 0 : idx;
-
-            FreeTree tree = tree(row.partition());
-
-            if (tree.needWalDeltaRecord(page))
-                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(), row.key(), row.value(),
-                    row.version(), idx, entrySize));
-
-            row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
-
+            int rowSize = getRowSize(coctx, row);
             int freeSpace = io.getFreeSpace(buf);
 
-            // Put our free item.
-            tree.put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
+            assert freeSpace > 0: freeSpace;
 
-            return null;
+            // If the full row does not fit into this page write only a fragment.
+            written = freeSpace >= rowSize ? addRow(coctx, page, buf, io, row, rowSize):
+                addRowFragment(coctx, page, buf, io, row, written, rowSize);
+
+            // Reread free space after update.
+            freeSpace = io.getFreeSpace(buf);
+
+            // Put our free item back to tree.
+            tree(row.partition()).put(new FreeItem(freeSpace, pageId));
+
+            // Avoid boxing with garbage generation for usual case.
+            return written == rowSize ? COMPLETE : written;
+        }
+
+        /**
+         * @param coctx Cache object context.
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param row Row.
+         * @param rowSize Row size.
+         * @return Written size which is always equal to row size here.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRow(
+            CacheObjectContext coctx,
+            Page page,
+            ByteBuffer buf,
+            DataPageIO io,
+            CacheDataRow row,
+            int rowSize
+        ) throws IgniteCheckedException {
+            io.addRow(coctx, buf, row, rowSize);
+
+            // TODO This record must contain only a reference to a logical WAL record with the actual data.
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
+                    row.key(), row.value(), row.version(), rowSize));
+
+            return rowSize;
+        }
+
+        /**
+         * @param coctx Cache object context.
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param row Row.
+         * @param written Written size.
+         * @param rowSize Row size.
+         * @return Updated written size.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRowFragment(
+            CacheObjectContext coctx,
+            Page page,
+            ByteBuffer buf,
+            DataPageIO io,
+            CacheDataRow row,
+            int written,
+            int rowSize
+        ) throws IgniteCheckedException {
+            // Read last link before the fragment write, because it will be updated there.
+            long lastLink = row.link();
+
+            int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
+
+            assert payloadSize > 0: payloadSize;
+
+            if (isWalDeltaRecordNeeded(wal, page)) {
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                byte[] payload = new byte[payloadSize];
+
+                io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+                buf.get(payload);
+                buf.position(0);
+
+                wal.log(new DataPageInsertFragmentRecord(cctx.cacheId(), page.id(), payload, lastLink));
+            }
+
+            return written + payloadSize;
         }
     };
 
     /** */
-    private final PageHandler<FreeTree, Void> removeRow = new PageHandler<FreeTree, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, FreeTree tree,
-            int itemId) throws IgniteCheckedException {
+    private final PageHandler<FreeTree, Long> removeRow = new PageHandler<FreeTree, Long>() {
+        @Override public Long run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
             assert tree != null;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            assert DataPageIO.check(itemId) : itemId;
-
             int oldFreeSpace = io.getFreeSpace(buf);
 
-            io.removeRow(buf, (byte)itemId);
+            assert oldFreeSpace > 0: oldFreeSpace;
 
-            if (tree.needWalDeltaRecord(page))
+            long nextLink = io.removeRow(buf, (byte)itemId);
+
+            if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageRemoveRecord(cctx.cacheId(), page.id(), itemId));
 
             int newFreeSpace = io.getFreeSpace(buf);
 
             // Move page to the new position with respect to the new free space.
-            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, pageId, cctx.cacheId()));
+            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, pageId));
 
             // If item is null, then it was removed concurrently by insertRow, because
             // in removeRow we own the write lock on this page. Thus we can be sure that
             // insertRow will update position correctly after us.
             if (item != null) {
-                FreeItem old = tree.put(new FreeItem(newFreeSpace, pageId, cctx.cacheId()));
+                FreeItem old = tree.put(new FreeItem(newFreeSpace, pageId));
 
                 assert old == null;
             }
 
-            return null;
+            // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
+            return nextLink;
         }
     };
 
@@ -149,7 +225,7 @@ public class FreeList {
     private FreeItem take(FreeTree tree, FreeItem lookupItem) throws IgniteCheckedException {
         FreeItem res = tree.removeCeil(lookupItem, null);
 
-        assert res == null || (res.pageId() != 0 && res.cacheId() == cctx.cacheId()) : res;
+        assert res == null || res.pageId() != 0: res;
 
         return res;
     }
@@ -185,20 +261,45 @@ public class FreeList {
 
     /**
      * @param link Row link.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
         int partId = PageIdUtils.partId(pageId);
-        int itemId = PageIdUtils.dwordsOffset(link);
+        int itemId = PageIdUtils.itemId(link);
 
         FreeTree tree = tree(partId);
 
+        long nextLink;
+
         try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
-            writePage(pageId, page, removeRow, tree, itemId);
+            nextLink = writePage(pageId, page, removeRow, tree, itemId);
         }
+
+        while (nextLink != 0) {
+            itemId = PageIdUtils.itemId(nextLink);
+            pageId = PageIdUtils.pageId(nextLink);
+
+            try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
+                nextLink = writePage(pageId, page, removeRow, tree, itemId);
+            }
+        }
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param row Row.
+     * @return Entry size on page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static int getRowSize(CacheObjectContext coctx, CacheDataRow row)
+        throws IgniteCheckedException {
+        int keyLen = row.key().valueBytesLength(coctx);
+        int valLen = row.value().valueBytesLength(coctx);
+
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false);
     }
 
     /**
@@ -208,39 +309,37 @@ public class FreeList {
     public void insertRow(CacheDataRow row) throws IgniteCheckedException {
         assert row.link() == 0 : row.link();
 
-        int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key(), row.value());
+        final int rowSize = getRowSize(cctx.cacheObjectContext(), row);
 
-        assert entrySize > 0 && entrySize < Short.MAX_VALUE : entrySize;
+        // In case of a big entry we just ask for a page which is at least 90% empty,
+        // because we have to support multiple data page versions at once and we do not know
+        // in advance size of page header or max possible free space on data page.
+        // We assume this 90% heuristic to be safe: even for small page size like 512,
+        // it leaves 51 byte for a header, which must be enough.
+        // We will have 1024 as min configurable page size.
+        final int pageFreeSpace = (int) (0.9f * pageMem.pageSize());
 
         FreeTree tree = tree(row.partition());
 
-        // TODO add random pageIndex here for lower contention?
-        FreeItem item = take(tree, new FreeItem(entrySize, 0, cctx.cacheId()));
+        int written = 0;
 
-        try (Page page = item == null ?
-            allocateDataPage(row.partition()) :
-            pageMem.page(item.cacheId(), item.pageId())
-        ) {
-            if (item == null) {
-                DataPageIO io = DataPageIO.VERSIONS.latest();
+        do {
+            // TODO When the new version of FreeList will be ready, just ask for an empty page.
+            int freeSpace = Math.min(rowSize - written, pageFreeSpace);
 
-                ByteBuffer buf = page.getForWrite(); // Initial write.
+            FreeItem item = take(tree, new FreeItem(freeSpace, 0));
 
-                try {
-                    io.initNewPage(buf, page.id());
+            try (Page page = item == null ?
+                allocateDataPage(row.partition()) :
+                pageMem.page(cctx.cacheId(), item.pageId())
+            ) {
+                // If it is an existing page, we do not need to initialize it.
+                DataPageIO init = item == null ? DataPageIO.VERSIONS.latest() : null;
 
-                    // It is a newly allocated page and we will not write record to WAL here.
-                    assert !page.isDirty();
-
-                    writeRow.run(page.id(), page, buf, row, entrySize);
-                }
-                finally {
-                    page.releaseWrite(true);
-                }
+                written = writePage(page.id(), page, writeRow, init, wal, row, written);
             }
-            else
-                writePage(page.id(), page, writeRow, row, entrySize);
         }
+        while (written != COMPLETE);
     }
 
     /**

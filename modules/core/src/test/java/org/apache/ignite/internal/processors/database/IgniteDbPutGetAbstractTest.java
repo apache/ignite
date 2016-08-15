@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,9 +38,11 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DatabaseConfiguration;
@@ -57,6 +60,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 /**
  *
@@ -81,11 +85,20 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         DatabaseConfiguration dbCfg = new DatabaseConfiguration();
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+        if (isLargePage()) {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(1024);
+            dbCfg.setPageSize(16 * 1024);
 
-        dbCfg.setPageCacheSize(200 * 1024 * 1024);
+            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+        }
+        else {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+            dbCfg.setPageSize(1024);
+
+            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+        }
 
         cfg.setDatabaseConfiguration(dbCfg);
 
@@ -109,7 +122,26 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setCacheConfiguration(ccfg, ccfg2);
+        CacheConfiguration ccfg3 = new CacheConfiguration("large");
+
+        if (indexingEnabled())
+            ccfg3.setIndexedTypes(Integer.class, LargeDbValue.class);
+
+        ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
+
+        ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
+
+        ccfg4.setAffinity(aff);
+
+        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -142,6 +174,13 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         deleteRecursively(U.resolveWorkDirectory("db", false));
     }
+
+    /**
+     * @return {@code True} if use large page.
+     */
+    protected boolean isLargePage() {
+        return false;
+    };
 
     public void testGradualRandomPutAllRemoveAll() {
         IgniteEx ig = grid(0);
@@ -301,6 +340,65 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         assertEquals(v0, cache.get(k0));
 
         checkEmpty(internalCache, k0);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetLarge() throws Exception {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, byte[]> cache = ig.cache(null);
+
+        final byte[] val = new byte[2048];
+
+        ThreadLocalRandom.current().nextBytes(val);
+
+        cache.put(0, val);
+
+        Assert.assertArrayEquals(val, cache.get(0));
+
+        final IgniteCache<Integer, LargeDbValue> cache1 = ig.cache("large");
+
+        final LargeDbValue large = new LargeDbValue("str1", "str2", randomInts(1024));
+
+        cache1.put(1, large);
+
+        assertEquals(large, cache1.get(1));
+
+        if (indexingEnabled()) {
+            final List<Cache.Entry<Integer, LargeDbValue>> all = cache1.query(
+                new SqlQuery<Integer, LargeDbValue>(LargeDbValue.class, "str1='str1'")).getAll();
+
+            assertEquals(1, all.size());
+
+            final Cache.Entry<Integer, LargeDbValue> entry = all.get(0);
+
+            assertEquals(1, entry.getKey().intValue());
+
+            assertEquals(large, entry.getValue());
+        }
+
+        cache.remove(0);
+        cache1.remove(1);
+
+        assertNull(cache.get(0));
+        assertNull(cache1.get(1));
+    }
+
+    /**
+     * @param size Array size.
+     * @return Array with random items.
+     */
+    private int[] randomInts(final int size) {
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final int[] arr = new int[size];
+
+        for (int i = 0; i < arr.length; i++)
+            arr[i] = rnd.nextInt();
+
+        return arr;
     }
 
     /**
@@ -1299,6 +1397,62 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DbValue.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LargeDbValue {
+        /** */
+        @QuerySqlField(index = true)
+        private String str1;
+
+        /** */
+        @QuerySqlField(index = true)
+        private String str2;
+
+        /** */
+        private int[] arr;
+
+        /**
+         * @param str1 String 1.
+         * @param str2 String 2.
+         * @param arr Big array.
+         */
+        public LargeDbValue(final String str1, final String str2, final int[] arr) {
+            this.str1 = str1;
+            this.str2 = str2;
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final LargeDbValue that = (LargeDbValue) o;
+
+            if (str1 != null ? !str1.equals(that.str1) : that.str1 != null) return false;
+            if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;
+
+            return Arrays.equals(arr, that.arr);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = str1 != null ? str1.hashCode() : 0;
+
+            res = 31 * res + (str2 != null ? str2.hashCode() : 0);
+            res = 31 * res + Arrays.hashCode(arr);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(LargeDbValue.class, this);
         }
     }
 }

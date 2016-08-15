@@ -651,6 +651,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
+            final CacheObjectContext ctx) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
             return 0;
         }

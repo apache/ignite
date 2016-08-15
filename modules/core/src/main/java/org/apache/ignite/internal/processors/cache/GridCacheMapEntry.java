@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
@@ -399,14 +400,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap().read(this);
+                CacheDataRow read = cctx.offheap().read(this);
 
                 flags |= IS_UNSWAPPED_MASK;
 
                 if (read != null) {
-                    CacheObject val = read.get1();
+                    CacheObject val = read.value();
 
-                    update(val, 0, 0, read.get2(), false);
+                    update(val, 0, 0, read.version(), false);
 
                     return val;
                 }
@@ -3563,10 +3564,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val = this.val;
 
         if (val == null && isStartVersion()) {
-            IgniteBiTuple<CacheObject, GridCacheVersion> t = detached() || isNear() ? null : cctx.offheap().read(this);
+            CacheDataRow row = detached() || isNear() ? null : cctx.offheap().read(this);
 
-            if (t != null)
-                val = t.get1();
+            if (row != null)
+                val = row.value();
         }
 
         return val;

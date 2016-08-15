@@ -397,6 +397,22 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /**
+     * @param absPtr Absolute pointer to the page.
+     * @return {@code True} if write lock acquired for the page.
+     */
+    boolean isPageWriteLocked(long absPtr) {
+        return rwLock.isWriteLocked(absPtr + LOCK_OFFSET);
+    }
+
+    /**
+     * @param absPtr Absolute pointer to the page.
+     * @return {@code True} if read lock acquired for the page.
+     */
+    boolean isPageReadLocked(long absPtr) {
+        return rwLock.isReadLocked(absPtr + LOCK_OFFSET);
+    }
+
+    /**
      * @param ptr Pointer to wrap.
      * @param len Memory location length.
      * @return Wrapped buffer.

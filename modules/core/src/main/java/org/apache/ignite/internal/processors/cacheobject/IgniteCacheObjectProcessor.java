@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -181,6 +182,26 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache object context.
+     * @param buf Buffer.
+     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @return Incomplete cache object.
+     * @throws IgniteCheckedException If fail.
+     */
+    public IncompleteCacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache object context.
+     * @param buf Buffer.
+     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @return Incomplete cache object.
+     * @throws IgniteCheckedException If fail.
+     */
+    public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**
      * @param obj Value.

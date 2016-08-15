@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -201,6 +202,46 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         buf.get(data);
 
         return toKeyCacheObject(ctx, type, data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toKeyCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
     }
 
     /** {@inheritDoc} */
