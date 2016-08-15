@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestPlatformMemoryStream()
         {
-            TestStream(new PlatformMemoryStream(GetMemory()));
+            TestStream(new PlatformMemoryStream(GetMemory()), false);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestPlatformBigEndianMemoryStream()
         {
-            TestStream(new PlatformBigEndianMemoryStream(GetMemory()));
+            TestStream(new PlatformBigEndianMemoryStream(GetMemory()), false);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         [Test]
         public void TestBinaryHeapStream()
         {
-            TestStream(new BinaryHeapStream(1));
+            TestStream(new BinaryHeapStream(1), true);
         }
 
         /// <summary>
@@ -58,17 +58,20 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
         /// </summary>
         private static PlatformMemory GetMemory()
         {
-            var mem = new PlatformMemoryPool().Allocate(10);
-            return mem;
+            return new PlatformMemoryPool().Allocate(10);
         }
 
         /// <summary>
         /// Tests the stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        private static void TestStream(IBinaryStream stream)
+        /// <param name="sameArr">Same array flag.</param>
+        private static void TestStream(IBinaryStream stream, bool sameArr)
         {
             Assert.IsNotNull(stream);
+
+            Assert.AreEqual(sameArr, stream.IsSameArray(stream.GetArray()));
+            Assert.IsFalse(stream.IsSameArray(new byte[1]));
         }
     }
 }
