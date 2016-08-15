@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -38,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersion
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jsr166.ConcurrentHashMap8;
@@ -343,23 +342,18 @@ public class FreeList {
     }
 
     /**
-     * @return Pages currently stored in this FreeList.
+     * @param collector List to add pages.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<Long> pages() throws IgniteCheckedException {
-        Collection<Long> result = new ArrayList<>();
-
+    public void pages(GridLongList collector) throws IgniteCheckedException {
         for (GridFutureAdapter<FreeTree> fut : trees.values()) {
             FreeTree tree = fut.get();
 
             GridCursor<FreeItem> cursor = tree.find(null, null);
 
-            while (cursor.next()) {
-                result.add(cursor.get().pageId());
-            }
+            while (cursor.next())
+                collector.add(cursor.get().pageId());
         }
-
-        return result;
     }
 
     /**

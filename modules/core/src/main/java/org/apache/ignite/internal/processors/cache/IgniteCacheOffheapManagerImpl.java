@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -205,15 +205,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             metaStore.destroy();
 
-            Collection<Long> pages = freeList.pages();
+            GridLongList pagesList = new GridLongList();
 
-            pages.addAll(reuseList.pages());
+            freeList.pages(pagesList);
+
+            reuseList.pages(pagesList);
 
             reuseList.destroy();
 
             freeList.destroy();
 
-            for (Long pageId : pages) {
+            for (int i = 0; i < pagesList.size(); i++) {
+                long pageId = pagesList.get(i);
+
                 pageMem.freePage(cctx.cacheId(), pageId);
             }
         }
