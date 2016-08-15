@@ -87,6 +87,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         int cnt = gridCount();
 
         assert cnt >= 1 : "At least one grid must be started";
