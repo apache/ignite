@@ -102,10 +102,18 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
 
             // Others.
             check(() => stream.Write(new byte[] { 3, 4, 5 }, 1, 2), () => stream.ReadByteArray(2), new byte[] { 4, 5 });
+
             check(() => stream.WriteBool(true), () => stream.ReadBool(), true);
             check(() => stream.WriteBoolArray(new[] {true, false}), () => stream.ReadBoolArray(2), new[] {true, false});
+
             check(() => stream.WriteByte(4), () => stream.ReadByte(), 4);
             check(() => stream.WriteByteArray(new byte[] {4, 5, 6}), () => stream.ReadByteArray(3), new byte[] {4, 5, 6});
+
+            check(() => stream.WriteChar('x'), () => stream.ReadChar(), 'x');
+            check(() => stream.WriteCharArray(new[] {'a', 'b'}), () => stream.ReadCharArray(2), new[] {'a', 'b'});
+
+            check(() => stream.WriteDouble(4), () => stream.ReadDouble(), 4d);
+            check(() => stream.WriteDoubleArray(new[] {4d}), () => stream.ReadDoubleArray(1), new[] {4d});
 
         }
     }
