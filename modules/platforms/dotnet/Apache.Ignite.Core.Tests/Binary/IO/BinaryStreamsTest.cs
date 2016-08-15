@@ -138,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             check(() => stream.WriteFloatArray(new[] {4f}), () => stream.ReadFloatArray(1), new[] {4f});
 
             check(() => stream.WriteInt(4), () => stream.ReadInt(), 4);
+            check(() => stream.WriteInt(0, 4), () => stream.ReadInt(), 4);
             check(() => stream.WriteIntArray(new[] {4}), () => stream.ReadIntArray(1), new[] {4});
 
             check(() => stream.WriteLong(4), () => stream.ReadLong(), 4L);
