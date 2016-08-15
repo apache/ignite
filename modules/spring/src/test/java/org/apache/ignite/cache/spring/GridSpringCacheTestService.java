@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.cache.spring;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.cache.annotation.CacheEvict;
@@ -57,6 +57,19 @@ public class GridSpringCacheTestService {
     }
 
     /**
+     * @param key Key.
+     * @return Value.
+     */
+    @Cacheable("testCache")
+    public String simpleKeyNullValue(Integer key) {
+        assert key != null;
+
+        cnt.incrementAndGet();
+
+        return null;
+    }
+
+    /**
      * @param p1 Parameter 1.
      * @param p2 Parameter 2.
      * @return Value.
@@ -69,6 +82,21 @@ public class GridSpringCacheTestService {
         cnt.incrementAndGet();
 
         return "value" + p1 + p2;
+    }
+
+    /**
+     * @param p1 Parameter 1.
+     * @param p2 Parameter 2.
+     * @return Value.
+     */
+    @Cacheable("testCache")
+    public String complexKeyNullValue(Integer p1, String p2) {
+        assert p1 != null;
+        assert p2 != null;
+
+        cnt.incrementAndGet();
+
+        return null;
     }
 
     /**
@@ -85,6 +113,19 @@ public class GridSpringCacheTestService {
     }
 
     /**
+     * @param key Key.
+     * @return Value.
+     */
+    @CachePut("testCache")
+    public String simpleKeyPutNullValue(Integer key) {
+        assert key != null;
+
+        cnt.incrementAndGet();
+
+        return null;
+    }
+
+    /**
      * @param p1 Parameter 1.
      * @param p2 Parameter 2.
      * @return Value.
@@ -97,6 +138,21 @@ public class GridSpringCacheTestService {
         int cnt0 = cnt.incrementAndGet();
 
         return "value" + p1 + p2 + (cnt0 % 2 == 0 ? "even" : "odd");
+    }
+
+    /**
+     * @param p1 Parameter 1.
+     * @param p2 Parameter 2.
+     * @return Value.
+     */
+    @CachePut("testCache")
+    public String complexKeyPutNullValue(Integer p1, String p2) {
+        assert p1 != null;
+        assert p2 != null;
+
+        cnt.incrementAndGet();
+
+        return null;
     }
 
     /**
