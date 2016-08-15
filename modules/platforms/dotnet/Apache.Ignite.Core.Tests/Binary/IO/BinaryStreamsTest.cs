@@ -100,14 +100,19 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             Assert.AreEqual(1, *bytes2);
             Assert.AreEqual(2, *(bytes2 + 1));
 
+            // char*
+            // TODO
+
             // Others.
-            check(() => stream.Write(new byte[] { 3, 4, 5 }, 1, 2), () => stream.ReadByteArray(2), new byte[] { 4, 5 });
+            check(() => stream.Write(new byte[] {3, 4, 5}, 1, 2), () => stream.ReadByteArray(2), new byte[] {4, 5});
 
             check(() => stream.WriteBool(true), () => stream.ReadBool(), true);
-            check(() => stream.WriteBoolArray(new[] {true, false}), () => stream.ReadBoolArray(2), new[] {true, false});
+            check(() => stream.WriteBoolArray(new[] {true, false}), () => stream.ReadBoolArray(2), 
+                new[] {true, false});
 
             check(() => stream.WriteByte(4), () => stream.ReadByte(), 4);
-            check(() => stream.WriteByteArray(new byte[] {4, 5, 6}), () => stream.ReadByteArray(3), new byte[] {4, 5, 6});
+            check(() => stream.WriteByteArray(new byte[] {4, 5, 6}), () => stream.ReadByteArray(3), 
+                new byte[] {4, 5, 6});
 
             check(() => stream.WriteChar('x'), () => stream.ReadChar(), 'x');
             check(() => stream.WriteCharArray(new[] {'a', 'b'}), () => stream.ReadCharArray(2), new[] {'a', 'b'});
@@ -115,6 +120,17 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
             check(() => stream.WriteDouble(4), () => stream.ReadDouble(), 4d);
             check(() => stream.WriteDoubleArray(new[] {4d}), () => stream.ReadDoubleArray(1), new[] {4d});
 
+            check(() => stream.WriteFloat(4), () => stream.ReadFloat(), 4f);
+            check(() => stream.WriteFloatArray(new[] {4f}), () => stream.ReadFloatArray(1), new[] {4f});
+
+            check(() => stream.WriteInt(4), () => stream.ReadInt(), 4);
+            check(() => stream.WriteIntArray(new[] {4}), () => stream.ReadIntArray(1), new[] {4});
+
+            check(() => stream.WriteLong(4), () => stream.ReadLong(), 4L);
+            check(() => stream.WriteLongArray(new[] {4L}), () => stream.ReadLongArray(1), new[] {4L});
+
+            check(() => stream.WriteShort(4), () => stream.ReadShort(), (short)4);
+            check(() => stream.WriteShortArray(new short[] {4}), () => stream.ReadShortArray(1), new short[] {4});
         }
     }
 }
