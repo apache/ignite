@@ -41,6 +41,7 @@ public interface BinaryObjectEx extends BinaryObject {
 
     /**
      * Check if flag set.
+     *
      * @param flag flag to check.
      * @return {@code true} if flag is set, {@code false} otherwise.
      */

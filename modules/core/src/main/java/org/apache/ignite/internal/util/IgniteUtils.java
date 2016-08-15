@@ -8507,9 +8507,15 @@ public abstract class IgniteUtils {
      * @return {@code True} if given object has overridden equals and hashCode method.
      */
     public static boolean overridesEqualsAndHashCode(Object obj) {
-        try {
-            Class<?> cls = obj.getClass();
+        return overridesEqualsAndHashCode(obj.getClass());
+    }
 
+    /**
+     * @param cls Class.
+     * @return {@code True} if given class has overridden equals and hashCode method.
+     */
+    public static boolean overridesEqualsAndHashCode(Class<?> cls) {
+        try {
             return !Object.class.equals(cls.getMethod("equals", Object.class).getDeclaringClass()) &&
                 !Object.class.equals(cls.getMethod("hashCode").getDeclaringClass());
         }
