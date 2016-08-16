@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -42,18 +45,24 @@ public class IgfsModeResolver {
     /** Cached modes per path. */
     private Map<IgfsPath, IgfsMode> modesCache;
 
+    /** Set to store parent dual paths that have primary children. */
+    private final Set<IgfsPath> dualParentsWithPrimaryChildren;
+
     /**
      * Constructor
      *
      * @param dfltMode Default IGFS mode.
      * @param modes List of configured modes. The order is significant as modes are added in order of occurrence.
      */
-    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) {
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> modes)
+            throws IgniteCheckedException {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
 
-        this.modes = modes;
+        this.dualParentsWithPrimaryChildren = new HashSet<>();
+
+        this.modes = IgfsUtils.preparePathModes(dfltMode, modes, dualParentsWithPrimaryChildren);
 
         if (modes != null)
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
@@ -94,10 +103,20 @@ public class IgfsModeResolver {
     }
 
     /**
-     * @return Unmodifiable copy of properly ordered modes prefixes
+     * @return Copy of properly ordered modes prefixes
      *  or {@code null} if no modes set.
      */
-    @Nullable public List<T2<IgfsPath, IgfsMode>> modesOrdered() {
-        return modes != null ? Collections.unmodifiableList(modes) : null;
+    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> modesOrdered() {
+        return modes != null ? new ArrayList<>(modes) : null;
+    }
+
+    /**
+     * Answers if the given path has an immediate child of PRIMARY mode.
+     *
+     * @param path The path to query.
+     * @return If the given path has an immediate child of PRIMARY mode.
+     */
+    public boolean hasPrimaryChild(IgfsPath path) {
+        return dualParentsWithPrimaryChildren.contains(path);
     }
 }

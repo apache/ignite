@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.binary;
+
+import org.jetbrains.annotations.Nullable;
+
 /**
- * <!-- Package description. -->
- * Contains APIs for IGFS secondary file system base on local file system.
+ * Interface to perform write replace.
  */
-package org.apache.ignite.igfs.secondary;
+public interface BinaryWriteReplacer {
+    /**
+     * Perform replace.
+     *
+     * @param target Original object.
+     * @return Replaced object.
+     */
+    @Nullable public Object replace(Object target);
+}

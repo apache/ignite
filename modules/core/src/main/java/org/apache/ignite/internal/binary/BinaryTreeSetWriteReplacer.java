@@ -15,8 +15,20 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.binary;
+
+import org.jetbrains.annotations.Nullable;
+
+import java.util.TreeSet;
+
 /**
- * <!-- Package description. -->
- * Contains APIs for IGFS secondary file system base on local file system.
+ * Binary {@link TreeSet} write replacer.
  */
-package org.apache.ignite.igfs.secondary;
+public class BinaryTreeSetWriteReplacer implements BinaryWriteReplacer {
+    /** {@inheritDoc} */
+    @Nullable @Override public Object replace(Object target) {
+        assert target instanceof TreeSet;
+
+        return new BinaryTreeSet((TreeSet)target);
+    }
+}

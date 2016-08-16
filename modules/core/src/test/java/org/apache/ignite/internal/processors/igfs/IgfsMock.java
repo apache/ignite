@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -361,10 +362,22 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgfsMode mode(IgfsPath path) {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public long usedSpaceSize() throws IgniteException {
         throwUnsupported();
 
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
+        throwUnsupported();
     }
 
     /** {@inheritDoc} */

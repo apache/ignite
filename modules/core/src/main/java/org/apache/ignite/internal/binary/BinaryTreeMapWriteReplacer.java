@@ -15,8 +15,20 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.binary;
+
+import org.jetbrains.annotations.Nullable;
+
+import java.util.TreeMap;
+
 /**
- * <!-- Package description. -->
- * Contains APIs for IGFS secondary file system base on local file system.
+ * Binary {@link TreeMap} write replacer.
  */
-package org.apache.ignite.igfs.secondary;
+public class BinaryTreeMapWriteReplacer implements BinaryWriteReplacer {
+    /** {@inheritDoc} */
+    @Nullable @Override public Object replace(Object target) {
+        assert target instanceof TreeMap;
+
+        return new BinaryTreeMap((TreeMap)target);
+    }
+}
