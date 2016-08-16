@@ -219,21 +219,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerJobException()
         {
-            List<object> args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), args, new Reducer(false));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), args, new Reducer(false))));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), args, new Reducer(false)).Wait()));
         }
 
         /// <summary>
@@ -242,23 +231,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerReduceException()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
+            var e = Assert.Throws<Exception>(() => Grid1.GetCompute().Apply(Func(false), args, new Reducer(true)));
 
-            try
-            {
-                Grid1.GetCompute().Apply(Func(false), args, new Reducer(true));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(typeof(Exception), e.GetType());
-
-                Assert.AreEqual(ErrMsg, e.Message);
-            }
+            Assert.AreEqual(ErrMsg, e.Message);
         }
 
         /// <summary>
