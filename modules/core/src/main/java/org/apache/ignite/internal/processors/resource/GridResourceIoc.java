@@ -242,7 +242,7 @@ public class GridResourceIoc {
         return t2 == null ? GridResourceMethod.EMPTY_ARRAY : t2.get2();
     }
 
-    /** {@inheritDoc} */
+    /** Print memory statistics */
     public void printMemoryStats() {
         X.println(">>>   taskMapSize: " + taskMap.size());
 
