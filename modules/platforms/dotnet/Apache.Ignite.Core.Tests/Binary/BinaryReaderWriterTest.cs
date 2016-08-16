@@ -131,6 +131,35 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new Guid?[] {Guid}, reader.ReadGuidArray("GuidArray"));
                 Assert.AreEqual(MyEnum.Bar, reader.ReadEnum<MyEnum>("Enum"));
                 Assert.AreEqual(new[] {MyEnum.Bar}, reader.ReadEnumArray<MyEnum>("EnumArray"));
+
+                var raw = reader.GetRawReader();
+
+                Assert.AreEqual(1, raw.ReadByte());
+                Assert.AreEqual(new byte[] { 1 }, raw.ReadByteArray());
+                Assert.AreEqual('1', raw.ReadChar());
+                Assert.AreEqual(new[] { '1' }, raw.ReadCharArray());
+                Assert.AreEqual(1, raw.ReadShort());
+                Assert.AreEqual(new short[] { 1 }, raw.ReadShortArray());
+                Assert.AreEqual(1, raw.ReadInt());
+                Assert.AreEqual(new[] { 1 }, raw.ReadIntArray());
+                Assert.AreEqual(1, raw.ReadLong());
+                Assert.AreEqual(new long[] { 1 }, raw.ReadLongArray());
+                Assert.AreEqual(true, raw.ReadBoolean());
+                Assert.AreEqual(new[] { true }, raw.ReadBooleanArray());
+                Assert.AreEqual(1, raw.ReadFloat());
+                Assert.AreEqual(new float[] { 1 }, raw.ReadFloatArray());
+                Assert.AreEqual(1, raw.ReadDouble());
+                Assert.AreEqual(new double[] { 1 }, raw.ReadDoubleArray());
+                Assert.AreEqual(1, raw.ReadDecimal());
+                Assert.AreEqual(new decimal?[] { 1 }, raw.ReadDecimalArray());
+                Assert.AreEqual(Date, raw.ReadTimestamp());
+                Assert.AreEqual(new DateTime?[] { Date }, raw.ReadTimestampArray());
+                Assert.AreEqual("1", raw.ReadString());
+                Assert.AreEqual(new[] { "1" }, raw.ReadStringArray());
+                Assert.AreEqual(Guid, raw.ReadGuid());
+                Assert.AreEqual(new Guid?[] { Guid }, raw.ReadGuidArray());
+                Assert.AreEqual(MyEnum.Bar, raw.ReadEnum<MyEnum>());
+                Assert.AreEqual(new[] { MyEnum.Bar }, raw.ReadEnumArray<MyEnum>());
             }
         }
 
