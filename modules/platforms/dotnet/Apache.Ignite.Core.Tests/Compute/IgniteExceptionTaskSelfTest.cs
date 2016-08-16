@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as GoodException);
             Assert.AreEqual(ErrorMode.LocJobErr, ((GoodException) JobErrs.First()).Mode);
         }
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as BadException); // Local job exception is not marshalled.
         }
 
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as GoodException);
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
         }
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
         }
@@ -307,12 +307,17 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Func<object, int> getRes = r => r is GoodTaskResult ? ((GoodTaskResult) r).Res : ((BadTaskResult) r).Res;
 
-            var res = getRes(Grid1.GetCompute().Execute(new Task()));
-            var resAsync = getRes(Grid1.GetCompute().ExecuteAsync(new Task()).Result);
+            var res1 = getRes(Grid1.GetCompute().Execute(new Task()));
+            var res2 = getRes(Grid1.GetCompute().Execute<object, object>(typeof(Task)));
 
-            Assert.AreEqual(res, resAsync);
+            var resAsync1 = getRes(Grid1.GetCompute().ExecuteAsync(new Task()).Result);
+            var resAsync2 = getRes(Grid1.GetCompute().ExecuteAsync<object, object>(typeof(Task)).Result);
 
-            return res; 
+            Assert.AreEqual(res1, res2);
+            Assert.AreEqual(res2, resAsync1);
+            Assert.AreEqual(resAsync1, resAsync2);
+
+            return res1;
         }
 
         /// <summary>
