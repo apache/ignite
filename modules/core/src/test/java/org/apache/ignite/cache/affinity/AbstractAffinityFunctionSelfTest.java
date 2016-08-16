@@ -25,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -101,6 +103,19 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      */
     public void testRandomReassignmentThreeBackups() throws Exception {
         checkRandomReassignment(3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNullKeyForPartitionCalculation() throws Exception {
+        AffinityFunction aff = affinityFunction();
+        try {
+            aff.partition(null);
+            fail("Should throw IllegalArgumentException due to NULL affinity key.");
+        } catch (IllegalArgumentException e) {
+            X.println("Unable to get value due to NULL affinity key.");
+        }
     }
 
     /**

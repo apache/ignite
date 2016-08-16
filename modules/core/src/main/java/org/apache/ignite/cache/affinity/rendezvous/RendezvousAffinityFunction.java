@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,6 +79,9 @@ import org.jetbrains.annotations.Nullable;
 public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final String NULL_AFFINITY_KEY_ERR_MSG = "Null key is passed for a partition calculation. Make sure that an affinity key that is used is initialized properly.";
 
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
@@ -464,6 +468,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException(NULL_AFFINITY_KEY_ERR_MSG);
+
         return U.safeAbs(key.hashCode() % parts);
     }
 
