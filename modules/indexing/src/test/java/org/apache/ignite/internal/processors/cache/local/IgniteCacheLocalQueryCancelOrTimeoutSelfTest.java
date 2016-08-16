@@ -29,30 +29,58 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests local query cancellations and timeouts.
  */
-public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends IgniteCacheAbstractQuerySelfTest {
+public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbstractTest {
     /** Cache size. */
-    private static int CACHE_SIZE = 10_000;
+    private static final int CACHE_SIZE = 10_000;
 
     /** */
     private static final String QUERY = "select a._val, b._val from String a, String b";
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        ccfg.setIndexedTypes(Integer.class, String.class);
+        ccfg.setCacheMode(LOCAL);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        for (Ignite g : G.allGrids())
+            g.cache(null).removeAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -92,7 +120,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends IgniteCacheAbs
      * Tests cancellation.
      */
     private void testQuery(boolean timeout, int timeoutUnits, TimeUnit timeUnit) {
-        Ignite ignite = ignite();
+        Ignite ignite = grid(0);
 
         IgniteCache<Integer, String> cache = ignite.cache(null);
 
