@@ -733,14 +733,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters,
+        int timeout, AtomicReference<GridAbsClosure> cancel)
         throws IgniteCheckedException {
         setFilters(filters);
 
         try {
             Connection conn = connectionForThread(schema(spaceName));
 
-            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, qry, params, true, 0, null);
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, qry, params, true, timeout, cancel);
 
             List<GridQueryFieldMetadata> meta = null;
 
@@ -1154,13 +1155,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        AtomicReference<GridAbsClosure> mapQrysCancel = new AtomicReference<>();
-        AtomicReference<GridAbsClosure> rdcQryCancel = new AtomicReference<>();
+        final AtomicReference<GridAbsClosure> mapQrysCancel = new AtomicReference<>();
+        final AtomicReference<GridAbsClosure> rdcQryCancel = new AtomicReference<>();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             doQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), qry.getTimeout(), mapQrysCancel, rdcQryCancel),
-            mapQrysCancel,
-            rdcQryCancel);
+            new GridAbsClosure() {
+                @Override public void apply() {
+                    GridAbsClosure clo;
+                        // Cancellation closure is changed on each attempt. Make sure we use correct closure.
+                        while(true) {
+                            clo = mapQrysCancel.get();
+
+                            if (mapQrysCancel.compareAndSet(clo, F.noop()))
+                                break;
+                        }
+
+                        if (clo != null)
+                            clo.apply();
+
+                        clo = rdcQryCancel.get();
+
+                        if (clo != null && rdcQryCancel.compareAndSet(clo, F.noop()))
+                            clo.apply();
+                }
+            });
 
         cursor.fieldsMeta(meta);
 
@@ -1512,7 +1531,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return -1;
 
         IgniteSpiCloseableIterator<List<?>> iter = queryFields(spaceName,
-            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null).iterator();
+            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null, 0, null).iterator();
 
         return ((Number)iter.next().get(0)).longValue();
     }
@@ -2679,5 +2698,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void cancelAllQueries() {
         for (Connection conn : conns)
             U.close(conn, log);;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<GridQueryFieldMetadata> meta(String space, String sql) {
+        Connection c = connectionForSpace(space);
+
+        try {
+            PreparedStatement stmt = prepareStatement(c, sql, true);
+
+            return meta(stmt.getMetaData());
+        }
+        catch (SQLException e) {
+            throw new CacheException("Failed to get metadata: [qry=" + sql + ", space=" +
+                space + "]", e);
+        }
     }
 }

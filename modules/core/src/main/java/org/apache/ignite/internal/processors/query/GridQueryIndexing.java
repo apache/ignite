@@ -84,11 +84,13 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param filters Space name and key filters.
+     * @param timeout Query timeout in millis
+     * @param cancel Cancellation closure.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
+        Collection<Object> params, IndexingQueryFilter filters, int timeout, AtomicReference<GridAbsClosure> cancel) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -237,4 +239,12 @@ public interface GridQueryIndexing {
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
+
+    /**
+     * Returns query metadata
+     * @param space space
+     * @param sql sql.
+     * @return list of field metadata.
+     */
+    public List<GridQueryFieldMetadata> meta(String space, String sql);
 }

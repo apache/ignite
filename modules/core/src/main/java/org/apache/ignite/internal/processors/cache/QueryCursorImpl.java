@@ -46,27 +46,22 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private List<GridQueryFieldMetadata> fieldsMeta;
 
     /** */
-    private final AtomicReference<GridAbsClosure> mapQrysCancel;
-
-    /** */
-    private final AtomicReference<GridAbsClosure> rdcQryCancel;
+    private final GridAbsClosure cancel;
 
     /**
      * @param iterExec Query executor.
-     * @param rdcQryCancel Used to hold cancellation closure.
+     * @param cancel Cancellation closure.
      */
-    public QueryCursorImpl(Iterable<T> iterExec,
-        @Nullable AtomicReference<GridAbsClosure> mapQrysCancel, @Nullable AtomicReference<GridAbsClosure> rdcQryCancel) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridAbsClosure cancel) {
         this.iterExec = iterExec;
-        this.mapQrysCancel = mapQrysCancel;
-        this.rdcQryCancel = rdcQryCancel;
+        this.cancel = cancel;
     }
 
     /**
      * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this(iterExec, null, null);
+        this(iterExec, null);
     }
 
     /** {@inheritDoc} */
@@ -134,28 +129,8 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                     throw new IgniteException(e);
                 }
             }
-        } else if (cancellable) {
-            GridAbsClosure clo;
-            if (mapQrysCancel != null) {
-                // Make sure we use correct closure.
-                while(true) {
-                    clo = mapQrysCancel.get();
-
-                    if (mapQrysCancel.compareAndSet(clo, F.noop()))
-                        break;
-                }
-
-                if (clo != null)
-                    clo.apply();
-            }
-
-            if (rdcQryCancel != null) {
-                clo = rdcQryCancel.get();
-
-                if (clo != null && rdcQryCancel.compareAndSet(clo, F.noop()))
-                    clo.apply();
-            }
-        }
+        } else if (cancellable && cancel != null)
+            cancel.apply();
     }
 
     /**

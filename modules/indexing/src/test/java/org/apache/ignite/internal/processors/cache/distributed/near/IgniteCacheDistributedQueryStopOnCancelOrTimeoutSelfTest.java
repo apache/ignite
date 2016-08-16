@@ -30,8 +30,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -97,66 +97,66 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
     /** */
     public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, true);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableTimeout() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, true);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 1_000, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 1, TimeUnit.SECONDS, false);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_1, 3_000, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 1_500, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 1_500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_2, 3_000, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 500, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_3, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 1_000, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_3, 1_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
     public void testRemoteQueryWithoutMergeTableCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QUERY_3, 3_000, TimeUnit.MILLISECONDS, false);
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_3, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        testQueryCancel(100, VAL_SIZE, QUERY_3, 3000, TimeUnit.MILLISECONDS, false);
+        testQuery(100, VAL_SIZE, QUERY_3, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
-    private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutMillis, TimeUnit timeUnit,
+    private void testQuery(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
         boolean timeout) throws Exception {
         try (Ignite client = startGrid("client")) {
 
@@ -183,7 +183,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             final QueryCursor<List<?>> cursor;
             if (timeout) {
-                qry.setTimeout(timeoutMillis, timeUnit);
+                qry.setTimeout(timeoutUnits, timeUnit);
 
                 cursor = cache.query(qry);
             } else {
@@ -193,7 +193,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                     @Override public void run() {
                         cursor.close();
                     }
-                }, timeoutMillis, timeUnit);
+                }, timeoutUnits, timeUnit);
             }
 
             try {
@@ -205,7 +205,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 assertTrue("Must throw correct exception", ex.getCause() instanceof GridH2QueryCancelledException);
             }
 
-            Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutMillis, timeUnit) + 3_000);
+            // Give some time to clean up.
+            Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
 
             checkCleanState();
         }
@@ -222,9 +223,9 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
                 grid.context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
-            String msg = "Executor state is not cleared";
+            String msg = "Map executor state is not cleared";
 
-            // TODO FIXME Current implementation leaves map entry for each node who's ever executed a query.
+            // TODO FIXME Current implementation leaves map entry for each node that's ever executed a query.
             for (ConcurrentMap<Long, ?> results : map.values())
                 assertEquals(msg, 0, results.size());
         }

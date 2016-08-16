@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,10 +47,10 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -941,22 +942,38 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    String space = cctx.name();
-                    String sql = qry.getSql();
-                    Object[] args = qry.getArgs();
+                    final String space = cctx.name();
+                    final String sql = qry.getSql();
+                    final Object[] args = qry.getArgs();
 
-                    final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
-                        idx.backupFilter(null, null, null));
+                    List<GridQueryFieldMetadata>  meta = idx.meta(space, sql);
 
-                    sendQueryExecutedEvent(sql, args);
+                    final AtomicReference<GridAbsClosure> cancel = new AtomicReference<>();
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
-                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                            try {
+                                final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
+                                    idx.backupFilter(null, null, null), qry.getTimeout(), cancel);
+
+                                sendQueryExecutedEvent(sql, args);
+
+                                return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+                        }
+                    }, new GridAbsClosure() {
+                        @Override public void apply() {
+                            GridAbsClosure clo = cancel.get();
+
+                            if (clo != null)
+                                clo.apply();
                         }
                     });
 
-                    cursor.fieldsMeta(res.metaData());
+                    cursor.fieldsMeta(meta);
 
                     return cursor;
                 }
@@ -1133,7 +1150,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(cctx, new IgniteOutClosureX<GridQueryFieldsResult>() {
                 @Override public GridQueryFieldsResult applyx() throws IgniteCheckedException {
-                    return idx.queryFields(space, clause, params, filters);
+                    return idx.queryFields(space, clause, params, filters, 0, null);
                 }
             }, false);
         }
