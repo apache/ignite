@@ -968,9 +968,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             compute.WithKeepBinary();
 
-            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
-
-            arg.Field = 100;
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable {Field = 100};
 
             int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
 
@@ -1065,9 +1063,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1.GetCompute().Run(Enumerable.Range(0, 10).Select(x => new ComputeAction(id)));
             Assert.AreEqual(10, ComputeAction.InvokeCount(id));
 
-            id = Guid.NewGuid();
-            _grid1.GetCompute().RunAsync(Enumerable.Range(0, 10).Select(x => new ComputeAction(id))).Wait();
-            Assert.AreEqual(10, ComputeAction.InvokeCount(id));
+            var id2 = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(Enumerable.Range(0, 10).Select(x => new ComputeAction(id2))).Wait();
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id2));
         }
 
         /// <summary>
@@ -1090,7 +1088,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
 
+                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, new ComputeAction()).Wait();
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
         }
