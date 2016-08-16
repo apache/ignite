@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -90,15 +91,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleReduced()
         {
-            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
+            var clos = Enumerable.Range(0, MultiCloCnt).Select(x => OutFunc(false)).ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                clos.Add(OutFunc(false));
-
-            ICollection<object> ress = Grid1.GetCompute().Call(clos, new Reducer(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            // Sync.
+            Grid1.GetCompute().Call(clos, new Reducer(false)).ToList().ForEach(CheckResult);
+            
+            // Async.
+            Grid1.GetCompute().CallAsync(clos, new Reducer(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
