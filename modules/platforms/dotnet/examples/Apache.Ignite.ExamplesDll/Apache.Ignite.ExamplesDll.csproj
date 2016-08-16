@@ -57,7 +57,6 @@
     <Compile Include="Binary\Account.cs" />
     <Compile Include="Binary\Address.cs" />
     <Compile Include="Binary\Employee.cs" />
-    <Compile Include="Binary\EmployeeKey.cs" />
     <Compile Include="Binary\Organization.cs" />
     <Compile Include="Binary\OrganizationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

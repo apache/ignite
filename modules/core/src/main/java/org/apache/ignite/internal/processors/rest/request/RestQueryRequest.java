@@ -88,7 +88,7 @@ public class RestQueryRequest extends GridRestRequest {
     /**
      * @return Page size.
      */
-    public int pageSize() {
+    public Integer pageSize() {
         return pageSize;
     }
 

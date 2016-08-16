@@ -26,12 +26,12 @@
     <!--
         Test service with cacheable methods.
     -->
-    <bean id="testService" class="org.apache.ignite.spring.GridSpringCacheTestService"/>
+    <bean id="testService" class="org.apache.ignite.cache.spring.GridSpringCacheTestService"/>
 
     <!--
         Test service with cacheable methods (dynamic cache).
     -->
-    <bean id="dynamicTestService" class="org.apache.ignite.spring.GridSpringDynamicCacheTestService"/>
+    <bean id="dynamicTestService" class="org.apache.ignite.cache.spring.GridSpringDynamicCacheTestService"/>
 
     <!--
         Cache manager.
@@ -48,7 +48,7 @@
     <!--
         Key generator.
     -->
-    <bean id="keyGenerator" class="org.apache.ignite.spring.GridSpringCacheTestKeyGenerator"/>
+    <bean id="keyGenerator" class="org.apache.ignite.cache.spring.GridSpringCacheTestKeyGenerator"/>
 
     <!--
         Enable annotation-driver configuration for caching.

@@ -9637,4 +9637,14 @@ public abstract class IgniteUtils {
 
         return "<failed to find active thread " + threadId + '>';
     }
+
+    /**
+     * @param t0 Comparable object.
+     * @param t1 Comparable object.
+     * @param <T> Comparable type.
+     * @return Maximal object o t0 and t1.
+     */
+    public static <T extends Comparable<? super T>> T max(T t0, T t1) {
+        return t0.compareTo(t1) > 0 ? t0 : t1;
+    }
 }

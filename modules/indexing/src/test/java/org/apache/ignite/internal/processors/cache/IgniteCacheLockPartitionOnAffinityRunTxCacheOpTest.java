@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spring;
+package org.apache.ignite.internal.processors.cache;
 
-import java.lang.reflect.Method;
-import org.springframework.cache.interceptor.KeyGenerator;
+import org.apache.ignite.cache.CacheAtomicityMode;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
- * Key generator.
+ * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310.
  */
-public class GridSpringCacheTestKeyGenerator implements KeyGenerator {
+public class IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest
+    extends IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest {
     /** {@inheritDoc} */
-    @Override public Object generate(Object target, Method mtd, Object... params) {
-        assert params != null;
-        assert params.length > 0;
-
-        if (params.length == 1)
-            return params[0];
-        else {
-            assert params.length == 2;
-
-            return new GridSpringCacheTestKey((Integer)params[0], (String)params[1]);
-        }
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }
