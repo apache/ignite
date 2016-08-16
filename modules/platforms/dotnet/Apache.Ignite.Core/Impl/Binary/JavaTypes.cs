@@ -110,13 +110,5 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
         }
-
-        /// <summary>
-        /// Gets the supported types as a comma-separated string.
-        /// </summary>
-        public static string SupportedTypesString
-        {
-            get { return MappedTypes; }
-        }
     }
 }
