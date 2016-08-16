@@ -929,12 +929,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return rs;
         }
-        catch (GridH2QueryCancelledException e) {
-            onSqlException();
-
-            throw e;
-        }
-        catch (SQLException e) {
+        catch (Exception e) {
             onSqlException();
 
             throw new IgniteCheckedException(e);
