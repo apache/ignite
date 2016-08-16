@@ -69,6 +69,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             TestClosure((c, t) => c.BroadcastAsync(new ComputeAction(), t));
             TestClosure((c, t) => c.BroadcastAsync(new ComputeFunc(), t));
+            TestClosure((c, t) => c.BroadcastAsync(new ComputeBiFunc(), 10, t));
 
             TestClosure((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
 
