@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// binary object header structure.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal struct BinaryObjectHeader
+    internal struct BinaryObjectHeader : IEquatable<BinaryObjectHeader>
     {
         /** Size, equals to sizeof(BinaryObjectHeader). */
         public const int Size = 24;
@@ -278,5 +278,54 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hdr;
         }
 
+        /** <inheritdoc /> */
+        public bool Equals(BinaryObjectHeader other)
+        {
+            return Header == other.Header &&
+                   Version == other.Version &&
+                   Flags == other.Flags &&
+                   TypeId == other.TypeId &&
+                   HashCode == other.HashCode &&
+                   Length == other.Length &&
+                   SchemaId == other.SchemaId &&
+                   SchemaOffset == other.SchemaOffset;
+        }
+
+        /** <inheritdoc /> */
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+
+            return obj is BinaryObjectHeader && Equals((BinaryObjectHeader) obj);
+        }
+
+        /** <inheritdoc /> */
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Header.GetHashCode();
+                hashCode = (hashCode*397) ^ Version.GetHashCode();
+                hashCode = (hashCode*397) ^ Flags.GetHashCode();
+                hashCode = (hashCode*397) ^ TypeId;
+                hashCode = (hashCode*397) ^ HashCode;
+                hashCode = (hashCode*397) ^ Length;
+                hashCode = (hashCode*397) ^ SchemaId;
+                hashCode = (hashCode*397) ^ SchemaOffset;
+                return hashCode;
+            }
+        }
+
+        /** <inheritdoc /> */
+        public static bool operator ==(BinaryObjectHeader left, BinaryObjectHeader right)
+        {
+            return left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
+        {
+            return !left.Equals(right);
+        }
     }
 }
