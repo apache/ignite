@@ -184,7 +184,7 @@ public class GridReduceQueryExecutor {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Overridepublic void onEvent(final Event evt) {
+            @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 for (QueryRun r : runs.values()) {
@@ -467,7 +467,7 @@ public class GridReduceQueryExecutor {
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
 
-                    throw new CacheException("Query execution was interrupted.", e);
+                    throw new CacheException("Query was interrupted.", e);
                 }
             }
 
@@ -581,12 +581,11 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                GridAbsClosure cancelClo;
-                if (!mapQrysCancel.compareAndSet(clo, (cancelClo = new GridAbsClosure() { // Update cancellation for current attempt.
+                if (!mapQrysCancel.compareAndSet(clo, new GridAbsClosure() { // Update cancellation closure for current attempt.
                     @Override public void apply() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
-                })))
+                }))
                     throw new CacheException(new GridH2QueryCancelledException());
 
                 boolean retry = false;
@@ -668,8 +667,7 @@ public class GridReduceQueryExecutor {
 
                         resIter = new Iter(res);
                     }
-                } else if (clo != F.noop()) // Always explicitly cancel on retry if not cancelled before.
-                    send(nodes, new GridQueryCancelRequest(qryReqId), null);
+                }
 
                 if (retry) {
                     if (Thread.currentThread().isInterrupted())
@@ -707,7 +705,7 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
-                // Make sure any activity related to current attempt is terminated.
+                // Make sure any activity related to current attempt is cancelled.
                 cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
 
                 if (!runs.remove(qryReqId, r))
