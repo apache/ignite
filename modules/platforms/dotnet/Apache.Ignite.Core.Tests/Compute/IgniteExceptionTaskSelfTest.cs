@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(2, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as GoodException);
             Assert.AreEqual(ErrorMode.LocJobErr, ((GoodException) JobErrs.First()).Mode);
         }
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(2, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as BadException); // Local job exception is not marshalled.
         }
 
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(2, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as GoodException);
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(2, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
         }
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(2, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
         }
@@ -305,9 +305,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            object res = Grid1.GetCompute().Execute(new Task());
+            Func<object, int> getRes = r => r is GoodTaskResult ? ((GoodTaskResult) r).Res : ((BadTaskResult) r).Res;
 
-            return res is GoodTaskResult ? ((GoodTaskResult)res).Res : ((BadTaskResult)res).Res;
+            var res = getRes(Grid1.GetCompute().Execute(new Task()));
+            var resAsync = getRes(Grid1.GetCompute().ExecuteAsync(new Task()).Result);
+
+            Assert.AreEqual(res, resAsync);
+
+            return res; 
         }
 
         /// <summary>
@@ -318,20 +323,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            Exception err = null;
-
-            try
-            {
-                Grid1.GetCompute().Execute(new Task());
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                err = e;
-            }
-
-            return err;
+            return Assert.Catch(() => Grid1.GetCompute().Execute(new Task()));
         }
 
         /// <summary>
@@ -391,11 +383,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Task.
         /// </summary>
-        public class Task : IComputeTask<object, object>
+        private class Task : IComputeTask<object, object>
         {
             /** Grid. */
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** Result. */
             private int _res;
