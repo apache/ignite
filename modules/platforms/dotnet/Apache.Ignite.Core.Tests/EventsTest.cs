@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
             CheckSend(2);
 
             // Unsubscribe from all events
-            events.StopLocalListen(listener);
+            events.StopLocalListen(listener, Enumerable.Empty<int>());
 
             CheckNoEvent();
 
