@@ -68,6 +68,35 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteGuidArray("GuidArray", new Guid?[] {Guid.Empty});
                 writer.WriteEnum("Enum", 1);
                 writer.WriteEnumArray("EnumArray", new[] {1});
+
+                var raw = writer.GetRawWriter();
+
+                raw.WriteByte(1);
+                raw.WriteByteArray(new byte[] { 1 });
+                raw.WriteChar('1');
+                raw.WriteCharArray(new[] { '1' });
+                raw.WriteShort(1);
+                raw.WriteShortArray(new short[] { 1 });
+                raw.WriteInt(1);
+                raw.WriteIntArray(new[] { 1 });
+                raw.WriteLong(1);
+                raw.WriteLongArray(new long[] { 1 });
+                raw.WriteBoolean(true);
+                raw.WriteBooleanArray(new[] { true });
+                raw.WriteFloat(1);
+                raw.WriteFloatArray(new float[] { 1 });
+                raw.WriteDouble(1);
+                raw.WriteDoubleArray(new double[] { 1 });
+                raw.WriteDecimal(1);
+                raw.WriteDecimalArray(new decimal?[] { 1 });
+                raw.WriteTimestamp(DateTime.UtcNow);
+                raw.WriteTimestampArray(new DateTime?[] { DateTime.UtcNow });
+                raw.WriteString("1");
+                raw.WriteStringArray(new[] { "1" });
+                raw.WriteGuid(Guid.Empty);
+                raw.WriteGuidArray(new Guid?[] { Guid.Empty });
+                raw.WriteEnum(1);
+                raw.WriteEnumArray(new[] { 1 });
             }
 
             public void ReadBinary(IBinaryReader reader)
