@@ -968,7 +968,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         @Override public void apply() {
                             GridAbsClosure clo = cancel.get();
 
-                            if (clo != null)
+                            if (clo != null && cancel.compareAndSet(clo, F.noop()))
                                 clo.apply();
                         }
                     });
