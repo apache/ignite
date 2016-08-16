@@ -163,19 +163,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultiple()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            Console.WriteLine("START TASK");
-
-            var ress = Grid1.GetCompute().Apply(Func(false), args);
-
-            Console.WriteLine("END TASK.");
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Apply(Func(false), args).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().ApplyAsync(Func(false), args).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -184,21 +175,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleException()
         {
-            ICollection<int> args = new List<int>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), args);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), args)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), args).Wait()));
         }
 
         /// <summary>

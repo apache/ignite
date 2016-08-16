@@ -1062,11 +1062,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunActions()
         {
             var id = Guid.NewGuid();
+            _grid1.GetCompute().Run(Enumerable.Range(0, 10).Select(x => new ComputeAction(id)));
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id));
 
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
-            
-            _grid1.GetCompute().Run(actions);
-
+            id = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(Enumerable.Range(0, 10).Select(x => new ComputeAction(id))).Wait();
             Assert.AreEqual(10, ComputeAction.InvokeCount(id));
         }
 
