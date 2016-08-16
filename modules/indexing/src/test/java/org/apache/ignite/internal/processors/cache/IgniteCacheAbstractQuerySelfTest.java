@@ -376,7 +376,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testExpiration() throws Exception {
         ignite().cache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(7, 1);
+            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10000))).put(7, 1);
 
         IgniteCache<Integer, Integer> cache = ignite().cache(null);
 
@@ -387,7 +387,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(1, res.getValue().intValue());
 
-        U.sleep(800); // Less than minimal amount of time that must pass before a cache entry is considered expired.
+        U.sleep(8000); // Less than minimal amount of time that must pass before a cache entry is considered expired.
 
         qry =  cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
@@ -395,13 +395,27 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(1, res.getValue().intValue());
 
-        U.sleep(1200); // No expiry guarantee here. Test should be refactored in case of fails.
+        U.sleep(12000);
 
         qry = cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
-        res = F.first(qry);
+        assertCacheEviction(F.first(qry));
+    }
 
-        assertNull(res);
+    private void assertCacheEviction(Cache.Entry<Integer, Integer> res) throws Exception
+    {
+        boolean flag = true;
+
+        while (flag)
+        {
+            try {
+                assertNull(res);
+                flag  = false;
+            }catch (AssertionError ae)
+            {
+                Thread.sleep(5000); // In case cache is not evicted, sleep for more 5000 ms
+            }
+        }
     }
 
     /**
