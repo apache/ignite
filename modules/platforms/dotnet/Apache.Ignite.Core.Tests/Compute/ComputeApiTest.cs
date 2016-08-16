@@ -1156,6 +1156,11 @@ namespace Apache.Ignite.Core.Tests.Compute
                     typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
 
             Assert.AreEqual(2, res);
+
+            Assert.AreEqual(4, _grid1.GetCompute().Execute(new NetSimpleTask(), new NetSimpleJobArgument(2)).Res);
+
+            Assert.AreEqual(6, _grid1.GetCompute().ExecuteAsync(new NetSimpleTask(), new NetSimpleJobArgument(3))
+                .Result.Res);
         }
 
         /// <summary>
