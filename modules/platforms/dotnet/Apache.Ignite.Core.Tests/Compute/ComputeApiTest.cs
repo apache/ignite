@@ -187,7 +187,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.NotNull(prj);
 
-            Assert.IsTrue(prj == prj.Ignite);
+            Assert.AreEqual(prj, prj.Ignite);
+
+            // Check that default Compute projection excludes client nodes.
+            CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
         }
 
         /// <summary>
