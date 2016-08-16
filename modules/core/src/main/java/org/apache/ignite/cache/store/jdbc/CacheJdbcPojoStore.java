@@ -150,8 +150,9 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         ResultSet rs) throws CacheLoaderException {
         try {
             JdbcTypeField field = fields[0];
+            int colIdx = loadColIdxs.get(field.getDatabaseFieldName());
 
-            return getColumnValue(rs, loadColIdxs.get(field.getDatabaseFieldName()), field.getJavaFieldType());
+            return transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
@@ -200,7 +201,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                 Integer colIdx = loadColIdxs.get(fldDbName);
 
                 try {
-                    Object colVal = getColumnValue(rs, colIdx, fld.getJavaFieldType());
+                    Object colVal = transformer.getColumnValue(rs, colIdx, fld.getJavaFieldType());
 
                     try {
                         prop.set(obj, colVal);
@@ -246,7 +247,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             for (JdbcTypeField field : fields) {
                 Integer colIdx = loadColIdxs.get(field.getDatabaseFieldName());
 
-                Object colVal = getColumnValue(rs, colIdx, field.getJavaFieldType());
+                Object colVal = transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
 
                 builder.setField(field.getJavaFieldName(), colVal, (Class<Object>)field.getJavaFieldType());
 

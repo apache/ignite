@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import java.nio.ByteBuffer;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -186,6 +185,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /** Hash calculator.  */
     protected JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
+
+    /** Types transformer. */
+    protected JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
 
     /**
      * Get field value from object for use as query parameter.
@@ -407,85 +409,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (log.isDebugEnabled())
                 log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
         }
-    }
-
-    /**
-     * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and
-     * will convert to the requested Java data type.
-     *
-     * @param rs Result set.
-     * @param colIdx Column index in result set.
-     * @param type Class representing the Java data type to convert the designated column to.
-     * @return Value in column.
-     * @throws SQLException If a database access error occurs or this method is called.
-     */
-    protected Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException {
-        Object val = rs.getObject(colIdx);
-
-        if (val == null)
-            return null;
-
-        if (type == int.class)
-            return rs.getInt(colIdx);
-
-        if (type == long.class)
-            return rs.getLong(colIdx);
-
-        if (type == double.class)
-            return rs.getDouble(colIdx);
-
-        if (type == boolean.class || type == Boolean.class)
-            return rs.getBoolean(colIdx);
-
-        if (type == byte.class)
-            return rs.getByte(colIdx);
-
-        if (type == short.class)
-            return rs.getShort(colIdx);
-
-        if (type == float.class)
-            return rs.getFloat(colIdx);
-
-        if (type == Integer.class || type == Long.class || type == Double.class ||
-            type == Byte.class || type == Short.class ||  type == Float.class) {
-            Number num = (Number)val;
-
-            if (type == Integer.class)
-                return num.intValue();
-            else if (type == Long.class)
-                return num.longValue();
-            else if (type == Double.class)
-                return num.doubleValue();
-            else if (type == Byte.class)
-                return num.byteValue();
-            else if (type == Short.class)
-                return num.shortValue();
-            else if (type == Float.class)
-                return num.floatValue();
-        }
-
-        if (type == UUID.class) {
-            if (val instanceof UUID)
-                return val;
-
-            if (val instanceof byte[]) {
-                ByteBuffer bb = ByteBuffer.wrap((byte[])val);
-
-                long most = bb.getLong();
-                long least = bb.getLong();
-
-                return new UUID(most, least);
-            }
-
-            if (val instanceof String)
-                return UUID.fromString((String)val);
-        }
-
-        // Workaround for known issue with Oracle JDBC driver https://community.oracle.com/thread/2355464?tstart=0
-        if (type == java.sql.Date.class && val instanceof java.util.Date)
-            return new java.sql.Date(((java.util.Date)val).getTime());
-
-        return val;
     }
 
     /**
@@ -1594,6 +1517,24 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      */
     public void setHasher(JdbcTypeHasher hasher) {
         this.hasher = hasher;
+    }
+
+    /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     */
+    public void setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
     }
 
     /**

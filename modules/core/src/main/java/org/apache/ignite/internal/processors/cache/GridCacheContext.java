@@ -245,6 +245,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private boolean deferredDel;
 
+    /** */
+    private boolean customAffMapper;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -362,6 +365,13 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+    }
+
+    /**
+     * @return {@code True} if custom {@link AffinityKeyMapper} is configured for cache.
+     */
+    public boolean customAffinityMapper() {
+        return customAffMapper;
     }
 
     /**
@@ -564,6 +574,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean isReplicated() {
         return cacheCfg.getCacheMode() == CacheMode.REPLICATED;
+    }
+
+    /**
+     * @return {@code True} if cache is partitioned cache.
+     */
+    public boolean isPartitioned() {
+        return cacheCfg.getCacheMode() == CacheMode.PARTITIONED;
     }
 
     /**
@@ -1132,6 +1149,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
         this.cacheObjCtx = cacheObjCtx;
+
+        customAffMapper = cacheCfg.getAffinityMapper().getClass() != cacheObjCtx.defaultAffMapper().getClass();
     }
 
     /**
@@ -1788,20 +1807,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return toCacheKeyObject(obj, false);
-    }
-
-    /**
-     * @param obj Object.
-     * @return Cache key object.
-     */
-    public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        if (includePartition)
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
-        else
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);
     }
 
     /**
@@ -1822,7 +1830,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
         Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, false);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, false);
     }
 
     /**
@@ -1970,21 +1978,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
-        return cacheKeysView(keys, false);
-    }
-
-    /**
-     * @param keys Keys.
-     * @param includePartition Include partition.
-     * @return Read-only collection of KeyCacheObject instances.
-     */
-    public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys, final boolean includePartition) {
         return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
             @Override public KeyCacheObject apply(Object key) {
                 if (key == null)
                     throw new NullPointerException("Null key.");
 
-                return toCacheKeyObject(key, includePartition);
+                return toCacheKeyObject(key);
             }
         });
     }

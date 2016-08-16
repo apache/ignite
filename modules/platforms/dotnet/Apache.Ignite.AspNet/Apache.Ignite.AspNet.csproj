@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="IgniteOutputCacheProvider.cs" />
     <Compile Include="IgniteWebUtils.cs" />
+    <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
@@ -123,12 +124,17 @@ namespace Apache.Ignite.Core.Impl
         /// Load JVM DLL if needed.
         /// </summary>
         /// <param name="configJvmDllPath">JVM DLL path from config.</param>
-        public static void LoadDlls(string configJvmDllPath)
+        /// <param name="log">Log.</param>
+        public static void LoadDlls(string configJvmDllPath, ILogger log)
         {
-            if (_loaded) return;
+            if (_loaded)
+            {
+                log.Debug("JNI dll is already loaded.");
+                return;
+            }
 
             // 1. Load JNI dll.
-            LoadJvmDll(configJvmDllPath);
+            LoadJvmDll(configJvmDllPath, log);
 
             // 2. Load GG JNI dll.
             UnmanagedUtils.Initialize();
@@ -189,17 +195,25 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Loads the JVM DLL.
         /// </summary>
-        private static void LoadJvmDll(string configJvmDllPath)
+        private static void LoadJvmDll(string configJvmDllPath, ILogger log)
         {
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
+                log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
+
                 var errCode = LoadDll(dllPath.Value, FileJvmDll);
                 if (errCode == 0)
+                {
+                    log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
+                }
 
-                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]", 
-                    dllPath.Key, dllPath.Value, FormatWin32Error(errCode)));
+                var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
+                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                messages.Add(message);
+
+                log.Debug("Failed to load jvm.dll: " + message);
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options
@@ -223,6 +237,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Formats the Win32 error.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         private static string FormatWin32Error(int errorCode)
         {
             if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)

@@ -42,7 +42,8 @@ public class ModelUtil {
         Identifier.class,
         Mark.class,
         Integer.class,
-        UUID.class
+        UUID.class,
+        String.class
     };
 
     /**
@@ -146,6 +147,9 @@ public class ModelUtil {
                 break;
             case "Person8":
                 res = new Person8(id);
+                break;
+            case "String":
+                res = String.valueOf(id);
         }
 
         return res;

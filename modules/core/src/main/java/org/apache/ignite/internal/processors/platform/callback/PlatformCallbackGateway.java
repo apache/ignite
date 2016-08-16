@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -942,6 +943,44 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Logs to the platform.
+     *
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Error info.
+     * @param memPtr Pointer to optional payload (serialized exception).
+     */
+    public void loggerLog(int level, String message, String category, String errorInfo, long memPtr) {
+        if (!tryEnter())
+            return;  // Do not lock for logger: this should work during shutdown
+
+        try {
+            PlatformCallbackUtils.loggerLog(envPtr, level, message, category, errorInfo, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Gets a value indicating whether native logger has specified level enabled.
+     *
+     * @param level Log level.
+     */
+    public boolean loggerIsLevelEnabled(int level) {
+        if (!tryEnter())
+            return false;  // Do not lock for logger: this should work during shutdown
+
+        try {
+            return PlatformCallbackUtils.loggerIsLevelEnabled(envPtr, level);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Kernal stop callback.
      */
     public void onStop() {
@@ -954,13 +993,14 @@ public class PlatformCallbackGateway {
      * Initializes affinity function.
      *
      * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    public long affinityFunctionInit(long memPtr) {
+    public long affinityFunctionInit(long memPtr, PlatformAffinityFunctionTarget baseFunc) {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr);
+            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr, baseFunc);
         }
         finally {
             leave();
@@ -1038,11 +1078,28 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Redirects the console output to platform.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    public static void consoleWrite(String str, boolean isErr) {
+        PlatformCallbackUtils.consoleWrite(str, isErr);
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
         if (!lock.enterBusy())
             throw new IgniteException("Failed to execute native callback because grid is stopping.");
+    }
+
+    /**
+     * Enter gateway.
+     */
+    protected boolean tryEnter() {
+        return lock.enterBusy();
     }
 
     /**

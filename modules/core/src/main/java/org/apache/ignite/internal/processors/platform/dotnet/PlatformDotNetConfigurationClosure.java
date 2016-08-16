@@ -31,6 +31,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -89,7 +90,15 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr);
+        PlatformLogger userLogger = null;
+
+        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
+            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
+            userLogger.setGateway(gate);
+        }
+
+        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
+            userLogger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -197,8 +206,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 writer.writeInt(affFuncs.size());
 
-                for (PlatformDotNetAffinityFunction func : affFuncs)
-                    func.write(writer);
+                for (PlatformDotNetAffinityFunction func : affFuncs) {
+                    writer.writeString(func.getTypeName());
+                    writer.writeMap(func.getProperties());
+                }
 
                 out.synchronize();
 
@@ -258,7 +269,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         if (!affFuncs.isEmpty()) {
             for (PlatformDotNetAffinityFunction aff : affFuncs)
-                aff.initPartitions(in.readInt());
+                aff.init(PlatformConfigurationUtils.readAffinityFunction(in));
         }
     }
 

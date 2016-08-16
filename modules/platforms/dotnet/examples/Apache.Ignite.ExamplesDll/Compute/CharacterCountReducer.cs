@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Compute;
-
 namespace Apache.Ignite.ExamplesDll.Compute
 {
+    using Apache.Ignite.Core.Compute;
+
     /// <summary>
     /// Character count reducer which collects individual string lengths and aggregate them.
     /// </summary>

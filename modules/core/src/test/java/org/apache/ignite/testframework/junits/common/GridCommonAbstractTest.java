@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -47,6 +48,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -161,12 +163,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+    protected static <K, V> GridCacheAdapter<K, V> internalCache0(IgniteCache<K, V> cache) {
         if (isMultiJvmObject(cache))
-            throw new UnsupportedOperationException("Oparetion can't be supported automatically for multi jvm " +
+            throw new UnsupportedOperationException("Operation can't be supported automatically for multi jvm " +
                 "(send closure instead).");
 
         return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+        return internalCache0(cache);
     }
 
     /**
@@ -521,7 +531,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
 
-                                Thread.sleep(200); // Busy wait.
+                                Thread.sleep(20); // Busy wait.
 
                                 continue;
                             }
@@ -1138,7 +1148,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Result of closure execution.
      * @throws Exception If failed.
      */
-    protected <T> T doInTransaction(Ignite ignite,
+    protected static <T> T doInTransaction(Ignite ignite,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         Callable<T> clo) throws Exception {
@@ -1168,5 +1178,40 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 // Safe to retry right away.
             }
         }
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param key Counter.
+     * @param node Target node.
+     * @return Key.
+     */
+    protected final Integer keyForNode(Affinity<Object> aff, AtomicInteger key, ClusterNode node) {
+        for (int i = 0; i < 100_000; i++) {
+            Integer next = key.getAndIncrement();
+
+            if (aff.mapKeyToNode(next).equals(node))
+                return next;
+        }
+
+        fail("Failed to find key for node: " + node);
+
+        return null;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     * @return Query plan.
+     */
+    protected final String queryPlan(IgniteCache<?, ?> cache, SqlFieldsQuery qry) {
+        return (String)cache.query(new SqlFieldsQuery("explain " + qry.getSql())
+            .setArgs(qry.getArgs())
+            .setLocal(qry.isLocal())
+            .setCollocated(qry.isCollocated())
+            .setPageSize(qry.getPageSize())
+            .setDistributedJoins(qry.isDistributedJoins())
+            .setEnforceJoinOrder(qry.isEnforceJoinOrder()))
+            .getAll().get(0).get(0);
     }
 }

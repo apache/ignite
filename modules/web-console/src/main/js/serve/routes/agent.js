@@ -53,26 +53,26 @@ module.exports.factory = function(_, express, fs, JSZip, settings, agentMgr) {
                 if (errFs)
                     return res.download(agentPathZip, agentZip);
 
-                const zip = new JSZip(data);
-
-                const prop = [];
-
-                const host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
-
-                prop.push('tokens=' + req.user.token);
-                prop.push('server-uri=' + (settings.agent.SSLOptions ? 'https' : 'http') + '://' + host + ':' + settings.agent.port);
-                prop.push('#Uncomment following options if needed:');
-                prop.push('#node-uri=http://localhost:8080');
-                prop.push('#driver-folder=./jdbc-drivers');
-
-                zip.file(agentFld + '/default.properties', prop.join('\n'));
-
-                const buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
-
                 // Set the archive name.
                 res.attachment(agentZip);
 
-                res.send(buffer);
+                JSZip.loadAsync(data)
+                    .then((zip) => {
+                        const prop = [];
+
+                        const host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
+
+                        prop.push('tokens=' + req.user.token);
+                        prop.push('server-uri=' + (settings.agent.SSLOptions ? 'https' : 'http') + '://' + host + ':' + settings.agent.port);
+                        prop.push('#Uncomment following options if needed:');
+                        prop.push('#node-uri=http://localhost:8080');
+                        prop.push('#driver-folder=./jdbc-drivers');
+
+                        zip.file(agentFld + '/default.properties', prop.join('\n'));
+
+                        zip.generateAsync({type: 'nodebuffer', platform: 'UNIX'})
+                            .then((buffer) => res.send(buffer));
+                    });
             });
         });
 

@@ -254,11 +254,11 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 
-                    sizeTmp = res.GetLength() + 8;
+                    sizeTmp = res.GetMagnitudeLength() + 8;
 
                     break;
                 }
@@ -437,7 +437,7 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 

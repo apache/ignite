@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
@@ -517,6 +516,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        if (binaryCtx == null)
+            return null;
+
+        return binaryCtx.affinityKeyFieldName(typeId(keyType));
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
@@ -667,7 +674,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public Object affinityKey(BinaryObject po) {
         try {
-            BinaryType meta = po.type();
+            BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
@@ -729,6 +736,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
+            cfg.getName(),
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             binaryEnabled,
@@ -761,37 +769,38 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        return toCacheKeyObject(ctx, obj, userObj, -1);
-    }
-
-    /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(
         CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
         Object obj,
-        boolean userObj,
-        int partition
+        boolean userObj
     ) {
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
-            return super.toCacheKeyObject(ctx, obj, userObj, partition);
+            return super.toCacheKeyObject(ctx, cctx, obj, userObj);
 
         if (obj instanceof KeyCacheObject) {
-            ((KeyCacheObject)obj).partition(partition);
+            KeyCacheObject key = (KeyCacheObject)obj;
+
+            if (key instanceof BinaryObjectImpl) {
+                // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
+                key = key.copy(partition(ctx, cctx, key));
+            }
+            else if (key.partition() == -1)
+                // Assume others KeyCacheObjects can not be reused for another cache.
+                key.partition(partition(ctx, cctx, key));
+
+            return key;
+        }
+
+        obj = toBinary(obj);
+
+        if (obj instanceof BinaryObjectImpl) {
+            ((BinaryObjectImpl)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
         }
 
-        if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
-            obj = toBinary(obj);
-
-            if (obj instanceof KeyCacheObject) {
-                ((KeyCacheObject)obj).partition(partition);
-
-                return (KeyCacheObject)obj;
-            }
-        }
-
-        return toCacheKeyObject0(obj, userObj, partition);
+        return toCacheKeyObject0(ctx, cctx, obj, userObj);
     }
 
     /** {@inheritDoc} */

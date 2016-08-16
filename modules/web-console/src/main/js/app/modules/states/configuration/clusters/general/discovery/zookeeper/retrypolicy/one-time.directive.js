@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './one-time.jade!';
+import templateUrl from './one-time.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryZookeeperOneTime', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

@@ -21,9 +21,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -43,6 +45,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
         /** */
         private const string CacheName = "cache";
+
+        /** */
+        private const string CacheNameFair = "cacheFair";
+
+        /** */
+        private const string CacheNameRendezvous = "cacheRendezvous";
 
         /** */
         private const int PartitionCount = 10;
@@ -68,6 +76,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     {
                         AffinityFunction = new SimpleAffinityFunction(),
                         Backups = 7
+                    },
+                    new CacheConfiguration(CacheNameFair)
+                    {
+                        AffinityFunction = new FairAffinityFunctionEx {Foo = 25}
+                    },
+                    new CacheConfiguration(CacheNameRendezvous)
+                    {
+                        AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
                     }
                 }
             };
@@ -84,8 +100,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void FixtureTearDown()
         {
             // Check that affinity handles are present
-            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count, 0);
-            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 1, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 1, 0);
 
             // Destroy all caches
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
@@ -184,6 +200,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             // Called on both nodes
             TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
+            Assert.GreaterOrEqual(RemovedNodes.Count, 6);
             Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
         }
 
@@ -218,22 +235,94 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests user-defined function that inherits predefined function.
+        /// Tests customized fair affinity.
         /// </summary>
         [Test]
-        public void TestInheritPredefinedFunction()
+        public void TestInheritFairAffinity()
         {
-            var ex = Assert.Throws<IgniteException>(() =>
-                _ignite.CreateCache<int, int>(
-                    new CacheConfiguration("failCache3")
-                    {
-                        AffinityFunction = new FairAffinityFunctionInheritor()
-                    }));
+            Assert.Greater(FairAffinityFunctionEx.AssignCount, 2);
 
-            Assert.AreEqual("User-defined AffinityFunction can not inherit from " +
-                            "Apache.Ignite.Core.Cache.Affinity.AffinityFunctionBase: " +
-                            "Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionTest" +
-                            "+FairAffinityFunctionInheritor", ex.Message);
+            var caches = new[]
+            {
+                _ignite.GetCache<int, int>(CacheNameFair),
+                _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameFair + "2")
+                {
+                    AffinityFunction = new FairAffinityFunctionEx {Foo = 25}
+                })
+            };
+
+            foreach (var cache in caches)
+            {
+                var aff = _ignite.GetAffinity(cache.Name);
+
+                Assert.AreEqual(PartitionCount, aff.Partitions);
+
+                // Test from map
+                Assert.AreEqual(2, aff.GetPartition(1));
+                Assert.AreEqual(3, aff.GetPartition(2));
+
+                // Test from base func
+                Assert.AreEqual(6, aff.GetPartition(33));
+
+                // Check config
+                var func = (FairAffinityFunctionEx) cache.GetConfiguration().AffinityFunction;
+                Assert.AreEqual(25, func.Foo);
+            }
+        }
+
+        /// <summary>
+        /// Tests customized rendezvous affinity.
+        /// </summary>
+        [Test]
+        public void TestInheritRendezvousAffinity()
+        {
+            Assert.Greater(RendezvousAffinityFunctionEx.AssignCount, 2);
+
+            var caches = new[]
+            {
+                _ignite.GetCache<int, int>(CacheNameRendezvous),
+                _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameRendezvous + "2")
+                {
+                    AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
+                })
+            };
+
+            foreach (var cache in caches)
+            {
+                var aff = _ignite.GetAffinity(cache.Name);
+
+                Assert.AreEqual(PartitionCount, aff.Partitions);
+
+                // Test from map
+                Assert.AreEqual(3, aff.GetPartition(1));
+                Assert.AreEqual(4, aff.GetPartition(2));
+
+                // Test from base func
+                Assert.AreEqual(2, aff.GetPartition(42));
+
+                // Check config
+                var func = (RendezvousAffinityFunctionEx)cache.GetConfiguration().AffinityFunction;
+                Assert.AreEqual("test", func.Bar);
+            }
+        }
+
+        /// <summary>
+        /// Tests the AffinityFunction with simple inheritance: none of the methods are overridden,
+        /// so there are no callbacks, and user object is not passed over the wire.
+        /// </summary>
+        [Test]
+        public void TestSimpleInheritance()
+        {
+           var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("simpleInherit")
+            {
+                AffinityFunction = new SimpleOverride()
+            });
+
+            var aff = _ignite.GetAffinity(cache.Name);
+
+            Assert.AreEqual(PartitionCount, aff.Partitions);
+            Assert.AreEqual(6, aff.GetPartition(33));
+            Assert.AreEqual(4, aff.GetPartition(34));
         }
 
         [Serializable]
@@ -300,9 +389,97 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         [Serializable]
-        private class FairAffinityFunctionInheritor : FairAffinityFunction
+        private class FairAffinityFunctionEx : FairAffinityFunction
         {
-            // No-op.
+            public static int AssignCount;
+
+            private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 2}, {2, 3}};
+
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { Assert.AreEqual(Partitions, value); }
+            }
+
+            public int Foo { get; set; }
+
+            public override int GetPartition(object key)
+            {
+                int res;
+
+                if (PartitionMap.TryGetValue((int)key, out res))
+                    return res;
+
+                return base.GetPartition(key);
+            }
+
+            public override void RemoveNode(Guid nodeId)
+            {
+                RemovedNodes.Add(nodeId);
+            }
+
+            public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+            {
+                var res = base.AssignPartitions(context).Reverse();
+
+                Interlocked.Increment(ref AssignCount);
+
+                return res;
+            }
+        }
+
+        [Serializable]
+        private class RendezvousAffinityFunctionEx : RendezvousAffinityFunction
+        {
+            public static int AssignCount;
+
+            private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 3}, {2, 4}};
+
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { Assert.AreEqual(Partitions, value); }
+            }
+
+            public string Bar { get; set; }
+
+            public override int GetPartition(object key)
+            {
+                int res;
+
+                if (PartitionMap.TryGetValue((int)key, out res))
+                    return res;
+
+                return base.GetPartition(key);
+            }
+
+            public override void RemoveNode(Guid nodeId)
+            {
+                RemovedNodes.Add(nodeId);
+            }
+
+            public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+            {
+                var res = base.AssignPartitions(context).Reverse();
+
+                Interlocked.Increment(ref AssignCount);
+
+                return res;
+            }
+        }
+
+        /// <summary>
+        /// Override only properties, so this func won't be passed over the wire.
+        /// </summary>
+        private class SimpleOverride : FairAffinityFunction
+        {
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { throw new NotSupportedException(); }
+            }
+
+            public override bool ExcludeNeighbors { get; set; }
         }
     }
 }

@@ -1024,4 +1024,12 @@ public class VisorTaskUtils {
 
         return bos.toByteArray();
     }
+
+    /**
+     * @param msg Exception message.
+     * @return {@code true} if node failed to join grid.
+     */
+    public static boolean joinTimedOut(String msg) {
+        return msg != null && msg.startsWith("Join process timed out.");
+    }
 }

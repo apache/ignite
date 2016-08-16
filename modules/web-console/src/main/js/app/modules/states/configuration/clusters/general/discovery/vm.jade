@@ -37,7 +37,7 @@ include ../../../../../../../app/helpers/jade/mixins.jade
                 li Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)
             | If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)#[br]
             | If port range is provided (e.g. host:port1..port2) the following should be considered:
-            ul: li port1 < port2 should be true
+            ul: li port1 &lt; port2 should be true
                 li Both port1 and port2 should be greater than 0
         ignite-form-group-add(ng-click='group.add = [{}]')
             | Add new address
