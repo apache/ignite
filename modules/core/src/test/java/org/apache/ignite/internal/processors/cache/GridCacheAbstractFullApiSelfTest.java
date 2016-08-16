@@ -4426,41 +4426,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorLeakOnCancelCursor() throws Exception {
-        IgniteCache<String, Integer> cache = jcache(0);
-
-        final int SIZE = 10_000;
-
-        Map<String, Integer> putMap = new HashMap<>();
-
-        for (int i = 0; i < SIZE; ++i) {
-            String key = Integer.toString(i);
-
-            putMap.put(key, i);
-
-            if (putMap.size() == 500) {
-                cache.putAll(putMap);
-
-                info("Puts finished: " + (i + 1));
-
-                putMap.clear();
-            }
-        }
-
-        cache.putAll(putMap);
-
-        QueryCursor<Cache.Entry<String, Integer>> cur = cache.query(new ScanQuery<String, Integer>());
-
-        cur.iterator().next();
-
-        cur.close();
-
-        waitForIteratorsCleared(cache, 10);
-    }
-
-    /**
      * If hasNext() is called repeatedly, it should return the same result.
      */
     private void checkIteratorHasNext() {
@@ -4569,31 +4534,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Checks iterators are cleared.
-     */
-    private void waitForIteratorsCleared(IgniteCache<String, Integer> cache, int secs) throws InterruptedException {
-        for (int i = 0; i < secs; i++) {
-            try {
-                cache.size(); // Trigger weak queue poll.
-
-                checkIteratorsCleared();
-            }
-            catch (AssertionFailedError e) {
-                if (i == 9) {
-                    for (int j = 0; j < gridCount(); j++)
-                        executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
-
-                    throw e;
-                }
-
-                log.info("Iterators not cleared, will wait");
-
-                Thread.sleep(1000);
-            }
-        }
-    }
-
-    /**
      * Checks iterators are cleared after using.
      *
      * @param cache Cache.
@@ -4612,7 +4552,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         System.gc();
 
-        waitForIteratorsCleared(cache, 10);
+        for (int i = 0; i < 10; i++) {
+            try {
+                cache.size(); // Trigger weak queue poll.
+
+                checkIteratorsCleared();
+            }
+            catch (AssertionFailedError e) {
+                if (i == 9)
+                    throw e;
+
+                log.info("Set iterators not cleared, will wait");
+
+                Thread.sleep(1000);
+            }
+        }
     }
 
     /**
