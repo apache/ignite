@@ -171,16 +171,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOutException()
         {
-            try
-            {
-                Grid1.GetCompute().Broadcast(Func(true), 1);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Broadcast(Func(true), 1)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().BroadcastAsync(Func(true), 1).Wait()));
         }
 
         /// <summary>
@@ -189,9 +181,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApply()
         {
-            object res = Grid1.GetCompute().Apply(Func(false), 1);
-
-            CheckResult(res);
+            CheckResult(Grid1.GetCompute().Apply(Func(false), 1));
+            CheckResult(Grid1.GetCompute().ApplyAsync(Func(false), 1).Result);
         }
 
         /// <summary>
@@ -200,16 +191,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyException()
         {
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), 1);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), 1)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), 1).Wait()));
         }
 
         /// <summary>
