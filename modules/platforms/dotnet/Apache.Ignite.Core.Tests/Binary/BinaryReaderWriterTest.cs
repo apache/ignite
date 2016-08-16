@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -41,7 +42,32 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteInt("int", 1);
+                writer.WriteByte("Byte", 1);
+                writer.WriteByteArray("ByteArray", new byte[] { 1});
+                writer.WriteChar("Char", '1');
+                writer.WriteCharArray("CharArray", new[] { '1' });
+                writer.WriteShort("Short", 1);
+                writer.WriteShortArray("ShortArray", new short[] {1});
+                writer.WriteInt("Int", 1);
+                writer.WriteIntArray("IntArray", new[] {1});
+                writer.WriteLong("Long", 1);
+                writer.WriteLongArray("LongArray", new long[] { 1 });
+                writer.WriteBoolean("Boolean", true);
+                writer.WriteBooleanArray("BooleanArray", new [] {true});
+                writer.WriteFloat("Float", 1);
+                writer.WriteFloatArray("FloatArray", new float[] {1});
+                writer.WriteDouble("Double", 1);
+                writer.WriteDoubleArray("DoubleArray", new double[] {1});
+                writer.WriteDecimal("Decimal", 1);
+                writer.WriteDecimalArray("DecimalArray", new decimal?[] {1});
+                writer.WriteTimestamp("Timestamp", DateTime.UtcNow);
+                writer.WriteTimestampArray("TimestampArray", new DateTime?[] {DateTime.UtcNow});
+                writer.WriteString("String", "1");
+                writer.WriteStringArray("StringArray", new[] {"1"});
+                writer.WriteGuid("Guid", Guid.Empty);
+                writer.WriteGuidArray("GuidArray", new Guid?[] {Guid.Empty});
+                writer.WriteEnum("Enum", 1);
+                writer.WriteEnumArray("EnumArray", new[] {1});
             }
 
             public void ReadBinary(IBinaryReader reader)
