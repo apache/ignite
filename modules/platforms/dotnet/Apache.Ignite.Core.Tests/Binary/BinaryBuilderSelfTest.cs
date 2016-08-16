@@ -1635,9 +1635,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             foreach (var binEnum in binEnums)
             {
                 Assert.IsTrue(binEnum.GetBinaryType().IsEnum);
+
                 Assert.AreEqual(val, binEnum.EnumValue);
-                Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
+
+                Assert.AreEqual((TestEnumRegistered) val, binEnum.Deserialize<TestEnumRegistered>());
             }
+
+            Assert.AreEqual(binEnums[0], binEnums[1]);
         }
 
         /// <summary>
