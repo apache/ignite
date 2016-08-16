@@ -207,16 +207,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleReducer()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            ICollection<object> ress =
-                Grid1.GetCompute().Apply(Func(false), args, new Reducer(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Apply(Func(false), args, new Reducer(false)).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().ApplyAsync(Func(false), args, new Reducer(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>

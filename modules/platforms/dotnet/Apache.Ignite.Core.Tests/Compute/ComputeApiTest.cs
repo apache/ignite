@@ -1013,9 +1013,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestBroadcastAction()
         {
             var id = Guid.NewGuid();
-            
             _grid1.GetCompute().Broadcast(new ComputeAction(id));
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().BroadcastAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
@@ -1026,9 +1028,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunAction()
         {
             var id = Guid.NewGuid();
-
             _grid1.GetCompute().Run(new ComputeAction(id));
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
