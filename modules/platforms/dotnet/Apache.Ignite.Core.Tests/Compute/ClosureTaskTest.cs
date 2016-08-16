@@ -90,21 +90,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleException()
         {
-            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
+            // Some closures will be faulty.
+            var clos = Enumerable.Range(0, MultiCloCnt).Select(x => OutFunc(x % 2 == 0)).ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                clos.Add(OutFunc(i % 2 == 0)); // Some closures will be faulty.
-
-            try
-            {
-                Grid1.GetCompute().Call(clos);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Call(clos)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().CallAsync(clos).Wait()));
         }
 
         /// <summary>
