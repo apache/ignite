@@ -1152,10 +1152,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNetTaskSimple()
         {
-            int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
-                    typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res);
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .ExecuteAsync<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Result.Res);
 
             Assert.AreEqual(4, _grid1.GetCompute().Execute(new NetSimpleTask(), new NetSimpleJobArgument(2)).Res);
 
