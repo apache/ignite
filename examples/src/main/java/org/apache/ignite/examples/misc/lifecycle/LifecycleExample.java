@@ -18,16 +18,12 @@
 package org.apache.ignite.examples.misc.lifecycle;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
@@ -52,6 +48,7 @@ public final class LifecycleExample {
 
         // Create new configuration.
         IgniteConfiguration cfg = new IgniteConfiguration();
+
         LifecycleExampleBean bean = new LifecycleExampleBean();
 
         // Provide lifecycle bean to configuration.
@@ -60,12 +57,6 @@ public final class LifecycleExample {
         try (Ignite ignite  = Ignition.start(cfg)) {
             // Make sure that lifecycle bean was notified about ignite startup.
             assert bean.isStarted();
-
-            IgniteCluster cluster = ignite.cluster();
-            ConcurrentMap map = cluster.nodeLocalMap();
-            for (Object key: map.keySet()) {
-                System.out.println("LifecycleBean: key=" + key + ", eventCounter=" + map.get(key));
-            }
         }
 
         // Make sure that lifecycle bean was notified about ignite stop.
@@ -88,11 +79,6 @@ public final class LifecycleExample {
             System.out.println();
             System.out.println(">>> Lifecycle event occurred: " + evt);
             System.out.println(">>> Ignite name: " + ignite.name());
-
-            IgniteCluster cluster = ignite.cluster();
-            ConcurrentMap map = cluster.nodeLocalMap();
-            Integer val = (Integer)map.getOrDefault(evt, 0);
-            map.put(evt, val + 1); // event counter
 
             if (evt == AFTER_NODE_START)
                 isStarted = true;
