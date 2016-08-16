@@ -30,12 +30,12 @@ public class RendezvousAffinityFunctionSelfTest extends AbstractAffinityFunction
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
