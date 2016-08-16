@@ -103,10 +103,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOut()
         {
-            ICollection<object> ress = Grid1.GetCompute().Broadcast(OutFunc(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Broadcast(OutFunc(false)).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().BroadcastAsync(OutFunc(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -115,16 +113,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOutException()
         {
-            try
-            {
-                Grid1.GetCompute().Broadcast(OutFunc(true));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Broadcast(OutFunc(true))));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().BroadcastAsync(OutFunc(true)).Wait()));
         }
 
         /// <summary>
@@ -133,10 +123,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOut()
         {
-            ICollection<object> ress = Grid1.GetCompute().Broadcast(Func(false), 1);
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Broadcast(Func(false), 1).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().BroadcastAsync(Func(false), 1).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
