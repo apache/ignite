@@ -2692,7 +2692,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void cancelAllQueries() {
         for (Connection conn : conns)
-            U.close(conn, log);;
+            U.close(conn, log);
     }
 
     /** {@inheritDoc} */
