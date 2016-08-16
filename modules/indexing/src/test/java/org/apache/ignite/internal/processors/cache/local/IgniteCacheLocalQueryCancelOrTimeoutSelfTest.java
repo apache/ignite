@@ -80,6 +80,8 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         stopAllGrids();
     }
 
