@@ -66,7 +66,7 @@ public class GridQueryRequest implements Message {
     @GridToStringInclude
     private int[] parts;
 
-    /** Timeout in millis. */
+    /** */
     private int timeout;
 
     /**

@@ -84,7 +84,7 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param filters Space name and key filters.
-     * @param timeout Query timeout in millis
+     * @param timeout Query timeout in milliseconds.
      * @param cancel Cancellation closure.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
@@ -241,9 +241,9 @@ public interface GridQueryIndexing {
     public void cancelAllQueries();
 
     /**
-     * Returns query metadata
-     * @param space space
-     * @param sql sql.
+     * Returns query metadata.
+     * @param space Space.
+     * @param sql SQL query.
      * @return list of field metadata.
      */
     public List<GridQueryFieldMetadata> meta(String space, String sql);

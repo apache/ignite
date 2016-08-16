@@ -831,7 +831,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, sql, false);
+            stmt = prepareStatement(conn, sql, useStmtCache);
 
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);

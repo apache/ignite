@@ -946,7 +946,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final String sql = qry.getSql();
                     final Object[] args = qry.getArgs();
 
-                    List<GridQueryFieldMetadata>  meta = idx.meta(space, sql);
+                    List<GridQueryFieldMetadata> meta = idx.meta(space, sql);
 
                     final AtomicReference<GridAbsClosure> cancel = new AtomicReference<>();
 
