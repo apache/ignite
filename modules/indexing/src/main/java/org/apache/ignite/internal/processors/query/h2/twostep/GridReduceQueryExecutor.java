@@ -183,22 +183,21 @@ public class GridReduceQueryExecutor {
             }
         });
 
-//        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-//            @Override
-//            public void onEvent(final Event evt) {
-//                UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
-//
-//                for (QueryRun r : runs.values()) {
-//                    for (GridMergeIndex idx : r.idxs) {
-//                        if (idx.hasSource(nodeId)) {
-//                            handleNodeLeft(r, nodeId);
-//
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
+
+                for (QueryRun r : runs.values()) {
+                    for (GridMergeIndex idx : r.idxs) {
+                        if (idx.hasSource(nodeId)) {
+                            handleNodeLeft(r, nodeId);
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /**
