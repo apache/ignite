@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -28,7 +26,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -1164,85 +1161,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     }
 
     /**
-     * Ensure that prefetch occurs in case several blocks are read sequentially.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void testOpenPrefetch() throws Exception {
-        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
-
-        // Write enough data to the secondary file system.
-        int blockSize0 = igfs.info(FILE).blockSize();
-        final int blockSize = blockSize0 != 0 ? blockSize0 : 8 * 1024;
-
-        int totalWritten = 0;
-        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
-            while (totalWritten < blockSize * 2 + chunk.length) {
-                out.write(chunk);
-
-                totalWritten += chunk.length;
-            }
-        }
-
-        if (propertiesSupported())
-            awaitFileClose(igfsSecondaryFileSystem, FILE);
-        else
-            Thread.sleep(1000);
-
-        // Read the first two blocks.
-        int totalRead = 0;
-
-        IgfsInputStream in = igfs.open(FILE, blockSize);
-
-        final byte[] readBuf = new byte[1024];
-
-        while (totalRead + readBuf.length <= blockSize * 2) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Wait for a while for prefetch to finish.
-        IgfsMetaManager meta = igfs.context().meta();
-
-        IgfsEntryInfo info = meta.info(meta.fileId(FILE));
-
-        assert info != null;
-
-        IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
-
-        IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
-            igfs.configuration().getDataCacheName());
-
-        for (int i = 0; i < 10; i++) {
-            if (dataCache.containsKey(key))
-                break;
-            else
-                U.sleep(100);
-        }
-
-        // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE.toString(), false);
-
-        // Let's wait for file will be deleted.
-        U.sleep(300);
-
-        // Read the third block.
-        totalRead = 0;
-
-        in.seek(blockSize * 2);
-
-        while (totalRead + readBuf.length <= blockSize) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        in.close();
-    }
-
-    /**
      * Test create when parent directory is partially missing locally.
      *
      * @throws Exception If failed.
@@ -1251,7 +1169,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        createFile(igfs.asSecondary(), FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
@@ -1287,7 +1205,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfs.asSecondary(), FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk);
