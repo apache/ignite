@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <repositories>
@@ -66,6 +66,12 @@
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>
             <version>${javax.cache.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>${jetbrains.annotations.version}</version>
         </dependency>
 
         <dependency>

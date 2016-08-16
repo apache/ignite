@@ -24,6 +24,8 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -677,6 +679,69 @@
         {
             get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
             set { _isLateAffinityAssignment = value; }
+        }
+
+        /// <summary>
+        /// Serializes this instance to the specified XML writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        public void ToXml(XmlWriter writer, string rootElementName)
+        {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
+
+            IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
+        }
+
+        /// <summary>
+        /// Serializes this instance to an XML string.
+        /// </summary>
+        public string ToXml()
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                ToXml(xmlWriter, "igniteConfiguration");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteConfiguration FromXml(XmlReader reader)
+        {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
+            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteConfiguration FromXml(string xml)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return FromXml(xmlReader);
+            }
         }
     }
 }

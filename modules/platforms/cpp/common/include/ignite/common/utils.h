@@ -179,6 +179,24 @@ namespace ignite
 
             return res;
         }
+
+        /**
+         * Check if the predicate returns true for all the elements of the
+         * sequence.
+         *
+         * @return True if the predicate returns true for all the elements
+         *     of the sequence and false otherwise.
+         */
+        template<typename Iter, typename Pred>
+        bool AllOf(Iter begin, Iter end, Pred pred)
+        {
+            Iter i = begin;
+
+            while (i != end && pred(*i))
+                ++i;
+
+            return i == end;
+        }
     }
 }
 

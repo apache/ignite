@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.spring;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCache;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
@@ -25,6 +26,9 @@ import org.springframework.cache.support.SimpleValueWrapper;
  * Spring cache implementation.
  */
 class SpringCache implements Cache {
+    /** */
+    private static final Object NULL = new NullValue();
+
     /** */
     private final IgniteCache<Object, Object> cache;
 
@@ -51,13 +55,16 @@ class SpringCache implements Cache {
     @Override public ValueWrapper get(Object key) {
         Object val = cache.get(key);
 
-        return val != null ? new SimpleValueWrapper(val) : null;
+        return val != null ? fromValue(val) : null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Class<T> type) {
         Object val = cache.get(key);
+
+        if (NULL.equals(val))
+            val = null;
 
         if (val != null && type != null && !type.isInstance(val))
             throw new IllegalStateException("Cached value is not of required type [cacheName=" + cache.getName() +
@@ -68,14 +75,22 @@ class SpringCache implements Cache {
 
     /** {@inheritDoc} */
     @Override public void put(Object key, Object val) {
-        cache.put(key, val);
+        if (val == null)
+            cache.withSkipStore().put(key, NULL);
+        else
+            cache.put(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public ValueWrapper putIfAbsent(Object key, Object val) {
-        Object old = cache.putIfAbsent(key, val);
+        Object old;
 
-        return old != null ? new SimpleValueWrapper(old) : null;
+        if (val == null)
+            old = cache.withSkipStore().putIfAbsent(key, NULL);
+        else
+            old = cache.putIfAbsent(key, val);
+
+        return old != null ? fromValue(old) : null;
     }
 
     /** {@inheritDoc} */
@@ -86,5 +101,24 @@ class SpringCache implements Cache {
     /** {@inheritDoc} */
     @Override public void clear() {
         cache.removeAll();
+    }
+
+    /**
+     * @param val Cache value.
+     * @return Wrapped value.
+     */
+    private static ValueWrapper fromValue(Object val) {
+        assert val != null;
+
+        return new SimpleValueWrapper(NULL.equals(val) ? null : val);
+    }
+
+    /**
+     */
+    private static class NullValue implements Serializable {
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || (o != null && getClass() == o.getClass());
+        }
     }
 }

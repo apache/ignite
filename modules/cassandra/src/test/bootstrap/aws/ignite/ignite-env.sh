@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,6 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+# -----------------------------------------------------------------------------------------------
+# Environment setup script from Ignite
+# -----------------------------------------------------------------------------------------------
 
 JVM_OPTS="-Xms10g -Xmx10g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
 JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
