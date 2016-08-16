@@ -606,7 +606,7 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if ( err.getMessage().contains("The query was cancelled while executing"))
+                            if (err.getMessage().contains("The query was cancelled while executing"))
                                 throw new CacheException(new GridH2QueryCancelledException()); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely.", err);
