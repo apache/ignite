@@ -5565,8 +5565,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!notInjected.isEmpty())
                 assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
 
-            CacheEvent evt;
-
             Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(), UUID.randomUUID().toString(),
                 UUID.randomUUID().toString()));
