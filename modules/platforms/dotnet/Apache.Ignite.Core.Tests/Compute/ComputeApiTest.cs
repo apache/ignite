@@ -1401,6 +1401,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         int IComputeFunc<int>.Invoke()
         {
+            Thread.Sleep(10);
             InvokeCount++;
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
             return InvokeCount;
