@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,45 +15,39 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Log
 {
+    using System;
+
     /// <summary>
-    /// Object handle. Wraps a single value.
+    /// Defines log levels.
     /// </summary>
-    internal class BinaryObjectHandle
+    [Serializable]
+    public enum LogLevel
     {
-        /** Value. */
-        private readonly object _val;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryObjectHandle"/> class.
+        /// Trace log level.
         /// </summary>
-        /// <param name="val">The value.</param>
-        public BinaryObjectHandle(object val)
-        {
-            _val = val;
-        }
-
+        Trace = 0,
+        
         /// <summary>
-        /// Gets the value.
+        /// Debug log level.
         /// </summary>
-        public object Value
-        {
-            get { return _val; }
-        }
-
-        /** <inheritdoc /> */
-        public override bool Equals(object obj)
-        {
-            var that = obj as BinaryObjectHandle;
-
-            return that != null && _val == that._val;
-        }
-
-        /** <inheritdoc /> */
-        public override int GetHashCode()
-        {
-            return _val != null ? _val.GetHashCode() : 0;
-        }
+        Debug = 1,
+        
+        /// <summary>
+        /// Info log level.
+        /// </summary>
+        Info = 2,
+        
+        /// <summary>
+        /// Warning log level.
+        /// </summary>
+        Warn = 3,
+        
+        /// <summary>
+        /// Error log level.
+        /// </summary>
+        Error = 4
     }
 }
