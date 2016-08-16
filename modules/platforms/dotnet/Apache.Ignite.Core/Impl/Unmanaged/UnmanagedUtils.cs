@@ -77,11 +77,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #region NATIVE METHODS: PROCESSOR
 
         internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
-            bool clientMode)
+            bool clientMode, bool userLogger)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
             {
                 mem.WriteBool(clientMode);
+                mem.WriteBool(userLogger);
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
                 sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
@@ -375,6 +376,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
         {
             JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
+        }
+
+        internal static bool ProcessorLoggerIsLevelEnabled(IUnmanagedTarget target, int level)
+        {
+            return JNI.ProcessorLoggerIsLevelEnabled(target.Context, target.Target, level);
+        }
+
+        internal static void ProcessorLoggerLog(IUnmanagedTarget target, int level, string message, string category, 
+            string errorInfo)
+        {
+            var message0 = IgniteUtils.StringToUtf8Unmanaged(message);
+            var category0 = IgniteUtils.StringToUtf8Unmanaged(category);
+            var errorInfo0 = IgniteUtils.StringToUtf8Unmanaged(errorInfo);
+
+            try
+            {
+                JNI.ProcessorLoggerLog(target.Context, target.Target, level, message0, category0, errorInfo0);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(message0));
+                Marshal.FreeHGlobal(new IntPtr(category0));
+                Marshal.FreeHGlobal(new IntPtr(errorInfo0));
+            }
         }
 
         #endregion
