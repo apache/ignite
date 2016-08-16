@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public abstract class ClosureTaskTest : AbstractTaskTest
     {
-        /** Amount of multiple clousres. */
+        /** Amount of multiple closures. */
         private const int MultiCloCnt = 5;
 
         /** */
