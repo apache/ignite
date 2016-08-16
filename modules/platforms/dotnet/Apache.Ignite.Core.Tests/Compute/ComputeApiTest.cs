@@ -1115,6 +1115,15 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(result, ComputeFunc.InvokeCount);
 
                 Assert.AreEqual(node.Id, ComputeFunc.LastNodeId);
+
+                // Async.
+                ComputeFunc.InvokeCount = 0;
+
+                result = _grid1.GetCompute().AffinityCallAsync(cacheName, affinityKey, new ComputeFunc()).Result;
+
+                Assert.AreEqual(result, ComputeFunc.InvokeCount);
+
+                Assert.AreEqual(node.Id, ComputeFunc.LastNodeId);
             }
         }
 

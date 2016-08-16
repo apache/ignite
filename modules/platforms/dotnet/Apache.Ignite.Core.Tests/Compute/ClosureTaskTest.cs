@@ -45,9 +45,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteSingle()
         {
-            var res = Grid1.GetCompute().Call(OutFunc(false));
-
-            CheckResult(res);
+            CheckResult(Grid1.GetCompute().Call(OutFunc(false)));
+            CheckResult(Grid1.GetCompute().CallAsync(OutFunc(false)).Result);
         }
 
         /// <summary>
