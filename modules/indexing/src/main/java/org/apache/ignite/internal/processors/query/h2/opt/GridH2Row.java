@@ -147,7 +147,7 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
 
     /** {@inheritDoc} */
     @Override public void setKey(long key) {
-        throw new UnsupportedOperationException();
+        // No-op, may be set in H2 INFORMATION_SCHEMA.
     }
 
     /** {@inheritDoc} */

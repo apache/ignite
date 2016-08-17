@@ -71,6 +71,9 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /** */
     private static IgniteCache<String, Organization> orgCache;
 
+    /** Cache name. */
+    protected static final String CACHE = "cache";
+
     /** */
     private static IgniteCache<AffinityKey<String>, Person> personCache;
 
