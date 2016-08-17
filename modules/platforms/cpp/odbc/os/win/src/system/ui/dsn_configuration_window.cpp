@@ -31,12 +31,17 @@ namespace ignite
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
                     height(250),
+                    connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
                     addressEdit(),
                     cacheLabel(),
                     cacheEdit(),
+                    distributedJoinsCheckBox(),
+                    enforceJoinOrderCheckBox(),
+                    protocolVersionLabel(),
+                    protocolVersionComboBox(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -107,7 +112,7 @@ namespace ignite
                     rowPos += interval + rowSize;
 
                     val = config.GetCache().c_str();
-                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache:", ID_CACHE_LABEL);
+                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ID_CACHE_LABEL);
                     cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_CACHE_EDIT);
 
                     rowPos += interval + rowSize;
@@ -132,14 +137,7 @@ namespace ignite
                         ++id;
                     }
 
-                    rowPos += interval * 2 + rowSize;
-
-                    connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
-                        rowPos - interval - sectionBegin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
-
-                    sectionBegin = rowPos;
-
-                    rowPos += interval;
+                    rowPos += interval + rowSize;
 
                     distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
                         "Distributed Joins", ID_DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
@@ -155,8 +153,10 @@ namespace ignite
 
                     rowPos += interval * 2 + rowSize;
 
-                    querySettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
-                        rowPos - interval - sectionBegin, "Query settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
+                    connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
+                        rowPos - interval - sectionBegin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
+
+                    rowPos += interval;
 
                     int buttonSizeX = 80;
                     int cancelPosX = width - margin - buttonSizeX;
@@ -276,6 +276,9 @@ namespace ignite
                     addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
                     protocolVersionComboBox->GetText(version);
+
+                    common::StripSurroundingWhitespaces(address);
+                    common::StripSurroundingWhitespaces(dsn);
 
                     distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
