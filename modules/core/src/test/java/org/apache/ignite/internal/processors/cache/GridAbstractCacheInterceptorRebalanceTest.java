@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
@@ -30,6 +31,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -103,8 +107,18 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
                 latch.await();
 
                 for (int j = 1; j <= 3; j++) {
-                    for (int i = 0; i < CNT; i++)
-                        cache.put(i, i + j);
+                    for (int i = 0; i < CNT; i++) {
+                        if (i % 2 == 0) {
+                            try (Transaction tx = ignite.transactions()
+                                .txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                                cache.put(i, i + j);
+
+                                tx.commit();
+                            }
+                        }
+                        else
+                            cache.put(i, i + j);
+                    }
                 }
 
                 return null;

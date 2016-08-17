@@ -590,14 +590,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Old value.
      */
     @Nullable public CacheObject oldValue() {
-        return oldVal.value();
+        return oldVal == null ? null : oldVal.value();
     }
 
     /**
      * @return {@code True} if old value present.
      */
     public boolean hasOldValue() {
-        return oldVal.hasValue();
+        return oldVal != null && oldVal.hasValue();
     }
 
     /**
