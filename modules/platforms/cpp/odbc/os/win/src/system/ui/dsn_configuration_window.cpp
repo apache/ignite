@@ -30,7 +30,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(250),
+                    height(230),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -155,8 +155,6 @@ namespace ignite
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
                         rowPos - interval - sectionBegin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
-
-                    rowPos += interval;
 
                     int buttonSizeX = 80;
                     int cancelPosX = width - margin - buttonSizeX;
