@@ -19,8 +19,11 @@ package org.apache.ignite.cache.store;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.integration.CacheWriterException;
+
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -67,20 +70,38 @@ public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
         return loaded;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
+    @Override
+    public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
+        CacheWriterException exception = null;
+        Iterator<Cache.Entry<? extends K, ? extends V>> iterator = entries.iterator();
+        while (iterator.hasNext()){
+            try {
+                write(iterator.next());
+                iterator.remove();
+            } catch (CacheWriterException cwe){
+                exception = cwe;
+            }
 
-        for (Cache.Entry<? extends K, ? extends V> e : entries)
-            write(e);
+        }
+        if (entries.size() > 0) throw exception;
     }
 
     /** {@inheritDoc} */
     @Override public void deleteAll(Collection<?> keys) {
         assert keys != null;
 
-        for (Object key : keys)
-            delete(key);
+        CacheWriterException exception = null;
+        Iterator<?> iterator = keys.iterator();
+        while (iterator.hasNext()){
+            try {
+                delete(iterator.next());
+                iterator.remove();
+            } catch (CacheWriterException cwe){
+                exception = cwe;
+            }
+        }
+        if (keys.size() > 0) throw exception;
     }
 
     /**
