@@ -44,6 +44,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -259,8 +260,10 @@ public class GridResourceIoc {
         /** */
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
-        /** Uses as enum-map with enum {@link AnnotationSet} member as key,
-         * and bitmap as a result of matching found annotations with enum set {@link ResourceAnnotation} as value. */
+        /**
+         * Uses as enum-map with enum {@link AnnotationSet} member as key,
+         * and bitmap as a result of matching found annotations with enum set {@link ResourceAnnotation} as value.
+         */
         private final int[] containsAnnSets;
 
         /** Uses as enum-map with enum {@link ResourceAnnotation} member as a keys. */
@@ -347,22 +350,28 @@ public class GridResourceIoc {
                 for (int i = 0; i < sets.length; i++) {
                     int res = 0, mask = 1;
 
+                    //TODO: replace collection iterasions with bitset operations
                     for (ResourceAnnotation ann : sets[i].annotations) {
                         T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
 
-                        if (member != null) {
-                            if (annArr == null)
-                                annArr = new T2[ResourceAnnotation.values().length];
-
-                            annArr[ann.ordinal()] = member;
-
+                        if (member != null)
                             res |= mask;
-                        }
 
                         mask <<= 1;
                     }
 
                     containsAnnSets[i] = res;
+                }
+
+                for (ResourceAnnotation ann : ResourceAnnotation.values()) {
+                    T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
+
+                    if (member != null) {
+                        if (annArr == null)
+                            annArr = new T2[ResourceAnnotation.values().length];
+
+                        annArr[ann.ordinal()] = member;
+                    }
                 }
             }
             this.annArr = annArr;
@@ -580,6 +589,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SERVICE
         });
 
+        //TODO: replace with bitset.
         /** Annotations. */
         public final ResourceAnnotation[] annotations;
 
