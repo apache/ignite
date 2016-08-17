@@ -18,11 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
+    using System.Globalization;
     using System.Linq;
-    using Apache.Ignite.Core.Log;
     using Apache.Ignite.NLog;
     using global::NLog;
     using global::NLog.Config;
+    using global::NLog.Layouts;
     using global::NLog.Targets;
     using NUnit.Framework;
     using LogLevel = Apache.Ignite.Core.Log.LogLevel;
@@ -43,7 +44,10 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var cfg = new LoggingConfiguration();
 
-            _logTarget = new MemoryTarget("mem");
+            _logTarget = new MemoryTarget("mem")
+            {
+                Layout = new SimpleLayout("${Logger}|${Level}|${Message}|${all-event-properties}")
+            };
 
             cfg.AddTarget(_logTarget);
 
@@ -76,9 +80,10 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var nLogger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger());
 
-            nLogger.Trace("trace!");
+            nLogger.Log(LogLevel.Trace, "msg{0}", new object[] {1}, CultureInfo.InvariantCulture, "category", 
+                "java-err", new Exception("myException"));
 
-            Assert.AreEqual("|TRACE||trace!", GetLastLog());
+            Assert.AreEqual("category|Trace|msg1|nativeErrorInfo=java-err", GetLastLog());
         }
 
         /// <summary>
@@ -95,15 +100,8 @@ namespace Apache.Ignite.Core.Tests.Log
         /// </summary>
         private string GetLastLog()
         {
-            return StripDate(_logTarget.Logs.Last()).Replace(GetType().FullName, "");
+            return _logTarget.Logs.Last();
         }
 
-        /// <summary>
-        /// Strips the date.
-        /// </summary>
-        private static string StripDate(string logEntry)
-        {
-            return logEntry.Substring(logEntry.IndexOf("|", StringComparison.Ordinal));
-        }
     }
 }
