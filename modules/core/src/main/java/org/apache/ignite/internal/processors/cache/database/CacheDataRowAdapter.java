@@ -30,8 +30,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -41,7 +43,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
  */
 public class CacheDataRowAdapter implements CacheDataRow {
     /** */
-    @GridToStringInclude
+    @GridToStringExclude
     protected long link;
 
     /** */
@@ -321,7 +323,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheDataRowAdapter.class, this);
+        return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
     }
 
     /**
