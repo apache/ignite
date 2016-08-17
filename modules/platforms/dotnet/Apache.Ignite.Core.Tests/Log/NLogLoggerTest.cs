@@ -131,8 +131,6 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestIgniteStartup()
         {
-            // TODO: more ctors, log from .NET, instance check
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 Logger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger())
