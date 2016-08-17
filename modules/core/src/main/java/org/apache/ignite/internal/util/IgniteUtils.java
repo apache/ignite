@@ -151,6 +151,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1361,13 +1363,35 @@ public abstract class IgniteUtils {
      * @param dflt Default class to return.
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
-        try {
-            return cls == null ? dflt : Class.forName(cls);
+    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
+        return classForName(cls, dflt, false);
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(
+        @Nullable String cls,
+        @Nullable Class<?> dflt,
+        boolean includePrimitiveTypes
+    ) {
+        Class<?> clazz;
+        if (cls == null)
+            clazz = dflt;
+        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
+            try {
+                clazz = Class.forName(cls);
+            }
+            catch (ClassNotFoundException ignore) {
+                clazz = dflt;
+            }
         }
-        catch (ClassNotFoundException ignore) {
-            return dflt;
-        }
+        return clazz;
     }
 
     /**
@@ -4766,6 +4790,44 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Writes UUID to binary writer.
+     *
+     * @param out Output Binary writer.
+     * @param uid UUID to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeUuid(BinaryRawWriter out, UUID uid) {
+        // Write null flag.
+        if (uid != null) {
+            out.writeBoolean(true);
+
+            out.writeLong(uid.getMostSignificantBits());
+            out.writeLong(uid.getLeastSignificantBits());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Reads UUID from binary reader.
+     *
+     * @param in Binary reader.
+     * @return Read UUID.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static UUID readUuid(BinaryRawReader in) {
+        // If UUID is not null.
+        if (in.readBoolean()) {
+            long most = in.readLong();
+            long least = in.readLong();
+
+            return new UUID(most, least);
+        }
+        else
+            return null;
+    }
+
+    /**
      * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
@@ -6706,6 +6768,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Swaps two objects in array.
+     *
+     * @param arr Array.
+     * @param a Index of the first object.
+     * @param b Index of the second object.
+     */
+    public static void swap(Object[] arr, int a, int b) {
+        Object tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+
+    /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
      * <p/>
@@ -7456,6 +7531,27 @@ public abstract class IgniteUtils {
     public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Tries to acquire a permit from provided semaphore during {@code timeout}.
+     *
+     * @param sem Semaphore.
+     * @param timeout The maximum time to wait.
+     * @param unit The unit of the {@code time} argument.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @return {@code True} if acquires a permit, {@code false} another.
+     */
+    public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
+        throws IgniteInterruptedCheckedException {
+        try {
+            return sem.tryAcquire(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -8275,7 +8371,11 @@ public abstract class IgniteUtils {
         if (cls != null)
             return cls;
 
-        if (ldr == null)
+        if (ldr != null) {
+            if (ldr instanceof ClassCache)
+                return ((ClassCache)ldr).getFromCache(clsName);
+        }
+        else
             ldr = gridClassLoader;
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
@@ -8601,7 +8701,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
         Collection<String> hostNames) throws IgniteCheckedException {
-        List<InetAddress> res = new ArrayList<>(addrs.size());
+        Set<InetAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8634,7 +8734,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return Collections.unmodifiableList(res);
+        return res;
     }
 
     /**
@@ -8660,7 +8760,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
         Collection<String> hostNames, int port) {
-        List<InetSocketAddress> res = new ArrayList<>(addrs.size());
+        Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8681,7 +8781,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return Collections.unmodifiableList(res);
+        return res;
     }
 
     /**
@@ -8706,20 +8806,47 @@ public abstract class IgniteUtils {
             InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
 
             if (!sockAddr.isUnresolved()) {
-                try {
-                    Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
+                Collection<InetSocketAddress> extAddrs0 = resolveAddress(addrRslvr, sockAddr);
 
-                    if (extAddrs0 != null)
-                        extAddrs.addAll(extAddrs0);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSpiException("Failed to get mapped external addresses " +
-                        "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
-                }
+                if (extAddrs0 != null)
+                    extAddrs.addAll(extAddrs0);
             }
         }
 
         return extAddrs;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    public static Collection<InetSocketAddress> resolveAddresses(AddressResolver addrRslvr,
+        Collection<InetSocketAddress> sockAddr) {
+        if (addrRslvr == null)
+            return sockAddr;
+
+        Collection<InetSocketAddress> resolved = new HashSet<>();
+
+        for (InetSocketAddress address :sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, address));
+
+        return resolved;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    private static Collection<InetSocketAddress> resolveAddress(AddressResolver addrRslvr, InetSocketAddress sockAddr) {
+        try {
+            return addrRslvr.getExternalAddresses(sockAddr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to get mapped external addresses " +
+                "[addrRslvr=" + addrRslvr + ", addr=" + sockAddr + ']', e);
+        }
     }
 
     /**
@@ -9605,5 +9732,15 @@ public abstract class IgniteUtils {
                 return threads[i].getName();
 
         return "<failed to find active thread " + threadId + '>';
+    }
+
+    /**
+     * @param t0 Comparable object.
+     * @param t1 Comparable object.
+     * @param <T> Comparable type.
+     * @return Maximal object o t0 and t1.
+     */
+    public static <T extends Comparable<? super T>> T max(T t0, T t1) {
+        return t0.compareTo(t1) > 0 ? t0 : t1;
     }
 }

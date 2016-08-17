@@ -49,13 +49,19 @@ public abstract class WALRecord {
         // Delta records.
 
         /** */
+        INIT_NEW_PAGE_RECORD,
+
+        /** */
         DATA_PAGE_INSERT_RECORD,
+
+        /** */
+        DATA_PAGE_INSERT_FRAGMENT_RECORD,
 
         /** */
         DATA_PAGE_REMOVE_RECORD,
 
         /** */
-        BTREE_META_PAGE_INIT_NEW,
+        BTREE_META_PAGE_INIT_ROOT,
 
         /** */
         BTREE_META_PAGE_ADD_ROOT,
@@ -95,9 +101,6 @@ public abstract class WALRecord {
 
         /** */
         BTREE_PAGE_MERGE,
-
-        /** */
-        BTREE_PAGE_INIT_LEAF,
 
         ;
 

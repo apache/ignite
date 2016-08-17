@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -125,20 +124,16 @@ public final class ReuseList {
     }
 
     /**
-     * @return Pages contained in this Reuse List.
+     * @param collector List to add pages.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<Long> pages() throws IgniteCheckedException {
-        Collection<Long> result = new ArrayList<>();
-
+    public void pages(GridLongList collector) throws IgniteCheckedException {
         for (ReuseTree tree : trees) {
             GridCursor<Long> cursor = tree.find(null, null);
 
             while (cursor.next())
-                result.add(cursor.get());
+                collector.add(cursor.get());
         }
-
-        return result;
     }
 
     /**

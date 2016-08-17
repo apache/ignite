@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, bool> arg)
             {
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
 
                 Tuple<bool, bool> t = arg;
 

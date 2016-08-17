@@ -69,7 +69,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
     /** {@inheritDoc} */
     @Override protected long allocatePageForNew() throws IgniteCheckedException {
         // Do not call reuse list when allocating a new ReuseTree.
-        return allocatePage0();
+        return allocatePageNoReuse();
     }
 
     /**

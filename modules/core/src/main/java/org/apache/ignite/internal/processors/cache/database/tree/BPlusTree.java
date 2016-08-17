@@ -40,11 +40,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.LeafPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitNewRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
@@ -77,6 +76,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTre
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
@@ -574,6 +574,23 @@ public abstract class BPlusTree<L, T extends L> {
         }
     };
 
+    /** */
+    private final PageHandler<Long, Void> initRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootId, int lvl)
+            throws IgniteCheckedException {
+            assert rootId != null;
+
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
+
+            io.initRoot(buf, rootId);
+
+            if (needWalDeltaRecord(meta))
+                wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+
+            return null;
+        }
+    };
+
     /**
      * @param name Tree name.
      * @param cacheId Cache ID.
@@ -633,10 +650,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @param page Updated page.
      * @return {@code true} If we need to make a delta WAL record for the change in this page.
      */
-    public final boolean needWalDeltaRecord(Page page) {
-        // If the page is clean, then it is either newly allocated or just after checkpoint.
-        // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && page.isDirty();
+    private boolean needWalDeltaRecord(Page page) {
+        return isWalDeltaRecordNeeded(wal, page);
     }
 
     /**
@@ -645,40 +660,16 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
+        // Allocate the first leaf page, it will be our root.
         long rootId = allocatePageForNew();
 
-        // Allocate the first leaf page, it will be our root.
         try (Page root = page(rootId)) {
-            ByteBuffer buf = root.getForWrite(); // Initial write, no check for concurrent modification.
-
-            try {
-                BPlusLeafIO<L> io = latestLeafIO();
-
-                io.initNewPage(buf, rootId);
-
-                if (needWalDeltaRecord(root))
-                    wal.log(new LeafPageInitRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
-            }
-            finally {
-                root.releaseWrite(true);
-            }
+            writePage(rootId, root, PageHandler.NOOP, latestLeafIO(), wal, null, 0);
         }
 
         // Initialize meta page with new root page.
         try (Page meta = page(metaPageId)) {
-            ByteBuffer buf = meta.getForWrite(); // Initial write, no need to check for concurrent modification.
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
-
-                io.initNewPage(buf, metaPageId, rootId);
-
-                if (needWalDeltaRecord(meta))
-                    wal.log(new MetaPageInitNewRecord(cacheId, meta.id(), metaPageId, rootId, io.getVersion()));
-            }
-            finally {
-                meta.releaseWrite(true);
-            }
+            writePage(metaPageId, meta, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0);
         }
     }
 
@@ -1430,7 +1421,9 @@ public abstract class BPlusTree<L, T extends L> {
             for (; ; ) { // Go down with retries.
                 p.init();
 
-                switch (putDown(p, p.rootId, 0L, p.rootLvl)) {
+                Result result = putDown(p, p.rootId, 0L, p.rootLvl);
+
+                switch (result) {
                     case RETRY:
                     case RETRY_ROOT:
                         checkInterrupted();
@@ -1438,7 +1431,7 @@ public abstract class BPlusTree<L, T extends L> {
                         continue;
 
                     default:
-                        assert p.isFinished();
+                        assert p.isFinished() : result;
 
                         return p.oldRow;
                 }
@@ -1494,7 +1487,7 @@ public abstract class BPlusTree<L, T extends L> {
         long pagesCnt = 0;
 
         try (Page meta = page(metaPageId)) {
-            ByteBuffer metaBuf = meta.getForWrite();
+            ByteBuffer metaBuf = meta.getForWrite(); // No checks, we must be out of use.
 
             try {
                 for (long pageId : getFirstPageIds(metaBuf)) {
@@ -1503,7 +1496,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     do {
                         try (Page page = page(pageId)) {
-                            ByteBuffer buf = page.getForWrite();
+                            ByteBuffer buf = page.getForWrite(); // No checks, we must be out of use.
 
                             try {
                                 BPlusIO<L> io = io(buf);
@@ -2080,6 +2073,9 @@ public abstract class BPlusTree<L, T extends L> {
                 ByteBuffer fwdBuf = fwd.getForWrite(); // Initial write, no need to check for concurrent modification.
 
                 try {
+                    // Never write full forward page, because it is known to be new.
+                    fwd.fullPageWalRecordPolicy(Boolean.FALSE);
+
                     boolean midShift = splitPage(io, page, buf, fwdId, fwd, fwdBuf, idx);
 
                     // Do insert.
@@ -2122,6 +2118,9 @@ public abstract class BPlusTree<L, T extends L> {
                             ByteBuffer newRootBuf = newRoot.getForWrite(); // Initial write, no concurrent modification.
 
                             try {
+                                // Never write full new root page, because it is known to be new.
+                                newRoot.fullPageWalRecordPolicy(Boolean.FALSE);
+
                                 long pageId = PageIO.getPageId(buf);
 
                                 inner(io).initNewRoot(newRootBuf, newRootId, pageId, moveUpRow, null, fwdId);
@@ -2940,7 +2939,7 @@ public abstract class BPlusTree<L, T extends L> {
             pageId = reuseList.take(this, bag);
 
         if (pageId == 0)
-            pageId = allocatePage0();
+            pageId = allocatePageNoReuse();
 
         assert pageId != 0;
 
@@ -2959,9 +2958,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @return Page ID of newly allocated page.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    protected long allocatePage0() throws IgniteCheckedException {
+    protected final long allocatePageNoReuse() throws IgniteCheckedException {
         return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 

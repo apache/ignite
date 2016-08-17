@@ -43,13 +43,22 @@ public abstract class PageIO {
     private static final int VER_OFF = TYPE_OFF + 2;
 
     /** */
-    private static final int PAGE_ID_OFF = VER_OFF + 2;
+    private static final int CRC_OFF = VER_OFF + 2;
 
     /** */
-    private static final int CRC_OFF = PAGE_ID_OFF + 8;
+    private static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
-    public static final int COMMON_HEADER_END = 32; // type(2) + ver(2) + pageId(8) + crc(4) + reserved(16)
+    private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_1_OFF + 8;
+
+    /** */
+    private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
+
+    /** */
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
 
     /* All the page types. */
 
@@ -212,11 +221,35 @@ public abstract class PageIO {
         setType(buf, getType());
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
+
+        buf.putLong(RESERVED_1_OFF, 0L);
+        buf.putLong(RESERVED_2_OFF, 0L);
+        buf.putLong(RESERVED_3_OFF, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + "[ver=" + getVersion() + "]";
+    }
+
+    /**
+     * @param type IO Type.
+     * @param ver IO Version.
+     * @return Page IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public static <Q extends PageIO> Q getPageIO(int type, int ver) throws IgniteCheckedException {
+        switch (type) {
+            case T_DATA:
+                return (Q)DataPageIO.VERSIONS.forVersion(ver);
+
+            case T_BPLUS_META:
+                return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            default:
+                return (Q)getBPlusIO(type, ver);
+        }
     }
 
     /**
@@ -277,6 +310,6 @@ public abstract class PageIO {
                 return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
         }
 
-        throw new IgniteCheckedException("Unknown B+Tree page IO type: " + type);
+        throw new IgniteCheckedException("Unknown page IO type: " + type);
     }
 }

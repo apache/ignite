@@ -26,7 +26,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -90,12 +89,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary marshaller tests.
@@ -1791,6 +1788,47 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCustomTypeRegistration() throws Exception {
+        BinaryTypeConfiguration customType = new BinaryTypeConfiguration(Value.class.getName());
+
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(customType));
+
+        BinaryContext ctx = binaryContext(marsh);
+
+        int typeId = ctx.typeId(Value.class.getName());
+
+        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, false);
+
+        assertEquals(Value.class, descriptor.describedClass());
+        assertEquals(true, descriptor.registered());
+        assertEquals(true, descriptor.userType());
+
+        // Custom explicit types must be registered in 'predefinedTypes' in order not to break the interoperability.
+        Field field = ctx.getClass().getDeclaredField("predefinedTypes");
+
+        field.setAccessible(true);
+
+        Map<Integer, BinaryClassDescriptor> map = (Map<Integer, BinaryClassDescriptor>)field.get(ctx);
+
+        assertTrue(map.size() > 0);
+
+        assertNotNull(map.get(typeId));
+
+        // Custom explicit types must NOT be registered in 'predefinedTypeNames'.
+        field = ctx.getClass().getDeclaredField("predefinedTypeNames");
+
+        field.setAccessible(true);
+
+        Map<String, Integer> map2 = (Map<String, Integer>)field.get(ctx);
+
+        assertTrue(map2.size() > 0);
+
+        assertNull(map2.get(ctx.userTypeName(Value.class.getName())));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testFieldIdMapping() throws Exception {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
@@ -2360,7 +2398,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl po = marshal(simpleObject(), marsh);
 
-        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, false, true, false);
+        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, null, false, true, false);
 
         assert po.value(coCtx, false) == po.value(coCtx, false);
 

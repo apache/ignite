@@ -20,13 +20,27 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 
 /**
  * Page handler.
  */
 public abstract class PageHandler<X, R> {
+    /** */
+    public static final PageHandler<Void, Void> NOOP = new PageHandler<Void,Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, Void arg, int intArg)
+            throws IgniteCheckedException {
+            return null;
+        }
+    };
+
     /**
      * @param pageId Page ID.
      * @param page Page.
@@ -85,6 +99,28 @@ public abstract class PageHandler<X, R> {
      */
     public static <X, R> R writePage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
         throws IgniteCheckedException {
+        return writePage(pageId, page, h, null, null, arg, intArg);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param h Handler.
+     * @param init IO for new page initialization or {@code null} if it is an existing page.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <X, R> R writePage(
+        long pageId,
+        Page page,
+        PageHandler<X, R> h,
+        PageIO init,
+        IgniteWriteAheadLogManager wal,
+        X arg,
+        int intArg
+    ) throws IgniteCheckedException {
         assert page != null;
 
         R res;
@@ -96,6 +132,17 @@ public abstract class PageHandler<X, R> {
         assert buf != null;
 
         try {
+            if (init != null) { // It is a new page and we have to initialize it.
+                init.initNewPage(buf, pageId);
+
+                // Here we should never write full page, because it is known to be new.
+                page.fullPageWalRecordPolicy(FALSE);
+
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new InitNewPageRecord(page.fullId().cacheId(), page.id(),
+                        init.getType(), init.getVersion(), pageId));
+            }
+
             res = h.run(pageId, page, buf, arg, intArg);
 
             ok = true;
@@ -106,6 +153,18 @@ public abstract class PageHandler<X, R> {
         }
 
         return res;
+    }
+
+    /**
+     * @param wal Write ahead log.
+     * @param page Page.
+     * @return {@code true} If we need to make a delta WAL record for the change in this page.
+     */
+    public static boolean isWalDeltaRecordNeeded(IgniteWriteAheadLogManager wal, Page page) {
+        // If the page is clean, then it is either newly allocated or just after checkpoint.
+        // In both cases we have to write full page contents to WAL.
+        return wal != null && !wal.isAlwaysWriteFullPages() && page.fullPageWalRecordPolicy() != TRUE &&
+            (page.fullPageWalRecordPolicy() == FALSE || page.isDirty());
     }
 
     /**
