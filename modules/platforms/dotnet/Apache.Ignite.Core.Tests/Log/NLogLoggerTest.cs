@@ -90,7 +90,13 @@ namespace Apache.Ignite.Core.Tests.Log
             nLogger.Log(LogLevel.Info, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
                 null, new Exception("myException"));
 
-            Assert.AreEqual("category|Trace|msg1|myException|", GetLastLog());
+            Assert.AreEqual("category|Info|msg1|myException|", GetLastLog());
+
+            // No exception.
+            nLogger.Log(LogLevel.Debug, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
+                null, null);
+
+            Assert.AreEqual("category|Debug|msg1||", GetLastLog());
         }
 
         /// <summary>
