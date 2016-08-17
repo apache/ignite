@@ -18,13 +18,33 @@
 namespace Apache.Ignite.NLog
 {
     using System;
-    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Impl.Common;
+    using global::NLog;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
+    using IgniteLogLevel = Apache.Ignite.Core.Log.LogLevel;
+    using NLogLogLevel = global::NLog.LogLevel;
 
     /// <summary>
     /// Ignite NLog integration.
     /// </summary>
     public class IgniteNLogLogger : ILogger
     {
+        /// <summary>
+        /// The NLog logger.
+        /// </summary>
+        private readonly Logger _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteNLogLogger"/> class.
+        /// </summary>
+        /// <param name="logger">The NLog logger instance.</param>
+        public IgniteNLogLogger(Logger logger)
+        {
+            IgniteArgumentCheck.NotNull(logger, "logger");
+
+            _logger = logger;
+        }
+
         /// <summary>
         /// Logs the specified message.
         /// </summary>
@@ -37,10 +57,21 @@ namespace Apache.Ignite.NLog
         /// <param name="nativeErrorInfo">The native error information.</param>
         /// <param name="ex">The exception. Can be null.</param>
         /// <exception cref="System.NotImplementedException"></exception>
-        public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-            string nativeErrorInfo, Exception ex)
+        public void Log(IgniteLogLevel level, string message, object[] args, IFormatProvider formatProvider, 
+            string category, string nativeErrorInfo, Exception ex)
         {
-            throw new NotImplementedException();
+            var logEvent = new LogEventInfo
+            {
+                Level = ConvertLogLevel(level),
+                Message = message,
+                FormatProvider = formatProvider,
+                Parameters = args,
+                Exception = ex,
+                LoggerName = category,
+                Properties = {{"nativeErrorInfo", nativeErrorInfo}}
+            };
+
+            _logger.Log(logEvent);
         }
 
         /// <summary>
@@ -51,9 +82,33 @@ namespace Apache.Ignite.NLog
         /// Value indicating whether the specified log level is enabled
         /// </returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public bool IsEnabled(LogLevel level)
+        public bool IsEnabled(IgniteLogLevel level)
         {
-            throw new NotImplementedException();
+            return _logger.IsEnabled(ConvertLogLevel(level));
+        }
+
+        /// <summary>
+        /// Converts the Ignite LogLevel to the NLog log level.
+        /// </summary>
+        /// <param name="level">The Ignite log level.</param>
+        /// <returns>Corresponding NLog log level.</returns>
+        public static NLogLogLevel ConvertLogLevel(IgniteLogLevel level)
+        {
+            switch (level)
+            {
+                case IgniteLogLevel.Trace:
+                    return NLogLogLevel.Trace;
+                case IgniteLogLevel.Debug:
+                    return NLogLogLevel.Debug;
+                case IgniteLogLevel.Info:
+                    return NLogLogLevel.Info;
+                case IgniteLogLevel.Warn:
+                    return NLogLogLevel.Warn;
+                case IgniteLogLevel.Error:
+                    return NLogLogLevel.Error;
+                default:
+                    throw new ArgumentOutOfRangeException("level", level, "Invalid Ignite LogLevel.");
+            }
         }
     }
 }
