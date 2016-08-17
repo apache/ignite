@@ -95,13 +95,8 @@ public class DataPageIO extends PageIO {
     private void setEmptyPage(ByteBuffer buf) {
         setDirectCount(buf, 0);
         setIndirectCount(buf, 0);
-        
-        // We reserve size here because of freeSpace semantics (see method javadoc).
-        // It means that we must be able to accommodate a row of size which is equal to getFreeSpace(),
-        // plus we will have data page overhead: header of the page as well as item, payload length and
-        // link for the entry fragment.
-        setFreeSpace(buf, buf.capacity() - ITEMS_OFF - ITEM_SIZE - PAYLOAD_LEN_SIZE - LINK_SIZE);
         setFirstEntryOffset(buf, buf.capacity());
+        setRealFreeSpace(buf, buf.capacity() - ITEMS_OFF);
     }
 
     /**
@@ -162,22 +157,16 @@ public class DataPageIO extends PageIO {
     }
 
     /**
-     * Free space refers to a "max row size (without any data page specific overhead) which is
-     * guaranteed to fit into this data page".
-     *
      * @param buf Buffer.
      * @param freeSpace Free space.
      */
-    private void setFreeSpace(ByteBuffer buf, int freeSpace) {
-        assert freeSpace >= -(ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE): freeSpace;
-        assert freeSpace <= buf.capacity() - ITEMS_OFF - ITEM_SIZE - PAYLOAD_LEN_SIZE - LINK_SIZE: freeSpace;
+    private void setRealFreeSpace(ByteBuffer buf, int freeSpace) {
+        assert freeSpace == actualFreeSpace(buf): freeSpace + " != " + actualFreeSpace(buf);
 
         buf.putShort(FREE_SPACE_OFF, (short)freeSpace);
     }
 
     /**
-     * Public version (never return negative value).
-     *
      * Free space refers to a "max row size (without any data page specific overhead) which is
      * guaranteed to fit into this data page".
      *
@@ -188,27 +177,24 @@ public class DataPageIO extends PageIO {
         if (getFreeItemSlots(buf) == 0)
             return 0;
 
-        int freeSpace = getFreeSpace0(buf);
+        int freeSpace = getRealFreeSpace(buf);
 
-        if (freeSpace < 0) {
-            assert freeSpace >= -(ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE): freeSpace;
+        // We reserve size here because of getFreeSpace() method semantics (see method javadoc).
+        // It means that we must be able to accommodate a row of size which is equal to getFreeSpace(),
+        // plus we will have data page overhead: header of the page as well as item, payload length and
+        // possibly a link to the next row fragment.
+        freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
-            return 0;
-        }
-
-        return freeSpace;
+        return freeSpace < 0 ? 0 : freeSpace;
     }
 
     /**
-     * Private version (may return negative value).
-     *
-     * Free space refers to a "max row size (without any data page specific overhead) which is
-     * guaranteed to fit into this data page".
+     * Equivalent for {@link #actualFreeSpace(ByteBuffer)} but reads saved value.
      *
      * @param buf Buffer.
      * @return Free space.
      */
-    private int getFreeSpace0(ByteBuffer buf) {
+    private int getRealFreeSpace(ByteBuffer buf) {
         return buf.getShort(FREE_SPACE_OFF);
     }
 
@@ -306,7 +292,7 @@ public class DataPageIO extends PageIO {
     public String printPageLayout(ByteBuffer buf) {
         int directCnt = getDirectCount(buf);
         int indirectCnt = getIndirectCount(buf);
-        int free = getFreeSpace0(buf);
+        int free = getRealFreeSpace(buf);
 
         boolean valid = directCnt >= indirectCnt;
 
@@ -645,7 +631,7 @@ public class DataPageIO extends PageIO {
             assert getIndirectCount(buf) <= getDirectCount(buf);
 
             // Increase free space.
-            setFreeSpace(buf, getFreeSpace0(buf) + rmvEntrySize +
+            setRealFreeSpace(buf, getRealFreeSpace(buf) + rmvEntrySize +
                 ITEM_SIZE * (directCnt - getDirectCount(buf) + indirectCnt - getIndirectCount(buf)));
         }
 
@@ -690,7 +676,7 @@ public class DataPageIO extends PageIO {
         CacheDataRow row,
         int rowSize
     ) throws IgniteCheckedException {
-        assert rowSize <= getFreeSpace0(buf);
+        assert rowSize <= getFreeSpace(buf): "can't call addRow if not enough space for the whole row";
 
         int fullEntrySize = getPageEntrySize(rowSize, SHOW_PAYLOAD_LEN | SHOW_ITEM);
 
@@ -750,7 +736,7 @@ public class DataPageIO extends PageIO {
         assert getIndirectCount(buf) <= getDirectCount(buf);
 
         // Update free space. If number of indirect items changed, then we were able to reuse an item slot.
-        setFreeSpace(buf, getFreeSpace0(buf) - fullEntrySize +
+        setRealFreeSpace(buf, getRealFreeSpace(buf) - fullEntrySize +
             (getIndirectCount(buf) != indirectCnt ? ITEM_SIZE : 0));
 
         return itemId;
@@ -842,7 +828,7 @@ public class DataPageIO extends PageIO {
         int indirectCnt = getIndirectCount(buf);
 
         int payloadSize = payload != null ? payload.length :
-            Math.min(rowSize - written, getFreeSpace0(buf));
+            Math.min(rowSize - written, getFreeSpace(buf));
 
         int fullEntrySize = getPageEntrySize(payloadSize, SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM);
         int dataOff = getDataOffsetForWrite(buf, fullEntrySize, directCnt, indirectCnt);
