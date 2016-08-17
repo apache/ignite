@@ -130,7 +130,21 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestIgniteStartup()
         {
-            // TODO
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger())
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                Assert.IsTrue(_logTarget.Logs.Contains(
+                    string.Format("|Debug|Starting Ignite.NET {0}||", typeof(Ignition).Assembly.GetName().Version)));
+
+                Assert.IsTrue(_logTarget.Logs.Any(x => x.Contains(">>> Topology snapshot.")));
+            }
+
+            Assert.IsTrue(_logTarget.Logs.Contains(
+                "org.apache.ignite.internal.IgniteKernal|Debug|Grid is stopping.||"));
         }
 
         /// <summary>
