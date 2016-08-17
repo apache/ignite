@@ -17,15 +17,29 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
-    using Apache.Ignite.Core.Log;
     using Apache.Ignite.NLog;
+    using global::NLog;
+    using global::NLog.Config;
     using NUnit.Framework;
+    using LogLevel = Apache.Ignite.Core.Log.LogLevel;
 
     /// <summary>
     /// Tests the NLog integration.
     /// </summary>
     public class NLogLoggerTest
     {
+        /// <summary>
+        /// Test fixture set up.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void TestFixtureSetUp()
+        {
+            LogManager.Configuration = new LoggingConfiguration
+            {
+                
+            };
+        }
+
         /// <summary>
         /// Tests the log level conversion.
         /// </summary>
@@ -40,6 +54,25 @@ namespace Apache.Ignite.Core.Tests.Log
 
                 Assert.AreEqual(igniteLevel.ToString(), nlogLevel.ToString());
             }
+        }
+
+        /// <summary>
+        /// Tests the logger in isolated environment.
+        /// </summary>
+        [Test]
+        public void TestLogging()
+        {
+            // TODO: test isolated, without Ignite node
+            var nLogger = LogManager.GetCurrentClassLogger();
+        }
+
+        /// <summary>
+        /// Tests the logger with Ignite.
+        /// </summary>
+        [Test]
+        public void TestIgniteStartup()
+        {
+            // TODO
         }
     }
 }
