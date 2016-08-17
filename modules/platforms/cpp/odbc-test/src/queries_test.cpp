@@ -721,5 +721,56 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
     BOOST_CHECK_LT(rowsNum, entriesNum);
 }
 
+BOOST_AUTO_TEST_CASE(TestLenAggrFunction)
+{
+    TestType in1;
+    TestType in2;
+
+    in1.strField = "test string 1";
+    in2.strField = "Hello aggregate function LEN!";
+
+    testCache.Put(1, in1);
+    testCache.Put(2, in2);
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;PROTOCOL_VERSION=1.6.0");
+
+    SQLRETURN ret;
+
+    const size_t columnsCnt = 2;
+
+    SQLBIGINT columns[columnsCnt] = { 0 };
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR request[] = "SELECT LEN(strField) FROM TestType";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(columns[0], in1.strField.size());
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(columns[0], in2.strField.size());
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
