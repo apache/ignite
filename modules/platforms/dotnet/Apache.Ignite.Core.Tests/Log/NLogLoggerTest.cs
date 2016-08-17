@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using System;
+    using System.Linq;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.NLog;
     using global::NLog;
     using global::NLog.Config;
+    using global::NLog.Targets;
     using NUnit.Framework;
     using LogLevel = Apache.Ignite.Core.Log.LogLevel;
 
@@ -28,16 +32,24 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class NLogLoggerTest
     {
+        /** */
+        private MemoryTarget _logTarget;
+
         /// <summary>
-        /// Test fixture set up.
+        /// Test set up.
         /// </summary>
-        [TestFixtureSetUp]
-        public void TestFixtureSetUp()
+        [SetUp]
+        public void SetUp()
         {
-            LogManager.Configuration = new LoggingConfiguration
-            {
-                
-            };
+            var cfg = new LoggingConfiguration();
+
+            _logTarget = new MemoryTarget("mem");
+
+            cfg.AddTarget(_logTarget);
+
+            cfg.AddRule(global::NLog.LogLevel.Trace, global::NLog.LogLevel.Error, _logTarget);
+
+            LogManager.Configuration = cfg;
         }
 
         /// <summary>
@@ -62,8 +74,11 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestLogging()
         {
-            // TODO: test isolated, without Ignite node
-            var nLogger = LogManager.GetCurrentClassLogger();
+            var nLogger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger());
+
+            nLogger.Trace("trace!");
+
+            Assert.AreEqual("|TRACE||trace!", GetLastLog());
         }
 
         /// <summary>
@@ -73,6 +88,22 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestIgniteStartup()
         {
             // TODO
+        }
+
+        /// <summary>
+        /// Gets the last log.
+        /// </summary>
+        private string GetLastLog()
+        {
+            return StripDate(_logTarget.Logs.Last()).Replace(GetType().FullName, "");
+        }
+
+        /// <summary>
+        /// Strips the date.
+        /// </summary>
+        private static string StripDate(string logEntry)
+        {
+            return logEntry.Substring(logEntry.IndexOf("|", StringComparison.Ordinal));
         }
     }
 }
