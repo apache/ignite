@@ -64,11 +64,16 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var levels = new[] { LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
 
+            var nLogger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger());
+
             foreach (var igniteLevel in levels)
             {
                 var nlogLevel = IgniteNLogLogger.ConvertLogLevel(igniteLevel);
 
                 Assert.AreEqual(igniteLevel.ToString(), nlogLevel.ToString());
+
+
+                Assert.IsTrue(nLogger.IsEnabled(igniteLevel));
             }
         }
 
@@ -97,6 +102,26 @@ namespace Apache.Ignite.Core.Tests.Log
                 null, null);
 
             Assert.AreEqual("category|Debug|msg1||", GetLastLog());
+
+            // No params.
+            nLogger.Log(LogLevel.Warn, "msg{0}", null, CultureInfo.InvariantCulture, "category", null, null);
+
+            Assert.AreEqual("category|Warn|msg{0}||", GetLastLog());
+
+            // No formatter.
+            nLogger.Log(LogLevel.Error, "msg{0}", null, null, "category", null, null);
+
+            Assert.AreEqual("category|Error|msg{0}||", GetLastLog());
+
+            // No category.
+            nLogger.Log(LogLevel.Error, "msg{0}", null, null, null, null, null);
+
+            Assert.AreEqual("|Error|msg{0}||", GetLastLog());
+
+            // No message.
+            nLogger.Log(LogLevel.Error, null, null, null, null, null, null);
+
+            Assert.AreEqual("|Error|||", GetLastLog());
         }
 
         /// <summary>
