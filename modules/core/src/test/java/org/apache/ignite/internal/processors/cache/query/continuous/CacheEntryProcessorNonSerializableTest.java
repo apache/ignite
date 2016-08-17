@@ -52,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTest {
+public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTest {
     /** */
     private static final int EXPECTED_VALUE = 42;
 
@@ -295,8 +295,7 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
      * @param val Value.
      */
     private void putKeys(IgniteCache cache, int val) {
-        for (int i = 0; i < KEYS; i++)
-            cache.put(i, val);
+        cache.put(KEYS, val);
     }
 
     /**
@@ -304,8 +303,7 @@ public class CacheEntryProcessorNonSerialazibleTest extends GridCommonAbstractTe
      * @param expVal Expected value.
      */
     private void checkKeys(IgniteCache cache, int expVal) {
-        for (int i = 0; i < KEYS; i++)
-            assertEquals(expVal, cache.get(i));
+        assertEquals(expVal, cache.get(KEYS));
     }
 
     /**

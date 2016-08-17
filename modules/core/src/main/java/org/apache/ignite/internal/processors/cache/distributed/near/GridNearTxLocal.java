@@ -862,14 +862,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.finish(e);
+                    fut0.finish(false);
 
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.finish(e);
+                    fut0.finish(false);
                 }
             }
         });

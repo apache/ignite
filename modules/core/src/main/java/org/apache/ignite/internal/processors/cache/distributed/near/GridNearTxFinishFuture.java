@@ -100,9 +100,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** Commit flag. This flag used only for one-phase commit transaction. */
     private boolean commit;
 
-    /** Error. */
-    private volatile Throwable err;
-
     /** Node mappings. */
     private IgniteTxMappings mappings;
 
@@ -316,8 +313,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
 
-            if (this.err != null)
-                err = this.err;
+            if (tx.commitError() != null)
+                err = tx.commitError();
 
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
@@ -388,15 +385,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         return fut.getClass() == FinishMiniFuture.class ||
             fut.getClass() == CheckBackupMiniFuture.class ||
             fut.getClass() == CheckRemoteTxMiniFuture.class;
-    }
-
-    /**
-     * @param err Error.
-     */
-    void finish(Throwable err) {
-        this.err = err;
-
-        finish(false);
     }
 
     /**
