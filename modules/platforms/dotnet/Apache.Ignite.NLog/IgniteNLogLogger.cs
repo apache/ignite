@@ -67,9 +67,11 @@ namespace Apache.Ignite.NLog
                 FormatProvider = formatProvider,
                 Parameters = args,
                 Exception = ex,
-                LoggerName = category,
-                Properties = {{"nativeErrorInfo", nativeErrorInfo}}
+                LoggerName = category
             };
+
+            if (nativeErrorInfo != null)
+                logEvent.Properties.Add("nativeErrorInfo", nativeErrorInfo);
 
             _logger.Log(logEvent);
         }

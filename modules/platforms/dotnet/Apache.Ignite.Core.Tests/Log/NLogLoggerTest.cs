@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Log
 
             _logTarget = new MemoryTarget("mem")
             {
-                Layout = new SimpleLayout("${Logger}|${Level}|${Message}|${all-event-properties}")
+                Layout = new SimpleLayout("${Logger}|${Level}|${Message}|${exception}|${all-event-properties}")
             };
 
             cfg.AddTarget(_logTarget);
@@ -80,10 +80,17 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var nLogger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger());
 
+            // All parameters.
             nLogger.Log(LogLevel.Trace, "msg{0}", new object[] {1}, CultureInfo.InvariantCulture, "category", 
                 "java-err", new Exception("myException"));
 
-            Assert.AreEqual("category|Trace|msg1|nativeErrorInfo=java-err", GetLastLog());
+            Assert.AreEqual("category|Trace|msg1|myException|nativeErrorInfo=java-err", GetLastLog());
+
+            // No Java error.
+            nLogger.Log(LogLevel.Info, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
+                null, new Exception("myException"));
+
+            Assert.AreEqual("category|Trace|msg1|myException|", GetLastLog());
         }
 
         /// <summary>
