@@ -531,7 +531,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            OutQueryGetAllOperation(std::vector<cache::CacheEntry<K, V>>* res) : res(res)
+            OutQueryGetAllOperation(std::vector<ignite::cache::CacheEntry<K, V>>* res) : res(res)
             {
                 // No-op.
             }
@@ -545,7 +545,7 @@ namespace ignite
                     K key = reader.ReadTopObject<K>();
                     V val = reader.ReadTopObject<V>();
 
-                    res->push_back(cache::CacheEntry<K, V>(key, val));
+                    res->push_back(ignite::cache::CacheEntry<K, V>(key, val));
                 }
             }
 
