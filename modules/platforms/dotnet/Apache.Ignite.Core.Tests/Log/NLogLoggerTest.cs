@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using System;
     using System.Globalization;
     using System.Linq;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.NLog;
     using global::NLog;
     using global::NLog.Config;
@@ -130,17 +131,25 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestIgniteStartup()
         {
+            // TODO: more ctors, log from .NET, instance check
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 Logger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger())
             };
 
-            using (Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Assert.IsTrue(_logTarget.Logs.Contains(
                     string.Format("|Debug|Starting Ignite.NET {0}||", typeof(Ignition).Assembly.GetName().Version)));
 
                 Assert.IsTrue(_logTarget.Logs.Any(x => x.Contains(">>> Topology snapshot.")));
+
+                Assert.IsInstanceOf<IgniteNLogLogger>(ignite.Logger);
+
+                ignite.Logger.Info("Log from user code.");
+
+                Assert.IsTrue(_logTarget.Logs.Contains("|Info|Log from user code.||"));
             }
 
             Assert.IsTrue(_logTarget.Logs.Contains(
