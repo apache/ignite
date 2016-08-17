@@ -120,6 +120,13 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
     }
 
+    /*
+     * Context.
+     */
+    public GridKernalContext ctx() {
+        return ctx;
+    }
+
     /**
      * @param nodeId Node ID.
      * @return {@code true} If this index needs data from the given source node.

@@ -657,8 +657,7 @@ public class GridReduceQueryExecutor {
                             for (int c = 0; c < cols; c++) {
                                 Value val = row.getValue(c);
 
-                                resRow.add(val instanceof GridH2ValueCacheObject ?
-                                    ((GridH2ValueCacheObject)val).getObjectCopyIfNeeded() : val.getObject());
+                                resRow.add(val.getObject());
                             }
 
                             res.add(resRow);
@@ -1324,7 +1323,7 @@ public class GridReduceQueryExecutor {
          * @throws IgniteCheckedException If failed.
          */
         protected Iter(ResultSet data) throws IgniteCheckedException {
-            super(data, true);
+            super(data, true, false);
         }
 
         /** {@inheritDoc} */

@@ -21,6 +21,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -35,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /** */
     public CacheSqlQueryValueCopySelfTest() {
-        super(true);
+        super(false);
     }
 
     /** {@inheritDoc} */
@@ -56,8 +57,26 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGridsMultiThreaded(3);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        IgniteCache<Integer, Value> cache = grid(0).cache(null);
+
+        cache.put(0, new Value("before"));
+        cache.put(1, new Value("before"));
+        cache.put(2, new Value("before"));
+        cache.put(3, new Value("before"));
+        cache.put(4, new Value("before"));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().cache(null);
+        IgniteCache<Integer, Value> cache = grid(0).cache(null);
 
         cache.removeAll();
 
@@ -66,9 +85,9 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /**
@@ -95,9 +114,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      * Test two step query without local reduce phase.
      */
     public void testTwoStepSkipRdcSqlQuery() {
-        IgniteCache<Integer, Value> cache = grid().cache(null);
-
-        cache.put(0, new Value("before"));
+        IgniteCache<Integer, Value> cache = grid(0).cache(null);
 
         List<Cache.Entry<Integer, Value>> all = cache.query(
             new SqlQuery<Integer, Value>(Value.class, "select * from Value")).getAll();
@@ -112,7 +129,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      * Test two step query value copy.
      */
     public void testTwoStepRdcSqlQuery() {
-        IgniteCache<Integer, Value> cache = grid().cache(null);
+        IgniteCache<Integer, Value> cache = grid(0).cache(null);
 
         cache.put(0, new Value("before"));
 
@@ -128,7 +145,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
      * Tests local sql query.
      */
     public void testLocalSqlQuery() {
-        IgniteCache<Integer, Value> cache = grid().cache(null);
+        IgniteCache<Integer, Value> cache = grid(0).cache(null);
 
         Value before = new Value("before");
         cache.put(0, before);
