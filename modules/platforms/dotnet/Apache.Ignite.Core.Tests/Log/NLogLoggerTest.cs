@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestLogging()
         {
-            var nLogger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger());
+            var nLogger = new IgniteNLogLogger();
 
             // All parameters.
             nLogger.Log(LogLevel.Trace, "msg{0}", new object[] {1}, CultureInfo.InvariantCulture, "category", 
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new IgniteNLogLogger(LogManager.GetCurrentClassLogger())
+                Logger = new IgniteNLogLogger(LogManager.GetLogger("foo"))
             };
 
             using (var ignite = Ignition.Start(cfg))

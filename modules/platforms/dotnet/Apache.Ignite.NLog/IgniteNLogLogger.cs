@@ -29,8 +29,6 @@ namespace Apache.Ignite.NLog
     /// </summary>
     public class IgniteNLogLogger : ILogger
     {
-        // TODO: Should be configurable in config file.. how Java does this?
-
         /// <summary>
         /// The NLog logger.
         /// </summary>
@@ -40,18 +38,9 @@ namespace Apache.Ignite.NLog
         /// Initializes a new instance of the <see cref="IgniteNLogLogger"/> class using the
         /// <see cref="LogManager.GetCurrentClassLogger()"/> to retrieve the NLog logger.
         /// </summary>
-        public IgniteNLogLogger()
+        public IgniteNLogLogger() : this(LogManager.GetCurrentClassLogger())
         {
-            _logger = LogManager.GetCurrentClassLogger();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteNLogLogger"/> class using the
-        /// <see cref="LogManager.GetLogger(string)"/> to retrieve the NLog logger.
-        /// </summary>
-        public IgniteNLogLogger(string loggerName)
-        {
-            _logger = LogManager.GetLogger(loggerName);
+            // No-op.
         }
 
         /// <summary>
