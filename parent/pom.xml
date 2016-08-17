@@ -34,6 +34,8 @@
     </parent>
 
     <properties>
+        <app.version>1.8.0-SNAPSHOT</app.version>
+
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spark.version>1.5.2</spark.version>
