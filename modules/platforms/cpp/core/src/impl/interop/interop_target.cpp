@@ -36,6 +36,12 @@ namespace ignite
              */
             enum OperationResult
             {
+                /** Null. */
+                ResultNull = 0,
+
+                /** Object. */
+                ResultObject = 1,
+
                 /** Error. */
                 ResultError = -1
             };
@@ -160,10 +166,12 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res != ResultError)
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultObject)
                         ReadFrom(outInMem.Get(), outOp);
+                    else if (res == ResultNull)
+                        outOp.SetNull();
 
-                    //TODO: Read and process error if res == ResultError.
+                    //Read and process error if res == ResultError here.
                 }
             }
         }
