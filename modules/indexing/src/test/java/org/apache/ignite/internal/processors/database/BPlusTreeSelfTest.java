@@ -90,7 +90,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
 
-        X.println("Test seed: " + seed + "L");
+        X.println("Test seed: " + seed + "L; // ");
 
         rnd = new Random(seed);
 
@@ -543,17 +543,41 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testCursorMerge() throws IgniteCheckedException {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testEmptyCursors() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
-
-        X.println(" " + pageMem.pageSize());
 
         TestTree tree = createTestTree(true);
 
-        Map<Long,Long> map = new TreeMap<>();
+        assertFalse(tree.find(null, null).next());
+        assertFalse(tree.find(0L, 1L).next());
 
-        for (int i = 0; i < 20_000 + rnd.nextInt(10); i++) {
-            Long row = (long)rnd.nextInt(40000);
+        tree.put(1L);
+        tree.put(2L);
+        tree.put(3L);
+
+        assertEquals(3, size(tree.find(null, null)));
+
+        assertFalse(tree.find(4L, null).next());
+        assertFalse(tree.find(null, 0L).next());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testCursorConcurrentMerge() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+//        X.println(" " + pageMem.pageSize());
+
+        TestTree tree = createTestTree(true);
+
+        TreeMap<Long,Long> map = new TreeMap<>();
+
+        for (int i = 0; i < 20_000 + rnd.nextInt(2 * MAX_PER_PAGE); i++) {
+            Long row = (long)rnd.nextInt(40_000);
 
 //            X.println(" <-- " + row);
 
@@ -561,15 +585,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(row, tree.findOne(row));
         }
 
-        GridCursor<Long> c = tree.find(null, null);
-        Iterator<Long> i = map.keySet().iterator();
+        final int off = rnd.nextInt(5 * MAX_PER_PAGE);
 
-        final int off = rnd.nextInt(map.size());
+        Long upperBound = 30_000L + rnd.nextInt(2 * MAX_PER_PAGE);
+
+        GridCursor<Long> c = tree.find(null, upperBound);
+        Iterator<Long> i = map.headMap(upperBound, true).keySet().iterator();
+
+        Long last = null;
 
         for (int j = 0; j < off; j++) {
             assertTrue(c.next());
 
+//            X.println(" <-> " + c.get());
+
             assertEquals(i.next(), c.get());
+
+            last = c.get();
+        }
+
+        if (last != null) {
+//            X.println(" >-< " + last + " " + upperBound);
+
+            c = tree.find(last, upperBound);
+
+            assertTrue(c.next());
+            assertEquals(last, c.get());
         }
 
         while (c.next()) {
@@ -582,10 +623,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             i.remove();
         }
 
-        assertEquals(off, map.size());
-        assertEquals(off, size(tree.find(null, null)));
+        assertEquals(map.size(), size(tree.find(null, null)));
     }
 
+    /**
+     * @param c Cursor.
+     * @return Number of elements.
+     * @throws IgniteCheckedException If failed.
+     */
     private static int size(GridCursor<?> c) throws IgniteCheckedException {
         int cnt = 0;
 

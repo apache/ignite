@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
@@ -746,8 +747,8 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @param lower Lower bound.
-     * @param upper Upper bound.
+     * @param lower Lower bound inclusive or {@code null} if unbounded.
+     * @param upper Upper bound inclusive or {@code null} if unbounded.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
@@ -3009,7 +3010,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private final class ForwardCursor implements GridCursor<T> {
         /** */
-        private List<T> rows;
+        private T[] rows;
 
         /** */
         private int row = -1;
@@ -3043,7 +3044,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                 assert idx < 0;
 
-                cnt = -idx;
+                cnt = -idx - 1;
 
                 nextPageId = 0; // The End.
             }
@@ -3057,6 +3058,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param startIdx Start index.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
             assert buf != null;
             assert io.isLeaf();
@@ -3067,23 +3069,30 @@ public abstract class BPlusTree<L, T extends L> {
             nextPageId = io.getForward(buf);
             int cnt = io.getCount(buf);
 
-            if (cnt == 0)
-                return;
+            assert cnt >= startIdx;
 
-            assert cnt > 0 : cnt;
-
-            if (upperBound != null)
+            if (upperBound != null && startIdx != cnt)
                 cnt = findUpperBound(buf, io, cnt);
 
-            if (rows == null)
-                rows = new ArrayList<>(cnt);
-            else
-                rows.clear();
+            cnt -= startIdx;
 
-            for (int i = startIdx; i < cnt; i++)
-                rows.add(getRow(io, buf, i));
+            if (cnt > 0) {
+                if (rows == null)
+                    rows = (T[])new Object[cnt];
 
-            assert !rows.isEmpty() || (cnt == 0 && nextPageId == 0);
+                for (int i = 0; i < cnt; i++) {
+                    T r = getRow(io, buf, startIdx + i);
+
+                    rows = GridArrays.set(rows, i, r);
+                }
+
+                GridArrays.clearTail(rows, cnt);
+            }
+            else {
+                assert nextPageId == 0;
+
+                rows = null;
+            }
         }
 
         /** {@inheritDoc} */
@@ -3092,8 +3101,12 @@ public abstract class BPlusTree<L, T extends L> {
             if (rows == null)
                 return false;
 
-            if (++row < rows.size())
+            if (++row < rows.length && rows[row] != null) {
+                if (row != 0)
+                    rows[row - 1] = null; // Clear previous returned row.
+
                 return true;
+            }
 
             return nextPage();
 
@@ -3103,8 +3116,12 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException If failed.
          */
         private void reinitialize() throws IgniteCheckedException {
+            T lastRow = rows[row - 1];
+
+            assert lastRow != null;
+
             // Here we have shift 1 because otherwise we can return the same row twice.
-            doFind(new GetCursor(rows.get(row - 1), 1, this));
+            doFind(new GetCursor(lastRow, 1, this));
         }
 
         /**
@@ -3135,25 +3152,21 @@ public abstract class BPlusTree<L, T extends L> {
                 }
             }
 
-            if (reinitialize) // Reinitialize when `next` is released.
+            if (reinitialize) // Reinitialize when `next` page is released.
                 reinitialize();
-
-            if (rows.isEmpty()) {
-                rows = null;
-
-                assert nextPageId == 0; // We can not see any non-terminal leaf page in empty state.
-
-                return false;
-            }
 
             row = 0;
 
-            return true;
+            return rows != null;
         }
 
         /** {@inheritDoc} */
         @Override public T get() {
-            return rows.get(row);
+            T r = rows[row];
+
+            assert r != null;
+
+            return r;
         }
     }
 
