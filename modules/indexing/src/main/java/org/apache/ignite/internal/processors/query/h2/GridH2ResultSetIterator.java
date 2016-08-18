@@ -68,7 +68,7 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
     private final boolean closeStmt;
 
     /** */
-    private final boolean cpIfNeeded;
+    private final boolean locNode;
 
     /** */
     private boolean hasRow;
@@ -76,12 +76,13 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
     /**
      * @param data Data array.
      * @param closeStmt If {@code true} closes result set statement when iterator is closed.
+     * @param locNode Is local node?
      * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data, boolean closeStmt, boolean cpIfNeeded) throws IgniteCheckedException {
+    protected GridH2ResultSetIterator(ResultSet data, boolean closeStmt, boolean locNode) throws IgniteCheckedException {
         this.data = data;
         this.closeStmt = closeStmt;
-        this.cpIfNeeded = cpIfNeeded;
+        this.locNode = locNode;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -118,7 +119,7 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
             for (int c = 0; c < row.length; c++) {
                 Value val = values[c];
                 
-                if (cpIfNeeded && val instanceof GridH2ValueCacheObject)
+                if (locNode && val instanceof GridH2ValueCacheObject)
                     row[c] = ((GridH2ValueCacheObject)values[c]).getObjectCopyIfNeeded();
                 else
                     row[c] = val.getObject();

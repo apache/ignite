@@ -706,7 +706,7 @@ public class GridMapQueryExecutor {
                 page == 0 ? res.rowCnt : -1 ,
                 res.cols,
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
-                loc ? copyIfNeeded(rows) : null);
+                loc ? localNodeCopy(rows) : null);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -724,7 +724,7 @@ public class GridMapQueryExecutor {
      * Make necessary copies to honor {@link CacheConfiguration#setCopyOnRead(boolean)} semantics.
      * @param rows Rows.
      */
-    private Collection<?> copyIfNeeded(List<Value[]> rows) {
+    private Collection<?> localNodeCopy(List<Value[]> rows) {
         if (rows.size() == 0) return rows;
 
         for (int i = 0; i < rows.size(); i++) {
