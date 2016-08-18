@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -127,10 +128,15 @@ public class GridH2ValueCacheObject extends Value {
     }
 
     /** */
-    public Object getObjectCopyIfNeeded() {
-        // Avoid copying on client and in off-heap mode.
-        return obj.isPlatformType() ? obj.value(objectContext(),
-            cctx != null && cctx.affinityNode() && !cctx.isOffHeapEnabled() && cctx.config().isCopyOnRead()) : obj;
+    public Object getObjectCopy() {
+        return obj.value(objectContext(), true);
+    }
+
+    /**
+     * Returns true if the value for the cache object has to be copied because of {@link CacheConfiguration#isCopyOnRead()}.
+     */
+    public boolean isCopyNeeded() {
+        return cctx != null && cctx.affinityNode() && !cctx.isOffHeapEnabled() && cctx.config().isCopyOnRead();
     }
 
     /** {@inheritDoc} */

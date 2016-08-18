@@ -34,11 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests modification of values returned by query iterators with enabled copy on read.
  */
 public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
-    /** */
-    public CacheSqlQueryValueCopySelfTest() {
-        super(false);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
@@ -98,8 +93,6 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Value> cache = client.cache(null);
 
-            cache.put(0, new Value("before"));
-
             List<Cache.Entry<Integer, Value>> all = cache.query(
                 new SqlQuery<Integer, Value>(Value.class, "select * from Value")).getAll();
 
@@ -117,7 +110,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Value> cache = grid(0).cache(null);
 
         List<Cache.Entry<Integer, Value>> all = cache.query(
-            new SqlQuery<Integer, Value>(Value.class, "select * from Value")).getAll();
+            new SqlQuery<Integer, Value>(Value.class, "select * from Value").setPageSize(3)).getAll();
 
         for (Cache.Entry<Integer, Value> entry : all)
             entry.getValue().str = "after";
@@ -159,6 +152,37 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
             entry.getValue().str = "after";
 
         check(cache);
+    }
+
+    /** */
+    private static class Key {
+        /** */
+        private String str;
+
+        /**
+         * @param str String.
+         */
+        public Key(String str) {
+            this.str = str;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Key key = (Key)o;
+
+            return str.equals(key.str);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return str.hashCode();
+        }
     }
 
     /** */

@@ -119,8 +119,11 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
             for (int c = 0; c < row.length; c++) {
                 Value val = values[c];
                 
-                if (locNode && val instanceof GridH2ValueCacheObject)
-                    row[c] = ((GridH2ValueCacheObject)values[c]).getObjectCopyIfNeeded();
+                if (locNode && val instanceof GridH2ValueCacheObject) {
+                    GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
+
+                    row[c] = valCacheObj.isCopyNeeded() ? valCacheObj.getObjectCopy() : valCacheObj.getObject();
+                }
                 else
                     row[c] = val.getObject();
             }

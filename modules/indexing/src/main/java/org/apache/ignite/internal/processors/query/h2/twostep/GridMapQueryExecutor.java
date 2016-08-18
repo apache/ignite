@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -706,7 +705,7 @@ public class GridMapQueryExecutor {
                 page == 0 ? res.rowCnt : -1 ,
                 res.cols,
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
-                loc ? localNodeCopy(rows) : null);
+                loc ? rows : null);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -718,34 +717,6 @@ public class GridMapQueryExecutor {
 
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Make necessary copies to honor {@link CacheConfiguration#setCopyOnRead(boolean)} semantics.
-     * @param rows Rows.
-     */
-    private Collection<?> localNodeCopy(List<Value[]> rows) {
-        if (rows.size() == 0) return rows;
-
-        for (int i = 0; i < rows.size(); i++) {
-            Value[] row = rows.get(i);
-
-            for (int j = 0; j < row.length; j++) {
-                Value val = row[j];
-
-                if (val instanceof GridH2ValueCacheObject) {
-                    GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
-
-                    row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
-                        @Override public Object getObject() {
-                            return super.getObjectCopyIfNeeded();
-                        }
-                    };
-                }
-            }
-        }
-
-        return rows;
     }
 
     /**
@@ -930,6 +901,9 @@ public class GridMapQueryExecutor {
         private final int rowCnt;
 
         /** */
+        private boolean cpNeeded;
+
+        /** */
         private volatile boolean closed;
 
         /**
@@ -943,6 +917,7 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
+            this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -973,6 +948,31 @@ public class GridMapQueryExecutor {
                     return true;
 
                 Value[] row = res.currentRow();
+
+                if (cpNeeded) {
+                    boolean copied = false;
+
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
+
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+
+                            if (valCacheObj.isCopyNeeded()) {
+                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
+                                    @Override public Object getObject() {
+                                        return super.getObjectCopy();
+                                    }
+                                };
+
+                                copied = true;
+                            }
+                        }
+                    }
+
+                    if (i == 0 & !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
+                }
 
                 assert row != null;
 
