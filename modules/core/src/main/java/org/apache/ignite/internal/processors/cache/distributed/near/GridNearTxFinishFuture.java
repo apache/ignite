@@ -313,7 +313,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
 
-            if (tx.commitError() != null)
+            if (commit && tx.commitError() != null)
                 err = tx.commitError();
 
             if (initialized() || err != null) {
