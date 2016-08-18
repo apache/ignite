@@ -970,7 +970,7 @@ public class GridMapQueryExecutor {
                         }
                     }
 
-                    if (i == 0 & !copied)
+                    if (i == 0 && !copied)
                         cpNeeded = false; // No copy on read caches, skip next checks.
                 }
 
