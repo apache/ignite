@@ -2906,7 +2906,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
 
                 if (string.IsNullOrEmpty(containsText))
-                    Assert.AreEqual(ex.InnerException.Message, AddArgCacheEntryProcessor.ExceptionText);
+                    Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
                 else
                     Assert.IsTrue(ex.ToString().Contains(containsText));
             }
