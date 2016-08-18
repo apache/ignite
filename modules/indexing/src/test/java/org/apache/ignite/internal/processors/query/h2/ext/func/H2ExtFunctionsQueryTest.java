@@ -22,6 +22,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.h2.command.Prepared;
+import org.h2.engine.Session;
+import org.h2.jdbc.JdbcConnection;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -80,7 +85,7 @@ public class H2ExtFunctionsQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void testSqlLenFunction() throws Exception {
+    public void testSqlLenFunctionInSqlFieldsQuery() throws Exception {
         final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName, lastName, LEN(concat(firstName, ' ', lastName)) from Person;");
 
         List<List<?>> rows = pCache.query(sql).getAll();
