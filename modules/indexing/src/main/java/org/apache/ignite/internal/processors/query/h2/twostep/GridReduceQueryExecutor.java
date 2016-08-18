@@ -654,11 +654,8 @@ public class GridReduceQueryExecutor {
 
                             List<Object> resRow = new ArrayList<>(cols);
 
-                            for (int c = 0; c < cols; c++) {
-                                Value val = row.getValue(c);
-
-                                resRow.add(val.getObject());
-                            }
+                            for (int c = 0; c < cols; c++)
+                                resRow.add(row.getValue(c).getObject());
 
                             res.add(resRow);
                         }
