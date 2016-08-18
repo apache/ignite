@@ -86,7 +86,7 @@ public class H2ExtFunctionsQueryTest extends AbstractH2CompareQueryTest {
      */
     @SuppressWarnings("unchecked")
     public void testSqlLenFunctionInSqlFieldsQuery() throws Exception {
-        final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName, lastName, LEN(concat(firstName, ' ', lastName)) from Person;");
+        final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName, lastName, LEN(concat(firstName, ' ', lastName)) from \"part\".Person;");
 
         List<List<?>> rows = pCache.query(sql).getAll();
 
