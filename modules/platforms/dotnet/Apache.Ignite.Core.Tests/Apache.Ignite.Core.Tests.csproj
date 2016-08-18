@@ -58,6 +58,8 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
+    <Compile Include="Binary\JavaTypeMappingTest.cs" />
+    <Compile Include="Binary\TypeResolverTest.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
@@ -177,7 +179,6 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
-    <Compile Include="TypeResolverTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>

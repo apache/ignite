@@ -45,8 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
             {typeof (Guid), "java.util.UUID"},
-            {typeof (DateTime), "java.sql.Timestamp"},
-            {typeof (DateTime?), "java.sql.Timestamp"},
+            {typeof (DateTime), "java.sql.Timestamp"}
         };
 
         /** */
@@ -70,6 +69,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == null)
                 return null;
 
+            // Unwrap nullable.
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
             string res;
 
             return NetToJava.TryGetValue(type, out res) ? res : null;
@@ -83,14 +85,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == null)
                 return;
 
-            Type directType;
-            if (!IndirectMappingTypes.TryGetValue(type, out directType))
+            var directType = GetDirectlyMappedType(type);
+
+            if (directType == type)
                 return;
 
             log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
                      "This may cause issues in SQL queries. " +
                      "You can use '{3}' instead to achieve direct mapping.",
                 logInfo, type, NetToJava[type], directType);
+        }
+
+        /// <summary>
+        /// Gets the compatible type that maps directly to Java.
+        /// </summary>
+        public static Type GetDirectlyMappedType(Type type)
+        {
+            // Unwrap nullable.
+            var unwrapType = Nullable.GetUnderlyingType(type) ?? type;
+
+            Type directType;
+
+            return IndirectMappingTypes.TryGetValue(unwrapType, out directType) ? directType : type;
         }
 
         /// <summary>
