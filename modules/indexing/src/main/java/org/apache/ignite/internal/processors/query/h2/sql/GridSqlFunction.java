@@ -127,6 +127,10 @@ public class GridSqlFunction extends GridSqlElement {
 
                 break;
 
+            case LEN:
+                buff.append("LENGTH(").append(child().getSQL()).append(")");
+                break;
+
             case EXTRACT:
                 ValueString v = (ValueString)((GridSqlConst)child(0)).value();
                 buff.append(v.getString()).append(" FROM ").append(child(1).getSQL());

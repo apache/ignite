@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -39,9 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Query;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+
+import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -315,11 +315,19 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertSqlEquals(prepared.getPlanSQL(), res);
     }
 
+    /**
+     * Sql function for tests
+     * @return const 1
+     */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /**
+     * Sql function for tests
+     * @return simple query result
+     */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
@@ -329,18 +337,23 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public Date date = new Date(System.currentTimeMillis());
 
+        /** */
         @QuerySqlField(index = true)
         public String name = "Ivan";
 
+        /** */
         @QuerySqlField(index = true)
         public String parentName;
 
+        /** */
         @QuerySqlField(index = true)
         public int addrId;
 
+        /** */
         @QuerySqlField(index = true)
         public int old;
     }
@@ -349,12 +362,15 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public int id;
 
+        /** */
         @QuerySqlField(index = true)
         public int streetNumber;
 
+        /** */
         @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }
