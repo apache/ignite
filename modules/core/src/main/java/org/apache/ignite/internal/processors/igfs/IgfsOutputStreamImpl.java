@@ -315,6 +315,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
                     ", fileInfo=" + fileInfo + ']', e);
             }
 
+            // Finish batch before unlock to prevent assertion that check finished status of the exists batch
+            // when a file is open to write (e.g. append see more IgfsImpl.newBatch)
+            if (batch != null)
+                batch.finish();
+
             // Unlock the file after data is flushed.
             try {
                 if (flushSuccess && space > 0)
@@ -332,8 +337,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
             // Finally, await secondary file system flush.
             if (batch != null) {
-                batch.finish();
-
                 if (mode == DUAL_SYNC) {
                     try {
                         batch.await();
