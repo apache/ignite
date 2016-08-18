@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -128,6 +129,20 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    public void testPessimisticOnePhaseCommitWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1)
+            .setNearConfiguration(new NearCacheConfiguration());
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPessimisticOnePhaseCommitFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
 
@@ -141,8 +156,36 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    public void testPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
+            .setNearConfiguration(new NearCacheConfiguration());
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPessimistic() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2)
+            .setNearConfiguration(new NearCacheConfiguration());
 
         doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
 
@@ -193,6 +236,20 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    public void testOptimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
+            .setNearConfiguration(new NearCacheConfiguration());
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testOptimistic() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
 
@@ -217,6 +274,19 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
@@ -224,7 +294,14 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
         TransactionIsolation txIsolation) throws Exception {
         IgniteEx cln = grid(getServerNodeCount());
 
-        final IgniteCache clnCache = cln.createCache(ccfg);
+        grid(0).createCache(ccfg);
+
+        IgniteCache clnCache;
+
+        if (ccfg.getNearConfiguration() != null)
+            clnCache = cln.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
+        else
+            clnCache = cln.cache(ccfg.getName());
 
         putKeys(clnCache, EXPECTED_VALUE);
 
@@ -272,11 +349,13 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
                 checkKeys(cache, EXPECTED_VALUE);
             }
 
+            final IgniteCache clnCache0 = clnCache;
+
             // Implicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
                 GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        clnCache.invoke(KEYS, new NonSerialazibleEntryProcessor());
+                        clnCache0.invoke(KEYS, new NonSerialazibleEntryProcessor());
 
                         return null;
                     }
