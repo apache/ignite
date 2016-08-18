@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -37,6 +39,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
 
 /**
  */
@@ -88,7 +92,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         X.println("Test seed: " + seed + "L");
 
-        TestTree.rnd = new Random(seed);
+        rnd = new Random(seed);
 
         pageMem = createPageMemory();
 
@@ -115,7 +119,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestTree.rnd = null;
+        rnd = null;
 
         if (reuseList != null) {
             long size = reuseList.size();
@@ -537,6 +541,58 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     tree.validateTree();
             }
         }
+    }
+
+    public void testCursorMerge() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        X.println(" " + pageMem.pageSize());
+
+        TestTree tree = createTestTree(true);
+
+        Map<Long,Long> map = new TreeMap<>();
+
+        for (int i = 0; i < 20_000 + rnd.nextInt(10); i++) {
+            Long row = (long)rnd.nextInt(40000);
+
+//            X.println(" <-- " + row);
+
+            assertEquals(map.put(row, row), tree.put(row));
+            assertEquals(row, tree.findOne(row));
+        }
+
+        GridCursor<Long> c = tree.find(null, null);
+        Iterator<Long> i = map.keySet().iterator();
+
+        final int off = rnd.nextInt(map.size());
+
+        for (int j = 0; j < off; j++) {
+            assertTrue(c.next());
+
+            assertEquals(i.next(), c.get());
+        }
+
+        while (c.next()) {
+//            X.println(" --> " + c.get());
+
+            assertNotNull(c.get());
+            assertEquals(i.next(), c.get());
+            assertEquals(c.get(), tree.remove(c.get()));
+
+            i.remove();
+        }
+
+        assertEquals(off, map.size());
+        assertEquals(off, size(tree.find(null, null)));
+    }
+
+    private static int size(GridCursor<?> c) throws IgniteCheckedException {
+        int cnt = 0;
+
+        while(c.next())
+            cnt++;
+
+        return cnt;
     }
 
     /**

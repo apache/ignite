@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -2976,13 +2975,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
-        // TODO GG-11231 (workaround for GG-11231).
         if (isEmpty())
             return;
 
+        // We do batch and recreate cursor because removing using a single cursor
+        // will cause it to reinitialize on each merged page.
         List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
 
-        while (!isEmpty()) {
+        do {
             for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null);
                 it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH;)
                 keys.add((K)it.next().key());
@@ -2991,6 +2991,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             keys.clear();
         }
+        while (!isEmpty());
     }
 
     /** {@inheritDoc} */

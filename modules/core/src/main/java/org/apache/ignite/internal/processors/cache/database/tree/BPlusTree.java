@@ -239,8 +239,7 @@ public abstract class BPlusTree<L, T extends L> {
             g.backId = 0; // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, g.row,
-                g.getClass() == GetCursor.class ? -1 : 0); // For range lookup we search for a lower bound.
+            int idx = findInsertionPoint(io, buf, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -728,7 +727,7 @@ public abstract class BPlusTree<L, T extends L> {
             ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
 
             try {
-                cursor.bootstrap(buf, io(buf), 0);
+                cursor.fillFromBuffer(buf, io(buf), 0);
             }
             finally {
                 first.releaseRead();
@@ -742,7 +741,8 @@ public abstract class BPlusTree<L, T extends L> {
      * Check if the tree is getting destroyed.
      */
     private void checkDestroyed() {
-        assert !destroyed.get() : "Tree is being concurrently destroyed: " + name;
+        if (destroyed.get())
+            throw new IllegalStateException("Tree is being concurrently destroyed: " + name);
     }
 
     /**
@@ -758,7 +758,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (lower == null)
                 return findLowerUnbounded(upper);
 
-            GetCursor g = new GetCursor(lower, upper);
+            // Lower bound must be shifted to -1 for case when multiple rows are equal to this bound.
+            GetCursor g = new GetCursor(lower, -1, new ForwardCursor(upper));
 
             doFind(g);
 
@@ -1766,6 +1767,9 @@ public abstract class BPlusTree<L, T extends L> {
         /** In/Out parameter: in case of right turn this field will contain backward page ID for the child. */
         protected long backId;
 
+        /** */
+        int shift;
+
         /**
          * @param row Row.
          */
@@ -1894,12 +1898,14 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param lower Lower bound.
-         * @param upper Upper bound.
+         * @param shift Shift.
+         * @param cursor Cursor.
          */
-        private GetCursor(L lower, L upper) {
+        GetCursor(L lower, int shift, ForwardCursor cursor) {
             super(lower);
 
-            cursor = new ForwardCursor(upper);
+            this.shift = shift;
+            this.cursor = cursor;
         }
 
         /** {@inheritDoc} */
@@ -1907,7 +1913,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (!io.isLeaf())
                 return false;
 
-            cursor.bootstrap(buf, io, idx);
+            cursor.fillFromBuffer(buf, io, idx);
 
             return true;
         }
@@ -1921,7 +1927,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert io.isLeaf();
 
-            cursor.bootstrap(buf, io, idx);
+            cursor.fillFromBuffer(buf, io, idx);
 
             return true;
         }
@@ -3006,7 +3012,7 @@ public abstract class BPlusTree<L, T extends L> {
         private List<T> rows;
 
         /** */
-        private int row;
+        private int row = -1;
 
         /** */
         private long nextPageId;
@@ -3024,19 +3030,25 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @param buf Buffer.
          * @param io IO.
-         * @param startIdx Start index.
+         * @param cnt Number of rows in the buffer.
+         * @return Corrected number of rows with respect to upper bound.
          * @throws IgniteCheckedException If failed.
          */
-        private void bootstrap(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
-            assert startIdx >= 0 : startIdx;
-            assert buf != null;
-            assert io != null;
-            assert rows == null;
+        private int findUpperBound(ByteBuffer buf, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+            // Compare with the last row on the page.
+            int cmp = compare(io, buf, cnt - 1, upperBound);
 
-            rows = new ArrayList<>();
-            row = -1;
+            if (cmp > 0) {
+                int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
 
-            fillFromBuffer(buf, io, startIdx);
+                assert idx < 0;
+
+                cnt = -idx;
+
+                nextPageId = 0; // The End.
+            }
+
+            return cnt;
         }
 
         /**
@@ -3048,7 +3060,7 @@ public abstract class BPlusTree<L, T extends L> {
         private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
             assert buf != null;
             assert io.isLeaf();
-            assert io.canGetRow();
+            assert startIdx >= 0 : startIdx;
 
             checkDestroyed();
 
@@ -3060,25 +3072,22 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert cnt > 0 : cnt;
 
-            if (upperBound != null) {
-                int cmp = compare(io, buf, cnt - 1, upperBound);
+            if (upperBound != null)
+                cnt = findUpperBound(buf, io, cnt);
 
-                if (cmp > 0) {
-                    int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
-
-                    assert idx < 0;
-
-                    cnt = -idx;
-
-                    nextPageId = 0; // The End.
-                }
-            }
+            if (rows == null)
+                rows = new ArrayList<>(cnt);
+            else
+                rows.clear();
 
             for (int i = startIdx; i < cnt; i++)
                 rows.add(getRow(io, buf, i));
+
+            assert !rows.isEmpty() || (cnt == 0 && nextPageId == 0);
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("SimplifiableIfStatement")
         @Override public boolean next() throws IgniteCheckedException {
             if (rows == null)
                 return false;
@@ -3086,31 +3095,60 @@ public abstract class BPlusTree<L, T extends L> {
             if (++row < rows.size())
                 return true;
 
-            row = 0;
-            rows.clear();
+            return nextPage();
 
-            while (nextPageId != 0) {
-                try (Page next = page(nextPageId)) {
-                    ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
+        }
 
-                    try {
-                        if (PageIO.getPageId(buf) != nextPageId)
-                            throw new IgniteCheckedException("Concurrent merge.");
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private void reinitialize() throws IgniteCheckedException {
+            // Here we have shift 1 because otherwise we can return the same row twice.
+            doFind(new GetCursor(rows.get(row - 1), 1, this));
+        }
 
+        /**
+         * @return {@code true} If we have rows to return after reading the next page.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean nextPage() throws IgniteCheckedException {
+            if (nextPageId == 0) {
+                rows = null;
+
+                return false;
+            }
+
+            boolean reinitialize = false;
+
+            try (Page next = page(nextPageId)) {
+                ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
+
+                try {
+                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                    if (PageIO.getPageId(buf) != nextPageId)
+                        reinitialize = true;
+                    else
                         fillFromBuffer(buf, io(buf), 0);
-
-                        if (!rows.isEmpty())
-                            return true;
-                    }
-                    finally {
-                        next.releaseRead();
-                    }
+                }
+                finally {
+                    next.releaseRead();
                 }
             }
 
-            rows = null;
+            if (reinitialize) // Reinitialize when `next` is released.
+                reinitialize();
 
-            return false;
+            if (rows.isEmpty()) {
+                rows = null;
+
+                assert nextPageId == 0; // We can not see any non-terminal leaf page in empty state.
+
+                return false;
+            }
+
+            row = 0;
+
+            return true;
         }
 
         /** {@inheritDoc} */
