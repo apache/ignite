@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -244,6 +245,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Relaxed consistency flag.
+     */
+    protected boolean initializeDefaultPathModes() {
+        return false;
+    }
+
+    /**
      * @return Client flag.
      */
     protected boolean client() {
@@ -367,6 +375,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
+
+        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -1070,17 +1080,36 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRootPropertiesPersistAfterFormat() throws Exception {
-        igfs.update(new IgfsPath("/"), Collections.singletonMap("foo", "moo"));
+        if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+            // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
+            // an arbitrary named property is just ignored:
+            checkRootPropertyUpdate("foo", "moo", null);
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+        else {
+            checkRootPropertyUpdate("foo", "moo", "moo");
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
+        final IgfsPath rootPath = new IgfsPath("/");
+
+        igfs.update(rootPath, Collections.singletonMap(prop, setVal));
 
         igfs.format();
 
-        IgfsFile file = igfs.info(new IgfsPath("/"));
+        IgfsFile file = igfs.info(rootPath);
 
         assert file != null;
 
         Map<String,String> props = file.properties();
 
-        assertEquals("moo", props.get("foo"));
+        assertEquals(expGetVal, props.get(prop));
     }
 
     /**
@@ -1120,6 +1149,112 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 return null;
             }
         }, IgfsPathNotFoundException.class, "File not found: " + FILE);
+    }
+
+    /**
+     * Test setTimes operation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetTimes() throws Exception {
+        createFile(igfs.asSecondary(), FILE, true, chunk);
+
+        checkExist(igfs, igfsSecondary, DIR);
+        checkExist(igfs, igfsSecondary, SUBDIR);
+        checkExist(igfs, igfsSecondary, FILE);
+
+        checkSetTimes(SUBDIR);
+        checkSetTimes(FILE);
+
+        try {
+            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+
+            fail("Exception is not thrown for missing file.");
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Check setTimes logic for path.
+     *
+     * @param path Path.
+     * @throws Exception If failed.
+     */
+    private void checkSetTimes(IgfsPath path) throws Exception {
+        IgfsFile info = igfs.info(path);
+        T2<Long, Long> secondaryTimes = dual ? igfsSecondary.times(path.toString()) : null;
+
+        assert info != null;
+
+        // Change nothing.
+        igfs.setTimes(path, -1, -1);
+
+        IgfsFile newInfo = igfs.info(path);
+
+        assert newInfo != null;
+
+        assertEquals(info.accessTime(), newInfo.accessTime());
+        assertEquals(info.modificationTime(), newInfo.modificationTime());
+
+        if (dual) {
+            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+            assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
+            assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+        }
+
+        // Change only access time.
+        igfs.setTimes(path, info.accessTime() + 1, -1);
+
+        newInfo = igfs.info(path);
+
+        assert newInfo != null;
+
+        assertEquals(info.accessTime() + 1, newInfo.accessTime());
+        assertEquals(info.modificationTime(), newInfo.modificationTime());
+
+        if (dual) {
+            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
+            assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+        }
+
+        // Change only modification time.
+        igfs.setTimes(path, -1, info.modificationTime() + 1);
+
+        newInfo = igfs.info(path);
+
+        assert newInfo != null;
+
+        assertEquals(info.accessTime() + 1, newInfo.accessTime());
+        assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
+
+        if (dual) {
+            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
+            assertEquals(newInfo.modificationTime(), (long)newSecondaryTimes.get2());
+        }
+
+        // Change both.
+        igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
+
+        newInfo = igfs.info(path);
+
+        assert newInfo != null;
+
+        assertEquals(info.accessTime() + 2, newInfo.accessTime());
+        assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
+
+        if (dual) {
+            T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+            assertEquals(newInfo.accessTime(), (long)newSecondaryTimes.get1());
+            assertEquals(newInfo.modificationTime(), (long)newSecondaryTimes.get2());
+        }
     }
 
     /**
@@ -2764,8 +2899,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
      */
-    protected static void createFile(IgfsSecondaryFileSystem igfs, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
-        throws IOException {
+    protected static void createFile(IgfsSecondaryFileSystem igfs, IgfsPath file, boolean overwrite,
+        @Nullable byte[]... chunks) throws IOException {
         OutputStream os = null;
 
         try {

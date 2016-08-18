@@ -1361,13 +1361,35 @@ public abstract class IgniteUtils {
      * @param dflt Default class to return.
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
-        try {
-            return cls == null ? dflt : Class.forName(cls);
+    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
+        return classForName(cls, dflt, false);
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(
+        @Nullable String cls,
+        @Nullable Class<?> dflt,
+        boolean includePrimitiveTypes
+    ) {
+        Class<?> clazz;
+        if (cls == null)
+            clazz = dflt;
+        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
+            try {
+                clazz = Class.forName(cls);
+            }
+            catch (ClassNotFoundException ignore) {
+                clazz = dflt;
+            }
         }
-        catch (ClassNotFoundException ignore) {
-            return dflt;
-        }
+        return clazz;
     }
 
     /**
@@ -6703,6 +6725,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Swaps two objects in array.
+     *
+     * @param arr Array.
+     * @param a Index of the first object.
+     * @param b Index of the second object.
+     */
+    public static void swap(Object[] arr, int a, int b) {
+        Object tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+
+    /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
      * <p/>
@@ -7453,6 +7488,27 @@ public abstract class IgniteUtils {
     public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Tries to acquire a permit from provided semaphore during {@code timeout}.
+     *
+     * @param sem Semaphore.
+     * @param timeout The maximum time to wait.
+     * @param unit The unit of the {@code time} argument.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @return {@code True} if acquires a permit, {@code false} another.
+     */
+    public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
+        throws IgniteInterruptedCheckedException {
+        try {
+            return sem.tryAcquire(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -9580,5 +9636,15 @@ public abstract class IgniteUtils {
                 return threads[i].getName();
 
         return "<failed to find active thread " + threadId + '>';
+    }
+
+    /**
+     * @param t0 Comparable object.
+     * @param t1 Comparable object.
+     * @param <T> Comparable type.
+     * @return Maximal object o t0 and t1.
+     */
+    public static <T extends Comparable<? super T>> T max(T t0, T t1) {
+        return t0.compareTo(t1) > 0 ? t0 : t1;
     }
 }

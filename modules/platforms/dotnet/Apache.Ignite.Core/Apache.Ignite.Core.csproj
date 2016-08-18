@@ -84,17 +84,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
-    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
-    <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
+    <Compile Include="Common\JavaException.cs" />
+    <Compile Include="DataStructures\Configuration\Package-Info.cs" />
+    <Compile Include="Discovery\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
-    <Compile Include="Binary\UserSerializerProxy.cs" />
-    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
     <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Fair\Package-Info.cs" />
     <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
@@ -102,7 +109,11 @@
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
+    <Compile Include="Cache\Configuration\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\Package-Info.cs" />
     <Compile Include="Communication\ICommunicationSpi.cs" />
+    <Compile Include="Communication\Package-Info.cs" />
+    <Compile Include="Communication\Tcp\Package-Info.cs" />
     <Compile Include="Communication\Tcp\TcpCommunicationSpi.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
@@ -164,6 +175,8 @@
     <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
+    <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
@@ -419,6 +432,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Interop\Package-Info.cs" />
     <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />

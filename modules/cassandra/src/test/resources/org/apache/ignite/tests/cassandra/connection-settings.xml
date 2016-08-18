@@ -26,7 +26,11 @@
     <bean id="cassandraAdminCredentials" class="org.apache.ignite.tests.utils.CassandraAdminCredentials"/>
     <bean id="cassandraRegularCredentials" class="org.apache.ignite.tests.utils.CassandraRegularCredentials"/>
 
-    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.TokenAwarePolicy">
+        <constructor-arg type="com.datastax.driver.core.policies.LoadBalancingPolicy">
+            <bean class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+        </constructor-arg>
+    </bean>
 
     <bean id="contactPoints" class="org.apache.ignite.tests.utils.CassandraHelper" factory-method="getContactPointsArray"/>
 

@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return reader.ReadBoolean() ? reader.ReadLongAsTimespan() : (TimeSpan?) null;
         }
-        
+
         /// <summary>
         /// Reads the nullable int.
         /// </summary>
