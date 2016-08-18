@@ -131,22 +131,6 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setName("partitioned");
-        cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cc.setBackups(0);
-        cc.setAtomicityMode(TRANSACTIONAL);
-
-        CacheConfiguration metaCfg = defaultCacheConfiguration();
-
-        metaCfg.setName("replicated");
-        metaCfg.setCacheMode(CacheMode.REPLICATED);
-        metaCfg.setAtomicityMode(TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(metaCfg, cc);
-
         return cfg;
     }
 
@@ -176,10 +160,23 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
-        igfsConfiguration.setDataCacheName("partitioned");
-        igfsConfiguration.setMetaCacheName("replicated");
         igfsConfiguration.setName("igfs" + UUID.randomUUID());
         igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+
+        dataCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+
+        metaCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsConfiguration.setMetaCacheConfig(metaCacheCfg);
+        igfsConfiguration.setDataCacheConfig(dataCacheCfg);
 
         if (endPntCfg != null)
             igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);

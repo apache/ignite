@@ -22,6 +22,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -185,6 +186,12 @@ public class FileSystemConfiguration {
     /** Update file length on flush flag. */
     private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
 
+    /** Meta cache config. */
+    private CacheConfiguration metaCacheCfg;
+
+    /** Data cache config. */
+    private CacheConfiguration dataCacheCfg;
+
     /**
      * Constructs default configuration.
      */
@@ -233,6 +240,8 @@ public class FileSystemConfiguration {
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
         updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
+        metaCacheCfg = cfg.getMetaCacheConfig();
+        dataCacheCfg = cfg.getDataCacheConfig();
     }
 
     /**
@@ -255,22 +264,51 @@ public class FileSystemConfiguration {
     }
 
     /**
+     * Cache config to store IGFS meta information.
+     *
+     * @return Cache configuration object.
+     */
+    @Nullable public CacheConfiguration getMetaCacheConfig() {
+        return metaCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS meta information. If {@code null}, then default config for
+     * meta-cache will be used.
+     *
+     * @param metaCacheCfg Cache configuration object.
+     */
+    public void setMetaCacheConfig(CacheConfiguration metaCacheCfg) {
+        this.metaCacheCfg = metaCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS data.
+     *
+     * @return Cache configuration object.
+     */
+    @Nullable public CacheConfiguration getDataCacheConfig() {
+        return dataCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS data. If {@code null}, then default config for
+     * data cache will be used.
+     *
+     * @param dataCacheCfg Cache configuration object.
+     */
+    public void setDataCacheConfig(CacheConfiguration dataCacheCfg) {
+        this.dataCacheCfg = dataCacheCfg;
+    }
+
+    /**
      * Cache name to store IGFS meta information. If {@code null}, then instance
      * with default meta-cache name will be used.
      *
      * @return Cache name to store IGFS meta information.
      */
     @Nullable public String getMetaCacheName() {
-        return metaCacheName;
-    }
-
-    /**
-     * Sets cache name to store IGFS meta information.
-     *
-     * @param metaCacheName Cache name to store IGFS meta information.
-     */
-    public void setMetaCacheName(String metaCacheName) {
-        this.metaCacheName = metaCacheName;
+        return IgfsUtils.IGFS_CACHE_PREFIX + name + IgfsUtils.META_CACHE_SUFFIX;
     }
 
     /**
@@ -279,17 +317,9 @@ public class FileSystemConfiguration {
      * @return Cache name to store IGFS data.
      */
     @Nullable public String getDataCacheName() {
-        return dataCacheName;
+        return IgfsUtils.IGFS_CACHE_PREFIX + name + IgfsUtils.DATA_CACHE_SUFFIX;
     }
 
-    /**
-     * Sets cache name to store IGFS data.
-     *
-     * @param dataCacheName Cache name to store IGFS data.
-     */
-    public void setDataCacheName(String dataCacheName) {
-        this.dataCacheName = dataCacheName;
-    }
 
     /**
      * Get file's data block size.

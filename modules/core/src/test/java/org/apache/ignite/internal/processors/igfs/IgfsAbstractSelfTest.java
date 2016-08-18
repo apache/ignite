@@ -393,8 +393,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         TcpDiscoveryIpFinder ipFinder) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -408,7 +406,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
@@ -421,11 +418,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -441,7 +440,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

@@ -182,7 +182,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 if (proxyCache(cacheName))
                     continue;
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {

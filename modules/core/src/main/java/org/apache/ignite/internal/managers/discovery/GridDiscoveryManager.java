@@ -1749,7 +1749,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             CachePredicate pred = entry.getValue();
 
-            if (!CU.isSystemCache(cacheName) && !CU.isIgfsCache(ctx.config(), cacheName) &&
+            if (!CU.isSystemCache(cacheName) && !CU.isIgfsCache(cacheName) &&
                 pred != null && pred.cacheNode(node))
                 caches.put(cacheName, pred.cacheMode);
         }

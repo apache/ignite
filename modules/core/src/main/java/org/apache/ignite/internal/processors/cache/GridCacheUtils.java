@@ -1289,12 +1289,11 @@ public class GridCacheUtils {
 //    }
 
     /**
-     * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        return IgfsUtils.isIgfsCache(cfg, cacheName);
+    public static boolean isIgfsCache(@Nullable String cacheName) {
+        return IgfsUtils.isIgfsCache(cacheName);
     }
 
     /**

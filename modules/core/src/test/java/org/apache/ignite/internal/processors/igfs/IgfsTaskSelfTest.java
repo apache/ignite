@@ -116,8 +116,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private IgniteConfiguration config(int idx) {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -125,7 +123,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = new CacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -134,10 +131,12 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -146,7 +145,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setGridName("node-" + idx);

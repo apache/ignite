@@ -66,12 +66,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** Null IGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
-    /** Min available TCP port. */
-    private static final int MIN_TCP_PORT = 1;
-
-    /** Max available TCP port. */
-    private static final int MAX_TCP_PORT = 0xFFFF;
-
     /** Converts context to IGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
         @Override public IgniteFileSystem apply(IgfsContext igfsCtx) {
@@ -100,8 +94,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
-
-        validateLocalIgfsConfigurations(cfgs);
 
         // Start IGFS instances.
         for (FileSystemConfiguration cfg : cfgs) {
@@ -285,82 +277,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      */
     private String maskName(@Nullable String name) {
         return name == null ? NULL_NAME : name;
-    }
-
-    /**
-     * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
-     * @param cfgs IGFS configurations
-     * @throws IgniteCheckedException If any of IGFS configurations is invalid.
-     */
-    private void validateLocalIgfsConfigurations(FileSystemConfiguration[] cfgs) throws IgniteCheckedException {
-        Collection<String> cfgNames = new HashSet<>();
-
-        for (FileSystemConfiguration cfg : cfgs) {
-            String name = cfg.getName();
-
-            if (cfgNames.contains(name))
-                throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
-                    "assign unique name to each): " + name);
-
-            CacheConfiguration dataCacheCfg = config(cfg.getDataCacheName());
-            CacheConfiguration metaCacheCfg = config(cfg.getMetaCacheName());
-
-            if (dataCacheCfg == null)
-                throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
-
-            if (GridQueryProcessor.isEnabled(dataCacheCfg))
-                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
-
-            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
-
-            if (metaCacheCfg == null)
-                throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
-
-            if (GridQueryProcessor.isEnabled(metaCacheCfg))
-                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
-
-            if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
-
-            if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
-                throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
-
-            if (!(dataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
-                throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
-                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
-
-            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
-
-            if (ipcCfg != null) {
-                final int tcpPort = ipcCfg.getPort();
-
-                if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
-                    throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
-                        ".." + MAX_TCP_PORT + "]: " + tcpPort);
-
-                if (ipcCfg.getThreadCount() <= 0)
-                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
-                        ipcCfg.getThreadCount());
-            }
-
-            boolean secondary = cfg.getDefaultMode() == PROXY;
-
-            if (cfg.getPathModes() != null) {
-                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
-                    if (mode.getValue() == PROXY)
-                        secondary = true;
-                }
-            }
-
-            if (secondary) {
-                // When working in any mode except of primary, secondary FS config must be provided.
-                assertParameter(cfg.getSecondaryFileSystem() != null,
-                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
-            }
-
-            cfgNames.add(name);
-        }
     }
 
     /**

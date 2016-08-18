@@ -174,7 +174,7 @@ public class IgnitionEx {
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
-    /**
+    /*
      * Checks runtime version to be 1.7.x or 1.8.x.
      * This will load pretty much first so we must do these checks here.
      */
@@ -522,6 +522,7 @@ public class IgnitionEx {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * failIfStarted Throw or not an exception if grid is already started.
+     * @param failIfStarted Throw or not an exception if grid is already started.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
@@ -543,7 +544,8 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx)
+        throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), true).grid();
@@ -563,7 +565,8 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
+        boolean failIfStarted) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
@@ -606,7 +609,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName)
+        throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -997,7 +1001,8 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted )
+        throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -1996,17 +2001,23 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
+                    if (CU.isIgfsCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot match the template \""
+                            + IgfsUtils.IGFS_CACHE_PREFIX + "<igfs_name>(" + IgfsUtils.DATA_CACHE_SUFFIX + "|"
+                            + IgfsUtils.META_CACHE_SUFFIX
+                            + ")\" because it is reserved for IGFS internal purposes.");
+
                     cacheCfgs.add(ccfg);
                 }
             }
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
 
-            // Iterate over IGFS caches and prepare their configurations if needed.
             assert cfg.getCacheConfiguration() != null;
 
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
-                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
+            IgfsUtils.prepareCacheConfigurations(cfg);
+
+            IgfsUtils.validateLocalIgfsConfigurations(cfg);
         }
 
         /**
