@@ -876,13 +876,5 @@ namespace Apache.Ignite.Core.Impl
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
         }
-
-        /// <summary>
-        /// Gets a value indicating whether this instance is disposed.
-        /// </summary>
-        protected bool IsDisposed
-        {
-            get { return _disposed; }
-        }
     }
 }
