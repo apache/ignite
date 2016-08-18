@@ -43,8 +43,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -289,8 +287,7 @@ public class GridResourceIoc {
 
                         if (t2 == null) {
                             t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                                new ArrayList<>(), new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -314,8 +311,7 @@ public class GridResourceIoc {
 
                         if (t2 == null) {
                             t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                                new ArrayList<>(), new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -343,25 +339,7 @@ public class GridResourceIoc {
             if (annMap.isEmpty())
                 containsAnnSets = null;
             else {
-                AnnotationSet[] sets = AnnotationSet.values();
-
-                containsAnnSets = new int[sets.length];
-
-                for (int i = 0; i < sets.length; i++) {
-                    int res = 0, mask = 1;
-
-                    //TODO: replace collection iterasions with bitset operations
-                    for (ResourceAnnotation ann : sets[i].annotations) {
-                        T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
-
-                        if (member != null)
-                            res |= mask;
-
-                        mask <<= 1;
-                    }
-
-                    containsAnnSets[i] = res;
-                }
+                int annotationsBits = 0;
 
                 for (ResourceAnnotation ann : ResourceAnnotation.values()) {
                     T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
@@ -371,8 +349,17 @@ public class GridResourceIoc {
                             annArr = new T2[ResourceAnnotation.values().length];
 
                         annArr[ann.ordinal()] = member;
+
+                        annotationsBits |= 1 << ann.ordinal();
                     }
                 }
+
+                AnnotationSet[] annotationSets = AnnotationSet.values();
+
+                containsAnnSets = new int[annotationSets.length];
+
+                for (int i = 0; i < annotationSets.length; i++)
+                    containsAnnSets[i] = annotationsBits & annotationSets[i].annotationsBitSet;
             }
             this.annArr = annArr;
         }
@@ -397,7 +384,7 @@ public class GridResourceIoc {
          * @return {@code Bitmask} > 0 if any annotation is presented, otherwise return 0;
          */
         int isAnnotated(AnnotationSet set) {
-            return recursiveFields.length > 0 ? ~(-1 << set.annotations.length) :
+            return recursiveFields.length > 0 ? set.annotationsBitSet :
                 (containsAnnSets == null ? 0 : containsAnnSets[set.ordinal()]);
         }
 
@@ -545,16 +532,16 @@ public class GridResourceIoc {
     public enum AnnotationSet {
 
         /** */
-        GENERIC(new ResourceAnnotation[] {
+        GENERIC(
             ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
-        }),
+        ),
 
         /** */
-        ENTRY_PROCESSOR(new ResourceAnnotation[] {
+        ENTRY_PROCESSOR(
             ResourceAnnotation.CACHE_NAME,
 
             ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
@@ -562,10 +549,10 @@ public class GridResourceIoc {
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
-        }),
+        ),
 
         /** */
-        TASK(new ResourceAnnotation[] {
+        TASK(
             ResourceAnnotation.TASK_SESSION,
             ResourceAnnotation.LOAD_BALANCER,
             ResourceAnnotation.TASK_CONTINUOUS_MAPPER,
@@ -575,10 +562,10 @@ public class GridResourceIoc {
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
-        }),
+        ),
 
         /** */
-        JOB(new ResourceAnnotation[] {
+        JOB(
             ResourceAnnotation.TASK_SESSION,
             ResourceAnnotation.JOB_CONTEXT,
 
@@ -587,19 +574,27 @@ public class GridResourceIoc {
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
-        });
+        );
 
-        //TODO: replace with bitset.
-        /** Annotations. */
+        /** Resource annotations bits for fast checks. */
+        public final int annotationsBitSet;
+        /** Holds annotations in order */
         public final ResourceAnnotation[] annotations;
 
         /**
-         * @param annotations Annotations.
+         * @param annotations ResourceAnnotations.
          */
-        AnnotationSet(ResourceAnnotation[] annotations) {
+        AnnotationSet(ResourceAnnotation... annotations) {
             assert annotations.length < 32;
 
             this.annotations = annotations;
+
+            int mask = 0;
+
+            for (ResourceAnnotation ann : annotations)
+                mask |= 1 << ann.ordinal();
+
+            annotationsBitSet = mask;
         }
     }
 }
