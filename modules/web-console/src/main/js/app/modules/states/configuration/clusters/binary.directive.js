@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './binary.jade!';
+import templateUrl from './binary.jade';
 
 export default ['igniteConfigurationClustersBinary', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

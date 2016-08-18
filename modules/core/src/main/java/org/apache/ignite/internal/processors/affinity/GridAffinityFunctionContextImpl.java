@@ -80,4 +80,13 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     @Override public int backups() {
         return backups;
     }
+
+    /**
+     * Gets the previous assignment.
+     *
+     * @return Previous assignment
+     */
+    public List<List<ClusterNode>> prevAssignment() {
+        return prevAssignment;
+    }
 }

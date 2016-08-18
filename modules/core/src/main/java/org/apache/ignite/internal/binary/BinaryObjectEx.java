@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended binary object interface.
@@ -27,4 +30,12 @@ public interface BinaryObjectEx extends BinaryObject {
      * @return Type ID.
      */
     public int typeId();
+
+    /**
+     * Get raw type.
+     *
+     * @return Raw type
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable public BinaryType rawType() throws BinaryObjectException;
 }

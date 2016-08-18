@@ -273,6 +273,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForYoungest")]
         public static extern void* ProjectionForYoungest(void* ctx, void* obj);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForServers")]
+        public static extern void* ProjectionForServers(void* ctx, void* obj);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionResetMetrics")]
         public static extern void ProjectionResetMetrics(void* ctx, void* obj);
 
@@ -426,5 +429,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableIsCancelled(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteSetConsoleHandler")]
+        public static extern void SetConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
+        public static extern int RemoveConsoleHandler(void* consoleHandler);
     }
 }

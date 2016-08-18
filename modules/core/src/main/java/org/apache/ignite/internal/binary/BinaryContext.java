@@ -17,30 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -70,9 +46,26 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
 import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
+import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
@@ -83,7 +76,6 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -93,6 +85,31 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * Binary context.
@@ -126,9 +143,12 @@ public class BinaryContext {
         sysClss.add(IgfsFileMap.class.getName());
         sysClss.add(IgfsListingEntry.class.getName());
 
+        sysClss.add(IgfsDataPutProcessor.class.getName());
+
         sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
         sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
         sysClss.add(IgfsMetaFileLockProcessor.class.getName());
@@ -138,6 +158,23 @@ public class BinaryContext {
         sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
         sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
         sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
+
+        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
+
+        sysClss.add(IgfsClientAffinityCallable.class.getName());
+        sysClss.add(IgfsClientDeleteCallable.class.getName());
+        sysClss.add(IgfsClientExistsCallable.class.getName());
+        sysClss.add(IgfsClientInfoCallable.class.getName());
+        sysClss.add(IgfsClientListFilesCallable.class.getName());
+        sysClss.add(IgfsClientListPathsCallable.class.getName());
+        sysClss.add(IgfsClientMkdirsCallable.class.getName());
+        sysClss.add(IgfsClientRenameCallable.class.getName());
+        sysClss.add(IgfsClientSetTimesCallable.class.getName());
+        sysClss.add(IgfsClientSizeCallable.class.getName());
+        sysClss.add(IgfsClientSummaryCallable.class.getName());
+        sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1V2.class.getName());
@@ -259,7 +296,7 @@ public class BinaryContext {
         registerPredefinedType(LinkedHashMap.class, 0);
 
         // Classes with overriden default serialization flag.
-        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class));
+        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), false);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -562,9 +599,37 @@ public class BinaryContext {
         if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
         else if (!desc.registered()) {
-            assert desc.userType();
+            if (!desc.userType()) {
+                BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
+                    this,
+                    desc.describedClass(),
+                    false,
+                    desc.typeId(),
+                    desc.typeName(),
+                    desc.affFieldKeyName(),
+                    desc.mapper(),
+                    desc.initialSerializer(),
+                    false,
+                    true
+                );
 
-            desc = registerUserClassDescriptor(desc);
+                if (descByCls.replace(cls, desc, desc0)) {
+                    Collection<BinarySchema> schemas =
+                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
+
+                    BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
+                        desc0.typeName(),
+                        desc0.fieldsMeta(),
+                        desc0.affFieldKeyName(),
+                        schemas, desc0.isEnum());
+
+                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
+
+                    return desc0;
+                }
+            }
+            else
+                desc = registerUserClassDescriptor(desc);
         }
 
         return desc;
@@ -959,15 +1024,16 @@ public class BinaryContext {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
-        return registerPredefinedType(cls, id, null);
+        return registerPredefinedType(cls, id, null, true);
     }
 
     /**
      * @param cls Class.
      * @param id Type ID.
+     * @param affFieldName Affinity field name.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
         String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
@@ -983,7 +1049,7 @@ public class BinaryContext {
             SIMPLE_NAME_LOWER_CASE_MAPPER,
             new BinaryReflectiveSerializer(),
             false,
-            true /* registered */
+            registered /* registered */
         );
 
         predefinedTypeNames.put(simpleClsName, id);
@@ -1063,13 +1129,17 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                false
+                true
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
+
+            // Registering in order to support the interoperability between Java, C++ and .Net.
+            // https://issues.apache.org/jira/browse/IGNITE-3455
+            predefinedTypes.put(id, desc);
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));

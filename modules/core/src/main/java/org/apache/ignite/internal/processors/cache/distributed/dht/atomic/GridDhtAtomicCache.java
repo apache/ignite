@@ -37,6 +37,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -148,6 +149,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
+    /** Logger. */
+    private IgniteLogger msgLog;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -160,6 +164,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     public GridDhtAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
+
+        msgLog = ctx.shared().atomicMessageLogger();
     }
 
     /**
@@ -168,6 +174,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     public GridDhtAtomicCache(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
+
+        msgLog = ctx.shared().atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -336,7 +344,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
         try {
-            return getAsync0(ctx.toCacheKeyObject(key, true),
+            return getAsync0(ctx.toCacheKeyObject(key),
                 !ctx.config().isReadFromBackup(),
                 subjId,
                 taskName,
@@ -382,7 +390,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
-                return getAsync0(ctx.toCacheKeyObject(key, true),
+                return getAsync0(ctx.toCacheKeyObject(key),
                     forcePrimary,
                     subjId0,
                     taskName,
@@ -428,7 +436,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
-                return getAllAsync0(ctx.cacheKeysView(keys, true),
+                return getAllAsync0(ctx.cacheKeysView(keys),
                     forcePrimary,
                     subjId0,
                     taskName,
@@ -1371,8 +1379,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     /*temporary*/false,
@@ -1583,7 +1589,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         ClusterNode node = ctx.discovery().node(nodeId);
 
                         if (node == null) {
-                            U.warn(log, "Node originated update request left grid: " + nodeId);
+                            U.warn(msgLog, "Skip near update request, node originated update request left [" +
+                                "futId=" + req.futureVersion() + ", node=" + nodeId + ']');
 
                             return;
                         }
@@ -1598,13 +1605,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             if (hasNear)
                                 res.nearVersion(ver);
+
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Assigned update version [futId=" + req.futureVersion() +
+                                    ", writeVer=" + ver + ']');
+                            }
                         }
 
                         assert ver != null : "Got null version for update request: " + req;
-
-                        if (log.isDebugEnabled())
-                            log.debug("Using cache version for update request on primary node [ver=" + ver +
-                                ", req=" + req + ']');
 
                         boolean sndPrevVal = !top.rebalanceFinished(req.topologyVersion());
 
@@ -1848,8 +1856,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         /*read swap*/true,
                         /*read through*/true,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
                         /*temporary*/true,
@@ -1874,7 +1880,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
-                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
+                            computed = ctx.unwrapTemporary(computed);
+
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null,
+                                req.keepBinary());
                         }
 
                         if (!invokeEntry.modified())
@@ -1888,7 +1897,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (invokeRes == null)
                             invokeRes = new GridCacheReturn(node.isLocal());
 
-                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e);
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, req.keepBinary());
 
                         updated = old;
                     }
@@ -2005,8 +2014,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                              null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -2022,8 +2029,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 entry.key(),
                                 old,
                                 req.keepBinary()),
-                            updated.value(
-                                ctx.cacheObjectContext(),
+                            ctx.unwrapBinaryIfNeeded(
+                                updated,
+                                req.keepBinary(),
                                 false));
 
                         if (val == null)
@@ -2051,8 +2059,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -2366,7 +2372,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             k,
                             null,
                             compRes.get1(),
-                            compRes.get2());
+                            compRes.get2(),
+                            req.keepBinary());
                     }
                 }
                 else {
@@ -2932,8 +2939,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Near atomic update request.
      */
     private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicUpdateRequest req) {
-        if (log.isDebugEnabled())
-            log.debug("Processing near atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
+        if (msgLog.isDebugEnabled()) {
+            msgLog.debug("Received near atomic update request [futId=" + req.futureVersion() +
+                ", writeVer=" + req.updateVersion() +
+                ", node=" + nodeId + ']');
+        }
 
         req.nodeId(ctx.localNodeId());
 
@@ -2946,8 +2956,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicUpdateResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing near atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
+        if (msgLog.isDebugEnabled())
+            msgLog.debug("Received near atomic update response [futId" + res.futureVersion() + ", node=" + nodeId + ']');
 
         res.nodeId(ctx.localNodeId());
 
@@ -2961,8 +2971,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ((GridNearAtomicUpdateFuture)fut).onResult(nodeId, res, false);
         }
         else
-            U.warn(log, "Failed to find near update future for update response (will ignore) " +
-                "[nodeId=" + nodeId + ", res=" + res + ']');
+            U.warn(msgLog, "Failed to find near update future for update response (will ignore) " +
+                "[futId" + res.futureVersion() + ", node=" + nodeId + ", res=" + res + ']');
     }
 
     /**
@@ -2970,8 +2980,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Dht atomic update request.
      */
     private void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest req) {
-        if (log.isDebugEnabled())
-            log.debug("Processing dht atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
+        if (msgLog.isDebugEnabled()) {
+            msgLog.debug("Received DHT atomic update request [futId=" + req.futureVersion() +
+                ", writeVer=" + req.writeVersion() + ", node=" + nodeId + ']');
+        }
 
         GridCacheVersion ver = req.writeVersion();
 
@@ -3069,20 +3081,31 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ((GridNearAtomicCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
 
         try {
-            if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)
+            if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC) {
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Sent DHT atomic update response [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.writeVersion() + ", node=" + nodeId + ']');
+                }
+            }
             else {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Will send deferred DHT atomic update response [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.writeVersion() + ", node=" + nodeId + ']');
+                }
+
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
             }
         }
         catch (ClusterTopologyCheckedException ignored) {
-            U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
-                req.nodeId());
+            U.warn(msgLog, "Failed to send DHT atomic update response, node left [futId=" + req.futureVersion() +
+                ", node=" + req.nodeId() + ']');
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
-                ", req=" + req + ']', e);
+            U.error(msgLog, "Failed to send DHT atomic update response [futId=" + req.futureVersion() +
+                ", node=" + nodeId +  ", res=" + res + ']', e);
         }
     }
 
@@ -3121,16 +3144,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private void processDhtAtomicUpdateResponse(UUID nodeId, GridDhtAtomicUpdateResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing dht atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
-
         GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
-        if (updateFut != null)
+        if (updateFut != null) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Received DHT atomic update response [futId=" + res.futureVersion() +
+                    ", writeVer=" + updateFut.writeVersion() + ", node=" + nodeId + ']');
+            }
+
             updateFut.onResult(nodeId, res);
-        else
-            U.warn(log, "Failed to find DHT update future for update response [nodeId=" + nodeId +
-                ", res=" + res + ']');
+        }
+        else {
+            U.warn(msgLog, "Failed to find DHT update future for update response [futId=" + res.futureVersion() +
+                ", node=" + nodeId + ", res=" + res + ']');
+        }
     }
 
     /**
@@ -3139,17 +3166,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing deferred dht atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
-
         for (GridCacheVersion ver : res.futureVersions()) {
             GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(ver);
 
-            if (updateFut != null)
+            if (updateFut != null) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Received DHT atomic deferred update response [futId=" + ver +
+                        ", writeVer=" + res + ", node=" + nodeId + ']');
+                }
+
                 updateFut.onResult(nodeId);
-            else
-                U.warn(log, "Failed to find DHT update future for deferred update response [nodeId=" +
-                    nodeId + ", ver=" + ver + ", res=" + res + ']');
+            }
+            else {
+                U.warn(msgLog, "Failed to find DHT update future for deferred update response [futId=" + ver +
+                    ", nodeId=" + nodeId + ", res=" + res + ']');
+            }
         }
     }
 
@@ -3160,14 +3191,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
+
+            if (msgLog.isDebugEnabled())
+                msgLog.debug("Sent near update response [futId=" + res.futureVersion() + ", node=" + nodeId + ']');
         }
         catch (ClusterTopologyCheckedException ignored) {
-            U.warn(log, "Failed to send near update reply to node because it left grid: " +
-                nodeId);
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Failed to send near update response [futId=" + res.futureVersion() +
+                    ", node=" + nodeId + ']');
+            }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send near update reply (did node leave grid?) [nodeId=" + nodeId +
-                ", res=" + res + ']', e);
+            U.error(msgLog, "Failed to send near update response [futId=" + res.futureVersion() +
+                ", node=" + nodeId + ", res=" + res + ']', e);
         }
     }
 
@@ -3437,24 +3473,31 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     ctx.io().send(nodeId, msg, ctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Sent deferred DHT update response [futIds=" + msg.futureVersions() +
+                            ", node=" + nodeId + ']');
+                    }
                 }
                 finally {
                     ctx.kernalContext().gateway().readUnlock();
                 }
             }
             catch (IllegalStateException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send deferred dht update response to remote node (grid is stopping) " +
-                        "[nodeId=" + nodeId + ", msg=" + msg + ']');
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Failed to send deferred DHT update response, node is stopping [" +
+                        "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
+                }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send deferred dht update response to remote node (did node leave grid?) " +
-                        "[nodeId=" + nodeId + ", msg=" + msg + ']');
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Failed to send deferred DHT update response, node left [" +
+                        "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
+                }
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send deferred dht update response to remote node [nodeId="
-                    + nodeId + ", msg=" + msg + ']', e);
+                U.error(log, "Failed to send deferred DHT update response to remote node [" +
+                    "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']', e);
             }
 
             pendingResponses.remove(nodeId, this);

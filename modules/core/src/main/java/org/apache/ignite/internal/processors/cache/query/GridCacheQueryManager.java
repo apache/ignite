@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -74,7 +75,6 @@ import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicat
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -150,7 +150,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
+    private final ConcurrentMap<UUID, RequestFutureMap> qryIters =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -266,25 +266,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public final void stop0(boolean cancel) {
         if (log.isDebugEnabled())
             log.debug("Stopped cache query manager.");
-    }
-
-    /**
-     * Gets number of objects of given type in index.
-     *
-     * @param valType Value type.
-     * @return Number of objects or -1 if type was not indexed at all.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long size(Class<?> valType) throws IgniteCheckedException {
-        if (!enterBusy())
-            throw new IllegalStateException("Failed to get size (grid is stopping).");
-
-        try {
-            return qryProc.size(space, valType);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**
@@ -585,26 +566,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             switch (qry.type()) {
                 case SQL:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                            cctx.localNode(),
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            cctx.namex(),
-                            qry.queryClassName(),
-                            qry.clause(),
-                            null,
-                            null,
-                            args,
-                            subjId,
-                            taskName));
-                    }
-
-                    iter = qryProc.query(space, qry.clause(), F.asList(args),
-                        qry.queryClassName(), filter(qry));
-
-                    break;
+                    throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -763,11 +725,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 assert qry.type() == SQL_FIELDS;
 
-                GridQueryFieldsResult qryRes = qryProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
-
-                res.metaData(qryRes.metaData());
-
-                res.onDone(qryRes.iterator());
+                throw new IllegalStateException("Should never be called.");
             }
         }
         catch (Exception e) {
@@ -846,7 +804,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final ExpiryPolicy plc = cctx.expiry();
 
-            final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
+
+            if (topVer == null)
+                topVer = cctx.affinity().affinityTopologyVersion();
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
@@ -935,7 +896,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Integer part = qry.partition();
 
-        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups) :
+        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups, topVer) :
             cctx.swap().rawSwapIterator(part);
 
         if (expPlc != null)
@@ -977,7 +938,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (locNode && plc == null && !cctx.isLocal()) {
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-                final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true, backups);
+                final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
+                    backups, cache.context().keepBinary(), topVer);
 
                 return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
                     /** */
@@ -1157,8 +1119,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     K key = e.key();
                     V val = e.value();
 
+                    key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
+
                     if (filter != null || locNode) {
-                        key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
                         val = (V)cctx.unwrapBinaryIfNeeded(val, keepBinary);
                     }
 
@@ -1478,6 +1441,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName,
                     recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
+
+                if (res == null)
+                    return;
 
                 iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
                 type = res.type();
@@ -1827,17 +1793,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws IgniteCheckedException In case of error.
      */
-    private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
+    @Nullable private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert qryInfo != null;
 
         final UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>>(16, 0.75f, true) {
+            futs = new RequestFutureMap() {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -1854,7 +1820,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            Map<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
+            RequestFutureMap old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
@@ -1867,6 +1833,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         boolean exec = false;
 
         synchronized (futs) {
+            if (futs.isCanceled(qryInfo.requestId()))
+                return null;
+
             fut = futs.get(qryInfo.requestId());
 
             if (fut == null) {
@@ -1901,7 +1870,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (sndId == null)
             return;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs != null) {
             IgniteInternalFuture<QueryResult<K, V>> fut;
@@ -2673,7 +2642,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (key != null)
                     return key;
 
-                key = cctx.toCacheKeyObject(keyBytes()).value(cctx.cacheObjectContext(), false);
+                key = (K)cctx.toCacheKeyObject(keyBytes());
 
                 return key;
             }
@@ -3501,6 +3470,50 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         return null;
                 }
             }
+        }
+    }
+
+    /**
+     * The map prevents put to the map in case the specified request has been removed previously.
+     */
+    private class RequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Count of canceled keys */
+        private static final int CANCELED_COUNT = 128;
+
+        /**
+         * The ID of the canceled request is stored to the set in case
+         * remove(reqId) is called before put(reqId, future).
+         */
+        private Set<Long> canceled;
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter<QueryResult<K, V>> remove(Object key) {
+            if (containsKey(key))
+                return super.remove(key);
+            else {
+                if (canceled == null) {
+                    canceled = Collections.newSetFromMap(
+                        new LinkedHashMap<Long, Boolean>() {
+                            @Override protected boolean removeEldestEntry(Map.Entry<Long, Boolean> eldest) {
+                                return size() > CANCELED_COUNT;
+                            }
+                        });
+                }
+
+                canceled.add((Long)key);
+
+                return null;
+            }
+        }
+
+        /**
+         * @return true if the key is canceled
+         */
+        boolean isCanceled(Long key) {
+            return canceled != null && canceled.contains(key);
         }
     }
 }

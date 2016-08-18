@@ -312,6 +312,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
+        public IClusterGroup ForServers()
+        {
+            return GetClusterGroup(UU.ProjectionForServers(Target));
+        }
+
+        /** <inheritDoc /> */
         public IClusterGroup ForDotNet()
         {
             return ForAttribute(AttrPlatform, Platform);

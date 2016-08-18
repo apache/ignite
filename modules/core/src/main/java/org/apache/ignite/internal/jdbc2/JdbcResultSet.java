@@ -146,8 +146,8 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-                null, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery());
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
             try {
                 JdbcQueryTask.QueryResult res =
@@ -182,7 +182,7 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null)
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
 
         closed = true;

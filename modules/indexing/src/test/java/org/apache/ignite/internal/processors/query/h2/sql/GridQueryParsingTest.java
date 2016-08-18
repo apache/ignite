@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -39,9 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Query;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+
+import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -147,6 +147,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
+        checkQuery("select avg(old) from Person right join Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
 
         checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
@@ -164,6 +166,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select person.* from Person, Address a");
         checkQuery("select p.*, street from Person p, Address a");
         checkQuery("select p.name, a.street from Person p, Address a");
+        checkQuery("select p.name, a.street from Address a, Person p");
         checkQuery("select distinct p.name, a.street from Person p, Address a");
         checkQuery("select distinct name, street from Person, Address group by old");
         checkQuery("select distinct name, street from Person, Address");
@@ -254,20 +257,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testExample1() throws Exception {
-        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
-
-        GridSqlQueryParser ses = new GridSqlQueryParser();
-
-        GridSqlQuery gridSelect = ses.parse(select);
-
-        //System.out.println(select.getPlanSQL());
-        System.out.println(gridSelect.getSQL());
-    }
-
-    /**
-     *
-     */
     private JdbcConnection connection() throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
@@ -292,7 +281,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param sql2 Sql 2.
      */
     private void assertSqlEquals(String sql1, String sql2) {
-        assertEquals(normalizeSql(sql1), normalizeSql(sql2));
+        String nsql1 = normalizeSql(sql1);
+        String nsql2 = normalizeSql(sql2);
+
+        assertEquals(nsql1, nsql2);
     }
 
     /**
@@ -301,7 +293,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static String normalizeSql(String sql) {
         return sql.toLowerCase()
             .replaceAll("/\\*(?:.|\r|\n)*?\\*/", " ")
-            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " ")
+            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " on true ")
             .replaceAll("\\s+", " ")
             .replaceAll("\\( +", "(")
             .replaceAll(" +\\)", ")")
@@ -314,20 +306,28 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlQueryParser ses = new GridSqlQueryParser();
+        GridSqlQuery gQry = new GridSqlQueryParser().parse(prepared);
 
-        String res = ses.parse(prepared).getSQL();
+        String res = gQry.getSQL();
 
         System.out.println(normalizeSql(res));
 
         assertSqlEquals(prepared.getPlanSQL(), res);
     }
 
+    /**
+     * Sql function for tests
+     * @return const 1
+     */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /**
+     * Sql function for tests
+     * @return simple query result
+     */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
@@ -337,18 +337,23 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public Date date = new Date(System.currentTimeMillis());
 
+        /** */
         @QuerySqlField(index = true)
         public String name = "Ivan";
 
+        /** */
         @QuerySqlField(index = true)
         public String parentName;
 
+        /** */
         @QuerySqlField(index = true)
         public int addrId;
 
+        /** */
         @QuerySqlField(index = true)
         public int old;
     }
@@ -357,12 +362,15 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public int id;
 
+        /** */
         @QuerySqlField(index = true)
         public int streetNumber;
 
+        /** */
         @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }

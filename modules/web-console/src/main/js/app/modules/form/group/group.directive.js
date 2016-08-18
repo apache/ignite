@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './group.jade!';
+import templateUrl from './group.jade';
 
 export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
@@ -50,10 +50,10 @@ export default ['igniteFormGroup', [() => {
         };
 
         const setAsDirty = () => {
-            if (JSON.stringify(scope.ngModel) !== JSON.stringify(parentFormCtrl.$defaults[name]))
-                ngModelCtrl.$setDirty();
-            else
+            if (_.isEqual(scope.ngModel, parentFormCtrl.$defaults[name]))
                 ngModelCtrl.$setPristine();
+            else
+                ngModelCtrl.$setDirty();
         };
 
         scope.$watch(() => parentFormCtrl.$pristine, setAsDefault);
@@ -71,7 +71,7 @@ export default ['igniteFormGroup', [() => {
             label: '@'
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'group',
         replace: true,

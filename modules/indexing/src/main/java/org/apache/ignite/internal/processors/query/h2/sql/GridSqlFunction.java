@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.util.StatementBuilder;

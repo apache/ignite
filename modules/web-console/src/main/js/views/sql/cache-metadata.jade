@@ -24,7 +24,7 @@
             span(ng-switch='' on='node.type')
                 span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa.fa-table
-                    label.clickable(ng-bind-html='node.displayMame')
+                    label.clickable(ng-bind='node.displayName')
                 span(ng-switch-when='plain')
                     label {{node.name}}
                 span(ng-switch-when='field' ng-dblclick='dblclickMetadata(paragraph, node)')
