@@ -29,14 +29,15 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
-import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Universal adapter wrapping {@link org.apache.hadoop.fs.FileSystem} instance.
  */
-public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
+public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** File system factory. */
     private final HadoopFileSystemFactory factory;
 
@@ -44,7 +45,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
      * Constructor.
      * @param factory File system factory.
      */
-    public HadoopFileSystemUniversalFileSystemAdapter(HadoopFileSystemFactory factory) {
+    public HadoopIgfsSecondaryFileSystemTestAdapter(HadoopFileSystemFactory factory) {
         assert factory != null;
 
         this.factory = factory;
@@ -83,17 +84,30 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
 
         FileStatus status = get().getFileStatus(p);
 
-        Map<String,String> m = new HashMap<>(3); // max size == 4
+        Map<String,String> m = new HashMap<>(3);
 
         m.put(IgfsUtils.PROP_USER_NAME, status.getOwner());
         m.put(IgfsUtils.PROP_GROUP_NAME, status.getGroup());
-
-        FsPermission perm = status.getPermission();
-
-        m.put(IgfsUtils.PROP_PERMISSION, "0" + perm.getUserAction().ordinal() + perm.getGroupAction().ordinal() +
-            perm.getOtherAction().ordinal());
+        m.put(IgfsUtils.PROP_PERMISSION, permission(status));
 
         return m;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String permissions(String path) throws IOException {
+        return permission(get().getFileStatus(new Path(path)));
+    }
+
+    /**
+     * Get permission for file status.
+     *
+     * @param status Status.
+     * @return Permission.
+     */
+    private String permission(FileStatus status) {
+        FsPermission perm = status.getPermission();
+
+        return "0" + perm.getUserAction().ordinal() + perm.getGroupAction().ordinal() + perm.getOtherAction().ordinal();
     }
 
     /** {@inheritDoc} */
@@ -119,11 +133,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (HadoopFileSystemFactory.class.isAssignableFrom(cls))
-            return (T)factory;
-
+    @Override public IgfsEx igfs() {
         return null;
     }
 
@@ -133,7 +143,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
      * @return File system.
      * @throws IOException If failed.
      */
-    private FileSystem get() throws IOException {
+    protected FileSystem get() throws IOException {
         return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
     }
 }

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -308,6 +309,11 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
+    @Override public IgfsMode mode(IgfsPath path) {
+        return igfs.mode(path);
+    }
+
+    /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         return igfs.usedSpaceSize();
     }
@@ -315,5 +321,10 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystem asSecondary() {
         return igfs.asSecondary();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
+        igfs.await(paths);
     }
 }

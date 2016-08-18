@@ -1,23 +1,8 @@
-GridGain In-Memory Data Fabric Professional Edition Release Notes
-=======================================
+Apache Ignite Release Notes
+===========================
 
-GridGain In-Memory Data Fabric Professional Edition 1.6.4
-------------------------------------
-* Fixed a bug in GridCacheTtlManager.
-* Added basic implementation of address resolver.
-
-GridGain In-Memory Data Fabric Professional Edition 1.6.3
-------------------------------------
-* .NET: Fixed a bug in IBinaryObjectBuilder causing type name to be lost.
-
-GridGain In-Memory Data Fabric Professional Edition 1.6.2
-------------------------------------
-* Fixed CountDownLatch recreation.
-* CPP: Fixed string deserialization performance issue.
-* .NET: Added NuGet distribution.
-
-GridGain In-Memory Data Fabric Professional Edition 1.6.1
-------------------------------------
+Apache Ignite In-Memory Data Fabric 1.6
+---------------------------------------
 Ignite .NET:
 * Added LINQ Provider for cache SQL queries
 * Added native configuration mechanism (C#, app.config, web.config - instead of Spring XML)
@@ -35,218 +20,77 @@ Ignite C++:
 * Simplified Autotools build process for C++ client.
 
 Ignite:
-* Added Cache Store implementation backed by Cassandra DB.
-* Added ODBC driver for Ignite.
-* Added Web Console for Ignite.
-* ODBC: Added decimal type support.
-
-Changes in GridGain In-Memory Data Fabric Professional Edition 1.5.30
-------------------------------------
-* Ignite Cache: new API that lets calculating size per particular partition.
-* Visor CMD: Added skip confirm in batch mode. Improved kill command.
-* Hadoop: Implemented new weight-based map-reduce planner (IgniteHadoopWeightedMapReducePlanner).
-* .NET: Added ability to implement custom affintiy functions.
-* Added support of EXPIRED events to continuous queries.
-* Data Streamer: ability to set timeout for a number of methods.
-* Fixed NPE in Ignite Services internals that happened when a service was executed before system cache was started.
-* Fixed NPE in OptimizedMarshaller when pool of streams is used.
-* Fixed the issue when it wasn't possible to deserialize an object on Java side if the object was placed in the cache on C++ or .Net side.
-* Fixed SQL indexes processing under Java 8.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.29
-------------------------------------
-* Binary objects: performance improvements.
-* IGFS: Performance and usability improvements.
-* Fixed issue with unnecessary discovery messages resend that may cause slow discovery message delivery.
-* Fixed possible IO message loss during reconnect.
-* Additional system properties for troubleshooting logging.
-* Fixed issue when job ID was generated in a non unique way.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.28
-------------------------------------
-* IGFS: Usability improvements.
-* Fixed performance degradation when a cache is preloaded from many IgniteDataStreamers in parallel from the same node.
-* Fixed issue with service redeployment after topology change.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.27
-------------------------------------
-* IGFS: Fixed a problem with native libraries loading.
-* REST HTTP: Updated from json-lib 2.4 to Jackson 2.7.5.
-* External addresses are now registered in IP finder.
-* Client node's addresses are now not registered in IP finder.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.26
-------------------------------------
-* IGFS: Performance improvements.
-* Spark: added IgniteRDD.withKeepBinary() method for full support of binary objects.
-* Added Cassandra-based persistent store implementation.
-* Continuous queries: warning will be printed on client nodes instead of exception trace if the remote filter is not in classpath.
-* Fixed missing IgniteCountdownLatch updates that can lead to a deadlock or wrong behavior.
-* Fixed local store conflict resolving with keepBinary flag set to false.
-* Fixed addresses duplication at IP finder.
-* ZookeeperIpFinder now properly handles reconnects.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.25
-------------------------------------
-* IGFS: Performance improvements for client mode.
-* Hadoop: fixed inefficient memory usage during mapper output processing.
-* Fixed marshalling of arrays of primitives types when their are being placed into a cache.
-* Spark: added transformer closure to savePairs(..) and saveValues(..) methods of IgniteRDD.
-* Spark: fixed support for java.sql.Date in queries executed from IgniteRDD.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.24
-------------------------------------
-* IGFS: Added user name mapper to properly deal with security in complex Hadoop environments.
-* Validating that the same IgniteConfiguration instance is not used more than once.
-* Fixed marshalling of Void type with Binary marshaller.
-* Fixed metrics calculation for OFFHEAP_TIRED mode.
-* ScanQuery and localEntries now honor keepBinary flag.
-* Zookeeper module dependencies set fixed.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.23
-------------------------------------
-* IGFS: Improved error logging for operations in DUAL mode.
-* Added Ignition.getOrStart method.
-* Spark: support BigDecimal for queries executed from IgniteRDD.
-* Mesos integration: added possibility to configure http server timeout.
-* Fixed a bug with Ignite API usage during node stop.
-* Fixed a bug with 'keepBinary' handling for CacheInterceptor.
-* Fixed a bug with CacheEntryEvent cleanup for filtered events.
-* Fixed a bug with broken synchronization between cache entry expiration and update.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.22
-------------------------------------
-* Fixed UTF-16 surrogate pairs marshalling.
-* Fixed local store behavior at cross cache transactions.
-* Fixed memory leak in IgniteH2Indexing.
+* Added ability to get partition 'updateCntr' with continuous query public API.
+* Added asynchronous execution of ContinuousQuery's remote filter and local listener.
 * Added backup partitions storing to local store default behavior.
-* ScanQueries over local partitions performance optimisation.
-* Visor CMD: Added ability to attach custom scripts to alerts.
-* WebSession: fixed a bug causing invalidated session to be returned from HttpServletRequest.getSession() call.
-* Hadoop: fixed a bug causing exception during job resource unpacking.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.21
-------------------------------------
-* Web sessions: minor fix to prevent NullPointerException in some special case.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.20
-------------------------------------
-* Web sessions: user session classes are no longer needed on server nodes.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.19
-------------------------------------
 * Added cache deadlock detection.
+* Added Cache Store implementation backed by Cassandra DB.
+* Added method to get versioned cache entry.
+* Added ODBC driver for Ignite.
+* Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
+* Added support for JTA transactions via synchronization callback.
+* Added Web Console for Ignite.
 * Fixed a bug causing object deserialization when local store is configured for cache.
 * Fixed a problem with incorrect classloader picked in OSGI environment.
-* Hadoop: fixed a bug causing exception during MR planning when input split file doesn't exist.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.18
-------------------------------------
-* Fixed potential thread starvation during cache rebalancing.
-* Fixed deadlock in services deployment when Spring is used.
-* Mesos integration: added possibility to load Ignite package from file system.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.17
-------------------------------------
-* Performance optimization for transactions that do not acquire locks.
-* Optimized memory usage on server nodes to allow more client connections.
-* Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.16
-------------------------------------
-* Added asynchronous execution of ContinuousQuery's remote filter and local listener.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.15
-------------------------------------
-* Fixed discovery and node start procedure issues that may cause slowdowns during larger topologies start (>100 nodes).
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.14
-------------------------------------
 * Fixed a race condition when evicted offheap data was not delivered to query engine leading to query timeout.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.12
-------------------------------------
-* Improved marshaller behavior during cluster topology change.
-* .NET: Added ability to use Java-based remote filters in continuous queries.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.11
-------------------------------------
-* Fixed cluster stability with 500+ clients.
+* Fixed an issue in ContinuousQueries that caused missing of notifications.
 * Fixed background cache partition map exchange not to flood network.
-* Fixed BinaryObjectOffHeapImpl leak to public code.
 * Fixed BinaryContext to honor custom loader set through IgniteConfiguration.
-* Fixed continuous query not to call listener with empty set of events.
-* IGFS: Massive performance and stability fixes.
-* Many stability and fault-tolerance fixes.
-
-GridGain In-Memory Data Fabric Professional Edition 1.5.10
-------------------------------------
-* Fixed continuous query listener notification handling.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.9
----------------------------------------
-* Fixed issue with AWS dependencies.
-* Fixed excessive thread stack usage in case of high contention on cache entries.
+* Fixed BinaryObjectOffHeapImpl leak to public code.
+* Fixed cluster stability with 500+ clients.
 * Fixed continuous queries to send filter factory instead of filter.
-* Fixed NPE during rebalancing.
-* Fixed system caches not to use user-defined TransactionConfiguration.
-* Fixed GridClosureProcessor internal closures to be deserialized by BinaryMarshaller.
-* Fixed web session clustering with WebLogic.
-* Fixed value copying in entry processor with OptimizedMarshaller.
-* Fixed continuous query listener notification during concurrent key put.
-* Fixed service proxy not to make remote call for methods declared in java.lang.Object.
-* Added support for JTA transactions via synchronization callback.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.8
----------------------------------------
-* Fixed java proxies deserialization with optimized marshaller.
+* Fixed continuous query deployment in case originating node has left.
+* Fixed issues with continuous query.
+* Fixed deadlock in services deployment when Spring is used.
+* Fixed discovery and node start procedure issues that may cause slowdowns during larger topologies start (>100 nodes).
+* Fixed eviction policy notification if swap or off heap is enabled and an entry is not loaded during preloading.
 * Fixed excessive thread stack usage in case of high contention on cache entries.
+* Fixed execution of Splunk MapReduce jobs on top of Ignite MR.
+* Fixed GridClosureProcessor internal closures to be deserialized by BinaryMarshaller.
+* Fixed issue with AWS dependencies.
+* Fixed java proxies deserialization with optimized marshaller.
+* Fixed local store behavior at cross cache transactions.
+* Fixed marshalling of Java collection and maps for BinaryMarshaller.
+* Fixed memory leak in IgniteH2Indexing.
+* Fixed NPE during rebalancing.
+* Fixed NPE in GridMergeIndex.
+* Fixed OOME when OFFHEAP_TIERED mode is used.
+* Fixed potential thread starvation during cache rebalancing.
+* Fixed race condition on load cache on changing topology.
+* Fixed race in marshalling logic that could arise when several nodes are running on the same host.
+* Fixed redeployment issues happened with ScanQueries filters.
+* Fixed service proxy not to make remote call for methods declared in java.lang.Object.
+* Fixed several ClassNotFoundException in OSGi environment.
 * Fixed SKIP_STORE flag behavior for transaction entry.
+* Fixed support for classes with equal simple name for binary marshaller.
+* Fixed system caches not to use user-defined TransactionConfiguration.
+* Fixed the issue when CacheStore was updated even if EntryProcessor didn't update an entry.
 * Fixed thread safety for TcpDiscoveryMulticastIpFinder.
+* Fixed unintentional deserialization of BinaryObjects in OFFHEAP mode with peer class loading enabled.
+* Fixed UTF-16 surrogate pairs marshalling.
+* Fixed value copying in entry processor with OptimizedMarshaller.
+* Fixed web session clustering with WebLogic.
+* Hadoop: fixed a bug causing exception during MR planning when input split file doesn't exist.
+* IGFS: Added configuration flag to disable default path modes under "/ignite" folder.
+* IGFS: Added pluggable factory interface for Hadoop FileSystem creation.
 * IGFS: Fixed file properties when running over secondary file system.
 * IGFS: Fixed issues with Kerberized HDFS.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.7
----------------------------------------
-* Added method to get versioned cache entry.
-* Added ability to get partition 'updateCntr' with continuous query public API.
-* Fixed several ClassNotFoundException in OSGi environment.
-* Fixed continuous query notification with single node topology.
-* Fixed continuous query notification with cache listeners.
-* Fixed continuous query deployment in case originating node has left.
-* Fixed NPE in GridMergeIndex.
-* Fixed race condition on load cache on changing topology.
-* Fixed OOME when OFFHEAP_TIERED mode is used.
-* Fixed support for classes with equal simple name for binary marshaller.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.6
----------------------------------------
-* Support of package-private implementations for Ignite Services.
-* Fixed unintentional deserialization of BinaryObjects in OFFHEAP mode with peer class loading enabled.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.5
----------------------------------------
-* Fixed the issue when CacheStore was updated even if EntryProcessor didn't update an entry.
-* Fixed execution of Splunk MapReduce jobs on top of Ignite MR.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.4
----------------------------------------
-* Passed update notifier flag to discovery data to be sure that all cluster nodes have the same notifier status as the first node.
+* IGFS: Massive performance and stability fixes.
+* Improved marshaller behavior during cluster topology change.
+* Mesos integration: added possibility to load Ignite package from file system.
 * Optimized cache 'get' operations on affinity node.
+* Optimized memory usage on server nodes to allow more client connections.
+* Passed update notifier flag to discovery data to be sure that all cluster nodes have the same notifier status as the first node.
+* Performance optimization for transactions that do not acquire locks.
+* ScanQueries over local partitions performance optimisation.
+* Support of package-private implementations for Ignite Services.
 * Supported Ignite Compute tasks cancellation for Ignite.NET.
-* Fixed race in marshalling logic that could arise when several nodes are running on the same host.
-* Fixed marshalling of Java collection and maps for BinaryMarshaller.
-* Fixed eviction policy notification if swap or off heap is enabled and an entry is not loaded during preloading.
-* Fixed redeployment issues happened with ScanQueries filters.
-* Fixed an issue in ContinuousQueries that caused missing of notifications.
+* Visor CMD: Added ability to attach custom scripts to alerts.
+* Web sessions: minor fix to prevent NullPointerException in some special case.
+* Web sessions: user session classes are no longer needed on server nodes.
+* A lot of stability and fault-tolerance fixes.
 
-GridGain In-Memory Data Fabric Community Edition 1.5.3
----------------------------------------
-* IGFS: Added pluggable factory interface for Hadoop FileSystem creation.
-* IGFS: Added configuration flag to disable default path modes under "/ignite" folder.
-* IGFS: Various stability fixes.
-
-GridGain In-Memory Data Fabric Community Edition 1.5.1
+Apache Ignite In-Memory Data Fabric 1.5
 ---------------------------------------
 * Ignite.NET: Initial Release.
 * Ignite C++: Initial Release.
@@ -269,12 +113,14 @@ GridGain In-Memory Data Fabric Community Edition 1.5.1
 
 Complete list of closed issues: https://issues.apache.org/jira/issues/?jql=project%20%3D%20IGNITE%20AND%20fixVersion%20%3D%201.5%20AND%20status%20%3D%20closed
 
-GridGain In-Memory Data Fabric Community Edition 1.4.1
+Apache Ignite In-Memory Data Fabric 1.4
 ---------------------------------------
 * Added SSL support to communication and discovery.
 * Added support for log4j2.
 * Added versioned entry to cache API.
 * Added client node based JDBC driver implementation.
+* Fixed consistency issue for custom events processing within discovery.
+* Fixed race in cache swap/unswap logic.
 * Fixed IGNITE_HOME resolution with JBoss.
 * Fixed configuration file resolution on classpath.
 * Fixed MBean registration for caches.
@@ -285,39 +131,21 @@ GridGain In-Memory Data Fabric Community Edition 1.4.1
 * Fixed affinity routing in compute grid.
 * Many stability and fault-tolerance fixes.
 
-GridGain In-Memory Data Fabric Community Edition 1.3.3
----------------------------------------
-
-* Added SSL support to communication and discovery.
-* Fixed IGNITE_HOME resolution with JBoss.
-* Fixed configuration file resolution on classpath.
-* Fixed MBean registration for caches.
-* Many stability and fault-tolerance fixes.
-
-GridGain In-Memory Data Fabric Community Edition 1.3.1
+Apache Ignite In-Memory Data Fabric 1.3
 ---------------------------------------
 
 * Added auto-retries for cache operations in recoverable cases.
 * Added integration with Apache YARN.
+* Added auto detection and dropping of slow client nodes.
 * Fixed several issues with JTA integration.
 * Fixed several issues with Hibernate L2 cache.
+* Fixed issue with GAR files in source release.
 * Stability fixes for TCP discovery SPI.
 * Stability fixes for onheap and offheap SQL queries.
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-GridGain In-Memory Data Fabric Community Edition 1.1.4
----------------------------------------
-
-* Added dropping of slow clients.
-* Fixed several connectivity issues.
-
-GridGain In-Memory Data Fabric Community Edition 1.1.3
----------------------------------------
-
-* Fixed cache store configuration validation.
-
-GridGain In-Memory Data Fabric Community Edition 1.1.2
+Apache Ignite In-Memory Data Fabric 1.2
 ---------------------------------------
 
 * Added client mode to TCP discovery SPI.
@@ -329,13 +157,7 @@ GridGain In-Memory Data Fabric Community Edition 1.1.2
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-GridGain In-Memory Data Fabric Community Edition 1.0.5
----------------------------------------
-
-* Fixed unnecessary value sending for near cache with near lock response
-* Optimized getOrCreateCache methods for case when cache is already started locally
-
-GridGain In-Memory Data Fabric Community Edition 1.0.4
+Apache Ignite In-Memory Data Fabric 1.1
 ---------------------------------------
 
 * Added Google Compute Engine TCP discovery IP finder.
@@ -355,7 +177,7 @@ GridGain In-Memory Data Fabric Community Edition 1.0.4
 * Made deployment scanners for URI-based deployment pluggable.
 * Many stability and fault-tolerance fixes.
 
-GridGain In-Memory Data Fabric Community Edition 1.0
+Apache Ignite In-Memory Data Fabric 1.0
 ---------------------------------------
 
 * Simplified query API.
@@ -371,7 +193,7 @@ GridGain In-Memory Data Fabric Community Edition 1.0
 * Added ability to automatically exclude LGPL optional dependencies during build.
 
 
-GridGain In-Memory Data Fabric Community Edition 1.0 RC3
+Apache Ignite In-Memory Data Fabric 1.0 RC3
 -------------------------------------------
 
 This is the first release of Apache Ignite project. The source code in large part is based
