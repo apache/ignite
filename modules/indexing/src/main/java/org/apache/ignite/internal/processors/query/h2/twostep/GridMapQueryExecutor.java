@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -900,6 +901,9 @@ public class GridMapQueryExecutor {
         private final int rowCnt;
 
         /** */
+        private boolean cpNeeded;
+
+        /** */
         private volatile boolean closed;
 
         /**
@@ -913,6 +917,7 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
+            this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -943,6 +948,31 @@ public class GridMapQueryExecutor {
                     return true;
 
                 Value[] row = res.currentRow();
+
+                if (cpNeeded) {
+                    boolean copied = false;
+
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
+
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+
+                            if (valCacheObj.isCopyNeeded()) {
+                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
+                                    @Override public Object getObject() {
+                                        return super.getObjectCopy();
+                                    }
+                                };
+
+                                copied = true;
+                            }
+                        }
+                    }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
+                }
 
                 assert row != null;
 
