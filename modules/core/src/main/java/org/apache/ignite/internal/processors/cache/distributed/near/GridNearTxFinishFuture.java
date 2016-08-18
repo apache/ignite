@@ -408,9 +408,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
-                if ((tx.onePhaseCommit() && needFinishOnePhase())
-                    || (!tx.onePhaseCommit() && mappings != null)
-                    || (tx.pessimistic() && !commit) /* Need to release lock on primary nodes */) {
+                if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
@@ -550,13 +548,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /**
+     * @param commit Commit flag.
      * @return {@code True} if need to send finish request for one phase commit transaction.
      */
-    private boolean needFinishOnePhase() {
+    private boolean needFinishOnePhase(boolean commit) {
         if (tx.mappings().empty())
             return false;
 
-        boolean finish = tx.txState().hasNearCache(cctx);
+        boolean finish = tx.txState().hasNearCache(cctx) || !commit;
 
         if (finish) {
             GridDistributedTxMapping mapping = tx.mappings().singleMapping();
