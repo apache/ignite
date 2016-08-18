@@ -886,7 +886,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOpX((int) CacheOp.Lock, w => WriteEnumerable(w, keys),
+            return DoOutInOpX((int) CacheOp.LockAll, w => WriteEnumerable(w, keys),
                 (stream, res) => new CacheLock(res, Target), ReadException);
         }
 
