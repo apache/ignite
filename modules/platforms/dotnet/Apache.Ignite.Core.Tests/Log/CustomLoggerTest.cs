@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// </summary>
         private class TestLogger : ILogger
         {
-            public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
+            private static readonly List<LogEntry> Logs = new List<LogEntry>(5000);
 
             private readonly LogLevel _minLevel;
 
@@ -372,15 +372,26 @@ namespace Apache.Ignite.Core.Tests.Log
                 _minLevel = minLevel;
             }
 
+            public static List<LogEntry> Entries
+            {
+                get
+                {
+                    lock (Logs)
+                    {
+                        return Logs.ToList();
+                    }
+                }
+            }
+
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
                 string category, string nativeErrorInfo, Exception ex)
             {
                 if (!IsEnabled(level))
                     return;
 
-                lock (Entries)
+                lock (Logs)
                 {
-                    Entries.Add(new LogEntry
+                    Logs.Add(new LogEntry
                     {
                         Level = level,
                         Message = message,
