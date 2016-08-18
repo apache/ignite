@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
+import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -125,7 +126,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
-
+        suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
         suite.addTestSuite(OdbcProcessorValidationSelfTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
