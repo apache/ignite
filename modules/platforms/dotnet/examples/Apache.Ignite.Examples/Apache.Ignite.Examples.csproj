@@ -54,6 +54,7 @@
     <Compile Include="Datagrid\DataStreamerExample.cs" />
     <Compile Include="Datagrid\PutGetExample.cs" />
     <Compile Include="Datagrid\LinqExample.cs" />
+    <Compile Include="Datagrid\BinaryModeExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />

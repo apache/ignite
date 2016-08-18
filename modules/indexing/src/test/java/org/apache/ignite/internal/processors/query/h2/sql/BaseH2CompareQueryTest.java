@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.h2.ext.func.Functions;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -60,6 +61,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
+        cc.setSqlFunctionClasses(Functions.class);
+
         if (mode == CacheMode.PARTITIONED)
             cc.setIndexedTypes(
                 Integer.class, Organization.class,
@@ -397,6 +400,33 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     public void testSqlFieldsQuery() throws Exception {
         compareQueryRes0("select concat(firstName, ' ', lastName) from \"part\".Person");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlLenFunction() throws Exception {
+        final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName, lastName, LEN(concat(firstName, ' ', lastName)) from Person;");
+
+        List<List<?>> lists = pCache.query(sql).getAll();
+
+        assertEquals(PERS_CNT, lists.size());
+
+        for (List l : lists) {
+            assertEquals(3, l.size());
+
+            assertTrue(l.get(0) instanceof String);
+            assertTrue(l.get(1) instanceof String);
+            assertTrue(l.get(2) instanceof Long);
+
+            String firstName = (String)l.get(0);
+            String lastName = (String)l.get(1);
+            Long size = (Long)l.get(2);
+
+            String fullName = firstName +" " +lastName;
+
+            assertEquals(Integer.valueOf(fullName.length()).longValue(), size.longValue());
+        }
     }
 
     /**

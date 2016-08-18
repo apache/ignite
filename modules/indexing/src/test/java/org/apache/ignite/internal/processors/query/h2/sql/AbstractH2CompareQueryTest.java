@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.ext.func.Functions;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -109,6 +110,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cc.setSqlFunctionClasses(Functions.class);
 
         setIndexedTypes(cc, mode);
 

@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.ext.func.Functions;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -627,7 +629,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, CacheObject key,
+        CacheObject val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
@@ -834,7 +837,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param ccfg Cache configuration.
      * @return Proper schema name according to ANSI-99 standard.
      */
-    private static String schemaNameFromCacheConf(CacheConfiguration<?,?> ccfg) {
+    private static String schemaNameFromCacheConf(CacheConfiguration<?, ?> ccfg) {
         if (ccfg.getSqlSchema() == null)
             return escapeName(ccfg.getName(), true);
 
@@ -940,7 +943,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters collection.
      * @throws IgniteCheckedException If failed.
      */
-    public void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
+    public void bindParameters(PreparedStatement stmt,
+        @Nullable Collection<Object> params) throws IgniteCheckedException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -1005,7 +1009,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param enforceJoinOrder Enforce join order of tables.
      * @return Iterable result.
      */
-    private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
+    private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?, ?> cctx, final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj, final boolean enforceJoinOrder) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
@@ -1016,7 +1020,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry) {
+    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlQuery qry) {
         String type = qry.getType();
         String space = cctx.name();
 
@@ -1046,15 +1050,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
                 final Iterator<List<?>> iter0 = res.iterator();
 
-                return new Iterator<Cache.Entry<K,V>>() {
+                return new Iterator<Cache.Entry<K, V>>() {
                     @Override public boolean hasNext() {
                         return iter0.hasNext();
                     }
 
-                    @Override public Cache.Entry<K,V> next() {
+                    @Override public Cache.Entry<K, V> next() {
                         List<?> l = iter0.next();
 
-                        return new CacheEntryImpl<>((K)l.get(0),(V)l.get(1));
+                        return new CacheEntryImpl<>((K)l.get(0), (V)l.get(1));
                     }
 
                     @Override public void remove() {
@@ -1065,7 +1069,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
 
         // No metadata for SQL queries.
-        return new QueryCursorImpl<Cache.Entry<K,V>>(converted) {
+        return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
             @Override public void close() {
                 res.close();
             }
@@ -1081,7 +1085,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1263,7 +1267,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!upper.startsWith("FROM"))
             from = " FROM " + t +
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
-                " " : " WHERE ");
+                    " " : " WHERE ");
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 
@@ -1410,7 +1414,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
 
-        for (Map.Entry<String, Class<?>> e: tbl.type().fields().entrySet())
+        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet())
             sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
 
         sql.a(')');
@@ -1502,7 +1506,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private void cleanupStatementCache() {
         long cur = U.currentTimeMillis();
 
-        for(Iterator<Map.Entry<Thread, StatementCache>> it = stmtCache.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Thread, StatementCache>> it = stmtCache.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Thread, StatementCache> entry = it.next();
 
             Thread t = entry.getKey();
@@ -1762,16 +1766,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
-                @Override public byte[] serialize(Object obj) throws Exception {
-                    return marshaller.marshal(obj);
-                }
+            @Override public byte[] serialize(Object obj) throws Exception {
+                return marshaller.marshal(obj);
+            }
 
-                @Override public Object deserialize(byte[] bytes) throws Exception {
-                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
+            @Override public Object deserialize(byte[] bytes) throws Exception {
+                ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
 
-                    return marshaller.unmarshal(bytes, clsLdr);
-                }
-            };
+                return marshaller.unmarshal(bytes, clsLdr);
+            }
+        };
     }
 
     /**
@@ -1843,7 +1847,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(GridCacheContext<?, ?> cctx, CacheConfiguration<?,?> ccfg)
+    @Override public void registerCache(GridCacheContext<?, ?> cctx, CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
 
@@ -1854,7 +1858,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         createSchema(schema);
 
-        createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
+        Class<?>[] functionClasses = ccfg.getSqlFunctionClasses();
+
+        if (functionClasses == null)
+            functionClasses = new Class<?>[] {Functions.class};
+        else {
+            Class<?>[] temp = Arrays.copyOf(functionClasses, functionClasses.length + 1);
+            temp[functionClasses.length] = Functions.class;
+            functionClasses = temp;
+        }
+
+        createSqlFunctions(schema, functionClasses);
     }
 
     /** {@inheritDoc} */
@@ -1876,7 +1890,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             for (Iterator<Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery>> it = twoStepCache.entrySet().iterator();
-                 it.hasNext();) {
+                it.hasNext(); ) {
                 Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery> e = it.next();
 
                 if (F.eq(e.getKey().space, ccfg.getName()))
@@ -1903,7 +1917,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (parts != null) {
                     if (parts.length < 64) { // Fast scan for small arrays.
-                        return new IgniteBiPredicate<K,V>() {
+                        return new IgniteBiPredicate<K, V>() {
                             @Override public boolean apply(K k, V v) {
                                 int p = aff.partition(k);
 
@@ -1920,7 +1934,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         };
                     }
 
-                    return new IgniteBiPredicate<K,V>() {
+                    return new IgniteBiPredicate<K, V>() {
                         @Override public boolean apply(K k, V v) {
                             int p = aff.partition(k);
 
@@ -2625,10 +2639,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
 
         /** */
-        private final GridCacheContext<?,?> cctx;
+        private final GridCacheContext<?, ?> cctx;
 
         /** */
-        private final CacheConfiguration<?,?> ccfg;
+        private final CacheConfiguration<?, ?> ccfg;
 
         /**
          * @param spaceName Space name.
@@ -2636,7 +2650,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param cctx Cache context.
          * @param ccfg Cache configuration.
          */
-        private Schema(String spaceName, String schemaName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) {
+        private Schema(String spaceName, String schemaName, GridCacheContext<?, ?> cctx,
+            CacheConfiguration<?, ?> ccfg) {
             this.spaceName = spaceName;
             this.cctx = cctx;
             this.schemaName = schemaName;
@@ -2651,7 +2666,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 lirsCfg.maxMemory = ccfg.getSqlOnheapRowCacheSize();
 
                 rowCache = new CacheLongKeyLIRS<>(lirsCfg);
-            } else
+            }
+            else
                 rowCache = null;
         }
 
@@ -2767,7 +2783,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheContext<?,?> context() {
+        @Override public GridCacheContext<?, ?> context() {
             return schema.cctx;
         }
 
@@ -2837,7 +2853,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     return ValueTime.get((Time)obj);
                 case Value.TIMESTAMP:
                     if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
-                        obj = new Timestamp(((java.util.Date) obj).getTime());
+                        obj = new Timestamp(((java.util.Date)obj).getTime());
 
                     return ValueTimestamp.get((Timestamp)obj);
                 case Value.DECIMAL:
@@ -2986,7 +3002,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused caches.
+         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused
+         * caches.
+         *
          * @return last usage timestamp
          */
         private long lastUsage() {

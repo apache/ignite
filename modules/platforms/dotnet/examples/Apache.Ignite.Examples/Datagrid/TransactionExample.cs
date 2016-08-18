@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.ExamplesDll.Binary;
-using Apache.Ignite.Core.Transactions;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    class TransactionExample
+    public class TransactionExample
     {
         /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_tx";

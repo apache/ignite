@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-
-using Apache.Ignite.Core;
-using Apache.Ignite.Linq;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.Linq;
+
     /// <summary>
     /// This example populates cache with sample data and runs several LINQ queries over this data.
     /// <para />
@@ -103,7 +102,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
-            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry = 
+            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry =
                 cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
 
             Console.WriteLine();
@@ -122,7 +121,7 @@ namespace Apache.Ignite.Examples.Datagrid
             const int zip = 94109;
 
             // Compile cache query to eliminate LINQ overhead on multiple runs.
-            Func<int, IQueryCursor<ICacheEntry<EmployeeKey, Employee>>> qry = 
+            Func<int, IQueryCursor<ICacheEntry<EmployeeKey, Employee>>> qry =
                 CompiledQuery.Compile((int z) => cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == z));
 
             Console.WriteLine();
@@ -137,7 +136,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// </summary>
         /// <param name="employeeCache">Employee cache.</param>
         /// <param name="organizationCache">Organization cache.</param>
-        private static void JoinQueryExample(ICache<EmployeeKey, Employee> employeeCache, 
+        private static void JoinQueryExample(ICache<EmployeeKey, Employee> employeeCache,
             ICache<int, Organization> organizationCache)
         {
             const string orgName = "Apache";
@@ -145,7 +144,7 @@ namespace Apache.Ignite.Examples.Datagrid
             IQueryable<ICacheEntry<EmployeeKey, Employee>> employees = employeeCache.AsCacheQueryable();
             IQueryable<ICacheEntry<int, Organization>> organizations = organizationCache.AsCacheQueryable();
 
-            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry = 
+            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry =
                 from employee in employees
                 from organization in organizations
                 where employee.Key.OrganizationId == organization.Key && organization.Value.Name == orgName
