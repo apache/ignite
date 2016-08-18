@@ -61,9 +61,6 @@ public enum GridSqlFunctionType {
     /** */
     SYSTEM_RANGE,
 
-    /** */
-    LEN,
-
     /** TABLE and TABLE_DISTINCT */
     TABLE,
 

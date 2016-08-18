@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.util.StatementBuilder;
@@ -27,7 +28,6 @@ import org.h2.value.ValueString;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CASE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.LEN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.UNKNOWN_FUNCTION;
 
 /**
@@ -92,14 +92,10 @@ public class GridSqlFunction extends GridSqlElement {
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();
 
-        if (LEN.functionName().equals(name))
-            buff.append("LENGTH");
-        else {
-            if (schema != null)
-                buff.append(Parser.quoteIdentifier(schema)).append('.');
+        if (schema != null)
+            buff.append(Parser.quoteIdentifier(schema)).append('.');
 
-            buff.append(Parser.quoteIdentifier(name));
-        }
+        buff.append(Parser.quoteIdentifier(name));
 
         if (type == CASE) {
             buff.append(' ').append(child().getSQL());
