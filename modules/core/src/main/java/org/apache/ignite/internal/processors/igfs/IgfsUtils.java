@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -31,8 +30,8 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -60,12 +59,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -374,8 +375,7 @@ public class IgfsUtils {
                         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
-                            ccfg.getAffinityMapper() == null)
+                        if (igfsCfg.isColocateMetadata() && ccfg.getAffinityMapper() == null)
                             ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
 
                         return;
@@ -744,6 +744,40 @@ public class IgfsUtils {
     }
 
     /**
+     * Write IgfsFileAffinityRange.
+     *
+     * @param writer Writer
+     * @param affRange affinity range.
+     */
+    public static void writeFileAffinityRange(BinaryRawWriter writer, @Nullable IgfsFileAffinityRange affRange) {
+        if (affRange != null) {
+            writer.writeBoolean(true);
+
+            affRange.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IgfsFileAffinityRange.
+     *
+     * @param reader Reader.
+     * @return File affinity range.
+     */
+    public static IgfsFileAffinityRange readFileAffinityRange(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsFileAffinityRange affRange = new IgfsFileAffinityRange();
+
+            affRange.readRawBinary(reader);
+
+            return affRange;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
@@ -819,11 +853,13 @@ public class IgfsUtils {
      *
      * @param dfltMode The root mode. Must always be not null.
      * @param modes The subdirectory modes.
+     * @param dualParentsContainingPrimaryChildren The set to store parents into.
      * @return Descending list of filtered and checked modes.
-     * @throws IgniteCheckedException On error or
+     * @throws IgniteCheckedException On error.
      */
     public static ArrayList<T2<IgfsPath, IgfsMode>> preparePathModes(final IgfsMode dfltMode,
-        @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+        @Nullable List<T2<IgfsPath, IgfsMode>> modes, Set<IgfsPath> dualParentsContainingPrimaryChildren)
+        throws IgniteCheckedException {
         if (modes == null)
             return null;
 
@@ -856,6 +892,10 @@ public class IgfsUtils {
 
                     // Add to the 1st position (deep first).
                     resModes.add(0, mode);
+
+                    // Store primary paths inside dual paths in separate collection:
+                    if (mode.getValue() == PRIMARY)
+                        dualParentsContainingPrimaryChildren.add(mode.getKey().parent());
 
                     break;
                 }

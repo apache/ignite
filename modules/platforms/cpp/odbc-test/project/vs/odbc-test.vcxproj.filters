@@ -76,6 +76,9 @@
     <ClCompile Include="..\..\src\queries_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\protocol_version.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">

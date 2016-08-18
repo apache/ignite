@@ -1361,13 +1361,35 @@ public abstract class IgniteUtils {
      * @param dflt Default class to return.
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
-        try {
-            return cls == null ? dflt : Class.forName(cls);
+    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
+        return classForName(cls, dflt, false);
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(
+        @Nullable String cls,
+        @Nullable Class<?> dflt,
+        boolean includePrimitiveTypes
+    ) {
+        Class<?> clazz;
+        if (cls == null)
+            clazz = dflt;
+        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
+            try {
+                clazz = Class.forName(cls);
+            }
+            catch (ClassNotFoundException ignore) {
+                clazz = dflt;
+            }
         }
-        catch (ClassNotFoundException ignore) {
-            return dflt;
-        }
+        return clazz;
     }
 
     /**
@@ -6700,6 +6722,19 @@ public abstract class IgniteUtils {
         assert a == arr;
 
         return arr;
+    }
+
+    /**
+     * Swaps two objects in array.
+     *
+     * @param arr Array.
+     * @param a Index of the first object.
+     * @param b Index of the second object.
+     */
+    public static void swap(Object[] arr, int a, int b) {
+        Object tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
     }
 
     /**

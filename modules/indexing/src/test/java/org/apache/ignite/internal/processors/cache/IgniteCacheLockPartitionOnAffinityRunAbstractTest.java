@@ -49,7 +49,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Base class of for the tests to validate https://issues.apache.org/jira/browse/IGNITE-2310
+ * Base class of the tests to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
 public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCacheAbstractSelfTest {
     /** Count of affinity run threads. */

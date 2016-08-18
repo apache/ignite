@@ -43,6 +43,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     @GridToStringInclude
     private Object[] args;
 
+    /** */
+    private boolean distributedJoins;
+
     /**
      * Constructs query for the given type name and SQL query.
      *
@@ -142,9 +145,34 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * @param type Type.
+     * @return {@code this} For chaining.
      */
     public SqlQuery setType(Class<?> type) {
         return setType(GridQueryProcessor.typeName(type));
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * When disabled, join results will only contain colocated data (joins work locally).
+     * When enabled, joins work as expected, no matter how the data is distributed.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */

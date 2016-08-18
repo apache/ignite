@@ -566,6 +566,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
+                String distributedJoins = (String)params.get("distributedJoins");
+
+                if (distributedJoins != null)
+                    restReq0.distributedJoins(Boolean.parseBoolean(distributedJoins));
+
                 restReq0.cacheName((String)params.get("cacheName"));
 
                 if (cmd == EXECUTE_SQL_QUERY)

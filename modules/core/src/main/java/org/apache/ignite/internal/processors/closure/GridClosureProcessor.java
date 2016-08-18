@@ -78,6 +78,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
@@ -87,15 +90,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 public class GridClosureProcessor extends GridProcessorAdapter {
     /** Ignite version in which binarylizable versions of closures were introduced. */
     public static final IgniteProductVersion BINARYLIZABLE_CLOSURES_SINCE = IgniteProductVersion.fromString("1.6.0");
-
-    /** */
-    private final Executor sysPool;
-
-    /** */
-    private final Executor pubPool;
-
-    /** */
-    private final Executor igfsPool;
 
     /** Lock to control execution after stop. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
@@ -108,10 +102,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public GridClosureProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        sysPool = ctx.getSystemExecutorService();
-        pubPool = ctx.getExecutorService();
-        igfsPool = ctx.getIgfsExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -736,20 +726,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Whether to get system or public pool.
      * @return Requested worker pool.
      */
-    private Executor pool(GridClosurePolicy plc) {
-        switch (plc) {
-            case PUBLIC_POOL:
-                return pubPool;
-
-            case SYSTEM_POOL:
-                return sysPool;
-
-            case IGFS_POOL:
-                return igfsPool;
-
-            default:
-                throw new IllegalArgumentException("Invalid closure execution policy: " + plc);
-        }
+    private Executor pool(byte plc) throws IgniteCheckedException {
+        return ctx.io().pool(plc);
     }
 
     /**
@@ -758,7 +736,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Pool name.
      */
-    private String poolName(GridClosurePolicy plc) {
+    private String poolName(byte plc) {
         switch (plc) {
             case PUBLIC_POOL:
                 return "public";
@@ -770,7 +748,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return "igfs";
 
             default:
-                throw new IllegalArgumentException("Invalid closure execution policy: " + plc);
+                return "unknown";
         }
     }
 
@@ -781,7 +759,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, boolean sys) throws IgniteCheckedException {
-        return runLocal(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+        return runLocal(c, sys ? SYSTEM_POOL : PUBLIC_POOL);
     }
 
     /**
@@ -790,7 +768,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, GridClosurePolicy plc) throws IgniteCheckedException {
+    public IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, byte plc) throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture();
 
@@ -866,7 +844,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     public IgniteInternalFuture<?> runLocalSafe(Runnable c, boolean sys) {
-        return runLocalSafe(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+        return runLocalSafe(c, sys ? SYSTEM_POOL : PUBLIC_POOL);
     }
 
     /**
@@ -877,7 +855,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public IgniteInternalFuture<?> runLocalSafe(Runnable c, GridClosurePolicy plc) {
+    public IgniteInternalFuture<?> runLocalSafe(Runnable c, byte plc) {
         try {
             return runLocal(c, plc);
         }
@@ -921,7 +899,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, boolean sys) throws IgniteCheckedException {
-        return callLocal(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+        return callLocal(c, sys ? SYSTEM_POOL : PUBLIC_POOL);
     }
 
     /**
@@ -931,7 +909,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, GridClosurePolicy plc) throws IgniteCheckedException {
+    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc) throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
 
@@ -1005,7 +983,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, boolean sys) {
-        return callLocalSafe(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+        return callLocalSafe(c, sys ? SYSTEM_POOL : PUBLIC_POOL);
     }
 
     /**
@@ -1016,7 +994,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, GridClosurePolicy plc) {
+    public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
         try {
             return callLocal(c, plc);
         }
