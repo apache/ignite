@@ -31,10 +31,14 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.policies.SpeculativeExecutionPolicy;
+
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
@@ -43,7 +47,11 @@ import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
  */
-public class DataSource {
+public class DataSource implements Externalizable {
+    /** Null object, used as a replacement for those Cassandra connection options which
+     * don't support serialization (RetryPolicy, LoadBalancingPolicy and etc) */
+    private static final UUID NULL_OBJECT = UUID.fromString("45ffae47-3193-5910-84a2-048fe65735d9");
+
     /** Number of rows to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
 
@@ -520,6 +528,85 @@ public class DataSource {
             builder = builder.withNettyOptions(nettyOptions);
 
         return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(fetchSize);
+        out.writeObject(readConsistency);
+        out.writeObject(writeConsistency);
+        out.writeObject(user);
+        out.writeObject(pwd);
+        out.writeObject(port);
+        out.writeObject(contactPoints);
+        out.writeObject(contactPointsWithPorts);
+        out.writeObject(maxSchemaAgreementWaitSeconds);
+        out.writeObject(protoVer);
+        out.writeObject(compression);
+        out.writeObject(useSSL);
+        out.writeObject(collectMetrix);
+        out.writeObject(jmxReporting);
+        out.writeObject(creds);
+        writeObject(out, loadBalancingPlc);
+        writeObject(out, reconnectionPlc);
+        writeObject(out, addrTranslator);
+        writeObject(out, speculativeExecutionPlc);
+        writeObject(out, authProvider);
+        writeObject(out, sslOptions);
+        writeObject(out, poolingOptions);
+        writeObject(out, sockOptions);
+        writeObject(out, nettyOptions);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        fetchSize = (Integer)in.readObject();
+        readConsistency = (ConsistencyLevel)in.readObject();
+        writeConsistency = (ConsistencyLevel)in.readObject();
+        user = (String)in.readObject();
+        pwd = (String)in.readObject();
+        port = (Integer)in.readObject();
+        contactPoints = (List<InetAddress>)in.readObject();
+        contactPointsWithPorts = (List<InetSocketAddress>)in.readObject();
+        maxSchemaAgreementWaitSeconds = (Integer)in.readObject();
+        protoVer = (Integer)in.readObject();
+        compression = (String)in.readObject();
+        useSSL = (Boolean)in.readObject();
+        collectMetrix = (Boolean)in.readObject();
+        jmxReporting = (Boolean)in.readObject();
+        creds = (Credentials)in.readObject();
+        loadBalancingPlc = (LoadBalancingPolicy)readObject(in);
+        reconnectionPlc = (ReconnectionPolicy)readObject(in);
+        addrTranslator = (AddressTranslator)readObject(in);
+        speculativeExecutionPlc = (SpeculativeExecutionPolicy)readObject(in);
+        authProvider = (AuthProvider)readObject(in);
+        sslOptions = (SSLOptions)readObject(in);
+        poolingOptions = (PoolingOptions)readObject(in);
+        sockOptions = (SocketOptions)readObject(in);
+        nettyOptions = (NettyOptions)readObject(in);
+    }
+
+    /**
+     * Helper method used to serialize class members
+     * @param out the stream to write the object to
+     * @param obj the object to be written
+     * @throws IOException Includes any I/O exceptions that may occur
+     */
+    private void writeObject(ObjectOutput out, Object obj) throws IOException {
+        out.writeObject(obj == null || !(obj instanceof Serializable) ? NULL_OBJECT : obj);
+    }
+
+    /**
+     * Helper method used to deserialize class members
+     * @param in the stream to read data from in order to restore the object
+     * @throws IOException Includes any I/O exceptions that may occur
+     * @throws ClassNotFoundException If the class for an object being restored cannot be found
+     * @return deserialized object
+     */
+    private Object readObject(ObjectInput in) throws IOException, ClassNotFoundException {
+        Object obj = in.readObject();
+        return NULL_OBJECT.equals(obj) ? null : obj;
     }
 
     /**
