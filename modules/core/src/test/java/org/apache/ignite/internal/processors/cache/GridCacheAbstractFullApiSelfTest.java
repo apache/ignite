@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -5109,7 +5111,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param keys Keys list.
      * @param txConcurrency Concurrency mode.
      * @param txIsolation Isolation mode.
-     *
      * @throws Exception If failed.
      */
     private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
@@ -5344,7 +5345,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param cache Cache instance.
      * @param cacheSkipStore Cache skip store projection.
-     *
      * @throws Exception If failed.
      */
     private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
@@ -5520,9 +5520,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Ignite ignite = ignite(0);
 
         doTransformResourceInjection(ignite, cache);
+        doTransformResourceInjection(ignite, cache.withAsync());
 
         if (txEnabled()) {
             doTransformResourceInjection(ignite, cache);
+            doTransformResourceInjection(ignite, cache.withAsync());
 
             for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -5532,6 +5534,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                         log.info("Start transaction: " + concurrency + ", " + isolation);
 
                         doTransformResourceInjection(ignite, cache);
+                        doTransformResourceInjection(ignite, cache.withAsync());
 
                         tx.commit();
                     }
@@ -5562,6 +5565,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             Integer flags = cache.invoke(key, new ResourceInjectionEntryProcessor());
 
+            if (cache.isAsync())
+                flags = cache.<Integer>future().get();
+
             assertTrue("Processor result is null", flags != null);
 
             log.info("Injection flag: " + Integer.toBinaryString(flags));
@@ -5577,6 +5583,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 UUID.randomUUID().toString()));
 
             Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
+
+            if (cache.isAsync())
+                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
 
             assertEquals(keys.size(), results.size());
 

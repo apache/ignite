@@ -666,8 +666,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKey(key);
 
-        entryProcessor = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), entryProcessor);
-
         Map<? extends K, EntryProcessor> invokeMap =
             Collections.singletonMap(key, (EntryProcessor)entryProcessor);
 
@@ -734,8 +732,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        map = wrapEntryProcessors(map);
-
         return (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
             map.keySet(),
             map.values(),
@@ -758,8 +754,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         if (keyCheck)
             validateCacheKeys(map.keySet());
-
-        map = wrapEntryProcessors(map);
 
         return updateAllAsync0(null,
             map,
@@ -957,6 +951,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             if (op == UPDATE)
                 val = ctx.toCacheObject(val);
+            else if (op == TRANSFORM && val instanceof EntryProcessor)
+                val = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), (EntryProcessor)val);
 
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -1114,6 +1110,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
 
                     if (op == TRANSFORM) {
+                        val = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), (EntryProcessor)val);
+
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             (EntryProcessor<Object, Object, Object>)val;
 
@@ -1629,40 +1627,5 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert false : "Should not be called";
-    }
-
-    /**
-     * @param processors Processors.
-     * @return Map of wrappers.
-     */
-    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>> wrapEntryProcessors(
-        Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
-        if (!processors.isEmpty()) {
-            for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, T>> entry : processors.entrySet()) {
-                EntryProcessor<K, V, T> processor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
-                    entry.getValue());
-
-                if (processor0 != entry.getValue())
-                    return wrapEntryProcessorsInNewMap(processors);
-            }
-        }
-
-        return processors;
-    }
-
-    /**
-     * Wrap EntryProcessors
-     *
-     * @param processors Processors.
-     * @return Map of wrappers.
-     */
-    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>> wrapEntryProcessorsInNewMap(
-        Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
-        Map<K, EntryProcessor<K, V, T>> res = U.newHashMap(processors.size());
-
-        for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, T>> entry : processors.entrySet())
-            res.put(entry.getKey(), EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), entry.getValue()));
-
-        return res;
     }
 }
