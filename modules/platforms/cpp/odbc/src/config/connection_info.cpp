@@ -92,6 +92,28 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_PREDICATES);
                     DBG_STR_CASE(SQL_SQL92_RELATIONAL_JOIN_OPERATORS);
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
+                    DBG_STR_CASE(SQL_CONVERT_GUID);
+                    DBG_STR_CASE(SQL_CONVERT_BIGINT);
+                    DBG_STR_CASE(SQL_CONVERT_BINARY);
+                    DBG_STR_CASE(SQL_CONVERT_BIT);
+                    DBG_STR_CASE(SQL_CONVERT_CHAR);
+                    DBG_STR_CASE(SQL_CONVERT_DATE);
+                    DBG_STR_CASE(SQL_CONVERT_DECIMAL);
+                    DBG_STR_CASE(SQL_CONVERT_DOUBLE);
+                    DBG_STR_CASE(SQL_CONVERT_FLOAT);
+                    DBG_STR_CASE(SQL_CONVERT_INTEGER);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_NUMERIC);
+                    DBG_STR_CASE(SQL_CONVERT_REAL);
+                    DBG_STR_CASE(SQL_CONVERT_SMALLINT);
+                    DBG_STR_CASE(SQL_CONVERT_TIME);
+                    DBG_STR_CASE(SQL_CONVERT_TIMESTAMP);
+                    DBG_STR_CASE(SQL_CONVERT_TINYINT);
+                    DBG_STR_CASE(SQL_CONVERT_VARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_VARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_YEAR_MONTH);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_DAY_TIME);
                 default: 
                     break;
                 }
@@ -124,7 +146,7 @@ namespace ignite
 #ifdef SQL_COLUMN_ALIAS
                 // A character string: "Y" if the data source supports column 
                 // aliases; otherwise, "N".
-                strParams[SQL_COLUMN_ALIAS] = "N";
+                strParams[SQL_COLUMN_ALIAS] = "Y";
 #endif // SQL_COLUMN_ALIAS
 
 #ifdef SQL_IDENTIFIER_QUOTE_CHAR
@@ -192,7 +214,7 @@ namespace ignite
 
 #ifdef SQL_GETDATA_EXTENSIONS
                 // Bitmask enumerating extensions to SQLGetData.
-                intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN;
+                intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN | SQL_GD_ANY_ORDER | SQL_GD_BOUND;
 #endif // SQL_GETDATA_EXTENSIONS
 
 #ifdef SQL_ODBC_INTERFACE_CONFORMANCE
@@ -203,7 +225,7 @@ namespace ignite
 
 #ifdef SQL_SQL_CONFORMANCE
                 // Indicates the level of SQL-92 supported by the driver.
-                intParams[SQL_SQL_CONFORMANCE] = 0; // SQL_SC_SQL92_ENTRY;
+                intParams[SQL_SQL_CONFORMANCE] = SQL_SC_SQL92_ENTRY;
 #endif // SQL_SQL_CONFORMANCE
 
 #ifdef SQL_CATALOG_USAGE
@@ -213,7 +235,8 @@ namespace ignite
 
 #ifdef SQL_SCHEMA_USAGE
                 // Bitmask enumerating the statements in which schemas can be used.
-                intParams[SQL_SCHEMA_USAGE] = 0;
+                intParams[SQL_SCHEMA_USAGE] = SQL_SU_DML_STATEMENTS |
+                    SQL_SU_TABLE_DEFINITION | SQL_SU_PRIVILEGE_DEFINITION;
 #endif // SQL_SCHEMA_USAGE
 
 #ifdef SQL_MAX_IDENTIFIER_LEN
@@ -224,124 +247,232 @@ namespace ignite
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
-                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG | 
-                    SQL_AF_COUNT | SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN |
-                    SQL_AF_SUM;
+                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG | SQL_AF_COUNT |
+                    SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN | SQL_AF_SUM;
 #endif // SQL_AGGREGATE_FUNCTIONS
 
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN |
+                    SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
+                    SQL_FN_NUM_DEGREES | SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_LOG10 |
+                    SQL_FN_NUM_MOD | SQL_FN_NUM_PI | SQL_FN_NUM_POWER | SQL_FN_NUM_RADIANS| SQL_FN_NUM_RAND |
+                    SQL_FN_NUM_ROUND | SQL_FN_NUM_SIGN | SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN |
+                    SQL_FN_NUM_TRUNCATE;
 #endif // SQL_NUMERIC_FUNCTIONS
 
 #ifdef SQL_STRING_FUNCTIONS
                 // Bitmask enumerating the scalar string functions supported by the
                 // driver and associated data source.
-                intParams[SQL_STRING_FUNCTIONS] = 0;
+                intParams[SQL_STRING_FUNCTIONS] = SQL_FN_STR_ASCII | SQL_FN_STR_BIT_LENGTH | SQL_FN_STR_CHAR |
+                    SQL_FN_STR_CONCAT | SQL_FN_STR_DIFFERENCE | SQL_FN_STR_INSERT | SQL_FN_STR_LEFT |
+                    SQL_FN_STR_LENGTH | SQL_FN_STR_LOCATE | SQL_FN_STR_LTRIM | SQL_FN_STR_OCTET_LENGTH |
+                    SQL_FN_STR_POSITION | SQL_FN_STR_REPEAT | SQL_FN_STR_REPLACE | SQL_FN_STR_RIGHT | SQL_FN_STR_RTRIM |
+                    SQL_FN_STR_SOUNDEX | SQL_FN_STR_SPACE | SQL_FN_STR_SUBSTRING;
 #endif // SQL_STRING_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_FUNCTIONS
                 // Bitmask enumerating the scalar date and time functions supported
                 // by the driver and associated data source.
-                intParams[SQL_TIMEDATE_FUNCTIONS] = 0;
+                intParams[SQL_TIMEDATE_FUNCTIONS] = SQL_FN_TD_CURRENT_DATE | SQL_FN_TD_CURRENT_TIME |
+                    SQL_FN_TD_CURRENT_TIMESTAMP | SQL_FN_TD_DAYNAME | SQL_FN_TD_DAYOFMONTH | SQL_FN_TD_DAYOFWEEK |
+                    SQL_FN_TD_DAYOFYEAR | SQL_FN_TD_EXTRACT | SQL_FN_TD_HOUR | SQL_FN_TD_MINUTE | SQL_FN_TD_MONTH |
+                    SQL_FN_TD_MONTHNAME | SQL_FN_TD_QUARTER | SQL_FN_TD_SECOND | SQL_FN_TD_WEEK | SQL_FN_TD_YEAR;
 #endif // SQL_TIMEDATE_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_ADD_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver 
                 // and associated data source for the TIMESTAMPADD scalar function.
-                intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
+                intParams[SQL_TIMEDATE_ADD_INTERVALS] = SQL_FN_TSI_SECOND | SQL_FN_TSI_MINUTE | SQL_FN_TSI_HOUR |
+                    SQL_FN_TSI_WEEK | SQL_FN_TSI_MONTH | SQL_FN_TSI_QUARTER | SQL_FN_TSI_YEAR;
 #endif // SQL_TIMEDATE_ADD_INTERVALS
 
 #ifdef SQL_TIMEDATE_DIFF_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver
                 // and associated data source for the TIMESTAMPDIFF scalar function.
-                intParams[SQL_TIMEDATE_DIFF_INTERVALS] = 0;
+                intParams[SQL_TIMEDATE_DIFF_INTERVALS] = SQL_FN_TSI_SECOND | SQL_FN_TSI_MINUTE | SQL_FN_TSI_HOUR |
+                    SQL_FN_TSI_WEEK | SQL_FN_TSI_MONTH | SQL_FN_TSI_QUARTER | SQL_FN_TSI_YEAR;
 #endif // SQL_TIMEDATE_DIFF_INTERVALS
 
 #ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
-                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_INTERVAL_HOUR |
-                    SQL_DL_SQL92_DATE | SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND |
-                    SQL_DL_SQL92_TIME | SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND |
-                    SQL_DL_SQL92_TIMESTAMP | SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_YEAR | SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND |
-                    SQL_DL_SQL92_INTERVAL_MONTH | SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR |
-                    SQL_DL_SQL92_INTERVAL_DAY | SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_MINUTE | SQL_DL_SQL92_INTERVAL_SECOND |
-                    SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
+                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_DATE | SQL_DL_SQL92_TIME | SQL_DL_SQL92_TIMESTAMP |
+                    SQL_DL_SQL92_INTERVAL_YEAR | SQL_DL_SQL92_INTERVAL_MONTH | SQL_DL_SQL92_INTERVAL_DAY |
+                    SQL_DL_SQL92_INTERVAL_HOUR | SQL_DL_SQL92_INTERVAL_MINUTE | SQL_DL_SQL92_INTERVAL_SECOND |
+                    SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH | SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR |
+                    SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE | SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND |
+                    SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE |  SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND |
+                    SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND;
 #endif // SQL_DATETIME_LITERALS
 
 #ifdef SQL_SYSTEM_FUNCTIONS
                 // Bitmask enumerating the scalar system functions supported by the
                 // driver and associated data source.
-                intParams[SQL_SYSTEM_FUNCTIONS] = 0;
+                intParams[SQL_SYSTEM_FUNCTIONS] = SQL_FN_SYS_IFNULL;
 #endif // SQL_SYSTEM_FUNCTIONS
 
 #ifdef SQL_CONVERT_FUNCTIONS
                 // Bitmask enumerating the scalar conversion functions supported
                 // by the driver and associated data source.
-                intParams[SQL_CONVERT_FUNCTIONS] = 0;
+                intParams[SQL_CONVERT_FUNCTIONS] = SQL_FN_CVT_CAST | SQL_FN_CVT_CONVERT;
 #endif // SQL_CONVERT_FUNCTIONS
 
 #ifdef SQL_OJ_CAPABILITIES
                 // Bitmask enumerating the types of outer joins supported by the 
                 // driver and data source.
-                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT |
-                    SQL_OJ_FULL | SQL_OJ_NESTED | SQL_OJ_INNER | 
-                    SQL_OJ_ALL_COMPARISON_OPS;
+                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT | SQL_OJ_FULL | SQL_OJ_NOT_ORDERED |
+                    SQL_OJ_INNER | SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
 
 #ifdef SQL_POS_OPERATIONS
                 // Bitmask enumerating the support operations in SQLSetPos.
-                intParams[SQL_POS_OPERATIONS] = 0;
+                intParams[SQL_POS_OPERATIONS] = SQL_SSF_CONVERT | SQL_SSF_LOWER | SQL_SSF_UPPER | SQL_SSF_SUBSTRING |
+                    SQL_SSF_TRANSLATE | SQL_SSF_TRIM_BOTH | SQL_SSF_TRIM_LEADING | SQL_SSF_TRIM_TRAILING;
 #endif // SQL_POS_OPERATIONS
 
 #ifdef SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
                 // Bitmask enumerating the numeric value scalar functions.
-                intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = 0;
+                intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = SQL_SNVF_BIT_LENGTH | SQL_SNVF_EXTRACT |
+                    SQL_SNVF_OCTET_LENGTH | SQL_SNVF_POSITION ;
 #endif // SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
 
 #ifdef SQL_SQL92_STRING_FUNCTIONS
                 // Bitmask enumerating the string scalar functions.
-                intParams[SQL_SQL92_STRING_FUNCTIONS] = 0;
+                intParams[SQL_SQL92_STRING_FUNCTIONS] = SQL_SSF_CONVERT | SQL_SSF_LOWER | SQL_SSF_UPPER |
+                    SQL_SSF_SUBSTRING | SQL_SSF_TRANSLATE;
 #endif // SQL_SQL92_STRING_FUNCTIONS
 
 #ifdef SQL_SQL92_DATETIME_FUNCTIONS
                 // Bitmask enumerating the datetime scalar functions.
-                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = SQL_SDF_CURRENT_DATE |
+                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = SQL_SDF_CURRENT_DATE | SQL_SDF_CURRENT_TIME |
                     SQL_SDF_CURRENT_TIMESTAMP;
 #endif // SQL_SQL92_DATETIME_FUNCTIONS
 
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
-                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
-                    SQL_SVE_COALESCE | SQL_SVE_NULLIF;
+                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = 0;
 #endif // SQL_SQL92_VALUE_EXPRESSIONS
 
 #ifdef SQL_SQL92_PREDICATES
                 // Bitmask enumerating the datetime scalar functions.
-                intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN |
-                    SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
-                    SQL_SP_ISNOTNULL | SQL_SP_ISNULL | SQL_SP_LIKE |
-                    SQL_SP_MATCH_FULL | SQL_SP_MATCH_PARTIAL |
-                    SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL |
-                    SQL_SP_OVERLAPS | SQL_SP_QUANTIFIED_COMPARISON |
-                    SQL_SP_UNIQUE;
+                intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN | SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
+                    SQL_SP_ISNOTNULL | SQL_SP_ISNULL | SQL_SP_LIKE | SQL_SP_MATCH_FULL | SQL_SP_MATCH_PARTIAL |
+                    SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL | SQL_SP_OVERLAPS | SQL_SP_UNIQUE |
+                    SQL_SP_QUANTIFIED_COMPARISON;
 #endif // SQL_SQL92_PREDICATES
 
 #ifdef SQL_SQL92_RELATIONAL_JOIN_OPERATORS
                 // Bitmask enumerating the relational join operators supported
                 // in a SELECT statement, as defined in SQL-92.
-                intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] =
-                    SQL_SRJO_CORRESPONDING_CLAUSE | SQL_SRJO_CROSS_JOIN |
-                    SQL_SRJO_EXCEPT_JOIN | SQL_SRJO_EXCEPT_JOIN |
-                    SQL_SRJO_INNER_JOIN | SQL_SRJO_INTERSECT_JOIN |
-                    SQL_SRJO_LEFT_OUTER_JOIN | SQL_SRJO_NATURAL_JOIN |
-                    SQL_SRJO_RIGHT_OUTER_JOIN | SQL_SRJO_UNION_JOIN;
+                intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] = SQL_SRJO_CORRESPONDING_CLAUSE | SQL_SRJO_CROSS_JOIN |
+                    SQL_SRJO_EXCEPT_JOIN | SQL_SRJO_INNER_JOIN | SQL_SRJO_LEFT_OUTER_JOIN| SQL_SRJO_RIGHT_OUTER_JOIN |
+                    SQL_SRJO_NATURAL_JOIN | SQL_SRJO_INTERSECT_JOIN | SQL_SRJO_UNION_JOIN;
 #endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
+
+                const static int32_t numerucMask = SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_BIT | SQL_CVT_CHAR |
+                    SQL_CVT_DECIMAL | SQL_CVT_DOUBLE | SQL_CVT_FLOAT | SQL_CVT_INTEGER | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_LONGVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_REAL | SQL_CVT_SMALLINT | SQL_CVT_TINYINT |
+                    SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
+
+                const static int32_t dateTimeMask = SQL_CVT_BINARY | SQL_CVT_CHAR | SQL_CVT_DATE | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_LONGVARCHAR | SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
+
+                const static int32_t fullMask = SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_BIT | SQL_CVT_GUID |
+                    SQL_CVT_CHAR | SQL_CVT_DATE | SQL_CVT_DECIMAL | SQL_CVT_DOUBLE | SQL_CVT_FLOAT | SQL_CVT_INTEGER |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_LONGVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_REAL | SQL_CVT_SMALLINT |
+                    SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_TINYINT | SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
+
+#ifdef SQL_CONVERT_BIGINT
+                intParams[SQL_CONVERT_BIGINT] = numerucMask;
+#endif // SQL_CONVERT_BIGINT
+
+#ifdef SQL_CONVERT_INTEGER
+                intParams[SQL_CONVERT_INTEGER] = numerucMask;
+#endif // SQL_CONVERT_INTEGER
+
+#ifdef SQL_CONVERT_SMALLINT
+                intParams[SQL_CONVERT_SMALLINT] = numerucMask;
+#endif // SQL_CONVERT_SMALLINT
+
+#ifdef SQL_CONVERT_TINYINT
+                intParams[SQL_CONVERT_TINYINT] = numerucMask;
+#endif // SQL_CONVERT_TINYINT
+
+#ifdef SQL_CONVERT_DOUBLE
+                intParams[SQL_CONVERT_DOUBLE] = numerucMask;
+#endif // SQL_CONVERT_DOUBLE
+
+#ifdef SQL_CONVERT_REAL
+                intParams[SQL_CONVERT_REAL] = numerucMask;
+#endif // SQL_CONVERT_REAL
+
+#ifdef SQL_CONVERT_FLOAT
+                intParams[SQL_CONVERT_FLOAT] = numerucMask;
+#endif // SQL_CONVERT_FLOAT
+
+#ifdef SQL_CONVERT_NUMERIC
+                intParams[SQL_CONVERT_NUMERIC] = numerucMask;
+#endif // SQL_CONVERT_NUMERIC
+
+#ifdef SQL_CONVERT_DECIMAL
+                intParams[SQL_CONVERT_DECIMAL] = numerucMask;
+#endif // SQL_CONVERT_DECIMAL
+
+#ifdef SQL_CONVERT_BIT
+                intParams[SQL_CONVERT_BIT] = numerucMask;
+#endif // SQL_CONVERT_BIT
+
+#ifdef SQL_CONVERT_DATE
+                intParams[SQL_CONVERT_DATE] = dateTimeMask;
+#endif // SQL_CONVERT_DATE
+
+#ifdef SQL_CONVERT_TIME
+                intParams[SQL_CONVERT_TIME] = dateTimeMask;
+#endif // SQL_CONVERT_TIME
+
+#ifdef SQL_CONVERT_TIMESTAMP
+                intParams[SQL_CONVERT_TIMESTAMP] = dateTimeMask;
+#endif // SQL_CONVERT_TIMESTAMP
+
+#ifdef SQL_CONVERT_BINARY
+                intParams[SQL_CONVERT_BINARY] = fullMask;
+#endif // SQL_CONVERT_BINARY
+
+#ifdef SQL_CONVERT_CHAR
+                intParams[SQL_CONVERT_CHAR] = fullMask;
+#endif // SQL_CONVERT_CHAR
+
+#ifdef SQL_CONVERT_LONGVARCHAR
+                intParams[SQL_CONVERT_LONGVARCHAR] = fullMask;
+#endif // SQL_CONVERT_LONGVARCHAR
+
+#ifdef SQL_CONVERT_VARBINARY
+                intParams[SQL_CONVERT_VARBINARY] = fullMask;
+#endif // SQL_CONVERT_VARBINARY
+
+#ifdef SQL_CONVERT_VARCHAR
+                intParams[SQL_CONVERT_VARCHAR] = fullMask;
+#endif // SQL_CONVERT_VARCHAR
+
+#ifdef SQL_CONVERT_LONGVARBINARY
+                intParams[SQL_CONVERT_LONGVARBINARY] = fullMask;
+#endif // SQL_CONVERT_LONGVARBINARY
+
+#ifdef SQL_CONVERT_GUID
+                intParams[SQL_CONVERT_GUID] = SQL_CVT_BINARY | SQL_CVT_GUID | SQL_CVT_CHAR | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_LONGVARCHAR | SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
+#endif // SQL_CONVERT_GUID
+
+#ifdef SQL_CONVERT_INTERVAL_YEAR_MONTH
+                intParams[SQL_CONVERT_INTERVAL_YEAR_MONTH] = 0;
+#endif // SQL_CONVERT_INTERVAL_YEAR_MONTH
+
+#ifdef SQL_CONVERT_INTERVAL_DAY_TIME
+                intParams[SQL_CONVERT_INTERVAL_DAY_TIME] = 0;
+#endif // SQL_CONVERT_INTERVAL_DAY_TIME
 
                 //========================= Short Params ==========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
