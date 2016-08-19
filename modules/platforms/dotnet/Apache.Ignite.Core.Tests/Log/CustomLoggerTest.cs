@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Log
         [SetUp]
         public void TestSetUp()
         {
-            TestLogger.Entries.Clear();
+            TestLogger.Clear();
         }
 
         /// <summary>
@@ -412,6 +412,14 @@ namespace Apache.Ignite.Core.Tests.Log
             [InstanceResource]
             // ReSharper disable once UnusedAutoPropertyAccessor.Local
             public IIgnite Ignite { get; set; }
+
+            public static void Clear()
+            {
+                lock (Logs)
+                {
+                    Logs.Clear();
+                }
+            }
         }
 
 
