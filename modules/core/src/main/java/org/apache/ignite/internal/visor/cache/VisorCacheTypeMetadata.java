@@ -134,21 +134,25 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
 
                 JdbcTypeField[] keyFields = jdbcType.getKeyFields();
 
-                meta.keyFields = new ArrayList<>(keyFields.length);
+                if (keyFields != null) {
+                    meta.keyFields = new ArrayList<>(keyFields.length);
 
-                for (JdbcTypeField fld : keyFields)
-                    meta.keyFields.add(new VisorCacheTypeFieldMetadata(
-                        fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                        fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    for (JdbcTypeField fld : keyFields)
+                        meta.keyFields.add(new VisorCacheTypeFieldMetadata(
+                            fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                            fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                }
 
                 JdbcTypeField[] valFields = jdbcType.getValueFields();
 
-                meta.valFields = new ArrayList<>(valFields.length);
+                if (valFields != null) {
+                    meta.valFields = new ArrayList<>(valFields.length);
 
-                for (JdbcTypeField fld : valFields)
-                    meta.valFields.add(new VisorCacheTypeFieldMetadata(
+                    for (JdbcTypeField fld : valFields)
+                        meta.valFields.add(new VisorCacheTypeFieldMetadata(
                             fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
                             fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                }
 
                 if (notFound)
                     metas.add(meta);

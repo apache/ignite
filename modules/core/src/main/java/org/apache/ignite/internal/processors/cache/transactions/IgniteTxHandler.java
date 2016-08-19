@@ -639,7 +639,6 @@ public class IgniteTxHandler {
                     ", node=" + nodeId + ']');
             }
 
-
             fut.onResult(nodeId, res);
         }
     }
