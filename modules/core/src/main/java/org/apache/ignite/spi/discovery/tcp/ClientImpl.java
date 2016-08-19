@@ -2018,15 +2018,19 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<Integer, CacheMetrics> cacheMetrics,
             long tstamp)
         {
+            boolean isLocDaemon = spi.locNode.isDaemon();
+
             assert nodeId != null;
             assert metrics != null;
-            assert cacheMetrics != null;
+            assert isLocDaemon || cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
-                node.setCacheMetrics(cacheMetrics);
+
+                if (!isLocDaemon)
+                    node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTime(tstamp);
 

@@ -35,9 +35,11 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -201,15 +203,21 @@ namespace Apache.Ignite.Core
 
             lock (SyncRoot)
             {
+                // 0. Init logger
+                var log = cfg.Logger ?? new JavaLogger();
+
+                log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
+
                 // 1. Check GC settings.
-                CheckServerGc(cfg);
+                CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath);
+                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks();
+                var cbs = new UnmanagedCallbacks(log);
 
-                IgniteManager.CreateJvmContext(cfg, cbs);
+                IgniteManager.CreateJvmContext(cfg, cbs, log);
+                log.Debug("JVM started.");
 
                 var gridName = cfg.GridName;
 
@@ -221,11 +229,16 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
+
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
                     interopProc = node.InteropProcessor;
+
+                    var javaLogger = log as JavaLogger;
+                    if (javaLogger != null)
+                        javaLogger.SetProcessor(interopProc);
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -271,10 +284,11 @@ namespace Apache.Ignite.Core
         /// Check whether GC is set to server mode.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg)
+        /// <param name="log">Log.</param>
+        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                Logger.LogWarning("GC server mode is not enabled, this could lead to less " +
+                log.Warn("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }
@@ -285,14 +299,15 @@ namespace Apache.Ignite.Core
         /// <param name="inStream">Input stream with data.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream, 
-            HandleRegistry handleRegistry)
+        /// <param name="log">Log.</param>
+        internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream,
+            HandleRegistry handleRegistry, ILogger log)
         {
             try
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader, outStream);
+                PrepareConfiguration(reader, outStream, log);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
 
@@ -313,7 +328,8 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Response stream.</param>
-        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
+        /// <param name="log">Log.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream, ILogger log)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -334,6 +350,7 @@ namespace Apache.Ignite.Core
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
 
             // 3. Send configuration details to Java
+            cfg.Validate(log);
             cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 
