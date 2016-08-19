@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class IgniteCacheMessageRecoveryIdleConnection extends GridCommonAbstractTest {
+public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -123,7 +123,7 @@ public class IgniteCacheMessageRecoveryIdleConnection extends GridCommonAbstract
             long stopTime = System.currentTimeMillis() + 90_000;
 
             while (System.currentTimeMillis() < stopTime) {
-                if (iter++ % 10 == 0)
+                if (iter++ % 50 == 0)
                     log.info("Iteration: " + iter);
 
                 cache.put(iter, 1);
@@ -134,6 +134,9 @@ public class IgniteCacheMessageRecoveryIdleConnection extends GridCommonAbstract
                     fut.get(10_000);
                 }
                 catch (IgniteException e) {
+                    log.error("Failed to execute update, will dump debug information" +
+                        " [err=" + e+ ", iter=" + iter + ']', e);
+
                     List<Ignite> nodes = IgnitionEx.allGridsx();
 
                     for (Ignite node : nodes)
