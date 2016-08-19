@@ -1,5 +1,3 @@
-package org.apache.ignite.internal.processors.cache;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +15,8 @@ package org.apache.ignite.internal.processors.cache;
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
 import java.io.Serializable;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -29,24 +29,22 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @param <K>
- * @param <V>
- * @param <T>
+ * Entry processor wrapper injecting Ignite resources into target processor before processing.
  */
 public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProcessor<K, V, T>, Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = -5032286375274064774L;
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Delegate. */
     private EntryProcessor<K, V, T> delegate;
 
-    /** Injected. */
+    /** Injected flag. */
     private transient boolean injected;
 
     /**
      * @param delegate Delegate.
      */
-    public EntryProcessorResourceInjectorProxy(EntryProcessor<K, V, T> delegate) {
+    private EntryProcessorResourceInjectorProxy(EntryProcessor<K, V, T> delegate) {
         this.delegate = delegate;
     }
 
@@ -70,41 +68,40 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
         return delegate.process(entry, arguments);
     }
 
-    /** */
-    public EntryProcessor<K, V, T> getDelegate() {
-        return this.delegate;
+    /**
+     * @return Delegate entry processor.
+     */
+    public EntryProcessor<K, V, T> delegate() {
+        return delegate;
     }
 
     /**
-     * Wrap EntryProcessor if needed.
-     * @param processor Processor.
+     * Wraps EntryProcessor if needed.
+     *
+     * @param ctx Context.
+     * @param processor Entry processor.
+     * @return Wrapped entry processor if wrapping is needed.
      */
-    public static <K,V,T> EntryProcessor<K,V,T> wrap(GridKernalContext ctx,
-        @Nullable EntryProcessor<K,V,T> processor) {
+    public static <K, V, T> EntryProcessor<K, V, T> wrap(GridKernalContext ctx,
+        @Nullable EntryProcessor<K, V, T> processor) {
         if (processor == null || processor instanceof EntryProcessorResourceInjectorProxy)
             return processor;
 
         GridResourceProcessor rsrcProcessor = ctx.resource();
 
         return rsrcProcessor.isAnnotationsPresent(null, processor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
-                new EntryProcessorResourceInjectorProxy<K,V,T>(processor) : processor;
+            new EntryProcessorResourceInjectorProxy<>(processor) : processor;
     }
 
     /**
-     * Unwrap EntryProcessor if needed.
+     * Unwraps EntryProcessor as Object if needed.
+     *
+     * @param obj Entry processor.
+     * @return Unwrapped entry processor.
      */
-    public static <K,V,T> EntryProcessor<K,V,T> unwrap(EntryProcessor<K,V,T> processor) {
-        return processor == null || !(processor instanceof EntryProcessorResourceInjectorProxy) ?
-                processor :
-                ((EntryProcessorResourceInjectorProxy)processor).getDelegate();
-    }
-
-    /**
-     * Unwrap EntryProcessor as Object if needed.
-     */
-    public static Object unwrapAsObject(Object obj) {
+    static Object unwrap(Object obj) {
         return obj == null || !(obj instanceof EntryProcessorResourceInjectorProxy) ?
             obj :
-            ((EntryProcessorResourceInjectorProxy)obj).getDelegate();
+            ((EntryProcessorResourceInjectorProxy)obj).delegate();
     }
 }

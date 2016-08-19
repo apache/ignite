@@ -39,8 +39,11 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+
 /**
- * Created by spider on 24.02.16.
+ *
  */
 public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -48,27 +51,19 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
         return 1;
     }
 
-    /** Test grid with Spring context. */
-    private static Ignite grid;
-
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        grid = IgniteSpring.start(new ClassPathXmlApplicationContext(
-            "/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
+        IgniteSpring.start(getConfiguration(getTestGridName(0)),
+            new ClassPathXmlApplicationContext("/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTransformResourceInjection() throws Exception {
-        CacheConfiguration<String, Integer> ccfg =
-                new CacheConfiguration<String, Integer>(jcache().getConfiguration(CacheConfiguration.class));
+        Ignite grid = grid(0);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
-        IgniteCache<String, Integer> cache = grid.createCache(ccfg);
+        IgniteCache<String, Integer> cache = grid.createCache(cacheConfiguration(ATOMIC));
 
         try {
             doTransformResourceInjection(cache);
@@ -77,9 +72,7 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
             cache.destroy();
         }
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cache = grid.createCache(ccfg);
+        cache = grid.createCache(cacheConfiguration(TRANSACTIONAL));
 
         try {
             doTransformResourceInjection(cache);
@@ -102,11 +95,27 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
     }
 
     /**
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<String, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>();
+
+        ccfg.setName(getClass().getSimpleName());
+        ccfg.setAtomicityMode(atomicityMode);
+
+        return ccfg;
+    }
+
+    /**
+     * @param cache Cache.
      * @throws Exception If failed.
      */
-    public void doTransformResourceInjection(IgniteCache<String, Integer> cache) throws Exception {
-        final Collection<ResourceType> required = Arrays.asList(ResourceType.SPRING_APPLICATION_CONTEXT,
-                                                    ResourceType.SPRING_BEAN);
+    private void doTransformResourceInjection(IgniteCache<String, Integer> cache) throws Exception {
+        final Collection<ResourceType> required = Arrays.asList(
+            ResourceType.SPRING_APPLICATION_CONTEXT,
+            ResourceType.SPRING_BEAN);
+
         Integer flags = cache.invoke(UUID.randomUUID().toString(), new SpringResourceInjectionEntryProcessor());
 
         assertTrue("Processor result is null", flags != null);
@@ -116,33 +125,39 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
         Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
 
         if (!notInjected.isEmpty())
-            assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+            fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
 
-        Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString(),
-                                            UUID.randomUUID().toString(), UUID.randomUUID().toString()));
+        Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()));
 
         Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys,
             new SpringResourceInjectionEntryProcessor());
+
+        assertEquals(keys.size(), results.size());
 
         for (EntryProcessorResult<Integer> res : results.values()) {
             Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
 
             if (!notInjected1.isEmpty())
-                assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected1.toArray()), false);
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
         }
     }
 
     /**
      *
      */
-    public static class SpringResourceInjectionEntryProcessor
-        extends ResourceInjectionEntryProcessorBase<String, Integer> {
+    static class SpringResourceInjectionEntryProcessor extends ResourceInjectionEntryProcessorBase<String, Integer> {
         /** */
         private transient ApplicationContext appCtx;
 
         /** */
         private transient GridSpringResourceInjectionSelfTest.DummyResourceBean dummyBean;
 
+        /**
+         * @param appCtx Context.
+         */
         @SpringApplicationContextResource
         public void setApplicationContext(ApplicationContext appCtx) {
             assert appCtx != null;
@@ -154,6 +169,9 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
             this.appCtx = appCtx;
         }
 
+        /**
+         * @param dummyBean Resource bean.
+         */
         @SpringResource(resourceName = "dummyResourceBean")
         public void setDummyBean(GridSpringResourceInjectionSelfTest.DummyResourceBean dummyBean) {
             assert dummyBean != null;
@@ -164,6 +182,5 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
 
             this.dummyBean = dummyBean;
         }
-
     }
 }

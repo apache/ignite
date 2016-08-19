@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
@@ -42,27 +40,11 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 
 /**
  * Processor for all Ignite and task/job resources.
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
-    /** Grid instance injector. */
-    private GridResourceBasicInjector<IgniteEx> gridInjector;
-
-    /** Spring application context injector. */
-    private GridResourceInjector springCtxInjector;
-
-    /** Logger injector. */
-    private GridResourceBasicInjector<IgniteLogger> logInjector;
-
-    /** Services injector. */
-    private GridResourceBasicInjector<Collection<Service>> srvcInjector;
-
-    /** Spring bean resources injector. */
-    private GridResourceInjector springBeanInjector;
-
     /** Cleaning injector. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
 
@@ -83,19 +65,14 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     public GridResourceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        gridInjector = new GridResourceBasicInjector<>(ctx.grid());
-        logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
-        srvcInjector = new GridResourceServiceInjector(ctx.grid());
-
         injectorByAnnotation = new GridResourceInjector[GridResourceIoc.ResourceAnnotation.values().length];
 
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SERVICE.ordinal()] = srvcInjector;
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.LOGGER.ordinal()] = logInjector;
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] = gridInjector;
-
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
-            springCtxInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SERVICE.ordinal()] =
+            new GridResourceServiceInjector(ctx.grid());
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.LOGGER.ordinal()] =
+            new GridResourceLoggerInjector(ctx.config().getGridLogger());
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
+            new GridResourceBasicInjector<>(ctx.grid());
     }
 
     /** {@inheritDoc} */
@@ -120,8 +97,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     public void setSpringContext(@Nullable GridSpringResourceContext rsrcCtx) {
         this.rsrcCtx = rsrcCtx;
 
-        springCtxInjector = rsrcCtx != null ? rsrcCtx.springContextInjector() : nullInjector;
-        springBeanInjector = rsrcCtx != null ? rsrcCtx.springBeanInjector() : nullInjector;
+        GridResourceInjector springCtxInjector = rsrcCtx != null ? rsrcCtx.springContextInjector() : nullInjector;
+        GridResourceInjector springBeanInjector = rsrcCtx != null ? rsrcCtx.springBeanInjector() : nullInjector;
+
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
+            springCtxInjector;
     }
 
     /**
@@ -169,11 +150,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void inject(GridDeployment dep, Class<?> depCls, Object target) throws IgniteCheckedException {
-
         assert target != null;
 
         if (log.isDebugEnabled())
-            log.debug("Injecting cache store session: " + target);
+            log.debug("Injecting resources: " + target);
 
         // Unwrap Proxy object.
         target = unwrapTarget(target);
@@ -230,6 +210,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object to inject.
+     * @param annSet Supported annotations.
+     * @param params Parameters.
      * @throws IgniteCheckedException If failed to inject.
      */
     public void inject(Object obj, GridResourceIoc.AnnotationSet annSet, Object... params)
@@ -247,10 +229,17 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object to inject.
+     * @param annSet Supported annotations.
+     * @param dep Deployment.
+     * @param depCls Deployment class.
+     * @param params Parameters.
      * @throws IgniteCheckedException If failed to inject.
      */
-    private void inject(Object obj, GridResourceIoc.AnnotationSet annSet, @Nullable GridDeployment dep,
-        @Nullable Class<?> depCls, Object... params)
+    private void inject(Object obj,
+        GridResourceIoc.AnnotationSet annSet,
+        @Nullable GridDeployment dep,
+        @Nullable Class<?> depCls,
+        Object... params)
         throws IgniteCheckedException {
         GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
 
@@ -274,6 +263,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object.
+     * @param annSet Supported annotations.
      * @throws IgniteCheckedException If failed.
      */
     private void cleanup(Object obj, GridResourceIoc.AnnotationSet annSet)
@@ -300,6 +290,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * @param ann Annotation.
      * @param param Injector parameter.
+     * @return Injector.
      */
     private GridResourceInjector injectorByAnnotation(GridResourceIoc.ResourceAnnotation ann, Object param) {
         final GridResourceInjector res;
@@ -312,9 +303,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case CACHE_STORE_SESSION:
                 res = new GridResourceBasicInjector<>(param);
                 break;
+
             case JOB_CONTEXT:
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
                 break;
+
             default:
                 res = injectorByAnnotation[ann.ordinal()];
                 break;

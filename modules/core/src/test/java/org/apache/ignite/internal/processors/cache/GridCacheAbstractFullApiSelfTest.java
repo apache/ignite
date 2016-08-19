@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -40,7 +38,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -52,7 +49,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -229,10 +225,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (evtTypes == null || evtTypes.length == 0)
             cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_READ);
         else {
-            for (int evtType : evtTypes)
+            for (int evtType : evtTypes) {
                 if (evtType == EventType.EVT_CACHE_OBJECT_READ)
                     return cfg;
+            }
+
             int[] updatedEvtTypes = Arrays.copyOf(evtTypes, evtTypes.length + 1);
+
             updatedEvtTypes[updatedEvtTypes.length - 1] = EventType.EVT_CACHE_OBJECT_READ;
         }
 
@@ -295,12 +294,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cacheCfgMap = null;
         }
 
-        //We won't deploy service unless non-client node is configured
+        // We won't deploy service unless non-client node is configured.
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).configuration().isClientMode())
                 continue;
 
             grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+
             break;
         }
 
@@ -5541,16 +5541,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @param ignite Node.
+     * @param cache Cache.
      * @throws Exception If failed.
      */
-    protected void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
         final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
-            ResourceType.CACHE_NAME, ResourceType.LOGGER, ResourceType.SERVICE);
+            ResourceType.CACHE_NAME,
+            ResourceType.LOGGER,
+            ResourceType.SERVICE);
+
         final CacheEventListener lsnr = new CacheEventListener();
 
         IgniteEvents evts = ignite.events(ignite.cluster());
 
         UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
+
         try {
             String key = UUID.randomUUID().toString();
 
@@ -5563,19 +5569,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
 
             if (!notInjected.isEmpty())
-                assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
 
             Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
                 UUID.randomUUID().toString()));
 
             Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
+
+            assertEquals(keys.size(), results.size());
 
             for (EntryProcessorResult<Integer> res : results.values()) {
                 Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
 
                 if (!notInjected1.isEmpty())
-                    assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected1.toArray()), false);
+                    fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
             }
         }
         finally {
@@ -6089,6 +6098,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Dummy Service.
      */
     public interface DummyService {
+        /**
+         *
+         */
         public void noop();
     }
 

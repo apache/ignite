@@ -896,7 +896,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+                transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
                 cctx.events().addEvent(
                     partition(),
@@ -1007,7 +1007,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                    transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+                    transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
                     cctx.events().addEvent(
                         partition(),
@@ -1690,7 +1690,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
-                transformCloClsName = EntryProcessorResourceInjectorProxy.unwrapAsObject(writeObj).getClass().getName();
+                transformCloClsName = EntryProcessorResourceInjectorProxy.unwrap(writeObj).getClass().getName();
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
@@ -2468,7 +2468,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
 
-                        transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
@@ -2560,7 +2560,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
 
-                        transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,

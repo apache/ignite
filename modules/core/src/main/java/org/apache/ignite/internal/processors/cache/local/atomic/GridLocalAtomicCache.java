@@ -17,6 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.local.atomic;
 
+import java.io.Externalizable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -58,24 +75,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
-import java.io.Externalizable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -1633,14 +1632,11 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /**
-     * Wrap EntryProcessors
-     *
      * @param processors Processors.
      * @return Map of wrappers.
      */
-    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>>
-    wrapEntryProcessors(Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
-
+    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>> wrapEntryProcessors(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
         if (!processors.isEmpty()) {
             for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, T>> entry : processors.entrySet()) {
                 EntryProcessor<K, V, T> processor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
@@ -1660,15 +1656,13 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param processors Processors.
      * @return Map of wrappers.
      */
-    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>>
-    wrapEntryProcessorsInNewMap(Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
-
-        Map<K, EntryProcessor<K, V, T>> res = new HashMap<>(processors.size());
+    private <T> Map<? extends K, ? extends EntryProcessor<K, V, T>> wrapEntryProcessorsInNewMap(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> processors) {
+        Map<K, EntryProcessor<K, V, T>> res = U.newHashMap(processors.size());
 
         for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, T>> entry : processors.entrySet())
             res.put(entry.getKey(), EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), entry.getValue()));
 
         return res;
     }
-
 }

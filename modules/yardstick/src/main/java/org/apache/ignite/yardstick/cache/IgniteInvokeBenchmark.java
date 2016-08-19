@@ -50,9 +50,6 @@ public class IgniteInvokeBenchmark extends IgniteCacheAbstractBenchmark<Integer,
         /** */
         private Object val;
 
-        @IgniteInstanceResource
-        private transient Ignite ignite;
-
         /**
          * @param val Value.
          */
@@ -62,8 +59,6 @@ public class IgniteInvokeBenchmark extends IgniteCacheAbstractBenchmark<Integer,
 
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Integer, Object> entry, Object... args) {
-            assert ignite != null;
-
             entry.setValue(val);
 
             return null;

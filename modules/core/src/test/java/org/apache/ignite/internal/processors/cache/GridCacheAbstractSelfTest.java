@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,16 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -197,7 +196,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        storeStgy.resetStore();
+        if (storeStgy != null)
+            storeStgy.resetStore();
     }
 
     /** {@inheritDoc} */
@@ -629,13 +629,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
             return res == null ? Collections.<ResourceType>emptyList() : res;
         }
-
-        /**
-         * @param type resource type.
-         */
-        public boolean isSet(ResourceType type) {
-            return (this.val & (1 << type.ordinal())) != 0;
-        }
     }
 
     /**
@@ -657,5 +650,4 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 infoSet = new ResourceInfoSet();
         }
     }
-
 }

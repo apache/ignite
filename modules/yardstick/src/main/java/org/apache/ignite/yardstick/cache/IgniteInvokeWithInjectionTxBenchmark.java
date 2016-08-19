@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCache;
 /**
  * Ignite benchmark that performs invoke operations.
  */
-public class IgniteInvokeTxBenchmarkNoAnn extends IgniteInvokeBenchmarkNoAnn {
+public class IgniteInvokeWithInjectionTxBenchmark extends IgniteInvokeWithInjectionBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("tx");

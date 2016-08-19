@@ -76,7 +76,6 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(GridTransformSpringInjectionSelfTest.class);
 
         suite.addTestSuite(SpringCacheManagerContextInjectionTest.class);
-
         suite.addTestSuite(SpringTransactionManagerContextInjectionTest.class);
 
         return suite;

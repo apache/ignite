@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.resource;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
@@ -39,26 +49,13 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * Resource container contains caches for classes used for injection.
  * Caches used to improve the efficiency of standard Java reflection mechanism.
  */
 public class GridResourceIoc {
-
     /** Task class resource mapping. Used to efficiently cleanup resources related to class loader. */
-    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap = new ConcurrentHashMap8<>();
 
     /** Class descriptors cache. */
     private AtomicReference<Map<Class<?>, ClassDescriptor>> clsDescs = new AtomicReference<>();
@@ -70,7 +67,6 @@ public class GridResourceIoc {
         Set<Class<?>> clss = taskMap.remove(ldr);
 
         if (clss != null) {
-            //clsDescs.keySet().removeAll(clss);
             Map<Class<?>, ClassDescriptor> newMap, oldMap;
 
             do {
@@ -121,22 +117,11 @@ public class GridResourceIoc {
     }
 
     /**
+     * @param dep Deployment.
      * @param cls Class.
+     * @return Descriptor.
      */
     ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
-//        ClassDescriptor res = clsDescs.get(cls);
-//
-//        if (res == null) {
-//            if (dep != null) {
-//                Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
-//
-//                classes.add(cls);
-//            }
-//
-//            res = F.addIfAbsent(clsDescs, cls, new ClassDescriptor(cls));
-//        }
-//
-//        return res;
         Map<Class<?>, ClassDescriptor> newMap, oldMap;
         ClassDescriptor res, newDesc = null;
 
@@ -255,6 +240,7 @@ public class GridResourceIoc {
     class ClassDescriptor {
         /** */
         private final Field[] recursiveFields;
+
         /** */
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
@@ -270,7 +256,8 @@ public class GridResourceIoc {
         /**
          * @param cls Class.
          */
-        @SuppressWarnings("unchecked") ClassDescriptor(Class<?> cls) {
+        @SuppressWarnings("unchecked")
+        ClassDescriptor(Class<?> cls) {
             Map<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> annMap
                 = new HashMap<>();
 
@@ -287,7 +274,8 @@ public class GridResourceIoc {
 
                         if (t2 == null) {
                             t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<>(), new ArrayList<>());
+                                new ArrayList<GridResourceField>(),
+                                new ArrayList<GridResourceMethod>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -311,7 +299,8 @@ public class GridResourceIoc {
 
                         if (t2 == null) {
                             t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<>(), new ArrayList<>());
+                                new ArrayList<GridResourceField>(),
+                                new ArrayList<GridResourceMethod>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -329,13 +318,13 @@ public class GridResourceIoc {
             for (Map.Entry<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> entry
                 : annMap.entrySet()) {
                 GridResourceField[] fields = GridResourceField.toArray(entry.getValue().get1());
-
                 GridResourceMethod[] mtds = GridResourceMethod.toArray(entry.getValue().get2());
 
                 this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
             }
 
             T2<GridResourceField[], GridResourceMethod[]>[] annArr = null;
+
             if (annMap.isEmpty())
                 containsAnnSets = null;
             else {
@@ -361,21 +350,22 @@ public class GridResourceIoc {
                 for (int i = 0; i < annotationSets.length; i++)
                     containsAnnSets[i] = annotationsBits & annotationSets[i].annotationsBitSet;
             }
+
             this.annArr = annArr;
         }
 
         /**
          * @return Recursive fields.
          */
-        public Field[] recursiveFields() {
+        Field[] recursiveFields() {
             return recursiveFields;
         }
 
         /**
+         * @param annCls Annotation class.
          * @return Fields.
          */
-        @Nullable public T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(
-            Class<? extends Annotation> annCls) {
+        @Nullable T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(Class<? extends Annotation> annCls) {
             return annMap.get(annCls);
         }
 
@@ -398,6 +388,7 @@ public class GridResourceIoc {
 
         /**
          * @param target Target object.
+         * @param annCls Annotation class.
          * @param annotatedMembers Setter annotation.
          * @param injector Resource to inject.
          * @param dep Deployment.
@@ -464,6 +455,8 @@ public class GridResourceIoc {
          * @param target Target object.
          * @param ann Setter annotation.
          * @param injector Resource to inject.
+         * @param dep Deployment.
+         * @param depCls Deployment class.
          * @return {@code True} if resource was injected.
          * @throws IgniteCheckedException Thrown in case of any errors during injection.
          */
@@ -473,15 +466,20 @@ public class GridResourceIoc {
             @Nullable GridDeployment dep,
             @Nullable Class<?> depCls)
             throws IgniteCheckedException {
-            return injectInternal(target, ann.clazz, annArr == null ? null : annArr[ann.ordinal()],
-                injector, dep, depCls, null);
+            return injectInternal(target,
+                ann.clazz,
+                annArr == null ? null : annArr[ann.ordinal()],
+                injector,
+                dep,
+                depCls,
+                null);
         }
     }
 
     /**
      *
      */
-    public enum ResourceAnnotation {
+    enum ResourceAnnotation {
         /** */
         CACHE_NAME(CacheNameResource.class),
 
@@ -530,7 +528,6 @@ public class GridResourceIoc {
      *
      */
     public enum AnnotationSet {
-
         /** */
         GENERIC(
             ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
@@ -578,6 +575,7 @@ public class GridResourceIoc {
 
         /** Resource annotations bits for fast checks. */
         public final int annotationsBitSet;
+
         /** Holds annotations in order */
         public final ResourceAnnotation[] annotations;
 
@@ -585,7 +583,7 @@ public class GridResourceIoc {
          * @param annotations ResourceAnnotations.
          */
         AnnotationSet(ResourceAnnotation... annotations) {
-            assert annotations.length < 32;
+            assert annotations.length < 32 : annotations.length;
 
             this.annotations = annotations;
 
