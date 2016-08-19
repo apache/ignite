@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -432,7 +433,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             needVer);
     }
 
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
@@ -511,7 +511,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     entry = swapOrOffheap ? entryEx(cacheKey) : peekEx(cacheKey);
 
                     if (entry != null) {
-                        CacheObject v ;
+                        CacheObject v;
                         GridCacheVersion ver;
 
                         if (needVer) {
@@ -541,7 +541,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     deserializeBinary,
                                     true,
                                     ver);
-                            }else
+                            }
+                            else
                                 success = false;
                         }
                         else {
@@ -622,16 +623,19 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        final EntryProcessor<K, V, T> entryProcessor,
+        EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
         if (keyCheck)
             validateCacheKeys(keys);
 
+        final EntryProcessor<K, V, T> entryProcessor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
+            entryProcessor);
+
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
+                return entryProcessor0;
             }
         });
 
@@ -692,16 +696,19 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     @SuppressWarnings("unchecked")
     @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Set<? extends K> keys,
-        final EntryProcessor<K, V, T> entryProcessor,
+        EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
         if (keyCheck)
             validateCacheKeys(keys);
 
+        final EntryProcessor<K, V, T> entryProcessor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
+            entryProcessor);
+
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
+                return entryProcessor0;
             }
         });
 
@@ -944,6 +951,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             if (op == UPDATE)
                 val = ctx.toCacheObject(val);
+            else if (op == TRANSFORM && val instanceof EntryProcessor)
+                val = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), (EntryProcessor)val);
 
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -1014,7 +1023,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (err != null)
             throw err;
 
-        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, keepBinary, res.get2(), res.get1()) :
+        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx, true, keepBinary, res.get2(), res.get1()) :
             (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
@@ -1035,8 +1044,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param filter Optional filter.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @throws CachePartialUpdateCheckedException If update failed.
      * @return Results map for invoke operation.
+     * @throws CachePartialUpdateCheckedException If update failed.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
     private Map<K, EntryProcessorResult> updateWithBatch(
@@ -1101,6 +1110,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
 
                     if (op == TRANSFORM) {
+                        val = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(), (EntryProcessor)val);
+
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             (EntryProcessor<Object, Object, Object>)val;
 

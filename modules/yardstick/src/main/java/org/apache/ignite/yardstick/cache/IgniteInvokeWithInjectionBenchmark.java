@@ -17,18 +17,19 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import java.util.Map;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 
+import javax.cache.processor.MutableEntry;
+import java.util.Map;
+
 /**
  * Ignite benchmark that performs invoke operations.
  */
-public class IgniteInvokeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteInvokeWithInjectionBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
@@ -48,6 +49,10 @@ public class IgniteInvokeBenchmark extends IgniteCacheAbstractBenchmark<Integer,
      */
     public static class SetValueEntryProcessor implements CacheEntryProcessor<Integer, Object, Object> {
         /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        /** */
         private Object val;
 
         /**
@@ -59,6 +64,8 @@ public class IgniteInvokeBenchmark extends IgniteCacheAbstractBenchmark<Integer,
 
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Integer, Object> entry, Object... args) {
+            assert ignite != null;
+
             entry.setValue(val);
 
             return null;
