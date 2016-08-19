@@ -3102,22 +3102,37 @@ public abstract class BPlusTree<L, T extends L> {
                 return false;
 
             if (++row < rows.length && rows[row] != null) {
-                if (row != 0)
-                    rows[row - 1] = null; // Clear previous returned row.
+                clearLastRow();
 
                 return true;
             }
 
             return nextPage();
-
         }
 
         /**
+         * @return Cleared last row.
+         */
+        private T clearLastRow() {
+            if (row == 0)
+                return null;
+
+            int last = row - 1;
+
+            T r = rows[last];
+
+            assert r != null;
+
+            rows[last] = null;
+
+            return r;
+        }
+
+        /**
+         * @param lastRow Last row.
          * @throws IgniteCheckedException If failed.
          */
-        private void reinitialize() throws IgniteCheckedException {
-            T lastRow = rows[row - 1];
-
+        private void reinitialize(T lastRow) throws IgniteCheckedException {
             assert lastRow != null;
 
             // Here we have shift 1 because otherwise we can return the same row twice.
@@ -3134,6 +3149,8 @@ public abstract class BPlusTree<L, T extends L> {
 
                 return false;
             }
+
+            T lastRow = clearLastRow();
 
             boolean reinitialize = false;
 
@@ -3153,7 +3170,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             if (reinitialize) // Reinitialize when `next` page is released.
-                reinitialize();
+                reinitialize(lastRow);
 
             row = 0;
 
