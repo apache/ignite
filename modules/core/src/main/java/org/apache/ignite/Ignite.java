@@ -541,8 +541,8 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
@@ -551,6 +551,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Starts backup process.
+     *
      * @param cacheNames Cache names. {@code Null} to save all caches.
      * @return Backup future.
      */
