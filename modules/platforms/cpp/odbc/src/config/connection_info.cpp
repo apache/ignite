@@ -284,15 +284,13 @@ namespace ignite
 #ifdef SQL_TIMEDATE_ADD_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver 
                 // and associated data source for the TIMESTAMPADD scalar function.
-                intParams[SQL_TIMEDATE_ADD_INTERVALS] = SQL_FN_TSI_SECOND | SQL_FN_TSI_MINUTE | SQL_FN_TSI_HOUR |
-                    SQL_FN_TSI_WEEK | SQL_FN_TSI_MONTH | SQL_FN_TSI_QUARTER | SQL_FN_TSI_YEAR;
+                intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
 #endif // SQL_TIMEDATE_ADD_INTERVALS
 
 #ifdef SQL_TIMEDATE_DIFF_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver
                 // and associated data source for the TIMESTAMPDIFF scalar function.
-                intParams[SQL_TIMEDATE_DIFF_INTERVALS] = SQL_FN_TSI_SECOND | SQL_FN_TSI_MINUTE | SQL_FN_TSI_HOUR |
-                    SQL_FN_TSI_WEEK | SQL_FN_TSI_MONTH | SQL_FN_TSI_QUARTER | SQL_FN_TSI_YEAR;
+                intParams[SQL_TIMEDATE_DIFF_INTERVALS] = 0;
 #endif // SQL_TIMEDATE_DIFF_INTERVALS
 
 #ifdef SQL_DATETIME_LITERALS
@@ -375,7 +373,7 @@ namespace ignite
                 const static int32_t numerucMask = SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_BIT | SQL_CVT_CHAR |
                     SQL_CVT_DECIMAL | SQL_CVT_DOUBLE | SQL_CVT_FLOAT | SQL_CVT_INTEGER | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_LONGVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_REAL | SQL_CVT_SMALLINT | SQL_CVT_TINYINT |
-                    SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
+                    SQL_CVT_VARBINARY | SQL_CVT_VARCHAR | SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_DATE;
 
                 const static int32_t dateTimeMask = SQL_CVT_BINARY | SQL_CVT_CHAR | SQL_CVT_DATE | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_LONGVARCHAR | SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
