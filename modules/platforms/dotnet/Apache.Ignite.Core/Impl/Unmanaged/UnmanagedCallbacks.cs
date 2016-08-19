@@ -1102,6 +1102,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
             int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
+            // errData mechanism is only needed for CachePartialUpdateException and is no longer used,
+            // since CacheImpl handles all errors itself.
             Debug.Assert(errDataLen == 0);
             Debug.Assert(errData == null);
 
