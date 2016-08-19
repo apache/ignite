@@ -281,14 +281,12 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("partitioned");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -296,15 +294,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName(dfltIgfsName ? null : IGFS_NAME);
         igfsCfg.setPrefetchBlocks(1);
         igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 

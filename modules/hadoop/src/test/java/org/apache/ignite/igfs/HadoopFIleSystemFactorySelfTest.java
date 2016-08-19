@@ -220,8 +220,6 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(name);
         igfsCfg.setDefaultMode(dfltMode);
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
@@ -245,6 +243,9 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(name);
@@ -254,7 +255,6 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

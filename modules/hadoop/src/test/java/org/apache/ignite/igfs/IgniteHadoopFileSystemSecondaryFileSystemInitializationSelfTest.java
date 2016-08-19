@@ -66,8 +66,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setInitializeDefaultPathModes(initDfltPathModes);
@@ -84,22 +82,23 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
             "igfs://igfs-secondary:igfs-grid-secondary@127.0.0.1:11500/",
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -110,7 +109,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -135,8 +133,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
     private void startUpSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs-secondary");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -150,7 +146,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -160,10 +155,12 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsCfg.setDataCacheConfig(cacheCfg);
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -174,7 +171,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

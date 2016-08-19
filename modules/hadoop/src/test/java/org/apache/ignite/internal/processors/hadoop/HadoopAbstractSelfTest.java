@@ -53,12 +53,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** IGFS name. */
     protected static final String igfsName = null;
 
-    /** IGFS name. */
-    protected static final String igfsMetaCacheName = "meta";
-
-    /** IGFS name. */
-    protected static final String igfsDataCacheName = "data";
-
     /** IGFS block size. */
     protected static final int igfsBlockSize = 1024;
 
@@ -155,14 +149,15 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return IGFS configuration.
+     * @throws Exception If failed.
      */
     public FileSystemConfiguration igfsConfiguration() throws Exception {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
         cfg.setName(igfsName);
         cfg.setBlockSize(igfsBlockSize);
-        cfg.setDataCacheName(igfsDataCacheName);
-        cfg.setMetaCacheName(igfsMetaCacheName);
+        cfg.setDataCacheConfig(dataCacheConfiguration());
+        cfg.setMetaCacheConfig(metaCacheConfiguration());
         cfg.setFragmentizerEnabled(false);
 
         return cfg;
@@ -174,7 +169,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     public CacheConfiguration metaCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 
-        cfg.setName(igfsMetaCacheName);
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -188,7 +182,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     private CacheConfiguration dataCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 
-        cfg.setName(igfsDataCacheName);
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(igfsBlockGroupSize));

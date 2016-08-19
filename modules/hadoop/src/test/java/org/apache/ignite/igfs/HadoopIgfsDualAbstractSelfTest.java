@@ -145,8 +145,6 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -173,6 +171,9 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
@@ -182,7 +183,6 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
