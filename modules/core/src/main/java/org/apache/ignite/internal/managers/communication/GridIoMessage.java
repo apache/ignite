@@ -161,6 +161,10 @@ public class GridIoMessage implements Message {
         return skipOnTimeout;
     }
 
+    public int connectionIndex() {
+        return ordered ? topic.hashCode() : super.hashCode();
+    }
+
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
