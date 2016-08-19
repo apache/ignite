@@ -21,15 +21,17 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.h2.command.Command;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
@@ -165,11 +167,11 @@ public class GridSqlQuerySplitter {
         final Prepared prepared = prepared(stmt);
 
         if (prepared instanceof Query || prepared instanceof Explain)
-            return splitSelect(GridSqlQueryParser.query(prepared), params, collocatedGrpBy, distributedJoins);
+            return splitQuery(GridSqlQueryParser.query(prepared), params, collocatedGrpBy, distributedJoins);
 
         if (prepared instanceof Merge || prepared instanceof Update || prepared instanceof Insert ||
             prepared instanceof Delete)
-            return splitUpdate(prepared, params, distributedJoins);
+            return splitUpdateQuery(prepared, params, collocatedGrpBy, distributedJoins);
 
         throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
     }
@@ -181,7 +183,7 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins If distributed joins enabled.
      * @return Two step query.
      */
-    private static GridCacheTwoStepQuery splitSelect(
+    private static GridCacheTwoStepQuery splitQuery(
         Query prepared,
         Object[] params,
         final boolean collocatedGrpBy,
@@ -190,8 +192,23 @@ public class GridSqlQuerySplitter {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
         A.ensure(gridStmt instanceof GridSqlQuery, "SQL query expected");
 
-        GridSqlQuery qry = (GridSqlQuery)gridStmt;
+        return splitQuery((GridSqlQuery) gridStmt, params, collocatedGrpBy,
+            distributedJoins && !isCollocated(query(prepared)));
+    }
 
+    /**
+     * @param qry Grid SQL select or union.
+     * @param params Parameters.
+     * @param collocatedGrpBy Collocated query.
+     * @param distributedJoins If distributed joins enabled.
+     * @return Two step query.
+     */
+    private static GridCacheTwoStepQuery splitQuery(
+        GridSqlQuery qry,
+        Object[] params,
+        final boolean collocatedGrpBy,
+        final boolean distributedJoins
+    ) {
         Set<String> tbls = new HashSet<>();
         Set<String> schemas = new HashSet<>();
 
@@ -208,11 +225,12 @@ public class GridSqlQuerySplitter {
         GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocatedGrpBy);
 
         res.reduceQuery(rdc);
+        res.sourceStatement(qry);
 
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries
         // will be collocated as well.
-        res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
+        res.distributedJoins(distributedJoins);
 
         return res;
     }
@@ -220,11 +238,13 @@ public class GridSqlQuerySplitter {
     /**
      * @param prepared Prepared SQL INSERT, MERGE, UPDATE, or DELETE statement.
      * @param params Parameters.
+     * @param collocatedGrpBy Collocated SELECT (for WHERE and subqueries).
      * @param distributedJoins If distributed joins enabled.    @return Two step query.
      */
-    private static GridCacheTwoStepQuery splitUpdate(
+    private static GridCacheTwoStepQuery splitUpdateQuery(
         Prepared prepared,
         Object[] params,
+        boolean collocatedGrpBy,
         final boolean distributedJoins
     ) {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
@@ -232,8 +252,11 @@ public class GridSqlQuerySplitter {
         A.ensure(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
             gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete, "SQL update operation expected");
 
-        Set<String> tbls = new HashSet<>();
-        Set<String> schemas = new HashSet<>();
+        if (gridStmt instanceof GridSqlUpdate)
+            return splitUpdate((GridSqlUpdate)gridStmt, params, collocatedGrpBy, distributedJoins);
+
+        if (gridStmt instanceof GridSqlDelete)
+            return splitDelete((GridSqlDelete)gridStmt, params, collocatedGrpBy, distributedJoins);
 
         GridSqlElement target = null;
 
@@ -243,13 +266,10 @@ public class GridSqlQuerySplitter {
         if (gridStmt instanceof GridSqlMerge)
             target = ((GridSqlMerge)gridStmt).into();
 
-        if (gridStmt instanceof GridSqlUpdate)
-            target = ((GridSqlUpdate)gridStmt).target();
-
-        if (gridStmt instanceof GridSqlDelete)
-            target = ((GridSqlDelete)gridStmt).from();
-
         A.notNull(target, "Failed to retrieve target for SQL update operation");
+
+        Set<String> tbls = new HashSet<>();
+        Set<String> schemas = new HashSet<>();
 
         collectAllTablesInFrom(target, schemas, tbls);
 
@@ -270,6 +290,74 @@ public class GridSqlQuerySplitter {
         // will be collocated as well.
         // Statement left for clarity - currently update operations don't really care much about joins.
         res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
+
+        res.sourceStatement(gridStmt);
+
+        return res;
+    }
+
+    /** */
+    private static GridCacheTwoStepQuery splitDelete(GridSqlDelete del, Object[] params, boolean collocatedGrpBy,
+        boolean distributedJoins) {
+        GridSqlSelect mapQry = new GridSqlSelect();
+
+        mapQry.from(del.from());
+
+        GridSqlTable tbl = null;
+
+        if (del.from() instanceof GridSqlTable)
+            tbl = (GridSqlTable) del.from();
+        else if (del.from() instanceof GridSqlAlias)
+            tbl = del.from().child(0);
+
+        A.notNull(tbl, "Failed to determine target table for DELETE");
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        A.notNull(gridTbl, "Failed to determine target grid table for DELETE");
+
+        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
+
+        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
+
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        valCol.resultType(GridSqlType.fromColumn(h2ValCol));
+
+        mapQry.addColumn(keyCol, true);
+        mapQry.addColumn(valCol, true);
+        mapQry.where(del.where());
+        mapQry.limit(del.limit());
+
+        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
+        res.sourceStatement(del);
+
+        return res;
+    }
+
+    /** */
+    private static GridCacheTwoStepQuery splitUpdate(GridSqlUpdate update, Object[] params, boolean collocatedGrpBy,
+        boolean distributedJoins) {
+        GridSqlSelect mapQry = new GridSqlSelect();
+
+        mapQry.from(update.target());
+        mapQry.addColumn(column(IgniteH2Indexing.KEY_FIELD_NAME), true);
+        mapQry.addColumn(column(IgniteH2Indexing.VAL_FIELD_NAME), true);
+
+        for (Map.Entry<GridSqlColumn, GridSqlElement> e : update.set().entrySet()) {
+            String newColName = "_upd_" + e.getKey().columnName();
+            // We have to use aliases to cover cases when the user
+            // wants to update _val field directly (if it's a literal)
+            mapQry.addColumn(new GridSqlAlias(newColName, e.getValue(), true), true);
+        }
+
+        mapQry.where(update.where());
+        mapQry.limit(update.limit());
+
+        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
+        res.sourceStatement(update);
 
         return res;
     }

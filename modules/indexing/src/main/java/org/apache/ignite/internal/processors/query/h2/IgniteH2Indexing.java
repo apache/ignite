@@ -63,7 +63,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -107,6 +106,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
@@ -1489,19 +1489,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             try {
-                Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
-
-                Boolean isQry = qry instanceof JdbcSqlFieldsQuery ? ((JdbcSqlFieldsQuery)qry).isQuery() : null;
-
-                A.ensure(isQry == null || (isQry == prep.isQuery()), "Query type mismatch - " +
-                    "expected " + (prep.isQuery() ? "non query" : "query"));
-
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
                     distributedJoins);
-
-                twoStepQry.setQuery(prep.isQuery());
 
                 List<Integer> caches;
                 List<Integer> extraCaches = null;
@@ -1559,7 +1550,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         twoStepQry.pageSize(qry.getPageSize());
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder), twoStepQry.isQuery());
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder),
+            twoStepQry.sourceStatement() instanceof GridSqlQuery
+        );
 
         cursor.fieldsMeta(meta);
 
@@ -1568,7 +1561,54 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
+        if (twoStepQry.sourceStatement() instanceof GridSqlDelete)
+            return doDelete(cctx, cursor);
+
         return cursor;
+    }
+
+    /**
+     *
+     *
+     * @param cctx
+     * @param cursor
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private QueryCursor<List<?>> doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor) {
+        // With DELETE, we have only two columns - key and value.
+        int res = 0;
+
+        Iterator<List<?>> it = cursor.iterator();
+        Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
+
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            if (e.size() != 2) {
+                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
+                continue;
+            }
+
+            m.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
+            res++;
+        }
+
+        try {
+            Map<Object, EntryProcessorResult<Boolean>> delRes = cctx.cache().invokeAll(m);
+
+            if (F.isEmpty(delRes))
+                return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(res)), false);
+
+            Object[] errKeys = delRes.keySet().toArray();
+
+            // TODO re-run query if some keys failed to be updated
+            U.warn(log, "Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']');
+
+            return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(res - errKeys.length)), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to perform SQL DELETE", e);
+        }
     }
 
     /**
@@ -3419,4 +3459,57 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
         }
     }
+
+    /**
+     * Entry processor invoked by UPDATE and DELETE operations.
+     */
+    private final static class ModifyingEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
+        /** Value to expect. */
+        private final Object val;
+
+        /** Action to perform on entry. */
+        private final IgniteInClosure<MutableEntry<Object, Object>> entryModifier;
+
+        /** */
+        private ModifyingEntryProcessor(Object val, IgniteInClosure<MutableEntry<Object, Object>> entryModifier) {
+            this.val = val;
+            this.entryModifier = entryModifier;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            // Something happened to the cache while we were performing map-reduce.
+            if (entry.getValue() == null || !entry.getValue().equals(val))
+                return false;
+
+            entryModifier.apply(entry);
+            return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
+        }
+    }
+
+    /** */
+    private static IgniteInClosure<MutableEntry<Object, Object>> RMV = new IgniteInClosure<MutableEntry<Object, Object>>() {
+        /** {@inheritDoc} */
+        @Override public void apply(MutableEntry<Object, Object> e) {
+            e.remove();
+        }
+    };
+
+    /**
+     *
+     */
+    private static final class EntryValueUpdater implements IgniteInClosure<MutableEntry<Object, Object>> {
+        /** Value to set. */
+        private final Object val;
+
+        /** */
+        private EntryValueUpdater(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(MutableEntry<Object, Object> e) {
+            e.setValue(val);
+        }
+    };
 }

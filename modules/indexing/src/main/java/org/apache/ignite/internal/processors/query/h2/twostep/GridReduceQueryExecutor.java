@@ -67,7 +67,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -85,12 +86,10 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.result.ResultInterface;
@@ -680,16 +679,10 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            boolean isQry;
-                            try (JdbcPreparedStatement ps = (JdbcPreparedStatement)r.conn.prepareStatement(rdc.query())) {
-                                Prepared c = GridSqlQueryParser.prepared(ps);
-                                isQry = c.isQuery();
-                            }
-                            catch (SQLException e) {
-                                throw new CacheException("Failed to parse reduce query", e);
-                            }
-
-                            if (isQry) {
+                            // MERGE and INSERT on reduce perform themselves,
+                            // while UPDATE and DELETE perform SELECT on reduce
+                            if (!(qry.sourceStatement() instanceof GridSqlMerge) &&
+                                !(qry.sourceStatement() instanceof GridSqlInsert)) {
                                 ResultSet res = h2.executeSqlQueryWithTimer(space,
                                     r.conn,
                                     rdc.query(),
@@ -1376,7 +1369,7 @@ public class GridReduceQueryExecutor {
     /**
      * Trivial iterator to return number of items affected by modifying query operation.
      */
-    private static class UpdateResIter implements GridSerializableIterator<List<?>> {
+    public static class UpdateResIter implements GridSerializableIterator<List<?>> {
         /** */
         private final int res;
 
@@ -1384,7 +1377,7 @@ public class GridReduceQueryExecutor {
         private boolean used;
 
         /** */
-        private UpdateResIter(int res) {
+        public UpdateResIter(int res) {
             this.res = res;
         }
 

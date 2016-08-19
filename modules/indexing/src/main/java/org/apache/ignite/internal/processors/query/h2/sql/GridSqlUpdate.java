@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import org.h2.command.Parser;
-import org.h2.expression.ValueExpression;
+import java.util.LinkedHashMap;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
-import org.h2.value.ValueString;
 
 /** */
 public class GridSqlUpdate extends GridSqlStatement {
@@ -34,7 +32,7 @@ public class GridSqlUpdate extends GridSqlStatement {
     private ArrayList<GridSqlColumn> cols;
 
     /** */
-    private HashMap<GridSqlColumn, GridSqlElement> set;
+    private LinkedHashMap<GridSqlColumn, GridSqlElement> set;
 
     /** */
     private GridSqlElement where;
@@ -57,7 +55,7 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** */
-    public GridSqlUpdate set(HashMap<GridSqlColumn, GridSqlElement> set) {
+    public GridSqlUpdate set(LinkedHashMap<GridSqlColumn, GridSqlElement> set) {
         this.set = set;
         return this;
     }
@@ -66,6 +64,16 @@ public class GridSqlUpdate extends GridSqlStatement {
     public GridSqlUpdate where(GridSqlElement where) {
         this.where = where;
         return this;
+    }
+
+    /** */
+    public GridSqlElement where() {
+        return where;
+    }
+
+    /** */
+    public HashMap<GridSqlColumn, GridSqlElement> set() {
+        return set;
     }
 
     /** {@inheritDoc} */

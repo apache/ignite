@@ -45,6 +45,11 @@ public class GridSqlDelete extends GridSqlStatement {
         return this;
     }
 
+    /** */
+    public GridSqlElement where() {
+        return where;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");

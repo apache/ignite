@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -69,8 +69,6 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
-import org.h2.util.IntArray;
-import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -568,7 +566,7 @@ public class GridSqlQueryParser {
         Map<Column, Expression> srcSet = UPDATE_SET.get(update);
 
         ArrayList<GridSqlColumn> cols = new ArrayList<>(srcCols.size());
-        HashMap<GridSqlColumn, GridSqlElement> set = new HashMap<>(srcSet.size());
+        LinkedHashMap<GridSqlColumn, GridSqlElement> set = new LinkedHashMap<>(srcSet.size());
 
         for (Column c : srcCols) {
             GridSqlColumn col = new GridSqlColumn(c, tbl, c.getName(), c.getSQL());
@@ -658,7 +656,7 @@ public class GridSqlQueryParser {
      * @param qry Query.
      * @return Grid SQL query.
      */
-    GridSqlQuery parse(Query qry, @Nullable Query idxQry) {
+    private GridSqlQuery parse(Query qry, @Nullable Query idxQry) {
         if (qry instanceof Select)
             return parse((Select)qry, idxQry);
 

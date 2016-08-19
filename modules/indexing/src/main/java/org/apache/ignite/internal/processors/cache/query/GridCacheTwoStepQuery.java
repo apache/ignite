@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -61,7 +62,7 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
-    private boolean qry;
+    private GridSqlStatement srcStmt;
 
     /** */
     private List<Integer> caches;
@@ -97,17 +98,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return {@code true} if this query is reduced to a query operation, {@code false} if it's reduced to update.
+     * @return Source statement.
      */
-    public boolean isQuery() {
-        return qry;
+    public GridSqlStatement sourceStatement() {
+        return srcStmt;
     }
 
     /**
-     * @param qry {@code true} if this query is reduced to a query operation, {@code false} if it's reduced to update.
+     * @param srcStmt Source statement.
      */
-    public void setQuery(boolean qry) {
-        this.qry = qry;
+    public void sourceStatement(GridSqlStatement srcStmt) {
+        this.srcStmt = srcStmt;
     }
 
     /**
@@ -248,6 +249,7 @@ public class GridCacheTwoStepQuery {
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
+        cp.srcStmt = srcStmt;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

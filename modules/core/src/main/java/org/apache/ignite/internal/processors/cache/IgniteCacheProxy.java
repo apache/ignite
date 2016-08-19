@@ -63,6 +63,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -695,6 +696,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
                 boolean isQry = ctx.kernalContext().query().isQuery(ctx, p);
+
+                Boolean isJdbcQry = p instanceof JdbcSqlFieldsQuery ? ((JdbcSqlFieldsQuery) p).isQuery() : null;
+
+                A.ensure(isJdbcQry == null || (isJdbcQry == isQry), "Query type mismatch - " +
+                    "expected " + (isQry ? "non query" : "query"));
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal() && isQry)
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
