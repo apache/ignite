@@ -20,14 +20,12 @@ namespace Apache.Ignite.AspNet
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Web.Caching;
+    using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
@@ -41,15 +39,6 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
-        /** */
-        private const string GridName = "gridName";
-        
-        /** */
-        private const string CacheName = "cacheName";
-
-        /** */
-        private const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
-
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
@@ -121,46 +110,9 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var gridName = config[GridName];
-            var cacheName = config[CacheName];
-            var cfgSection = config[IgniteConfigurationSectionName];
-
-            try
-            {
-                var grid = cfgSection != null
-                    ? StartFromApplicationConfiguration(cfgSection)
-                    : Ignition.GetIgnite(gridName);
-
-                _cache = grid.GetOrCreateCache<string, object>(cacheName);
-            }
-            catch (Exception ex)
-            {
-                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
-                    "Failed to initialize {0}: {1}", GetType(), ex), ex);
-            }
+            _cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
         }
 
-        /// <summary>
-        /// Starts Ignite from application configuration.
-        /// </summary>
-        private static IIgnite StartFromApplicationConfiguration(string sectionName)
-        {
-            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
-
-            if (section == null)
-                throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture, 
-                    "Could not find {0} with name '{1}'", typeof(IgniteConfigurationSection).Name, sectionName));
-
-            var config = section.IgniteConfiguration;
-
-            if (string.IsNullOrWhiteSpace(config.IgniteHome))
-            {
-                // IgniteHome not set by user: populate from default directory
-                config = new IgniteConfiguration(config) {IgniteHome = IgniteWebUtils.GetWebIgniteHome()};
-            }
-
-            return Ignition.Start(config);
-        }
 
         /// <summary>
         /// Gets the cache.

@@ -17,10 +17,74 @@
 
 namespace Apache.Ignite.AspNet.Impl
 {
+    using System;
+    using System.Collections.Specialized;
+    using System.Configuration;
+    using System.Globalization;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Common;
+
     /// <summary>
     /// Config utils.
     /// </summary>
     internal static class ConfigUtil
     {
+        /** */
+        public const string GridName = "gridName";
+
+        /** */
+        public const string CacheName = "cacheName";
+
+        /** */
+        public const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
+
+        /// <summary>
+        /// Initializes the cache from configuration.
+        /// </summary>
+        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType)
+        {
+            var gridName = config[GridName];
+            var cacheName = config[CacheName];
+            var cfgSection = config[IgniteConfigurationSectionName];
+
+            try
+            {
+                var grid = cfgSection != null
+                    ? StartFromApplicationConfiguration(cfgSection)
+                    : Ignition.GetIgnite(gridName);
+
+                return grid.GetOrCreateCache<TK, TV>(cacheName);
+            }
+            catch (Exception ex)
+            {
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                    "Failed to initialize {0}: {1}", callerType, ex), ex);
+            }
+
+        }
+
+        /// <summary>
+        /// Starts Ignite from application configuration.
+        /// </summary>
+        private static IIgnite StartFromApplicationConfiguration(string sectionName)
+        {
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture,
+                    "Could not find {0} with name '{1}'", typeof(IgniteConfigurationSection).Name, sectionName));
+
+            var config = section.IgniteConfiguration;
+
+            if (string.IsNullOrWhiteSpace(config.IgniteHome))
+            {
+                // IgniteHome not set by user: populate from default directory
+                config = new IgniteConfiguration(config) { IgniteHome = IgniteWebUtils.GetWebIgniteHome() };
+            }
+
+            return Ignition.Start(config);
+        }
+
     }
 }
