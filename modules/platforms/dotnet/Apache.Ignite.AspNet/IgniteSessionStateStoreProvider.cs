@@ -260,11 +260,9 @@ namespace Apache.Ignite.AspNet
         /// <param name="id">The session identifier for the current request.</param>
         public override void ResetItemTimeout(HttpContext context, string id)
         {
-            var key = GetKey(id);
-
-            // Re-insert to update the expiry policy.
-            // TODO
-            Cache[key] = Cache[key];
+            // No-op.
+            // This is not necessary since ResetItemTimeout is called right after SetAndReleaseItemExclusive,
+            // which itself resets the timeout when the item is inserted into cache.
         }
 
         /// <summary>
