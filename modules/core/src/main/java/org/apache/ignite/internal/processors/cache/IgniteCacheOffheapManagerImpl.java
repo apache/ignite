@@ -655,6 +655,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return dataStore;
     }
 
+    /** {@inheritDoc} */
+    @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
+        try {
+            partDataStores.remove(p, store);
+
+            store.destroy();
+
+            meta().dropRootPage(store.name());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      *
      */
@@ -701,6 +715,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.rowStore = rowStore;
             this.dataTree = dataTree;
             this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return name;
         }
 
         /** {@inheritDoc} */
