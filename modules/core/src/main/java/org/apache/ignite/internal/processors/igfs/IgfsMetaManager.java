@@ -250,9 +250,9 @@ public class IgfsMetaManager extends IgfsManager {
      * @param task Task.
      * @return Result.
      */
-    <T> T runRemoteTask(IgfsClientAbstractCallable<T> task) {
+    <T> T runRemote(IgfsClientAbstractCallable<T> task) {
         try {
-            return runRemoteTask(IgfsUtils.ROOT_ID, task);
+            return runRemote(IgfsUtils.ROOT_ID, task);
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -266,7 +266,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param task Task.
      * @return Result.
      */
-    <T> T runRemoteTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
+    <T> T runRemote(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
                 clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
@@ -426,7 +426,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Get IDs.
         if (client) {
-            List<IgniteUuid> ids = runRemoteTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
+            List<IgniteUuid> ids = runRemote(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
 
             return new IgfsPathIds(path, parts, ids.toArray(new IgniteUuid[ids.size()]));
         }
@@ -670,7 +670,7 @@ public class IgfsMetaManager extends IgfsManager {
         throws IgniteCheckedException {
 
         if(client) {
-            runRemoteTask(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
+            runRemote(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
                 updateSpace, space, affRange));
 
             return;
@@ -2077,7 +2077,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runRemoteTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+        return client ? runRemote(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
     }
 
     /**
@@ -2088,7 +2088,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runRemoteTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+        return client ? runRemote(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
     }
 
     /**
