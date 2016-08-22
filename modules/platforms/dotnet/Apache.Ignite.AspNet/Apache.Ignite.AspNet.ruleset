@@ -3,6 +3,7 @@
   <IncludeAll Action="Error" />
   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
     <Rule Id="CA1020" Action="None" />
+    <Rule Id="CA1303" Action="None" />
     <Rule Id="CA1704" Action="None" />
     <Rule Id="CA2204" Action="None" />
     <Rule Id="CA2243" Action="None" />
