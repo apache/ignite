@@ -20,10 +20,12 @@ namespace Apache.Ignite.AspNet.Impl
     using System;
     using System.Collections.Specialized;
     using System.Configuration;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Config utils.
@@ -44,6 +46,9 @@ namespace Apache.Ignite.AspNet.Impl
         /// </summary>
         public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType)
         {
+            Debug.Assert(config != null);
+            Debug.Assert(callerType != null);
+
             var gridName = config[GridName];
             var cacheName = config[CacheName];
             var cfgSection = config[IgniteConfigurationSectionName];
@@ -53,6 +58,8 @@ namespace Apache.Ignite.AspNet.Impl
                 var grid = cfgSection != null
                     ? StartFromApplicationConfiguration(cfgSection)
                     : Ignition.GetIgnite(gridName);
+
+                grid.Logger.Info("Initializing {0} with cache '{1}'", callerType, cacheName);
 
                 return grid.GetOrCreateCache<TK, TV>(cacheName);
             }
