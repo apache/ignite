@@ -1638,7 +1638,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     initExpireTime = CU.EXPIRE_TIME_ETERNAL;
                 }
 
-                storeValue(oldVal, initExpireTime, ver);
+                if (oldVal != null)
+                    storeValue(oldVal, initExpireTime, ver);
+                // else nothing to do, real old value was null.
 
                 update(oldVal, initExpireTime, initTtl, ver, true);
 
