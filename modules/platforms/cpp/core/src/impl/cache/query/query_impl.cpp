@@ -45,7 +45,7 @@ namespace ignite
                     env(env),
                     javaRef(javaRef),
                     batch(),
-                    empty(false),
+                    endReached(false),
                     iterCalled(false),
                     getAllCalled(false)
                 {
@@ -76,10 +76,12 @@ namespace ignite
                     if (!CreateIteratorIfNeeded(err))
                         return false;
 
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
                     if (!GetNextBatchIfNeeded(err))
                         return false;
 
-                    return !empty;
+                    return !endReached;
                 }
 
                 void QueryCursorImpl::GetNext(OutputOperation& op, IgniteError& err)
@@ -97,10 +99,12 @@ namespace ignite
                     if (!CreateIteratorIfNeeded(err))
                         return;
 
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
                     if (!GetNextBatchIfNeeded(err))
                         return;
 
-                    if (empty)
+                    if (endReached)
                     {
                         // Ensure we do not overwrite possible previous error.
                         if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
@@ -118,10 +122,12 @@ namespace ignite
                     if (!CreateIteratorIfNeeded(err))
                         return 0;
 
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
                     if (!GetNextBatchIfNeeded(err))
                         return 0;
 
-                    if (empty)
+                    if (endReached)
                     {
                         // Ensure we do not overwrite possible previous error.
                         if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
@@ -176,21 +182,19 @@ namespace ignite
 
                 bool QueryCursorImpl::CreateIteratorIfNeeded(IgniteError& err)
                 {
-                    if (!iterCalled)
-                    {
-                        JniErrorInfo jniErr;
+                    if (iterCalled)
+                        return true;
 
-                        env.Get()->Context()->QueryCursorIterator(javaRef, &jniErr);
+                    JniErrorInfo jniErr;
 
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    env.Get()->Context()->QueryCursorIterator(javaRef, &jniErr);
 
-                        if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                            iterCalled = true;
-                        else
-                            return false;
-                    }
-                    
-                    return true;
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                        iterCalled = true;
+
+                    return iterCalled;
                 }
 
                 bool QueryCursorImpl::GetNextBatchIfNeeded(IgniteError& err)
@@ -199,12 +203,12 @@ namespace ignite
 
                     QueryBatch *rawBatch = batch.Get();
 
-                    if (empty || (rawBatch && rawBatch->Left() > 0))
+                    if (endReached || (rawBatch && rawBatch->Left() > 0))
                         return true;
 
                     JniErrorInfo jniErr;
 
-                    SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory(1 << 16);
+                    SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
 
                     env.Get()->Context()->TargetOutStream(
                         javaRef, OP_GET_BATCH, inMem.Get()->PointerLong(), &jniErr);
@@ -216,7 +220,7 @@ namespace ignite
 
                     batch = SharedPointer<QueryBatch>(new QueryBatch(env, inMem));
 
-                    empty = batch.Get()->IsEmpty();
+                    endReached = batch.Get()->IsEmpty();
 
                     return true;
                 }

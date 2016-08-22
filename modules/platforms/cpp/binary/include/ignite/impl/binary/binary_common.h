@@ -101,12 +101,6 @@ namespace ignite
             /** Type: date. */
             const int8_t IGNITE_TYPE_DATE = 11;
 
-            /** Type: timestamp. */
-            const int8_t IGNITE_TYPE_TIMESTAMP = 33;
-            
-            /** Type: timestamp array. */
-            const int8_t IGNITE_TYPE_TIMESTAMP_ARRAY = 34;
-
             /** Type: unsigned byte array. */
             const int8_t IGNITE_TYPE_ARRAY_BYTE = 12;
 

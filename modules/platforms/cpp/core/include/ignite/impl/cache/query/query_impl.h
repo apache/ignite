@@ -96,7 +96,7 @@ namespace ignite
                     ignite::common::concurrent::SharedPointer<QueryBatch> batch;
 
                     /** Whether cursor has no more elements available. */
-                    bool empty;
+                    bool endReached;
 
                     /** Whether iteration methods were called. */
                     bool iterCalled;

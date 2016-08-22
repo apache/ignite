@@ -19,7 +19,7 @@
 #include "ignite/impl/cache/query/query_fields_row_impl.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 
@@ -37,26 +37,18 @@ namespace ignite
 
                     int32_t rowBegin = stream.Position();
 
+                    int32_t rowLen = reader.ReadInt32();
                     int32_t columnNum = reader.ReadInt32();
 
-                    for (int32_t i = 0; i < columnNum; ++i)
-                        reader.SkipTopObject();
-
-                    int32_t rowEnd = stream.Position();
-
-                    int32_t rowLen = rowEnd - rowBegin;
+                    int32_t dataPos = stream.Position();
 
                     assert(rowLen >= 4);
 
-                    MemorySharedPtr rowMem = env.Get()->AllocateMemory(rowLen);
-
-                    memcpy(rowMem.Get()->Data(), mem.Get()->Data() + rowBegin, rowLen);
-
-                    rowMem.Get()->Length(rowLen);
-
                     ++pos;
 
-                    return new QueryFieldsRowImpl(rowMem);
+                    stream.Position(rowBegin + rowLen);
+
+                    return new QueryFieldsRowImpl(mem, dataPos, columnNum);
                 }
 
             }

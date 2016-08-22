@@ -939,16 +939,11 @@ namespace ignite
                 }
 
                 /**
-                 * Skip top object.
-                 */
-                void SkipTopObject();
-
-                /**
                  * Get underlying stream.
                  *
                  * @return Stream.
                  */
-                impl::interop::InteropInputStream* GetStream();
+                interop::InteropInputStream* GetStream();
             private:
                 /** Underlying stream. */
                 interop::InteropInputStream* stream;

@@ -39,8 +39,8 @@ namespace ignite
                  */
                 class IGNITE_IMPORT_EXPORT QueryBatch
                 {
-                    typedef ignite::common::concurrent::SharedPointer<impl::IgniteEnvironment> EnvironmentSharedPtr;
-                    typedef ignite::common::concurrent::SharedPointer<ignite::impl::interop::InteropMemory> MemorySharedPtr;
+                    typedef common::concurrent::SharedPointer<IgniteEnvironment> EnvironmentSharedPtr;
+                    typedef common::concurrent::SharedPointer<interop::InteropMemory> MemorySharedPtr;
 
                 public:
                     /**
@@ -128,7 +128,7 @@ namespace ignite
                     MemorySharedPtr mem;
 
                     /** Stream. */
-                    impl::interop::InteropInputStream stream;
+                    interop::InteropInputStream stream;
 
                     /** Reader. */
                     binary::BinaryReaderImpl reader;

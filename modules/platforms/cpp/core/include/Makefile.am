@@ -26,6 +26,7 @@ nobase_include_HEADERS = \
     ignite/impl/ignite_impl.h \
     ignite/impl/cache/query/query_fields_row_impl.h \
     ignite/impl/cache/query/query_impl.h \
+    ignite/impl/cache/query/query_batch.h \
     ignite/impl/cache/cache_impl.h \
     ignite/impl/interop/interop_target.h \
     ignite/impl/interop/interop_external_memory.h \
