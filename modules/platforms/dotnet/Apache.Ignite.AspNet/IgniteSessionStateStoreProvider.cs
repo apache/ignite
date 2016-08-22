@@ -18,6 +18,7 @@
 namespace Apache.Ignite.AspNet
 {
     using System;
+    using System.Collections.Specialized;
     using System.Web;
     using System.Web.SessionState;
 
@@ -26,6 +27,15 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
+        /** */
+        private const string GridName = "gridName";
+
+        /** */
+        private const string CacheName = "cacheName";
+
+        /** */
+        private const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
+
         // TODO: See 
         /*
            cacheName="myPartionReplicaCache" 
@@ -37,6 +47,11 @@ namespace Apache.Ignite.AspNet
            sessionLockingRetry="-1"
            emptySessionWhenLocked="false" 
          */
+
+        public override void Initialize(string name, NameValueCollection config)
+        {
+            base.Initialize(name, config);
+        }
 
 
         public override void Dispose()
