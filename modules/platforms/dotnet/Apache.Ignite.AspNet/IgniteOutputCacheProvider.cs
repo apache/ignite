@@ -30,7 +30,8 @@ namespace Apache.Ignite.AspNet
     /// <para />
     /// You can either start Ignite yourself, and provide <c>gridName</c> attribute, 
     /// or provide <c>igniteConfigurationSectionName</c> attribute to start Ignite automatically from specified
-    /// configuration section (see <see cref="IgniteConfigurationSection"/>).
+    /// configuration section (see <see cref="IgniteConfigurationSection"/>) 
+    /// using <c>igniteConfigurationSectionName</c>.
     /// <para />
     /// <c>cacheName</c> attribute specifies Ignite cache name to use for data storage. This attribute can be omitted 
     /// if cache name is null.
