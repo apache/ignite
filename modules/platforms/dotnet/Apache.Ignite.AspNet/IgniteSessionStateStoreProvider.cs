@@ -34,10 +34,10 @@ namespace Apache.Ignite.AspNet
         private const string ApplicationId = "applicationId";
 
         /** */
-        private volatile ICache<string, object> _cache;
+        private volatile string _applicationId;
 
         /** */
-        private volatile string _applicationId;
+        private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
 
         // TODO: See 
         /*
@@ -62,7 +62,9 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            _cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+
+            _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
 
             _applicationId = config[ApplicationId];
         }
@@ -310,12 +312,12 @@ namespace Apache.Ignite.AspNet
         {
             get
             {
-                var cache = _cache;
+                var holder = _expiryCacheHolder;
 
-                if (cache == null)
+                if (holder == null)
                     throw new InvalidOperationException(GetType() + " has not been initialized.");
 
-                return cache;
+                return holder.Cache;
             }
         }
 
