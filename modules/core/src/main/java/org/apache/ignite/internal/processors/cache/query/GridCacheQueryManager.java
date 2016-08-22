@@ -364,9 +364,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Writes key-value pair to index.
      *
      * @param key Key.
+     * @param partId Partition.
+     * @param prevVal Previous value.
+     * @param prevVer Previous version.
      * @param val Value.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
+     * @param link Link.
      * @throws IgniteCheckedException In case of error.
      */
     public void store(KeyCacheObject key,
@@ -400,7 +404,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param key Key.
+     * @param partId Partition.
      * @param val Value.
+     * @param ver Version.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
