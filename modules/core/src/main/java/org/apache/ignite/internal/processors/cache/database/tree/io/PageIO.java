@@ -19,15 +19,48 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
  * Base format for all the page types.
+ *
+ * Checklist for page IO implementations and usage (The Rules):
+ *
+ * 1. IO should not have any `public static` methods.
+ *    We have versioned IOs and any static method will mean that it have to always work in backward
+ *    compatible way between all the IO versions. The base class {@link PageIO} has
+ *    static methods (like {@code {@link #getPageId(ByteBuffer)}}) intentionally:
+ *    this base format can not be changed between versions.
+ *
+ * 2. IO must correctly override {@link #initNewPage(ByteBuffer, long)} method and call super.
+ *    We have logic that relies on this behavior.
+ *
+ * 3. Page IO type ID constant must be declared in this class to have a list of all the
+ *    existing IO types in a single place.
+ *
+ * 4. IO must be added to {@link #getBPlusIO(int, int)} or to {@link #getPageIO(int, int)}.
+ *
+ * 5. Always keep in mind that IOs are versioned and their format can change from version
+ *    to version. In this respect it is a good practice to avoid exposing details
+ *    of IO internal format on it's API. The API should be minimalistic and abstract, so that
+ *    internal format in future IO version can be completely changed without any changes
+ *    to the API of this page IO.
+ *
+ * 6. Page IO API should not have any version dependent semantics and should not change API
+ *    semantics in newer versions.
+ *
+ * 7. It is almost always preferable to read or write (especially write) page contents using
+ *    static methods on {@link PageHandler}. To just initialize new page use
+ *    {@link PageHandler#writePage(long, Page, PageHandler, PageIO, IgniteWriteAheadLogManager, Object, int)}
+ *    method with needed IO instance and {@link PageHandler#NOOP} handler.
  */
 public abstract class PageIO {
     /** */

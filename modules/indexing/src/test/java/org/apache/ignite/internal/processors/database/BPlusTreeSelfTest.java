@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -37,6 +39,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
 
 /**
  */
@@ -86,9 +90,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
 
-        X.println("Test seed: " + seed + "L");
+        X.println("Test seed: " + seed + "L; // ");
 
-        TestTree.rnd = new Random(seed);
+        rnd = new Random(seed);
 
         pageMem = createPageMemory();
 
@@ -115,7 +119,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestTree.rnd = null;
+        rnd = null;
 
         if (reuseList != null) {
             long size = reuseList.size();
@@ -537,6 +541,103 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     tree.validateTree();
             }
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testEmptyCursors() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        assertFalse(tree.find(null, null).next());
+        assertFalse(tree.find(0L, 1L).next());
+
+        tree.put(1L);
+        tree.put(2L);
+        tree.put(3L);
+
+        assertEquals(3, size(tree.find(null, null)));
+
+        assertFalse(tree.find(4L, null).next());
+        assertFalse(tree.find(null, 0L).next());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testCursorConcurrentMerge() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+//        X.println(" " + pageMem.pageSize());
+
+        TestTree tree = createTestTree(true);
+
+        TreeMap<Long,Long> map = new TreeMap<>();
+
+        for (int i = 0; i < 20_000 + rnd.nextInt(2 * MAX_PER_PAGE); i++) {
+            Long row = (long)rnd.nextInt(40_000);
+
+//            X.println(" <-- " + row);
+
+            assertEquals(map.put(row, row), tree.put(row));
+            assertEquals(row, tree.findOne(row));
+        }
+
+        final int off = rnd.nextInt(5 * MAX_PER_PAGE);
+
+        Long upperBound = 30_000L + rnd.nextInt(2 * MAX_PER_PAGE);
+
+        GridCursor<Long> c = tree.find(null, upperBound);
+        Iterator<Long> i = map.headMap(upperBound, true).keySet().iterator();
+
+        Long last = null;
+
+        for (int j = 0; j < off; j++) {
+            assertTrue(c.next());
+
+//            X.println(" <-> " + c.get());
+
+            assertEquals(i.next(), c.get());
+
+            last = c.get();
+        }
+
+        if (last != null) {
+//            X.println(" >-< " + last + " " + upperBound);
+
+            c = tree.find(last, upperBound);
+
+            assertTrue(c.next());
+            assertEquals(last, c.get());
+        }
+
+        while (c.next()) {
+//            X.println(" --> " + c.get());
+
+            assertNotNull(c.get());
+            assertEquals(i.next(), c.get());
+            assertEquals(c.get(), tree.remove(c.get()));
+
+            i.remove();
+        }
+
+        assertEquals(map.size(), size(tree.find(null, null)));
+    }
+
+    /**
+     * @param c Cursor.
+     * @return Number of elements.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static int size(GridCursor<?> c) throws IgniteCheckedException {
+        int cnt = 0;
+
+        while(c.next())
+            cnt++;
+
+        return cnt;
     }
 
     /**
