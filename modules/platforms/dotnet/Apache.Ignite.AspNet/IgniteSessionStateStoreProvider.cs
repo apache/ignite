@@ -176,9 +176,11 @@ namespace Apache.Ignite.AspNet
                 if (locked)
                 {
                     // Already locked: return lock age.
-                    cacheLock.Dispose();
-                    lockId = null;
                     lockAge = GetLockAge(key);
+
+                    lockId = null;
+                    cacheLock.Dispose();
+
                     return null;
                 }
 
