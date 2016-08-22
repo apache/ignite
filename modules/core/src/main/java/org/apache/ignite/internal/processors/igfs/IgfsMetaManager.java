@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -236,12 +235,23 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * @return Client flag.
+     * Check whether remote task execution is needed.
+     *
+     * @return {@code True} if remote task execution is needed.
      */
     boolean isRunRemote() {
-        return client
-            || (cfg.isColocateMetadata() && metaCache.configuration().getCacheMode() == CacheMode.PARTITIONED
-                && !metaCache.affinity().isPrimary(igfsCtx.kernalContext().discovery().localNode(), IgfsUtils.ROOT_ID));
+        return isRunRemote(IgfsUtils.ROOT_ID);
+    }
+
+    /**
+     * Check whether remote task execution is needed.
+     *
+     * @param affKey Affinity key,
+     * @return {@code True} if remote task execution is needed.
+     */
+    boolean isRunRemote(IgniteUuid affKey) {
+        return client || cfg.isColocateMetadata() &&
+            !metaCache.affinity().isPrimary(igfsCtx.kernalContext().discovery().localNode(), affKey);
     }
 
     /**
@@ -262,14 +272,14 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Run client task.
      *
-     * @param affinityFileId Affinity fileId.
+     * @param affKey Affinity fileId.
      * @param task Task.
      * @return Result.
      */
-    <T> T runRemote(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
+    <T> T runRemote(IgniteUuid affKey, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().affinityCall(cfg.getMetaCacheName(), affKey, task) :
                 clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
