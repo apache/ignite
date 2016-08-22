@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+// ReSharper disable AssignNullToNotNullAttribute
 namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Web.SessionState;
     using Apache.Ignite.AspNet;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
@@ -69,8 +71,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
         {
             var stateProvider = new IgniteSessionStateStoreProvider();
 
+            SessionStateActions actions;
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+
+
             // Not initialized
-            Assert.Throws<InvalidOperationException>(() => stateProvider.Get("1"));
+            Assert.Throws<InvalidOperationException>(() =>
+                    stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions));
 
             // Grid not started
             Assert.Throws<IgniteException>(() =>
@@ -83,8 +92,17 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Valid grid
             stateProvider = GetProvider();
 
-            stateProvider.Set("1", 1, DateTime.MaxValue);
-            Assert.AreEqual(1, stateProvider.Get("1"));
+            var data = stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(data);
+
+            data = stateProvider.CreateNewStoreData(null, 42);
+            Assert.IsNotNull(data);
+
+            stateProvider.SetAndReleaseItemExclusive(null, "1", data, lockId, false);
+
+            data = stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(data);
+            Assert.AreEqual(42, data.Timeout);
         }
 
 
@@ -103,6 +121,5 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             return stateProvider;
         }
-
     }
 }
