@@ -37,7 +37,7 @@ namespace Apache.Ignite.AspNet
         private volatile ICache<string, object> _cache;
 
         /** */
-        private volatile string _applicationId = null;
+        private volatile string _applicationId;
 
         // TODO: See 
         /*
@@ -149,18 +149,48 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge,
             out object lockId, out SessionStateActions actions)
         {
-            // TODO: An option to return empty data
+            actions = SessionStateActions.None;  // TODO: CookieLess?
+            lockAge = TimeSpan.Zero;  // TODO: ???
 
             var key = GetKey(id);
 
             var cacheLock = Cache.Lock(key);
-
-            locked = cacheLock.TryEnter();
             lockId = cacheLock;
-            lockAge = TimeSpan.Zero;  // TODO: ???
 
+            try
+            {
+                var lockObtained = cacheLock.TryEnter();
+                locked = !lockObtained;   // locked means "was already locked"
 
-            throw new NotImplementedException();
+                if (locked)
+                {
+                    // Already locked: return lock age.
+                    cacheLock.Dispose();
+                    lockId = null;
+                    lockAge = GetLockAge(key);
+                    return null;
+                }
+
+                // Locked successfully, update lock age.
+                SetLockAge(key);
+
+                object existingData;
+
+                if (Cache.TryGet(key, out existingData))
+                {
+                    // Item found, return it.
+                    return (SessionStateStoreData) existingData;
+                }
+
+                // Item not found - return null.
+                // TODO: An option to return empty data.
+                return null;
+            }
+            catch (Exception)
+            {
+                cacheLock.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -274,6 +304,44 @@ namespace Apache.Ignite.AspNet
         private string GetKey(string sessionId)
         {
             return _applicationId == null ? sessionId : ApplicationId + "." + sessionId;
+        }
+
+        /// <summary>
+        /// Gets the lock age key.
+        /// </summary>
+        private static string GetLockAgeKey(string key)
+        {
+            return "lock_" + key;
+        }
+
+        /// <summary>
+        /// Gets the lock age.
+        /// </summary>
+        private TimeSpan GetLockAge(string key)
+        {
+            var k = GetLockAgeKey(key);
+
+            object lockDate;
+            if (Cache.TryGet(k, out lockDate))
+                return DateTime.UtcNow - (DateTime) lockDate;
+
+            return TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// Sets the lock age for the specified key to zero.
+        /// </summary>
+        private void SetLockAge(string key)
+        {
+            Cache[GetLockAgeKey(key)] = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Removes the lock age.
+        /// </summary>
+        private void RemoveLockAge(string key)
+        {
+            Cache.Remove(GetLockAgeKey(key));
         }
     }
 }
