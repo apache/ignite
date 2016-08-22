@@ -121,6 +121,14 @@ namespace ignite
                      * @return True if operation has been successful.
                      */
                     bool GetNextBatchIfNeeded(IgniteError& err);
+
+                    /**
+                     * Check if the iterator has next value.
+                     *
+                     * @param err Error.
+                     * @return True if iterator has next value.
+                     */
+                    bool IteratorHasNext(IgniteError & err);
                 };
             }
         }

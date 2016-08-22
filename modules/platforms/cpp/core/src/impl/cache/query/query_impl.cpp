@@ -206,6 +206,11 @@ namespace ignite
                     if (endReached || (rawBatch && rawBatch->Left() > 0))
                         return true;
 
+                    endReached = IteratorHasNext(err);
+
+                    if (endReached)
+                        return true;
+
                     JniErrorInfo jniErr;
 
                     SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
@@ -223,6 +228,20 @@ namespace ignite
                     endReached = batch.Get()->IsEmpty();
 
                     return true;
+                }
+
+                bool QueryCursorImpl::IteratorHasNext(IgniteError& err)
+                {
+                    JniErrorInfo jniErr;
+
+                    bool res = !env.Get()->Context()->QueryCursorIteratorHasNext(javaRef, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                        return res;
+
+                    return false;
                 }
             }
         }
