@@ -39,18 +39,6 @@ namespace Apache.Ignite.AspNet
         /** */
         private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
 
-        // TODO: See 
-        /*
-           cacheName="myPartionReplicaCache" 
-           sessionAppId="NCacheApp1"
-           exceptionsEnabled="true" 
-           writeExceptionsToEventLog="false"
-           enableLogs="false" 
-           enableSessionLocking="true"
-           sessionLockingRetry="-1"
-           emptySessionWhenLocked="false" 
-         */
-
         /// <summary>
         /// Initializes the provider.
         /// </summary>
@@ -90,7 +78,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override bool SetItemExpireCallback(SessionStateItemExpireCallback expireCallback)
         {
-            // TODO: Should we support this?
+            // Expiration events not supported for now.
             return false;
         }
 
@@ -198,7 +186,6 @@ namespace Apache.Ignite.AspNet
                 }
 
                 // Item not found - return null.
-                // TODO: An option to return empty data?
                 return null;
             }
             catch (Exception)
