@@ -149,6 +149,8 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge,
             out object lockId, out SessionStateActions actions)
         {
+            // TODO: An option to return empty data
+
             throw new NotImplementedException();
         }
 
