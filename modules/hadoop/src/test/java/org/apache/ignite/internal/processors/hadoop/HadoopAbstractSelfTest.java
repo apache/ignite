@@ -115,11 +115,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        if (igfsEnabled()) {
-            cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
-
+        if (igfsEnabled())
             cfg.setFileSystemConfiguration(igfsConfiguration());
-        }
 
         if (restEnabled()) {
             ConnectorConfiguration clnCfg = new ConnectorConfiguration();
