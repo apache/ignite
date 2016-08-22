@@ -66,7 +66,7 @@ namespace Apache.Ignite.AspNet
         /// </summary>
         public override void Dispose()
         {
-            // TODO
+            // TODO: nothing?
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override bool SetItemExpireCallback(SessionStateItemExpireCallback expireCallback)
         {
-            // TODO
+            // TODO: Should we support this?
             return false;
         }
 
