@@ -204,6 +204,7 @@ namespace Apache.Ignite.AspNet
             catch (Exception)
             {
                 cacheLock.Dispose();
+
                 throw;
             }
         }
@@ -235,7 +236,7 @@ namespace Apache.Ignite.AspNet
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item,
             object lockId, bool newItem)
         {
-            Cache[GetKey(id)] = item;
+            PutSessionStateStoreData(id, item);
 
             ReleaseItemExclusive(context, id, lockId);
         }
@@ -292,7 +293,9 @@ namespace Apache.Ignite.AspNet
         /// for the current request.</param>
         public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
         {
-            throw new NotImplementedException();
+            var item = CreateNewStoreData(context, timeout);
+
+            PutSessionStateStoreData(id, item);
         }
 
         /// <summary>
@@ -301,7 +304,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="context">The <see cref="T:System.Web.HttpContext" /> for the current request.</param>
         public override void EndRequest(HttpContext context)
         {
-            throw new NotImplementedException();
+            // No-op.
         }
 
         /// <summary>
@@ -364,6 +367,16 @@ namespace Apache.Ignite.AspNet
         private void RemoveLockAge(string key)
         {
             Cache.Remove(GetLockAgeKey(key));
+        }
+
+        /// <summary>
+        /// Puts the session state store data to the Ignite cache with expiry.
+        /// </summary>
+        private void PutSessionStateStoreData(string id, SessionStateStoreData item)
+        {
+            var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
+
+            cache[GetKey(id)] = item;
         }
     }
 }

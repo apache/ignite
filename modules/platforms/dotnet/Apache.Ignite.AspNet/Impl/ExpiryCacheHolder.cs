@@ -34,7 +34,7 @@ namespace Apache.Ignite.AspNet.Impl
         /** */
         private readonly ICache<TK, TV> _cache;
 
-        /** Cached caches per expiry units. */
+        /** Cached caches per expiry seconds. */
         private volatile Dictionary<long, ICache<TK, TV>> _expiryCaches =
             new Dictionary<long, ICache<TK, TV>>();
 
@@ -82,7 +82,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Gets the cache with expiry.
         /// </summary>
-        /// <param name="expiry">The expiration interval (in any units).</param>
+        /// <param name="expiry">The expiration interval (in seconds).</param>
         public ICache<TK, TV> GetCacheWithExpiry(long expiry)
         {
             ICache<TK, TV> expiryCache;
