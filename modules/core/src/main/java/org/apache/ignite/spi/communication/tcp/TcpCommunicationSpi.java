@@ -382,7 +382,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 recoveryData.onNodeLeft();
                         }
 
-                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(recoveryData,
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(id,
+                            recoveryData,
                             reconnect);
 
                         commWorker.addProcessDisconnectRequest(disconnectData);
@@ -824,6 +825,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Clients. */
     private final ConcurrentMap<ConnectionId, GridCommunicationClient> clients = GridConcurrentFactory.newMap();
 
+    /** */
+    private int connectionsPerNode = 2;
+
+    public int getConnectionsPerNode() {
+        return connectionsPerNode;
+    }
+
+    public void setConnectionsPerNode(int connectionsPerNode) {
+        this.connectionsPerNode = connectionsPerNode;
+    }
+
     /**
      *
      */
@@ -858,6 +870,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             int res = idx;
             res = 31 * res + id.hashCode();
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ConnectionId.class, this);
         }
     }
 
@@ -1454,7 +1471,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             sb.append("Communication SPI clients: ").append(U.nl());
 
-            for (Map.Entry<UUID, GridCommunicationClient> entry : clients.entrySet()) {
+            for (Map.Entry<ConnectionId, GridCommunicationClient> entry : clients.entrySet()) {
                 sb.append("    [node=").append(entry.getKey())
                     .append(", client=").append(entry.getValue())
                     .append(']').append(U.nl());
@@ -1998,8 +2015,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         sendMessage0(node, msg, ackC);
     }
 
-    private final int CONNECTIONS_PER_NODE = 2;
-
     /**
      * @param node Destination node.
      * @param msg Message to send.
@@ -2027,7 +2042,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            ConnectionId id = new ConnectionId(((GridIoMessage)msg).connectionIndex() % CONNECTIONS_PER_NODE, node.id());
+            ConnectionId id = new ConnectionId(((GridIoMessage)msg).connectionIndex() % connectionsPerNode, node.id());
 
             try {
                 boolean retry;
