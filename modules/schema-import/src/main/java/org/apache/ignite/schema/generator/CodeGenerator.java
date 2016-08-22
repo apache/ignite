@@ -728,6 +728,9 @@ public class CodeGenerator {
                             add2(src, "idx.setName(\"" + idx.getName() + "\");");
                             add0(src, "");
 
+                            add2(src, "idx.setIndexType(QueryIndexType." + idx.getIndexType() + ");");
+                            add0(src, "");
+
                             add2(src, (firstIdx ? "LinkedHashMap<String, Boolean> " : "") +
                                 "idxFlds = new LinkedHashMap<>();");
                             add0(src, "");
@@ -781,7 +784,7 @@ public class CodeGenerator {
         add2(src, "ccfg.setWriteThrough(true);");
         add0(src, "");
 
-        add2(src, "// Configure JDBC types. ");
+        add2(src, "// Configure JDBC types.");
         add2(src, "Collection<JdbcType> jdbcTypes = new ArrayList<>();");
         add0(src, "");
 
@@ -794,7 +797,7 @@ public class CodeGenerator {
         add0(src, "");
 
 
-        add2(src, "// Configure query entities. ");
+        add2(src, "// Configure query entities.");
         add2(src, "Collection<QueryEntity> qryEntities = new ArrayList<>();");
         add0(src, "");
 
