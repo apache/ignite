@@ -162,8 +162,8 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge,
             out object lockId, out SessionStateActions actions)
         {
-            actions = SessionStateActions.None;  // TODO: CookieLess?
-            lockAge = TimeSpan.Zero;  // TODO: ???
+            actions = SessionStateActions.None;  // Our items never need initialization.
+            lockAge = TimeSpan.Zero;
 
             var key = GetKey(id);
 
@@ -198,7 +198,7 @@ namespace Apache.Ignite.AspNet
                 }
 
                 // Item not found - return null.
-                // TODO: An option to return empty data.
+                // TODO: An option to return empty data?
                 return null;
             }
             catch (Exception)
