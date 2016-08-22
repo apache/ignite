@@ -41,7 +41,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query(), null);
+            var compiledQuery = GetCompiledQuery(query(), query);
 
             return () => compiledQuery(new object[0]);
         }
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query(default(T1)), null);
+            var compiledQuery = GetCompiledQuery(query(default(T1)), query);
 
             return x => compiledQuery(new object[] {x});
         }
@@ -191,6 +191,8 @@ namespace Apache.Ignite.Linq
         private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(IQueryable<T> queryable, 
             Delegate queryCaller)
         {
+            Debug.Assert(queryCaller != null);
+
             var cacheQueryable = queryable as ICacheQueryableInternal;
 
             if (cacheQueryable == null)

@@ -45,19 +45,16 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
+import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
@@ -85,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Non-transactional local cache.
  */
-public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
+public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -103,24 +100,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ctx Cache context.
      */
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getStartSize());
+        super(ctx);
 
         preldr = new GridCachePreloaderAdapter(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
-            @Override public GridCacheMapEntry create(
-                GridCacheContext ctx,
-                AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
-            ) {
-                return new GridLocalCacheEntry(ctx, key, hash, val);
-            }
-        });
     }
 
     /** {@inheritDoc} */
@@ -430,7 +412,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
-        return m.get(key);
+        return F.firstValue(m);
     }
 
     /** {@inheritDoc} */
@@ -535,6 +517,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (needVer) {
                             T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                 null,
+                                null,
                                 /*swap*/swapOrOffheap,
                                 /*unmarshal*/true,
                                 /**update-metrics*/false,
@@ -562,11 +545,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 success = false;
                         }
                         else {
-                            v = entry.innerGet(null,
+                            v = entry.innerGet(
+                                null,
+                                null,
                                 /*swap*/swapOrOffheap,
                                 /*read-through*/false,
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/!skipVals,
                                 /**temporary*/false,
@@ -1121,11 +1104,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             (EntryProcessor<Object, Object, Object>)val;
 
-                        CacheObject old = entry.innerGet(null,
+                        CacheObject old = entry.innerGet(
+                            null,
+                            null,
                             /*swap*/true,
                             /*read-through*/true,
-                            /*fail-fast*/false,
-                            /*unmarshal*/true,
                             /**update-metrics*/true,
                             /**event*/true,
                             /**temporary*/true,
@@ -1243,11 +1226,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         CacheObject cacheVal = ctx.toCacheObject(val);
 
                         if (intercept) {
-                            CacheObject old = entry.innerGet(null,
+                            CacheObject old = entry.innerGet(
+                                null,
+                                null,
                                 /*swap*/true,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/true,
                                 /**temporary*/true,
@@ -1278,11 +1261,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         assert op == DELETE;
 
                         if (intercept) {
-                            CacheObject old = entry.innerGet(null,
+                            CacheObject old = entry.innerGet(
+                                null,
+                                null,
                                 /*swap*/true,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/true,
                                 /**temporary*/true,

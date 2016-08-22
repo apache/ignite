@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLostPartitionTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -43,9 +42,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
-
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryLostPartitionTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);

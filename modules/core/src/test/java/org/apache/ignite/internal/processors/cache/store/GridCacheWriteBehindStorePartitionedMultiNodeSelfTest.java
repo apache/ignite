@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -58,7 +59,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private GridCacheTestStore[] stores = new GridCacheTestStore[GRID_CNT];
 
     /** Start grid counter. */
-    private int idx;
+    private AtomicInteger idx = new AtomicInteger();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -79,7 +80,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(new NearCacheConfiguration());
 
-        CacheStore store = stores[idx] = new GridCacheTestStore();
+        CacheStore store = stores[idx.getAndIncrement()] = new GridCacheTestStore();
 
         cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
@@ -87,8 +88,6 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
-
-        idx++;
 
         return c;
     }
@@ -104,9 +103,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
      * @throws Exception If failed.
      */
     private void prepare() throws Exception {
-        idx = 0;
-
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */

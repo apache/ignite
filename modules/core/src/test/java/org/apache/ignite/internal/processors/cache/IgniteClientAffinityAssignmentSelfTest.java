@@ -103,7 +103,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     private void checkAffinityFunction() throws Exception {
         cache = true;
 
-        startGrids(3);
+        startGridsMultiThreaded(3, true);
 
         long topVer = 3;
 

@@ -190,21 +190,17 @@ class HadoopV2JobResourceManager {
         Collection<String> res = new ArrayList<>();
 
         for (Object pathObj : files) {
-            String locName = null;
             Path srcPath;
 
             if (pathObj instanceof URI) {
                 URI uri = (URI)pathObj;
-
-                locName = uri.getFragment();
 
                 srcPath = new Path(uri);
             }
             else
                 srcPath = (Path)pathObj;
 
-            if (locName == null)
-                locName = srcPath.getName();
+            String locName = srcPath.getName();
 
             File dstPath = new File(jobLocDir.getAbsolutePath(), locName);
 

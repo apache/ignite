@@ -50,8 +50,9 @@ import scala.language.implicitConversions
  * |        | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |        | events on each node can also affect the functionality of this command.        |
  * |        |                                                                               |
- * |        | By default - all events are DISABLED and Ignite stores last 10,000 local      |
- * |        | events on each node. Both of these defaults can be changed in configuration.  |
+ * |        | By default - all events are DISABLED. But if events enabled then Ignite will  |
+ * |        | stores last 10,000 local events on each node.                                 |
+ * |        | Both of these defaults can be changed in configuration.                       |
  * +----------------------------------------------------------------------------------------+
  * }}}
  *
@@ -64,12 +65,15 @@ import scala.language.implicitConversions
  *
  * ====Arguments====
  * {{{
- *     -id=<node-id>
- *         Full node ID.
- *         Either '-id' or '-id8' can be specified.
- *         If called without the arguments - starts in interactive mode.
  *     -id8
  *         Node ID8.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
+ *         If called without the arguments - starts in interactive mode.
+ *     -id=<node-id>
+ *         Full node ID.
  *         Either '-id' or '-id8' can be specified.
  *         If called without the arguments - starts in interactive mode.
  *     -e=<ch,de,di,jo,ta,ca,cr,sw>
@@ -145,7 +149,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
      */
     @throws[IllegalArgumentException]("In case unknown event mnemonic.")
     protected def typeFilter(typeArg: Option[String]) = {
-        typeArg.map(_.split(",").map(typeIds).flatten).orNull
+        typeArg.map(_.split(",").flatMap(typeIds)).orNull
     }
 
     /**
@@ -227,6 +231,8 @@ class VisorEventsCommand extends VisorConsoleCommand {
 
                             return
                     }
+
+                    println("ID8=" + nid8(node))
 
                     if (evts == null || evts.isEmpty) {
                         println("No events found.")
@@ -392,7 +398,7 @@ object VisorEventsCommand {
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and Ignite stores last 10,000 local",
+            "By default - all events are disabled. But if events enabled then Ignite will stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
@@ -401,15 +407,17 @@ object VisorEventsCommand {
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
+            "-id8=<node-id8>" -> List(
+                "Node ID8.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
+                "If called without the arguments - starts in interactive mode."
+            ),
             "-id=<node-id>" -> List(
                 "Full node ID.",
                 "Either '-id' or '-id8' can be specified.",
-                "If called without the arguments - starts in interactive mode."
-            ),
-            "-id8=<node-id8>" -> List(
-                "Node ID8.",
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
                 "If called without the arguments - starts in interactive mode."
             ),
             "-e=<ch,de,di,jo,ta,ca,cr,sw>" -> List(

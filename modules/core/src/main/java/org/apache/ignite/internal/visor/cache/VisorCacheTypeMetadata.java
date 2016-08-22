@@ -30,6 +30,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -39,7 +40,7 @@ import javax.cache.configuration.Factory;
 /**
  * Data transfer object for {@link CacheTypeMetadata}.
  */
-public class VisorCacheTypeMetadata implements Serializable {
+public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -133,21 +134,25 @@ public class VisorCacheTypeMetadata implements Serializable {
 
                 JdbcTypeField[] keyFields = jdbcType.getKeyFields();
 
-                meta.keyFields = new ArrayList<>(keyFields.length);
+                if (keyFields != null) {
+                    meta.keyFields = new ArrayList<>(keyFields.length);
 
-                for (JdbcTypeField fld : keyFields)
-                    meta.keyFields.add(new VisorCacheTypeFieldMetadata(
-                        fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                        fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    for (JdbcTypeField fld : keyFields)
+                        meta.keyFields.add(new VisorCacheTypeFieldMetadata(
+                            fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                            fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                }
 
                 JdbcTypeField[] valFields = jdbcType.getValueFields();
 
-                meta.valFields = new ArrayList<>(valFields.length);
+                if (valFields != null) {
+                    meta.valFields = new ArrayList<>(valFields.length);
 
-                for (JdbcTypeField fld : valFields)
-                    meta.valFields.add(new VisorCacheTypeFieldMetadata(
+                    for (JdbcTypeField fld : valFields)
+                        meta.valFields.add(new VisorCacheTypeFieldMetadata(
                             fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
                             fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                }
 
                 if (notFound)
                     metas.add(meta);

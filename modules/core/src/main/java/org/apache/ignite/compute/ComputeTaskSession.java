@@ -86,7 +86,7 @@ import org.jetbrains.annotations.Nullable;
  * ...
  * // This field will be injected with distributed task session.
  * &#64TaskSessionResource
- * private GridComputeTaskSession ses;
+ * private ComputeTaskSession ses;
  * ...
  * </pre>
  * or from a setter method:
@@ -94,7 +94,7 @@ import org.jetbrains.annotations.Nullable;
  * // This setter method will be automatically called by the system
  * // to set grid task session.
  * &#64TaskSessionResource
- * void setSession(GridComputeTaskSession ses) {
+ * void setSession(ComputeTaskSession ses) {
  *     this.ses = ses;
  * }
  * </pre>

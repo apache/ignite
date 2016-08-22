@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 
@@ -45,4 +46,9 @@ public interface PlatformConfigurationEx {
      * @return Warnings to be displayed on grid start.
      */
     public Collection<String> warnings();
+
+    /**
+     * @return Platform logger.
+     */
+    public PlatformLogger logger();
 }

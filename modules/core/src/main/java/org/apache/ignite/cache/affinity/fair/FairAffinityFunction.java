@@ -102,6 +102,9 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
+    /** Optional affinity backups filter. The first node is a node being tested, the second is a list of nodes that are already assigned for a given partition (primary node is the first in the list). */
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
+
     /**
      * Empty constructor with all defaults.
      */
@@ -195,6 +198,8 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param parts Total number of partitions.
      */
     public void setPartitions(int parts) {
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+
         this.parts = parts;
     }
 
@@ -220,9 +225,37 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
+     * @deprecated Use {@code affinityBackupFilter} instead.
      */
+    @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        return affinityBackupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param affinityBackupFilter Optional backup filter.
+     */
+    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        this.affinityBackupFilter = affinityBackupFilter;
     }
 
     /**
@@ -321,6 +354,10 @@ public class FairAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(hash(key.hashCode())) % parts;
     }
 
@@ -865,6 +902,7 @@ public class FairAffinityFunction implements AffinityFunction {
          * @param tier Tier.
          * @param node Node.
          * @param allowNeighbors Allow neighbors.
+         * @return {@code true} if the partition is assignable to the node.
          */
         private boolean isAssignable(int part, int tier, final ClusterNode node, boolean allowNeighbors) {
             if (containsPartition(part, node))
@@ -872,9 +910,50 @@ public class FairAffinityFunction implements AffinityFunction {
 
             if (exclNeighbors)
                 return allowNeighbors || !neighborsContainPartition(node, part);
-            else if (backupFilter == null)
-                return true;
-            else {
+            else if (affinityBackupFilter != null) {
+                List<ClusterNode> assigment = assignments.get(part);
+
+                assert assigment.size() > 0;
+
+                List<ClusterNode> newAssignment;
+
+                if (tier == 0) {
+                    for (int t = 1; t < assigment.size(); t++) {
+                        newAssignment = new ArrayList<>(assigment.size() - 1);
+
+                        newAssignment.add(node);
+
+                        if (t != 1)
+                            newAssignment.addAll(assigment.subList(1, t));
+
+                        if (t + 1 < assigment.size())
+                            newAssignment.addAll(assigment.subList(t + 1, assigment.size()));
+
+                        if (!affinityBackupFilter.apply(assigment.get(t), newAssignment))
+                            return false;
+
+                    }
+
+                    return true;
+                }
+                else if (tier < assigment.size()) {
+                    newAssignment = new ArrayList<>(assigment.size() - 1);
+
+                    int i = 0;
+
+                    for (ClusterNode assignmentNode: assigment) {
+                        if (i != tier)
+                            newAssignment.add(assignmentNode);
+
+                        i++;
+                    }
+                }
+                else
+                    newAssignment = assigment;
+
+                return affinityBackupFilter.apply(node, newAssignment);
+            }
+            else if (backupFilter != null) {
                 if (tier == 0) {
                     List<ClusterNode> assigment = assignments.get(part);
 
@@ -891,6 +970,8 @@ public class FairAffinityFunction implements AffinityFunction {
                 else
                     return (backupFilter.apply(assignments.get(part).get(0), node));
             }
+            else
+                return true;
         }
 
         /**

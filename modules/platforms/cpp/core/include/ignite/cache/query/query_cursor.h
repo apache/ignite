@@ -20,15 +20,15 @@
  * Declares ignite::cache::query::QueryCursor class template.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_CURSOR
-#define _IGNITE_CACHE_QUERY_CURSOR
+#ifndef _IGNITE_CACHE_QUERY_QUERY_CURSOR
+#define _IGNITE_CACHE_QUERY_QUERY_CURSOR
 
 #include <vector>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_entry.h"
-#include "ignite/ignite_error.h"
 #include "ignite/impl/cache/query/query_impl.h"
 #include "ignite/impl/operations.h"
 
@@ -39,7 +39,16 @@ namespace ignite
         namespace query
         {
             /**
-             * Query cursor.
+             * Query cursor class template.
+             *
+             * Both key and value types should be default-constructable,
+             * copy-constructable and assignable. Also BinaryType class
+             * template should be specialized for both types.
+             *
+             * This class implemented as a reference to an implementation so copying
+             * of this class instance will only create another reference to the same
+             * underlying object. Underlying object released automatically once all
+             * the instances are destructed.
              */
             template<typename K, typename V>
             class QueryCursor
@@ -47,14 +56,19 @@ namespace ignite
             public:
                 /**
                  * Default constructor.
+                 *
+                 * Constructed instance is not valid and thus can not be used
+                 * as a cursor.
                  */
-                QueryCursor() : impl(NULL)
+                QueryCursor() : impl(0)
                 {
                     // No-op.
                 }
 
                 /**
                  * Constructor.
+                 *
+                 * Internal method. Should not be used by user.
                  *
                  * @param impl Implementation.
                  */
@@ -66,7 +80,11 @@ namespace ignite
                 /**
                  * Check whether next entry exists.
                  *
+                 * This method should only be used on the valid instance.
+                 *
                  * @return True if next entry exists.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -81,9 +99,13 @@ namespace ignite
 
                 /**
                  * Check whether next entry exists.
+                 * Properly sets error param in case of failure.
                  *
-                 * @param err Error.
-                 * @return True if next entry exists.
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param err Used to set operation result.
+                 * @return True if next entry exists and operation resulted in
+                 * success. Returns false on failure.
                  */
                 bool HasNext(IgniteError& err)
                 {
@@ -103,7 +125,11 @@ namespace ignite
                 /**
                  * Get next entry.
                  *
+                 * This method should only be used on the valid instance.
+                 *
                  * @return Next entry.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 CacheEntry<K, V> GetNext()
                 {
@@ -118,9 +144,14 @@ namespace ignite
 
                 /**
                  * Get next entry.
+                 * Properly sets error param in case of failure.
                  *
-                 * @param err Error.
-                 * @return Next entry.
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param err Used to set operation result.
+                 * @return Next entry on success and default-constructed
+                 * entry on failure. Default-constructed entry contains
+                 * default-constructed instances of both key and value types.
                  */
                 CacheEntry<K, V> GetNext(IgniteError& err)
                 {
@@ -152,8 +183,12 @@ namespace ignite
 
                 /**
                  * Get all entries.
-                 * 
+                 *
+                 * This method should only be used on the valid instance.
+                 *
                  * @param Vector where query entries will be stored.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 void GetAll(std::vector<CacheEntry<K, V>>& res)
                 {
@@ -166,9 +201,12 @@ namespace ignite
 
                 /**
                  * Get all entries.
+                 * Properly sets error param in case of failure.
+                 *
+                 * This method should only be used on the valid instance.
                  * 
                  * @param Vector where query entries will be stored.
-                 * @param err Error.                 
+                 * @param err Used to set operation result.
                  */
                 void GetAll(std::vector<CacheEntry<K, V>>& res, IgniteError& err)
                 {
@@ -187,9 +225,15 @@ namespace ignite
                 /**
                  * Check if the instance is valid.
                  *
+                 * Invalid instance can be returned if some of the previous
+                 * operations have resulted in a failure. For example invalid
+                 * instance can be returned by not-throwing version of method
+                 * in case of error. Invalid instances also often can be
+                 * created using default constructor.
+                 *
                  * @return True if the instance is valid and can be used.
                  */
-                bool IsValid()
+                bool IsValid() const
                 {
                     return impl.IsValid();
                 }
@@ -202,4 +246,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_CURSOR

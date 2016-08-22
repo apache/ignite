@@ -100,6 +100,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Maximum number of partitions. */
+    public static final int MAX_PARTITIONS_COUNT = 0x4000;
+
     /** Default size of rebalance thread pool. */
     @Deprecated
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
@@ -544,6 +547,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets the near cache configuration to use on all cache nodes.
+     *
      * @param nearCfg Near cache configuration.
      * @return {@code this} for chaining.
      */
@@ -565,6 +570,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets write synchronization mode.
+     * <p>
+     * Default synchronization mode is {@link CacheWriteSynchronizationMode#PRIMARY_SYNC}.
      *
      * @param writeSync Write synchronization mode.
      * @return {@code this} for chaining.
@@ -2292,6 +2299,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
+                if (mtd.isBridge())
+                    continue;
+
                 QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 

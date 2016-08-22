@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Collections;

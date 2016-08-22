@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
@@ -991,10 +990,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 key1 = PrimaryKeyForCache(Cache(1));
             }
 
-            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
-
             // Test zero expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -1889,6 +1886,50 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
+        /// <summary>
+        /// Simple cache lock test (while <see cref="TestLock"/> is ignored).
+        /// </summary>
+        [Test]
+        public void TestLockSimple()
+        {
+            if (!LockingEnabled())
+                return;
+
+            var cache = Cache();
+
+            const int key = 7;
+
+            Action<ICacheLock> checkLock = lck =>
+            {
+                using (lck)
+                {
+                    Assert.Throws<InvalidOperationException>(lck.Exit); // can't exit if not entered
+
+                    lck.Enter();
+
+                    Assert.IsTrue(cache.IsLocalLocked(key, true));
+                    Assert.IsTrue(cache.IsLocalLocked(key, false));
+
+                    lck.Exit();
+
+                    Assert.IsFalse(cache.IsLocalLocked(key, true));
+                    Assert.IsFalse(cache.IsLocalLocked(key, false));
+
+                    Assert.IsTrue(lck.TryEnter());
+
+                    Assert.IsTrue(cache.IsLocalLocked(key, true));
+                    Assert.IsTrue(cache.IsLocalLocked(key, false));
+
+                    lck.Exit();
+                }
+
+                Assert.Throws<ObjectDisposedException>(lck.Enter); // Can't enter disposed lock
+            };
+
+            checkLock(cache.Lock(key));
+            checkLock(cache.LockAll(new[] {key, 1, 2, 3}));
+        }
+
         [Test]
         [Ignore("IGNITE-835")]
         public void TestLock()
@@ -1994,7 +2035,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// ENsure taht lock cannot be obtained by other threads.
+        /// Ensure that lock cannot be obtained by other threads.
         /// </summary>
         /// <param name="getLock">Get lock function.</param>
         /// <param name="sharedLock">Shared lock.</param>
@@ -2375,10 +2416,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 return;
 
             var tx = Transactions.TxStart();
-            
-            Assert.AreEqual(TransactionState.Active, tx.State);
 
-            tx.Rollback();
+            Assert.AreEqual(TransactionState.Active, tx.State);
+            Assert.AreEqual(Thread.CurrentThread.ManagedThreadId, tx.ThreadId);
+
+            tx.AddMeta("myMeta", 42);
+            Assert.AreEqual(42, tx.Meta<int>("myMeta"));
+            Assert.AreEqual(42, tx.RemoveMeta<int>("myMeta"));
+
+            tx.RollbackAsync().Wait();
 
             Assert.AreEqual(TransactionState.RolledBack, tx.State);
 
@@ -2906,7 +2952,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
 
                 if (string.IsNullOrEmpty(containsText))
-                    Assert.AreEqual(ex.InnerException.Message, AddArgCacheEntryProcessor.ExceptionText);
+                    Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
                 else
                     Assert.IsTrue(ex.ToString().Contains(containsText));
             }
@@ -3062,8 +3108,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't get non-existent cache with Cache method
             Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             var cache = GetIgnite(0).CreateCache<int, int>(randomName);
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             cache.Put(1, 10);
 
@@ -3111,14 +3159,30 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = ignite.CreateCache<int, int>(cacheName);
 
             Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             ignite.DestroyCache(cache.Name);
+
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
 
             Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
 
             Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = GetIgnite(0).GetCacheNames();
+            var expectedNames = new[]
+            {
+                "local", "local_atomic", "partitioned", "partitioned_atomic",
+                "partitioned_near", "partitioned_atomic_near", "replicated", "replicated_atomic"
+            };
+
+            Assert.AreEqual(0, expectedNames.Except(cacheNames).Count());
         }
 
 
@@ -3284,7 +3348,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return true;
         }
 
-        protected virtual bool LockingEnabled()
+        protected bool LockingEnabled()
         {
             return TxEnabled();
         }

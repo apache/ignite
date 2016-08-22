@@ -213,9 +213,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                         lsnr = lsnr0;
                     else if (lsnr instanceof ArrayListener)
                         ((ArrayListener)lsnr).add(lsnr0);
-                    else {
+                    else
                         lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
-                    }
 
                     return;
                 }

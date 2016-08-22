@@ -24,18 +24,18 @@ import javax.cache.event.EventType;
 /**
  * A Cache continuous query entry event.
  *
- * @param <K> the type of key
- * @param <V> the type of value
+ * @param <K> The type of key.
+ * @param <V> The type of value.
  */
 public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
     /**
      * Constructs a cache entry event from a given cache as source.
      *
-     * @param source the cache that originated the event
-     * @param eventType Event type.
+     * @param src The cache that originated the event.
+     * @param evtType Event type.
      */
-    public CacheQueryEntryEvent(Cache source, EventType eventType) {
-        super(source, eventType);
+    public CacheQueryEntryEvent(Cache src, EventType evtType) {
+        super(src, evtType);
     }
 
     /**

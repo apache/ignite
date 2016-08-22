@@ -27,7 +27,7 @@
         <discoverySpi type="TcpDiscoverySpi">
             <ipFinder type="TcpDiscoveryStaticIpFinder">
                 <endpoints>
-                    <string>127.0.0.1:47500..47501</string>
+                    <string>127.0.0.1:47500</string>
                 </endpoints>
             </ipFinder>
         </discoverySpi>

@@ -43,17 +43,25 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
+    /** Maximum allowed cursors. */
+    private final int maxCursors;
+
     /** Logger. */
     private final IgniteLogger log;
 
     /**
+     * Constructor.
+     *
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
+     * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock) {
+    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
-        this.log = ctx.log(getClass());
+        this.maxCursors = maxCursors;
+
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -136,7 +144,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /**
      * Connection-related data.
      */
-    private static class ConnectionData {
+    private class ConnectionData {
         /** Request handler. */
         private final OdbcRequestHandler handler;
 
@@ -148,7 +156,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
          * @param busyLock Shutdown busy lock.
          */
         public ConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock) {
-            handler = new OdbcRequestHandler(ctx, busyLock);
+            handler = new OdbcRequestHandler(ctx, busyLock, maxCursors);
             parser = new OdbcMessageParser(ctx);
         }
 

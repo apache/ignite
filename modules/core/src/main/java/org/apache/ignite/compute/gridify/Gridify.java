@@ -92,7 +92,7 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  *        }));
  *    }
  *
- *    public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *    public Integer reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *        return results.size() - 1 + F.sum(F.&lt;Integer&gt;jobResults(results));
  *    }
  * }

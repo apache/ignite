@@ -161,11 +161,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public int available() {
-        return cnt.get();
-    }
-
-    /** {@inheritDoc} */
     @Override public R next() {
         try {
             R next = unmaskNull(internalIterator().next());
@@ -568,6 +563,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         catch (IgniteCheckedException e) {
             onDone(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cancel();
     }
 
     /** {@inheritDoc} */

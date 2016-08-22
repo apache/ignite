@@ -61,6 +61,7 @@ public class PlatformStartIgniteTask extends ComputeTaskAdapter<String, String> 
 
         /**
          * Ctor.
+         *
          * @param springConfig Config.
          */
         private PlatformStartIgniteJob(String springConfig) {

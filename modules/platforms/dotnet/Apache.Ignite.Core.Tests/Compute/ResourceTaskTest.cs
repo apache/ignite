@@ -50,7 +50,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new InjectionTask(), 0);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(GetServerCount(), res);
+        }
+
+        /// <summary>
+        /// Test Ignite injection into the task.
+        /// </summary>
+        [Test]
+        public void TestTaskInjectionBinarizable()
+        {
+            int res = Grid1.GetCompute().Execute(new InjectionTaskBinarizable(), 0);
+
+            Assert.AreEqual(GetServerCount(), res);
         }
 
         /// <summary>
@@ -61,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var res = Grid1.GetCompute().Broadcast(new InjectionClosure(), 1);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res.Sum());
+            Assert.AreEqual(GetServerCount(), res.Sum());
         }
 
         /// <summary>
@@ -72,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(3, res);
         }
 
         /// <summary>
@@ -83,7 +94,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(GetServerCount(), res);
+        }
+
+        /** <inheritdoc /> */
+        protected override ICollection<Type> GetBinaryTypes()
+        {
+            return new[] {typeof(InjectionJobBinarizable)};
         }
 
         /// <summary>
@@ -110,6 +127,40 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 return results.Sum(res => res.Data);
             }
+        }
+
+        /// <summary>
+        /// Injection task.
+        /// </summary>
+        private class InjectionTaskBinarizable : Injectee, IComputeTask<object, int, int>
+        {
+            /** <inheritDoc /> */
+            public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
+            {
+                CheckInjection();
+
+                return subgrid.ToDictionary(x => (IComputeJob<int>) new InjectionJobBinarizable(), x => x);
+            }
+
+            /** <inheritDoc /> */
+            public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
+            {
+                return ComputeJobResultPolicy.Wait;
+            }
+
+            /** <inheritDoc /> */
+            public int Reduce(IList<IComputeJobResult<int>> results)
+            {
+                return results.Sum(res => res.Data);
+            }
+        }
+
+        /// <summary>
+        /// Binarizable job.
+        /// </summary>
+        public class InjectionJobBinarizable : InjectionJob
+        {
+            // No-op.
         }
 
         /// <summary>

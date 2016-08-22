@@ -31,6 +31,10 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  * {@link Factory} implementation for {@link CacheJdbcPojoStore}.
  *
  * Use this factory to pass {@link CacheJdbcPojoStore} to {@link CacheConfiguration}.
+ * <p>
+ * Please note, that {@link CacheJdbcPojoStoreFactory#setDataSource(DataSource)} is deprecated and
+ * {@link CacheJdbcPojoStoreFactory#setDataSourceFactory(Factory)} or
+ * {@link CacheJdbcPojoStoreFactory#setDataSourceBean(String)} should be used instead.
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml">
@@ -127,11 +131,17 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     /** Hash calculator.  */
     private JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
 
+    /** Types transformer.  */
+    private JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
+
     /** Types that store could process. */
     private JdbcType[] types;
 
     /** Data source. */
     private transient DataSource dataSrc;
+
+    /** Data source factory. */
+    private Factory<DataSource> dataSrcFactory;
 
     /** Application context. */
     @SpringApplicationContextResource
@@ -147,29 +157,31 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
         store.setMaximumWriteAttempts(maxWriteAttempts);
         store.setParallelLoadCacheMinimumThreshold(parallelLoadCacheMinThreshold);
         store.setTypes(types);
+        store.setHasher(hasher);
+        store.setTransformer(transformer);
 
         if (dataSrc != null)
             store.setDataSource(dataSrc);
-        else {
-            if (dataSrcBean != null) {
-                if (appCtx == null)
-                    throw new IgniteException("Spring application context resource is not injected.");
+        else if (dataSrcBean != null) {
+            if (appCtx == null)
+                throw new IgniteException("Spring application context resource is not injected.");
 
-                IgniteSpringHelper spring;
+            IgniteSpringHelper spring;
 
-                try {
-                    spring = IgniteComponentType.SPRING.create(false);
+            try {
+                spring = IgniteComponentType.SPRING.create(false);
 
-                    DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
+                DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
 
-                    store.setDataSource(data);
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                        ", igniteConfig=" + appCtx + ']', e);
-                }
+                store.setDataSource(data);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
+                    ", igniteConfig=" + appCtx + ']', e);
             }
         }
+        else if (dataSrcFactory != null)
+            store.setDataSource(dataSrcFactory.create());
 
         return store;
     }
@@ -181,6 +193,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      * @see CacheJdbcPojoStore#setDataSource(DataSource)
      */
+    @Deprecated
     public CacheJdbcPojoStoreFactory<K, V> setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
 
@@ -351,6 +364,50 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      */
     public CacheJdbcPojoStoreFactory setHasher(JdbcTypeHasher hasher) {
         this.hasher = hasher;
+
+        return this;
+    }
+
+    /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
+
+        return this;
+    }
+
+    /**
+     * Gets factory for underlying datasource.
+     *
+     * @return Cache store factory.
+     */
+    @SuppressWarnings("unchecked")
+    public Factory<DataSource> getDataSourceFactory() {
+        return dataSrcFactory;
+    }
+
+    /**
+     * Sets factory for underlying datasource.
+
+     * @param dataSrcFactory Datasource factory.
+     * @return {@code this} for chaining.
+     */
+    @SuppressWarnings("unchecked")
+    public CacheJdbcPojoStoreFactory<K, V> setDataSourceFactory(Factory<DataSource> dataSrcFactory) {
+        this.dataSrcFactory = dataSrcFactory;
 
         return this;
     }

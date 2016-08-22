@@ -484,7 +484,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        // Will clean and re-create marshaller directory from scratch.
+        U.resolveWorkDirectory("marshaller", true);
     }
 
     /**
@@ -774,7 +775,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", marshaller=" + nodeCfg.getMarshaller()
-                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration() + "]");
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 
                 return node;
             }
@@ -1523,10 +1525,18 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
+     * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
+     */
+    protected boolean isFirstGrid(String gridName) {
+        return "0".equals(gridName.substring(getTestGridName().length()));
+    }
+
+    /**
+     * @param gridName Grid name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
     protected boolean isRemoteJvm(String gridName) {
-        return isMultiJvm() && !"0".equals(gridName.substring(getTestGridName().length()));
+        return isMultiJvm() && !isFirstGrid(gridName);
     }
 
     /**

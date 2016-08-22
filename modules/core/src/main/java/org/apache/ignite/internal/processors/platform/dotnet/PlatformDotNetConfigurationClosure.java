@@ -24,12 +24,14 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 
@@ -87,7 +90,15 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr);
+        PlatformLogger userLogger = null;
+
+        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
+            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
+            userLogger.setGateway(gate);
+        }
+
+        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
+            userLogger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -180,6 +191,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
+                // Write .NET beans
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
                 writer.writeInt(beans.size());
@@ -187,6 +199,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 for (PlatformDotNetLifecycleBean bean : beans) {
                     writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
+                }
+
+                // Write .NET affinity funcs
+                List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
+
+                writer.writeInt(affFuncs.size());
+
+                for (PlatformDotNetAffinityFunction func : affFuncs) {
+                    writer.writeString(func.getTypeName());
+                    writer.writeMap(func.getProperties());
                 }
 
                 out.synchronize();
@@ -209,6 +231,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
 
+        // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
 
@@ -240,6 +263,14 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 cfg.setLifecycleBeans(mergedBeans);
             }
         }
+
+        // Process affinity functions
+        List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
+
+        if (!affFuncs.isEmpty()) {
+            for (PlatformDotNetAffinityFunction aff : affFuncs)
+                aff.init(PlatformConfigurationUtils.readAffinityFunction(in));
+        }
     }
 
     /**
@@ -255,6 +286,27 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             for (LifecycleBean bean : cfg.getLifecycleBeans()) {
                 if (bean instanceof PlatformDotNetLifecycleBean)
                     res.add((PlatformDotNetLifecycleBean)bean);
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Find .NET affinity functions in configuration.
+     *
+     * @param cfg Configuration.
+     * @return affinity functions.
+     */
+    private static List<PlatformDotNetAffinityFunction> affinityFunctions(IgniteConfiguration cfg) {
+        List<PlatformDotNetAffinityFunction> res = new ArrayList<>();
+
+        CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
+
+        if (cacheCfg != null) {
+            for (CacheConfiguration ccfg : cacheCfg) {
+                if (ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction)
+                    res.add((PlatformDotNetAffinityFunction)ccfg.getAffinity());
             }
         }
 

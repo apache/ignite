@@ -137,6 +137,42 @@ BOOST_AUTO_TEST_CASE(TestGuid)
     BOOST_REQUIRE(readVal.GetLeastSignificantBits() == writeVal.GetLeastSignificantBits());    
 }
 
+BOOST_AUTO_TEST_CASE(TestDate)
+{
+    Date writeVal = Date(42);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writeSes(&out, NULL);
+    writeSes.WriteTopObject<Date>(writeVal);
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    Date readVal = reader.ReadTopObject<Date>();
+
+    BOOST_REQUIRE(readVal == writeVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimestamp)
+{
+    Timestamp writeVal = Timestamp(77);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writeSes(&out, NULL);
+    writeSes.WriteTopObject<Timestamp>(writeVal);
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    Timestamp readVal = reader.ReadTopObject<Timestamp>();
+
+    BOOST_REQUIRE(readVal == writeVal);
+}
+
 BOOST_AUTO_TEST_CASE(TestString)
 {
     std::string writeVal = "MyString";

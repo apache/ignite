@@ -616,7 +616,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp, 0);
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
@@ -1062,7 +1062,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 try {
                     if (ack) {
                         synchronized (mux) {
-                            assert unackedMsg == null : unackedMsg;
+                            assert unackedMsg == null : "Unacked=" + unackedMsg + ", received=" + msg;
 
                             unackedMsg = msg;
                         }
@@ -2018,15 +2018,19 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<Integer, CacheMetrics> cacheMetrics,
             long tstamp)
         {
+            boolean isLocDaemon = spi.locNode.isDaemon();
+
             assert nodeId != null;
             assert metrics != null;
-            assert cacheMetrics != null;
+            assert isLocDaemon || cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
-                node.setCacheMetrics(cacheMetrics);
+
+                if (!isLocDaemon)
+                    node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTime(tstamp);
 

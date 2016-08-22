@@ -101,7 +101,7 @@ public class GridH2String extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2String.class);
     }
 
     /** {@inheritDoc} */
@@ -112,5 +112,10 @@ public class GridH2String extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return x;
     }
 }

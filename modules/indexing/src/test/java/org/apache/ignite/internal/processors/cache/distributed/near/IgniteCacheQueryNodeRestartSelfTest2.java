@@ -238,6 +238,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                             assertEquals(pRes, cache.query(qry).getAll());
                         }
                         catch (CacheException e) {
+                            if (!smallPageSize)
+                                e.printStackTrace();
+
                             assertTrue("On large page size must retry.", smallPageSize);
 
                             boolean failedOnRemoteFetch = false;

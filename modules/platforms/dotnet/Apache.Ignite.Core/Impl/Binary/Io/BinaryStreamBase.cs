@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Base class for managed and unmanaged data streams.
     /// </summary>
-    internal unsafe abstract class BinaryStreamBase : IBinaryStream
+    internal abstract unsafe class BinaryStreamBase : IBinaryStream
     {
         /** Byte: zero. */
         private const byte ByteZero = 0;
@@ -959,20 +959,6 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         public abstract int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding);
 
         /// <summary>
-        /// Internal string write routine.
-        /// </summary>
-        /// <param name="chars">Chars.</param>
-        /// <param name="charCnt">Chars count.</param>
-        /// <param name="byteCnt">Bytes count.</param>
-        /// <param name="enc">Encoding.</param>
-        /// <param name="data">Data.</param>
-        /// <returns>Amount of bytes written.</returns>
-        protected static int WriteString0(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
-        {
-            return enc.GetBytes(chars, charCnt, data, byteCnt);
-        }
-
-        /// <summary>
         /// Write arbitrary data.
         /// </summary>
         /// <param name="src">Source array.</param>
@@ -1084,13 +1070,10 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <returns>
         ///   <c>True</c> if they are same.
         /// </returns>
-        public virtual bool IsSameArray(byte[] arr)
-        {
-            return false;
-        }
-
+        public abstract bool IsSameArray(byte[] arr);
+        
         /// <summary>
-        /// Seek to the given positoin.
+        /// Seek to the given position.
         /// </summary>
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>

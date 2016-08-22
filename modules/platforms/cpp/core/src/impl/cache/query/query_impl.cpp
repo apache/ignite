@@ -19,7 +19,8 @@
 #include "ignite/impl/cache/query/query_fields_row_impl.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
+using namespace ignite::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 

@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *      Upon request to execute a grid task with given task name system will find
  *      deployed task with given name. Task needs to be deployed prior to execution
  *      (see {@link org.apache.ignite.IgniteCompute#localDeployTask(Class, ClassLoader)} method), however if task does not specify
- *      its name explicitly via {@link ComputeTaskName @GridComputeTaskName} annotation, it
+ *      its name explicitly via {@link ComputeTaskName @ComputeTaskName} annotation, it
  *      will be auto-deployed first time it gets executed.
  * </li>
  * <li>
@@ -62,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  *      on the remote node (immediately, buffered or canceled).
  * </li>
  * <li>
- *      Once job execution results become available method {@link #result(ComputeJobResult, List) result(GridComputeJobResult, List)}
+ *      Once job execution results become available method {@link #result(ComputeJobResult, List) result(ComputeJobResult, List)}
  *      will be called for each received job result. The policy returned by this method will
  *      determine the way task reacts to every job result:
  *      <ul>
@@ -80,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  *          If {@link ComputeJobResultPolicy#FAILOVER} policy is returned, then job will
  *          be failed over to another node for execution. The node to which job will get
  *          failed over is decided by {@link org.apache.ignite.spi.failover.FailoverSpi} SPI implementation.
- *          Note that if you use {@link ComputeTaskAdapter} adapter for {@code GridComputeTask}
+ *          Note that if you use {@link ComputeTaskAdapter} adapter for {@code ComputeTask}
  *          implementation, then it will automatically fail jobs to another node for 2
  *          known failure cases:
  *          <ul>
@@ -99,7 +99,7 @@ import org.jetbrains.annotations.Nullable;
  *      </ul>
  * </li>
  * <li>
- *      Once all results are received or {@link #result(ComputeJobResult, List) result(GridComputeJobResult, List)}
+ *      Once all results are received or {@link #result(ComputeJobResult, List) result(ComputeJobResult, List)}
  *      method returned {@link ComputeJobResultPolicy#REDUCE} policy, method {@link #reduce(List) reduce(List)}
  *      is called to aggregate received results into one final result. Once this method is finished the
  *      execution of the grid task is complete. This result will be returned to the user through
@@ -113,12 +113,12 @@ import org.jetbrains.annotations.Nullable;
  * use {@link ComputeTaskContinuousMapper} to continuously stream jobs from task even after {@code map(...)}
  * step is complete. Usually with continuous mapper the number of jobs within task
  * may grow too large - in this case it may make sense to use it in combination with
- * {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation.
+ * {@link ComputeTaskNoResultCache @ComputeTaskNoResultCache} annotation.
  * <p>
  * <h1 class="header">Task Result Caching</h1>
  * Sometimes job results are too large or task simply has too many jobs to keep track
  * of which may hinder performance. In such cases it may make sense to disable task
- * result caching by attaching {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
+ * result caching by attaching {@link ComputeTaskNoResultCache @ComputeTaskNoResultCache} annotation to task class, and
  * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
  * When Ignite sees this annotation it will disable tracking of job results and
  * list of all job results passed into {@link #result(ComputeJobResult, List)} or
@@ -140,7 +140,7 @@ import org.jetbrains.annotations.Nullable;
  * Refer to corresponding resource documentation for more information.
  * <p>
  * <h1 class="header">Grid Task Adapters</h1>
- * {@code GridComputeTask} comes with several convenience adapters to make the usage easier:
+ * {@code ComputeTask} comes with several convenience adapters to make the usage easier:
  * <ul>
  * <li>
  * {@link ComputeTaskAdapter} provides default implementation for {@link ComputeTask#result(ComputeJobResult, List)}
@@ -149,14 +149,14 @@ import org.jetbrains.annotations.Nullable;
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
  * Here is an example of how a you would implement your task using {@link ComputeTaskAdapter}:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
- *         Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
+ *     public Map&lt;? extends ComputeJob, ClusterNode&gt; map(List&lt;ClusterNode&gt; subgrid, String arg) throws IgniteCheckedException {
+ *         Map&lt;MyFooBarJob, ClusterNode&gt; jobs = new HashMap&lt;MyFooBarJob, ClusterNode&gt;(subgrid.size());
  *
  *         // In more complex cases, you can actually do
  *         // more complicated assignments of jobs to nodes.
@@ -192,7 +192,7 @@ import org.jetbrains.annotations.Nullable;
  * method for splitting task into sub-jobs in homogeneous environments.
  * Here is an example of how you would implement your task using {@link ComputeTaskSplitAdapter}:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
@@ -207,13 +207,13 @@ import org.jetbrains.annotations.Nullable;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
  *         StringBuilder buf = new StringBuilder();
  *
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             // Append string representation of result
  *             // returned by every job.
  *             buf.append(res.getData().string());

@@ -17,26 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
-import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadLifecycleAbstractTest;
-import org.apache.ignite.internal.processors.cache.query.CacheQuery;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -167,40 +158,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         }
     }
 
-
-    /**
-     * @param keys Keys.
-     * @throws Exception If failed.
-     */
-    public void checkScanQuery(Object[] keys) throws Exception {
-        preloadMode = SYNC;
-
-        lifecycleBean = lifecycleBean(keys);
-
-        for (int i = 0; i < gridCnt; i++) {
-            startGrid(i);
-
-            info("Checking '" + (i + 1) + "' nodes...");
-
-            for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
-
-                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.context().queries().createScanQuery(null, null, false);
-
-                final int i0 = j;
-                final int j0 = i;
-
-                qry = qry.projection(grid(j).cluster());
-
-                int totalCnt = F.sumInt(qry.execute(new EntryReducer(j0, i0)).get());
-
-                info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
-
-                assertEquals(keys.length * (i + 1) / 2, totalCnt);
-            }
-        }
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -227,92 +184,5 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
      */
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery1() throws Exception {
-        checkScanQuery(keys(true, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery2() throws Exception {
-        checkScanQuery(keys(false, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery3() throws Exception {
-        checkScanQuery(keys(true, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery4() throws Exception {
-        checkScanQuery(keys(false, 500));
-    }
-
-    private static class EntryReducer implements IgniteReducer<Map.Entry<Object, MyValue>, Integer> {
-        /** */
-        private final int j0;
-
-        /** */
-        private final int i0;
-
-        /** */
-        @IgniteInstanceResource
-        private Ignite grid;
-
-        /** */
-        @LoggerResource
-        private IgniteLogger log0;
-
-        /** */
-        private int cnt;
-
-        /**
-         */
-        public EntryReducer(int j0, int i0) {
-            this.j0 = j0;
-            this.i0 = i0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-            if (!quiet && log0.isInfoEnabled())
-                log0.info("Collecting entry: " + e);
-
-            Object key = e.getKey();
-
-            assertNotNull(e.getValue());
-
-            try {
-                Object v1 = e.getValue();
-                Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
-
-                assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 + ", missedKey=" +
-                    key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
-                assertEquals(v1, v2);
-            }
-            catch (IgniteCheckedException e1) {
-                e1.printStackTrace();
-
-                assert false;
-            }
-
-            cnt++;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer reduce() {
-            return cnt;
-        }
     }
 }

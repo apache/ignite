@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -55,6 +56,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import java.math.BigDecimal;
 import java.security.Timestamp;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -573,6 +575,31 @@ public class PlatformUtils {
     }
 
     /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+
+        writer.writeObjectDetached(ex.getMessage());
+
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+
+            writer.writeObjectDetached(nativeCause.cause());
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
      * Writer error data.
      *
      * @param err Error.
@@ -730,6 +757,7 @@ public class PlatformUtils {
                 writer.writeBoolean(false);
                 writer.writeString(err.getClass().getName());
                 writer.writeString(err.getMessage());
+                writer.writeString(X.getFullStackTrace(err));
             }
             else {
                 writer.writeBoolean(true);
@@ -919,6 +947,84 @@ public class PlatformUtils {
 
         return map0;
     }
+    /**
+     * Create Java object.
+     *
+     * @param clsName Class name.
+     * @return Instance.
+     */
+    public static <T> T createJavaObject(String clsName) {
+        if (clsName == null)
+            throw new IgniteException("Java object/factory class name is not set.");
+
+        Class cls = U.classForName(clsName, null);
+
+        if (cls == null)
+            throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +
+                clsName);
+
+        try {
+            return (T)cls.newInstance();
+        }
+        catch (ReflectiveOperationException e) {
+            throw new IgniteException("Failed to instantiate Java object/factory class (does it have public " +
+                "default constructor?): " + clsName, e);
+        }
+    }
+
+    /**
+     * Initialize Java object or object factory.
+     *
+     * @param obj Object.
+     * @param clsName Class name.
+     * @param props Properties (optional).
+     * @param ctx Kernal context (optional).
+     */
+    public static void initializeJavaObject(Object obj, String clsName, @Nullable Map<String, Object> props,
+        @Nullable GridKernalContext ctx) {
+        if (props != null) {
+            for (Map.Entry<String, Object> prop : props.entrySet()) {
+                String fieldName = prop.getKey();
+
+                if (fieldName == null)
+                    throw new IgniteException("Java object/factory field name cannot be null: " + clsName);
+
+                Field field = U.findField(obj.getClass(), fieldName);
+
+                if (field == null)
+                    throw new IgniteException("Java object/factory class field is not found [" +
+                        "className=" + clsName + ", fieldName=" + fieldName + ']');
+
+                try {
+                    field.set(obj, prop.getValue());
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
+                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                }
+            }
+        }
+
+        if (ctx != null) {
+            try {
+                ctx.resource().injectGeneric(obj);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
+            }
+        }
+    }
+
+    /**
+     * Gets the entire nested stack-trace of an throwable.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        return X.getFullStackTrace(throwable);
+    }
+
     /**
      * Private constructor.
      */

@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
@@ -25,10 +26,13 @@ import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
-import org.apache.ignite.spring.GridSpringCacheManagerSelfTest;
+import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
+import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
+import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
+import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 
 /**
  * Spring tests.
@@ -42,6 +46,7 @@ public class IgniteSpringTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Spring Test Suite");
 
         suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
+        suite.addTestSuite(IgniteSpringBeanTest.class);
         suite.addTestSuite(GridFactorySelfTest.class);
 
         suite.addTest(IgniteResourceSelfTestSuite.suite());
@@ -64,6 +69,11 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
 
         suite.addTest(new TestSuite(GridSpringTransactionManagerSelfTest.class));
+
+        suite.addTestSuite(GridServiceInjectionSpringResourceTest.class);
+
+        suite.addTestSuite(SpringCacheManagerContextInjectionTest.class);
+        suite.addTestSuite(SpringTransactionManagerContextInjectionTest.class);
 
         return suite;
     }

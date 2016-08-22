@@ -18,15 +18,21 @@
 #include "ignite/impl/ignite_impl.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 
 namespace ignite
 {    
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) : env(env), javaRef(javaRef)
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+            env(env),
+            javaRef(javaRef)
         {
-            // No-op.
+            IgniteError err;
+
+            txImpl = InternalGetTransactions(err);
+
+            IgniteError::ThrowIfNeeded(err);
         }
 
         IgniteImpl::~IgniteImpl()
@@ -43,5 +49,21 @@ namespace ignite
         {
             return env.Get()->Context();
         }
-    }    
+
+        IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
+        {
+            IgniteImpl::SP_TransactionsImpl res;
+
+            ignite::jni::java::JniErrorInfo jniErr;
+
+            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+
+            if (txJavaRef)
+                res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
+            else
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+            return res;
+        }
+    }
 }

@@ -81,6 +81,8 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
 
+            igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
+
             IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
             endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
@@ -99,6 +101,8 @@ public class IgfsEventsTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
+
+            igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
 
             IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -223,6 +227,8 @@ public class IgfsEventsTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
+
+            igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
 
             igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
                 "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",

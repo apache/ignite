@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSystemProperties;
@@ -64,6 +65,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Semaphore name. */
     private static final String TEST_SEMAPHORE_NAME = "test-semaphore";
 
+    /** Reentrant lock name. */
+    private static final String TEST_REENTRANT_LOCK_NAME = "test-reentrant-lock";
+
     /** */
     private static final CollectionConfiguration colCfg = new CollectionConfiguration();
 
@@ -96,6 +100,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
     /** */
     private static final boolean SEMAPHORE = true;
+
+    /** */
+    private static final boolean REENTRANTLOCK = true;
 
     /** */
     private GridCacheDataStructuresLoadTest() {
@@ -347,6 +354,44 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             }
         };
 
+
+    /** Reentrant lock read closure. */
+    private final CIX1<Ignite> reentrantLockReadClos =
+        new CIX1<Ignite>() {
+            @Override public void applyx(Ignite ignite) {
+                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, false, true);
+
+                for (int i = 0; i < operationsPerTx; i++) {
+                    r.isLocked();
+
+                    long cnt = reads.incrementAndGet();
+
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
+            }
+        };
+
+    /** Reentrant lock write closure. */
+    private final CIX1<Ignite> reentrantLockWriteClos =
+        new CIX1<Ignite>() {
+            @Override public void applyx(Ignite ignite) {
+                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, false, true);
+
+                for (int i = 0; i < operationsPerTx; i++) {
+                    if ((i % 2) == 0)
+                        r.lock();
+                    else
+                        r.unlock();
+
+                    long cnt = writes.incrementAndGet();
+
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
+            }
+        };
+
     /**
      * @param args Arguments.
      * @throws IgniteCheckedException In case of error.
@@ -416,6 +461,14 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
                 info("Testing semaphore...");
 
                 test.loadTestIgnite(test.semaphoreWriteClos, test.semaphoreReadClos);
+            }
+
+            System.gc();
+
+            if (REENTRANTLOCK) {
+                info("Testing reentrant lock...");
+
+                test.loadTestIgnite(test.reentrantLockWriteClos, test.reentrantLockReadClos);
             }
         }
     }

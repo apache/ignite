@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -212,8 +213,10 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * Gracefully shut down the Grid.
+     *
      * @param gridName Grid name.
-     * @param cancel Cacnel flag.
+     * @param cancel If {@code true} then all jobs currently will be cancelled.
      */
     public static void stop(String gridName, boolean cancel) {
         IgniteProcessProxy proxy = gridProxies.get(gridName);
@@ -223,6 +226,26 @@ public class IgniteProcessProxy implements IgniteEx {
 
             gridProxies.remove(gridName, proxy);
         }
+    }
+
+    /**
+     * Forcefully shut down the Grid.
+     *
+     * @param gridName Grid name.
+     */
+    public static void kill(String gridName) {
+        IgniteProcessProxy proxy = gridProxies.get(gridName);
+
+        A.notNull(gridName, "gridName");
+
+        try {
+            proxy.getProcess().kill();
+        }
+        catch (Exception e) {
+            U.error(proxy.log, "Exception while killing " + gridName, e);
+        }
+
+        gridProxies.remove(gridName, proxy);
     }
 
     /**
@@ -541,6 +564,12 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe,
         boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLock reentrantLock(String name, boolean failoverSafe,
+        boolean fair, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

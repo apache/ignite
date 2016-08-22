@@ -64,6 +64,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -83,6 +84,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.managers.GridManager;
@@ -113,6 +115,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
@@ -167,6 +170,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -176,6 +180,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -191,6 +196,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -203,6 +209,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -295,6 +302,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
+
+    /** */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
     /** Indicate error on grid stop. */
     @GridToStringExclude
@@ -666,6 +677,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
         throws IgniteCheckedException
     {
@@ -770,6 +782,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc,
+                callbackExecSvc,
                 plugins);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -868,9 +881,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
+            startProcessor((GridProcessor)createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
@@ -1090,6 +1101,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
+        final long longOpDumpTimeout =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+
+        if (longOpDumpTimeout > 0) {
+            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
+                @Override public void run() {
+                    GridKernalContext ctx = IgniteKernal.this.ctx;
+
+                    if (ctx != null)
+                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                }
+            }, longOpDumpTimeout, longOpDumpTimeout);
+        }
+
         ctx.performance().logSuggestions(log, gridName);
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
@@ -1098,6 +1123,54 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
+    }
+
+    /**
+     * Create Hadoop component.
+     *
+     * @return Non-null Hadoop component: workable or no-op.
+     * @throws IgniteCheckedException If the component is mandatory and cannot be initialized.
+     */
+    private HadoopProcessorAdapter createHadoopComponent() throws IgniteCheckedException {
+        boolean mandatory = cfg.getHadoopConfiguration() != null;
+
+        if (mandatory) {
+            if (cfg.isPeerClassLoadingEnabled())
+                throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
+                    "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
+
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+
+            res.validateEnvironment();
+
+            return res;
+        }
+        else {
+            HadoopProcessorAdapter cmp = null;
+
+            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+                U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
+                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
+                    "to use Hadoop module).");
+            }
+            else {
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+
+                try {
+                    cmp.validateEnvironment();
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+
+                    cmp = null;
+                }
+            }
+
+            if (cmp == null)
+                cmp = IgniteComponentType.HADOOP.create(ctx, true);
+
+            return cmp;
+        }
     }
 
     /**
@@ -1265,11 +1338,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
+        add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
         if (cfg.getMarshaller() instanceof BinaryMarshaller) {
             add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
                 BinaryConfiguration.DFLT_COMPACT_FOOTER :
                 cfg.getBinaryConfiguration().isCompactFooter());
+
+            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
         }
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
@@ -1851,6 +1929,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (metricsLogTask != null)
                 metricsLogTask.close();
 
+            if (longOpDumpTask != null)
+                longOpDumpTask.close();
+
             boolean interrupted = false;
 
             while (true) {
@@ -1869,11 +1950,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                GridCacheProcessor cache = ctx.cache();
-
-                if (cache != null)
-                    cache.blockGateways();
-
                 assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
@@ -1887,6 +1963,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            // Stopping cache operations.
+            GridCacheProcessor cache = ctx.cache();
+
+            if (cache != null)
+                cache.blockGateways();
 
             // Unregister MBeans.
             if (!(
@@ -2996,6 +3078,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteLock reentrantLock(
+        String name,
+        boolean failoverSafe,
+        boolean fair,
+        boolean create
+    ) {
+        guard();
+
+        try {
+            return ctx.dataStructures().reentrantLock(name, failoverSafe, fair, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
