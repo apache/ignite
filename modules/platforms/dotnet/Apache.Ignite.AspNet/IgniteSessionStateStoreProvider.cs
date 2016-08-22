@@ -261,6 +261,7 @@ namespace Apache.Ignite.AspNet
         public override void ResetItemTimeout(HttpContext context, string id)
         {
             // No-op.
+
             // This is not necessary since ResetItemTimeout is called right after SetAndReleaseItemExclusive,
             // which itself resets the timeout when the item is inserted into cache.
         }
