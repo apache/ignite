@@ -59,7 +59,7 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType(), true);
 
             _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
 

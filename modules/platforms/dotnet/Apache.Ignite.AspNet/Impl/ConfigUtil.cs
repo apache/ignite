@@ -24,6 +24,7 @@ namespace Apache.Ignite.AspNet.Impl
     using System.Globalization;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Log;
 
@@ -44,7 +45,8 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Initializes the cache from configuration.
         /// </summary>
-        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType)
+        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType,
+            bool forceTransactional = false)
         {
             Debug.Assert(config != null);
             Debug.Assert(callerType != null);
@@ -61,7 +63,18 @@ namespace Apache.Ignite.AspNet.Impl
 
                 grid.Logger.Info("Initializing {0} with cache '{1}'", callerType, cacheName);
 
-                return grid.GetOrCreateCache<TK, TV>(cacheName);
+                var cacheConfiguration = new CacheConfiguration(cacheName);
+
+                if (forceTransactional)
+                    cacheConfiguration.AtomicityMode = CacheAtomicityMode.Transactional;
+
+                var cache = grid.GetOrCreateCache<TK, TV>(cacheConfiguration);
+
+                if (cache.GetConfiguration().AtomicityMode != CacheAtomicityMode.Transactional)
+                    throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                        "Failed to initialize {0}: CacheAtomicityMode.Transactional mode is required.", callerType));
+
+                return cache;
             }
             catch (Exception ex)
             {
