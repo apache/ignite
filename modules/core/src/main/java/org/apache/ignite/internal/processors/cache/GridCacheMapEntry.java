@@ -744,8 +744,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // If version matched, set value.
                 if (startVer.equals(ver)) {
-                    CacheObject old = this.val;
-
                     long expTime = CU.toExpireTime(ttl);
 
                     // Detach value before index update.
@@ -759,7 +757,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             deletedUnlocked(false);
                     }
                     else {
-                        removeValue(old, ver);
+                        removeValue();
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
                             deletedUnlocked(true);
@@ -1069,10 +1067,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            if (old == null)
-                old = saveValueForIndexUnlocked();
-
-            removeValue(old, ver);
+            removeValue();
 
             update(null, 0, 0, newVer, true);
 
@@ -1290,7 +1285,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (old != null)
                     storeValue(old, expireTime, ver);
                 else
-                    removeValue(null, ver);
+                    removeValue();
 
                 update(old, expireTime, ttl, ver, true);
             }
@@ -1465,10 +1460,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().remove(null, key);
 
-                if (old == null)
-                    old = saveValueForIndexUnlocked();
-
-                removeValue(old, this.ver);
+                removeValue();
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
 
@@ -2118,9 +2110,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().remove(null, key);
 
-                if (oldVal == null)
-                    oldVal = saveValueForIndexUnlocked();
-
                 updateCntr0 = nextPartCounter(topVer);
 
                 if (updateCntr != null)
@@ -2128,7 +2117,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 logUpdate(op, null, newVer, updateCntr0);
 
-                removeValue(oldVal, ver);
+                removeValue();
 
                 if (hadVal) {
                     assert !deletedUnlocked();
@@ -2367,8 +2356,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (obsolete())
                 return false;
 
-            CacheObject val = saveValueForIndexUnlocked();
-
             try {
                 if ((!hasReaders() || readers)) {
                     // markObsolete will clear the value.
@@ -2400,7 +2387,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     ", val=" + val + ']');
             }
 
-            removeValue(val, ver);
+            removeValue();
         }
 
         onMarkedObsolete();
@@ -2587,13 +2574,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert newVer != null;
 
         if (curVer == null || ver.equals(curVer)) {
-            CacheObject val = saveValueForIndexUnlocked();
-
             value(null);
 
             ver = newVer;
 
-            removeValue(val, ver);
+            removeValue();
 
             onInvalidate();
         }
@@ -2858,7 +2843,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long delta = expireTime - U.currentTimeMillis();
 
             if (delta <= 0) {
-                removeValue(saveValueForIndexUnlocked(), ver);
+                removeValue();
 
                 return true;
             }
@@ -3362,7 +3347,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             log.trace("onExpired clear [key=" + key +
                 ", entry=" + System.identityHashCode(this) + ']');
 
-        removeValue(expiredVal, ver);
+        removeValue();
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),
@@ -3506,7 +3491,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr)
         throws IgniteCheckedException {
-        // We log individual updates only in ATMOIC cache.
+        // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
 
         try {
@@ -3530,47 +3515,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Removes value from offheap.
      *
-     * @param prevVal Previous value (if needed for index update).
      * @throws IgniteCheckedException If failed.
      */
-    protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
+    protected void removeValue() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
-    }
-
-    /**
-     * This method will return current value only if clearIndex(V) will require previous value.
-     * If previous value is not required, this method will return {@code null}.
-     *
-     * @return Previous value or {@code null}.
-     * @throws IgniteCheckedException If failed to retrieve previous value.
-     */
-    protected final CacheObject saveValueForIndexUnlocked() throws IgniteCheckedException {
-        return saveOldValueUnlocked(true);
-    }
-
-    /**
-     * @param qryOnly If {@code true} reads old value only if query indexing is enabled.
-     * @return Previous value or {@code null}.
-     * @throws IgniteCheckedException If failed to retrieve previous value.
-     */
-    private CacheObject saveOldValueUnlocked(boolean qryOnly) throws IgniteCheckedException {
-        assert Thread.holdsLock(this);
-
-        if (qryOnly && !cctx.queries().enabled())
-            return null;
-
-        CacheObject val = this.val;
-
-        if (val == null && isStartVersion()) {
-            CacheDataRow row = detached() || isNear() ? null : cctx.offheap().read(this);
-
-            if (row != null)
-                val = row.value();
-        }
-
-        return val;
+        cctx.offheap().remove(key, partition(), localPartition());
     }
 
     /** {@inheritDoc} */
@@ -3712,8 +3662,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!v.equals(ver))
                             // Version has changed since entry passed the filter. Do it again.
                             continue;
-
-                        CacheObject prevVal = saveValueForIndexUnlocked();
 
                         if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                             // Nullify value after swap.

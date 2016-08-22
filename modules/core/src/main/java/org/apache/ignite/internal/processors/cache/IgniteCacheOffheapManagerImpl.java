@@ -362,12 +362,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** {@inheritDoc} */
     @Override public void remove(
         KeyCacheObject key,
-        CacheObject prevVal,
-        GridCacheVersion prevVer,
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(key, prevVal, prevVer, partId);
+        dataStore(part).remove(key, partId);
     }
 
     /** {@inheritDoc} */
@@ -722,7 +720,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 assert qryMgr.enabled();
 
-                qryMgr.store(key, p, val, ver, expireTime, dataRow.link());
+                if (old != null)
+                    qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
+                else
+                    qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
             }
 
             if (old != null) {
@@ -735,22 +736,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(KeyCacheObject key,
-            CacheObject prevVal,
-            GridCacheVersion prevVer,
-            int partId) throws IgniteCheckedException {
-            if (indexingEnabled) {
-                GridCacheQueryManager qryMgr = cctx.queries();
-
-                assert qryMgr.enabled();
-
-                qryMgr.remove(key, partId, prevVal, prevVer);
-            }
-
+        @Override public void remove(KeyCacheObject key, int partId) throws IgniteCheckedException {
             DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
 
             if (dataRow != null) {
                 assert dataRow.link() != 0 : dataRow;
+
+                if (indexingEnabled) {
+                    GridCacheQueryManager qryMgr = cctx.queries();
+
+                    assert qryMgr.enabled();
+
+                    qryMgr.remove(key, partId, dataRow.value(), dataRow.version());
+                }
 
                 rowStore.removeRow(dataRow.link());
 

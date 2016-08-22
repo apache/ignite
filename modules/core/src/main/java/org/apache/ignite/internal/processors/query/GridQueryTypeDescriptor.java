@@ -89,4 +89,9 @@ public interface GridQueryTypeDescriptor {
      * @return Affinity key.
      */
     public String affinityKey();
+
+    /**
+     * @return Type ID.
+     */
+    public int typeId();
 }

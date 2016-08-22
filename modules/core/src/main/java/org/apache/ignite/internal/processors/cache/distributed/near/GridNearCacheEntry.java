@@ -432,7 +432,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeValue(CacheObject val, GridCacheVersion ver) {
+    @Override protected void removeValue() {
         // No-op.
     }
 
