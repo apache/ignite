@@ -26,6 +26,19 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
+        // TODO: See 
+        /*
+           cacheName="myPartionReplicaCache" 
+           sessionAppId="NCacheApp1"
+           exceptionsEnabled="true" 
+           writeExceptionsToEventLog="false"
+           enableLogs="false" 
+           enableSessionLocking="true"
+           sessionLockingRetry="-1"
+           emptySessionWhenLocked="false" 
+         */
+
+
         public override void Dispose()
         {
             throw new NotImplementedException();
