@@ -28,9 +28,9 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- * Universal adapter over {@link IgfsEx} filesystem.
+ * Adapter over {@link IgfsEx} filesystem.
  */
-public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
+public class DefaultIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** The wrapped igfs. */
     private final IgfsEx igfsEx;
 
@@ -38,7 +38,7 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
      * Constructor.
      * @param igfsEx the igfs to be wrapped.
      */
-    public IgfsExUniversalFileSystemAdapter(IgfsEx igfsEx) {
+    public DefaultIgfsSecondaryFileSystemTestAdapter(IgfsEx igfsEx) {
         this.igfsEx = igfsEx;
     }
 
@@ -66,6 +66,11 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     @SuppressWarnings("ConstantConditions")
     @Override public Map<String, String> properties(String path) {
         return igfsEx.info(new IgfsPath(path)).properties();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String permissions(String path) throws IOException {
+        return properties(path).get(IgfsUtils.PROP_PERMISSION);
     }
 
     /** {@inheritDoc} */
@@ -106,11 +111,7 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz == IgfsEx.class)
-            return (T)igfsEx;
-
-        return null;
+    @Override public IgfsEx igfs() {
+        return igfsEx;
     }
 }

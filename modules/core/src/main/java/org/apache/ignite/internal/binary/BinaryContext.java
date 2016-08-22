@@ -106,6 +106,8 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
@@ -183,6 +185,11 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        if (BinaryUtils.wrapTrees()) {
+            sysClss.add(TreeMap.class.getName());
+            sysClss.add(TreeSet.class.getName());
+        }
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }
@@ -334,11 +341,16 @@ public class BinaryContext {
      * @param cls Class.
      * @return {@code True} if must be deserialized.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean mustDeserialize(Class cls) {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
+        if (desc == null) {
+            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
+                return false;
+
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+        }
         else
             return desc.useOptimizedMarshaller();
     }
@@ -1251,6 +1263,13 @@ public class BinaryContext {
         }
 
         return reg;
+    }
+
+    /**
+     * Unregister all binary schemas.
+     */
+    public void unregisterBinarySchemas() {
+        schemas = null;
     }
 
     /**

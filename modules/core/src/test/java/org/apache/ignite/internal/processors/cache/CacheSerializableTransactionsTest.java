@@ -3311,6 +3311,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void getRemoveTx(boolean nearCache, boolean store) throws Exception {
+        long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
+
         final Ignite ignite0 = ignite(0);
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, store, false);
@@ -3330,6 +3332,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < 100; i++) {
+                if (U.currentTimeMillis() > stopTime)
+                    break;
+
                 final AtomicInteger cntr = new AtomicInteger();
 
                 final Integer key = i;
