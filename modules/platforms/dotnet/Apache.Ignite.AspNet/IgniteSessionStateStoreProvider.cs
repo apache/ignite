@@ -275,7 +275,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
         {
-            return new SessionStateStoreData(new SessionStateItemCollection(),
+            return new IgniteSessionStateStoreData(new SessionStateItemCollection(),
                 SessionStateUtility.GetSessionStaticObjects(context), timeout);
         }
 
