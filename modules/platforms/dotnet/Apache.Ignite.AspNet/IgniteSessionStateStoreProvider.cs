@@ -151,6 +151,15 @@ namespace Apache.Ignite.AspNet
         {
             // TODO: An option to return empty data
 
+            var key = GetKey(id);
+
+            var cacheLock = Cache.Lock(key);
+
+            locked = cacheLock.TryEnter();
+            lockId = cacheLock;
+            lockAge = TimeSpan.Zero;  // TODO: ???
+
+
             throw new NotImplementedException();
         }
 
