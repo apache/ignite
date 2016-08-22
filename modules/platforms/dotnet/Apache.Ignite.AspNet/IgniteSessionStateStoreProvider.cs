@@ -30,8 +30,14 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
+        /** Application id config parameter. */
+        private const string ApplicationId = "applicationId";
+
         /** */
         private volatile ICache<string, object> _cache;
+
+        /** */
+        private volatile string _applicationId = null;
 
         // TODO: See 
         /*
@@ -57,6 +63,8 @@ namespace Apache.Ignite.AspNet
             base.Initialize(name, config);
 
             _cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+
+            _applicationId = config[ApplicationId];
         }
 
 
@@ -246,8 +254,15 @@ namespace Apache.Ignite.AspNet
                     throw new InvalidOperationException(GetType() + " has not been initialized.");
 
                 return cache;
-            }}
+            }
+        }
 
-
+        /// <summary>
+        /// Gets the key.
+        /// </summary>
+        private string GetKey(string sessionId)
+        {
+            return _applicationId == null ? sessionId : ApplicationId + "." + sessionId;
+        }
     }
 }
