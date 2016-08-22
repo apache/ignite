@@ -630,8 +630,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
             if (tbl.luceneIdx != null)
                 tbl.luceneIdx.remove(key);
-
-            return;
         }
     }
 
