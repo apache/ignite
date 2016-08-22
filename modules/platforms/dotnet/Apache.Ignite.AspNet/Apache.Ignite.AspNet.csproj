@@ -50,6 +50,7 @@
     <Compile Include="IgniteSessionStateStoreProvider.cs" />
     <Compile Include="IgniteWebUtils.cs" />
     <Compile Include="Impl\ConfigUtil.cs" />
+    <Compile Include="Impl\ExpiryCacheHolder.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

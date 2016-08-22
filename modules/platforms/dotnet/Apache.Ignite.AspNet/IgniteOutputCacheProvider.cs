@@ -18,14 +18,12 @@
 namespace Apache.Ignite.AspNet
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.Web.Caching;
     using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Expiry;
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
@@ -39,18 +37,8 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
-        /** Max number of cached expiry caches. */
-        private const int MaxExpiryCaches = 1000;
-
         /** */
-        private volatile ICache<string, object> _cache;
-
-        /** Cached caches per expiry seconds. */
-        private volatile Dictionary<long, ICache<string, object>> _expiryCaches = 
-            new Dictionary<long, ICache<string, object>>();
-
-        /** Sync object. */ 
-        private readonly object _syncRoot = new object();
+        private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
 
         /// <summary>
         /// Returns a reference to the specified entry in the output cache.
@@ -77,7 +65,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Add(string key, object entry, DateTime utcExpiry)
         {
-            return GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry).Value;
+            return _expiryCacheHolder.GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry).Value;
         }
 
         /// <summary>
@@ -88,7 +76,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="utcExpiry">The time and date on which the cached <paramref name="entry" /> expires.</param>
         public override void Set(string key, object entry, DateTime utcExpiry)
         {
-            GetCacheWithExpiry(utcExpiry)[key] = entry;
+            _expiryCacheHolder.GetCacheWithExpiry(utcExpiry)[key] = entry;
         }
 
         /// <summary>
@@ -110,7 +98,9 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            _cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+
+            _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
         }
 
 
@@ -121,51 +111,12 @@ namespace Apache.Ignite.AspNet
         {
             get
             {
-                var cache = _cache;
+                var holder = _expiryCacheHolder;
 
-                if (cache == null)
+                if (holder == null)
                     throw new InvalidOperationException(GetType() + " has not been initialized.");
 
-                return cache;
-            }
-        }
-
-        /// <summary>
-        /// Gets the cache with expiry policy according to provided expiration date.
-        /// </summary>
-        /// <param name="utcExpiry">The UTC expiry.</param>
-        /// <returns>Cache with expiry policy.</returns>
-        private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
-        {
-            if (utcExpiry == DateTime.MaxValue)
-                return Cache;
-
-            // Round up to seconds ([OutputCache] duration is in seconds).
-            var expirySeconds = (long) Math.Round((utcExpiry - DateTime.UtcNow).TotalSeconds);
-
-            if (expirySeconds < 0)
-                expirySeconds = 0;
-
-            ICache<string, object> expiryCache;
-
-            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
-                return expiryCache;
-
-            lock (_syncRoot)
-            {
-                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
-                    return expiryCache;
-
-                // Copy on write with size limit
-                _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<long, ICache<string, object>>()
-                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
-
-                expiryCache = Cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
-
-                _expiryCaches[expirySeconds] = expiryCache;
-
-                return expiryCache;
+                return holder.Cache;
             }
         }
     }
