@@ -124,7 +124,7 @@ namespace Apache.Ignite.AspNet
                 var cache = _cache;
 
                 if (cache == null)
-                    throw new InvalidOperationException("IgniteOutputCacheProvider has not been initialized.");
+                    throw new InvalidOperationException(GetType() + " has not been initialized.");
 
                 return cache;
             }

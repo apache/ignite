@@ -230,5 +230,22 @@ namespace Apache.Ignite.AspNet
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        private ICache<string, object> Cache
+        {
+            get
+            {
+                var cache = _cache;
+
+                if (cache == null)
+                    throw new InvalidOperationException(GetType() + " has not been initialized.");
+
+                return cache;
+            }}
+
+
     }
 }
