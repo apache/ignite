@@ -382,8 +382,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 recoveryData.onNodeLeft();
                         }
 
-                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(id,
-                            recoveryData,
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(recoveryData,
                             reconnect);
 
                         commWorker.addProcessDisconnectRequest(disconnectData);
@@ -1453,6 +1452,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(']').append(U.nl());
             }
 
+            sb.append("Communication SPI clients: ").append(U.nl());
+
+            for (Map.Entry<UUID, GridCommunicationClient> entry : clients.entrySet()) {
+                sb.append("    [node=").append(entry.getKey())
+                    .append(", client=").append(entry.getValue())
+                    .append(']').append(U.nl());
+            }
+
             U.warn(log, sb.toString());
         }
 
@@ -2037,17 +2044,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
 
-                    client = null;
-
                     if (!retry)
                         sentMsgsCnt.increment();
                     else {
+                        clients.remove(node.id(), client);
+
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
                             throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
+
+                    client = null;
                 }
                 while (retry);
             }

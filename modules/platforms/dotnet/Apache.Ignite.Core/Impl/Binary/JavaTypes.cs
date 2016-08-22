@@ -61,6 +61,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly Dictionary<string, Type> JavaToNet =
             NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
+        /** */
+        private static readonly Dictionary<string, string> JavaPrimitiveToType = new Dictionary<string, string>
+        {
+            {"boolean", "java.lang.Boolean"},
+            {"byte", "java.lang.Byte"},
+            {"short", "java.lang.Short"},
+            {"char", "java.lang.Character"},
+            {"int", "java.lang.Integer"},
+            {"long", "java.lang.Long"},
+            {"float", "java.lang.Float"},
+            {"double", "java.lang.Double"},
+        };
+
         /// <summary>
         /// Gets the corresponding Java type name.
         /// </summary>
@@ -119,9 +132,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (string.IsNullOrEmpty(javaTypeName))
                 return null;
 
+            string fullJavaTypeName;
+
+            JavaPrimitiveToType.TryGetValue(javaTypeName, out fullJavaTypeName);
+
             Type res;
 
-            return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
+            return JavaToNet.TryGetValue(fullJavaTypeName ?? javaTypeName, out res) ? res : null;
         }
     }
 }
