@@ -121,18 +121,19 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @return {@code true} if successful.
      */
     private boolean deleteDirectory(File dir) {
+        if (Files.isSymbolicLink(dir.toPath()))
+            return dir.delete();
+
         File[] entries = dir.listFiles();
 
         if (entries != null) {
             for (File entry : entries) {
                 if (entry.isDirectory())
                     deleteDirectory(entry);
-                else if (entry.isFile()) {
+                else {
                     if (!entry.delete())
                         return false;
                 }
-                else
-                    throw new UnsupportedOperationException("Symlink deletion is not yet supported: " + entry);
             }
         }
 
