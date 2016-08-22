@@ -38,7 +38,7 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging() throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
 

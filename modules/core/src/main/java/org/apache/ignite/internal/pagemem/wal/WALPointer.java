@@ -21,5 +21,6 @@ package org.apache.ignite.internal.pagemem.wal;
  *
  */
 public interface WALPointer {
-    // Marker interface for WAL implementation.
+    /** */
+    public WALPointer next();
 }
