@@ -212,7 +212,9 @@ namespace Apache.Ignite.AspNet
         /// <param name="lockId">The lock identifier for the current request.</param>
         public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
         {
-            throw new NotImplementedException();
+            RemoveLockAge(GetKey(id));
+
+            ((ICacheLock)lockId).Exit();
         }
 
         /// <summary>
@@ -229,7 +231,9 @@ namespace Apache.Ignite.AspNet
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item,
             object lockId, bool newItem)
         {
-            throw new NotImplementedException();
+            Cache[GetKey(id)] = item;
+
+            ReleaseItemExclusive(context, id, lockId);
         }
 
         /// <summary>
@@ -242,7 +246,7 @@ namespace Apache.Ignite.AspNet
         /// the item to delete from the data store.</param>
         public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
         {
-            throw new NotImplementedException();
+            Cache.Remove(GetKey(id));
         }
 
         /// <summary>
