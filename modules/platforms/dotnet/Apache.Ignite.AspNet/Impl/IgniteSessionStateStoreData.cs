@@ -18,6 +18,7 @@
 namespace Apache.Ignite.AspNet.Impl
 {
     using System;
+    using System.Diagnostics;
     using System.Runtime.Serialization;
     using System.Web;
     using System.Web.SessionState;
@@ -56,6 +57,7 @@ namespace Apache.Ignite.AspNet.Impl
         /** <inheritdoc /> */
         private static int ReadTimeout(SerializationInfo info)
         {
+            Debug.Assert(info != null);
             // TODO
             return 0;
         }
@@ -63,6 +65,7 @@ namespace Apache.Ignite.AspNet.Impl
         /** <inheritdoc /> */
         private static HttpStaticObjectsCollection ReadStaticObjects(SerializationInfo info)
         {
+            Debug.Assert(info != null);
             // TODO
             return new HttpStaticObjectsCollection();
         }
@@ -70,6 +73,7 @@ namespace Apache.Ignite.AspNet.Impl
         /** <inheritdoc /> */
         private static ISessionStateItemCollection ReadSessionItems(SerializationInfo info)
         {
+            Debug.Assert(info != null);
             // TODO
             return new SessionStateItemCollection();
         }

@@ -92,7 +92,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Valid grid
             stateProvider = GetProvider();
 
-            var data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            var data = stateProvider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, 
+                out lockId, out actions);
             Assert.IsNull(data);
 
             data = stateProvider.CreateNewStoreData(GetHttpContext(), 42);
