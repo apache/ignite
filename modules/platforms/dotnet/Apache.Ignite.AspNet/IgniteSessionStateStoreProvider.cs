@@ -207,7 +207,8 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
         {
-            throw new NotImplementedException();
+            return new SessionStateStoreData(new SessionStateItemCollection(),
+                SessionStateUtility.GetSessionStaticObjects(context), timeout);
         }
 
         /// <summary>
