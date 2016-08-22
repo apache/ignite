@@ -87,6 +87,7 @@ namespace Apache.Ignite.AspNet
         public override void InitializeRequest(HttpContext context)
         {
             // TODO
+            Cache["1"] = 1;
         }
 
         /// <summary>
