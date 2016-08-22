@@ -74,7 +74,7 @@ namespace Apache.Ignite.AspNet
         /// </summary>
         public override void Dispose()
         {
-            // TODO: nothing?
+            // No-op.
         }
 
         /// <summary>
@@ -92,10 +92,14 @@ namespace Apache.Ignite.AspNet
             return false;
         }
 
+        /// <summary>
+        /// Called by the <see cref="T:System.Web.SessionState.SessionStateModule" /> object 
+        /// for per-request initialization.
+        /// </summary>
+        /// <param name="context">The <see cref="T:System.Web.HttpContext" /> for the current request.</param>
         public override void InitializeRequest(HttpContext context)
         {
-            // TODO
-            Cache["1"] = 1;
+            // No-op.
         }
 
         /// <summary>
@@ -122,7 +126,14 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge, out object lockId,
             out SessionStateActions actions)
         {
-            throw new NotImplementedException();
+            var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
+
+            // There is no way to check if lock is obtained without entering it.
+            // So we enter and exit immediately.
+            if (!locked)
+                ((ICacheLock)lockId).Exit();
+
+            return res;
         }
 
         /// <summary>
