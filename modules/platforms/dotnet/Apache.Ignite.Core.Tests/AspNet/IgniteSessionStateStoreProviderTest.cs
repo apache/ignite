@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-// ReSharper disable AssignNullToNotNullAttribute
 namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet;
     using Apache.Ignite.Core.Common;
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             // Not initialized
             Assert.Throws<InvalidOperationException>(() =>
-                    stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions));
+                    stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions));
 
             // Grid not started
             Assert.Throws<IgniteException>(() =>
@@ -92,15 +92,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Valid grid
             stateProvider = GetProvider();
 
-            var data = stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions);
+            var data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(data);
 
-            data = stateProvider.CreateNewStoreData(null, 42);
+            data = stateProvider.CreateNewStoreData(GetHttpContext(), 42);
             Assert.IsNotNull(data);
 
-            stateProvider.SetAndReleaseItemExclusive(null, "1", data, lockId, false);
+            stateProvider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
 
-            data = stateProvider.GetItem(null, "1", out locked, out lockAge, out lockId, out actions);
+            data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(data);
             Assert.AreEqual(42, data.Timeout);
         }
@@ -120,6 +120,14 @@ namespace Apache.Ignite.Core.Tests.AspNet
             });
 
             return stateProvider;
+        }
+
+        /// <summary>
+        /// Gets the HTTP context.
+        /// </summary>
+        private static HttpContext GetHttpContext()
+        {
+            return new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
         }
     }
 }
