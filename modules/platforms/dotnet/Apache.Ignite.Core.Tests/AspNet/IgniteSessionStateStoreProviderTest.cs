@@ -131,6 +131,33 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the caching.
+        /// </summary>
+        [Test]
+        public void TestCaching()
+        {
+            
+        }
+
+        /// <summary>
+        /// Tests the expiry.
+        /// </summary>
+        [Test]
+        public void TestExpiry()
+        {
+            
+        }
+
+        /// <summary>
+        /// Tests the locking.
+        /// </summary>
+        [Test]
+        public void TestLocking()
+        {
+            
+        }
+
+        /// <summary>
         /// Gets the initialized provider.
         /// </summary>
         private static IgniteSessionStateStoreProvider GetProvider()
