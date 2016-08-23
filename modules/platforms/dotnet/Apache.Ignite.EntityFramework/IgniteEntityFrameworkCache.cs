@@ -87,6 +87,9 @@ namespace Apache.Ignite.EntityFramework
             if (dependentEntitySets == null)
                 return;
 
+            // TODO: It is possible to put old data to cache because of a race between PutItem and Invalidate
+            // Looks like versioning is the only way to resolve this
+
             var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
 
             using (var tx = TxStart())
@@ -123,6 +126,7 @@ namespace Apache.Ignite.EntityFramework
                 var sets = _dependencyCache.GetAll(Sort(entitySets));
 
                 // Remove all cached queries that depend on specific entity set
+                // TODO: Use a single RemoveAll (should be faster)
                 foreach (var dependentKeys in sets)
                     _cache.RemoveAll(dependentKeys.Value);
 
