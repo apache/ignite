@@ -162,11 +162,72 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(SessionStateActions.None, actions);
             Assert.Throws<ObjectDisposedException>(() => ((ICacheLock) lockId).Enter());
 
+            // Add item.
+            res = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+
+            provider.SetAndReleaseItemExclusive(GetHttpContext(), "1", CreateStoreData(), lockId, true);
+
             // Not locked, item present.
+            res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            CheckStoreData(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
 
             // Locked.
 
 
+        }
+
+        /// <summary>
+        /// Creates the store data.
+        /// </summary>
+        private static SessionStateStoreData CreateStoreData()
+        {
+            var items = new SessionStateItemCollection();
+
+            items["name1"] = 1;
+            items["name2"] = "2";
+
+            var statics = new HttpStaticObjectsCollection();
+
+            // Modification method is internal.
+            statics.GetType().GetMethod("Add").Invoke(statics, new object[] {"int", typeof(int), false});
+
+            var data = new SessionStateStoreData(items, statics, 8);
+
+            CheckStoreData(data);
+
+            return data;
+        }
+
+        /// <summary>
+        /// Checks that store data is the same as <see cref="CreateStoreData"/> returns.
+        /// </summary>
+        private static void CheckStoreData(SessionStateStoreData data)
+        {
+            Assert.IsNotNull(data);
+
+            Assert.AreEqual(8, data.Timeout);
+
+            Assert.AreEqual(1, data.Items["name1"]);
+            Assert.AreEqual("2", data.Items["name2"]);
+
+            Assert.AreEqual(0, data.StaticObjects["int"]);
+        }
+
+        /// <summary>
+        /// Tests the store data serializer.
+        /// </summary>
+        [Test]
+        public void TestStoreDataSerializer()
+        {
+            // TODO
         }
 
         /// <summary>
@@ -175,6 +236,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestExpiry()
         {
+            // TODO
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
         }
 
@@ -184,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestLocking()
         {
-            
+            // TODO: ?
         }
 
         /// <summary>
