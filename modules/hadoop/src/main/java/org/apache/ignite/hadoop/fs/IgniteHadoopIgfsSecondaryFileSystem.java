@@ -570,7 +570,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         if (fsFactory instanceof LifecycleAware)
-             ((LifecycleAware)fsFactory).stop();
+            ((LifecycleAware)fsFactory).stop();
     }
 
     /** {@inheritDoc} */
