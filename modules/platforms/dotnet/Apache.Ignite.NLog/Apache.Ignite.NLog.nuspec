@@ -29,7 +29,7 @@ Creating NuGet package:
 <package >
     <metadata>
         <id>Apache.Ignite.NLog</id>
-        <title>Apache Ignite NLog Integration</title>
+        <title>Apache Ignite NLog Logger</title>
         <!-- -->
         <version>$version$</version>
         <authors>Apache Ignite</authors>
@@ -39,7 +39,6 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>NLog Logger for Apache Ignite</description>
-        <summary>NLog Logger for Apache Ignite</summary>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2016</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache NLog logger</tags>
