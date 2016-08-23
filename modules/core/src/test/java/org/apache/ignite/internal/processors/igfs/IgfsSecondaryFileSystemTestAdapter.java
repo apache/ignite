@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +30,7 @@ import java.util.Map;
  * Typically used for secondary filesystem.
  * To be used solely in tests.
  */
-public interface UniversalFileSystemAdapter {
+public interface IgfsSecondaryFileSystemTestAdapter {
     /**
      * Gets name of the FS.
      * @return name of this file system.
@@ -64,7 +65,7 @@ public interface UniversalFileSystemAdapter {
     /**
      * Clears (formats) entire the filesystem.
      * All the data in the filesystem are DESTROYED.
-     * @throws IOException
+     * @throws IOException On failure.
      */
     void format() throws IOException;
 
@@ -74,6 +75,15 @@ public interface UniversalFileSystemAdapter {
      * @return the properties.
      */
     Map<String,String> properties(String path) throws IOException;
+
+    /**
+     * Get permissions.
+     *
+     * @param path Path.
+     * @return Permissions.
+     * @throws IOException If failed.
+     */
+    String permissions(String path) throws IOException;
 
     /**
      * Opens input stream to read file contents.
@@ -100,10 +110,9 @@ public interface UniversalFileSystemAdapter {
     T2<Long, Long> times(String path) throws IOException;
 
     /**
-     * Gets an entity of the given type (class) associated with this universal adapter.
-     * @param clazz The class representing the type we wish to adapt to.
-     * @param <T> The type we need to adapt to.
-     * @return the adapter object of the given type.
+     * Get underlying IGFS if it is possible.
+     *
+     * @return Underlying IGFS or null.
      */
-    <T> T unwrap(Class<T> clazz);
+    @Nullable IgfsEx igfs();
 }
