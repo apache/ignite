@@ -751,7 +751,7 @@ private case class VisorSentAlert(
     assert(spec != null)
 
     def idVar: String = {
-        val v = mfind(id)
+        val v = mfindHead(id)
 
         if (v.isDefined) id + "(@" + v.get._1 + ")" else id
     }

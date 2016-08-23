@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -62,17 +61,6 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
-     * Runs two step query.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param keepCacheObjects If {@code true}, cache objects representation will be preserved.
-     * @return Cursor.
-     */
-    public Iterable<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry,
-        boolean keepCacheObjects);
-
-    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param cctx Cache context.
@@ -96,12 +84,13 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param qry Query.
      * @param params Query parameters.
-     * @param filters Space name and key filters.
+     * @param filter Space name and key filter.
+     * @param enforceJoinOrder Enforce join order of tables in the query.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
+    public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -110,12 +99,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param type Query return type.
-     * @param filters Space name and key filters.
+     * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName, String qry,
+        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -123,35 +112,24 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param qry Text query.
      * @param type Query return type.
-     * @param filters Space name and key filter.
+     * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
-
-    /**
-     * Gets size of index for given type or -1 if it is a unknown type.
-     *
-     * @param spaceName Space name.
-     * @param desc Type descriptor.
-     * @param filters Filters.
-     * @return Objects number.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, IndexingQueryFilter filters)
-        throws IgniteCheckedException;
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
+        GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Registers cache.
      *
+     * @param cctx Cache context.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
 
     /**
-     * Deregisters cache.
+     * Unregisters cache.
      *
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed to drop cache schema.
@@ -253,12 +231,11 @@ public interface GridQueryIndexing {
     /**
      * Returns backup filter.
      *
-     * @param caches List of caches.
      * @param topVer Topology version.
      * @param parts Partitions.
      * @return Backup filter.
      */
-    public IndexingQueryFilter backupFilter(List<String> caches, AffinityTopologyVersion topVer, int[] parts);
+    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
 
     /**
      * Client disconnected callback.

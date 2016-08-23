@@ -137,10 +137,11 @@ public interface GridCacheEntryEx {
 
     /**
      * Wraps entry to an entry with lazy value get.
+     * @param keepBinary Keep binary flag.
      *
      * @return Entry.
      */
-    public <K, V> Cache.Entry<K, V> wrapLazyValue();
+    public <K, V> Cache.Entry<K, V> wrapLazyValue(boolean keepBinary);
 
     /**
      * Peeks value provided to public API entries and to entry filters.
@@ -641,6 +642,7 @@ public interface GridCacheEntryEx {
      * @param preload Flag indicating whether entry is being preloaded.
      * @param topVer Topology version.
      * @param drType DR type.
+     * @param fromStore {@code True} if value was loaded from store.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -651,7 +653,8 @@ public interface GridCacheEntryEx {
         long expireTime,
         boolean preload,
         AffinityTopologyVersion topVer,
-        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        GridDrType drType,
+        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if current version is <tt>0</tt> using swap entry data.

@@ -36,11 +36,11 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and 
+ * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and
  * mixed ignite caches (replicated and partitioned) which have the same data models and data content.
- * 
- * 
- * <pre> 
+ *
+ *
+ * <pre>
  *
  *  -------------------------------------> rootOrderId (virtual) <--------------------------
  *  |                                                                |                     |
@@ -76,7 +76,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /** Dates count. */
     private static final int DATES_CNT = 5;
-    
+
     /** Full the big query. */
     private String bigQry = getBigQry();
 
@@ -84,13 +84,13 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     private static IgniteCache<Integer, CustOrder> cacheCustOrd;
 
     /** Cache repl ord. */
-    private static IgniteCache<AffinityKey, ReplaceOrder> cacheReplOrd;
+    private static IgniteCache<Object, ReplaceOrder> cacheReplOrd;
 
     /** Cache ord parameter. */
-    private static IgniteCache<AffinityKey, OrderParams> cacheOrdParam;
+    private static IgniteCache<Object, OrderParams> cacheOrdParam;
 
     /** Cache cancel. */
-    private static IgniteCache<AffinityKey, Cancel> cacheCancel;
+    private static IgniteCache<Object, Cancel> cacheCancel;
 
     /** Cache execute. */
     private static IgniteCache<Integer, Exec> cacheExec;
@@ -101,9 +101,9 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("custord", CacheMode.PARTITIONED, Integer.class, CustOrder.class),
-            cacheConfiguration("replord", CacheMode.PARTITIONED, AffinityKey.class, ReplaceOrder.class),
-            cacheConfiguration("ordparam", CacheMode.PARTITIONED, AffinityKey.class, OrderParams.class),
-            cacheConfiguration("cancel", CacheMode.PARTITIONED, AffinityKey.class, Cancel.class),
+            cacheConfiguration("replord", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, ReplaceOrder.class),
+            cacheConfiguration("ordparam", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, OrderParams.class),
+            cacheConfiguration("cancel", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, Cancel.class),
             cacheConfiguration("exec", CacheMode.REPLICATED, Integer.class, Exec.class));
 
         return cfg;
@@ -122,14 +122,14 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /**
      * Extracts the big query from file.
-     *  
+     *
      * @return Big query.
      */
     private String getBigQry() {
         String res = "";
 
         Reader isr = new InputStreamReader(getClass().getResourceAsStream("bigQuery.sql"));
-        
+
         try(BufferedReader reader = new BufferedReader(isr)) {
             for(String line; (line = reader.readLine()) != null; )
                 if (!line.startsWith("--")) // Skip commented lines.
@@ -137,11 +137,25 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         }
         catch (Throwable e) {
             e.printStackTrace();
-            
+
             fail();
         }
 
         return res;
+    }
+
+    /**
+     * @return Use colocated data.
+     */
+    private boolean useColocatedData() {
+        return !distributedJoins();
+    }
+
+    /**
+     * @return Whehter to use distrubutedJoins or not.
+     */
+    protected boolean distributedJoins() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -176,8 +190,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
                 // Generate 1 - 5 orders for 1 root order.
                 for (int i = 0; i < rootOrderId % 5; i++) {
                     int orderId = idGen.incrementAndGet();
-                    
-                    CustOrder order = new CustOrder(orderId, rootOrderId, dates.get(orderId % dates.size()) , 
+
+                    CustOrder order = new CustOrder(orderId, rootOrderId, dates.get(orderId % dates.size()) ,
                         orderId % 2 == 0 ? "CUSTOM" : "OTHER", orderId);
 
                     add(order);
@@ -185,23 +199,23 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
                     cacheCustOrd.put(order.orderId, order);
 
                     insertInDb(order);
-                }                
+                }
             }
         }};
 
         final Collection<OrderParams> params = new ArrayList<OrderParams>(){{
             for (CustOrder o : orders) {
-                OrderParams op = new OrderParams(idGen.incrementAndGet(), o.orderId, o.date, 
+                OrderParams op = new OrderParams(idGen.incrementAndGet(), o.orderId, o.date,
                     o.orderId % 2 == 0 ? "Algo 1" : "Algo 2");
 
                 add(op);
 
-                cacheOrdParam.put(op.key(), op);
+                cacheOrdParam.put(op.key(useColocatedData()), op);
 
                 insertInDb(op);
             }
         }};
-        
+
         final Collection<ReplaceOrder> replaces = new ArrayList<ReplaceOrder>(){{
             for (CustOrder o : orders) {
                 if (o.orderId % 7 == 0) {
@@ -210,7 +224,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
                     add(replace);
 
-                    cacheReplOrd.put(replace.key(), replace);
+                    cacheReplOrd.put(replace.key(useColocatedData()), replace);
 
                     insertInDb(replace);
                 }
@@ -220,12 +234,12 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         final Collection<Cancel> cancels = new ArrayList<Cancel>(){{
             for (CustOrder o : orders) {
                 if (o.orderId % 9 == 0) {
-                    Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId, 
+                    Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
                         new Date(o.date.getTime() + 12 * 60 * 60 * 1000));// Plus a half of day.
 
                     add(c);
 
-                    cacheCancel.put(c.key(), c);
+                    cacheCancel.put(c.key(useColocatedData()), c);
 
                     insertInDb(c);
                 }
@@ -237,7 +251,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
                 int execShares = 10000 + rootOrderId;
                 int price = 1000 + rootOrderId;
                 int latsMkt = 3000 + rootOrderId;
-                
+
                 Exec exec = new Exec(rootOrderId, dates.get(rootOrderId % dates.size()), execShares, price, latsMkt);
 
                 add(exec);
@@ -266,8 +280,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception If failed.
      */
     public void testBigQuery() throws Exception {
-        List<List<?>> res = compareQueryRes0(cacheCustOrd, bigQry);
-        
+        List<List<?>> res = compareQueryRes0(cacheCustOrd, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
+
         assertTrue(!res.isEmpty()); // Ensure we set good testing data at database.
     }
 
@@ -280,6 +294,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         st.execute("CREATE SCHEMA \"ordparam\"");
         st.execute("CREATE SCHEMA \"cancel\"");
         st.execute("CREATE SCHEMA \"exec\"");
+
+        final String keyType = useColocatedData() ? "other" : "int";
 
         st.execute("create table \"custord\".CustOrder" +
             "  (" +
@@ -295,7 +311,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         st.execute("create table \"replord\".ReplaceOrder" +
             "  (" +
-            "  _key other not null," +
+            "  _key " + keyType + " not null," +
             "  _val other not null," +
             "  id int unique," +
             "  orderId int ," +
@@ -308,7 +324,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         st.execute("create table \"ordparam\".OrderParams" +
             "  (" +
-            "  _key other not null," +
+            "  _key " + keyType + " not null," +
             "  _val other not null," +
             "  id int unique," +
             "  orderId int ," +
@@ -318,7 +334,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         st.execute("create table \"cancel\".Cancel" +
             "  (" +
-            "  _key other not null," +
+            "  _key " + keyType + " not null," +
             "  _val other not null," +
             "  id int unique," +
             "  date Date, " +
@@ -335,15 +351,15 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  price int," +
             "  lastMkt int" +
             "  )");
-        
+
         conn.commit();
-        
+
         return st;
     }
 
     /**
      * Insert {@link CustOrder} at h2 database.
-     *  
+     *
      * @param o CustOrder.
      */
     private void insertInDb(CustOrder o) throws SQLException {
@@ -351,7 +367,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "insert into \"custord\".CustOrder (_key, _val, orderId, rootOrderId, date, alias, archSeq, origOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
-            
+
             st.setObject(++i, o.orderId);
             st.setObject(++i, o);
             st.setObject(++i, o.orderId);
@@ -375,8 +391,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "insert into \"replord\".ReplaceOrder (_key, _val, id, orderId, rootOrderId, date, alias, archSeq, refOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
-            
-            st.setObject(++i, o.key());
+
+            st.setObject(++i, o.key(useColocatedData()));
             st.setObject(++i, o);
             st.setObject(++i, o.id);
             st.setObject(++i, o.orderId);
@@ -399,15 +415,15 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"ordparam\".OrderParams (_key, _val, id, date, orderId, parentAlgo) values(?, ?, ?, ?, ?, ?)")) {
             int i = 0;
-            
-            st.setObject(++i, o.key());
+
+            st.setObject(++i, o.key(useColocatedData()));
             st.setObject(++i, o);
             st.setObject(++i, o.id);
             st.setObject(++i, o.date);
             st.setObject(++i, o.orderId);
             st.setObject(++i, o.parentAlgo);
 
-            st.executeUpdate();
+           st.executeUpdate();
         }
     }
 
@@ -420,8 +436,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"cancel\".Cancel (_key, _val, id, date, refOrderId) values(?, ?, ?, ?, ?)")) {
             int i = 0;
-            
-            st.setObject(++i, o.key());
+
+            st.setObject(++i, o.key(useColocatedData()));
             st.setObject(++i, o);
             st.setObject(++i, o.id);
             st.setObject(++i, o.date);
@@ -441,7 +457,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "insert into \"exec\".Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
                 "values(?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
-            
+
             st.setObject(++i, o.rootOrderId);
             st.setObject(++i, o);
             st.setObject(++i, o.date);
@@ -515,7 +531,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         /** Primary key. */
         @QuerySqlField(index = true)
         private int id;
-        
+
         /** Order id. */
         @QuerySqlField(index = true)
         private int orderId;
@@ -558,10 +574,11 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         }
 
         /**
-         * @return Afinity key.
+         * @param useColocatedData Use colocated data.
+         * @return Key.
          */
-        public AffinityKey<Integer> key() {
-            return new AffinityKey<>(id, orderId);
+        public Object key(boolean useColocatedData) {
+            return useColocatedData ? new AffinityKey<>(id, orderId) : id;
         }
 
         /** {@inheritDoc} */
@@ -609,10 +626,11 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         }
 
         /**
-         * @return Afinity key.
+         * @param useColocatedData Use colocated data.*
+         * @return Key.
          */
-        public AffinityKey<Integer> key() {
-            return new AffinityKey<>(id, orderId);
+        public Object key(boolean useColocatedData) {
+            return useColocatedData ? new AffinityKey<>(id, orderId) : id;
         }
 
         /** {@inheritDoc} */
@@ -643,7 +661,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         private Date date;
 
         /**
-         * @param id
+         * @param id ID.
          * @param refOrderId Reference order id.
          * @param date Date.
          */
@@ -654,10 +672,11 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         }
 
         /**
-         * @return Afinity key.
+         * @param useColocatedData Use colocated data.
+         * @return Key.
          */
-        public AffinityKey<Integer> key() {
-            return new AffinityKey<>(id, refOrderId);
+        public Object key(boolean useColocatedData) {
+            return useColocatedData ? new AffinityKey<>(id, refOrderId) : id;
         }
 
         /** {@inheritDoc} */

@@ -17,36 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-
-import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  * Data store for H2 rows.
  */
 public class H2RowFactory {
     /** */
-    private final PageMemory pageMem;
-
-    /** */
     private final GridCacheContext<?,?> cctx;
-
-    /** */
-    private final CacheObjectContext coctx;
 
     /** */
     private final GridH2RowDescriptor rowDesc;
@@ -58,9 +42,6 @@ public class H2RowFactory {
     public H2RowFactory(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx) {
         this.rowDesc = rowDesc;
         this.cctx = cctx;
-
-        coctx = cctx.cacheObjectContext();
-        pageMem = cctx.shared().database().pageMemory();
     }
 
     /**
@@ -73,56 +54,27 @@ public class H2RowFactory {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row getRow(long link) throws IgniteCheckedException {
-        try (Page page = page(pageId(link))) {
-            ByteBuffer buf = page.getForRead();
+        // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
+        // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
 
-            try {
-                DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+        final CacheDataRowAdapter rowBuilder = new CacheDataRowAdapter(link);
 
-                int dataOff = io.getDataOffset(buf, dwordsOffset(link));
+        rowBuilder.initFromLink(cctx, false);
 
-                buf.position(dataOff);
+        GridH2Row row;
 
-                // Skip entry size.
-                buf.getShort();
+        try {
+            row = rowDesc.createRow(rowBuilder.key(),
+                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), 0);
 
-                KeyCacheObject key = coctx.processor().toKeyCacheObject(coctx, buf);
-                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
-
-                int topVer = buf.getInt();
-                int nodeOrderDrId = buf.getInt();
-                long globalTime = buf.getLong();
-                long order = buf.getLong();
-
-                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-
-                GridH2Row row;
-
-                try {
-                    row = rowDesc.createRow(key, PageIdUtils.partId(link), val, ver, 0);
-
-                    row.link = link;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                assert row.ver != null;
-
-                return row;
-            }
-            finally {
-                page.releaseRead();
-            }
+            row.link = link;
         }
-    }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
 
-    /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(long pageId) throws IgniteCheckedException {
-        return pageMem.page(cctx.cacheId(), pageId);
+        assert row.ver != null;
+
+        return row;
     }
 }

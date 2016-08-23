@@ -40,11 +40,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.LeafPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitNewRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
@@ -77,6 +77,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTre
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
@@ -239,8 +240,7 @@ public abstract class BPlusTree<L, T extends L> {
             g.backId = 0; // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, g.row,
-                g.getClass() == GetCursor.class ? -1 : 0); // For range lookup we search for a lower bound.
+            int idx = findInsertionPoint(io, buf, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -574,6 +574,23 @@ public abstract class BPlusTree<L, T extends L> {
         }
     };
 
+    /** */
+    private final PageHandler<Long, Void> initRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootId, int lvl)
+            throws IgniteCheckedException {
+            assert rootId != null;
+
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
+
+            io.initRoot(buf, rootId);
+
+            if (needWalDeltaRecord(meta))
+                wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+
+            return null;
+        }
+    };
+
     /**
      * @param name Tree name.
      * @param cacheId Cache ID.
@@ -633,10 +650,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @param page Updated page.
      * @return {@code true} If we need to make a delta WAL record for the change in this page.
      */
-    public final boolean needWalDeltaRecord(Page page) {
-        // If the page is clean, then it is either newly allocated or just after checkpoint.
-        // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && page.isDirty();
+    private boolean needWalDeltaRecord(Page page) {
+        return isWalDeltaRecordNeeded(wal, page);
     }
 
     /**
@@ -645,40 +660,16 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected final void initNew() throws IgniteCheckedException {
+        // Allocate the first leaf page, it will be our root.
         long rootId = allocatePageForNew();
 
-        // Allocate the first leaf page, it will be our root.
         try (Page root = page(rootId)) {
-            ByteBuffer buf = root.getForWrite(); // Initial write, no check for concurrent modification.
-
-            try {
-                BPlusLeafIO<L> io = latestLeafIO();
-
-                io.initNewPage(buf, rootId);
-
-                if (needWalDeltaRecord(root))
-                    wal.log(new LeafPageInitRecord(cacheId, root.id(), io.getType(), io.getVersion(), rootId));
-            }
-            finally {
-                root.releaseWrite(true);
-            }
+            writePage(rootId, root, PageHandler.NOOP, latestLeafIO(), wal, null, 0);
         }
 
         // Initialize meta page with new root page.
         try (Page meta = page(metaPageId)) {
-            ByteBuffer buf = meta.getForWrite(); // Initial write, no need to check for concurrent modification.
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
-
-                io.initNewPage(buf, metaPageId, rootId);
-
-                if (needWalDeltaRecord(meta))
-                    wal.log(new MetaPageInitNewRecord(cacheId, meta.id(), metaPageId, rootId, io.getVersion()));
-            }
-            finally {
-                meta.releaseWrite(true);
-            }
+            writePage(metaPageId, meta, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0);
         }
     }
 
@@ -737,7 +728,7 @@ public abstract class BPlusTree<L, T extends L> {
             ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
 
             try {
-                cursor.bootstrap(buf, io(buf), 0);
+                cursor.fillFromBuffer(buf, io(buf), 0);
             }
             finally {
                 first.releaseRead();
@@ -751,12 +742,13 @@ public abstract class BPlusTree<L, T extends L> {
      * Check if the tree is getting destroyed.
      */
     private void checkDestroyed() {
-        assert !destroyed.get() : "Tree is being concurrently destroyed: " + name;
+        if (destroyed.get())
+            throw new IllegalStateException("Tree is being concurrently destroyed: " + name);
     }
 
     /**
-     * @param lower Lower bound.
-     * @param upper Upper bound.
+     * @param lower Lower bound inclusive or {@code null} if unbounded.
+     * @param upper Upper bound inclusive or {@code null} if unbounded.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
@@ -767,7 +759,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (lower == null)
                 return findLowerUnbounded(upper);
 
-            GetCursor g = new GetCursor(lower, upper);
+            // Lower bound must be shifted to -1 for case when multiple rows are equal to this bound.
+            GetCursor g = new GetCursor(lower, -1, new ForwardCursor(upper));
 
             doFind(g);
 
@@ -1430,7 +1423,9 @@ public abstract class BPlusTree<L, T extends L> {
             for (; ; ) { // Go down with retries.
                 p.init();
 
-                switch (putDown(p, p.rootId, 0L, p.rootLvl)) {
+                Result result = putDown(p, p.rootId, 0L, p.rootLvl);
+
+                switch (result) {
                     case RETRY:
                     case RETRY_ROOT:
                         checkInterrupted();
@@ -1438,7 +1433,7 @@ public abstract class BPlusTree<L, T extends L> {
                         continue;
 
                     default:
-                        assert p.isFinished();
+                        assert p.isFinished() : result;
 
                         return p.oldRow;
                 }
@@ -1494,7 +1489,7 @@ public abstract class BPlusTree<L, T extends L> {
         long pagesCnt = 0;
 
         try (Page meta = page(metaPageId)) {
-            ByteBuffer metaBuf = meta.getForWrite();
+            ByteBuffer metaBuf = meta.getForWrite(); // No checks, we must be out of use.
 
             try {
                 for (long pageId : getFirstPageIds(metaBuf)) {
@@ -1503,7 +1498,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     do {
                         try (Page page = page(pageId)) {
-                            ByteBuffer buf = page.getForWrite();
+                            ByteBuffer buf = page.getForWrite(); // No checks, we must be out of use.
 
                             try {
                                 BPlusIO<L> io = io(buf);
@@ -1773,6 +1768,9 @@ public abstract class BPlusTree<L, T extends L> {
         /** In/Out parameter: in case of right turn this field will contain backward page ID for the child. */
         protected long backId;
 
+        /** */
+        int shift;
+
         /**
          * @param row Row.
          */
@@ -1901,12 +1899,14 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param lower Lower bound.
-         * @param upper Upper bound.
+         * @param shift Shift.
+         * @param cursor Cursor.
          */
-        private GetCursor(L lower, L upper) {
+        GetCursor(L lower, int shift, ForwardCursor cursor) {
             super(lower);
 
-            cursor = new ForwardCursor(upper);
+            this.shift = shift;
+            this.cursor = cursor;
         }
 
         /** {@inheritDoc} */
@@ -1914,7 +1914,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (!io.isLeaf())
                 return false;
 
-            cursor.bootstrap(buf, io, idx);
+            cursor.fillFromBuffer(buf, io, idx);
 
             return true;
         }
@@ -1928,7 +1928,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert io.isLeaf();
 
-            cursor.bootstrap(buf, io, idx);
+            cursor.fillFromBuffer(buf, io, idx);
 
             return true;
         }
@@ -2080,6 +2080,9 @@ public abstract class BPlusTree<L, T extends L> {
                 ByteBuffer fwdBuf = fwd.getForWrite(); // Initial write, no need to check for concurrent modification.
 
                 try {
+                    // Never write full forward page, because it is known to be new.
+                    fwd.fullPageWalRecordPolicy(Boolean.FALSE);
+
                     boolean midShift = splitPage(io, page, buf, fwdId, fwd, fwdBuf, idx);
 
                     // Do insert.
@@ -2122,6 +2125,9 @@ public abstract class BPlusTree<L, T extends L> {
                             ByteBuffer newRootBuf = newRoot.getForWrite(); // Initial write, no concurrent modification.
 
                             try {
+                                // Never write full new root page, because it is known to be new.
+                                newRoot.fullPageWalRecordPolicy(Boolean.FALSE);
+
                                 long pageId = PageIO.getPageId(buf);
 
                                 inner(io).initNewRoot(newRootBuf, newRootId, pageId, moveUpRow, null, fwdId);
@@ -2940,7 +2946,7 @@ public abstract class BPlusTree<L, T extends L> {
             pageId = reuseList.take(this, bag);
 
         if (pageId == 0)
-            pageId = allocatePage0();
+            pageId = allocatePageNoReuse();
 
         assert pageId != 0;
 
@@ -2959,9 +2965,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @return Page ID of newly allocated page.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    protected long allocatePage0() throws IgniteCheckedException {
+    protected final long allocatePageNoReuse() throws IgniteCheckedException {
         return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 
@@ -3004,10 +3010,10 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private final class ForwardCursor implements GridCursor<T> {
         /** */
-        private List<T> rows;
+        private T[] rows;
 
         /** */
-        private int row;
+        private int row = -1;
 
         /** */
         private long nextPageId;
@@ -3025,19 +3031,25 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @param buf Buffer.
          * @param io IO.
-         * @param startIdx Start index.
+         * @param cnt Number of rows in the buffer.
+         * @return Corrected number of rows with respect to upper bound.
          * @throws IgniteCheckedException If failed.
          */
-        private void bootstrap(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
-            assert startIdx >= 0 : startIdx;
-            assert buf != null;
-            assert io != null;
-            assert rows == null;
+        private int findUpperBound(ByteBuffer buf, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+            // Compare with the last row on the page.
+            int cmp = compare(io, buf, cnt - 1, upperBound);
 
-            rows = new ArrayList<>();
-            row = -1;
+            if (cmp > 0) {
+                int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
 
-            fillFromBuffer(buf, io, startIdx);
+                assert idx < 0;
+
+                cnt = -idx - 1;
+
+                nextPageId = 0; // The End.
+            }
+
+            return cnt;
         }
 
         /**
@@ -3046,77 +3058,132 @@ public abstract class BPlusTree<L, T extends L> {
          * @param startIdx Start index.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
             assert buf != null;
             assert io.isLeaf();
-            assert io.canGetRow();
+            assert startIdx >= 0 : startIdx;
 
             checkDestroyed();
 
             nextPageId = io.getForward(buf);
             int cnt = io.getCount(buf);
 
-            if (cnt == 0)
-                return;
+            assert cnt >= startIdx;
 
-            assert cnt > 0 : cnt;
+            if (upperBound != null && startIdx != cnt)
+                cnt = findUpperBound(buf, io, cnt);
 
-            if (upperBound != null) {
-                int cmp = compare(io, buf, cnt - 1, upperBound);
+            cnt -= startIdx;
 
-                if (cmp > 0) {
-                    int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
+            if (cnt > 0) {
+                if (rows == null)
+                    rows = (T[])new Object[cnt];
 
-                    assert idx < 0;
+                for (int i = 0; i < cnt; i++) {
+                    T r = getRow(io, buf, startIdx + i);
 
-                    cnt = -idx;
-
-                    nextPageId = 0; // The End.
+                    rows = GridArrays.set(rows, i, r);
                 }
-            }
 
-            for (int i = startIdx; i < cnt; i++)
-                rows.add(getRow(io, buf, i));
+                GridArrays.clearTail(rows, cnt);
+            }
+            else {
+                assert nextPageId == 0;
+
+                rows = null;
+            }
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("SimplifiableIfStatement")
         @Override public boolean next() throws IgniteCheckedException {
             if (rows == null)
                 return false;
 
-            if (++row < rows.size())
+            if (++row < rows.length && rows[row] != null) {
+                clearLastRow();
+
                 return true;
+            }
 
-            row = 0;
-            rows.clear();
+            return nextPage();
+        }
 
-            while (nextPageId != 0) {
-                try (Page next = page(nextPageId)) {
-                    ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
+        /**
+         * @return Cleared last row.
+         */
+        private T clearLastRow() {
+            if (row == 0)
+                return null;
 
-                    try {
-                        if (PageIO.getPageId(buf) != nextPageId)
-                            throw new IgniteCheckedException("Concurrent merge.");
+            int last = row - 1;
 
+            T r = rows[last];
+
+            assert r != null;
+
+            rows[last] = null;
+
+            return r;
+        }
+
+        /**
+         * @param lastRow Last row.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void reinitialize(T lastRow) throws IgniteCheckedException {
+            assert lastRow != null;
+
+            // Here we have shift 1 because otherwise we can return the same row twice.
+            doFind(new GetCursor(lastRow, 1, this));
+        }
+
+        /**
+         * @return {@code true} If we have rows to return after reading the next page.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean nextPage() throws IgniteCheckedException {
+            if (nextPageId == 0) {
+                rows = null;
+
+                return false;
+            }
+
+            T lastRow = clearLastRow();
+
+            boolean reinitialize = false;
+
+            try (Page next = page(nextPageId)) {
+                ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
+
+                try {
+                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                    if (PageIO.getPageId(buf) != nextPageId)
+                        reinitialize = true;
+                    else
                         fillFromBuffer(buf, io(buf), 0);
-
-                        if (!rows.isEmpty())
-                            return true;
-                    }
-                    finally {
-                        next.releaseRead();
-                    }
+                }
+                finally {
+                    next.releaseRead();
                 }
             }
 
-            rows = null;
+            if (reinitialize) // Reinitialize when `next` page is released.
+                reinitialize(lastRow);
 
-            return false;
+            row = 0;
+
+            return rows != null;
         }
 
         /** {@inheritDoc} */
         @Override public T get() {
-            return rows.get(row);
+            T r = rows[row];
+
+            assert r != null;
+
+            return r;
         }
     }
 

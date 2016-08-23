@@ -97,11 +97,11 @@ import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isS
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
-    /** Exchange protocol limit for max partition count. */
-    public static final int MAX_PARTS_COUNT = 0xFFFF;
-
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Maximum number of partitions. */
+    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
 
     /** Default size of rebalance thread pool. */
     @Deprecated
@@ -2261,6 +2261,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
+                if (mtd.isBridge())
+                    continue;
+
                 QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 

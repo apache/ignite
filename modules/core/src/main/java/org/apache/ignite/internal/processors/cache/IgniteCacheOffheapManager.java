@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -73,7 +71,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -82,6 +80,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
+
+    /**
+     * @param p Partition ID.
+     * @param store Data store.
+     */
+    public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.
@@ -204,6 +208,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface CacheDataStore {
+        /**
+         * @return Store name.
+         */
+        String name();
+
         /**
          * @param key Key.
          * @param part Partition.

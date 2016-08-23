@@ -54,6 +54,8 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorAtomicReference(gcj::JniContext* ctx, void* obj, char* name, long long memPtr, bool create);
     void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long long memPtr);
     void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr);
+    bool IGNITE_CALL IgniteProcessorLoggerIsLevelEnabled(gcj::JniContext* ctx, void* obj, int level);
+    void IGNITE_CALL IgniteProcessorLoggerLog(gcj::JniContext* ctx, void* obj, int level, char* message, char* category, char* errorInfo);
     
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr);
@@ -114,6 +116,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProjectionForRandom(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForOldest(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForYoungest(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteProjectionForServers(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionOutOpRet(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
 
@@ -180,6 +183,9 @@ extern "C" {
 
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
+
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
 }
 
 #endif //_IGNITE_JNI_EXPORTS

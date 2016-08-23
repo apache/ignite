@@ -790,7 +790,9 @@ namespace ignite
                         {
                             int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
-                            if (fieldId == currentFieldId)
+                            if (fieldId != currentFieldId)
+                                continue;
+                            else
                                 return static_cast<uint8_t>(stream->ReadInt8(schemaPos + 4)) + pos;
                         }
                         break;
@@ -802,7 +804,9 @@ namespace ignite
                         {
                             int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
-                            if (fieldId == currentFieldId)
+                            if (fieldId != currentFieldId)
+                                continue;
+                            else
                                 return static_cast<uint16_t>(stream->ReadInt16(schemaPos + 4)) + pos;
                         }
                         break;
@@ -814,7 +818,9 @@ namespace ignite
                         {
                             int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
-                            if (fieldId == currentFieldId)
+                            if (fieldId != currentFieldId)
+                                continue;
+                            else
                                 return stream->ReadInt32(schemaPos + 4) + pos;
                         }
                         break;

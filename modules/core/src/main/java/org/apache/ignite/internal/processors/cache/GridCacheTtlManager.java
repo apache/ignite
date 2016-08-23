@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,8 +41,18 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private IgniteCacheOffheapManager.PendingEntries pentries;
 
-    /** Cleanup worker thread. */
+    /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Next expire time. */
+    private volatile long nextExpireTime;
+
+    /** Next expire time updater. */
+    private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
+        AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
 
     /** */
     private boolean cleanupEnabled;
@@ -146,7 +157,24 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         assert cleanupWorker != null;
         assert nearTtl = true;
 
-        ((GridConcurrentSkipListSetEx)pentries).add(new EntryWrapper(entry));
+        EntryWrapper e = new EntryWrapper(entry);
+
+        pendingEntries.add(e);
+
+        while (true) {
+            long nextExpireTime = this.nextExpireTime;
+
+            if (e.expireTime < nextExpireTime) {
+                if (nextExpireTimeUpdater.compareAndSet(this, nextExpireTime, e.expireTime)) {
+                    synchronized (mux) {
+                        mux.notifyAll();
+                    }
+
+                    break;
+                }
+            } else
+                break;
+        }
     }
 
     /**
@@ -224,15 +252,98 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                         }
                     }
 
-                    if (touch)
-                        entry.context().evicts().touch(entry, null);
-                }
-                else
-                    break;
+                if (touch)
+                    entry.context().evicts().touch(entry, null);
             }
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to process expired entries: " + e, e);
+    }
+
+    /**
+     * Entry cleanup worker.
+     */
+    private class CleanupWorker extends GridWorker {
+        /**
+         * Creates cleanup worker.
+         */
+        CleanupWorker() {
+            super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                expire();
+
+                long waitTime;
+
+                while (true) {
+                    long curTime = U.currentTimeMillis();
+
+                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
+
+                    if (first == null) {
+                        waitTime = 500;
+                        nextExpireTime = curTime + 500;
+                    }
+                    else {
+                        long expireTime = first.expireTime;
+
+                        waitTime = expireTime - curTime;
+                        nextExpireTime = expireTime;
+                    }
+
+                    synchronized (mux) {
+                        if (pendingEntries.firstx() == first) {
+                            if (waitTime > 0)
+                                mux.wait(waitTime);
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param cctx1 First cache context.
+     * @param key1 Left key to compare.
+     * @param cctx2 Second cache context.
+     * @param key2 Right key to compare.
+     * @return Comparison result.
+     */
+    private static int compareKeys(GridCacheContext cctx1, CacheObject key1, GridCacheContext cctx2, CacheObject key2) {
+        int key1Hash = key1.hashCode();
+        int key2Hash = key2.hashCode();
+
+        int res = Integer.compare(key1Hash, key2Hash);
+
+        if (res == 0) {
+            key1 = (CacheObject)cctx1.unwrapTemporary(key1);
+            key2 = (CacheObject)cctx2.unwrapTemporary(key2);
+
+            try {
+                byte[] key1ValBytes = key1.valueBytes(cctx1.cacheObjectContext());
+                byte[] key2ValBytes = key2.valueBytes(cctx2.cacheObjectContext());
+
+                // Must not do fair array comparison.
+                res = Integer.compare(key1ValBytes.length, key2ValBytes.length);
+
+                if (res == 0) {
+                    for (int i = 0; i < key1ValBytes.length; i++) {
+                        res = Byte.compare(key1ValBytes[i], key2ValBytes[i]);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+
+                if (res == 0)
+                    res = Boolean.compare(cctx1.isNear(), cctx2.isNear());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 

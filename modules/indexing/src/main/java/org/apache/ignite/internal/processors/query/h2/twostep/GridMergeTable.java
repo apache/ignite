@@ -50,8 +50,8 @@ public class GridMergeTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(Session session, boolean exclusive, boolean force) {
-        // No-op.
+    @Override public boolean lock(Session session, boolean exclusive, boolean force) {
+        return false;
     }
 
     /** {@inheritDoc} */
