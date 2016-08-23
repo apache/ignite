@@ -98,7 +98,9 @@ struct QueriesTestSuiteFixture
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("queries-test.xml");
+        BOOST_REQUIRE(cfgPath != 0);
+
+        cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
 
         IgniteError err;
 
@@ -178,7 +180,7 @@ struct QueriesTestSuiteFixture
 
         T columns[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), 0);
@@ -214,7 +216,7 @@ struct QueriesTestSuiteFixture
 
         SQLLEN columnLens[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), &columnLens[i]);
@@ -327,7 +329,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, 0);
@@ -364,7 +366,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -420,7 +422,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -479,7 +481,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, 0, 0, &columnLens[i]);
@@ -508,6 +510,40 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     BOOST_CHECK_EQUAL(columnLens[8], 36);
     BOOST_CHECK_EQUAL(columnLens[9], 19);
     BOOST_CHECK_EQUAL(columnLens[10], 19);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionLength)
+{
+    SQLRETURN ret;
+
+    TestType in;
+    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    testCache.Put(1, in);
+
+    SQLCHAR request[] = "SELECT {fn LENGTH(strField)} FROM TestType";
+
+    const size_t columnsCnt = 1;
+
+    SQLBIGINT res = 0;
+
+    ret = SQLBindCol(stmt, 1, SQL_C_SBIGINT, 0, 0, &res);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(res, in.strField.size());
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
