@@ -129,7 +129,7 @@ namespace Apache.Ignite.AspNet
             var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
 
             // There is no way to check if lock is obtained without entering it.
-            // So we enter and exit immediately.
+            // So we enter in GetItemExclusive and exit immediately here.
             if (!locked)
                 ((ICacheLock)lockId).Exit();
 
