@@ -344,12 +344,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     if (prevBatch == null)
                         break;
-                    else {
-                        assert prevBatch.finishing() :
-                            "File lock should prevent stream creation on a not-closed-yet file.";
-
+                    else
                         prevBatch.await();
-                    }
                 }
 
                 return batch;

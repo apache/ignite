@@ -1071,12 +1071,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             os.write(new byte[10 * 1024 * 1024]);
         }
 
+        awaitFileClose(igfs, FILE);
+
         if (dual)
             checkExist(igfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
         checkExist(igfs, DIR, SUBDIR, FILE);
 
-        assert igfs.info(FILE).length() == 10 * 1024 * 1024;
+        assertEquals(10 * 1024 * 1024, igfs.info(FILE).length());
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
