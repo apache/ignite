@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -26,26 +27,56 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message indicating that a backup has been started.
  */
-public class BackupMessage implements DiscoveryCustomMessage {
+public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Backup ID. */
     private long backupId;
 
     /** */
     private Collection<String> cacheNames;
 
+    /** */
+    private UUID initiatorID;
+
+    /** Error. */
+    private Exception err;
+
     /**
      * @param backupId Backup ID.
      * @param cacheNames Cache names.
      */
-    public BackupMessage(long backupId, Collection<String> cacheNames) {
+    public StartFullBackupDiscoveryMessage(long backupId, Collection<String> cacheNames, UUID initiatorID) {
         this.backupId = backupId;
         this.cacheNames = cacheNames;
+        this.initiatorID = initiatorID;
+    }
+
+    /**
+     * Sets error.
+     *
+     * @param err Error.
+     */
+    public void error(Exception err) {
+        this.err = err;
+    }
+
+    /**
+     * @return {@code True} if message contains error.
+     */
+    public boolean hasError() {
+        return err != null;
+    }
+
+    /**
+     * @return Error.
+     */
+    public Exception error() {
+        return err;
     }
 
     /** {@inheritDoc} */
@@ -69,11 +100,11 @@ public class BackupMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        return new StartFullBackupAckDiscoveryMessage(backupId, cacheNames, err, initiatorID);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
+        return true;
     }
 }

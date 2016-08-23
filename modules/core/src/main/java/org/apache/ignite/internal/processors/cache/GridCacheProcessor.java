@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -73,7 +74,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.backup.BackupFuture;
-import org.apache.ignite.internal.pagemem.backup.BackupMessage;
+import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.backup.StartFullBackupDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogNoopManager;
@@ -2537,7 +2539,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof BackupMessage)
+        if (msg instanceof StartFullBackupAckDiscoveryMessage &&
+            ((StartFullBackupAckDiscoveryMessage)msg).error() == null)
             return true;
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
@@ -3566,7 +3569,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
-        long backupId = System.currentTimeMillis();
+        long backupId = ThreadLocalRandom.current().nextLong();
 
         Collection<String> actualCacheNames = new HashSet<>();
 
@@ -3585,7 +3588,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.cache().context().database().submitBackupFuture(backupFut);
 
-        BackupMessage msg = new BackupMessage(backupId, actualCacheNames);
+        StartFullBackupDiscoveryMessage msg = new StartFullBackupDiscoveryMessage(backupId, actualCacheNames,
+            ctx.localNodeId());
 
         ctx.discovery().sendCustomEvent(msg);
 
