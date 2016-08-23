@@ -257,6 +257,44 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
+    void CheckSingleResult0(const char* request, SQLSMALLINT type, void* column, SQLLEN bufSize, SQLLEN* resSize)
+    {
+        SQLRETURN ret;
+
+        ret = SQLBindCol(stmt, 1, type, column, bufSize, resSize);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(const_cast<char*>(request)), SQL_NTS);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetch(stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetch(stmt);
+        BOOST_CHECK(ret == SQL_NO_DATA);
+    }
+
+    template<typename T>
+    void CheckSingleResult(const char* request, const T& expected)
+    {
+        BOOST_FAIL("Function is not defined for the type.");
+    }
+
+    template<typename T>
+    void CheckSingleResultNum0(const char* request, const T& expected, SQLSMALLINT type)
+    {
+        T res = 0;
+
+        CheckSingleResult0(request, type, &res, 0, 0);
+
+        BOOST_CHECK_EQUAL(res, expected);
+    }
+
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -272,6 +310,42 @@ struct QueriesTestSuiteFixture
     /** ODBC Statement. */
     SQLHSTMT stmt;
 };
+
+
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected)
+{
+    SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
+    SQLLEN resLen = 0;
+
+    CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
+
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(res), static_cast<size_t>(resLen)), expected);
+}
+
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
+{
+    CheckSingleResultNum0<int64_t>(request, expected, SQL_C_SBIGINT);
+}
+
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
+{
+    CheckSingleResultNum0<int32_t>(request, expected, SQL_C_SLONG);
+}
+
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
+{
+    CheckSingleResultNum0<int16_t>(request, expected, SQL_C_SSHORT);
+}
+
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected)
+{
+    CheckSingleResultNum0<int8_t>(request, expected, SQL_C_STINYINT);
+}
 
 BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
@@ -517,34 +591,12 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
 BOOST_AUTO_TEST_CASE(TestAggrFunctionLength)
 {
-    SQLRETURN ret;
-
     TestType in;
     in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
 
     testCache.Put(1, in);
 
-    SQLCHAR request[] = "SELECT {fn LENGTH(strField)} FROM TestType";
-
-    SQLBIGINT res = 0;
-
-    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
-
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    ret = SQLExecDirect(stmt, request, SQL_NTS);
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    ret = SQLFetch(stmt);
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    BOOST_CHECK_EQUAL(res, in.strField.size());
-
-    ret = SQLFetch(stmt);
-    BOOST_CHECK(ret == SQL_NO_DATA);
+    CheckSingleResult<int64_t>("SELECT {fn LENGTH(strField)} FROM TestType", in.strField.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

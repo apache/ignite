@@ -370,7 +370,7 @@ namespace ignite
                     SQL_SRJO_NATURAL_JOIN | SQL_SRJO_INTERSECT_JOIN | SQL_SRJO_UNION_JOIN;
 #endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
 
-                const static int32_t numerucMask = SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_BIT | SQL_CVT_CHAR |
+                const static int32_t numericMask = SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_BIT | SQL_CVT_CHAR |
                     SQL_CVT_DECIMAL | SQL_CVT_DOUBLE | SQL_CVT_FLOAT | SQL_CVT_INTEGER | SQL_CVT_LONGVARBINARY |
                     SQL_CVT_LONGVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_REAL | SQL_CVT_SMALLINT | SQL_CVT_TINYINT |
                     SQL_CVT_VARBINARY | SQL_CVT_VARCHAR | SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_DATE;
@@ -384,43 +384,43 @@ namespace ignite
                     SQL_CVT_TIMESTAMP | SQL_CVT_TIME | SQL_CVT_TINYINT | SQL_CVT_VARBINARY | SQL_CVT_VARCHAR;
 
 #ifdef SQL_CONVERT_BIGINT
-                intParams[SQL_CONVERT_BIGINT] = numerucMask;
+                intParams[SQL_CONVERT_BIGINT] = numericMask;
 #endif // SQL_CONVERT_BIGINT
 
 #ifdef SQL_CONVERT_INTEGER
-                intParams[SQL_CONVERT_INTEGER] = numerucMask;
+                intParams[SQL_CONVERT_INTEGER] = numericMask;
 #endif // SQL_CONVERT_INTEGER
 
 #ifdef SQL_CONVERT_SMALLINT
-                intParams[SQL_CONVERT_SMALLINT] = numerucMask;
+                intParams[SQL_CONVERT_SMALLINT] = numericMask;
 #endif // SQL_CONVERT_SMALLINT
 
 #ifdef SQL_CONVERT_TINYINT
-                intParams[SQL_CONVERT_TINYINT] = numerucMask;
+                intParams[SQL_CONVERT_TINYINT] = numericMask;
 #endif // SQL_CONVERT_TINYINT
 
 #ifdef SQL_CONVERT_DOUBLE
-                intParams[SQL_CONVERT_DOUBLE] = numerucMask;
+                intParams[SQL_CONVERT_DOUBLE] = numericMask;
 #endif // SQL_CONVERT_DOUBLE
 
 #ifdef SQL_CONVERT_REAL
-                intParams[SQL_CONVERT_REAL] = numerucMask;
+                intParams[SQL_CONVERT_REAL] = numericMask;
 #endif // SQL_CONVERT_REAL
 
 #ifdef SQL_CONVERT_FLOAT
-                intParams[SQL_CONVERT_FLOAT] = numerucMask;
+                intParams[SQL_CONVERT_FLOAT] = numericMask;
 #endif // SQL_CONVERT_FLOAT
 
 #ifdef SQL_CONVERT_NUMERIC
-                intParams[SQL_CONVERT_NUMERIC] = numerucMask;
+                intParams[SQL_CONVERT_NUMERIC] = numericMask;
 #endif // SQL_CONVERT_NUMERIC
 
 #ifdef SQL_CONVERT_DECIMAL
-                intParams[SQL_CONVERT_DECIMAL] = numerucMask;
+                intParams[SQL_CONVERT_DECIMAL] = numericMask;
 #endif // SQL_CONVERT_DECIMAL
 
 #ifdef SQL_CONVERT_BIT
-                intParams[SQL_CONVERT_BIT] = numerucMask;
+                intParams[SQL_CONVERT_BIT] = numericMask;
 #endif // SQL_CONVERT_BIT
 
 #ifdef SQL_CONVERT_DATE
