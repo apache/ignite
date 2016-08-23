@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System.Collections.Specialized;
     using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet;
@@ -67,10 +68,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
-        /// Test set up.
+        /// Test teardown.
         /// </summary>
-        [SetUp]
-        public void SetUp()
+        [TearDown]
+        public void TearDown()
         {
             // Clear all caches.
             var ignite = Ignition.GetIgnite(GridName);
@@ -199,12 +200,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            // Try to get it.
-            res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
-            Assert.IsNull(res);
-            Assert.IsTrue(locked);
-            Assert.Greater(lockAge, TimeSpan.Zero);
-            Assert.AreEqual(SessionStateActions.None, actions);
+            // Try to get it in a different thread.
+            Task.Factory.StartNew(() =>
+            {
+                res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+                Assert.IsNull(res);
+                Assert.IsTrue(locked);
+                Assert.Greater(lockAge, TimeSpan.Zero);
+                Assert.AreEqual(SessionStateActions.None, actions);
+            }).Wait();
         }
 
         /// <summary>

@@ -135,7 +135,7 @@ namespace Apache.Ignite.AspNet
 
                 // There is no way to check if lock is obtained without entering it.
                 // So we enter in GetItemExclusive and exit immediately here.
-                if (!locked)
+                if (!locked && cacheLock != null)
                     cacheLock.Exit();
 
                 return res;
@@ -143,7 +143,8 @@ namespace Apache.Ignite.AspNet
             finally
             {
                 // Lock is not needed in read-only session mode.
-                cacheLock.Dispose();
+                if (cacheLock != null)
+                    cacheLock.Dispose();
             }
         }
 
