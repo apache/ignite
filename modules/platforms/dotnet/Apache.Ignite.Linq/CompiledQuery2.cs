@@ -27,18 +27,18 @@ namespace Apache.Ignite.Linq
     using Apache.Ignite.Linq.Impl;
 
     /// <summary>
+    /// Delegate for compiled query with arbitrary number of arguments.
+    /// </summary>
+    /// <typeparam name="T">Result type.</typeparam>
+    /// <param name="args">The arguments.</param>
+    /// <returns>Query cursor.</returns>
+    public delegate IQueryCursor<T> CompiledQueryDelegate<T>(params object[] args);
+
+    /// <summary>
     /// Represents a compiled cache query.
     /// </summary>
     public static class CompiledQuery2
     {
-        /// <summary>
-        /// Delegate for compiled query with arbitrary number of arguments.
-        /// </summary>
-        /// <typeparam name="T">Result type.</typeparam>
-        /// <param name="args">The arguments.</param>
-        /// <returns>Query cursor.</returns>
-        public delegate IQueryCursor<T> CompiledQueryDelegate<T>(params object[] args);
-
         /// <summary>
         /// Creates a new delegate that represents the compiled cache query.
         /// </summary>
