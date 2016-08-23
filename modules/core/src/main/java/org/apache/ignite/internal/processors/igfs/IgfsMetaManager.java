@@ -152,7 +152,7 @@ public class IgfsMetaManager extends IgfsManager {
     private final boolean client;
 
     /** Compute facade for client tasks. */
-    private IgniteCompute cliCompute;
+    private IgniteCompute remoteCompute;
 
     /**
      * Constructor.
@@ -319,8 +319,8 @@ public class IgfsMetaManager extends IgfsManager {
     <T> T runRemote(IgniteUuid affKey, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affKey, task) :
-                clientCompute().call(task);
+                remoteCompute().affinityCall(cfg.getMetaCacheName(), affKey, task) :
+                remoteCompute().call(task);
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -332,24 +332,22 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return Compute facade.
      */
-    private IgniteCompute clientCompute() {
-        assert client;
+    private IgniteCompute remoteCompute() {
+        IgniteCompute remoteCompute0 = remoteCompute;
 
-        IgniteCompute cliCompute0 = cliCompute;
-
-        if (cliCompute0 == null) {
+        if (remoteCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
             ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
 
-            cliCompute0 = ignite.compute(cluster);
+            remoteCompute0 = ignite.compute(cluster);
 
-            cliCompute = cliCompute0;
+            remoteCompute = remoteCompute0;
         }
 
-        assert cliCompute0 != null;
+        assert remoteCompute0 != null;
 
-        return cliCompute0;
+        return remoteCompute0;
     }
 
     /**
