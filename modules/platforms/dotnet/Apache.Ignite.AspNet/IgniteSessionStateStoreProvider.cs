@@ -19,6 +19,7 @@ namespace Apache.Ignite.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Web;
     using System.Web.SessionState;
@@ -191,7 +192,7 @@ namespace Apache.Ignite.AspNet
                 if (Cache.TryGet(key, out existingData))
                 {
                     // Item found, return it.
-                    return (SessionStateStoreData) existingData;
+                    return SessionStateStoreDataSerializer.Deserialize((byte[]) existingData);
                 }
 
                 // Item not found - return null.
@@ -275,7 +276,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
         {
-            return new IgniteSessionStateStoreData(new SessionStateItemCollection(),
+            return new SessionStateStoreData(new SessionStateItemCollection(),
                 SessionStateUtility.GetSessionStaticObjects(context), timeout);
         }
 
@@ -370,9 +371,11 @@ namespace Apache.Ignite.AspNet
         /// </summary>
         private void PutSessionStateStoreData(string id, SessionStateStoreData item)
         {
+            Debug.Assert(item != null);
+
             var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
 
-            cache[GetKey(id)] = item;
+            cache[GetKey(id)] = SessionStateStoreDataSerializer.Serialize(item);
         }
     }
 }
