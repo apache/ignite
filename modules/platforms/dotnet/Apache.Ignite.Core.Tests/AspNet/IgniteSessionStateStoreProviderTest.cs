@@ -113,6 +113,24 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the transactional requirement.
+        /// </summary>
+        [Test]
+        public void TestTransactionalRequirement()
+        {
+            var provider = new IgniteSessionStateStoreProvider();
+
+            var ex = Assert.Throws<IgniteException>(() =>
+                provider.Initialize("testName2", new NameValueCollection
+                {
+                    {SectionNameAttr, "igniteConfiguration2"},
+                    {CacheNameAttr, "cacheName2"}
+                }));
+
+            Assert.IsTrue(ex.Message.Contains("Transactional mode is required."));
+        }
+
+        /// <summary>
         /// Gets the initialized provider.
         /// </summary>
         private static IgniteSessionStateStoreProvider GetProvider()
