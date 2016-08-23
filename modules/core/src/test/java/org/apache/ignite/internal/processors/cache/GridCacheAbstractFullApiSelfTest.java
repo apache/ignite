@@ -5559,70 +5559,96 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
 
         try {
-            // test invoke for single key
-            String key = UUID.randomUUID().toString();
+            checkResourceInjectionOnInvoke(cache, required);
 
-            Integer flags = cache.invoke(key, new ResourceInjectionEntryProcessor());
+            checkResourceInjectionOnInvokeAll(cache, required);
 
-            if (cache.isAsync())
-                flags = cache.<Integer>future().get();
-
-            assertTrue("Processor result is null", flags != null);
-
-            log.info("Injection flag: " + Integer.toBinaryString(flags));
-
-            Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
-
-            if (!notInjected.isEmpty())
-                fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
-
-            // test invokeAll method for set of keys
-            Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString()));
-
-            Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
-
-            if (cache.isAsync())
-                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
-
-            assertEquals(keys.size(), results.size());
-
-            for (EntryProcessorResult<Integer> res : results.values()) {
-                Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
-
-                if (!notInjected1.isEmpty())
-                    fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
-            }
-
-            // test invokeAll method for map of pairs (key, entryProcessor)
-            EntryProcessor entryProcessor = new ResourceInjectionEntryProcessor();
-
-            Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
-
-            map.put(UUID.randomUUID().toString(), entryProcessor);
-            map.put(UUID.randomUUID().toString(), entryProcessor);
-            map.put(UUID.randomUUID().toString(), entryProcessor);
-            map.put(UUID.randomUUID().toString(), entryProcessor);
-
-            results = cache.invokeAll(map);
-
-            if (cache.isAsync())
-                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
-
-            assertEquals(map.size(), results.size());
-
-            for (EntryProcessorResult<Integer> res : results.values()) {
-                Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
-
-                if (!notInjected1.isEmpty())
-                    fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
-            }
+            checkResourceInjectionOnInvokeAllMap(cache, required);
         }
         finally {
             evts.stopRemoteListen(opId);
         }
+    }
+
+    /**
+     * Test invokeAll method for map of pairs (key, entryProcessor)
+     */
+    private void checkResourceInjectionOnInvokeAllMap(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+
+        Map<String, EntryProcessorResult<Integer>> results;
+
+        EntryProcessor entryProcessor = new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor();
+
+        Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
+
+        map.put(UUID.randomUUID().toString(), entryProcessor);
+        map.put(UUID.randomUUID().toString(), entryProcessor);
+        map.put(UUID.randomUUID().toString(), entryProcessor);
+        map.put(UUID.randomUUID().toString(), entryProcessor);
+
+        results = cache.invokeAll(map);
+
+        if (cache.isAsync())
+            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+
+        assertEquals(map.size(), results.size());
+
+        for (EntryProcessorResult<Integer> res : results.values()) {
+            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+
+            if (!notInjected1.isEmpty())
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
+        }
+    }
+
+    /**
+     * Test invokeAll method for set of keys
+     */
+    private void checkResourceInjectionOnInvokeAll(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+
+        Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()));
+
+        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+
+        if (cache.isAsync())
+            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+
+        assertEquals(keys.size(), results.size());
+
+        for (EntryProcessorResult<Integer> res : results.values()) {
+            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+
+            if (!notInjected1.isEmpty())
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
+        }
+    }
+
+    /**
+     * Test invoke for single key
+     */
+    private void checkResourceInjectionOnInvoke(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+
+        String key = UUID.randomUUID().toString();
+
+        Integer flags = cache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+
+        if (cache.isAsync())
+            flags = cache.<Integer>future().get();
+
+        assertTrue("Processor result is null", flags != null);
+
+        log.info("Injection flag: " + Integer.toBinaryString(flags));
+
+        Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
+
+        if (!notInjected.isEmpty())
+            fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
     }
 
     /**
