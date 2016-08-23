@@ -132,6 +132,9 @@ public abstract class PageIO {
     public static final short T_METASTORE_LEAF = 12;
 
     /** */
+    public static final short T_META = 13;
+
+    /** */
     private final int ver;
 
     /** */
@@ -276,6 +279,9 @@ public abstract class PageIO {
         switch (type) {
             case T_DATA:
                 return (Q)DataPageIO.VERSIONS.forVersion(ver);
+
+            case T_META:
+                return (Q)PageMetaIO.VERSIONS.forVersion(ver);
 
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
