@@ -17,12 +17,6 @@
 
 package org.apache.ignite.testframework.junits.logger;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -33,7 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.*;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerWorkDirectoryAware;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -44,6 +39,13 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.UUID;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSOLE_APPENDER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;

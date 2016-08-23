@@ -71,8 +71,9 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath1 = getSpi().getCurrentDirectoryPath();
 
-        String workDirectory = getConfiguration().getWorkDirectory();
-        File folder1 = U.resolveWorkDirectory(workDirectory, curSpiPath1, false);
+        String workDir = getConfiguration().getWorkDirectory();
+
+        File folder1 = U.resolveWorkDirectory(workDir, curSpiPath1, false);
 
         assert folder1.exists() : "Checkpoint folder doesn't exist.";
 
@@ -85,7 +86,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath2 = getSpi().getCurrentDirectoryPath();
 
-        File folder2 = U.resolveWorkDirectory(workDirectory, curSpiPath2, false);
+        File folder2 = U.resolveWorkDirectory(workDir, curSpiPath2, false);
 
         assert folder2.exists() : "Check point folder doesn't exist.";
 
@@ -99,7 +100,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String newCurSpiPath = getSpi().getCurrentDirectoryPath();
 
-        File changedFolder = U.resolveWorkDirectory(workDirectory, newCurSpiPath, false);
+        File changedFolder = U.resolveWorkDirectory(workDir, newCurSpiPath, false);
 
         assert changedFolder.exists() : "Check point folder doesn't exist.";
 

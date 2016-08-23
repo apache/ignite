@@ -103,6 +103,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
         try {
             for (int i = 0; i < GRID_COUNT; i++) {
                 IgniteConfiguration cfg = getConfiguration(log);
+
                 try (Ignite g = G.start(cfg)) {
                     assert g != null;
 

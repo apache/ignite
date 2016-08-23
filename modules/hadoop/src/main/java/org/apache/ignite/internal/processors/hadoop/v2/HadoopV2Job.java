@@ -124,7 +124,6 @@ public class HadoopV2Job implements HadoopJob {
     /** Serialized JobConf. */
     private volatile byte[] jobConfData;
 
-
     /**
      * Constructor.
      *
@@ -413,7 +412,6 @@ public class HadoopV2Job implements HadoopJob {
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
         HadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
-
 
         taskCtxClsPool.add(ctx.getClass());
 
