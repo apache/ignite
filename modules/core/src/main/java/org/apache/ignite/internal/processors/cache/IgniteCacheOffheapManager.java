@@ -82,6 +82,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
 
     /**
+     * @param p Partition ID.
+     * @param store Data store.
+     */
+    public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
+
+    /**
      * TODO: GG-10884, used on only from initialValue.
      */
     public boolean containsKey(GridCacheMapEntry entry);
@@ -196,6 +202,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface CacheDataStore {
+        /**
+         * @return Store name.
+         */
+        String name();
+
         /**
          * @param key Key.
          * @param part Partition.

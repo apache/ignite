@@ -169,7 +169,7 @@ public class FreeList {
 
             int oldFreeSpace = io.getFreeSpace(buf);
 
-            assert oldFreeSpace > 0: oldFreeSpace;
+            assert oldFreeSpace >= 0: oldFreeSpace;
 
             long nextLink = io.removeRow(buf, (byte)itemId);
 

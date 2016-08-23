@@ -180,28 +180,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected void destroyCacheDataStructures() {
         final PageMemory pageMem = cctx.shared().database().pageMemory();
 
-        try (Page meta = pageMem.metaPage(cctx.cacheId())) {
-            final ByteBuffer buf = meta.getForWrite();
-
-            try {
-                // Set number of initialized pages to 0.
-                buf.putInt(0);
-            }
-            finally {
-                meta.releaseWrite(true);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-
         try {
             if (locCacheDataStore != null)
                 locCacheDataStore.destroy();
 
-            for (CacheDataStore store : partDataStores.values()) {
+            for (CacheDataStore store : partDataStores.values())
                 store.destroy();
-            }
 
             metaStore.destroy();
 
@@ -655,6 +639,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return dataStore;
     }
 
+    /** {@inheritDoc} */
+    @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
+        try {
+            partDataStores.remove(p, store);
+
+            store.destroy();
+
+            meta().dropRootPage(store.name());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      *
      */
@@ -701,6 +699,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.rowStore = rowStore;
             this.dataTree = dataTree;
             this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return name;
         }
 
         /** {@inheritDoc} */
@@ -773,8 +776,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public void destroy() throws IgniteCheckedException {
             dataTree.destroy();
 
-            if (cctx.shared().database().persistenceEnabled())
-                metaStore.dropRootPage(name);
+            metaStore.dropRootPage(name);
         }
     }
 
