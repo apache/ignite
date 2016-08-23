@@ -33,6 +33,7 @@ import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
+import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
@@ -135,6 +136,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(VariationsIteratorTest.class);
         suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
         suite.addTestSuite(NotStringSystemPropertyTest.class);
+
+        suite.addTestSuite(MarshallerContextLockingSelfTest.class);
 
         return suite;
     }
