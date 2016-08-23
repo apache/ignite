@@ -506,7 +506,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public boolean exists(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             return meta.runRemote(new IgfsClientExistsCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Boolean>() {
@@ -554,7 +554,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override @Nullable public IgfsFile info(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             return meta.runRemote(new IgfsClientInfoCallable(cfg.getName(), path));
 
         return safeOp(new Callable<IgfsFile>() {
@@ -580,7 +580,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public IgfsPathSummary summary(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             return meta.runRemote(new IgfsClientSummaryCallable(cfg.getName(), path));
 
         return safeOp(new Callable<IgfsPathSummary>() {
@@ -608,7 +608,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(props, "props");
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
-        if (meta.isRunRemote())
+        if (meta.isModifyRemote(path))
             return meta.runRemote(new IgfsClientUpdateCallable(cfg.getName(), path, props));
 
         return safeOp(new Callable<IgfsFile>() {
@@ -657,7 +657,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(src, "src");
         A.notNull(dest, "dest");
 
-        if (meta.isRunRemote()) {
+        if (meta.isModifyRemote()) {
             meta.runRemote(new IgfsClientRenameCallable(cfg.getName(), src, dest));
 
             return;
@@ -707,7 +707,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public boolean delete(final IgfsPath path, final boolean recursive) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isModifyRemote())
             return meta.runRemote(new IgfsClientDeleteCallable(cfg.getName(), path, recursive));
 
         return safeOp(new Callable<Boolean>() {
@@ -746,7 +746,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote()) {
+        if (meta.isModifyRemote()) {
             meta.runRemote(new IgfsClientMkdirsCallable(cfg.getName(), path, props));
 
             return ;
@@ -781,7 +781,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             meta.runRemote(new IgfsClientListPathsCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Collection<IgfsPath>>() {
@@ -831,7 +831,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             meta.runRemote(new IgfsClientListFilesCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Collection<IgfsFile>>() {
@@ -1136,7 +1136,7 @@ public final class IgfsImpl implements IgfsEx {
         if (accessTime == -1 && modificationTime == -1)
             return;
 
-        if (meta.isRunRemote()) {
+        if (meta.isModifyRemote(path)) {
             meta.runRemote(new IgfsClientSetTimesCallable(cfg.getName(), path, accessTime, modificationTime));
 
             return;
@@ -1168,7 +1168,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(start >= 0, "start >= 0");
         A.ensure(len >= 0, "len >= 0");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             return meta.runRemote(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
@@ -1251,7 +1251,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public long size(final IgfsPath path) {
         A.notNull(path, "path");
 
-        if (meta.isRunRemote())
+        if (meta.isReadRemote())
             return meta.runRemote(new IgfsClientSizeCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Long>() {

@@ -239,19 +239,59 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return {@code True} if remote task execution is needed.
      */
-    boolean isRunRemote() {
-        return isRunRemote(IgfsUtils.ROOT_ID);
+    boolean isReadRemote() {
+        return isRunRemote(false, IgfsUtils.ROOT_ID);
     }
 
     /**
      * Check whether remote task execution is needed.
      *
+     * @return {@code True} if remote task execution is needed.
+     */
+    boolean isModifyRemote() {
+        return isRunRemote(true, IgfsUtils.ROOT_ID);
+    }
+
+    /**
+     * Check whether remote task execution is needed.
+     *
+     * @param fileId Identifier of the modified file.
+     * @return {@code True} if remote task execution is needed.
+     */
+    boolean isModifyRemote(IgniteUuid fileId) {
+        return isRunRemote(true, fileId);
+    }
+
+    /**
+     * Check whether remote task execution is needed.
+     *
+     * @param path Modified path.
+     * @return {@code True} if remote task execution is needed.
+     */
+    boolean isModifyRemote(IgfsPath path) {
+        IgniteUuid fileId = null;
+        try {
+            fileId = fileId(path);
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Cannot get file ID for specified path", e);
+        }
+        return isRunRemote(false, fileId == null ? IgfsUtils.ROOT_ID : fileId);
+    }
+
+    /**
+     * Check whether remote task execution is needed.
+     *
+     * @param mutate {@code true} if the operation update anything.
      * @param affKey Affinity key,
      * @return {@code True} if remote task execution is needed.
      */
-    boolean isRunRemote(IgniteUuid affKey) {
-        return client || cfg.isColocateMetadata() &&
-            !metaCache.affinity().isPrimary(igfsCtx.kernalContext().discovery().localNode(), affKey);
+    private boolean isRunRemote(boolean mutate, IgniteUuid affKey) {
+        return client
+            || !mutate && cfg.isColocateMetadata()
+                && !metaCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), affKey)
+            || mutate && (IgfsUtils.ROOT_ID == affKey || cfg.isColocateMetadata())
+                && !metaCache.affinity().isPrimary(igfsCtx.kernalContext().discovery().localNode(), affKey);
     }
 
     /**
@@ -679,7 +719,7 @@ public class IgfsMetaManager extends IgfsManager {
         final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
 
-        if(client) {
+        if(isModifyRemote(fileId)) {
             runRemote(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
                 updateSpace, space, affRange));
 
