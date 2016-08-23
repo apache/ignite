@@ -884,6 +884,8 @@ BOOST_AUTO_TEST_CASE(TestNumericFunctionMod)
 
 BOOST_AUTO_TEST_CASE(TestNumericFunctionPi)
 {
+    testCache.Put(1, TestType());
+
     CheckSingleResult<double>("SELECT {fn PI()} FROM TestType", M_PI);
 }
 
@@ -911,6 +913,8 @@ BOOST_AUTO_TEST_CASE(TestNumericFunctionRadians)
 
 BOOST_AUTO_TEST_CASE(TestNumericFunctionRand)
 {
+    testCache.Put(1, TestType());
+
     CheckSingleResult<double>("SELECT {fn RAND()} * 0 FROM TestType", 0);
 }
 
