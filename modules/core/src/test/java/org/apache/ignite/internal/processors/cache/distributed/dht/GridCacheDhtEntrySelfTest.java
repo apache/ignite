@@ -175,6 +175,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         // Get value on other node.
         assertEquals(val, near1.get(key));
 
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
+
         assert e0 != null;
 
         assert e0.readers().contains(other.id());
@@ -219,6 +222,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 
@@ -265,6 +271,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 

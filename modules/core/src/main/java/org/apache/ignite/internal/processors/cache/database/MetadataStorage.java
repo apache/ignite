@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -33,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Metadata storage.
@@ -69,7 +68,8 @@ public class MetadataStorage implements MetaStore {
         final int cacheId,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew) {
+        final boolean initNew
+    ) {
         try {
             this.pageMem = pageMem;
             this.cacheId = cacheId;
@@ -191,26 +191,6 @@ public class MetadataStorage implements MetaStore {
             final int idx) throws IgniteCheckedException {
             return readRow(buf, ((IndexIO)io).getOffset(idx));
         }
-
-        /** {@inheritDoc} */
-        @Override protected Iterable<Long> getFirstPageIds(ByteBuffer metaBuf) {
-            List<Long> result = new ArrayList<>();
-
-            final int pagesNum = metaBuf.getInt();
-
-            if (pagesNum > 0) {
-                assert pagesNum > 2 : "Must be at least 2 pages for reuse list";
-
-                result.add(metaBuf.getLong());
-
-                for (int i = 0; i < pagesNum - 1; i++) {
-                    result.add(metaBuf.getLong());
-                }
-
-            }
-
-            return result;
-        }
     }
 
     /**
@@ -230,6 +210,11 @@ public class MetadataStorage implements MetaStore {
         private IndexItem(final byte[] idxName, final long pageId) {
             this.idxName = idxName;
             this.pageId = pageId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "I [idxName=" + new String(idxName) + ", pageId=" + U.hexLong(pageId) + ']';
         }
     }
 
@@ -288,14 +273,14 @@ public class MetadataStorage implements MetaStore {
             // Index name length.
             final byte len = src.get();
 
+            dst.put(len);
+
             int lim = src.limit();
 
             src.limit(src.position() + len);
 
             // Index name.
             dst.put(src);
-
-            dst.put(len);
 
             src.limit(lim);
 

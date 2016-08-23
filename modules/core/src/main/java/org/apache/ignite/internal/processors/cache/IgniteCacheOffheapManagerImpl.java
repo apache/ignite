@@ -180,28 +180,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected void destroyCacheDataStructures() {
         final PageMemory pageMem = cctx.shared().database().pageMemory();
 
-        try (Page meta = pageMem.metaPage(cctx.cacheId())) {
-            final ByteBuffer buf = meta.getForWrite();
-
-            try {
-                // Set number of initialized pages to 0.
-                buf.putInt(0);
-            }
-            finally {
-                meta.releaseWrite(true);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-
         try {
             if (locCacheDataStore != null)
                 locCacheDataStore.destroy();
 
-            for (CacheDataStore store : partDataStores.values()) {
+            for (CacheDataStore store : partDataStores.values())
                 store.destroy();
-            }
 
             metaStore.destroy();
 
@@ -792,8 +776,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public void destroy() throws IgniteCheckedException {
             dataTree.destroy();
 
-            if (cctx.shared().database().persistenceEnabled())
-                metaStore.dropRootPage(name);
+            metaStore.dropRootPage(name);
         }
     }
 
