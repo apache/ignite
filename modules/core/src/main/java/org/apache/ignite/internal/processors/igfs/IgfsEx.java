@@ -142,4 +142,11 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return Secondary file system wrapper.
      */
     public IgfsSecondaryFileSystem asSecondary();
+
+    /**
+     * Await for any pending finished writes on the children paths.
+     *
+     * @param paths Paths to check.
+     */
+    public void await(IgfsPath... paths);
 }

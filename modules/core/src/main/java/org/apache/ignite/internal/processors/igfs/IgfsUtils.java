@@ -120,6 +120,12 @@ public class IgfsUtils {
     /** Separator between id and name parts in the trash name. */
     private static final char TRASH_NAME_SEPARATOR = '|';
 
+    /** Flag: this is a directory. */
+    private static final byte FLAG_DIR = 0x1;
+
+    /** Flag: this is a file. */
+    private static final byte FLAG_FILE = 0x2;
+
     /**
      * Static initializer.
      */
@@ -906,5 +912,52 @@ public class IgfsUtils {
         resModes.remove(resModes.size() - 1);
 
         return resModes;
+    }
+
+    /**
+     * Create flags value.
+     *
+     * @param isDir Directory flag.
+     * @param isFile File flag.
+     * @return Result.
+     */
+    public static byte flags(boolean isDir, boolean isFile) {
+        byte res = isDir ? FLAG_DIR : 0;
+
+        if (isFile)
+            res |= FLAG_FILE;
+
+        return res;
+    }
+
+    /**
+     * Check whether passed flags represent directory.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is directory.
+     */
+    public static boolean isDirectory(byte flags) {
+        return hasFlag(flags, FLAG_DIR);
+    }
+
+    /**
+     * Check whether passed flags represent file.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is file.
+     */
+    public static boolean isFile(byte flags) {
+        return hasFlag(flags, FLAG_FILE);
+    }
+
+    /**
+     * Check whether certain flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag to check.
+     * @return {@code True} if flag is set.
+     */
+    private static boolean hasFlag(byte flags, byte flag) {
+        return (flags & flag) == flag;
     }
 }
