@@ -643,7 +643,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             assert !affNodes.isEmpty();
 
             if (affNodes.contains(loc)) {
-                String val = sync ? cache.localPeek(i, CachePeekMode.ONHEAP) : cache.get(i);
+                String val = sync ? cache.localPeek(i) : cache.get(i);
 
                 ClusterNode primaryNode = F.first(affNodes);
 
@@ -651,10 +651,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 boolean primary = primaryNode.equals(loc);
 
-                assert Integer.toString(i).equals(val) : "Key check failed [grid=" + ignite.name() +
+                assertEquals("Key check failed [grid=" + ignite.name() +
                     ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
                     ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
-                    ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']';
+                    ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']',
+                    Integer.toString(i), val);
             }
         }
     }

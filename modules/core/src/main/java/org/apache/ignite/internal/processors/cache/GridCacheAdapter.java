@@ -4542,7 +4542,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx entry = entryEx(cacheKey);
+            GridCacheEntryEx entry = ctx.isNear() ? peekEx(cacheKey) : entryEx(cacheKey);
 
             if (entry != null)
                 return entry.clear(obsoleteVer, readers);

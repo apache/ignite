@@ -893,7 +893,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, ONHEAP_PEEK_MODES, null);
+        return cache.localPeek(key, null, null);
     }
 
     /**

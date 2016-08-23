@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class RootPage {
     /** */
+    @GridToStringInclude
     private FullPageId pageId;
 
     /** */
@@ -50,5 +53,10 @@ public class RootPage {
      */
     public boolean isAllocated() {
         return allocated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RootPage.class, this);
     }
 }
