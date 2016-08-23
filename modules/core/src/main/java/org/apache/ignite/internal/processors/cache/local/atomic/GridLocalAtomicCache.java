@@ -711,11 +711,17 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             resourceProcessor.inject(entryProcessor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
         }
         catch (IgniteCheckedException e) {
-            CacheInvokeResult<T> invokeResult = CacheInvokeResult.fromError(e);
+            final EntryProcessorResult<T> invokeResult = CacheInvokeResult.fromError(e);
 
-            return F.viewAsMap(keys, new C1<K, CacheInvokeResult>() {
-                @Override public CacheInvokeResult apply(K k) {
+            final Map<? extends K, EntryProcessorResult<T>> resultMap = F.viewAsMap(keys, new C1<K, EntryProcessorResult<T>>() {
+                @Override public EntryProcessorResult<T> apply(K k) {
                     return invokeResult;
+                }
+            });
+
+            return asyncOp(new Callable<Map<? extends K, EntryProcessorResult<T>>>() {
+                @Override public Map<? extends K, EntryProcessorResult<T>> call() throws Exception {
+                    return resultMap;
                 }
             });
         }
