@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -71,7 +72,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -279,20 +280,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * storage of entries
      */
     interface PendingEntries {
-        /**
-         *
-         */
-        ExpiredEntriesCursor expired(long time) throws IgniteCheckedException;
-
-        /**
-         *
-         */
-        int pendingSize();
-
-        /**
-         *
-         */
-        long firstExpired();
     }
 
     /**

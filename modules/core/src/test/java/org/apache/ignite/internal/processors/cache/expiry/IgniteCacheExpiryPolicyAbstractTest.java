@@ -1042,7 +1042,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
                     for (Integer key : keys) {
-                        Object val = jcache(i).localPeek(key, null);
+                        Object val = jcache(i).localPeek(key);
 
                         if (val != null) {
                             // log.info("Value [grid=" + i + ", val=" + val + ']');
@@ -1070,7 +1070,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             ClusterNode node = grid(i).cluster().localNode();
 
             for (Integer key : keys) {
-                Object val = jcache(i).localPeek(key, null);
+                Object val = jcache(i).localPeek(key);
 
                 if (val != null) {
                     log.info("Unexpected value [grid=" + i +

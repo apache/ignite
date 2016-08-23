@@ -55,6 +55,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected CacheObject val;
 
     /** */
+    protected long expireTime;
+
+    /** */
     @GridToStringInclude
     protected GridCacheVersion ver;
 
@@ -304,6 +307,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert ver != null : "Version is not ready: " + this;
 
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return expireTime;
     }
 
     /** {@inheritDoc} */
