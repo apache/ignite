@@ -115,7 +115,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
                     cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());
 
-                if (cctx.affinityNode() && cctx.isLocal()) {
+                String name = "PendingEntries";
+
+                final RootPage rootPage = meta().getOrAllocateForTree("PendingEntries");
+
+                pendingEntries = new PendingEntriesTree(cctx,
+                    name,
+                    cctx.shared().database().pageMemory(),
+                    rootPage.pageId().pageId(),
+                    reuseList,
+                    rootPage.isAllocated());
+
+                if (cctx.isLocal()) {
                     assert cctx.cache() instanceof GridLocalCache : cctx.cache();
 
                     locCacheDataStore = createCacheDataStore(0, (CacheDataStore.Listener)cctx.cache());
@@ -670,26 +681,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      */
     private String treeName(int p) {
         return BPlusTree.treeName("p-" + p, "CacheData");
-    }
-
-    /** {@inheritDoc} */
-    @Override public PendingEntries createPendingEntries() throws IgniteCheckedException {
-        assert pendingEntries == null;
-
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
-        String name = "PendingEntries";
-
-        final RootPage rootPage = meta().getOrAllocateForTree("PendingEntries");
-
-        pendingEntries = new PendingEntriesTree(cctx,
-            name,
-            dbMgr.pageMemory(),
-            rootPage.pageId().pageId(),
-            reuseList,
-            rootPage.isAllocated());
-
-        return null;
     }
 
     /**

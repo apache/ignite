@@ -200,12 +200,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
     /**
-     * @return PendingEntries container that is used by TTL manager.
-     * @throws IgniteCheckedException If failed.
-     */
-    PendingEntries createPendingEntries() throws IgniteCheckedException;
-
-    /**
      *
      */
     interface CacheDataStore {

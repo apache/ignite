@@ -40,6 +40,8 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
     /** */
     private GridCacheVersion ver;
 
+    private long expireTime;
+
     /** */
     private int rowSize;
 
@@ -86,6 +88,11 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
      */
     @Override public GridCacheVersion version() {
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return expireTime;
     }
 
     /**
