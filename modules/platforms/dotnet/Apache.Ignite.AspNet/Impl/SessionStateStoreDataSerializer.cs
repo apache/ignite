@@ -19,6 +19,7 @@ namespace Apache.Ignite.AspNet.Impl
 {
     using System.Diagnostics;
     using System.IO;
+    using System.Web;
     using System.Web.SessionState;
 
     /// <summary>
@@ -38,6 +39,24 @@ namespace Apache.Ignite.AspNet.Impl
             {
                 writer.Write(data.Timeout);
 
+                var items = data.Items as SessionStateItemCollection;
+
+                if (items != null)
+                {
+                    writer.Write(true);
+                    items.Serialize(writer);
+                }
+                else
+                    writer.Write(false);
+
+                if (data.StaticObjects != null)
+                {
+                    writer.Write(true);
+                    data.StaticObjects.Serialize(writer);
+                }
+                else
+                    writer.Write(false);
+
                 return stream.ToArray();
             }
         }
@@ -54,8 +73,11 @@ namespace Apache.Ignite.AspNet.Impl
             {
                 var timeout = reader.ReadInt32();
 
+                var items = reader.ReadBoolean() ? SessionStateItemCollection.Deserialize(reader) : null;
 
-                return new SessionStateStoreData(null, null, timeout);
+                var statics = reader.ReadBoolean() ? HttpStaticObjectsCollection.Deserialize(reader) : null;
+
+                return new SessionStateStoreData(items, statics, timeout);
             }
         }
     }
