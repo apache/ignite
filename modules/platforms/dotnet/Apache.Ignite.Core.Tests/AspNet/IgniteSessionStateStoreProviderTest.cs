@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Linq;
+    using System.Reflection;
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet;
@@ -37,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** Cache name XML config attribute. */
         private const string CacheNameAttr = "cacheName";
 
-        /** Cache name XML config attribute. */
+        /** Section name XML config attribute. */
         private const string SectionNameAttr = "igniteConfigurationSectionName";
 
         /** Grid name. */
@@ -62,6 +64,17 @@ namespace Apache.Ignite.Core.Tests.AspNet
         public void TestFixtureTearDown()
         {
             Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Test set up.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            // Clear all caches.
+            var ignite = Ignition.GetIgnite(GridName);
+            ignite.GetCacheNames().ToList().ForEach(x => ignite.GetCache<object, object>(x).Clear());
         }
 
         /// <summary>
@@ -197,7 +210,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
             var statics = new HttpStaticObjectsCollection();
 
             // Modification method is internal.
-            statics.GetType().GetMethod("Add").Invoke(statics, new object[] {"int", typeof(int), false});
+            statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(statics, new object[] {"int", typeof(int), false});
 
             var data = new SessionStateStoreData(items, statics, 8);
 
