@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
@@ -146,10 +147,26 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestCachingReadOnly()
         {
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+
             var provider = GetProvider();
 
-            //provider.GetItem(GetHttpContext(), "1")
+            // Not locked, no item.
+            var res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.IsInstanceOf<ICacheLock>(lockId);
+            Assert.AreEqual(SessionStateActions.None, actions);
 
+            // Not locked, item present.
+
+            // Locked.
+
+            
         }
 
         /// <summary>

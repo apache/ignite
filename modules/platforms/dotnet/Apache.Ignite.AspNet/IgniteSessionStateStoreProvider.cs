@@ -128,12 +128,23 @@ namespace Apache.Ignite.AspNet
         {
             var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
 
-            // There is no way to check if lock is obtained without entering it.
-            // So we enter in GetItemExclusive and exit immediately here.
-            if (!locked)
-                ((ICacheLock)lockId).Exit();
+            var cacheLock = (ICacheLock) lockId;
 
-            return res;
+            try
+            {
+
+                // There is no way to check if lock is obtained without entering it.
+                // So we enter in GetItemExclusive and exit immediately here.
+                if (!locked)
+                    cacheLock.Exit();
+
+                return res;
+            }
+            finally
+            {
+                // Lock is not needed in read-only session mode.
+                cacheLock.Dispose();
+            }
         }
 
         /// <summary>
@@ -216,7 +227,10 @@ namespace Apache.Ignite.AspNet
         {
             RemoveLockAge(GetKey(id));
 
-            ((ICacheLock)lockId).Exit();
+            var cacheLock = (ICacheLock)lockId;
+
+            cacheLock.Exit();
+            cacheLock.Dispose();
         }
 
         /// <summary>
