@@ -103,10 +103,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
         {
             var provider = new IgniteSessionStateStoreProvider();
 
-            provider.Initialize("testName2", new NameValueCollection
+            provider.Initialize("testName3", new NameValueCollection
             {
-                {SectionNameAttr, "igniteConfiguration2"},
-                {CacheNameAttr, "cacheName2"}
+                {SectionNameAttr, "igniteConfiguration3"},
+                {CacheNameAttr, "cacheName3"}
             });
 
             CheckProvider(provider);
