@@ -192,9 +192,19 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(SessionStateActions.None, actions);
             Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
 
-            // Locked.
+            // Lock item.
+            res = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            CheckStoreData(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
 
-
+            // Try to get it.
+            res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
+            Assert.IsTrue(locked);
+            Assert.Greater(lockAge, TimeSpan.Zero);
+            Assert.AreEqual(SessionStateActions.None, actions);
         }
 
         /// <summary>
