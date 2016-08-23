@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -3663,7 +3664,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 this,
                 op,
                 val,
-                entryProcessor,
+                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProcessor),
                 invokeArgs,
                 hasDrTtl ? drTtl : -1L,
                 entry,
