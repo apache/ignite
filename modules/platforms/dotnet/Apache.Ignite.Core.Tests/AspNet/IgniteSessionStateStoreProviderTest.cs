@@ -92,20 +92,25 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Valid grid
             stateProvider = GetProvider();
 
-            var data = stateProvider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, 
-                out lockId, out actions);
-            Assert.IsNull(data);
-
-            data = stateProvider.CreateNewStoreData(GetHttpContext(), 42);
-            Assert.IsNotNull(data);
-
-            stateProvider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
-
-            data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
-            Assert.IsNotNull(data);
-            Assert.AreEqual(42, data.Timeout);
+            CheckProvider(stateProvider);
         }
 
+        /// <summary>
+        /// Tests autostart from web configuration section.
+        /// </summary>
+        [Test]
+        public void TestStartFromWebConfigSection()
+        {
+            var provider = new IgniteSessionStateStoreProvider();
+
+            provider.Initialize("testName2", new NameValueCollection
+            {
+                {SectionNameAttr, "igniteConfiguration2"},
+                {CacheNameAttr, "cacheName2"}
+            });
+
+            CheckProvider(provider);
+        }
 
         /// <summary>
         /// Gets the initialized provider.
@@ -121,6 +126,29 @@ namespace Apache.Ignite.Core.Tests.AspNet
             });
 
             return stateProvider;
+        }
+
+        /// <summary>
+        /// Checks the provider.
+        /// </summary>
+        private static void CheckProvider(SessionStateStoreProviderBase stateProvider)
+        {
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+            var data = stateProvider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge,
+                out lockId, out actions);
+            Assert.IsNull(data);
+
+            data = stateProvider.CreateNewStoreData(GetHttpContext(), 42);
+            Assert.IsNotNull(data);
+
+            stateProvider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
+
+            data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(data);
+            Assert.AreEqual(42, data.Timeout);
         }
 
         /// <summary>
