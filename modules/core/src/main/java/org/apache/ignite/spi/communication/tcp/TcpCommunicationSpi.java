@@ -1780,6 +1780,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
                 IgniteConfiguration cfg = ignite.configuration();
+
                 IpcSharedMemoryServerEndpoint srv =
                     new IpcSharedMemoryServerEndpoint(log, cfg.getWorkDirectory(), cfg.getNodeId(), gridName);
 
