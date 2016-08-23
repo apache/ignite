@@ -18,6 +18,7 @@
 namespace Apache.Ignite.AspNet.Impl
 {
     using System.Diagnostics;
+    using System.IO;
     using System.Web.SessionState;
 
     /// <summary>
@@ -25,18 +26,37 @@ namespace Apache.Ignite.AspNet.Impl
     /// </summary>
     internal static class SessionStateStoreDataSerializer
     {
+        /// <summary>
+        /// Serializes the data.
+        /// </summary>
         public static byte[] Serialize(SessionStateStoreData data)
         {
             Debug.Assert(data != null);
 
-            return null;
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write(data.Timeout);
+
+                return stream.ToArray();
+            }
         }
 
+        /// <summary>
+        /// Deserializes the data.
+        /// </summary>
         public static SessionStateStoreData Deserialize(byte[] bytes)
         {
             Debug.Assert(bytes != null);
 
-            return null;
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = new BinaryReader(stream))
+            {
+                var timeout = reader.ReadInt32();
+
+
+                return new SessionStateStoreData(null, null, timeout);
+            }
         }
     }
 }
