@@ -31,10 +31,8 @@ import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => 
 import org.apache.ignite.lang._
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.common.VisorTextTable
-
 import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
-
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
 import java.net._
@@ -42,6 +40,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.node._
@@ -2357,7 +2356,9 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+        val cfg = ignite.configuration()
+
+        logFile = new File(U.resolveWorkDirectory(cfg.getWorkDirectory(), folder, false), fileName)
 
         logFile.createNewFile()
 

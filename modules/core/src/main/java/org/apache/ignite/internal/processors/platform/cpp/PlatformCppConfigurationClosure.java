@@ -135,12 +135,5 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         else
             // If user provided IGNITE_HOME - set it as a system property.
             U.setIgniteHome(ggHome);
-
-        try {
-            U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 }
