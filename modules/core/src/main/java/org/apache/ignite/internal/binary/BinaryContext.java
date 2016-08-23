@@ -101,6 +101,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -1270,9 +1271,14 @@ public class BinaryContext {
      * @param ldr Class loader being undeployed.
      */
     public void onUndeploy(ClassLoader ldr) {
-        for (Class<?> cls : descByCls.keySet()) {
-            if (ldr.equals(cls.getClassLoader()))
-                descByCls.remove(cls);
+        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            // Never undeploy system types.
+            if (e.getValue().userType()) {
+                if (ldr.equals(e.getKey().getClassLoader()))
+                    it.remove();
+            }
         }
 
         U.clearClassCache(ldr);
