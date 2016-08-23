@@ -66,11 +66,10 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer, GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<CacheDataRow, Integer> writeRow = new PageHandler<CacheDataRow, Integer>() {
-        @Override public Integer run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int written)
+    private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
+        new PageHandler<CacheDataRow, DataPageIO, Integer>() {
+        @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
             throws IgniteCheckedException {
-            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
             int rowSize = getRowSize(coctx, row);
@@ -163,11 +162,10 @@ public class FreeList {
     };
 
     /** */
-    private final PageHandler<FreeTree, Long> removeRow = new PageHandler<FreeTree, Long>() {
-        @Override public Long run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+    private final PageHandler<FreeTree, DataPageIO, Long> removeRow = new PageHandler<FreeTree, DataPageIO, Long>() {
+        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, FreeTree tree, int itemId)
+            throws IgniteCheckedException {
             assert tree != null;
-
-            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
             int oldFreeSpace = io.getFreeSpace(buf);
 

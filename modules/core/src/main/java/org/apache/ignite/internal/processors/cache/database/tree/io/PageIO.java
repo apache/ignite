@@ -59,10 +59,16 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#writePage(long, Page, PageHandler, PageIO, IgniteWriteAheadLogManager, Object, int)}
- *    method with needed IO instance and {@link PageHandler#NOOP} handler.
+ *    {@link PageHandler#initPage(long, Page, PageIO, IgniteWriteAheadLogManager)}
+ *    method with needed IO instance.
  */
 public abstract class PageIO {
+    /** */
+    private static BPlusInnerIO<?> innerTestIO;
+
+    /** */
+    private static BPlusLeafIO<?> leafTestIO;
+
     /** */
     private static IOVersions<? extends BPlusInnerIO<?>> h2InnerIOs;
 
@@ -130,6 +136,12 @@ public abstract class PageIO {
 
     /** */
     public static final short T_METASTORE_LEAF = 12;
+
+    /** */
+    public static final short T_PAGE_LIST_META = 13;
+
+    /** */
+    public static final short T_PAGE_LIST = 14;
 
     /** */
     private final int ver;
@@ -233,6 +245,17 @@ public abstract class PageIO {
     }
 
     /**
+     * Registers IOs for testing.
+     *
+     * @param innerIO Inner IO.
+     * @param leafIO Leaf IO.
+     */
+    public static void registerTest(BPlusInnerIO<?> innerIO, BPlusLeafIO<?> leafIO) {
+        innerTestIO = innerIO;
+        leafTestIO = leafIO;
+    }
+
+    /**
      * @return Type.
      */
     public final int getType() {
@@ -263,6 +286,18 @@ public abstract class PageIO {
     /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + "[ver=" + getVersion() + "]";
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <Q extends PageIO> Q getPageIO(ByteBuffer buf) throws IgniteCheckedException {
+        int type = getType(buf);
+        int ver = getVersion(buf);
+
+        return getPageIO(type, ver);
     }
 
     /**
@@ -341,6 +376,14 @@ public abstract class PageIO {
 
             case T_REUSE_LEAF:
                 return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
+
+            default:
+                // For tests.
+                if (innerTestIO != null && innerTestIO.getType() == type && innerTestIO.getVersion() == ver)
+                    return (Q)innerTestIO;
+
+                if (leafTestIO != null && leafTestIO.getType() == type && leafTestIO.getVersion() == ver)
+                    return (Q)leafTestIO;
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
