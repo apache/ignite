@@ -287,7 +287,7 @@ public class GridSqlQueryParser {
     private static final Getter<Update, Expression> UPDATE_WHERE = getter(Update.class, "condition");
 
     /** */
-    static final Getter<Update, Expression> UPDATE_LIMIT = getter(Update.class, "limitExpr");
+    private static final Getter<Update, Expression> UPDATE_LIMIT = getter(Update.class, "limitExpr");
 
     /** */
     private static final Getter<Command, Prepared> PREPARED =
@@ -541,8 +541,8 @@ public class GridSqlQueryParser {
         h2ObjToGridObj.put(del, res);
 
         GridSqlElement tbl = parseTable(DELETE_FROM.get(del));
-        GridSqlElement where = parseExpression(DELETE_WHERE.get(del), false);
-        GridSqlElement limit = parseExpression(DELETE_LIMIT.get(del), false);
+        GridSqlElement where = parseExpression(DELETE_WHERE.get(del), true);
+        GridSqlElement limit = parseExpression(DELETE_LIMIT.get(del), true);
         res.from(tbl).where(where).limit(limit);
         return res;
     }
@@ -566,16 +566,17 @@ public class GridSqlQueryParser {
         Map<Column, Expression> srcSet = UPDATE_SET.get(update);
 
         ArrayList<GridSqlColumn> cols = new ArrayList<>(srcCols.size());
-        LinkedHashMap<GridSqlColumn, GridSqlElement> set = new LinkedHashMap<>(srcSet.size());
+        LinkedHashMap<String, GridSqlElement> set = new LinkedHashMap<>(srcSet.size());
 
         for (Column c : srcCols) {
             GridSqlColumn col = new GridSqlColumn(c, tbl, c.getName(), c.getSQL());
+            col.resultType(GridSqlType.fromColumn(c));
             cols.add(col);
-            set.put(col, parseExpression(srcSet.get(c), false));
+            set.put(col.columnName(), parseExpression(srcSet.get(c), true));
         }
 
-        GridSqlElement where = parseExpression(UPDATE_WHERE.get(update), false);
-        GridSqlElement limit = parseExpression(UPDATE_LIMIT.get(update), false);
+        GridSqlElement where = parseExpression(UPDATE_WHERE.get(update), true);
+        GridSqlElement limit = parseExpression(UPDATE_LIMIT.get(update), true);
 
         res.target(tbl).cols(cols).set(set).where(where).limit(limit);
         return res;

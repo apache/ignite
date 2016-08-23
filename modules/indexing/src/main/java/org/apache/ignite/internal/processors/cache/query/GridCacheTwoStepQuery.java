@@ -62,7 +62,7 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
-    private GridSqlStatement srcStmt;
+    private GridSqlStatement initStmt;
 
     /** */
     private List<Integer> caches;
@@ -98,17 +98,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Source statement.
+     * @return Initial statement.
      */
-    public GridSqlStatement sourceStatement() {
-        return srcStmt;
+    public GridSqlStatement initialStatement() {
+        return initStmt;
     }
 
     /**
-     * @param srcStmt Source statement.
+     * @param initStmt Initial statement.
      */
-    public void sourceStatement(GridSqlStatement srcStmt) {
-        this.srcStmt = srcStmt;
+    public void initialStatement(GridSqlStatement initStmt) {
+        this.initStmt = initStmt;
     }
 
     /**
@@ -249,7 +249,7 @@ public class GridCacheTwoStepQuery {
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
-        cp.srcStmt = srcStmt;
+        cp.initStmt = initStmt;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

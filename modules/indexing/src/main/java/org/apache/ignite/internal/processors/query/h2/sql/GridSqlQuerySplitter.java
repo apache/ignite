@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -225,7 +223,7 @@ public class GridSqlQuerySplitter {
         GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocatedGrpBy);
 
         res.reduceQuery(rdc);
-        res.sourceStatement(qry);
+        res.initialStatement(qry);
 
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries
@@ -291,7 +289,7 @@ public class GridSqlQuerySplitter {
         // Statement left for clarity - currently update operations don't really care much about joins.
         res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
 
-        res.sourceStatement(gridStmt);
+        res.initialStatement(gridStmt);
 
         return res;
     }
@@ -332,7 +330,7 @@ public class GridSqlQuerySplitter {
         mapQry.limit(del.limit());
 
         GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.sourceStatement(del);
+        res.initialStatement(del);
 
         return res;
     }
@@ -343,21 +341,46 @@ public class GridSqlQuerySplitter {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
-        mapQry.addColumn(column(IgniteH2Indexing.KEY_FIELD_NAME), true);
-        mapQry.addColumn(column(IgniteH2Indexing.VAL_FIELD_NAME), true);
+        GridSqlTable tbl = null;
 
-        for (Map.Entry<GridSqlColumn, GridSqlElement> e : update.set().entrySet()) {
-            String newColName = "_upd_" + e.getKey().columnName();
+        if (update.target() instanceof GridSqlTable)
+            tbl = (GridSqlTable) update.target();
+        else if (update.target() instanceof GridSqlAlias)
+            tbl = update.target().child(0);
+
+        A.notNull(tbl, "Failed to determine target table for UPDATE");
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        A.notNull(gridTbl, "Failed to determine target grid table for UPDATE");
+
+        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
+
+        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
+
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        valCol.resultType(GridSqlType.fromColumn(h2ValCol));
+
+        mapQry.addColumn(keyCol, true);
+        mapQry.addColumn(valCol, true);
+
+        for (GridSqlColumn c : update.cols()) {
+            String newColName = "_upd_" + c.columnName();
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
-            mapQry.addColumn(new GridSqlAlias(newColName, e.getValue(), true), true);
+            GridSqlAlias alias = new GridSqlAlias(newColName, update.set().get(c.columnName()), true);
+            alias.resultType(c.resultType());
+            mapQry.addColumn(alias, true);
         }
 
         mapQry.where(update.where());
         mapQry.limit(update.limit());
 
         GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.sourceStatement(update);
+        res.initialStatement(update);
 
         return res;
     }

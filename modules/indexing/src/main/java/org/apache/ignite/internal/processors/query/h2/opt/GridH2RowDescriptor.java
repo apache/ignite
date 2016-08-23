@@ -107,6 +107,24 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public Object columnValue(Object key, Object val, int col);
 
     /**
+     * Gets column value by column index.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param colVal Value to set to column.
+     * @param col Column index.
+     */
+    public void setColumnValue(Object key, Object val, Object colVal, int col);
+
+    /**
+     * Determine whether a column corresponds to a property of key or to one of value.
+     *
+     * @param col Column index.
+     * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
+     */
+    public boolean isColumnKeyProperty(int col);
+
+    /**
      * @return Unsafe memory.
      */
     public GridUnsafeMemory memory();

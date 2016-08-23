@@ -681,8 +681,8 @@ public class GridReduceQueryExecutor {
 
                             // MERGE and INSERT on reduce perform themselves,
                             // while UPDATE and DELETE perform SELECT on reduce
-                            if (!(qry.sourceStatement() instanceof GridSqlMerge) &&
-                                !(qry.sourceStatement() instanceof GridSqlInsert)) {
+                            if (!(qry.initialStatement() instanceof GridSqlMerge) &&
+                                !(qry.initialStatement() instanceof GridSqlInsert)) {
                                 ResultSet res = h2.executeSqlQueryWithTimer(space,
                                     r.conn,
                                     rdc.query(),
@@ -692,7 +692,7 @@ public class GridReduceQueryExecutor {
                                 resIter = new Iter(res);
                             }
                             else {
-                                int res = h2.executeSqlUpdateQuery(cctx, r.conn, qry.tables(), rdc.query(), rdc.parameters());
+                                int res = h2.executeSqlUpdateQuery(cctx, qry);
 
                                 return new UpdateResIter(res);
                             }

@@ -61,6 +61,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -104,6 +105,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
@@ -115,6 +117,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -966,54 +970,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Executes sql query.
      *
      * @param cctx Cache context.
-     * @param conn Connection.
-     * @param tbls Tables (must be single element).
-     * @param sql Sql query.
-     * @param params Parameters.   @return Result.
+     * @param qry Two-step query that contains the statement to execute and its params.
      * @throws IgniteCheckedException If failed.
      */
-    public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, JdbcConnection conn, Set<String> tbls, String sql,
-        Object[] params) throws IgniteCheckedException {
-        PreparedStatement stmt;
+    public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, GridCacheTwoStepQuery qry)
+        throws IgniteCheckedException {
 
-        try {
-            stmt = prepareStatement(conn, sql, true);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-        }
+        A.ensure(qry.tables().size() == 1, "SQL update operations don't support more than one table");
 
-        switch (commandType(stmt)) {
-            case CommandInterface.MERGE:
-                break;
-            case CommandInterface.INSERT:
-                break;
-            default:
-                throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
-        }
-
-        A.ensure(stmt instanceof JdbcPreparedStatement, "H2 JDBC prepared statement expected");
-
-        GridSqlStatement gridStmt = new GridSqlQueryParser()
-            .parse(GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt));
-
-        A.ensure(!(gridStmt instanceof GridSqlQuery), "Non query grid SQL statement expected");
-
-        A.ensure(tbls.size() == 1, "SQL update operations don't support more than one table");
-
-        String tbl = tbls.iterator().next();
+        String tbl = qry.tables().iterator().next();
 
         TableDescriptor desc = tableDescriptorForNativeName(tbl, schema(cctx.name()));
         A.notNull(desc, "Table descriptor not found [tbl=" + tbl + ']');
 
-        if (gridStmt instanceof GridSqlMerge)
-            return doMerge(cctx, (GridSqlMerge)gridStmt, desc, params);
+        if (qry.initialStatement() instanceof GridSqlMerge)
+            return doMerge(cctx, (GridSqlMerge)qry.initialStatement(), desc, qry.reduceQuery().parameters());
 
-        if (gridStmt instanceof GridSqlInsert)
-            return doInsert(cctx, (GridSqlInsert)gridStmt, desc, params);
+        if (qry.initialStatement() instanceof GridSqlInsert)
+            return doInsert(cctx, (GridSqlInsert)qry.initialStatement(), desc, qry.reduceQuery().parameters());
 
         throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
-            gridStmt.getClass() + ']');
+            qry.initialStatement().getClass() + ']');
     }
 
     /**
@@ -1027,13 +1004,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, TableDescriptor desc, Object[] params)
         throws IgniteCheckedException {
-        A.ensure(!F.isEmpty(gridStmt.rows()) && gridStmt.query() == null, "SQL MERGE from SELECT is not supported");
+        if (F.isEmpty(gridStmt.rows()) || gridStmt.query() == null)
+            throw new CacheException("SQL MERGE from SELECT is not supported");
+
+        // This check also protects us from attempts to update key or its fields directly -
+        // when no key except cache one can be used, it will serve only for uniqueness checks,
+        // not for updates.
+        if (!F.isEmpty(gridStmt.keys()))
+            throw new CacheException("SQL MERGE does not support arbitrary keys");
 
         GridSqlColumn[] cols = gridStmt.columns();
 
-        if (marshaller instanceof BinaryMarshaller) {
-            A.ensure(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor,
-                "Expected binary cache object processor when using binary marshaller");
+        if (cctx.binaryMarshaller()) {
+            if (!(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor))
+                throw new CacheException("Expected binary cache object processor when using binary marshaller");
 
             CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
 
@@ -1075,9 +1059,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridSqlColumn[] cols = ins.columns();
 
-        if (marshaller instanceof BinaryMarshaller) {
-            A.ensure(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor,
-                "Expected binary cache object processor when using binary marshaller");
+        if (cctx.binaryMarshaller()) {
+            if (!(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor))
+                throw new CacheException("Expected binary cache object processor when using binary marshaller");
 
             CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
 
@@ -1161,7 +1145,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    A.ensure(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valCls=" + valCls.getName() + ']');
 
                     val = colVal;
@@ -1494,6 +1478,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
                     distributedJoins);
 
+                //Let's verify (early) that the user is not trying to mess with the key or its fields directly
+                if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
+                    verifyUpdateColumns((GridSqlUpdate) twoStepQry.initialStatement());
+
                 List<Integer> caches;
                 List<Integer> extraCaches = null;
 
@@ -1551,7 +1539,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder),
-            twoStepQry.sourceStatement() instanceof GridSqlQuery
+            twoStepQry.initialStatement() instanceof GridSqlQuery
         );
 
         cursor.fieldsMeta(meta);
@@ -1561,18 +1549,68 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
-        if (twoStepQry.sourceStatement() instanceof GridSqlDelete)
+        A.notNull(twoStepQry.initialStatement(), "Source statement undefined");
+
+        if (twoStepQry.initialStatement() instanceof GridSqlDelete)
             return doDelete(cctx, cursor);
+
+        if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
+            return doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
 
         return cursor;
     }
 
     /**
-     *
-     *
-     * @param cctx
-     * @param cursor
-     * @return
+     * Check that UPDATE statement affects no key columns.
+     * @param update Update statement.
+     */
+    private static void verifyUpdateColumns(GridSqlUpdate update) {
+        GridSqlElement updTarget = update.target();
+
+        GridSqlTable tbl = null;
+
+        if (updTarget instanceof GridSqlTable)
+            tbl = (GridSqlTable) updTarget;
+        else if (updTarget instanceof GridSqlAlias)
+            tbl = updTarget.child(0);
+
+        if (tbl == null)
+            throw new CacheException("Failed to determine target table for UPDATE");
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        if (updateAffectsKeyColumns(gridTbl, update.set().keySet()))
+            throw new CacheException("SQL UPDATE can't modify key or its fields directly");
+    }
+
+    /**
+     * Check if given set of modified columns intersects with the set of SQL properties of the key.
+     * @param gridTbl Table.
+     * @param affectedColNames Column names.
+     * @return {@code true} if any of given columns corresponds to the key or any of its properties.
+     */
+    private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
+        GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+
+        Column[] cols = gridTbl.getColumns();
+
+        // Check "_key" column itself - always has index of 0.
+        if (affectedColNames.contains(cols[0].getName()))
+            return true;
+
+        // Start off from i = 2 to skip indices of 0 an 1 corresponding to key and value respectively.
+        for (int i = 2; i < cols.length; i++)
+           if (affectedColNames.contains(cols[i].getName()) && desc.isColumnKeyProperty(i))
+               return true;
+
+        return false;
+    }
+
+    /**
+     * Perform DELETE operation on top of results of SELECT.
+     * @param cctx Cache context.
+     * @param cursor SELECT results.
+     * @return Cursor corresponding to results of DELETE (contains number of items affected).
      */
     @SuppressWarnings("unchecked")
     private QueryCursor<List<?>> doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor) {
@@ -1602,12 +1640,117 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Object[] errKeys = delRes.keySet().toArray();
 
             // TODO re-run query if some keys failed to be updated
-            U.warn(log, "Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']');
+            U.warn(log, "Failed to DELETE some keys [keys=" + Arrays.toString(errKeys) + ']');
 
             return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(res - errKeys.length)), false);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException("Failed to perform SQL DELETE", e);
+        }
+    }
+
+    /**
+     * Perform UPDATE operation on top of results of SELECT.
+     * @param cctx Cache context.
+     * @param update Update statement.
+     * @param cursor SELECT results.
+     * @return Cursor corresponding to results of UPDATE (contains number of items affected).
+     */
+    @SuppressWarnings("unchecked")
+    private QueryCursor<List<?>> doUpdate(GridCacheContext cctx, GridSqlUpdate update, QueryCursorImpl<List<?>> cursor) {
+        GridSqlTable tbl = null;
+
+        GridSqlElement target = update.target();
+
+        if (target instanceof GridSqlTable)
+            tbl = (GridSqlTable) target;
+        else if (target instanceof GridSqlAlias)
+            tbl = target.child(0);
+
+        if (tbl == null)
+            throw new CacheException("Failed to determine target table for UPDATE");
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+
+        if (desc == null)
+            throw new CacheException("Row descriptor undefined for table '" + gridTbl.getName() + "'");
+
+        Class<?> valCls = null;
+
+        boolean bin = cctx.binaryMarshaller();
+
+        if (!bin)
+            valCls = desc.type().valueClass();
+
+        Iterator<List<?>> it = cursor.iterator();
+        Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
+
+        Column[] cols = gridTbl.getColumns();
+
+        List<GridSqlColumn> updatedCols = update.cols();
+
+        int res = 0;
+
+        while (it.hasNext()) {
+            List<?> e = it.next();
+
+            Object key = e.get(0);
+            Object val = e.get(1);
+
+            Object newVal;
+
+            Map<String, Object> newColVals = new HashMap<>();
+
+            for (int i = 0; i < updatedCols.size(); i++)
+                newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
+
+            if (bin)
+                newVal = cctx.grid().binary().builder((BinaryObject) val);
+            else
+                try {
+                    newVal = GridUnsafe.allocateInstance(valCls);
+                }
+                catch (InstantiationException ex) {
+                    throw new CacheException("Failed to perform SQL UPDATE", ex);
+                }
+
+            // Skip key and value - that's why we start off with 2nd column
+            for (int i = 0; i < cols.length - 2; i++) {
+                Column c = cols[i + 2];
+
+                boolean hasNewVal = newColVals.containsKey(c.getName());
+
+                // Binary objects get old field values from the Builder, so we can skip what we're not updating
+                if (bin && !hasNewVal)
+                    continue;
+
+                Object colVal = hasNewVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
+
+                desc.setColumnValue(key, newVal, colVal, i);
+            }
+
+            m.put(key, new ModifyingEntryProcessor(val, new EntryValueUpdater(newVal)));
+
+            res++;
+        }
+
+        try {
+            Map<Object, EntryProcessorResult<Boolean>> updRes = cctx.cache().invokeAll(m);
+
+            if (F.isEmpty(updRes))
+                return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(res)), false);
+
+            Object[] errKeys = updRes.keySet().toArray();
+
+            // TODO re-run query if some keys failed to be updated
+            U.warn(log, "Failed to UPDATE some keys [keys=" + Arrays.toString(errKeys) + ']');
+
+            return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(res - errKeys.length)), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to perform SQL UPDATE", e);
         }
     }
 
@@ -3369,6 +3512,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @Override public void setColumnValue(Object key, Object val, Object colVal, int col) {
+            try {
+                props[col].setValue(key, val, colVal);
+            }
+            catch (IgniteCheckedException e) {
+                throw DbException.convert(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isColumnKeyProperty(int col) {
+            return props[col].key();
+
+        }
+
+        /** {@inheritDoc} */
         @Override public GridH2KeyValueRowOffheap createPointer(long ptr) {
             GridH2KeyValueRowOffheap row = schema.rowCache.get(ptr);
 
@@ -3479,7 +3638,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
             // Something happened to the cache while we were performing map-reduce.
-            if (entry.getValue() == null || !entry.getValue().equals(val))
+            if (!F.eq(entry.getValue(), val))
                 return false;
 
             entryModifier.apply(entry);

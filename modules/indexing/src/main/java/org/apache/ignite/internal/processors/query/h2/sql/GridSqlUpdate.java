@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
@@ -32,7 +31,7 @@ public class GridSqlUpdate extends GridSqlStatement {
     private ArrayList<GridSqlColumn> cols;
 
     /** */
-    private LinkedHashMap<GridSqlColumn, GridSqlElement> set;
+    private LinkedHashMap<String, GridSqlElement> set;
 
     /** */
     private GridSqlElement where;
@@ -55,7 +54,13 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** */
-    public GridSqlUpdate set(LinkedHashMap<GridSqlColumn, GridSqlElement> set) {
+    public ArrayList<GridSqlColumn> cols() {
+        return cols;
+    }
+
+
+    /** */
+    public GridSqlUpdate set(LinkedHashMap<String, GridSqlElement> set) {
         this.set = set;
         return this;
     }
@@ -72,7 +77,7 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** */
-    public HashMap<GridSqlColumn, GridSqlElement> set() {
+    public LinkedHashMap<String, GridSqlElement> set() {
         return set;
     }
 
@@ -84,7 +89,7 @@ public class GridSqlUpdate extends GridSqlStatement {
             .append("\nSET\n");
 
         for (GridSqlColumn c : cols) {
-            GridSqlElement e = set.get(c);
+            GridSqlElement e = set.get(c.columnName());
             buff.appendExceptFirst(",\n    ");
             buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL() : "DEFAULT");
         }
@@ -93,7 +98,7 @@ public class GridSqlUpdate extends GridSqlStatement {
             buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
         if (limit != null)
-            buff.append("\nLIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
+            buff.append("\nLIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
 
         return buff.toString();
     }

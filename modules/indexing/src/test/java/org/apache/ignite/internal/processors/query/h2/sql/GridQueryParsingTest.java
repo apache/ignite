@@ -411,21 +411,13 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        // For some reason, Update#getPlanSQL does not include LIMIT into its result, so we'll have to add it ourselves
-        String updateLimitSql = null;
-        if (prepared instanceof Update) {
-            Expression limit = GridSqlQueryParser.UPDATE_LIMIT.get((Update)prepared);
-            if (limit != null)
-                updateLimitSql = " LIMIT (" + StringUtils.unEnclose(limit.getSQL()) + ')';
-        }
-
         GridSqlStatement gQry = new GridSqlQueryParser().parse(prepared);
 
         String res = gQry.getSQL();
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(prepared.getPlanSQL() + U.firstNotNull(updateLimitSql, ""), res);
+        assertSqlEquals(prepared.getPlanSQL(), res);
     }
 
     @QuerySqlFunction

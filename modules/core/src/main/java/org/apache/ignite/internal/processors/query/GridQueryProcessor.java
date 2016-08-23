@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
@@ -2041,7 +2042,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
-            throw new UnsupportedOperationException("Individual properties can't be set for binary objects");
+            Object obj = key() ? key : val;
+
+            if (obj == null)
+                return;
+
+            if (!(obj instanceof BinaryObjectBuilder))
+                throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
+
+            ((BinaryObjectBuilder) obj).setField(propName, propVal);
         }
 
         /**
