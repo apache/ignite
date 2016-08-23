@@ -1442,26 +1442,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Check whether the given object is binarizeble, i.e. it can be serialized with binary marshaller.
-        /// </summary>
-        /// <param name="obj">Object.</param>
-        /// <returns>True if binarizable.</returns>
-        internal bool IsBinarizable(object obj)
-        {
-            if (obj != null)
-            {
-                Type type = obj.GetType();
-
-                // We assume object as binarizable only in case it has descriptor.
-                // Collections, Enums and non-primitive arrays do not have descriptors
-                // and this is fine here because we cannot know whether their members are binarizable.
-                return _marsh.GetDescriptor(type) != null || BinarySystemHandlers.GetWriteHandler(type) != null;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Write field ID.
         /// </summary>
         /// <param name="fieldName">Field name.</param>

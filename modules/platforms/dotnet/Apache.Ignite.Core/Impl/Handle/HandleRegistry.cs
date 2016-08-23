@@ -102,10 +102,11 @@ namespace Apache.Ignite.Core.Impl.Handle
         }
 
         /// <summary>
-        /// Allocate a handle for critical resource in safe mode.
-        /// </summary>
-        /// <param name="target">Target.</param>
-        /// <returns>Pointer.</returns>
+        /// Allocate a handle for critical resource in safe mode.		
+        /// </summary>		
+        /// <param name="target">Target.</param>		
+        /// <returns>Pointer.</returns>		
+        [ExcludeFromCodeCoverage]
         public long AllocateCriticalSafe(object target)
         {
             return Allocate0(target, true, true);
@@ -121,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         private long Allocate0(object target, bool critical, bool safe)
         {
             if (Closed)
-                throw ClosedException();
+                throw GetClosedException();
 
             // Try allocating on critical path.
             if (critical)
@@ -140,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Handle
 
                             Release0(target, true);
 
-                            throw ClosedException();
+                            throw GetClosedException();
                         }
 
                         return fastIdx;
@@ -159,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Handle
 
                 Release0(target, true);
 
-                throw ClosedException();
+                throw GetClosedException();
             }
 
             return slowIdx;
@@ -320,6 +321,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// Gets a snapshot of currently referenced objects list.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        [ExcludeFromCodeCoverage]
         public IList<KeyValuePair<long, object>> GetItems()
         {
             Thread.MemoryBarrier();
@@ -335,7 +337,8 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// Create new exception for closed state.
         /// </summary>
         /// <returns>Exception.</returns>
-        private static Exception ClosedException()
+        [ExcludeFromCodeCoverage]
+        private static Exception GetClosedException()
         {
             return new InvalidOperationException("Cannot allocate a resource handle because Ignite is stopping.");
         }
