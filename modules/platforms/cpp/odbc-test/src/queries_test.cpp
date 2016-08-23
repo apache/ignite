@@ -347,6 +347,16 @@ void QueriesTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, con
     CheckSingleResultNum0<int8_t>(request, expected, SQL_C_STINYINT);
 }
 
+template<>
+void QueriesTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected)
+{
+    SQLFLOAT res = 0;
+
+    CheckSingleResult0(request, SQL_C_FLOAT, &res, 0, 0);
+
+    BOOST_CHECK_CLOSE(static_cast<float>(res), expected, 1E-6f);
+}
+
 BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
@@ -597,6 +607,111 @@ BOOST_AUTO_TEST_CASE(TestAggrFunctionLength)
     testCache.Put(1, in);
 
     CheckSingleResult<int64_t>("SELECT {fn LENGTH(strField)} FROM TestType", in.strField.size());
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionAvgInt)
+{
+    std::vector<TestType> in(3);
+
+    in[0].i32Field = 43;
+    in[1].i32Field = 311;
+    in[2].i32Field = 7;
+
+    int32_t avg = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        avg += in[i].i32Field;
+    }
+
+    avg /= static_cast<int32_t>(in.size());
+
+    CheckSingleResult<int64_t>("SELECT {fn AVG(i32Field)} FROM TestType", avg);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionAvgFloat)
+{
+    std::vector<TestType> in(3);
+
+    in[0].floatField = 43.0;
+    in[1].floatField = 311.0;
+    in[2].floatField = 7.0;
+
+    float avg = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        avg += in[i].i32Field;
+    }
+
+    avg /= in.size();
+
+    CheckSingleResult<float>("SELECT {fn AVG(floatField)} FROM TestType", avg);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionCount)
+{
+    std::vector<TestType> in(8);
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+        testCache.Put(i, in[i]);
+
+    CheckSingleResult<int64_t>("SELECT {fn COUNT(*)} FROM TestType", in.size());
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionMax)
+{
+    std::vector<TestType> in(4);
+
+    in[0].i32Field = 121;
+    in[1].i32Field = 17;
+    in[2].i32Field = 314041;
+    in[3].i32Field = 9410;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+        testCache.Put(i, in[i]);
+
+    CheckSingleResult<int64_t>("SELECT {fn MAX(i32Field)} FROM TestType", in[2].i32Field);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionMin)
+{
+    std::vector<TestType> in(4);
+
+    in[0].i32Field = 121;
+    in[1].i32Field = 17;
+    in[2].i32Field = 314041;
+    in[3].i32Field = 9410;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+        testCache.Put(i, in[i]);
+
+    CheckSingleResult<int64_t>("SELECT {fn MIN(i32Field)} FROM TestType", in[1].i32Field);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggrFunctionSum)
+{
+    std::vector<TestType> in(4);
+
+    in[0].i32Field = 121;
+    in[1].i32Field = 17;
+    in[2].i32Field = 314041;
+    in[3].i32Field = 9410;
+
+    int64_t sum = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        sum += in[i].i32Field;
+    }
+
+    CheckSingleResult<int64_t>("SELECT {fn SUM(i32Field)} FROM TestType", sum);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
