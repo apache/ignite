@@ -136,7 +136,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestCaching()
         {
-            
+            var provider = GetProvider();
+
         }
 
         /// <summary>
@@ -145,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestExpiry()
         {
-            
+            Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
         }
 
         /// <summary>
@@ -176,24 +177,31 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /// <summary>
         /// Checks the provider.
         /// </summary>
-        private static void CheckProvider(SessionStateStoreProviderBase stateProvider)
+        private static void CheckProvider(SessionStateStoreProviderBase provider)
         {
             bool locked;
             TimeSpan lockAge;
             object lockId;
             SessionStateActions actions;
-            var data = stateProvider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge,
+
+            provider.InitializeRequest(GetHttpContext());
+
+            var data = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge,
                 out lockId, out actions);
             Assert.IsNull(data);
 
-            data = stateProvider.CreateNewStoreData(GetHttpContext(), 42);
+            data = provider.CreateNewStoreData(GetHttpContext(), 42);
             Assert.IsNotNull(data);
 
-            stateProvider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
+            provider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
 
-            data = stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            data = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(data);
             Assert.AreEqual(42, data.Timeout);
+
+            provider.ResetItemTimeout(GetHttpContext(), "1");
+            provider.EndRequest(GetHttpContext());
+            provider.Dispose();
         }
 
         /// <summary>
