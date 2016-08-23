@@ -122,7 +122,7 @@ public final class PageIdUtils {
      * @return Page ID.
      */
     public static int pageIndex(long pageId) {
-        return (int)(pageId & PAGE_IDX_MASK); // 30 bytes
+        return (int)(pageId & PAGE_IDX_MASK); // 4 bytes
     }
 
     /**

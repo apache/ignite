@@ -370,7 +370,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
-            String s = dhtCache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+            String s = dhtCache.localPeek(key, null, null);
 
             assert s != null : "Value is null for key: " + key;
             assertEquals(s, Integer.toString(key));
@@ -417,8 +417,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("3", s);
         }
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
@@ -433,7 +433,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         near.put(2, "2");
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
         assertEquals("2", near.get(2));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
@@ -456,7 +456,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNotNull(s);
         assertEquals("3", s);
 
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("3", near.localPeek(3));
         assertEquals("3", near.get(3));
 
         Ignite primaryIgnite = primaryGrid(3);
@@ -497,8 +497,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNotNull(s);
         assertEquals("3", s);
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", near.get(2));
         assertEquals("3", near.get(3));
@@ -530,7 +530,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNotNull(dht(primaryGrid(3)).localPeek(3, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
+                assertNotNull(dht(primaryGrid(3)).localPeek(3, null, null));
 
                 tx.commit();
             }
@@ -544,8 +544,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("3", s);
         }
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
@@ -567,16 +567,16 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertFalse(near.putIfAbsent(key, "1"));
         assertEquals("1", near.getAndPutIfAbsent(key, "2"));
 
-        assertEquals("1", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("1", near.localPeek(key));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
 
         assertEquals("1", near.getAndReplace(key, "2"));
-        assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(key));
 
         assertTrue(near.replace(key, "2"));
 
-        assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(key));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
 
@@ -695,7 +695,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertNotNull(nearEntry2);
             assertTrue("Invalid near entry [hash=" + nearEntry2, nearEntry2.valid(topVer));
 
-            assertEquals(val, cache.localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val, cache.localPeek(key));
             assertEquals(val, dhtPeek(0, key));
             assertEquals(val, dhtPeek(1, key));
 
@@ -714,7 +714,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, cache.get(key));
             assertEquals(val, cache.getAndRemove(key));
 
-            assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+            assertNull(cache.localPeek(key));
             assertNull(localPeek(dht(primaryGrid(key)), key));
 
             assertTrue(cache.isLocalLocked(key, false));
@@ -760,7 +760,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(key, val);
 
-            assertEquals(val, near.localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val, near.localPeek(key));
             assertEquals(val, localPeek(dht(primaryGrid(key)), key));
 
             assertTrue(near.isLocalLocked(key, false));
@@ -772,7 +772,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals(val, near.get(key));
                 assertEquals(val, near.getAndRemove(key));
 
-                assertNull(near.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(near.localPeek(key));
                 assertNull(localPeek(dht(primaryGrid(key)), key));
 
                 assertTrue(near.isLocalLocked(key, false));

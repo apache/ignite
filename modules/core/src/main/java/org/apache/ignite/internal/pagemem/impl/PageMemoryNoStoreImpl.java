@@ -70,7 +70,7 @@ import sun.misc.SharedSecrets;
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
-    public static final long PAGE_MARKER = 0x0000000000000001L;
+    public static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
 
     /** Full relative pointer mask. */
     private static final long RELATIVE_PTR_MASK = 0xFFFFFFFFFFFFFFL;
@@ -257,12 +257,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException {
+    @Override public boolean freePage(int cacheId, long pageId) {
+        cacheMetaPages.remove(cacheId, PageIdUtils.effectivePageId(pageId));
+
         Segment seg = segment(pageId);
 
         seg.releaseFreePage(pageId);
-
-        cacheMetaPages.remove(cacheId, pageId);
 
         return true;
     }
@@ -310,7 +310,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void clear(int cacheId) {
-        cacheMetaPages.remove(cacheId);
+        Long metaPageId = cacheMetaPages.remove(cacheId);
+
+        if (metaPageId != null)
+            freePage(cacheId, metaPageId);
     }
 
     /** */
@@ -551,7 +554,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             long marker = GridUnsafe.getLong(absPtr);
 
             if (marker != PAGE_MARKER)
-                throw new IllegalStateException("Page was not allocated: " + U.hexLong(absPtr));
+                throw new IllegalStateException("Page was not allocated [absPtr=" + U.hexLong(absPtr) +
+                    ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) +
+                    ", marker=" + U.hexLong(marker) + ']');
 
             while (true) {
                 long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
