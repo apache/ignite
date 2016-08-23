@@ -151,7 +151,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      * Constructor to set dependencies explicitly.
      *
      * @param log Log.
-     * @param workDir Working directory
+     * @param workDir Working directory.
      * @param locNodeId Node id.
      * @param gridName Grid name.
      */

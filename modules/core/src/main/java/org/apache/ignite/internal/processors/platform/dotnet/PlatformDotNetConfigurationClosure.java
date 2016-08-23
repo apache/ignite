@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -155,10 +154,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
 
-        if (ggHome == null)
-            ggHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
+        if (ggHome != null)
             U.setIgniteHome(ggHome);
 
         // 4. Callback to .Net.

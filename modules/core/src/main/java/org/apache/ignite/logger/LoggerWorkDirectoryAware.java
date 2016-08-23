@@ -23,16 +23,16 @@ package org.apache.ignite.logger;
 public interface LoggerWorkDirectoryAware {
 
     /**
-     * Sets Work directory.
+     * Sets work directory.
      *
      * @param workDir Work directory.
      */
-    void setWorkDir(String workDir);
+    void setWorkDirectory(String workDir);
 
     /**
-     * Gets  Work directory.
+     * Gets work directory.
      *
      * @return Work directory.
      */
-    String getWorkDir();
+    String getWorkDirectory();
 }

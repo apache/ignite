@@ -76,9 +76,9 @@ public final class JavaLoggerFileHandler extends StreamHandler {
     }
 
     /**
-     * Sets Work directory, Node id and instantiates {@link FileHandler} delegate.
+     * Sets work directory, Node id and instantiates {@link FileHandler} delegate.
      *
-     * @param workDir Work directory
+     * @param workDir Work directory.
      * @param nodeId Node id.
      */
     public void initialize(String workDir, UUID nodeId) throws IgniteCheckedException, IOException {
@@ -137,7 +137,8 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * @return Logging directory.
      */
     private File logDirectory(String workDir) throws IgniteCheckedException {
-        return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) : U.resolveWorkDirectory(workDir, "log", false);
+        return !F.isEmpty(U.IGNITE_LOG_DIR) ?
+            new File(U.IGNITE_LOG_DIR) : U.resolveWorkDirectory(workDir, "log", false);
     }
 
     /**

@@ -429,12 +429,12 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware, Log
 
 
     /** {@inheritDoc} */
-    @Override public void setWorkDir(String workDir) {
+    @Override public void setWorkDirectory(String workDir) {
         this.workDir = workDir;
 
         for (FileAppender a : fileAppenders) {
             if (a instanceof LoggerWorkDirectoryAware) {
-                ((LoggerWorkDirectoryAware)a).setWorkDir(workDir);
+                ((LoggerWorkDirectoryAware)a).setWorkDirectory(workDir);
 
                 a.activateOptions();
             }
@@ -442,7 +442,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware, Log
     }
 
     /** {@inheritDoc} */
-    @Override public String getWorkDir() {
+    @Override public String getWorkDirectory() {
         return workDir;
     }
 

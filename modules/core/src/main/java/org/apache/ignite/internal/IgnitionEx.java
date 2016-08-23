@@ -2135,7 +2135,7 @@ public class IgnitionEx {
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 if (cfgLog instanceof LoggerWorkDirectoryAware)
-                    ((LoggerWorkDirectoryAware)cfgLog).setWorkDir(workDir);
+                    ((LoggerWorkDirectoryAware)cfgLog).setWorkDirectory(workDir);
 
                 if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "

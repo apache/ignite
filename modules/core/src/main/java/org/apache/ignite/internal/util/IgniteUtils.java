@@ -8845,6 +8845,7 @@ public abstract class IgniteUtils {
             igniteWork = new File(IGNITE_WORK_DIR);
         else {
             String igniteHome = getIgniteHome();
+
             if (!F.isEmpty(igniteHome))
                 igniteWork = new File(igniteHome, "work");
             else {
@@ -8894,6 +8895,7 @@ public abstract class IgniteUtils {
 
         if (!dir.isAbsolute()) {
             String basedir = getValidWorkDir(workDir);
+
             if (F.isEmpty(basedir))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
 

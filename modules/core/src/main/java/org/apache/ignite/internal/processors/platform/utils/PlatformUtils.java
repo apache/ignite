@@ -93,9 +93,6 @@ public class PlatformUtils {
     /** Cache peek modes. */
     private static volatile CachePeekMode[][] CACHE_PEEK_MODES;
 
-    /**
-     * Static initializer.
-     */
     static {
         int len = 1 << CACHE_PEEK_MODES_CNT;
 
@@ -813,14 +810,13 @@ public class PlatformUtils {
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         try {
-            IgniteConfiguration igniteCfg = new IgniteConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
-            BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), igniteCfg, new NullLogger());
+            BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), cfg, new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null, igniteCfg.getWorkDirectory()));
+            marsh.setContext(new MarshallerContextImpl(null, cfg.getWorkDirectory()));
 
             ctx.configure(marsh, new IgniteConfiguration());
 
