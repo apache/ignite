@@ -128,6 +128,9 @@ namespace Apache.Ignite.EntityFramework
 
                 // Do not remove dependency information: same query always depends on same entity sets
 
+                // TODO: This is not correct, because parameter values are embedded, 
+                // so we can have infinite number of queries
+
                 tx.Commit();
             }
         }
