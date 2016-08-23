@@ -72,6 +72,10 @@ public class DataEntry {
         de.partId = txEntry.key().partition();
         de.partCnt = txEntry.updateCounter();
 
+        // Only CREATE, UPDATE and DELETE operations are supported.
+        assert de.op() == GridCacheOperation.CREATE || de.op() == GridCacheOperation.UPDATE ||
+            de.op() == GridCacheOperation.DELETE : de.op();
+
         return de;
     }
 
@@ -107,6 +111,9 @@ public class DataEntry {
         this.writeVer = writeVer;
         this.partId = partId;
         this.partCnt = partCnt;
+
+        // Only CREATE, UPDATE and DELETE operations are supported.
+        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**
