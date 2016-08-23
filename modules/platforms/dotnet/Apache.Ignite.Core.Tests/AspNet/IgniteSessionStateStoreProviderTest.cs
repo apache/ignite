@@ -141,6 +141,18 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the caching in read-only scenario.
+        /// </summary>
+        [Test]
+        public void TestCachingReadOnly()
+        {
+            var provider = GetProvider();
+
+            //provider.GetItem(GetHttpContext(), "1")
+
+        }
+
+        /// <summary>
         /// Tests the expiry.
         /// </summary>
         [Test]
@@ -189,6 +201,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             var data = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge,
                 out lockId, out actions);
             Assert.IsNull(data);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.IsNotNull(lockId);
+            Assert.AreEqual(SessionStateActions.None, actions);
 
             data = provider.CreateNewStoreData(GetHttpContext(), 42);
             Assert.IsNotNull(data);
@@ -198,6 +214,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             data = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(data);
             Assert.AreEqual(42, data.Timeout);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.IsNotNull(lockId);
+            Assert.AreEqual(SessionStateActions.None, actions);
 
             provider.ResetItemTimeout(GetHttpContext(), "1");
             provider.EndRequest(GetHttpContext());
