@@ -526,11 +526,9 @@ BOOST_AUTO_TEST_CASE(TestAggrFunctionLength)
 
     SQLCHAR request[] = "SELECT {fn LENGTH(strField)} FROM TestType";
 
-    const size_t columnsCnt = 1;
-
     SQLBIGINT res = 0;
 
-    ret = SQLBindCol(stmt, 1, SQL_C_SBIGINT, 0, 0, &res);
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
