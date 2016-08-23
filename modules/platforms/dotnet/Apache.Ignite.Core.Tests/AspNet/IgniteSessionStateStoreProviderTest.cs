@@ -159,14 +159,14 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsNull(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
-            Assert.IsInstanceOf<ICacheLock>(lockId);
             Assert.AreEqual(SessionStateActions.None, actions);
+            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock) lockId).Enter());
 
             // Not locked, item present.
 
             // Locked.
 
-            
+
         }
 
         /// <summary>
