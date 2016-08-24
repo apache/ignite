@@ -243,7 +243,29 @@ namespace Apache.Ignite.Core.Tests.AspNet
         public void TestExpiry()
         {
             // TODO
+            // Minimum expiration is 1 minute, which is quite a lot for a unit test
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
+        }
+
+        /// <summary>
+        /// Tests the create uninitialized item.
+        /// </summary>
+        [Test]
+        public void TestCreateUninitializedItem()
+        {
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+
+            var provider = GetProvider();
+            provider.CreateUninitializedItem(HttpContext, "myId", 45);
+
+            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+            Assert.AreEqual(45, res.Timeout);
+            Assert.AreEqual(0, res.Items.Count);
+            Assert.AreEqual(0, res.StaticObjects.Count);
         }
 
         /// <summary>
