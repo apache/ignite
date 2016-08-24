@@ -323,7 +323,7 @@ class VisorCacheCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off heap)", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -397,7 +397,7 @@ class VisorCacheCommand {
                         (ad.maximumHeapSize() + ad.maximumOffHeapSize()))
                     csT += ("  Heap size Min/Avg/Max", ad.minimumHeapSize() + " / " +
                         formatDouble(ad.averageHeapSize()) + " / " + ad.maximumHeapSize())
-                    csT += ("  Off heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
+                    csT += ("  Off-heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
                         formatDouble(ad.averageOffHeapSize()) + " / " + ad.maximumOffHeapSize())
 
                     val ciT = VisorTextTable()
@@ -414,7 +414,15 @@ class VisorCacheCommand {
 
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
-                            cm.keySize(),
+                            cm match {
+                                case v2: VisorCacheMetricsV2 => (
+                                    "Total: " + (v2.keySize() + v2.offHeapEntriesCount()),
+                                    "  Heap: " + v2.keySize(),
+                                    "  Off-Heap: " + v2.offHeapEntriesCount(),
+                                    "  Off-Heap Memory: " + formatMemory(v2.offHeapAllocatedSize())
+                                )
+                                case v1 => v1.keySize()
+                            },
                             (
                                 "Hi: " + cm.hits(),
                                 "Mi: " + cm.misses(),
@@ -633,7 +641,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off heap)")
+        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off-heap)")
 
         sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
