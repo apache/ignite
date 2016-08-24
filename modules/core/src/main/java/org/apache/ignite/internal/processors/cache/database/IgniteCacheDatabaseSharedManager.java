@@ -32,6 +32,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -133,6 +134,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void beforeCachesStop() throws IgniteCheckedException {
         // No-op.
+    }
+
+    /**
+     * @param cctx Stopped cache context.
+     */
+    public void onCacheStop(GridCacheContext cctx) {
+        // No-op
     }
 
     /**
