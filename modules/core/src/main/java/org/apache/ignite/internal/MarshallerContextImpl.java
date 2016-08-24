@@ -36,7 +36,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
@@ -87,10 +86,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         if (ctx.clientNode()) {
-            IgniteConfiguration cfg = ctx.config();
-
-            workDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), "marshaller", false);
-
             lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
 
             ctx.continuous().registerStaticRoutine(
@@ -107,10 +102,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
-
-        IgniteConfiguration cfg = ctx.config();
-
-        workDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), "marshaller", false);
 
         log = ctx.log(MarshallerContextImpl.class);
 
