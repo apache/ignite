@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System.Collections.Specialized;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
     using System.Web.SessionState;
@@ -240,11 +241,30 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /// Tests the expiry.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]  // Minimum expiration is 1 minute
         public void TestExpiry()
         {
-            // TODO
-            // Minimum expiration is 1 minute, which is quite a lot for a unit test
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+
+            // Callbacks are not supported for now.
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
+
+            // Put an item.
+            var provider = GetProvider();
+            provider.CreateUninitializedItem(HttpContext, "myId", 45);
+
+            // Check that it is there.
+            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+
+            // Wait a minute and check again.
+            Thread.Sleep(TimeSpan.FromMinutes(1.05));
+
+            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
         }
 
         /// <summary>
