@@ -49,6 +49,13 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** Cache name. */
         private const string CacheName = "myCache";
 
+        /** Session id. */
+        private const string Id = "1";
+
+        /** Test context */
+        private static readonly HttpContext HttpContext = 
+            new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
+
         /// <summary>
         /// Fixture setup.
         /// </summary>
@@ -107,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             // Not initialized
             Assert.Throws<InvalidOperationException>(() =>
-                    stateProvider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions));
+                    stateProvider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions));
 
             // Grid not started
             Assert.Throws<IgniteException>(() =>
@@ -182,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             var provider = GetProvider();
 
             // Not locked, no item.
-            var res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
@@ -190,16 +197,16 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.Throws<ObjectDisposedException>(() => ((ICacheLock) lockId).Enter());
 
             // Add item.
-            res = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            provider.SetAndReleaseItemExclusive(GetHttpContext(), "1", CreateStoreData(), lockId, true);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, CreateStoreData(), lockId, true);
 
             // Not locked, item present.
-            res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             CheckStoreData(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
@@ -207,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
 
             // Lock item.
-            res = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             CheckStoreData(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
@@ -216,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Try to get it in a different thread.
             Task.Factory.StartNew(() =>
             {
-                res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+                res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
                 Assert.IsNull(res);
                 Assert.IsTrue(locked);
                 Assert.Greater(lockAge, TimeSpan.Zero);
@@ -224,12 +231,12 @@ namespace Apache.Ignite.Core.Tests.AspNet
             }).Wait();
 
             // Release item.
-            provider.ReleaseItemExclusive(GetHttpContext(), "1", lockId);
+            provider.ReleaseItemExclusive(HttpContext, Id, lockId);
 
             // Make sure it is accessible in a different thread.
             Task.Factory.StartNew(() =>
             {
-                res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+                res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
                 Assert.IsNotNull(res);
                 Assert.IsFalse(locked);
                 Assert.AreEqual(TimeSpan.Zero, lockAge);
@@ -329,9 +336,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
             object lockId;
             SessionStateActions actions;
 
-            provider.InitializeRequest(GetHttpContext());
+            provider.InitializeRequest(HttpContext);
 
-            var data = provider.GetItemExclusive(GetHttpContext(), "1", out locked, out lockAge,
+            var data = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge,
                 out lockId, out actions);
             Assert.IsNull(data);
             Assert.IsFalse(locked);
@@ -339,12 +346,12 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsNotNull(lockId);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            data = provider.CreateNewStoreData(GetHttpContext(), 42);
+            data = provider.CreateNewStoreData(HttpContext, 42);
             Assert.IsNotNull(data);
 
-            provider.SetAndReleaseItemExclusive(GetHttpContext(), "1", data, lockId, false);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, data, lockId, false);
 
-            data = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+            data = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(data);
             Assert.AreEqual(42, data.Timeout);
             Assert.IsFalse(locked);
@@ -352,17 +359,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsNotNull(lockId);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            provider.ResetItemTimeout(GetHttpContext(), "1");
-            provider.EndRequest(GetHttpContext());
+            provider.ResetItemTimeout(HttpContext, Id);
+            provider.EndRequest(HttpContext);
             provider.Dispose();
-        }
-
-        /// <summary>
-        /// Gets the HTTP context.
-        /// </summary>
-        private static HttpContext GetHttpContext()
-        {
-            return new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
         }
     }
 }
