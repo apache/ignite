@@ -61,7 +61,8 @@ namespace Apache.Ignite.AspNet.Impl
                     ? StartFromApplicationConfiguration(cfgSection)
                     : Ignition.GetIgnite(gridName);
 
-                grid.Logger.Info("Initializing {0} with cache '{1}'", callerType, cacheName);
+                grid.Logger.GetLogger(callerType.ToString())
+                    .Info("Initializing {0} with cache '{1}'", callerType, cacheName);
 
                 var cacheConfiguration = new CacheConfiguration(cacheName);
 

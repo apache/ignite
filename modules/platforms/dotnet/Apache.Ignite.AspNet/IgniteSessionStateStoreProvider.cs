@@ -26,6 +26,7 @@ namespace Apache.Ignite.AspNet
     using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// ASP.NET Session-State Store Provider that use Ignite distributed cache as an underlying storage.
@@ -37,17 +38,27 @@ namespace Apache.Ignite.AspNet
     /// <para />
     /// <c>cacheName</c> attribute specifies Ignite cache name to use for data storage. This attribute can be omitted 
     /// if cache name is null.
+    /// <para />
+    /// Optional <c>applicationId</c> attribute allows sharing a single Ignite cache between multiple web applications.
+    /// <para />
+    /// <c>enableDebugLogging</c> attribute enables verbose logging to Ignite log with Debug level.
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
         /** Application id config parameter. */
         private const string ApplicationId = "applicationId";
 
+        /** Debug logging config parameter. */
+        private const string EnableDebugLogging = "enableDebugLogging";
+
         /** */
         private volatile string _applicationId;
 
         /** */
         private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
+
+        /** */
+        private volatile ILogger _log;
 
         /// <summary>
         /// Initializes the provider.
@@ -65,6 +76,12 @@ namespace Apache.Ignite.AspNet
             _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
 
             _applicationId = config[ApplicationId];
+
+            if (config[EnableDebugLogging] == "true")
+                _log = cache.Ignite.Logger.GetLogger(GetType().FullName);
+
+            Log("{0} initialized: gridName={1}, cacheName={2}, applicationId={3}", GetType(), cache.Ignite.Name, 
+                cache.Name, _applicationId);
         }
 
 
@@ -126,6 +143,8 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge, out object lockId,
             out SessionStateActions actions)
         {
+            Log("GetItem(id={0})", id);
+
             var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
 
             var cacheLock = (ICacheLock) lockId;
@@ -137,6 +156,8 @@ namespace Apache.Ignite.AspNet
                 // So we enter in GetItemExclusive and exit immediately here.
                 if (!locked && cacheLock != null)
                     cacheLock.Exit();
+
+                Log("GetItem(id={0})={1}", id, res == null ? "null" : res.ToString());
 
                 return res;
             }
@@ -172,6 +193,8 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge,
             out object lockId, out SessionStateActions actions)
         {
+            Log("GetItemExclusive(id={0})", id);
+
             actions = SessionStateActions.None;  // Our items never need initialization.
             lockAge = TimeSpan.Zero;
 
@@ -391,6 +414,19 @@ namespace Apache.Ignite.AspNet
             var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
 
             cache[GetKey(id)] = SessionStateStoreDataSerializer.Serialize(item);
+        }
+
+        /// <summary>
+        /// Logs the specified message to the debug log, if enabled.
+        /// </summary>
+        private void Log(string msg, params object[] args)
+        {
+            var log = _log;
+
+            if (log == null)
+                return;
+
+            log.Debug(msg, args);
         }
     }
 }
