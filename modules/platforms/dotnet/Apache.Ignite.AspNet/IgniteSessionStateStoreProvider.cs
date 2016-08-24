@@ -211,6 +211,8 @@ namespace Apache.Ignite.AspNet
                 if (locked)
                 {
                     // Already locked: return lock age.
+                    Log("GetItemExclusive(id={0}): already locked", id);
+
                     lockAge = GetLockAge(key);
 
                     lockId = null;
@@ -220,6 +222,8 @@ namespace Apache.Ignite.AspNet
                 }
 
                 // Locked successfully, update lock age.
+                Log("GetItemExclusive(id={0}): locked successfully", id);
+
                 SetLockAge(key);
 
                 object existingData;
@@ -227,10 +231,14 @@ namespace Apache.Ignite.AspNet
                 if (Cache.TryGet(key, out existingData))
                 {
                     // Item found, return it.
+                    Log("GetItemExclusive(id={0}): session store data exists", id);
+
                     return SessionStateStoreDataSerializer.Deserialize((byte[]) existingData);
                 }
 
                 // Item not found - return null.
+                Log("GetItemExclusive(id={0}): session store data not found", id);
+
                 return null;
             }
             catch (Exception)
@@ -249,6 +257,8 @@ namespace Apache.Ignite.AspNet
         /// <param name="lockId">The lock identifier for the current request.</param>
         public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
         {
+            Log("ReleaseItemExclusive(id={0})", id);
+
             RemoveLockAge(GetKey(id));
 
             var cacheLock = (ICacheLock)lockId;
@@ -271,6 +281,8 @@ namespace Apache.Ignite.AspNet
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item,
             object lockId, bool newItem)
         {
+            Log("SetAndReleaseItemExclusive(id={0})", id);
+
             PutSessionStateStoreData(id, item);
 
             ReleaseItemExclusive(context, id, lockId);
@@ -286,6 +298,8 @@ namespace Apache.Ignite.AspNet
         /// the item to delete from the data store.</param>
         public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
         {
+            Log("RemoveItem(id={0})", id);
+
             Cache.Remove(GetKey(id));
         }
 
@@ -314,6 +328,8 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
         {
+            Log("CreateNewStoreData(timeout={0})", timeout);
+
             return new SessionStateStoreData(new SessionStateItemCollection(),
                 SessionStateUtility.GetSessionStaticObjects(context), timeout);
         }
@@ -328,6 +344,8 @@ namespace Apache.Ignite.AspNet
         /// for the current request.</param>
         public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
         {
+            Log("CreateUninitializedItem(id={0},timeout={1})", id, timeout);
+
             var item = CreateNewStoreData(context, timeout);
 
             PutSessionStateStoreData(id, item);
