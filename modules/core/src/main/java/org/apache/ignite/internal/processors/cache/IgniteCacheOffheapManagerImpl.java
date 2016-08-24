@@ -95,7 +95,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         final PageMemory pageMem = cctx.shared().database().pageMemory();
 
-        indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
+        indexingEnabled = GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
             int cacheId = cctx.cacheId();
@@ -725,6 +725,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             DataRow old = dataTree.put(dataRow);
 
+            if (old == null)
+                lsnr.onInsert();
+
             if (indexingEnabled) {
                 GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -738,8 +741,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 rowStore.removeRow(old.link());
             }
-            else
-                lsnr.onInsert();
         }
 
         /** {@inheritDoc} */

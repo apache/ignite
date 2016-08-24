@@ -120,7 +120,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             for (int i = 0; i < gridCount(); i++) {
                 if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).cache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals(key, grid(i).cache(null).localPeek(key));
             }
 
             if (nearEnabled())
@@ -140,7 +140,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                TestClass1 val = (TestClass1)grid(i).cache(null).localPeek(key, CachePeekMode.ONHEAP);
+                TestClass1 val = (TestClass1)grid(i).cache(null).localPeek(key);
 
                 assertNotNull(val);
                 assertEquals(key.intValue(), val.val);
