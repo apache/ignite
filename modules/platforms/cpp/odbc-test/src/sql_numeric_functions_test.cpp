@@ -52,244 +52,258 @@ using namespace boost::unit_test;
 
 using ignite::impl::binary::BinaryUtils;
 
-BOOST_FIXTURE_TEST_SUITE(SqlStringFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SqlNumericFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionAscii)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionAbs)
 {
     TestType in;
 
-    in.strField = "Hi";
+    in.i32Field = -42;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn ASCII(strField)} FROM TestType", static_cast<int32_t>('H'));
+    CheckSingleResult<int32_t>("SELECT {fn ABS(i32Field)} FROM TestType", std::abs(in.i32Field));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionBitLength)
-{
-    TestType in;
-    in.strField = "Lorem ipsum dolor";
-
-    testCache.Put(1, in);
-
-    CheckSingleResult<int64_t>("SELECT {fn BIT_LENGTH(strField)} FROM TestType", in.strField.size() * 16);
-}
-
-BOOST_AUTO_TEST_CASE(TestStringFunctionChar)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionAcos)
 {
     TestType in;
 
-    in.i32Field = static_cast<int32_t>('H');
+    in.doubleField = 0.32;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn CHAR(i32Field)} FROM TestType", "H");
+    CheckSingleResult<double>("SELECT {fn ACOS(doubleField)} FROM TestType", std::acos(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionCharLength)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionAsin)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor";
+
+    in.doubleField = 0.12;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn CHAR_LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<double>("SELECT {fn ASIN(doubleField)} FROM TestType", std::asin(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionCharacterLength)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionAtan)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor";
+
+    in.doubleField = 0.14;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn CHARACTER_LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<double>("SELECT {fn ATAN(doubleField)} FROM TestType", std::atan(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionConcat)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionAtan2)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet,";
+
+    in.doubleField = 0.24;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn CONCAT(strField, \' consectetur adipiscing elit\')} FROM TestType",
-        in.strField + " consectetur adipiscing elit");
+    CheckSingleResult<double>("SELECT {fn ATAN2(doubleField, 0.2)} FROM TestType", std::atan2(in.doubleField, 0.2));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionDifference)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionCeiling)
 {
     TestType in;
-    in.strField = "Hello";
+
+    in.doubleField = 7.31;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn DIFFERENCE(strField, \'Hola!\')} FROM TestType", 4);
+    CheckSingleResult<double>("SELECT {fn CEILING(doubleField)} FROM TestType", std::ceil(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionInsert)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionCos)
 {
     TestType in;
-    in.strField = "Hello World!";
+
+    in.doubleField = 2.31;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn INSERT(strField, 7, 5, \'Ignite\')} FROM TestType", "Hello Ignite!");
+    CheckSingleResult<double>("SELECT {fn COS(doubleField)} FROM TestType", std::cos(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLcase)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionCot)
 {
     TestType in;
-    in.strField = "Hello World!";
+
+    in.doubleField = 2.31;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn LCASE(strField)} FROM TestType", "hello world!");
+    CheckSingleResult<double>("SELECT {fn COT(doubleField)} FROM TestType", 1 / std::tan(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLeft)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionDegrees)
 {
     TestType in;
-    in.strField = "Hello World!";
+
+    in.doubleField = 2.31;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn LEFT(strField, 5)} FROM TestType", "Hello");
+    CheckSingleResult<double>("SELECT {fn DEGREES(doubleField)} FROM TestType", in.doubleField * M_1_PI * 180);
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLength)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionExp)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    in.doubleField = 1.23;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<double>("SELECT {fn EXP(doubleField)} FROM TestType", std::exp(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLocate)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionFloor)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    in.doubleField = 5.29;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LOCATE(\'ip\', strField)} FROM TestType", 7);
+    CheckSingleResult<double>("SELECT {fn FLOOR(doubleField)} FROM TestType", std::floor(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLocate2)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionLog)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    in.doubleField = 15.3;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LOCATE(\'ip\', strField, 10)} FROM TestType", 43);
+    CheckSingleResult<double>("SELECT {fn LOG(doubleField)} FROM TestType", std::log(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionLtrim)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionLog10)
 {
     TestType in;
-    in.strField = "    Lorem ipsum  ";
+
+    in.doubleField = 15.3;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn LTRIM(strField)} FROM TestType", "Lorem ipsum  ");
+    CheckSingleResult<double>("SELECT {fn LOG10(doubleField)} FROM TestType", std::log10(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionOctetLength)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionMod)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    in.i64Field = 26;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn OCTET_LENGTH(strField)} FROM TestType", in.strField.size() * 2);
+    CheckSingleResult<int64_t>("SELECT {fn MOD(i64Field, 3)} FROM TestType", in.i64Field % 3);
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionPosition)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionPi)
+{
+    CheckSingleResult<double>("SELECT {fn PI()}", M_PI);
+}
+
+BOOST_AUTO_TEST_CASE(TestNumericFunctionPower)
 {
     TestType in;
-    in.strField = "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+
+    in.doubleField = 1.81;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn POSITION(\'sit\', strField)} FROM TestType", 19);
+    CheckSingleResult<double>("SELECT {fn POWER(doubleField, 2.5)} FROM TestType", std::pow(in.doubleField, 2.5));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionRepeat)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionRadians)
 {
     TestType in;
-    in.strField = "Test";
+
+    in.doubleField = 161;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn REPEAT(strField,4)} FROM TestType", "TestTestTestTest");
+    CheckSingleResult<double>("SELECT {fn RADIANS(doubleField)} FROM TestType", in.doubleField * M_PI / 180.0);
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionReplace)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionRand)
+{
+    CheckSingleResult<double>("SELECT {fn RAND()} * 0", 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestNumericFunctionRound)
 {
     TestType in;
-    in.strField = "Hello Ignite!";
+
+    in.doubleField = 5.29;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn REPLACE(strField, \'Ignite\', \'World\')} FROM TestType", "Hello World!");
+    CheckSingleResult<double>("SELECT {fn ROUND(doubleField)} FROM TestType", std::floor(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionRight)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionSign)
 {
     TestType in;
-    in.strField = "Hello World!";
+
+    in.doubleField = -1.39;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn RIGHT(strField, 6)} FROM TestType", "World!");
+    CheckSingleResult<double>("SELECT {fn SIGN(doubleField)} FROM TestType", in.doubleField < 0 ? -1 : in.doubleField == 0 ? 0 : 1);
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionRtrim)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionSin)
 {
     TestType in;
-    in.strField = "    Lorem ipsum  ";
+
+    in.doubleField = 1.01;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn RTRIM(strField)} FROM TestType", "    Lorem ipsum");
+    CheckSingleResult<double>("SELECT {fn SIN(doubleField)} FROM TestType", std::sin(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionSoundex)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionSqrt)
 {
     TestType in;
-    in.strField = "Hello Ignite!";
+
+    in.doubleField = 2.56;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn SOUNDEX(strField)} FROM TestType", "H425");
+    CheckSingleResult<double>("SELECT {fn SQRT(doubleField)} FROM TestType", std::sqrt(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionSpace)
-{
-    CheckSingleResult<std::string>("SELECT {fn SPACE(10)}", "          ");
-}
-
-BOOST_AUTO_TEST_CASE(TestStringFunctionSubstring)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionTan)
 {
     TestType in;
-    in.strField = "Hello Ignite!";
+
+    in.doubleField = 0.56;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn SUBSTRING(strField, 7, 6)} FROM TestType", "Ignite");
+    CheckSingleResult<double>("SELECT {fn TAN(doubleField)} FROM TestType", std::tan(in.doubleField));
 }
 
-BOOST_AUTO_TEST_CASE(TestStringFunctionUcase)
+BOOST_AUTO_TEST_CASE(TestNumericFunctionTruncate)
 {
     TestType in;
-    in.strField = "Hello World!";
+
+    in.doubleField = 4.17133;
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn UCASE(strField)} FROM TestType", "HELLO WORLD!");
+    CheckSingleResult<double>("SELECT {fn TRUNCATE(doubleField, 3)} FROM TestType", 4.171);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-#define _USE_MATH_DEFINES
-
 #ifdef _WIN32
 #   include <windows.h>
 #endif
 
 #include <sql.h>
 #include <sqlext.h>
-
-#include <cmath>
 
 #include <vector>
 #include <string>
