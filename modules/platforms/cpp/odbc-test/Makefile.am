@@ -61,6 +61,8 @@ ignite_odbc_tests_SOURCES = \
     src/row_test.cpp \
     src/utility_test.cpp \
     src/queries_test.cpp \
+    src/test_utils.cpp \
+    src/sql_string_functions_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
@@ -71,10 +73,10 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/result_page.cpp
 
 run-check: check
-	./ignite-odbc-tests -p
+    ./ignite-odbc-tests -p
 
 clean-local: clean-check
-	$(RM) *.gcno *.gcda
+    $(RM) *.gcno *.gcda
 
 clean-docs:
-	$(RM) $(ignite_odbc_tests_OBJECTS)
+    $(RM) $(ignite_odbc_tests_OBJECTS)
