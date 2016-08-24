@@ -32,7 +32,7 @@ namespace Apache.Ignite.Linq
     /// <typeparam name="T">Result type.</typeparam>
     /// <param name="args">The arguments.</param>
     /// <returns>Query cursor.</returns>
-    public delegate IQueryCursor<T> CompiledQueryDelegate<T>(params object[] args);
+    public delegate IQueryCursor<T> CompiledQueryFunc<T>(params object[] args);
 
     /// <summary>
     /// Represents a compiled cache query.
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Linq
         /// <returns>Delegate that represents the compiled cache query.</returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
             Justification = "Invalid warning, validation is present.")]
-        public static CompiledQueryDelegate<T> Compile<T>(IQueryable<T> query)
+        public static CompiledQueryFunc<T> Compile<T>(IQueryable<T> query)
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
