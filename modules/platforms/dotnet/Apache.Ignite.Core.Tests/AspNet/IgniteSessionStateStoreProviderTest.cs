@@ -171,16 +171,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestCaching()
         {
-            var provider = GetProvider();
-
-        }
-
-        /// <summary>
-        /// Tests the caching in read-only scenario.
-        /// </summary>
-        [Test]
-        public void TestCachingReadOnly()
-        {
             bool locked;
             TimeSpan lockAge;
             object lockId;
