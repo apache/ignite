@@ -528,7 +528,7 @@ public abstract class IgniteUtils {
             mac = true;
         else {
             // UNIXs flavors tokens.
-            for (CharSequence os : new String[]{"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
+            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
                 if (osLow.contains(os)) {
                     unix = true;
 
@@ -640,7 +640,7 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
+        Class<?>[] evtHolderClasses = new Class[] {EventType.class, DiscoveryCustomEvent.class};
 
         for (Class<?> cls : evtHolderClasses) {
             for (Field field : cls.getFields()) {
@@ -726,7 +726,8 @@ public abstract class IgniteUtils {
      * @param clazz Class.
      * @return The IgniteClosure mapped to this exception class, or null if none.
      */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(
+        Class<? extends IgniteCheckedException> clazz) {
         return exceptionConverters.get(clazz);
     }
 
@@ -736,7 +737,7 @@ public abstract class IgniteUtils {
      * @return Exception converters.
      */
     private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters() {
+    exceptionConverters() {
         Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
@@ -1041,7 +1042,6 @@ public abstract class IgniteUtils {
      *
      * @param log Logger.
      * @param msg Message to debug.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1064,7 +1064,6 @@ public abstract class IgniteUtils {
      * Prints stack trace of the current thread to {@code System.out}.
      *
      * @param msg Message to print with the stack.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1085,7 +1084,6 @@ public abstract class IgniteUtils {
      *
      * @param msg Message to print with the stack.
      * @param out Output to dump stack to.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1098,7 +1096,6 @@ public abstract class IgniteUtils {
      *
      * @param log Logger.
      * @param msg Message to print with the stack.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1215,7 +1212,7 @@ public abstract class IgniteUtils {
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
-                    "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
 
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
@@ -1242,6 +1239,7 @@ public abstract class IgniteUtils {
 
     /**
      * Get deadlocks from the thread bean.
+     *
      * @param mxBean the bean
      * @return the set of deadlocked threads (may be empty Set, but never null).
      */
@@ -1367,7 +1365,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to
+     * int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -1440,7 +1439,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (ctor != null && set)
                 ctor.setAccessible(false);
         }
@@ -1474,7 +1474,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (set)
                 ctor.setAccessible(false);
         }
@@ -1542,7 +1543,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param len Number of characters to fill in.
      * @param ch Character to fill with.
      * @return String.
@@ -1620,7 +1620,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param out Output.
      * @param col Set to write.
      * @throws IOException If write failed.
@@ -1637,7 +1636,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param out Output.
      * @param col Set to write.
      * @throws IOException If write failed.
@@ -1685,7 +1683,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param m Map to copy.
      * @param <K> Key type.
      * @param <V> Value type
@@ -1696,7 +1693,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param m Map to seal.
      * @param <K> Key type.
      * @param <V> Value type
@@ -1776,8 +1772,7 @@ public abstract class IgniteUtils {
     /**
      * Determines whether current local host is different from previously cached.
      *
-     * @return {@code true} or {@code false} depending on whether or not local host
-     *      has changed from the cached value.
+     * @return {@code true} or {@code false} depending on whether or not local host has changed from the cached value.
      * @throws IOException If attempt to get local host failed.
      */
     public static synchronized boolean isLocalHostChanged() throws IOException {
@@ -1826,11 +1821,13 @@ public abstract class IgniteUtils {
         for (Future<?> fut : futs) {
             try {
                 fut.get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw new IgniteException(e);
             }
         }
@@ -2077,8 +2074,7 @@ public abstract class IgniteUtils {
      * Note that on linux getHardwareAddress() can return null from time to time
      * if NetworkInterface.getHardwareAddress() method is called from many threads.
      *
-     * @return List of all known enabled local MACs or empty list
-     *      if no MACs could be found.
+     * @return List of all known enabled local MACs or empty list if no MACs could be found.
      */
     public static synchronized Collection<String> allLocalMACs() {
         List<String> macs = new ArrayList<>(3);
@@ -2151,7 +2147,8 @@ public abstract class IgniteUtils {
         }
         catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new IOException("Failed to open HTTPs connection [url=" + url.toString() + ", msg=" + e + ']', e);
-        } finally {
+        }
+        finally {
             close(in, null);
             close(out, null);
         }
@@ -2165,7 +2162,7 @@ public abstract class IgniteUtils {
      * @return Array with one X509TrustManager implementation of trust manager.
      */
     private static TrustManager[] getTrustManagers() {
-        return new TrustManager[]{
+        return new TrustManager[] {
             new X509TrustManager() {
                 @Nullable @Override public X509Certificate[] getAcceptedIssuers() {
                     return null;
@@ -2238,17 +2235,15 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return ClassLoader at IgniteConfiguration in case it is not null or
-     * ClassLoader used to start Ignite.
+     * @return ClassLoader at IgniteConfiguration in case it is not null or ClassLoader used to start Ignite.
      */
     public static ClassLoader resolveClassLoader(IgniteConfiguration cfg) {
         return resolveClassLoader(null, cfg);
     }
 
     /**
-     * @return ClassLoader passed as param in case it is not null or
-     * ClassLoader at IgniteConfiguration in case it is not null or
-     * ClassLoader used to start Ignite.
+     * @return ClassLoader passed as param in case it is not null or ClassLoader at IgniteConfiguration in case it is
+     * not null or ClassLoader used to start Ignite.
      */
     public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
@@ -2891,8 +2886,7 @@ public abstract class IgniteUtils {
      * number of elements.
      *
      * @param data An array of characters containing hexidecimal digits
-     * @return A byte array containing binary data decoded from
-     *         the supplied char array.
+     * @return A byte array containing binary data decoded from the supplied char array.
      * @throws org.apache.ignite.IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
     public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
@@ -3154,6 +3148,7 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     *
      * @throws InterruptedException If interrupted.
      */
     public static void onGridStop() throws InterruptedException {
@@ -3192,7 +3187,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -3217,7 +3212,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -3311,8 +3306,7 @@ public abstract class IgniteUtils {
      * Deletes file or directory with all sub-directories and files.
      *
      * @param file File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted,
-     *      {@code false} otherwise
+     * @return {@code true} if and only if the file or directory is successfully deleted, {@code false} otherwise
      */
     public static boolean delete(@Nullable File file) {
         if (file == null)
@@ -3350,8 +3344,8 @@ public abstract class IgniteUtils {
 
     /**
      * @param dir Directory to create along with all non-existent parent directories.
-     * @return {@code True} if directory exists (has been created or already existed),
-     *      {@code false} if has not been created and does not exist.
+     * @return {@code True} if directory exists (has been created or already existed), {@code false} if has not been
+     * created and does not exist.
      */
     public static boolean mkdirs(File dir) {
         assert dir != null;
@@ -4219,7 +4213,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param err Whether to print to {@code System.err}.
      * @param objs Objects to log in quiet mode.
      */
@@ -4311,7 +4304,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String jvmId = ManagementFactory.getRuntimeMXBean().getName();
 
             sb.a("jvmId=").a(jvmId).a(',');
@@ -4566,8 +4559,7 @@ public abstract class IgniteUtils {
      *
      * @param ws Collection of workers to join.
      * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
+     * @return {@code true} if none of the worker have been interrupted, {@code false} if at least one was interrupted.
      */
     public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
         boolean retval = true;
@@ -4990,7 +4982,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -5018,7 +5009,8 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
+        ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         if (size == -1)
@@ -5056,8 +5048,8 @@ public abstract class IgniteUtils {
      * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
      *
      * @param in Data input.
-     * @throws IOException If write failed.
      * @return Read result.
+     * @throws IOException If write failed.
      */
     public static Map<String, String> readStringMap(DataInput in) throws IOException {
         int size = in.readInt();
@@ -5128,7 +5120,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -5293,7 +5284,7 @@ public abstract class IgniteUtils {
         Set<E> set = new HashSet(size, 1.0f);
 
         for (int i = 0; i < size; i++)
-            set.add((E) in.readObject());
+            set.add((E)in.readObject());
 
         return set;
     }
@@ -5460,8 +5451,7 @@ public abstract class IgniteUtils {
      *
      * @param base Base map.
      * @param map Map to check.
-     * @return {@code True} if all entries within map are contained in base map,
-     *      {@code false} otherwise.
+     * @return {@code True} if all entries within map are contained in base map, {@code false} otherwise.
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
@@ -5490,8 +5480,8 @@ public abstract class IgniteUtils {
      * Gets task name for the given task class.
      *
      * @param taskCls Task class.
-     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}})
-     *      or task class name if there is no annotation.
+     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}}) or task
+     * class name if there is no annotation.
      */
     public static String getTaskName(Class<? extends ComputeTask<?, ?>> taskCls) {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
@@ -5544,6 +5534,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets OS MBean.
+     *
      * @return OS MBean.
      */
     public static OperatingSystemMXBean getOsMx() {
@@ -5658,8 +5649,8 @@ public abstract class IgniteUtils {
      * Tests whether or not given class is loadable provided class loader.
      *
      * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead. If System class
+     * loader is not set - this method will return {@code false}.
      * @return {@code True} if class is loadable, {@code false} otherwise.
      */
     public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
@@ -5687,9 +5678,8 @@ public abstract class IgniteUtils {
      *
      * @param c Collection.
      * @return Peer deploy aware object from this collection with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this collection cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this collection
+     * cannot be found. In such case - peer deployment is not possible.
      */
     public static GridPeerDeployAware peerDeployAware0(@Nullable Iterable<?> c) {
         if (!F.isEmpty(c)) {
@@ -5698,7 +5688,7 @@ public abstract class IgniteUtils {
             // We need to find common classloader for all elements AND the collection itself
             Collection<Object> tmpC = new ArrayList<>();
 
-            for (Object e: c)
+            for (Object e : c)
                 tmpC.add(e);
 
             tmpC.add(c);
@@ -5764,9 +5754,8 @@ public abstract class IgniteUtils {
      *
      * @param c Objects.
      * @return Peer deploy aware object from this array with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this array cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this array cannot be
+     * found. In such case - peer deployment is not possible.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public static GridPeerDeployAware peerDeployAware0(@Nullable Object... c) {
@@ -6135,6 +6124,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets JDK name.
+     *
      * @return JDK name.
      */
     public static String jdkName() {
@@ -6407,9 +6397,8 @@ public abstract class IgniteUtils {
      *
      * @param v1 - java implementation version
      * @param v2 - java implementation version
-     * @return the value {@code 0} if {@code v1 == v2};
-     *         a value less than {@code 0} if {@code v1 < v2}; and
-     *         a value greater than {@code 0} if {@code v1 > v2}
+     * @return the value {@code 0} if {@code v1 == v2}; a value less than {@code 0} if {@code v1 < v2}; and a value
+     * greater than {@code 0} if {@code v1 > v2}
      */
     public static int compareVersionNumbers(@Nullable String v1, @Nullable String v2) {
         if (v1 == null && v2 == null)
@@ -6430,7 +6419,7 @@ public abstract class IgniteUtils {
             String p2 = part2[idx];
 
             int cmp = (p1.matches("\\d+") && p2.matches("\\d+"))
-                        ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
+                ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
 
             if (cmp != 0)
                 return cmp;
@@ -6866,8 +6855,7 @@ public abstract class IgniteUtils {
      *
      * @param arr Array.
      * @param len Prefix length.
-     * @return Old array if length of {@code arr} is equals to {@code len},
-     *      otherwise copy of array.
+     * @return Old array if length of {@code arr} is equals to {@code len}, otherwise copy of array.
      */
     public static int[] copyIfExceeded(int[] arr, int len) {
         assert arr != null;
@@ -6877,7 +6865,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param t Tokenizer.
      * @param str Input string.
      * @param date Date.
@@ -6897,7 +6884,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param str ISO date.
      * @return Calendar instance.
      * @throws IgniteCheckedException Thrown in case of any errors.
@@ -7209,7 +7195,6 @@ public abstract class IgniteUtils {
      * Dumps stack for given thread.
      *
      * @param t Thread to dump stack for.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings("deprecation")
@@ -7223,7 +7208,6 @@ public abstract class IgniteUtils {
      *
      * @param t Thread to dump stack for.
      * @param s {@code PrintStream} to use for output.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
@@ -7252,7 +7236,6 @@ public abstract class IgniteUtils {
     /**
      * @param cls Class.
      * @return {@code True} if given class represents a primitive or a primitive wrapper class.
-     *
      */
     public static boolean isPrimitiveOrWrapper(Class<?> cls) {
         return cls.isPrimitive() ||
@@ -7328,8 +7311,8 @@ public abstract class IgniteUtils {
      * @param latch Latch to wait for.
      * @param timeout Maximum time to wait.
      * @param unit Time unit for timeout.
-     * @return {@code True} if the count reached zero and {@code false}
-     *      if the waiting time elapsed before the count reached zero.
+     * @return {@code True} if the count reached zero and {@code false} if the waiting time elapsed before the count
+     * reached zero.
      * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
@@ -7499,8 +7482,8 @@ public abstract class IgniteUtils {
      * @param sem Semaphore.
      * @param timeout The maximum time to wait.
      * @param unit The unit of the {@code time} argument.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      * @return {@code True} if acquires a permit, {@code false} another.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
         throws IgniteInterruptedCheckedException {
@@ -7530,8 +7513,7 @@ public abstract class IgniteUtils {
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @return {@code true} if given node has near cache enabled for the
-     *      specified partitioned cache.
+     * @return {@code true} if given node has near cache enabled for the specified partitioned cache.
      */
     public static boolean hasNearCache(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
@@ -7638,7 +7620,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                        "not be propagated to callee): " + e,
+                            "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -7702,11 +7684,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8114,8 +8096,8 @@ public abstract class IgniteUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
-     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null} if it did not found
+     * in classpath. Notice that in this case logging is not suppressed.
      * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
      */
     public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
@@ -8257,8 +8239,7 @@ public abstract class IgniteUtils {
      * Creates string for log output.
      *
      * @param msg Message to start string.
-     * @param args Even length array where the odd elements are parameter names
-     *      and even elements are parameter values.
+     * @param args Even length array where the odd elements are parameter names and even elements are parameter values.
      * @return Log message, formatted as recommended by Ignite guidelines.
      */
     public static String fl(String msg, Object... args) {
@@ -8270,7 +8251,7 @@ public abstract class IgniteUtils {
             sb.append(" [");
 
             for (int i = 0; i < args.length / 2; i++) {
-                sb.append(args[ i * 2]).append('=').append(args[i * 2 + 1]);
+                sb.append(args[i * 2]).append('=').append(args[i * 2 + 1]);
                 sb.append(", ");
             }
 
@@ -8385,11 +8366,11 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }
@@ -8440,8 +8421,7 @@ public abstract class IgniteUtils {
      * to be available on all JVM, this method should be called to ensure
      * logic could work properly.
      *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
+     * @return {@code True} if unsafe copying can work on the current JVM or {@code false} if it can't.
      */
     @SuppressWarnings("TypeParameterExtendsFinalClass")
     private static boolean unsafeByteArrayCopyAvailable() {
@@ -8527,8 +8507,7 @@ public abstract class IgniteUtils {
      * Returns a first non-null value in a given array, if such is present.
      *
      * @param vals Input array.
-     * @return First non-null value, or {@code null}, if array is empty or contains
-     *      only nulls.
+     * @return First non-null value, or {@code null}, if array is empty or contains only nulls.
      */
     @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
         if (vals == null)
@@ -8562,8 +8541,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link
+     * org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop}
+     * method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -8589,8 +8569,8 @@ public abstract class IgniteUtils {
      * physical computer.
      *
      * @param nodes Nodes.
-     * @return Collection of projections where each projection represents all nodes (in this projection)
-     *      from a single physical computer. Result collection can be empty if this projection is empty.
+     * @return Collection of projections where each projection represents all nodes (in this projection) from a single
+     * physical computer. Result collection can be empty if this projection is empty.
      */
     public static Map<String, Collection<ClusterNode>> neighborhood(Iterable<ClusterNode> nodes) {
         Map<String, Collection<ClusterNode>> map = new HashMap<>();
@@ -8761,7 +8741,7 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address :sockAddr)
+        for (InetSocketAddress address : sockAddr)
             resolved.addAll(resolveAddress(addrRslvr, address));
 
         return resolved;
@@ -8832,19 +8812,21 @@ public abstract class IgniteUtils {
      * Default work directory return if not provided.
      * Creates subdirectories and ensures read-write operations permitted
      *
-     * @param workdir Ignite work folder provided by user.
+     * @param workDir Ignite work folder.
+     * @param igniteHome Ignite home folder.
      * @return actual Work directory
      */
-    private static String getValidWorkDir(@Nullable String workdir)
+    public static String getValidWorkDir(@Nullable String igniteHome, @Nullable String workDir)
         throws IgniteCheckedException {
         File igniteWork;
 
-        if (!F.isEmpty(workdir))
-            igniteWork = new File(workdir);
+        if (!F.isEmpty(workDir))
+            igniteWork = new File(workDir);
         else if (!F.isEmpty(IGNITE_WORK_DIR))
             igniteWork = new File(IGNITE_WORK_DIR);
         else {
-            String igniteHome = getIgniteHome();
+            if (F.isEmpty(igniteHome))
+                igniteHome = getIgniteHome();
 
             if (!F.isEmpty(igniteHome))
                 igniteWork = new File(igniteHome, "work");
@@ -8890,11 +8872,12 @@ public abstract class IgniteUtils {
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist) throws IgniteCheckedException {
+    public static File resolveWorkDirectory(String workDir, String path,
+        boolean delIfExist) throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String basedir = getValidWorkDir(workDir);
+            String basedir = getValidWorkDir(null, workDir);
 
             if (F.isEmpty(basedir))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
@@ -8926,7 +8909,8 @@ public abstract class IgniteUtils {
      * @param suppressed The collections of suppressed exceptions.
      * @return {@code IgniteCheckedException}.
      */
-    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+    public static IgniteCheckedException exceptionWithSuppressed(String msg,
+        @Nullable Collection<Throwable> suppressed) {
         IgniteCheckedException e = new IgniteCheckedException(msg);
 
         if (suppressed != null) {
@@ -8941,8 +8925,8 @@ public abstract class IgniteUtils {
      * Extracts full name of enclosing class from JDK8 lambda class name.
      *
      * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
+     * @return Full name of enclosing class for JDK8 lambda class name or {@code null} if passed in name is not related
+     * to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
         int idx = clsName.indexOf("$$Lambda$");
