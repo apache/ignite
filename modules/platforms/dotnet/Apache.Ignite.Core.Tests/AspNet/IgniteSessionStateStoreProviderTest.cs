@@ -223,8 +223,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Try to get it in a different thread.
             Task.Factory.StartNew(() =>
             {
-                res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+                object lockId1;   // do not overwrite lockId
+                res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId1, out actions);
                 Assert.IsNull(res);
+                Assert.IsNull(lockId1);
                 Assert.IsTrue(locked);
                 Assert.Greater(lockAge, TimeSpan.Zero);
                 Assert.AreEqual(SessionStateActions.None, actions);
