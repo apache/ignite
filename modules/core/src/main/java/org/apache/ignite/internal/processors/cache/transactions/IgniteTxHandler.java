@@ -1264,10 +1264,19 @@ public class IgniteTxHandler {
 
                 if (committed) {
                     if (!req.waitRemoteTransactions()) {
-                        res.returnValue(ctx.tm().getCommittedTxReturn(req.version()));
+                        try {
+                            res.returnValue(ctx.tm().getCommittedTxReturn(req.version()).fut().get());
 
-                        if (res.returnValue() != null)
-                            ctx.tm().removeTxReturn(req.version(), nodeId);
+                            if (res.returnValue() != null)
+                                ctx.tm().removeTxReturn(req.version(), nodeId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (txFinishMsgLog.isDebugEnabled()) {
+                                txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
+                                    ", dhtTxId=" + req.version() +
+                                    ", node=" + nodeId + ']');
+                            }
+                        }
                     }
                 }
                 else {

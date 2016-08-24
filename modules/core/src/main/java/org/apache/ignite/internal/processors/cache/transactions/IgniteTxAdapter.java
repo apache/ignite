@@ -1495,7 +1495,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (F.isEmpty(txEntry.entryProcessors())) {
             if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+                GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion()).raw();
 
                 ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
             }
@@ -1568,7 +1568,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 if (!near() && !local() && onePhaseCommit() & needReturnValue()) {
-                    GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+                    GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion()).raw();
 
                     assert ret != null;
 

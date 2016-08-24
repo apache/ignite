@@ -530,31 +530,43 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         readyNearMappingFromBackup(mapping);
 
                         if (committed) {
-                            GridCacheReturn retVal = cctx.tm().getCommittedTxReturn(tx.xidVersion());
+                            try {
+                                GridCacheReturn retVal = cctx.tm().getCommittedTxReturn(tx.xidVersion()).fut().get();
 
-                            assert retVal != null;
+                                assert retVal != null;
 
-                            tx.implicitSingleResult(retVal);
+                                tx.implicitSingleResult(retVal);
 
-                            cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                                cctx.tm().removeTxReturn(tx.xidVersion(), null);
 
-                            if (tx.syncMode() == FULL_SYNC) {
-                                GridCacheVersion nearXidVer = tx.nearXidVersion();
+                                if (tx.syncMode() == FULL_SYNC) {
+                                    GridCacheVersion nearXidVer = tx.nearXidVersion();
 
-                                assert nearXidVer != null : tx;
+                                    assert nearXidVer != null : tx;
 
-                                IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
+                                    IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
 
-                                fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                    @Override public void apply(IgniteInternalFuture<?> fut) {
-                                        mini.onDone(tx);
-                                    }
-                                });
+                                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                                            mini.onDone(tx);
+                                        }
+                                    });
 
-                                return;
+                                    return;
+                                }
+
+                                mini.onDone(tx);
                             }
+                            catch (IgniteCheckedException e) {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("Near finish fut, failed to finish [" +
+                                        "txId=" + tx.nearXidVersion() +
+                                        ", node=" + backup.id() +
+                                        ", err=" + e + ']');
+                                }
 
-                            mini.onDone(tx);
+                                mini.onDone(e);
+                            }
                         }
                         else {
                             ClusterTopologyCheckedException cause =

@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
@@ -916,7 +916,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @param tx Committed transaction.
      */
-    public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturn ret) {
+    public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturnCompletableWrapper ret) {
         addCommittedTxReturn(tx, tx.nearXidVersion(), null, ret);
     }
 
@@ -965,7 +965,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         IgniteInternalTx tx,
         GridCacheVersion xidVer,
         @Nullable GridCacheVersion nearXidVer,
-        GridCacheReturn retVal
+        GridCacheReturnCompletableWrapper retVal
     ) {
         assert retVal != null;
 
@@ -1019,14 +1019,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param xidVer xidVer Completed transaction version.
      * @return Tx result.
      */
-    public GridCacheReturn getCommittedTxReturn(GridCacheVersion xidVer) {
+    public GridCacheReturnCompletableWrapper getCommittedTxReturn(GridCacheVersion xidVer) {
         Object retVal = completedVersHashMap.get(xidVer);
 
         // Will gain true in regular case or GridCacheReturn in onePhaseCommit case.
         if (!Boolean.TRUE.equals(retVal)) {
             assert !Boolean.FALSE.equals(retVal); // Method should be used only after 'committed' checked.
 
-            return (GridCacheReturn)retVal;
+            return (GridCacheReturnCompletableWrapper)retVal;
         }
         else
             return null;
@@ -1041,7 +1041,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
             return;
 
-        assert prev instanceof GridCacheReturn;
+        assert prev instanceof GridCacheReturnCompletableWrapper;
 
         boolean res = completedVersHashMap.replace(xidVer, prev, true);
 

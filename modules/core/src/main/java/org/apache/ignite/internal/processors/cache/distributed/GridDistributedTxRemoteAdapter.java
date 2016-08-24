@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -450,13 +451,14 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
                 if (!F.isEmpty(writeMap)) {
+                    if (!near() && !local() && onePhaseCommit())
+                        cctx.tm().addCommittedTxReturn(this,
+                            new GridCacheReturnCompletableWrapper(
+                                new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true)));
+
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
-
-                    if (!near() && !local() && onePhaseCommit() && needReturnValue())
-                        cctx.tm().addCommittedTxReturn(this,
-                            new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true));
 
                     AffinityTopologyVersion topVer = topologyVersion();
 
@@ -686,6 +688,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (ex instanceof Error)
                                 throw (Error)ex;
                         }
+                    }
+
+                    if (!near() && !local() && onePhaseCommit()) {
+                        GridCacheReturnCompletableWrapper ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+
+                        ret.markInitialized();
                     }
                 }
 
