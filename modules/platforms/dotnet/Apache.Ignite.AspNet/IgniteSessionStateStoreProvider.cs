@@ -40,16 +40,11 @@ namespace Apache.Ignite.AspNet
     /// if cache name is null.
     /// <para />
     /// Optional <c>applicationId</c> attribute allows sharing a single Ignite cache between multiple web applications.
-    /// <para />
-    /// <c>enableDebugLogging</c> attribute enables verbose logging to Ignite log with Debug level.
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
         /** Application id config parameter. */
         private const string ApplicationId = "applicationId";
-
-        /** Debug logging config parameter. */
-        private const string EnableDebugLogging = "enableDebugLogging";
 
         /** */
         private volatile string _applicationId;
@@ -77,13 +72,10 @@ namespace Apache.Ignite.AspNet
 
             _applicationId = config[ApplicationId];
 
-            if (config[EnableDebugLogging] == "true")
-            {
-                var log = cache.Ignite.Logger;
+            var log = cache.Ignite.Logger;
 
-                if (log.IsEnabled(LogLevel.Debug))
-                    _log = log.GetLogger(GetType().FullName);
-            }
+            if (log.IsEnabled(LogLevel.Trace))
+                _log = log.GetLogger(GetType().FullName);
 
             Log("{0} initialized: gridName={1}, cacheName={2}, applicationId={3}", GetType(), cache.Ignite.Name, 
                 cache.Name, _applicationId);
@@ -198,7 +190,7 @@ namespace Apache.Ignite.AspNet
             out TimeSpan lockAge,
             out object lockId, out SessionStateActions actions)
         {
-            Log("GetItemExclusive(id={0})", id);
+            Log("GetItemExclusive", id, context);
 
             actions = SessionStateActions.None;  // Our items never need initialization.
             lockAge = TimeSpan.Zero;
@@ -216,7 +208,7 @@ namespace Apache.Ignite.AspNet
                 if (locked)
                 {
                     // Already locked: return lock age.
-                    Log("GetItemExclusive(id={0}): already locked", id);
+                    Log("GetItemExclusive already locked", id, context);
 
                     lockAge = GetLockAge(key);
 
@@ -227,7 +219,7 @@ namespace Apache.Ignite.AspNet
                 }
 
                 // Locked successfully, update lock age.
-                Log("GetItemExclusive(id={0}): locked successfully", id);
+                Log("GetItemExclusive locked successfully", id, context);
 
                 SetLockAge(key);
 
@@ -236,13 +228,13 @@ namespace Apache.Ignite.AspNet
                 if (Cache.TryGet(key, out existingData))
                 {
                     // Item found, return it.
-                    Log("GetItemExclusive(id={0}): session store data exists", id);
+                    Log("GetItemExclusive session store data found", id, context);
 
                     return SessionStateStoreDataSerializer.Deserialize((byte[]) existingData);
                 }
 
                 // Item not found - return null.
-                Log("GetItemExclusive(id={0}): session store data not found", id);
+                Log("GetItemExclusive session store data not found", id, context);
 
                 return null;
             }
@@ -262,7 +254,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="lockId">The lock identifier for the current request.</param>
         public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
         {
-            Log("ReleaseItemExclusive(id={0})", id);
+            Log("ReleaseItemExclusive", id, context);
 
             RemoveLockAge(GetKey(id));
 
@@ -286,7 +278,7 @@ namespace Apache.Ignite.AspNet
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item,
             object lockId, bool newItem)
         {
-            Log("SetAndReleaseItemExclusive(id={0})", id);
+            Log("SetAndReleaseItemExclusive", id, context);
 
             PutSessionStateStoreData(id, item);
 
@@ -303,7 +295,7 @@ namespace Apache.Ignite.AspNet
         /// the item to delete from the data store.</param>
         public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
         {
-            Log("RemoveItem(id={0})", id);
+            Log("RemoveItem", id, context);
 
             Cache.Remove(GetKey(id));
         }
@@ -333,7 +325,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override SessionStateStoreData CreateNewStoreData(HttpContext context, int timeout)
         {
-            Log("CreateNewStoreData(timeout={0})", timeout);
+            Log("CreateNewStoreData", "", context, timeout);
 
             return new SessionStateStoreData(new SessionStateItemCollection(),
                 SessionStateUtility.GetSessionStaticObjects(context), timeout);
@@ -349,7 +341,7 @@ namespace Apache.Ignite.AspNet
         /// for the current request.</param>
         public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
         {
-            Log("CreateUninitializedItem(id={0},timeout={1})", id, timeout);
+            Log("CreateUninitializedItem", id, context, timeout);
 
             var item = CreateNewStoreData(context, timeout);
 
@@ -449,7 +441,20 @@ namespace Apache.Ignite.AspNet
             if (log == null)
                 return;
 
-            log.Debug(msg, args);
+            log.Trace(msg, args);
+        }
+
+        /// <summary>
+        /// Logs the specified method call to the debug log, if enabled.
+        /// </summary>
+        private void Log(string method, string id, HttpContext ctx, int timeout = 0)
+        {
+            var log = _log;
+
+            if (log == null)
+                return;
+
+            log.Trace("{0}: id={1}, url={2}, timeout={3}", method, id, ctx.Request.Path, timeout);
         }
     }
 }
