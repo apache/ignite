@@ -237,6 +237,16 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the expiry.
+        /// </summary>
+        [Test]
+        public void TestExpiry()
+        {
+            // TODO
+            Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
+        }
+
+        /// <summary>
         /// Creates the store data.
         /// </summary>
         private static SessionStateStoreData CreateStoreData()
@@ -272,34 +282,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual("2", data.Items["name2"]);
 
             Assert.AreEqual(0, data.StaticObjects["int"]);
-        }
-
-        /// <summary>
-        /// Tests the store data serializer.
-        /// </summary>
-        [Test]
-        public void TestStoreDataSerializer()
-        {
-            // TODO
-        }
-
-        /// <summary>
-        /// Tests the expiry.
-        /// </summary>
-        [Test]
-        public void TestExpiry()
-        {
-            // TODO
-            Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
-        }
-
-        /// <summary>
-        /// Tests the locking.
-        /// </summary>
-        [Test]
-        public void TestLocking()
-        {
-            // TODO: ?
         }
 
         /// <summary>
