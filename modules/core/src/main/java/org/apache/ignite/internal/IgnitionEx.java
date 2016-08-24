@@ -1848,10 +1848,6 @@ public class IgnitionEx {
 
             myCfg.setIgniteHome(ggHome);
 
-            String workDir = U.getValidWorkDir(cfg.getIgniteHome(), cfg.getWorkDirectory());
-
-            myCfg.setWorkDirectory(workDir);
-
             // Validate segmentation configuration.
             SegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 

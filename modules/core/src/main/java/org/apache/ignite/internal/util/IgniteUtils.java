@@ -8877,12 +8877,13 @@ public abstract class IgniteUtils {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String basedir = getValidWorkDir(null, workDir);
+            if (F.isEmpty(workDir))
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + workDir);
 
-            if (F.isEmpty(basedir))
-                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
+            if (!new File(workDir).isAbsolute())
+                throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
 
-            dir = new File(basedir, dir.getPath());
+            dir = new File(workDir, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {
