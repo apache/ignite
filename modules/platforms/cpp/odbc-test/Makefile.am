@@ -73,10 +73,10 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/result_page.cpp
 
 run-check: check
-    ./ignite-odbc-tests -p
+	./ignite-odbc-tests -p
 
 clean-local: clean-check
-    $(RM) *.gcno *.gcda
+	$(RM) *.gcno *.gcda
 
 clean-docs:
-    $(RM) $(ignite_odbc_tests_OBJECTS)
+	$(RM) $(ignite_odbc_tests_OBJECTS)
