@@ -24,6 +24,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
+import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,20 +58,20 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
         "('p3', 3, 'Mike', 'Green', 40)";
 
     /** SQL query. */
-    private static final String SQL_SELECT = "select * from Person";
+    private static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age) values " +
+    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age) values " +
         "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
 
     /** Connection. */
-    private Connection conn;
+    protected Connection conn;
 
     /** Statement. */
-    private Statement stmt;
+    protected Statement stmt;
 
     /** Prepared statement. */
-    private PreparedStatement prepStmt;
+    protected PreparedStatement prepStmt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -244,7 +246,7 @@ public class JdbcMergeStatementSelfTest extends GridCommonAbstractTest {
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static class Person implements Serializable {
+    protected static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
         private final int id;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -59,9 +60,11 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Configuration utils.
@@ -411,6 +414,18 @@ public class PlatformConfigurationUtils {
                 indexes.add(readQueryIndex(in));
 
             res.setIndexes(indexes);
+        }
+
+        // Key fields
+        cnt = in.readInt();
+
+        if (cnt > 0) {
+            Set<String> keyFields = new HashSet<>();
+
+            for (int i = 0; i < cnt; i++)
+                keyFields.add(in.readString());
+
+            res.setKeyFields(keyFields);
         }
 
         return res;
@@ -775,6 +790,18 @@ public class PlatformConfigurationUtils {
 
             for (QueryIndex index : indexes)
                 writeQueryIndex(writer, index);
+        }
+        else
+            writer.writeInt(0);
+
+        // Key fields
+        Set<String> keyFields = queryEntity.getKeyFields();
+
+        if (keyFields != null) {
+            writer.writeInt(keyFields.size());
+
+            for (String keyField : keyFields)
+                writer.writeString(keyField);
         }
         else
             writer.writeInt(0);

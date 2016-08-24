@@ -15,29 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.jdbc2;
 
+import java.sql.DriverManager;
+import java.util.Properties;
+import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+
 /**
- *
+ * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.
  */
-public class IgniteCacheBinaryMarshallerMergeSqlQuerySelfTest extends IgniteCacheMergeSqlQuerySelfTest {
+public class JdbcBinaryMarshallerMergeStatementSelfTest extends JdbcMergeStatementSelfTest {
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-bin-config.xml";
+
     static {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        conn = DriverManager.getConnection(BASE_URL);
 
-        // We have to register these types on the node we'll call 'get' on
-        CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)grid(0).context().cacheObjects();
+        stmt = conn.createStatement();
+        prepStmt = conn.prepareStatement(SQL_PREPARED);
 
-        binProc.registerType(Key.class);
-        binProc.registerType(Key2.class);
-        binProc.registerType(Person.class);
+        assertNotNull(stmt);
+        assertFalse(stmt.isClosed());
+
+        assertNotNull(prepStmt);
+        assertFalse(prepStmt.isClosed());
     }
 }

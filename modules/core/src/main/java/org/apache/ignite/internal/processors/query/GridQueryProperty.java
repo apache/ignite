@@ -23,12 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
  * Description and access method for query entity field.
  */
 public abstract class GridQueryProperty {
-    /** Property ownership flag. */
-    private final boolean key;
-
     /** */
-    public GridQueryProperty(boolean key) {
-        this.key = key;
+    public GridQueryProperty() {
     }
 
     /**
@@ -65,7 +61,5 @@ public abstract class GridQueryProperty {
      * Property ownership flag.
      * @return {@code true} if this property belongs to key, {@code false} if it belongs to value.
      */
-    public boolean key() {
-        return key;
-    }
+    public abstract boolean key();
 }

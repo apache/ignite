@@ -74,6 +74,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -91,6 +92,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -1004,29 +1006,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, TableDescriptor desc, Object[] params)
         throws IgniteCheckedException {
-        if (F.isEmpty(gridStmt.rows()) || gridStmt.query() == null)
+        if (F.isEmpty(gridStmt.rows()) || gridStmt.query() != null)
             throw new CacheException("SQL MERGE from SELECT is not supported");
 
         // This check also protects us from attempts to update key or its fields directly -
         // when no key except cache one can be used, it will serve only for uniqueness checks,
         // not for updates.
-        if (!F.isEmpty(gridStmt.keys()))
+        GridSqlColumn[] keys = gridStmt.keys();
+        if (keys.length != 1 || !keys[0].columnName().equalsIgnoreCase(KEY_FIELD_NAME))
             throw new CacheException("SQL MERGE does not support arbitrary keys");
 
         GridSqlColumn[] cols = gridStmt.columns();
-
-        if (cctx.binaryMarshaller()) {
-            if (!(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor))
-                throw new CacheException("Expected binary cache object processor when using binary marshaller");
-
-            CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
-
-            if (desc.type().keyClass() == Object.class)
-                binProc.registerType(desc.type().origKeyClass());
-
-            if (desc.type().valueClass() == Object.class)
-                binProc.registerType(desc.type().origValueClass());
-        }
 
         if (gridStmt.rows().size() == 1) {
             IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, gridStmt.rows().get(0), params);
@@ -1058,19 +1048,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         A.ensure(!F.isEmpty(ins.rows()) && ins.query() == null, "SQL INSERT from SELECT is not supported");
 
         GridSqlColumn[] cols = ins.columns();
-
-        if (cctx.binaryMarshaller()) {
-            if (!(cctx.kernalContext().cacheObjects() instanceof CacheObjectBinaryProcessor))
-                throw new CacheException("Expected binary cache object processor when using binary marshaller");
-
-            CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)cctx.kernalContext().cacheObjects();
-
-            if (desc.type().keyClass() == Object.class)
-                binProc.registerType(desc.type().origKeyClass());
-
-            if (desc.type().valueClass() == Object.class)
-                binProc.registerType(desc.type().origValueClass());
-        }
 
         if (ins.rows().size() == 1) {
             IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, ins.rows().get(0), params);
@@ -1114,31 +1091,44 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Key-value pair.
      * @throws IgniteCheckedException if failed.
      */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, TableDescriptor desc, GridSqlColumn[] cols,
         GridSqlElement[] row, Object[] params) throws IgniteCheckedException {
         for (GridSqlElement rowEl : row)
             A.ensure(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
                 "SQL INSERT and MERGE statements support literal values only");
 
-        Class<?> keyCls = desc.type().origKeyClass();
-        Class<?> valCls = desc.type().origValueClass();
+        Class<?> keyCls = U.firstNotNull(U.classForName(desc.type().keyTypeName(), null), desc.type().keyClass());
+        Class<?> valCls = desc.type().valueClass();
 
         Object key = null;
         Object val = null;
 
-        boolean isKeyLiteral = isLiteralType(keyCls);
-        boolean isValLiteral = isLiteralType(valCls);
+        boolean isKeyLiteral = GridQueryProcessor.isSqlType(keyCls);
+        boolean isValLiteral = GridQueryProcessor.isSqlType(valCls);
 
-        if (marshaller instanceof BinaryMarshaller) {
-            BinaryObjectBuilder keyBuilder = !isKeyLiteral ? cctx.grid().binary().builder(keyCls.getName()) : null;
-            BinaryObjectBuilder valBuilder = !isValLiteral ? cctx.grid().binary().builder(valCls.getName()) : null;
+        if (cctx.binaryMarshaller()) {
+            //TODO change this logic when there's available the way of generating hash codes for new binary objects
+            // As for now, we accept as keys only classes present locally (because we have to deserialize built key
+            // to obtain hash code) and standard types (because they are read literally from SQL and are always present).
+            // Both must override equals/hashCode (thus, arrays can't be used as keys although they are standard).
+            if ((!isKeyLiteral && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls))
+                throw new UnsupportedOperationException("Currently only SQL types or local types " +
+                    "with overridden equals/hashCode methods may be used as keys " +
+                    "in SQL DML operations w/binary marshalling.");
+
+            BinaryObjectBuilder keyBuilder = !isKeyLiteral ? cctx.grid().binary().builder(desc.type().keyTypeName()) :
+                null;
+
+            BinaryObjectBuilder valBuilder = !isValLiteral ? cctx.grid().binary().builder(desc.type().valueTypeName()) :
+                null;
 
             for (int i = 0; i < cols.length; i++) {
                 Object colVal = getLiteralValue(row[i], params);
 
                 if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
                     A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
-                        "[keyCls=" + keyCls.getName() + ']');
+                        "[keyCls=" + desc.type().keyTypeName() + ']');
 
                     key = colVal;
                     continue;
@@ -1146,28 +1136,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
                     A.ensure(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
-                        "[valCls=" + valCls.getName() + ']');
+                        "[valType=" + desc.type().valueTypeName() + ']');
 
                     val = colVal;
                     continue;
                 }
 
                 GridQueryProperty prop = desc.type().property(cols[i].columnName());
+
                 A.notNull(prop, "Property '" + cols[i].columnName() + "' not found.");
 
-                BinaryObjectBuilder builder = prop.key() ? keyBuilder : valBuilder;
-                A.notNull(builder, "Null builder for class '" + prop.type() + "'");
-
-                setBinaryFieldValue(builder, prop.name(), colVal, prop.type());
+                prop.setValue(keyBuilder, valBuilder, colVal);
             }
 
             //TODO change these statements when there's available the way of generating hash codes for new binary objects
 
+            // We have to deserialize for the object to have hash code
             if (!isKeyLiteral)
                 key = keyBuilder.build().deserialize();
 
             if (!isValLiteral)
-                val = valBuilder.build().deserialize();
+                val = valBuilder.build();
         }
         else {
             try {
@@ -1193,7 +1182,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    A.ensure(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valCls=" + valCls.getName() + ']');
 
                     val = colVal;
@@ -1211,33 +1200,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param builder Object builder.
-     * @param field Field name.
-     * @param val Value to set.
-     * @param valType Type of {@code val}.
-     * @param <T> Value type.
-     */
-    private static <T> void setBinaryFieldValue(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
-        //noinspection unchecked
-        builder.setField(field, (T)val, valType);
-    }
-
-    /**
-     * @param cls Class.
-     * @return {@code true} if given class represents one of primitive types or their wrappers, or String, false otherwise.
-     */
-    private boolean isLiteralType(Class<?> cls) {
-        return IgniteUtils.isPrimitiveOrWrapper(cls) || String.class == cls;
-    }
-
-    /**
      * @param element SQL element.
      * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
      * @return literal object value.
      */
     private static Object getLiteralValue(GridSqlElement element, Object[] params) {
         if (element instanceof GridSqlConst)
-            return GridH2Utils.getObjectFromValue(((GridSqlConst)element).value());
+            return ((GridSqlConst)element).value().getObject();
         else if (element instanceof GridSqlParameter)
             return params[((GridSqlParameter)element).index()];
         else
@@ -1270,7 +1239,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters collection.
      * @throws IgniteCheckedException If failed.
      */
-    public void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
+    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 

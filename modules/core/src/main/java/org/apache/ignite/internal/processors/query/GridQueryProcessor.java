@@ -237,8 +237,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
 
                     desc.name(simpleValType);
-                    desc.origKeyClass(keyCls);
-                    desc.origValueClass(valCls);
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -264,6 +262,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
                     }
+
+                    desc.keyTypeName(qryEntity.getKeyType());
+                    desc.valueTypeName(qryEntity.getValueType());
 
                     if (binaryEnabled && keyOrValMustDeserialize) {
                         if (mustDeserializeClss == null)
@@ -370,6 +371,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
                     }
+
+                    desc.keyTypeName(meta.getKeyType());
+                    desc.valueTypeName(meta.getValueType());
 
                     if (binaryEnabled && keyOrValMustDeserialize) {
                         if (mustDeserializeClss == null)
@@ -1317,7 +1321,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
 
             d.addProperty(prop, false);
 
@@ -1329,7 +1333,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
 
             d.addProperty(prop, false);
 
@@ -1341,7 +1345,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, d);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null, d);
 
             d.addProperty(prop, false);
 
@@ -1359,7 +1363,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases, d);
+                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases,
+                        null, d);
 
                     d.addProperty(prop, false);
 
@@ -1373,7 +1378,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1393,9 +1398,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (aliases == null)
             aliases = Collections.emptyMap();
 
+        Set<String> keyFields = qryEntity.getKeyFields();
+        boolean hasKeyFields = (keyFields != null);
+
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
+            Boolean isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+
             BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
-                aliases, d);
+                aliases, isKeyField, d);
 
             d.addProperty(prop, false);
         }
@@ -1495,27 +1505,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @param d Type descriptor.
-     * @return Binary property.
+     * @param isKeyField
+     *@param d Type descriptor.  @return Binary property.
      */
-    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases,
-        TypeDescriptor d) throws IgniteCheckedException {
-        boolean key;
-
-        // First let's check key, then value, in consistence with #buildClassProperty and BinaryProperty#value
-        Member member = deepFindMember(pathStr, d.origKeyClass(), resType);
-
-        if (member == null) {
-            member = deepFindMember(pathStr, d.origValueClass(), resType);
-            key = false;
-        }
-        else
-            key = true;
-
-        if (member == null)
-            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' of type '" +
-                resType.getName() + "' for key class '" + d.origKeyClass() + "' and value class '" + d.origValueClass() +
-                "'. Make sure that one of these classes contains respective getter method or field.");
+    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
+        @Nullable Boolean isKeyField, TypeDescriptor d) throws IgniteCheckedException {
 
         String[] path = pathStr.split("\\.");
 
@@ -1532,7 +1526,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new BinaryProperty(prop, res, resType, key, alias);
+            res = new BinaryProperty(prop, res, resType, isKeyField, alias);
         }
 
         return res;
@@ -1576,7 +1570,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param aliases Aliases.
      * @return Property instance corresponding to the given path.
      */
-    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
+    private static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
         Map<String,String> aliases, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
@@ -1734,39 +1728,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param pathStr Full path to property.
-     * @param cls Properties hierarchy entry point (outermost class).
-     * @param resType Expected type of the member.
-     * @return Member (field or property) at the end of properties hierarchy denoted by {@code pathStr}.
-     */
-    @Nullable private static Member deepFindMember(String pathStr, Class<?> cls, Class<?> resType) {
-        String[] path = pathStr.split("\\.");
-
-        Member res = null;
-
-        for (String prop : path) {
-            Member mem = findMember(prop, cls);
-
-            if (mem == null)
-                return null;
-
-            cls = memberType(mem);
-
-            res = mem;
-        }
-
-        if (res == null)
-            return null;
-
-        Class<?> actualResType = memberType(res);
-
-        if (!U.box(resType).isAssignableFrom(U.box(actualResType)))
-            return null;
-
-        return res;
-    }
-
-    /**
      * Find a member (either a getter method or a field) with given name of given class.
      * @param prop Property name.
      * @param cls Class to search for a member in.
@@ -1826,6 +1787,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private final Member member;
 
         /** */
+        private final boolean key;
+
+        /** */
         private ClassProperty parent;
 
         /** */
@@ -1843,8 +1807,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param member Element.
          */
         ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
-            super(key);
             this.member = member;
+            this.key = key;
 
             this.name = !F.isEmpty(name) ? name :
                 member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
@@ -1859,7 +1823,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = unwrap(key() ? key : val);
+            Object x = unwrap(this.key ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1886,7 +1850,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
-            Object x = unwrap(key() ? key : val);
+            Object x = unwrap(this.key ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1906,6 +1870,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return key;
         }
 
         /**
@@ -1983,15 +1952,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
-         * @param key {@code true} if key property, {@code false} otherwise.
+         * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
          * @param alias Field alias.
          */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, boolean key, String alias) {
-            super(key);
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, @Nullable Boolean key, String alias) {
+            super();
             this.propName = propName;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;
+
+            if (key != null)
+                this.isKeyProp = key ? 1 : -1;
         }
 
         /** {@inheritDoc} */
@@ -2050,7 +2022,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!(obj instanceof BinaryObjectBuilder))
                 throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-            ((BinaryObjectBuilder) obj).setField(propName, propVal);
+            setValue0((BinaryObjectBuilder) obj, name(), propVal, type());
+        }
+
+        /**
+         * @param builder Object builder.
+         * @param field Field name.
+         * @param val Value to set.
+         * @param valType Type of {@code val}.
+         * @param <T> Value type.
+         */
+        private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
+            //noinspection unchecked
+            builder.setField(field, (T)val, valType);
         }
 
         /**
@@ -2104,6 +2088,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public Class<?> type() {
             return type;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            int isKeyProp0 = isKeyProp;
+
+            if (isKeyProp0 == 0)
+                throw new IllegalStateException("Ownership flag not set for binary property. Have you set 'keyFields'" +
+                    " property of QueryEntity in configuration XML?");
+
+            return isKeyProp0 == 1;
+        }
     }
 
     /**
@@ -2138,10 +2133,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Class<?> valCls;
 
         /** */
-        private Class<?> origKeyCls;
+        private String keyTypeName;
 
-        /**  */
-        private Class<?> origValCls;
+        /** */
+        private String valTypeName;
 
         /** */
         private boolean valTextIdx;
@@ -2303,29 +2298,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        public Class<?> origKeyClass() {
-            return origKeyCls;
+        @Override public String keyTypeName() {
+            return keyTypeName;
         }
 
         /**
-         * Sets original key class set in {@link QueryEntity} this descriptor was built upon.
-         * @param origKeyClass Original key class.
+         * Set key type name.
+         *
+         * @param keyTypeName Key type name.
          */
-        public void origKeyClass(Class<?> origKeyClass) {
-            this.origKeyCls = origKeyClass;
+        public void keyTypeName(String keyTypeName) {
+            this.keyTypeName = keyTypeName;
         }
 
         /** {@inheritDoc} */
-        public Class<?> origValueClass() {
-            return origValCls;
+        @Override public String valueTypeName() {
+            return valTypeName;
         }
 
         /**
-         * Sets original value class set in {@link QueryEntity} this descriptor was built upon.
-         * @param origValueClass Original value class.
+         * Set value type name.
+         *
+         * @param valTypeName Value type name.
          */
-        public void origValueClass(Class<?> origValueClass) {
-            this.origValCls = origValueClass;
+        public void valueTypeName(String valTypeName) {
+            this.valTypeName = valTypeName;
         }
 
         /**

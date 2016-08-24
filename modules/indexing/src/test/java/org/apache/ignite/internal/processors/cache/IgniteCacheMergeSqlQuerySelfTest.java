@@ -194,7 +194,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key implements Serializable {
+    protected final static class Key implements Serializable {
         /** */
         public Key(int key) {
             this.key = key;
@@ -224,7 +224,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key2 implements Serializable {
+    protected final static class Key2 implements Serializable {
         /** */
         public Key2(int Id) {
             this.Id = Id;
@@ -254,7 +254,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Person implements Serializable {
+    protected static class Person implements Serializable {
         /** */
         @SuppressWarnings("unused")
         private Person() {

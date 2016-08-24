@@ -51,6 +51,15 @@ public interface GridQueryTypeDescriptor {
      */
     public <T> T value(String field, Object key, Object val) throws IgniteCheckedException;
 
+    /**
+     * Sets field value for given key and value.
+     *
+     * @param field Field name.
+     * @param key Key.
+     * @param val Value.
+     * @param propVal Value for given field.
+     * @throws IgniteCheckedException If failed.
+     */
     public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException;
 
     /**
@@ -81,16 +90,18 @@ public interface GridQueryTypeDescriptor {
     public Class<?> keyClass();
 
     /**
-     * Gets original key class set in {@link QueryEntity} this descriptor was built upon.
-     * @return Original key class.
+     * Gets key type name.
+     *
+     * @return Key type name.
      */
-    public Class<?> origKeyClass();
+    public String keyTypeName();
 
     /**
-     * Gets original value class set in {@link QueryEntity} this descriptor was built upon.
-     * @return Original value class.
+     * Gets value type name.
+     *
+     * @return Value type name.
      */
-    public Class<?> origValueClass();
+    public String valueTypeName();
 
     /**
      * Returns {@code true} if string representation of value should be indexed as text.
