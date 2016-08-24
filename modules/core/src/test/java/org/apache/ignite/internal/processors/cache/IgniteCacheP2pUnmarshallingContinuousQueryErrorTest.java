@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
@@ -40,6 +41,7 @@ import org.apache.ignite.events.UnhandledExceptionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingErrorTest;
@@ -59,6 +61,9 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
     @Override protected int gridCount() {
         return 3;
     }
+
+    /** Used inside InitialQuery listener */
+    private static CountDownLatch latchInitialQuery = new CountDownLatch(1);
 
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cacheCfg =  super.cacheConfiguration(gridName);
@@ -97,6 +102,7 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
         qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
             @Override public boolean apply(TestKey key, String val) {
+                latchInitialQuery.countDown();
                 return true;
             }
         }));
@@ -114,10 +120,21 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
         assertEquals(unhandledExceptionCounter.intValue(), 0);
 
+        readCnt.set(100);
+
+        // Put element before creating QueryCursor.
+        jcache(1).put(generateNodeKeys(grid(1), jcache(1), "key"), "Hello primary node");
+
         try (QueryCursor<Cache.Entry<TestKey, String>> cur = jcache(0).query(qry)) {
+            latchInitialQuery.await();
+
+            jcache(1).clear();
+
             readCnt.set(3);
 
             addEntityAndValidate(1, 1);
+
+            assertEquals(unhandledExceptionCounter.intValue(), 1);
 
             readCnt.set(3);
 
@@ -141,7 +158,7 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
 
                 return metr.completedExecutions() == 1 && metr.fails() == failsNum;
             }
-        }, 5000));
+        }, 3000));
 
         validateCacheQueryMetrics(jcache(0), 1, 1, failsNum);
         validateCacheQueryMetrics(jcache(1), 0, 0, 0);
