@@ -3569,7 +3569,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public BackupFuture startBackup(Collection<String> cacheNames) throws IgniteCheckedException {
-        long backupId = ThreadLocalRandom.current().nextLong();
+        long backupId = System.currentTimeMillis();
 
         Collection<String> actualCacheNames = new HashSet<>();
 
