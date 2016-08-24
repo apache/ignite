@@ -235,6 +235,17 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 Assert.AreEqual(TimeSpan.Zero, lockAge);
                 Assert.AreEqual(SessionStateActions.None, actions);
             }).Wait();
+
+            // Remove item.
+            provider.RemoveItem(HttpContext, Id, lockId, null);
+
+            // Check removal.
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
         }
 
         /// <summary>
