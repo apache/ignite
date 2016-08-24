@@ -321,11 +321,18 @@ namespace Apache.Ignite.Core.Tests.AspNet
             {
                 var provider = new IgniteSessionStateStoreProvider();
 
-                provider.Initialize("", new NameValueCollection());
+                provider.Initialize("provider2", new NameValueCollection());
 
                 CheckProvider(provider);
 
                 var logs = SessionLogger.GetLogs();
+
+                Assert.AreEqual("Apache.Ignite.AspNet.IgniteSessionStateStoreProvider initialized: " +
+                                "gridName=, cacheName=, applicationId=", logs[1]);
+
+                Assert.AreEqual("GetItemExclusive session store data not found: id=1, url=/, timeout=0", logs[4]);
+
+                Assert.AreEqual("SetAndReleaseItemExclusive: id=1, url=/, timeout=0", logs[6]);
             }
         }
 
