@@ -75,7 +75,20 @@ namespace Apache.Ignite.Core.Tests.AspNet
         {
             // Clear all caches.
             var ignite = Ignition.GetIgnite(GridName);
-            ignite.GetCacheNames().ToList().ForEach(x => ignite.GetCache<object, object>(x).Clear());
+            ignite.GetCacheNames().ToList().ForEach(x => ignite.GetCache<object, object>(x).RemoveAll());
+        }
+        
+        /// <summary>
+        /// Test setup.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            // Make sure caches are empty.
+            var ignite = Ignition.GetIgnite(GridName);
+
+            foreach (var cache in ignite.GetCacheNames().Select(x => ignite.GetCache<object, object>(x)))
+                CollectionAssert.IsEmpty(cache.ToArray());
         }
 
         /// <summary>
