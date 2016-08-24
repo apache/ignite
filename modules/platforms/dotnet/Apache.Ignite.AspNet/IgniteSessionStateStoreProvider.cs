@@ -78,7 +78,12 @@ namespace Apache.Ignite.AspNet
             _applicationId = config[ApplicationId];
 
             if (config[EnableDebugLogging] == "true")
-                _log = cache.Ignite.Logger.GetLogger(GetType().FullName);
+            {
+                var log = cache.Ignite.Logger;
+
+                if (log.IsEnabled(LogLevel.Debug))
+                    _log = log.GetLogger(GetType().FullName);
+            }
 
             Log("{0} initialized: gridName={1}, cacheName={2}, applicationId={3}", GetType(), cache.Ignite.Name, 
                 cache.Name, _applicationId);
