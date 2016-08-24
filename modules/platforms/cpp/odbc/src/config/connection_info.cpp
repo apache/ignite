@@ -233,7 +233,12 @@ namespace ignite
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN | 
+                    SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
+                    SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_MOD | SQL_FN_NUM_SIGN |
+                    SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN | SQL_FN_NUM_PI | SQL_FN_NUM_RAND |
+                    SQL_FN_NUM_DEGREES | SQL_FN_NUM_LOG10 | SQL_FN_NUM_POWER | SQL_FN_NUM_RADIANS | SQL_FN_NUM_ROUND |
+                    SQL_FN_NUM_TRUNCATE;
 #endif // SQL_NUMERIC_FUNCTIONS
 
 #ifdef SQL_STRING_FUNCTIONS
@@ -268,15 +273,7 @@ namespace ignite
 #ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
-                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_INTERVAL_HOUR |
-                    SQL_DL_SQL92_DATE | SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND |
-                    SQL_DL_SQL92_TIME | SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND |
-                    SQL_DL_SQL92_TIMESTAMP | SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_YEAR | SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND |
-                    SQL_DL_SQL92_INTERVAL_MONTH | SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR |
-                    SQL_DL_SQL92_INTERVAL_DAY | SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_MINUTE | SQL_DL_SQL92_INTERVAL_SECOND |
-                    SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
+                intParams[SQL_DATETIME_LITERALS] = 0;
 #endif // SQL_DATETIME_LITERALS
 
 #ifdef SQL_SYSTEM_FUNCTIONS
@@ -317,8 +314,7 @@ namespace ignite
 
 #ifdef SQL_SQL92_DATETIME_FUNCTIONS
                 // Bitmask enumerating the datetime scalar functions.
-                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = SQL_SDF_CURRENT_DATE |
-                    SQL_SDF_CURRENT_TIMESTAMP;
+                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = 0;
 #endif // SQL_SQL92_DATETIME_FUNCTIONS
 
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
