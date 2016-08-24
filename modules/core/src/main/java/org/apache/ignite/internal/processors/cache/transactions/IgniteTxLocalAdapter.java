@@ -810,6 +810,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             op,
                                             nearXidVersion(),
                                             writeVersion(),
+                                            0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter())));
 

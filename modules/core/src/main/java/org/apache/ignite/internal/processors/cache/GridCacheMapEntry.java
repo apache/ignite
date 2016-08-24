@@ -2094,7 +2094,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                logUpdate(op, updated, newVer, updateCntr0);
+                logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
                 storeValue(updated, newExpireTime, newVer);
 
@@ -2156,7 +2156,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                logUpdate(op, null, newVer, updateCntr0);
+                logUpdate(op, null, newVer, 0, updateCntr0);
 
                 removeValue(oldVal, ver);
 
@@ -3545,9 +3545,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param op Update operation.
      * @param val Write value.
      * @param writeVer Write version.
+     * @param expireTime Expire time.
      * @param updCntr Update counter.
      */
-    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr)
+    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr)
         throws IgniteCheckedException {
         // We log individual updates only in ATMOIC cache.
         assert cctx.atomic();
@@ -3561,6 +3562,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     op,
                     null,
                     writeVer,
+                    expireTime,
                     partition(),
                     updCntr)));
         }

@@ -48,6 +48,9 @@ public class DataEntry {
     protected GridCacheVersion writeVer;
 
     /** */
+    protected long expireTime;
+
+    /** */
     protected int partId;
 
     /** */
@@ -69,6 +72,7 @@ public class DataEntry {
         de.op = txEntry.op();
         de.nearXidVer = tx.nearXidVersion();
         de.writeVer = tx.writeVersion();
+        de.expireTime = 0;
         de.partId = txEntry.key().partition();
         de.partCnt = txEntry.updateCounter();
 
@@ -96,6 +100,7 @@ public class DataEntry {
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        long expireTime,
         int partId,
         long partCnt
     ) {
@@ -105,6 +110,7 @@ public class DataEntry {
         this.op = op;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
+        this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
     }
@@ -163,6 +169,13 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /**
+     * @return Expire time.
+     */
+    public long expireTime() {
+        return expireTime;
     }
 
     /** {@inheritDoc} */
