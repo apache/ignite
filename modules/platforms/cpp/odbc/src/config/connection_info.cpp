@@ -225,13 +225,15 @@ namespace ignite
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
-                intParams[SQL_AGGREGATE_FUNCTIONS] = 0;
+                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG |
+                    SQL_AF_COUNT | SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN |
+                    SQL_AF_SUM;
 #endif // SQL_AGGREGATE_FUNCTIONS
 
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = 0;
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
 #endif // SQL_NUMERIC_FUNCTIONS
 
 #ifdef SQL_STRING_FUNCTIONS
@@ -266,7 +268,15 @@ namespace ignite
 #ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
-                intParams[SQL_DATETIME_LITERALS] = 0;
+                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_INTERVAL_HOUR |
+                    SQL_DL_SQL92_DATE | SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND |
+                    SQL_DL_SQL92_TIME | SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND |
+                    SQL_DL_SQL92_TIMESTAMP | SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE |
+                    SQL_DL_SQL92_INTERVAL_YEAR | SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND |
+                    SQL_DL_SQL92_INTERVAL_MONTH | SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR |
+                    SQL_DL_SQL92_INTERVAL_DAY | SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE |
+                    SQL_DL_SQL92_INTERVAL_MINUTE | SQL_DL_SQL92_INTERVAL_SECOND |
+                    SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
 #endif // SQL_DATETIME_LITERALS
 
 #ifdef SQL_SYSTEM_FUNCTIONS
@@ -284,7 +294,9 @@ namespace ignite
 #ifdef SQL_OJ_CAPABILITIES
                 // Bitmask enumerating the types of outer joins supported by the 
                 // driver and data source.
-                intParams[SQL_OJ_CAPABILITIES] = 0;
+                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT |
+                    SQL_OJ_FULL | SQL_OJ_NESTED | SQL_OJ_INNER |
+                    SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
 
 #ifdef SQL_POS_OPERATIONS
@@ -305,7 +317,8 @@ namespace ignite
 
 #ifdef SQL_SQL92_DATETIME_FUNCTIONS
                 // Bitmask enumerating the datetime scalar functions.
-                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = 0;
+                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = SQL_SDF_CURRENT_DATE |
+                    SQL_SDF_CURRENT_TIMESTAMP;
 #endif // SQL_SQL92_DATETIME_FUNCTIONS
 
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
