@@ -179,6 +179,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         val = coctx.processor().toCacheObject(coctx, buf);
         ver = CacheVersionIO.read(buf, false);
+        expireTime = buf.getLong();
 
         assert isReady(): "ready";
     }

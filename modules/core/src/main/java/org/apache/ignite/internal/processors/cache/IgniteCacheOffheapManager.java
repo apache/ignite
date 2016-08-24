@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -94,6 +95,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public boolean containsKey(GridCacheMapEntry entry);
 
     /**
+     * @param c Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException;
+
+    public long expiredSize() throws IgniteCheckedException;
+
+    /**
      * @param key  Key.
      * @param val  Value.
      * @param ver  Version.
@@ -102,12 +111,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public void update(
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            int partId,
-            GridDhtLocalPartition part
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        int partId,
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**
@@ -118,11 +127,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public void remove(
-            KeyCacheObject key,
-            CacheObject prevVal,
-            GridCacheVersion prevVer,
-            int partId,
-            GridDhtLocalPartition part
+        KeyCacheObject key,
+        CacheObject prevVal,
+        GridCacheVersion prevVer,
+        int partId,
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**

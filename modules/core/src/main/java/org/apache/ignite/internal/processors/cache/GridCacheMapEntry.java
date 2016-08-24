@@ -2689,22 +2689,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
+        boolean trackNear = addTracked && isNear() && cctx.config().isEagerTtl();
+
         long oldExpireTime = expireTimeExtras();
 
-//        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
-//            && cctx.config().isEagerTtl() && cctx.ttl().isNearTtl())
-//            cctx.ttl().removeNearTrackedEntry(this);
+        if (trackNear && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()))
+            cctx.ttl().removeTrackedEntry((GridNearCacheEntry)this);
 
         value(val);
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
         this.ver = ver;
-//
-//        if (addTracked && expireTime != 0 &&
-//            (expireTime != oldExpireTime || isStartVersion()) &&
-//            cctx.config().isEagerTtl() && cctx.ttl().isNearTtl())
-//            cctx.ttl().addNearTrackedEntry(this);
+
+        if (trackNear && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()))
+            cctx.ttl().addTrackedEntry((GridNearCacheEntry)this);
     }
 
     /**
@@ -2732,16 +2731,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (ttl != CU.TTL_NOT_CHANGED) {
             updateTtl(ttl);
 
-            expiryPlc.ttlUpdated(key(),
-                version(),
-                hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
+            expiryPlc.ttlUpdated(key(), version(), hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
         }
     }
 
     /**
      * @param ttl Time to live.
      */
-    protected void updateTtl(long ttl) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    private void updateTtl(long ttl) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
         assert Thread.holdsLock(this);
 
@@ -3342,9 +3339,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                     else
                         obsolete = true;
-
-//                    if (cctx.ttl().isNearTtl())
-//                        cctx.ttl().removeNearTrackedEntry(this);
                 }
             }
         }

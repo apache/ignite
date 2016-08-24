@@ -186,7 +186,7 @@ public class DataPageIO extends PageIO {
         // It means that we must be able to accommodate a row of size which is equal to getFreeSpace(),
         // plus we will have data page overhead: header of the page as well as item, payload length and
         // possibly a link to the next row fragment.
-        freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
+        freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE + EXPIRE_TIME_SIZE;
 
         return freeSpace < 0 ? 0 : freeSpace;
     }
@@ -1132,6 +1132,7 @@ public class DataPageIO extends PageIO {
      * @param buf Buffer.
      * @param dataOff Data offset.
      * @param payloadSize Payload size.
+     * @param row Data row.
      * @throws IgniteCheckedException If failed.
      */
     private void writeRowData(
@@ -1155,6 +1156,8 @@ public class DataPageIO extends PageIO {
             assert ok;
 
             CacheVersionIO.write(buf, row.version(), false);
+
+            buf.putLong(row.expireTime());
         }
         finally {
             buf.position(0);

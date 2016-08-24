@@ -148,7 +148,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             info("PUT DONE");
         }
 
-        int pSize = grid(0).context().cache().internalCache(null).context().ttl().pendingSize();
+        long pSize = grid(0).context().cache().internalCache(null).context().ttl().pendingSize();
 
         assertTrue("Too many pending entries: " + pSize, pSize <= 1);
 
@@ -1136,9 +1136,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-                        boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
-                        boolean backup = cache.affinity().isBackup(grid.localNode(), key);
-
                         if (ttl > 0)
                             assertTrue(e.expireTime() > 0);
                         else
@@ -1148,7 +1145,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    info("RETRY");
                     // Retry.
                 }
                 catch (GridDhtInvalidPartitionException ignore) {

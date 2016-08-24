@@ -40,6 +40,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
     /** */
     private GridCacheVersion ver;
 
+    /** */
     private long expireTime;
 
     /** */
@@ -49,8 +50,9 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param key Key.
-     * @param val value.
-     * @param ver version.
+     * @param val Value.
+     * @param ver Version.
+     * @param expireTime Expire time.
      * @param rowSize Row size.
      */
     public DataPageInsertRecord(
@@ -59,6 +61,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
+        long expireTime,
         int rowSize
     ) {
         super(cacheId, pageId);
@@ -66,6 +69,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
         this.key = key;
         this.val = val;
         this.ver = ver;
+        this.expireTime = expireTime;
         this.rowSize = rowSize;
     }
 
