@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.escape;
 
-import org.apache.ignite.IgniteException;
-
 import java.util.LinkedList;
+import org.apache.ignite.IgniteException;
 
 /**
  * ODBC escape sequence parse.
@@ -97,7 +96,7 @@ public class OdbcEscapeUtils {
 
                         nested = null;
 
-                        parseRes = parseExpression(res0, 0, res0.length()-1);
+                        parseRes = parseExpression(res0, 0, res0.length() - 1);
                     }
 
                     if (earlyExit)
@@ -143,14 +142,14 @@ public class OdbcEscapeUtils {
                 throw new IgniteException("Failed to parse escape sequence because it is not enclosed: " +
                     substring(text, startPos, len));
 
-            OdbcEscapeType typ = sequenceType(text, startPos, len);
+            ExpressionInfo exprInfo = expressionInfo(text, startPos, len);
 
-            switch (typ) {
+            switch (exprInfo.type()) {
                 case FN:
-                    return parseScalarExpression(text, startPos, len);
+                    return parseScalarExpression(text, exprInfo.expressionStart(), exprInfo.expressionLen());
 
                 default: {
-                    assert false : "Unknown expression type: " + typ;
+                    assert false : "Unknown expression type: " + exprInfo.type();
 
                     return null;
                 }
@@ -176,7 +175,15 @@ public class OdbcEscapeUtils {
     private static String parseScalarExpression(String text, int startPos, int len) {
         assert validSubstring(text, startPos, len);
 
-        return substring(text, startPos + 3, len - 3).trim();
+        int endPos = startPos + len;
+
+        while (Character.isWhitespace(text.charAt(startPos)))
+            startPos++;
+
+        while (Character.isWhitespace(text.charAt(endPos)) && endPos > startPos)
+            endPos--;
+
+        return substring(text, startPos, endPos - startPos);
     }
 
     /**
@@ -212,18 +219,26 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Get escape sequence type.
+     * Get escape sequence info.
      *
      * @param text Text.
      * @param startPos Start position.
-     * @return Escape sequence type.
+     * @return Escape sequence info.
      */
-    private static OdbcEscapeType sequenceType(String text, int startPos, int len) {
+    private static ExpressionInfo expressionInfo(String text, int startPos, int len) {
         assert validSubstring(text, startPos, len);
         assert text.charAt(startPos) == '{';
 
-        if (text.startsWith("fn", startPos + 1))
-            return OdbcEscapeType.FN;
+        int typeStartPos = startPos + 1;
+
+        // Skip leading whitespace characters
+        while (Character.isWhitespace(text.charAt(typeStartPos)))
+            typeStartPos++;
+
+        int leadingWhiteSpaces = typeStartPos - startPos - 1;
+
+        if (text.startsWith("fn", typeStartPos))
+            return new ExpressionInfo(typeStartPos + 2, len - leadingWhiteSpaces - 3, OdbcEscapeType.FN);
 
         throw new IgniteException("Unsupported escape sequence: " + text.substring(startPos, startPos + len));
     }
