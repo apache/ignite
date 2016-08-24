@@ -193,7 +193,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         if (destroy && cctx.affinityNode()) {
             destroyCacheDataStructures();
 
-            cctx.shared().database().pageMemory().clear(cctx.cacheId());
+            PageMemory pageMemory = cctx.shared().database().pageMemory();
+
+            if (pageMemory != null)
+                pageMemory.clear(cctx.cacheId());
         }
     }
 

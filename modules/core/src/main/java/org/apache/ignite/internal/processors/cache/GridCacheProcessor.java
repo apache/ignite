@@ -1110,6 +1110,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
+        ctx.kernalContext().cache().context().database().onCacheStop(ctx);
+
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
         if (log.isInfoEnabled())
