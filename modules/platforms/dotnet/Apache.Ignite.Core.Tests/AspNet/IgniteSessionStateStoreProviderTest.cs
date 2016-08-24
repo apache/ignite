@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
     using System.Reflection;
@@ -28,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using Apache.Ignite.AspNet;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -305,6 +307,29 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the trace logging.
+        /// </summary>
+        [Test]
+        public void TestTraceLogging()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = new SessionLogger()
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var provider = new IgniteSessionStateStoreProvider();
+
+                provider.Initialize("", new NameValueCollection());
+
+                CheckProvider(provider);
+
+                var logs = SessionLogger.GetLogs();
+            }
+        }
+
+        /// <summary>
         /// Creates the store data.
         /// </summary>
         private static SessionStateStoreData CreateStoreData()
@@ -394,6 +419,46 @@ namespace Apache.Ignite.Core.Tests.AspNet
             provider.ResetItemTimeout(HttpContext, Id);
             provider.EndRequest(HttpContext);
             provider.Dispose();
+        }
+
+        /// <summary>
+        /// Logger.
+        /// </summary>
+        private class SessionLogger : ILogger
+        {
+            /** */
+            private static readonly List<string> Logs = new List<string>();
+
+            /** <inheritdoc /> */
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                if (category != typeof(IgniteSessionStateStoreProvider).FullName)
+                    return;
+
+                lock (Logs)
+                {
+                    Logs.Add(string.Format(message, args));
+                }
+            }
+
+            /** <inheritdoc /> */
+            public bool IsEnabled(LogLevel level)
+            {
+                return true;
+            }
+
+            /// <summary>
+            /// Gets the logs.
+            /// </summary>
+            /// <returns></returns>
+            public static string[] GetLogs()
+            {
+                lock (Logs)
+                {
+                    return Logs.ToArray();
+                }
+            }
         }
     }
 }
