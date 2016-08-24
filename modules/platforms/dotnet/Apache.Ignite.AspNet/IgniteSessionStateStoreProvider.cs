@@ -432,7 +432,7 @@ namespace Apache.Ignite.AspNet
         }
 
         /// <summary>
-        /// Logs the specified message to the debug log, if enabled.
+        /// Logs the specified message to the trace log, if enabled.
         /// </summary>
         private void Log(string msg, params object[] args)
         {
@@ -445,7 +445,7 @@ namespace Apache.Ignite.AspNet
         }
 
         /// <summary>
-        /// Logs the specified method call to the debug log, if enabled.
+        /// Logs the specified method call to the trace log, if enabled.
         /// </summary>
         private void Log(string method, string id, HttpContext ctx, int timeout = 0)
         {
