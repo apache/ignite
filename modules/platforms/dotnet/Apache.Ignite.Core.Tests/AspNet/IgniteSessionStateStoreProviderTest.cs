@@ -222,6 +222,19 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 Assert.Greater(lockAge, TimeSpan.Zero);
                 Assert.AreEqual(SessionStateActions.None, actions);
             }).Wait();
+
+            // Release item.
+            provider.ReleaseItemExclusive(GetHttpContext(), "1", lockId);
+
+            // Make sure it is accessible in a different thread.
+            Task.Factory.StartNew(() =>
+            {
+                res = provider.GetItem(GetHttpContext(), "1", out locked, out lockAge, out lockId, out actions);
+                Assert.IsNotNull(res);
+                Assert.IsFalse(locked);
+                Assert.AreEqual(TimeSpan.Zero, lockAge);
+                Assert.AreEqual(SessionStateActions.None, actions);
+            }).Wait();
         }
 
         /// <summary>
