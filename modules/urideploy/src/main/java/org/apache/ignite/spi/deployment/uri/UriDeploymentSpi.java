@@ -17,29 +17,11 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -63,6 +45,26 @@ import org.apache.ignite.spi.deployment.uri.scanners.UriDeploymentScannerManager
 import org.apache.ignite.spi.deployment.uri.scanners.file.UriDeploymentFileScanner;
 import org.apache.ignite.spi.deployment.uri.scanners.http.UriDeploymentHttpScanner;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Implementation of {@link org.apache.ignite.spi.deployment.DeploymentSpi} which can deploy tasks from
@@ -1029,7 +1031,9 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
         URI uri;
 
         try {
-            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
+            IgniteConfiguration cfg = ignite.configuration();
+
+            uri = U.resolveWorkDirectory(cfg.getWorkDirectory(), DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize default file scanner", e);

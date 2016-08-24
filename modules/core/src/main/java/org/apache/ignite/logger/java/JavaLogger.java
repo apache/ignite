@@ -32,7 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.*;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.FINE;
@@ -93,7 +93,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
+public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDirectoryAware {
     /** */
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 
@@ -116,8 +116,12 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** Node ID. */
     private volatile UUID nodeId;
 
+    /** Working directory */
+    private volatile String workDir;
+
     /**
      * Creates new logger.
+     *
      */
     public JavaLogger() {
         this(!isConfigured());
@@ -361,7 +365,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
 
         try {
-            fileHnd.nodeId(nodeId);
+            fileHnd.initialize(workDir, nodeId);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);
@@ -372,6 +376,38 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     @Override public UUID getNodeId() {
         return nodeId;
     }
+
+    /** {@inheritDoc} */
+    @Override public String getWorkDir() {
+        return workDir;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setWorkDir(String workDir) {
+        if (this.workDir != null)
+            return;
+
+        synchronized (mux) {
+            // Double check.
+            if (this.workDir != null)
+                return;
+
+            this.workDir = workDir;
+        }
+
+        JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
+
+        if (fileHnd == null)
+            return;
+
+        try {
+            fileHnd.initialize(workDir, nodeId);
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new RuntimeException("Failed to enable file handler.", e);
+        }
+    }
+
 
     /**
      * Returns first found handler of specified class type or {@code null} if that handler isn't configured.

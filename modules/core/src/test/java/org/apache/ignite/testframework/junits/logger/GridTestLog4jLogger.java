@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.*;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -77,7 +77,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
+public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDirectoryAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -103,6 +103,9 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** Node ID. */
     private UUID nodeId;
+
+    /** Work directory. */
+    private String workDir;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -422,6 +425,25 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
         return nodeId;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void setWorkDir(String workDir) {
+        this.workDir = workDir;
+
+        for (FileAppender a : fileAppenders) {
+            if (a instanceof LoggerWorkDirectoryAware) {
+                ((LoggerWorkDirectoryAware)a).setWorkDir(workDir);
+
+                a.activateOptions();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getWorkDir() {
+        return workDir;
     }
 
     /**

@@ -813,12 +813,14 @@ public class PlatformUtils {
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         try {
+            IgniteConfiguration igniteCfg = new IgniteConfiguration();
+
             BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), igniteCfg, new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null));
+            marsh.setContext(new MarshallerContextImpl(null, igniteCfg.getWorkDirectory()));
 
             ctx.configure(marsh, new IgniteConfiguration());
 

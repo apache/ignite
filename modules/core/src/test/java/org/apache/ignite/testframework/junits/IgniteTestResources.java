@@ -70,6 +70,9 @@ public class IgniteTestResources {
     private final String home;
 
     /** */
+    private final String workDir;
+
+    /** */
     private ThreadPoolExecutor execSvc;
 
     /** */
@@ -82,8 +85,7 @@ public class IgniteTestResources {
         jmx = ManagementFactory.getPlatformMBeanServer();
         home = U.getIgniteHome();
         locHost = localHost();
-
-        U.setWorkDirectory(null, null);
+        workDir = null;
 
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
@@ -105,6 +107,7 @@ public class IgniteTestResources {
         locHost = localHost();
 
         GridTestKernalContext ctx = new GridTestKernalContext(log);
+        workDir = ctx.config().getWorkDirectory();
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -123,6 +126,7 @@ public class IgniteTestResources {
         locHost = localHost();
 
         GridTestKernalContext ctx = new GridTestKernalContext(log);
+        workDir = ctx.config().getWorkDirectory();
 
         rsrcProc = new GridResourceProcessor(ctx);
     }

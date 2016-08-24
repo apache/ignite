@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerWorkDirectoryAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -1817,8 +1818,6 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
@@ -1828,7 +1827,7 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), cfg.getWorkDirectory(), nodeId);
 
             assert cfgLog != null;
 
@@ -2073,7 +2072,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, String workDir, UUID nodeId) throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
@@ -2134,6 +2133,9 @@ public class IgnitionEx {
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof LoggerNodeIdAware)
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+                if (cfgLog instanceof LoggerWorkDirectoryAware)
+                    ((LoggerWorkDirectoryAware)cfgLog).setWorkDir(workDir);
 
                 if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
