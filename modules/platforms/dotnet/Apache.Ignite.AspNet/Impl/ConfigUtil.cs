@@ -70,7 +70,7 @@ namespace Apache.Ignite.AspNet.Impl
 
                 var cache = grid.GetOrCreateCache<TK, TV>(cacheConfiguration);
 
-                if (cache.GetConfiguration().AtomicityMode != CacheAtomicityMode.Transactional)
+                if (forceTransactional && cache.GetConfiguration().AtomicityMode != CacheAtomicityMode.Transactional)
                     throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
                         "Failed to initialize {0}: CacheAtomicityMode.Transactional mode is required.", callerType));
 
