@@ -244,6 +244,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Category(TestUtils.CategoryIntensive)]  // Minimum expiration is 1 minute
         public void TestExpiry()
         {
+            var provider = GetProvider();
+
             bool locked;
             TimeSpan lockAge;
             object lockId;
@@ -252,12 +254,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
             // Callbacks are not supported for now.
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
 
+            // Check there is no item.
+            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            Assert.IsNull(res);
+
             // Put an item.
-            var provider = GetProvider();
-            provider.CreateUninitializedItem(HttpContext, "myId", 45);
+            provider.CreateUninitializedItem(HttpContext, "myId", 1);
 
             // Check that it is there.
-            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
 
             // Wait a minute and check again.
