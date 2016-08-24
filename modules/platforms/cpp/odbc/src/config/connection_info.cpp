@@ -296,7 +296,7 @@ namespace ignite
 #ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
-                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_DATE | SQL_DL_SQL92_TIMESTAMP;
+                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_DATE | SQL_DL_SQL92_TIME | SQL_DL_SQL92_TIMESTAMP;
 #endif // SQL_DATETIME_LITERALS
 
 #ifdef SQL_SYSTEM_FUNCTIONS
@@ -345,7 +345,8 @@ namespace ignite
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
-                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = 0;
+                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
+                    SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF;
 #endif // SQL_SQL92_VALUE_EXPRESSIONS
 
 #ifdef SQL_SQL92_PREDICATES
