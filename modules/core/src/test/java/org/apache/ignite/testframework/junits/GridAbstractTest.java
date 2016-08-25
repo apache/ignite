@@ -1525,10 +1525,18 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
+     * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
+     */
+    protected boolean isFirstGrid(String gridName) {
+        return "0".equals(gridName.substring(getTestGridName().length()));
+    }
+
+    /**
+     * @param gridName Grid name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
     protected boolean isRemoteJvm(String gridName) {
-        return isMultiJvm() && !"0".equals(gridName.substring(getTestGridName().length()));
+        return isMultiJvm() && !isFirstGrid(gridName);
     }
 
     /**
