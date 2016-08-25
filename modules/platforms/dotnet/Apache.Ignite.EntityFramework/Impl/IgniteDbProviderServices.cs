@@ -25,7 +25,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     {
         private readonly IgniteEntityFrameworkCachingPolicy _policy;
 
-        public IgniteDbProviderServices(IgniteEntityFrameworkCachingPolicy policy)
+        public IgniteDbProviderServices(DbProviderServices services, TransactionInterceptor transactionInterceptor, IgniteEntityFrameworkCachingPolicy policy)
         {
             _policy = policy;
         }

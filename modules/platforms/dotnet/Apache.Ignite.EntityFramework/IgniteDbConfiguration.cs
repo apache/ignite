@@ -20,6 +20,7 @@ namespace Apache.Ignite.EntityFramework
     using System;
     using System.Configuration;
     using System.Data.Entity;
+    using System.Data.Entity.Core.Common;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core;
@@ -111,10 +112,10 @@ namespace Apache.Ignite.EntityFramework
 
             AddInterceptor(transactionHandler);
 
+            // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
+            Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
+                (s, a) => new IgniteDbProviderServices(s, transactionHandler, policy));
 
-            // https://entityframework.codeplex.com/wikipage?title=Rebuilding%20EF%20providers%20for%20EF6
-            var providerSvc = new IgniteDbProviderServices(policy);
-            SetProviderServices(providerSvc.GetType().FullName, providerSvc);
         }
 
         /// <summary>
