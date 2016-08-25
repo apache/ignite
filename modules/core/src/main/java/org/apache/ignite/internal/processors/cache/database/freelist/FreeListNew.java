@@ -101,7 +101,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override protected boolean isReuseBucket(int bucket) {
-        return bucket == REUSE_BUCKET && reuseList == this;
+        return bucket == REUSE_BUCKET;
     }
 
     /** {@inheritDoc} */

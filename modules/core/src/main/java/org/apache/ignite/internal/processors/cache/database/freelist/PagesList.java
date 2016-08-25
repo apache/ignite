@@ -212,9 +212,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @return {@code true} If it is a reuse bucket.
      */
-    protected boolean isReuseBucket(int bucket) {
-        return false;
-    }
+    protected abstract boolean isReuseBucket(int bucket);
 
     /**
      * @param io IO.
@@ -250,36 +248,17 @@ public abstract class PagesList extends DataStructure {
             if (old != null) {
                 int len = old.length;
 
-                upd = Arrays.copyOf(old, len + 1);
+                upd = Arrays.copyOf(old, len + 2);
 
-                upd[len] = pageId;
+                // Tail will be from the left, head from the right, but now they are the same.
+                upd[len + 1] = upd[len] = pageId;
             }
             else
-                upd = new long[]{pageId};
+                upd = new long[]{pageId, pageId};
 
-            if (casBucket(bucket, old, upd)) {
-                metaAddStripeHead(bucket, pageId);
-
+            if (casBucket(bucket, old, upd))
                 return pageId;
-            }
         }
-    }
-
-    /**
-     * @param bucket Bucket index.
-     * @param headId Head page ID.
-     */
-    private void metaAddStripeHead(int bucket, long headId) {
-        // TODO
-    }
-
-    /**
-     * @param bucket Bucket index.
-     * @param oldHeadId Old head page ID.
-     * @param newHeadId New head page ID or {@code 0L} to drop the stripe.
-     */
-    private void metaReplaceStripeHead(int bucket, long oldHeadId, long newHeadId) {
-        // TODO
     }
 
     /**
@@ -293,16 +272,23 @@ public abstract class PagesList extends DataStructure {
         for (;;) {
             long[] tails = getBucket(bucket);
 
-            assert tails != null;
-            assert tails.length > 0;
+            assert tails.length > 0; // Tail must exist to be updated.
 
             idx = findTailIndex(tails, oldTailId, idx);
+
+            assert tails[idx] == oldTailId;
 
             long[] newTails;
 
             if (newTailId == 0L) {
-                if (tails.length != 1)
-                    newTails = GridArrays.remove(tails, idx);
+                // Have to drop stripe.
+                assert tails[idx + 1] == oldTailId; // The last page must be the same for both: tail and head.
+
+                if (tails.length != 2) {
+                    // Remove tail and head.
+                    newTails = GridArrays.remove(tails, idx + 1); // TODO optimize - do in a single operation.
+                    newTails = GridArrays.remove(newTails, idx);
+                }
                 else
                     newTails = null; // Drop the bucket completely.
             }
@@ -312,12 +298,8 @@ public abstract class PagesList extends DataStructure {
                 newTails[idx] = newTailId;
             }
 
-            if (casBucket(bucket, tails, newTails)) {
-                if (newTailId == 0L)
-                    metaReplaceStripeHead(bucket, oldTailId, 0L); // Drop stripe.
-
+            if (casBucket(bucket, tails, newTails))
                 return;
-            }
         }
     }
 
@@ -325,7 +307,7 @@ public abstract class PagesList extends DataStructure {
      * @param tails Tails.
      * @param tailId Tail ID to find.
      * @param expIdx Expected index.
-     * @return Index of found tail ID.
+     * @return First found index of the given tail ID.
      */
     private static int findTailIndex(long[] tails, long tailId, int expIdx) {
         if (expIdx != -1 && tails.length > expIdx && tails[expIdx] == tailId)
@@ -362,10 +344,12 @@ public abstract class PagesList extends DataStructure {
 
         assert len != 0;
 
-        return len == 1 ? tails[0] : tails[randomInt(len)];
+        return tails[randomInt(len >>> 1) << 1]; // Choose only even tails, because odds are heads.
     }
 
     /**
+     * !!! For tests only, does not provide any correctness guarantees for concurrent access.
+     *
      * @param bucket Bucket index.
      * @return Number of pages stored in this list.
      * @throws IgniteCheckedException If failed.
@@ -375,7 +359,10 @@ public abstract class PagesList extends DataStructure {
 
         long[] tails = getBucket(bucket);
 
-        for (long pageId : tails) {
+        // Step == 2 because we store both tails of the same list.
+        for (int i = 0; i < tails.length; i += 2) {
+            long pageId = tails[i];
+
             try (Page page = page(pageId)) {
                 ByteBuffer buf = page.getForRead();
 
@@ -643,7 +630,8 @@ public abstract class PagesList extends DataStructure {
                 assert PagesListNodeIO.VERSIONS.forPage(nextBuf).getPreviousId(nextBuf) == pageId;
 
                 // Drop the page from meta: replace current head with next page.
-                metaReplaceStripeHead(bucket, pageId, nextId);
+                // It is a bit hacky, but method updateTail should work here.
+                updateTail(bucket, pageId, nextId);
             }
             else // Do a fair merge: link previous and next to each other.
                 fairMerge(prevId, pageId, nextId, nextBuf);
@@ -724,9 +712,9 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     *
+     * Singleton reuse bag.
      */
-    private static class SingletonReuseBag implements ReuseBag {
+    private static final class SingletonReuseBag implements ReuseBag {
         /** */
         long pageId;
 
@@ -739,7 +727,7 @@ public abstract class PagesList extends DataStructure {
 
         /** {@inheritDoc} */
         @Override public void addFreePage(long pageId) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Should never be called.");
         }
 
         /** {@inheritDoc} */

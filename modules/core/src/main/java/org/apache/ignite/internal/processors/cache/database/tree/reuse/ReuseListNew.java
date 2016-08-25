@@ -47,6 +47,13 @@ public final class ReuseListNew extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean isReuseBucket(int bucket) {
+        assert bucket == 0: bucket;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         put(bag, null, 0);
     }

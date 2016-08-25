@@ -61,7 +61,7 @@ public class PagesListMetaIO extends PageIO {
 
     }
 
-    public boolean addListHead(int bucket, long headId) {
+    public boolean addListHead(int bucket, long headId, long tailId) {
         return false;
     }
 }
