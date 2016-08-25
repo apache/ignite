@@ -28,8 +28,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,9 +85,15 @@ public class IgniteTestResources {
         jmx = ManagementFactory.getPlatformMBeanServer();
         home = U.getIgniteHome();
         locHost = localHost();
-        workDir = null;
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
+        workDir = U.getValidWorkDir(home, null);
+
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteHome(home);
+        cfg.setWorkDirectory(workDir);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log, cfg);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -106,8 +112,14 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-        workDir = ctx.config().getWorkDirectory();
+        workDir = U.getValidWorkDir(home, null);
+
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteHome(home);
+        cfg.setWorkDirectory(workDir);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log, cfg);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -125,8 +137,14 @@ public class IgniteTestResources {
         home = U.getIgniteHome();
         locHost = localHost();
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-        workDir = ctx.config().getWorkDirectory();
+        workDir = U.getValidWorkDir(home, null);
+
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteHome(home);
+        cfg.setWorkDirectory(workDir);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log, cfg);
 
         rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -185,7 +203,7 @@ public class IgniteTestResources {
 
         rsrcProc.injectBasicResource(target, LoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
-            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home));
+            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home, workDir));
     }
 
     /**
