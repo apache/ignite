@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeListOld;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -107,7 +108,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             try {
                 reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
-                freeList = new FreeList(cctx, reuseList);
+                freeList = new FreeListOld(cctx, reuseList);
 
                 metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
                     cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());
@@ -192,13 +193,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             GridLongList pagesList = new GridLongList();
 
-            freeList.pages(pagesList);
+            // TODO drop the following code -->
+            ((FreeListOld)freeList).pages(pagesList);
 
-            // TODO drop the following code
             ((ReuseListOld)reuseList).pages(pagesList);
             ((ReuseListOld)reuseList).destroy();
 
-            freeList.destroy();
+            ((FreeListOld)freeList).destroy();
+            // TODO drop the following code --^
 
             for (int i = 0; i < pagesList.size(); i++) {
                 long pageId = pagesList.get(i);
