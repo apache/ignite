@@ -29,6 +29,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     /// </summary>
     public class SecondLevelCacheTest
     {
+        // TODO: Integrated test with EF code first! This is a must! With multithreading, etc.
+
         /// <summary>
         /// Fixture setup.
         /// </summary>
