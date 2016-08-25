@@ -54,7 +54,7 @@ using ignite::impl::binary::BinaryUtils;
 
 BOOST_FIXTURE_TEST_SUITE(SqlAggregateFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionAvgInt)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgInt)
 {
     std::vector<TestType> in(3);
 
@@ -76,7 +76,31 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionAvgInt)
     CheckSingleResult<int64_t>("SELECT {fn AVG(i32Field)} FROM TestType", avg);
 }
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionAvgFloat)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgIntDistinct)
+{
+    std::vector<TestType> in(3);
+
+    in[0].i32Field = 43;
+    in[1].i32Field = 311;
+    in[2].i32Field = 7;
+
+    int32_t avg = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        avg += in[i].i32Field;
+    }
+
+    avg /= static_cast<int32_t>(in.size());
+
+    testCache.Put(in.size() + 10, in[0]);
+
+    CheckSingleResult<int64_t>("SELECT {fn AVG(DISTINCT i32Field)} FROM TestType", avg);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloat)
 {
     std::vector<TestType> in(3);
 
@@ -98,7 +122,31 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionAvgFloat)
     CheckSingleResult<float>("SELECT {fn AVG(floatField)} FROM TestType", avg);
 }
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionCount)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloatDistinct)
+{
+    std::vector<TestType> in(3);
+
+    in[0].floatField = 43.0;
+    in[1].floatField = 311.0;
+    in[2].floatField = 7.0;
+
+    float avg = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        avg += in[i].i32Field;
+    }
+
+    avg /= in.size();
+
+    testCache.Put(in.size() + 10, in[0]);
+
+    CheckSingleResult<float>("SELECT {fn AVG(DISTINCT floatField)} FROM TestType", avg);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionCount)
 {
     std::vector<TestType> in(8);
 
@@ -108,7 +156,23 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionCount)
     CheckSingleResult<int64_t>("SELECT {fn COUNT(*)} FROM TestType", in.size());
 }
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionMax)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionCountDistinct)
+{
+    std::vector<TestType> in(8);
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        in[i].i32Field = i;
+
+        testCache.Put(i, in[i]);
+    }
+
+    testCache.Put(in.size() + 10, in[0]);
+
+    CheckSingleResult<int64_t>("SELECT {fn COUNT(DISTINCT i32Field)} FROM TestType", in.size());
+}
+
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionMax)
 {
     std::vector<TestType> in(4);
 
@@ -123,7 +187,7 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionMax)
     CheckSingleResult<int64_t>("SELECT {fn MAX(i32Field)} FROM TestType", in[2].i32Field);
 }
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionMin)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionMin)
 {
     std::vector<TestType> in(4);
 
@@ -138,7 +202,7 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionMin)
     CheckSingleResult<int64_t>("SELECT {fn MIN(i32Field)} FROM TestType", in[1].i32Field);
 }
 
-BOOST_AUTO_TEST_CASE(TestAggredateFunctionSum)
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionSum)
 {
     std::vector<TestType> in(4);
 
@@ -157,6 +221,29 @@ BOOST_AUTO_TEST_CASE(TestAggredateFunctionSum)
     }
 
     CheckSingleResult<int64_t>("SELECT {fn SUM(i32Field)} FROM TestType", sum);
+}
+
+BOOST_AUTO_TEST_CASE(TestAggregateFunctionSumDistinct)
+{
+    std::vector<TestType> in(4);
+
+    in[0].i32Field = 121;
+    in[1].i32Field = 17;
+    in[2].i32Field = 314041;
+    in[3].i32Field = 9410;
+
+    int64_t sum = 0;
+
+    for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
+    {
+        testCache.Put(i, in[i]);
+
+        sum += in[i].i32Field;
+    }
+
+    testCache.Put(in.size() + 10, in[0]);
+
+    CheckSingleResult<int64_t>("SELECT {fn SUM(DISTINCT i32Field)} FROM TestType", sum);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
