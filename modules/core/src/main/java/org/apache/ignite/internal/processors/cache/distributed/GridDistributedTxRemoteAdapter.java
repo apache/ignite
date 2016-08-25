@@ -452,9 +452,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 if (!F.isEmpty(writeMap)) {
                     if (!near() && !local() && onePhaseCommit())
-                        cctx.tm().addCommittedTxReturn(this,
-                            new GridCacheReturnCompletableWrapper(
-                                new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true)));
+                        if (needReturnValue())
+                            cctx.tm().addCommittedTxReturn(this,
+                                new GridCacheReturnCompletableWrapper(
+                                    new GridCacheReturn(null,
+                                        cctx.localNodeId().equals(otherNodeId()), true, null, true)));
+                        else
+                            cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
 
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
@@ -690,7 +694,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         }
                     }
 
-                    if (!near() && !local() && onePhaseCommit()) {
+                    if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
                         GridCacheReturnCompletableWrapper ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
 
                         ret.markInitialized();

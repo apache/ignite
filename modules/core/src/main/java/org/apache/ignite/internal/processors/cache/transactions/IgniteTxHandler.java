@@ -1263,7 +1263,7 @@ public class IgniteTxHandler {
                 res.checkCommitted(true);
 
                 if (committed) {
-                    if (!req.waitRemoteTransactions()) {
+                    if (req.needReturnValue() && !req.waitRemoteTransactions()) {
                         try {
                             res.returnValue(ctx.tm().getCommittedTxReturn(req.version()).fut().get());
 

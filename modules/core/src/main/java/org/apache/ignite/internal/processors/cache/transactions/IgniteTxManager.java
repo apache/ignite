@@ -934,7 +934,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param nearXidVer Optional near transaction ID.
      * @return If transaction was not already present in completed set.
      */
-    protected boolean addCommittedTx(
+    public boolean addCommittedTx(
         IgniteInternalTx tx,
         GridCacheVersion xidVer,
         @Nullable GridCacheVersion nearXidVer
