@@ -195,4 +195,53 @@ namespace ignite
 
         BOOST_CHECK_EQUAL((res != 0), expected);
     }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request)
+    {
+        SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
+        SQLLEN resLen = 0;
+
+        CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
+    {
+        CheckSingleResultNum0<int64_t>(request, SQL_C_SBIGINT);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
+    {
+        CheckSingleResultNum0<int32_t>(request, SQL_C_SLONG);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
+    {
+        CheckSingleResultNum0<int16_t>(request, SQL_C_SSHORT);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request)
+    {
+        CheckSingleResultNum0<int8_t>(request, SQL_C_STINYINT);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request)
+    {
+        SQLFLOAT res = 0;
+
+        CheckSingleResult0(request, SQL_C_FLOAT, &res, 0, 0);
+    }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request)
+    {
+        SQLDOUBLE res = 0;
+
+        CheckSingleResult0(request, SQL_C_DOUBLE, &res, 0, 0);
+    }
 }

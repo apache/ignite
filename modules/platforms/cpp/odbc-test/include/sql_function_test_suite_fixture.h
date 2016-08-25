@@ -78,7 +78,18 @@ namespace ignite
         {
             BOOST_FAIL("Function is not defined for the type.");
         }
-    
+
+        /**
+         * Run query returning single result and check it to be successful.
+         *
+         * @param request SQL request.
+         */
+        template<typename T>
+        void CheckSingleResult(const char* request)
+        {
+            BOOST_FAIL("Function is not defined for the type.");
+        }
+
         /**
          * Run query returning single result and check it to be equal to expected.
          *
@@ -94,6 +105,21 @@ namespace ignite
             CheckSingleResult0(request, type, &res, 0, 0);
 
             BOOST_CHECK_EQUAL(res, expected);
+        }
+
+        /**
+         * Run query returning single result and check it to be equal to expected.
+         *
+         * @param request SQL request.
+         * @param expected Expected result.
+         * @param type Result type.
+         */
+        template<typename T>
+        void CheckSingleResultNum0(const char* request, SQLSMALLINT type)
+        {
+            T res = 0;
+
+            CheckSingleResult0(request, type, &res, 0, 0);
         }
 
 
@@ -136,6 +162,27 @@ namespace ignite
 
     template<>
     void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE
