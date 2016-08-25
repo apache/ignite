@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -123,7 +124,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -254,6 +254,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
+
+    private static int DFLT_QRY_RERUN_ATTEMPTS = 4;
 
     /**
      * Command in H2 prepared statement.
@@ -827,6 +829,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final String qry,
         final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder) throws IgniteCheckedException {
+        Object[] errKeys = null;
+
+        int items = 0;
+
+        for (int i = 0; i < DFLT_QRY_RERUN_ATTEMPTS; i++) {
+            IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, qry, params, errKeys, filters, enforceJoinOrder);
+
+            if (F.isEmpty(r.get2())) {
+                return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
+                    new GridReduceQueryExecutor.UpdateResIter(items + r.get1()));
+            }
+            else {
+                items += r.get1();
+                errKeys = r.get2();
+            }
+        }
+
+        throw new IgniteCheckedException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
+    }
+
+    /**
+     * Actually perform SQL DML operation locally.
+     *
+     * @param cctx Cache context.
+     * @param qry DML query.
+     * @param params Query params.
+     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
+     * @param filters Filters.
+     * @param enforceJoinOrder Enforce join order.
+     * @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx, final String qry,
+        Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters, boolean enforceJoinOrder)
+        throws IgniteCheckedException {
         Connection conn = connectionForSpace(cctx.name());
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -838,14 +876,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 prepStmt = (JdbcPreparedStatement) conn.prepareStatement(qry);
             }
             catch (SQLException e) {
-                throw new CacheException(e);
+                throw new IgniteCheckedException(e);
             }
 
             Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
             GridSqlStatement stmt = new GridSqlQueryParser().parse(p);
-
-            final int res;
 
             if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert) {
                 GridSqlElement into = stmt instanceof GridSqlMerge ? ((GridSqlMerge)stmt).into() :
@@ -855,26 +891,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 GridSqlQuerySplitter.collectAllGridTablesInTarget(into, tbls);
 
-                A.ensure(tbls.size() == 1, "Failed to determine target table for MERGE or INSERT");
+                A.ensureX(tbls.size() == 1, "Failed to determine target table for MERGE or INSERT");
 
                 GridSqlTable tbl = tbls.iterator().next();
 
                 TableDescriptor tblDesc = tableDescriptorForNativeName(tbl.dataTable().identifier(), cctx.name());
 
+                int res;
+
                 if (stmt instanceof GridSqlMerge)
                     res = doMerge(cctx, (GridSqlMerge) stmt, tblDesc, params);
                 else
                     res = doInsert(cctx, (GridSqlInsert) stmt, tblDesc, params);
+
+                return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
             }
             else {
                 GridSqlSelect map;
 
-                if (stmt instanceof GridSqlUpdate)
-                    map = GridSqlQuerySplitter.mapQueryForUpdate((GridSqlUpdate) stmt);
-                else
-                    map = GridSqlQuerySplitter.mapQueryForDelete((GridSqlDelete) stmt);
+                int paramsCnt = F.isEmpty(params) ? 0 : params.length;
 
-                final ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, map.getSQL(), F.asList(params), true);
+                Integer keysParamIdx = !F.isEmpty(failedKeys) ? paramsCnt + 1 : null;
+
+                if (stmt instanceof GridSqlUpdate)
+                    map = GridSqlQuerySplitter.mapQueryForUpdate((GridSqlUpdate) stmt, keysParamIdx);
+                else
+                    map = GridSqlQuerySplitter.mapQueryForDelete((GridSqlDelete) stmt, keysParamIdx);
+
+                if (keysParamIdx != null) {
+                    params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
+                    params[paramsCnt] = failedKeys;
+                }
+
+                ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, map.getSQL(), F.asList(params), true);
 
                 final Iterator<List<?>> rsIter = new FieldsIterator(rs);
 
@@ -888,13 +937,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it, true);
 
                 if (stmt instanceof GridSqlUpdate)
-                    res = doUpdate(cctx, (GridSqlUpdate) stmt, cur).get1();
+                    return doUpdate(cctx, (GridSqlUpdate) stmt, cur);
                 else
-                    res = doDelete(cctx, cur).get1();
+                    return doDelete(cctx, cur);
             }
-
-            return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
-                new GridReduceQueryExecutor.UpdateResIter(res));
         }
         finally {
             GridH2QueryContext.clearThreadLocal();
@@ -1459,6 +1505,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+        Object[] errKeys = null;
+
+        int items = 0;
+
+        for (int i = 0; i < DFLT_QRY_RERUN_ATTEMPTS; i++) {
+            IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, errKeys);
+
+            if (F.isEmpty(r.get2())) {
+                if (items == 0)
+                    return r.get1();
+                else {
+                    A.ensure(!r.get1().isResultSet(), "");
+                    int cnt = (Integer) r.get1().getAll().get(0).get(0);
+                    return new QueryCursorImpl<>(updateResult(items + cnt), false);
+                }
+            }
+            else {
+                A.ensure(!r.get1().isResultSet(), "");
+                items += (Integer) r.get1().getAll().get(0).get(0);
+                errKeys = r.get2();
+            }
+        }
+
+        throw new CacheException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
+    }
+
+    /**
+     * Actually perform two-step query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param failedKeys Keys to restrict UPDATE and DELETE operation with. Null or empty array means no restriction.
+     * @return Pair [Query results cursor; keys that have failed to be processed (for UPDATE and DELETE only)]
+     */
+    private IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> queryTwoStep0(GridCacheContext<?,?> cctx, SqlFieldsQuery qry,
+        Object[] failedKeys) {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1522,8 +1604,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
-                    distributedJoins);
+                boolean injectFailedKeys = !F.isEmpty(failedKeys);
+
+                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
+                    failedKeys, grpByCollocated, distributedJoins);
 
                 //Let's verify (early) that the user is not trying to mess with the key or its fields directly
                 if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
@@ -1607,25 +1691,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
 
         if (updateRes != null)
-            return new QueryCursorImpl(
-                Collections.singletonList(Collections.singletonList(updateRes.get1() - updateRes.get2().length)),
-                false);
+            return new IgniteBiTuple<>(new QueryCursorImpl<>(updateResult(updateRes.get1() - updateRes.get2().length),
+                false), updateRes.get2());
 
-        return cursor;
+        return new IgniteBiTuple<>(cursor, null);
     }
 
     /**
      * Check that UPDATE statement affects no key columns.
+     *
      * @param update Update statement.
      */
-    private static void verifyUpdateColumns(GridSqlUpdate update) {
+    private static void verifyUpdateColumns(GridSqlUpdate update) throws IgniteCheckedException {
         GridSqlElement updTarget = update.target();
 
         Set<GridSqlTable> tbls = new HashSet<>();
 
         GridSqlQuerySplitter.collectAllGridTablesInTarget(updTarget, tbls);
 
-        A.ensure(tbls.size() == 1, "Failed to determine target table for UPDATE");
+        A.ensureX(tbls.size() == 1, "Failed to determine target table for UPDATE");
 
         GridSqlTable tbl = tbls.iterator().next();
 
@@ -1637,6 +1721,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Check if given set of modified columns intersects with the set of SQL properties of the key.
+     *
      * @param gridTbl Table.
      * @param affectedColNames Column names.
      * @return {@code true} if any of given columns corresponds to the key or any of its properties.
@@ -1690,9 +1775,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
 
             Object[] errKeys = delRes.keySet().toArray();
-
-            // TODO re-run query if some keys failed to be updated
-            U.warn(log, "Failed to DELETE some keys [keys=" + Arrays.toString(errKeys) + ']');
 
             return new IgniteBiTuple<>(res, errKeys);
         }
@@ -1811,9 +1893,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
 
             Object[] errKeys = updRes.keySet().toArray();
-
-            // TODO re-run query if some keys failed to be updated
-            U.warn(log, "Failed to UPDATE some keys [keys=" + Arrays.toString(errKeys) + ']');
 
             return new IgniteBiTuple<>(res, errKeys);
         }
@@ -3714,6 +3793,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             entryModifier.apply(entry);
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Iterable<List<?>> updateResult(int b) {
+        return new UpdateResIterable(b);
+    }
+
+    /**
+     *
+     */
+    private final static class UpdateResIterable<T> implements Iterable<List> {
+        /** */
+        private final List<List> l;
+
+        /** */
+        private UpdateResIterable(T v) {
+            this.l = Collections.singletonList((List) Collections.singletonList(v));
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public Iterator<List> iterator() {
+            return l.iterator();
         }
     }
 

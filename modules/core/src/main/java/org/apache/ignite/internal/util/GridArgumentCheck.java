@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,6 +108,18 @@ public class GridArgumentCheck {
     public static void ensure(boolean cond, String desc) {
         if (!cond)
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + desc);
+    }
+
+    /**
+     * Checks if given argument's condition is equal to {@code true}, otherwise
+     * throws {@link IgniteCheckedException} exception.
+     *
+     * @param cond Argument's value condition to check.
+     * @param desc Description of the condition to be used in error message.
+     */
+    public static void ensureX(boolean cond, String desc) throws IgniteCheckedException {
+        if (!cond)
+            throw new IgniteCheckedException(INVALID_ARG_MSG_PREFIX + desc);
     }
 
     /**
