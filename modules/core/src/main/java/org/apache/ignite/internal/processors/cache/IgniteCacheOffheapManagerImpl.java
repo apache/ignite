@@ -105,7 +105,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         final PageMemory pageMem = cctx.shared().database().pageMemory();
 
-        indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
+        indexingEnabled = GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
             int cacheId = cctx.cacheId();
@@ -207,34 +207,36 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         final PageMemory pageMem = cctx.shared().database().pageMemory();
 
         try {
-            if (locCacheDataStore != null)
-                locCacheDataStore.destroy();
+            if (cctx.affinityNode()) {
+                if (locCacheDataStore != null)
+                    locCacheDataStore.destroy();
 
-            if (pendingEntries != null) {
-                pendingEntries.destroy();
+                if (pendingEntries != null) {
+                    pendingEntries.destroy();
 
-                metaStore.dropRootPage(pendingEntries.getName());
-            }
+                    metaStore.dropRootPage(pendingEntries.getName());
+                }
 
-            for (CacheDataStore store : partDataStores.values())
-                store.destroy();
+                for (CacheDataStore store : partDataStores.values())
+                    store.destroy();
 
-            metaStore.destroy();
+                metaStore.destroy();
 
-            GridLongList pagesList = new GridLongList();
+                GridLongList pagesList = new GridLongList();
 
-            freeList.pages(pagesList);
+                freeList.pages(pagesList);
 
-            reuseList.pages(pagesList);
+                reuseList.pages(pagesList);
 
-            reuseList.destroy();
+                reuseList.destroy();
 
-            freeList.destroy();
+                freeList.destroy();
 
-            for (int i = 0; i < pagesList.size(); i++) {
-                long pageId = pagesList.get(i);
+                for (int i = 0; i < pagesList.size(); i++) {
+                    long pageId = pagesList.get(i);
 
-                pageMem.freePage(cctx.cacheId(), pageId);
+                    pageMem.freePage(cctx.cacheId(), pageId);
+                }
             }
         }
         catch (IgniteCheckedException e) {
@@ -783,6 +785,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             DataRow old = dataTree.put(dataRow);
 
+            if (old == null)
+                lsnr.onInsert();
+
             if (indexingEnabled) {
                 GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -799,8 +804,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 rowStore.removeRow(old.link());
             }
-            else
-                lsnr.onInsert();
 
             if (pendingEntries != null && expireTime != 0) {
                 pendingEntries.put(new PendingRow(expireTime, dataRow.link()));

@@ -450,18 +450,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             return false;
 
                         try {
-                            if (!locPart.isEmpty()) {
-                                for (GridCacheEntryEx o : locPart.allEntries()) {
-                                    if (!o.obsoleteOrDeleted())
-                                        dataLdr.removeDataInternal(o.key());
-                                }
-                            }
-
                             GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().keysIterator(part);
 
                             if (iter != null) {
-                                for (KeyCacheObject key : iter)
-                                    dataLdr.removeDataInternal(key);
+                                try {
+                                    while (iter.hasNext())
+                                        dataLdr.removeDataInternal(iter.next());
+                                }
+                                finally {
+                                    iter.close();
+                                }
                             }
                         }
                         finally {
