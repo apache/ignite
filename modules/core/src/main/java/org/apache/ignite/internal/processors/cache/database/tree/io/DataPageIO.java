@@ -75,9 +75,6 @@ public class DataPageIO extends PageIO {
     /** */
     private static final int FRAGMENTED_FLAG = 0b10000000_00000000;
 
-    /** */
-    private static final int EXPIRE_TIME_SIZE = 8;
-
     /**
      * @param ver Page format version.
      */
@@ -186,7 +183,7 @@ public class DataPageIO extends PageIO {
         // It means that we must be able to accommodate a row of size which is equal to getFreeSpace(),
         // plus we will have data page overhead: header of the page as well as item, payload length and
         // possibly a link to the next row fragment.
-        freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE + EXPIRE_TIME_SIZE;
+        freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
         return freeSpace < 0 ? 0 : freeSpace;
     }

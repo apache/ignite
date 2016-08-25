@@ -242,7 +242,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
         /**
          * @param key Key.
-         * @return Cached object entry.
+         * @return Data row.
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow find(KeyCacheObject key) throws IgniteCheckedException;
@@ -274,21 +274,5 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
              */
             void onRemove();
         }
-    }
-
-    /**
-     * The container to store entries with expiration time.
-     * It is used by TTL manager but implemented on the offhep manager because B+tree is
-     * used to store entries. Also the implementation uses features of paged memory
-     * storage of entries
-     */
-    interface PendingEntries {
-    }
-
-    /**
-     *
-     */
-    interface ExpiredEntriesCursor extends GridCursor<GridCacheEntryEx> {
-        // No-op.
     }
 }

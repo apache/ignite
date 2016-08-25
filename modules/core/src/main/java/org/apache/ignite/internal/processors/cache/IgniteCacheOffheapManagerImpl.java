@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -714,11 +713,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             while (cur.next()) {
                 PendingRow row = cur.get();
 
-                assert row.key != null;
+                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                PendingRow rmvd = pendingEntries.remove(row);
-
-                if (rmvd != null) {
+                if (pendingEntries.remove(row) != null) {
                     if (obsoleteVer == null)
                         obsoleteVer = cctx.versions().next();
 
@@ -1310,7 +1307,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> implements PendingEntries {
+    private class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         /** */
         private final GridCacheContext cctx;
 

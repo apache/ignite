@@ -211,9 +211,6 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
             }
         }
         finally {
-            // Temporary workaround  for ignite-db-x branch
-            ignite(0).cache(ccfg.getName()).clear();
-
             ignite(0).destroyCache(ccfg.getName());
         }
     }

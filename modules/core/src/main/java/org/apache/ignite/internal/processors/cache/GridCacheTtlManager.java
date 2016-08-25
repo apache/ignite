@@ -316,12 +316,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private final long expireTime;
 
         /** Entry. */
-        private final GridCacheEntryEx entry;
+        private final GridCacheMapEntry entry;
 
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheEntryEx entry) {
+        private EntryWrapper(GridCacheMapEntry entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;

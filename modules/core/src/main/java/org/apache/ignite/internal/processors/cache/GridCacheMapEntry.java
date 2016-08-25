@@ -2845,7 +2845,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         return null;
                     }
-                } else {
+                }
+                else {
                     CacheObject val = this.val;
 
                     if (val != null && expiryPlc != null)
@@ -3320,7 +3321,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             synchronized (this) {
                 checkObsolete();
 
-                unswap(true, false);
+                if (isStartVersion())
+                    unswap(true, false);
 
                 long expireTime = expireTimeExtras();
 
@@ -3485,7 +3487,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateTtl(ttl);
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Unexpected exception", e);
+                    U.error(log, "Failed to update TTL: " + e, e);
                 }
             }
 

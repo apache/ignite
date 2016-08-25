@@ -77,9 +77,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
-        assert cctx != null: "cctx";
-        assert link != 0: "link";
-        assert key == null: "key";
+        assert cctx != null : "cctx";
+        assert link != 0 : "link";
+        assert key == null : "key";
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 

@@ -113,9 +113,15 @@ public class FreeList {
             io.addRow(coctx, buf, row, rowSize);
 
             // TODO This record must contain only a reference to a logical WAL record with the actual data.
-            if (isWalDeltaRecordNeeded(wal, page))
-                wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
-                    row.key(), row.value(), row.version(), row.expireTime(), rowSize));
+            if (isWalDeltaRecordNeeded(wal, page)) {
+                wal.log(new DataPageInsertRecord(cctx.cacheId(),
+                    page.id(),
+                    row.key(),
+                    row.value(),
+                    row.version(),
+                    row.expireTime(),
+                    rowSize));
+            }
 
             return rowSize;
         }
