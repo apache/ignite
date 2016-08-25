@@ -17,13 +17,67 @@
 
 namespace Apache.Ignite.EntityFramework.Impl
 {
+    using System.Data;
+    using System.Data.Common;
     using System.Data.Entity.Infrastructure.Interception;
 
-    internal class TransactionInterceptor : IDbInterceptor
+    internal class TransactionInterceptor : IDbTransactionInterceptor
     {
-        public TransactionInterceptor(IgniteEntityFrameworkCache efCache)
+        private readonly IgniteEntityFrameworkCache _cache;
+
+        public TransactionInterceptor(IgniteEntityFrameworkCache cache)
         {
-            throw new System.NotImplementedException();
+            _cache = cache;
+        }
+
+        public void ConnectionGetting(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void ConnectionGot(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void IsolationLevelGetting(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void IsolationLevelGot(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void Committing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void Disposing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
+        }
+
+        public void RolledBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+        {
+            // No-op.
         }
     }
 }
