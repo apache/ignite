@@ -26,7 +26,10 @@ import org.apache.ignite.IgniteException;
  */
 public class OdbcEscapeUtils {
 
-    /** GUID regexp pattern */
+    /**
+     * GUID regexp pattern
+     * Valid example: '12345678-9abc-def0-1234-123456789abc'
+     */
     private static final Pattern GUID_PATTERN = Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
 
     /**
