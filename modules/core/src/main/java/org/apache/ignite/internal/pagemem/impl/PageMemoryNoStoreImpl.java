@@ -290,6 +290,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
+    @Override public Page page(int cacheId, long pageId, boolean skipReadingFromFile) throws IgniteCheckedException {
+        return page(cacheId, pageId); //ignoring flag
+    }
+
+    /** {@inheritDoc} */
     @Override public void releasePage(Page p) {
         PageNoStoreImpl page = (PageNoStoreImpl)p;
 

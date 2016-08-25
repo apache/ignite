@@ -46,7 +46,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param buf Buffer.
      */
-    public static int getPagesNum(ByteBuffer buf) {
+    public int getPagesNum(ByteBuffer buf) {
         return buf.getInt(PAGE_NUM_OFF);
     }
 
@@ -54,14 +54,14 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param pageNum Pages number.
      */
-    public static void setPagesNum(ByteBuffer buf, int pageNum) {
+    public void setPagesNum(ByteBuffer buf, int pageNum) {
         buf.putInt(PAGE_NUM_OFF, pageNum);
     }
 
     /**
      * @param buf Buffer.
      */
-    public static long getMetastoreRoot(ByteBuffer buf) {
+    public long getMetastoreRoot(ByteBuffer buf) {
         return buf.getLong(METASTORE_ROOT_OFF);
     }
 
@@ -69,14 +69,14 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param metastoreRoot metastore root
      */
-    public static void setMetastoreRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
+    public void setMetastoreRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
         buf.putLong(METASTORE_ROOT_OFF, metastoreRoot);
     }
 
     /**
      * @param buf Buffer.
      */
-    public static long[] getRootIds(@NotNull ByteBuffer buf) {
+    public long[] getRootIds(@NotNull ByteBuffer buf) {
         int pagesNum = getPagesNum(buf);
 
         if (pagesNum > 0) {
@@ -99,7 +99,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param rootIds Root ids.
      */
-    public static void setRootIds(@NotNull ByteBuffer buf, @NotNull long[] rootIds) {
+    public void setRootIds(@NotNull ByteBuffer buf, @NotNull long[] rootIds) {
         setPagesNum(buf, rootIds.length + 1);
 
         for (int i = 0; i < rootIds.length; i++)
