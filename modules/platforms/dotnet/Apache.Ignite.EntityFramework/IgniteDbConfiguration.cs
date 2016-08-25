@@ -111,6 +111,8 @@ namespace Apache.Ignite.EntityFramework
 
             AddInterceptor(transactionHandler);
 
+
+            // https://entityframework.codeplex.com/wikipage?title=Rebuilding%20EF%20providers%20for%20EF6
             var providerSvc = new IgniteDbProviderServices(policy);
             SetProviderServices(providerSvc.GetType().FullName, providerSvc);
         }
