@@ -52,7 +52,17 @@ BOOST_FIXTURE_TEST_SUITE(SqlSystemFunctionTestSuite, ignite::SqlFunctionTestSuit
 
 BOOST_AUTO_TEST_CASE(TestSystemFunctionDatabase)
 {
-    CheckSingleResult<std::string>("SELECT {fn DATABASE()}", "");
+    CheckSingleResult<std::string>("SELECT {fn DATABASE()}");
+}
+
+BOOST_AUTO_TEST_CASE(TestSystemFunctionUser)
+{
+    CheckSingleResult<std::string>("SELECT {fn USER()}");
+}
+
+BOOST_AUTO_TEST_CASE(TestSystemFunctionIfnull)
+{
+    CheckSingleResult<int32_t>("SELECT {fn IFNULL(NULL, 42)}", 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
