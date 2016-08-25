@@ -22,7 +22,6 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data;
     using System.Data.Common;
     using System.Linq;
-    using System.Runtime.InteropServices;
 
     /// <summary>
     /// Result of a DbDataReader.

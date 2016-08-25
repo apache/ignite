@@ -96,17 +96,22 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override bool GetBoolean(int ordinal)
         {
-            throw new NotImplementedException();
+            return (bool) GetValue(ordinal);
         }
 
         public override byte GetByte(int ordinal)
         {
-            throw new NotImplementedException();
+            return (byte) GetValue(ordinal);
         }
 
         public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
         {
-            throw new NotImplementedException();
+            var bytes = (byte[]) GetValue(ordinal);
+
+            // TODO: Bounds check. See the docs!
+            Array.Copy(bytes, dataOffset, buffer, bufferOffset, length);
+
+            return bytes.Length;
         }
 
         public override char GetChar(int ordinal)
@@ -158,6 +163,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var row = GetRow();
 
+            // TODO: Bounds check. See the docs!
             Array.Copy(row, values, row.Length);
 
             return row.Length;

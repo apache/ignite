@@ -22,6 +22,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// <summary>
     /// Represents a data reader field.
     /// </summary>
+    [Serializable]
     internal class DataReaderField
     {
         /** */
