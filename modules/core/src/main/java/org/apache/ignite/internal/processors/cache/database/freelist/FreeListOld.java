@@ -260,7 +260,7 @@ public class FreeListOld implements FreeList {
      * @param link Row link.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void removeRow(long link) throws IgniteCheckedException {
+    @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -303,7 +303,7 @@ public class FreeListOld implements FreeList {
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void insertRow(CacheDataRow row) throws IgniteCheckedException {
+    @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
         assert row.link() == 0 : row.link();
 
         final int rowSize = getRowSize(cctx.cacheObjectContext(), row);

@@ -27,11 +27,11 @@ public interface FreeList {
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void insertRow(CacheDataRow row) throws IgniteCheckedException;
+    public void insertDataRow(CacheDataRow row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeRow(long link) throws IgniteCheckedException;
+    public void removeDataRowByLink(long link) throws IgniteCheckedException;
 }
