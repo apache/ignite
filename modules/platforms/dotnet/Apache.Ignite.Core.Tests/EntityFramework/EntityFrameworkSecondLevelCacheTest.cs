@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data.Entity;
     using System.Diagnostics;
     using System.Linq;
+    using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,6 +32,17 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     {
         // https://www.stevefenton.co.uk/2015/11/using-an-in-memory-database-as-a-test-double-with-entity-framework/
 
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
 
         [Test]
         public void Test()
@@ -57,6 +69,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
         }
 
+        public class MyDbConfiguration : IgniteDbConfiguration
+        {
+            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
+            {
+            }
+        }
+
+
+        [DbConfigurationType(typeof(MyDbConfiguration))]
         public class BloggingContext : DbContext
         {
             internal BloggingContext(DbConnection connection)
