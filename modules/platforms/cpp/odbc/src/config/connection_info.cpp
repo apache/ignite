@@ -287,7 +287,7 @@ namespace ignite
 #ifdef SQL_SYSTEM_FUNCTIONS
                 // Bitmask enumerating the scalar system functions supported by the
                 // driver and associated data source.
-                intParams[SQL_SYSTEM_FUNCTIONS] = 0;
+                intParams[SQL_SYSTEM_FUNCTIONS] = SQL_FN_SYS_USERNAME | SQL_FN_SYS_DBNAME | SQL_FN_SYS_IFNULL;
 #endif // SQL_SYSTEM_FUNCTIONS
 
 #ifdef SQL_CONVERT_FUNCTIONS
