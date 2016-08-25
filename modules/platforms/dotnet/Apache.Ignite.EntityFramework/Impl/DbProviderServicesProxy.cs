@@ -26,13 +26,13 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Data.Entity.Spatial;
 
-    internal class IgniteDbProviderServices : DbProviderServices
+    internal class DbProviderServicesProxy : DbProviderServices
     {
         private readonly IgniteEntityFrameworkCachingPolicy _policy;
         private readonly DbProviderServices _services;
         private readonly TransactionInterceptor _interceptor;
 
-        public IgniteDbProviderServices(DbProviderServices services, TransactionInterceptor txInterceptor, IgniteEntityFrameworkCachingPolicy policy)
+        public DbProviderServicesProxy(DbProviderServices services, TransactionInterceptor txInterceptor, IgniteEntityFrameworkCachingPolicy policy)
         {
             _services = services;
             _interceptor = txInterceptor;

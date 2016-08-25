@@ -114,7 +114,7 @@ namespace Apache.Ignite.EntityFramework
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
-                (services, a) => new IgniteDbProviderServices(services, transactionHandler, policy));
+                (services, a) => new DbProviderServicesProxy(services, transactionHandler, policy));
 
         }
 
