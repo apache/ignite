@@ -18,7 +18,6 @@
 namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
-    using System.Diagnostics;
 
     /// <summary>
     /// Represents a data reader field.
@@ -42,10 +41,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <param name="dataType">Type of the data.</param>
         public DataReaderField(string name, Type fieldType, string dataType)
         {
-            Debug.Assert(_name != null);
-            Debug.Assert(_fieldType != null);
-            Debug.Assert(_dataType != null);
-
             _name = name;
             _fieldType = fieldType;
             _dataType = dataType;
