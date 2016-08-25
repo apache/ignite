@@ -33,6 +33,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -53,8 +55,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     private static final AtomicIntegerFieldUpdater<GridCompoundFuture> LSNR_CALLS_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
-    /** Futures. */
-    protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
+    /** Sync object */
+    protected final Object sync = new Object();
+
+    /** Possible values: null (no future), IgniteInternalFuture instance (single future) or List of futures  */
+    private volatile Object futs;
 
     /** Reducer. */
     @GridToStringInclude
@@ -155,8 +160,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     public Collection<IgniteInternalFuture<T>> futures() {
-        synchronized (futs) {
-            return new ArrayList<>(futs);
+        synchronized (sync) {
+            if(futs == null)
+                return Collections.emptyList();
+
+            if (futs instanceof IgniteInternalFuture)
+                return Collections.singletonList((IgniteInternalFuture<T>)futs);
+
+            return new ArrayList<>((Collection<IgniteInternalFuture<T>>)futs);
         }
     }
 
@@ -179,10 +190,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean hasPending() {
-        synchronized (futs) {
+        synchronized (sync) {
             // Avoid iterator creation and collection copy.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<T> fut = futs.get(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<T> fut = future(i);
 
                 if (!fut.isDone())
                     return true;
@@ -197,11 +208,23 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @param fut Future to add.
      */
+    @SuppressWarnings("unchecked")
     public void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
-        synchronized (futs) {
-            futs.add(fut);
+        synchronized (sync) {
+            if (futs == null)
+                futs = fut;
+            else if (futs instanceof IgniteInternalFuture) {
+                Collection<IgniteInternalFuture> futs0 = new ArrayList<>(4);
+
+                futs0.add((IgniteInternalFuture)futs);
+                futs0.add(fut);
+
+                futs = futs0;
+            }
+            else
+                ((Collection<IgniteInternalFuture>)futs).add(fut);
         }
 
         fut.listen(this);
@@ -217,8 +240,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     }
 
     /**
-     * @return {@code True} if this future was initialized. Initialization happens when
-     *      {@link #markInitialized()} method is called on future.
+     * @return {@code True} if this future was initialized. Initialization happens when {@link #markInitialized()}
+     * method is called on future.
      */
     public boolean initialized() {
         return initFlag == INIT_FLAG;
@@ -236,7 +259,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * Check completeness of the future.
      */
     private void checkComplete() {
-        if (initialized() && !isDone() && lsnrCalls == futuresSize()) {
+        if (initialized() && !isDone() && lsnrCalls == futuresCount()) {
             try {
                 onDone(rdc != null ? rdc.reduce() : null);
             }
@@ -256,11 +279,38 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     }
 
     /**
+     * Returns future at the specified position in this list.
+     *
+     * @param idx - index index of the element to return
+     * @return Future.
+     */
+    @SuppressWarnings("unchecked")
+    protected IgniteInternalFuture<T> future(int idx) {
+        assert Thread.holdsLock(sync);
+        assert futs != null && idx >= 0 && idx < futuresCount();
+
+        if (futs instanceof IgniteInternalFuture) {
+            assert idx == 0;
+
+            return (IgniteInternalFuture<T>)futs;
+        }
+        else
+            return ((List<IgniteInternalFuture>)futs).get(idx);
+    }
+
+    /**
      * @return Futures size.
      */
-    protected int futuresSize() {
-        synchronized (futs) {
-            return futs.size();
+    @SuppressWarnings("unchecked")
+    protected int futuresCount() {
+        synchronized (sync) {
+            if (futs == null)
+                return 0;
+
+            if (futs instanceof IgniteInternalFuture)
+                return 1;
+
+            return ((Collection<IgniteInternalFuture>)futs).size();
         }
     }
 
@@ -271,11 +321,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             "cancelled", isCancelled(),
             "err", error(),
             "futs",
-                F.viewReadOnly(futures(), new C1<IgniteInternalFuture<T>, String>() {
-                    @Override public String apply(IgniteInternalFuture<T> f) {
-                        return Boolean.toString(f.isDone());
-                    }
-                })
+            F.viewReadOnly(futures(), new C1<IgniteInternalFuture<T>, String>() {
+                @Override public String apply(IgniteInternalFuture<T> f) {
+                    return Boolean.toString(f.isDone());
+                }
+            })
         );
     }
 }

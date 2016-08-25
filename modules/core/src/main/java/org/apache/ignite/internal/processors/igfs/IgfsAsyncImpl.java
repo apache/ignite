@@ -322,4 +322,9 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     @Override public IgfsSecondaryFileSystem asSecondary() {
         return igfs.asSecondary();
     }
+
+    /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
+        igfs.await(paths);
+    }
 }

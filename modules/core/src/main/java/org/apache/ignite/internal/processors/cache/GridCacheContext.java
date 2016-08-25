@@ -1718,6 +1718,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if the value for the cache object has to be copied because
+     * of {@link CacheConfiguration#isCopyOnRead()}.
+     */
+    public boolean needValueCopy() {
+        return affNode && cacheCfg.isCopyOnRead() && cacheCfg.getMemoryMode() != OFFHEAP_VALUES;
+    }
+
+    /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.

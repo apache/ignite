@@ -27,7 +27,6 @@ import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +100,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         second.setFileSystemFactory(factory);
 
-        igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(factory);
+        igfsSecondary = new HadoopIgfsSecondaryFileSystemTestAdapter(factory);
 
         return second;
     }
