@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
- *
+ * Utility methods to work with arrays.
  */
 public final class GridArrays {
     /**
@@ -50,6 +51,55 @@ public final class GridArrays {
         arr[idx] = o;
 
         return arr;
+    }
+
+    /**
+     * @param arr Array.
+     * @param idx Index to remove.
+     * @return Smaller array.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T[] remove(T[] arr, int idx) {
+        int len = arr.length;
+
+        assert idx >= 0 && idx < len: idx + " < " + len;
+
+        if (idx == len - 1)
+            return Arrays.copyOfRange(arr, 0, len - 1);
+
+        if (idx == 0)
+            return Arrays.copyOfRange(arr, 1, len);
+
+        T[] res = (T[])Array.newInstance(arr.getClass().getComponentType(), len - 1);
+
+        System.arraycopy(arr, 0, res, 0, idx);
+        System.arraycopy(arr, idx + 1, res, idx, len - idx - 1);
+
+        return res;
+    }
+
+    /**
+     * @param arr Array.
+     * @param idx Index to remove.
+     * @return Smaller array.
+     */
+    public static long[] remove(long[] arr, int idx) {
+        int len = arr.length;
+
+        assert idx >= 0 && idx < len: idx + " < " + len;
+
+        if (idx == len - 1)
+            return Arrays.copyOfRange(arr, 0, len - 1);
+
+        if (idx == 0)
+            return Arrays.copyOfRange(arr, 1, len);
+
+        long[] res = new long[len - 1];
+
+        System.arraycopy(arr, 0, res, 0, idx);
+        System.arraycopy(arr, idx + 1, res, idx, len - idx - 1);
+
+        return res;
     }
 
     /**

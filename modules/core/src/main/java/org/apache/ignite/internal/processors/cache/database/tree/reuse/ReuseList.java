@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -70,7 +71,7 @@ public final class ReuseList {
      * @param client Client.
      * @return Reuse tree.
      */
-    private ReuseTree tree(BPlusTree<?, ?> client) {
+    private ReuseTree tree(DataStructure client) {
         int treeIdx = BPlusTree.randomInt(trees.length);
 
         ReuseTree tree = trees[treeIdx];
@@ -96,7 +97,7 @@ public final class ReuseList {
      * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    public long take(BPlusTree<?, ?> client, ReuseBag bag) throws IgniteCheckedException {
+    public long take(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
         // Remove and return page at min possible position.
         Long pageId = tree(client).removeCeil(0L, bag);
 
@@ -121,6 +122,13 @@ public final class ReuseList {
             if (++i == trees.length)
                 i = 0;
         }
+    }
+
+    /**
+     * @param pageId Page ID to recycle.
+     */
+    public void add(long pageId) {
+        throw new UnsupportedOperationException();
     }
 
     /**

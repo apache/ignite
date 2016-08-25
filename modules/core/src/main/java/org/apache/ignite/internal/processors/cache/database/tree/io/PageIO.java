@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -141,7 +143,7 @@ public abstract class PageIO {
     public static final short T_PAGE_LIST_META = 13;
 
     /** */
-    public static final short T_PAGE_LIST = 14;
+    public static final short T_PAGE_LIST_NODE = 14;
 
     /** */
     private final int ver;
@@ -314,6 +316,12 @@ public abstract class PageIO {
 
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_NODE:
+                return (Q)PagesListNodeIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_META:
+                return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

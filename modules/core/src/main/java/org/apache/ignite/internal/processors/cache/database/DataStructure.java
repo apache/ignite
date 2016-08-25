@@ -19,8 +19,14 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
@@ -28,9 +34,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 public abstract class DataStructure {
     /** For tests. */
     public static Random rnd;
-
-    /** */
-    private final String name;
 
     /** */
     protected final int cacheId;
@@ -41,28 +44,27 @@ public abstract class DataStructure {
     /** */
     protected final IgniteWriteAheadLogManager wal;
 
+    /** */
+    protected final ReuseList reuseList;
 
     /**
-     * @param name Name of the data structure.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param reuseList Reuse list.
      * @param wal Write ahead log manager.
      */
-    public DataStructure(String name, int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) {
-        this.cacheId = cacheId;
-        assert name != null;
+    public DataStructure(
+        int cacheId,
+        PageMemory pageMem,
+        ReuseList reuseList,
+        IgniteWriteAheadLogManager wal
+    ) {
         assert pageMem != null;
 
-        this.name = name;
+        this.cacheId = cacheId;
         this.pageMem = pageMem;
+        this.reuseList = reuseList;
         this.wal = wal;
-    }
-
-    /**
-     * @return Data structure name.
-     */
-    public final String getName() {
-        return name;
     }
 
     /**
@@ -80,5 +82,43 @@ public abstract class DataStructure {
         Random rnd0 = rnd != null ? rnd : ThreadLocalRandom.current();
 
         return rnd0.nextInt(max);
+    }
+
+    /**
+     * @param bag Reuse bag.
+     * @return Allocated page.
+     */
+    protected final long allocatePage(ReuseBag bag) throws IgniteCheckedException {
+        long pageId = bag != null ? bag.pollFreePage() : 0;
+
+        if (pageId == 0 && reuseList != null)
+            pageId = reuseList.take(this, bag);
+
+        if (pageId == 0)
+            pageId = allocatePageNoReuse();
+
+        assert pageId != 0;
+
+        return pageId;
+    }
+
+    /**
+     * @return Page ID of newly allocated page.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long allocatePageNoReuse() throws IgniteCheckedException {
+        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Page.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final Page page(long pageId) throws IgniteCheckedException {
+        if (PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_IDX)
+            pageId = PageIdUtils.maskPartId(pageId);
+
+        return pageMem.page(cacheId, pageId);
     }
 }

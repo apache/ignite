@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
@@ -34,5 +35,33 @@ public class PagesListMetaIO extends PageIO {
      */
     protected PagesListMetaIO(int ver) {
         super(T_PAGE_LIST_META, ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initNewPage(ByteBuffer buf, long pageId) {
+        super.initNewPage(buf, pageId);
+
+        setCount(buf, 0);
+        setNextMetaPageId(buf, 0L);
+    }
+
+    private int getCount(ByteBuffer buf) {
+        return 0;
+    }
+
+    private void setCount(ByteBuffer buf, int cnt) {
+
+    }
+
+    public long getNextMetaPageId(ByteBuffer buf) {
+        return 0L;
+    }
+
+    public void setNextMetaPageId(ByteBuffer buf, long metaPageId) {
+
+    }
+
+    public boolean addListHead(int bucket, long headId) {
+        return false;
     }
 }

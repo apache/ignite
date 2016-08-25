@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,7 +90,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     /** */
-    private final ReuseList reuseList;
+    private final String name;
 
     /** */
     private final float minFill;
@@ -589,7 +589,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal);
+        super(cacheId, pageMem, reuseList, wal);
+
+        assert !F.isEmpty(name);
 
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
@@ -602,7 +604,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         this.innerIos = innerIos;
         this.leafIos = leafIos;
         this.metaPageId = metaPageId;
-        this.reuseList = reuseList;
+        this.name = name;
+    }
+
+    /**
+     * @return Tree name.
+     */
+    public final String getName() {
+        return name;
     }
 
     /**
@@ -2873,36 +2882,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     }
 
     /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(long pageId) throws IgniteCheckedException {
-        if (PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_IDX)
-            pageId = PageIdUtils.maskPartId(pageId);
-
-        return pageMem.page(cacheId, pageId);
-    }
-
-    /**
-     * @param bag Reuse bag.
-     * @return Allocated page.
-     */
-    private long allocatePage(ReuseBag bag) throws IgniteCheckedException {
-        long pageId = bag != null ? bag.pollFreePage() : 0;
-
-        if (pageId == 0 && reuseList != null)
-            pageId = reuseList.take(this, bag);
-
-        if (pageId == 0)
-            pageId = allocatePageNoReuse();
-
-        assert pageId != 0;
-
-        return pageId;
-    }
-
-    /**
      * Allocates page for new BPlus tree.
      *
      * @return New page ID.
@@ -2910,14 +2889,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     protected long allocatePageForNew() throws IgniteCheckedException {
         return allocatePage(null);
-    }
-
-    /**
-     * @return Page ID of newly allocated page.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 
     /**

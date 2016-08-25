@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.cache.database.freelist.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.copyMemory;
 
 /**
- *
+ * TODO optimize: now we have slow {@link #removePage(ByteBuffer, long)}
  */
 public class PagesListNodeIO extends PageIO {
     /** */
@@ -30,23 +33,124 @@ public class PagesListNodeIO extends PageIO {
         new PagesListNodeIO(1)
     );
 
+    /** */
+    private static final int PREV_PAGE_ID_OFF = COMMON_HEADER_END;
+
+    /** */
+    private static final int NEXT_PAGE_ID_OFF = PREV_PAGE_ID_OFF + 8;
+
+    /** */
+    private static final int CNT_OFF = NEXT_PAGE_ID_OFF + 2;
+
+    /** */
+    private static final int PAGE_IDS_OFF = CNT_OFF + 2;
+
     /**
      * @param ver  Page format version.
      */
     protected PagesListNodeIO(int ver) {
-        super(T_PAGE_LIST, ver);
+        super(T_PAGE_LIST_NODE, ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initNewPage(ByteBuffer buf, long pageId) {
+        super.initNewPage(buf, pageId);
+
+        setEmpty(buf);
+
+        setPreviousId(buf, 0L);
+        setNextId(buf, 0L);
+    }
+
+    private void setEmpty(ByteBuffer buf) {
+        setCount(buf, 0);
+    }
+
+    public long getNextId(ByteBuffer buf) {
+        return buf.getLong(NEXT_PAGE_ID_OFF);
+    }
+
+    public void setNextId(ByteBuffer buf, long nextId) {
+        buf.putLong(NEXT_PAGE_ID_OFF, nextId);
+    }
+
+    public long getPreviousId(ByteBuffer buf) {
+        return buf.getLong(PREV_PAGE_ID_OFF);
+    }
+
+    public void setPreviousId(ByteBuffer buf, long prevId) {
+        buf.putLong(PREV_PAGE_ID_OFF, prevId);
+    }
+
+    private int getCount(ByteBuffer buf) {
+        return buf.getShort(CNT_OFF);
+    }
+
+    private void setCount(ByteBuffer buf, int cnt) {
+        assert cnt >= 0 && cnt <= Short.MAX_VALUE: cnt;
+
+        buf.putShort(CNT_OFF, (short)cnt);
+    }
+
+    private int getCapacity(ByteBuffer buf) {
+        return (buf.capacity() - PAGE_IDS_OFF) >>> 3; // /8
+    }
+
+    private int offset(int idx) {
+        return PAGE_IDS_OFF + 8 * idx;
+    }
+
+    private long getAt(ByteBuffer buf, int idx) {
+        return buf.getLong(offset(idx));
+    }
+
+    private void setAt(ByteBuffer buf, int idx, long pageId) {
+        buf.putLong(offset(idx), pageId);
     }
 
     public int addPage(ByteBuffer buf, long pageId) {
-        return -1;
+        int cnt = getCount(buf);
+
+        if (cnt == getCapacity(buf))
+            return -1;
+
+        setAt(buf, cnt, pageId);
+        setCount(buf, cnt + 1);
+
+        return cnt;
     }
 
+    public long takeAnyPage(ByteBuffer buf) {
+        int cnt = getCount(buf);
 
-    public long getForwardId(ByteBuffer buf) {
-        return 0L;
+        if (cnt == 0)
+            return 0L;
+
+        setCount(buf, --cnt);
+
+        return getAt(buf, cnt);
     }
 
-    public long getBackId(ByteBuffer buf) {
-        return 0L;
+    public void removePage(ByteBuffer buf, long dataPageId) {
+        assert dataPageId != 0;
+
+        int cnt = getCount(buf);
+
+        for (int i = 0; i < cnt; i++) {
+            if (getAt(buf, i) == dataPageId) {
+                if (i != cnt - 1)
+                    copyMemory(buf, buf, offset(i + 1), offset(i), 8 * (cnt - i - 1));
+
+                setCount(buf, cnt - 1);
+
+                return;
+            }
+        }
+
+        throw new IllegalStateException("Data page not found: " + U.hexLong(dataPageId));
+    }
+
+    public boolean isEmpty(ByteBuffer buf) {
+        return getCount(buf) == 0;
     }
 }

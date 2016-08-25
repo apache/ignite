@@ -224,4 +224,15 @@ public final class PageIdUtils {
 
         return pageId & ~(PART_ID_MASK << PAGE_IDX_SIZE);
     }
+
+    /**
+     * Change page type.
+     *
+     * @param pageId Old page ID.
+     * @param type New page type.
+     * @return Changed page ID.
+     */
+    public static long changeType(long pageId, byte type) {
+        return pageId(partId(pageId), type, pageIndex(pageId));
+    }
 }
