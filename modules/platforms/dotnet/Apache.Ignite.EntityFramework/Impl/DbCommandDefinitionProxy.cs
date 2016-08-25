@@ -34,7 +34,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override DbCommand CreateCommand()
         {
-            return _definition.CreateCommand();
+            return new DbCommandProxy(_definition.CreateCommand());
         }
     }
 }

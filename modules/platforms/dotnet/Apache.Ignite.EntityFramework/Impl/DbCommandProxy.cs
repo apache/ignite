@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.EntityFramework.Impl
 {
+    using System;
     using System.Data;
     using System.Data.Common;
     using System.Diagnostics;
+    using System.Linq;
 
     /// <summary>
     /// Command proxy.
@@ -99,11 +101,20 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
+            var parameters = string.Join("|",
+                Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
+
+            var cacheKey = string.Format("READ-{0}-{1}-{2}", Connection.Database, CommandText, parameters);
+
+            Console.WriteLine(cacheKey);
+
             // TODO: Caching
             return _command.ExecuteReader(behavior);
         }
 
+#if !NET40
         // TODO: ExecuteDbDataReaderAsync in newer frameworks? How does this stack up?
+#endif
 
         public override int ExecuteNonQuery()
         {
