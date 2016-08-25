@@ -72,7 +72,7 @@ public class GridCacheReturnCompletableWrapper {
             boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, null, new GridFutureAdapter<>());
 
             if (res)
-                return (IgniteInternalFuture)this.o;
+                return (IgniteInternalFuture)obj;
             else
                 return fut();
         }
