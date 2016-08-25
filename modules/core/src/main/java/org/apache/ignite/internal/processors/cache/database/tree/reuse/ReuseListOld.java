@@ -58,7 +58,7 @@ public final class ReuseListOld implements ReuseList {
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    public long size() throws IgniteCheckedException {
+    @Override public long recycledPagesCount() throws IgniteCheckedException {
         long size = 0;
 
         for (ReuseTree tree : trees)
@@ -97,7 +97,7 @@ public final class ReuseListOld implements ReuseList {
      * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    public long take(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
+    @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
         // Remove and return page at min possible position.
         Long pageId = tree(client).removeCeil(0L, bag);
 
@@ -108,7 +108,7 @@ public final class ReuseListOld implements ReuseList {
      * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
-    public void add(ReuseBag bag) throws IgniteCheckedException {
+    @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert bag != null;
 
         for (int i = BPlusTree.randomInt(trees.length);;) {
@@ -127,7 +127,7 @@ public final class ReuseListOld implements ReuseList {
     /**
      * @param pageId Page ID to recycle.
      */
-    public void add(long pageId) {
+    @Override public void addForRecycle(long pageId) {
         throw new UnsupportedOperationException();
     }
 

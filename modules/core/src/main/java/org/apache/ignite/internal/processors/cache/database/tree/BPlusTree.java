@@ -1431,7 +1431,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
         long pagesCnt = destroy(bag);
 
-        reuseList.add(bag);
+        reuseList.addForRecycle(bag);
 
         assert bag.size() == 0 : bag.size();
 
@@ -1474,7 +1474,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.add(bag);
+                            reuseList.addForRecycle(bag);
 
                             assert bag.isEmpty() : bag.size();
                         }
@@ -2531,7 +2531,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && bag == null)
-                reuseList.add(this);
+                reuseList.addForRecycle(this);
         }
 
         /**

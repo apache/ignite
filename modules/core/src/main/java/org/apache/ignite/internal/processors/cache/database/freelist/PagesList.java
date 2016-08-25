@@ -661,7 +661,7 @@ public abstract class PagesList extends DataStructure {
 
         PageIO.setPageId(buf, pageId);
 
-        reuseList.add(pageId);
+        reuseList.addForRecycle(pageId);
     }
 
     /**
