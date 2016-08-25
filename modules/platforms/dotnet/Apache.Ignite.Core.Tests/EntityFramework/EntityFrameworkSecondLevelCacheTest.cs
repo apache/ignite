@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
         /** */
-        private readonly ConcurrentStack<CacheEvent> _events;
+        private readonly ConcurrentStack<CacheEvent> _events = new ConcurrentStack<CacheEvent>();
 
         /// <summary>
         /// Fixture set up.
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // Subscribe to cache events.
             var events = ignite.GetEvents();
             events.EnableLocal(EventType.CacheObjectPut, EventType.CacheObjectRead, EventType.CacheObjectExpired);
-            events.LocalListen(this);
+            events.LocalListen(this, EventType.CacheAll);
 
             // Create SQL CE database in a temp file.
             using (var context = new BloggingContext(ConnectionString))
