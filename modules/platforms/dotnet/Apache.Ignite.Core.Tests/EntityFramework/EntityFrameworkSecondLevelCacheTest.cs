@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Collections.Generic;
     using System.Data.Common;
     using System.Data.Entity;
+    using NUnit.Framework;
 
     /// <summary>
     /// Integration test with in-memory database.
@@ -27,6 +28,29 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     public class EntityFrameworkSecondLevelCacheTest
     {
         // https://www.stevefenton.co.uk/2015/11/using-an-in-memory-database-as-a-test-double-with-entity-framework/
+
+
+        [Test]
+        public void Test()
+        {
+            var conn = Effort.DbConnectionFactory.CreateTransient();
+            var context = new BloggingContext(conn);
+
+            Assert.IsEmpty(context.Blogs);
+            Assert.IsEmpty(context.Posts);
+
+            context.Blogs.Add(new Blog
+            {
+                BlogId = 1,
+                Name = "Foo",
+                Posts = new List<Post>
+                {
+                    new Post {Title = "My First Post", Content = "Hello World!"}
+                }
+            });
+
+            Assert.AreEqual(2, context.SaveChanges());
+        }
 
         public class BloggingContext : DbContext
         {
