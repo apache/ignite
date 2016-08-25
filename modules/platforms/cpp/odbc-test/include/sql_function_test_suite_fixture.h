@@ -133,6 +133,9 @@ namespace ignite
 
     template<>
     void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE

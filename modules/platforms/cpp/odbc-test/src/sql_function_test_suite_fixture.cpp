@@ -185,4 +185,14 @@ namespace ignite
 
         BOOST_CHECK_CLOSE(static_cast<double>(res), expected, 1E-6);
     }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected)
+    {
+        SQLCHAR res = 0;
+
+        CheckSingleResult0(request, SQL_C_BIT, &res, 0, 0);
+
+        BOOST_CHECK_EQUAL((res != 0), expected);
+    }
 }
