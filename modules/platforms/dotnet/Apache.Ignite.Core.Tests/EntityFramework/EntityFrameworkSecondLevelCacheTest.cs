@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Collections.Generic;
     using System.Data.Common;
     using System.Data.Entity;
+    using System.Diagnostics;
+    using System.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +37,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             var conn = Effort.DbConnectionFactory.CreateTransient();
             var context = new BloggingContext(conn);
+            context.Database.Log = s => Debug.WriteLine(s);
 
             Assert.IsEmpty(context.Blogs);
             Assert.IsEmpty(context.Posts);
@@ -50,6 +53,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             });
 
             Assert.AreEqual(2, context.SaveChanges());
+
+            Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
         }
 
         public class BloggingContext : DbContext
