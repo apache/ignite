@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.external;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.hadoop.HadoopSortingTest;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
@@ -29,8 +30,7 @@ public class HadoopSortingExternalTest extends HadoopSortingTest {
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(true);
+        cfg.setExternalExecution(true);
 
         return cfg;
     }

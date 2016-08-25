@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -102,15 +103,26 @@ public class HadoopChildProcessRunner {
     /** Concurrent reducers. */
     private int concReducers;
 
+    /** Runner process ID */
+    private UUID procId;
+
     /**
      * Starts child process runner.
+     *
+     * @param comm Communication object.
+     * @param nodeDesc Parent node descriptor.
+     * @param msgExecSvc Execution service.
+     * @param parentLog Parent logger.
+     * @param procId Process ID.
+     * @throws IgniteCheckedException If failed.
      */
     public void start(HadoopExternalCommunication comm, HadoopProcessDescriptor nodeDesc,
-        ExecutorService msgExecSvc, IgniteLogger parentLog)
+        ExecutorService msgExecSvc, IgniteLogger parentLog, UUID procId)
         throws IgniteCheckedException {
         this.comm = comm;
         this.nodeDesc = nodeDesc;
         this.msgExecSvc = msgExecSvc;
+        this.procId = procId;
 
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(HadoopChildProcessRunner.class);
@@ -136,7 +148,7 @@ public class HadoopChildProcessRunner {
 
                 job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null);
 
-                job.initialize(true, nodeDesc.processId());
+                job.initialize(true, procId);
 
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers());
@@ -294,8 +306,6 @@ public class HadoopChildProcessRunner {
                 ", pendingTasks=" + pendingTasks0 +
                 ", err=" + status.failCause() + ']');
 
-        assert info.type() == MAP || info.type() == REDUCE : "Only MAP or REDUCE tasks are supported.";
-
         boolean flush = pendingTasks0 == 0 && info.type() == MAP;
 
         notifyTaskFinished(info, status, flush);
@@ -304,6 +314,7 @@ public class HadoopChildProcessRunner {
     /**
      * @param taskInfo Finished task info.
      * @param status Task status.
+     * @param flush Flush messages before sending finish notification..
      */
     private void notifyTaskFinished(final HadoopTaskInfo taskInfo, final HadoopTaskStatus status,
         boolean flush) {

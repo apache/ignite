@@ -296,9 +296,6 @@ public class HadoopV2Job implements HadoopJob {
 
         this.locNodeId = locNodeId;
 
-        assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-            .equals(HadoopClassLoader.nameForJob(this.locNodeId));
-
         Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
 
         try {

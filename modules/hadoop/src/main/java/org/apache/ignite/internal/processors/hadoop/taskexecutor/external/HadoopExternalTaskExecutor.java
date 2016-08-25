@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -115,7 +116,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         comm = new HadoopExternalCommunication(
             ctx.localNodeId(),
             UUID.randomUUID(),
-            ctx.kernalContext().config().getMarshaller(),
+            new JdkMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
             ctx.kernalContext().gridName());
@@ -291,6 +292,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param proc Process to send request to.
      * @param job Job instance.
      * @param tasks Collection of tasks to execute in started process.
+     * @throws IgniteCheckedException If failed.
      */
     private void sendExecutionRequest(HadoopProcess proc, HadoopJob job, Collection<HadoopTaskInfo> tasks)
         throws IgniteCheckedException {
@@ -347,6 +349,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      * @param job Job instance.
      * @param plan Map reduce plan.
+     * @return Hadoop process object.
      */
     private HadoopProcess startProcess(final HadoopJob job, final HadoopMapReducePlan plan) {
         final UUID childProcId = UUID.randomUUID();
@@ -389,7 +392,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                     // Read up all the process output.
                     while ((line = rdr.readLine()) != null) {
                         if (log.isDebugEnabled())
-                            log.debug("Tracing process output: " + line);
+                            log.debug("Tracing process [" + proc.toString() + "] output:"  + line);
 
                         if ("Started".equals(line)) {
                             // Process started successfully, it should not write anything more to the output stream.
@@ -518,6 +521,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param startMeta Metadata.
      * @param job Job.
      * @return Started process.
+     * @throws Exception If failed.
      */
     private Process startJavaProcess(UUID childProcId, HadoopExternalTaskMetadata startMeta,
         HadoopJob job) throws Exception {
@@ -551,6 +555,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         cmd.add(outFldr);
         cmd.add("-wd");
         cmd.add(workDir.getAbsolutePath());
+
+        if (log.isDebugEnabled())
+            log.debug("Start process [cmd=" + cmd + ", workDir=" + workDir + ']');
 
         return new ProcessBuilder(cmd)
             .redirectErrorStream(true)
@@ -765,6 +772,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         /**
          * @param jobId Job ID.
          * @param initFut Init future.
+         * @param reducers Reducers planned for this process.
          */
         private HadoopProcess(HadoopJobId jobId, HadoopProcessFuture initFut,
             int[] reducers) {
@@ -904,6 +912,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         private final IgniteLogger log = HadoopExternalTaskExecutor.this.log;
 
         /**
+         * @param childProcId Child process Id.
+         * @param jobId Job Id.
          */
         private HadoopProcessFuture(UUID childProcId, HadoopJobId jobId) {
             this.childProcId = childProcId;
@@ -912,6 +922,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         /**
          * Process started callback.
+         * @param proc Process object.
          */
         public void onProcessStarted(Process proc) {
             this.proc = proc;
@@ -924,6 +935,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         /**
          * Reply received callback.
+         *
+         * @param desc Process descriptor.
          */
         public void onReplyReceived(HadoopProcessDescriptor desc) {
             assert childProcId.equals(desc.processId());
