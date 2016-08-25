@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1728,14 +1729,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (desc == null)
             throw new CacheException("Row descriptor undefined for table '" + gridTbl.getName() + "'");
 
-        Class<?> valCls = null;
+        Class<?> valCls = U.classForName(desc.type().valueTypeName(), null);
 
         boolean bin = cctx.binaryMarshaller();
 
-        if (!bin)
-            valCls = desc.type().valueClass();
-
-        Iterator<List<?>> it = cursor.iterator();
         Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
 
         Column[] cols = gridTbl.getColumns();
@@ -1744,9 +1741,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int res = 0;
 
-        while (it.hasNext()) {
-            List<?> e = it.next();
-
+        for (List<?> e : cursor) {
             Object key = e.get(0);
             Object val = e.get(1);
 
@@ -1757,8 +1752,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (int i = 0; i < updatedCols.size(); i++)
                 newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
 
-            if (bin)
+            if (bin) {
+                if (!(val instanceof BinaryObject))
+                    val = cctx.grid().binary().toBinary(val);
+
                 newVal = cctx.grid().binary().builder((BinaryObject) val);
+            }
             else
                 try {
                     newVal = GridUnsafe.allocateInstance(valCls);
@@ -1782,9 +1781,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 desc.setColumnValue(key, newVal, colVal, i);
             }
 
+            if (bin)
+                newVal = ((BinaryObjectBuilder) newVal).build();
+
             m.put(key, new ModifyingEntryProcessor(val, new EntryValueUpdater(newVal)));
 
             res++;
+        }
+
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        if (bin) {
+            CacheOperationContext newOpCtx = null;
+
+            if (opCtx == null)
+                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+            else if (!opCtx.isKeepBinary())
+                newOpCtx = opCtx.keepBinary();
+
+            if (newOpCtx != null)
+                cctx.operationContextPerCall(newOpCtx);
         }
 
         try {
@@ -1802,6 +1819,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (IgniteCheckedException e) {
             throw new CacheException("Failed to perform SQL UPDATE", e);
+        }
+        finally {
+            cctx.operationContextPerCall(opCtx);
         }
     }
 
