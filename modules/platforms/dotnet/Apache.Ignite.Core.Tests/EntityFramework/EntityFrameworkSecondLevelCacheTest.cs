@@ -138,6 +138,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public int BlogId { get; set; }
             public virtual Blog Blog { get; set; }
+
+            // TODO: Test all kinds of field types (to test serialization and reader)
         }
 
         public bool Invoke(CacheEvent evt)
