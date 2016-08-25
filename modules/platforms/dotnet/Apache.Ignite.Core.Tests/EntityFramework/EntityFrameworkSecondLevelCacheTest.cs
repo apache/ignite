@@ -18,10 +18,7 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System.Collections.Generic;
-    using System.Data.Common;
     using System.Data.Entity;
-    using System.Data.Entity.Infrastructure;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.EntityFramework;
@@ -32,60 +29,54 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     /// </summary>
     public class EntityFrameworkSecondLevelCacheTest
     {
-        // https://www.stevefenton.co.uk/2015/11/using-an-in-memory-database-as-a-test-double-with-entity-framework/
+        private static readonly string TempFile = Path.GetTempFileName();
+        private static readonly string ConnectionString = "Datasource = " + TempFile;
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            // Start Ignite.
             Ignition.Start(TestUtils.GetTestConfiguration());
+
+            // Create SQL CE database in a temp file.
+            using (var context = new BloggingContext(ConnectionString))
+            {
+                File.Delete(TempFile);
+                context.Database.Create();
+            }
         }
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
+            File.Delete(TempFile);
         }
 
         [Test]
         public void Test()
         {
-            var context = CreateTempDatabase();
-            context.Database.Log = s => Debug.WriteLine(s);
-
-            Assert.IsEmpty(context.Blogs);
-            Assert.IsEmpty(context.Posts);
-
-            context.Blogs.Add(new Blog
+            using (var context = new BloggingContext(ConnectionString))
             {
-                BlogId = 1,
-                Name = "Foo",
-                Posts = new List<Post>
+                //context.Database.Log = s => Debug.WriteLine(s);
+
+                Assert.IsEmpty(context.Blogs);
+                Assert.IsEmpty(context.Posts);
+
+                context.Blogs.Add(new Blog
                 {
-                    new Post {Title = "My First Post", Content = "Hello World!"}
-                }
-            });
+                    BlogId = 1,
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "My First Post", Content = "Hello World!"}
+                    }
+                });
 
-            Assert.AreEqual(2, context.SaveChanges());
+                Assert.AreEqual(2, context.SaveChanges());
 
-            Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-        }
-
-        private static BloggingContext CreateTempDatabase()
-        {
-            // TODO: Delete this file afterwards.
-            var filePath = Path.GetTempFileName();
-            File.Delete(filePath);
-            var connectionString = "Datasource = " + filePath;
-
-#pragma warning disable 618
-            //Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
-#pragma warning restore 618
-
-            var context = new BloggingContext(connectionString);
-
-            context.Database.Create();
-
-            return context;
+                Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+            }
         }
 
         private class MyDbConfiguration : IgniteDbConfiguration
