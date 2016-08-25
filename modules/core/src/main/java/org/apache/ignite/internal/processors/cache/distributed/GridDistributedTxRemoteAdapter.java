@@ -471,8 +471,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         batchStoreCommit(writeMap().values());
 
-                        // Node that for near transactions we grab all entries.
-
+                        // Note that for near transactions we grab all entries.
                         for (IgniteTxEntry txEntry : entries) {
                             GridCacheContext cacheCtx = txEntry.context();
 
@@ -547,7 +546,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                        if (!near() && cctx.wal() != null) {
+                                        if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
                                             if (dataEntries == null)
                                                 dataEntries = new ArrayList<>(entries.size());
 
