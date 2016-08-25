@@ -47,8 +47,13 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Impl\IgniteDbProviderServices.cs" />
+    <Compile Include="Impl\TransactionInterceptor.cs" />
+    <Compile Include="IgniteEntityFrameworkCachingPolicy.cs" />
+    <Compile Include="ICache.cs" />
     <Compile Include="IgniteDbConfiguration.cs" />
     <Compile Include="IgniteEntityFrameworkCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

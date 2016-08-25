@@ -27,7 +27,6 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
-    using EFCache;
 
     /// <summary>
     /// Ignite-base EntityFramework second-level cache.

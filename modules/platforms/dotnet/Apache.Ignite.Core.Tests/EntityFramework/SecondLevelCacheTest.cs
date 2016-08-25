@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
-    using EFCache;
     using NUnit.Framework;
 
     /// <summary>
