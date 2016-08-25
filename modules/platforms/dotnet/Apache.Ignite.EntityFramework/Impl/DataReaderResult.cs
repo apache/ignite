@@ -57,7 +57,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         public DbDataReader CreateReader()
         {
             // TODO: ArrayReader
-            return null;
+            return new ArrayDbDataReader(_data, _schema);
         }
 
         /// <summary>

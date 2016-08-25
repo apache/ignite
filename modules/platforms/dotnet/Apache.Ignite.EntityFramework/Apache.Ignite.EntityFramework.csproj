@@ -47,8 +47,10 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Impl\ArrayDbDataReader.cs" />
     <Compile Include="Impl\DataReaderResult.cs" />
     <Compile Include="Impl\DbCommandDefinitionProxy.cs" />
     <Compile Include="Impl\DbCommandProxy.cs">
