@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -449,6 +451,17 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
                 if (!F.isEmpty(writeMap)) {
+                    GridCacheReturn ret = null;
+
+                    if (!near() && !local() && onePhaseCommit())
+                        if (needReturnValue()) {
+                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
+
+                            cctx.tm().addCommittedTxReturn(this, new GridCacheReturnCompletableWrapper());
+                        }
+                        else
+                            cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
+
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
@@ -486,7 +499,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
-                                        applyTransformClosures(txEntry, false);
+                                        applyTransformClosures(txEntry, false, ret);
 
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
@@ -681,6 +694,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (ex instanceof Error)
                                 throw (Error)ex;
                         }
+                    }
+
+                    if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
+                        GridCacheReturnCompletableWrapper wrapper =
+                            cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+
+                        wrapper.initialize(ret);
                     }
                 }
 

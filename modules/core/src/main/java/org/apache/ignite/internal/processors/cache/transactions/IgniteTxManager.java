@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
@@ -69,6 +71,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -159,13 +162,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Committed local transactions. */
-    private final ConcurrentLinkedHashMap<GridCacheVersion, Boolean> completedVersHashMap =
+    private final ConcurrentLinkedHashMap<GridCacheVersion, Object> completedVersHashMap =
         new ConcurrentLinkedHashMap<>(
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
             0.75f,
             Runtime.getRuntime().availableProcessors() * 2,
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
             PER_SEGMENT_Q);
+
+    /** Committed but not acknowledged one phase commit transactions per node. */
+    private final ConcurrentHashMap<UUID, Collection<GridCacheVersion>> nodesToTxs =
+        new ConcurrentHashMap<>();
 
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
@@ -208,6 +215,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     for (TxDeadlockFuture fut : deadlockDetectFuts.values())
                         fut.onNodeLeft(nodeId);
+
+                    Collection<GridCacheVersion> txs = nodesToTxs.remove(nodeId);
+
+                    if (txs != null)
+                        for (GridCacheVersion tx : txs)
+                            removeTxReturn(tx, /*nodesToTxs already cleared.*/ null);
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -568,6 +581,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             ", tx=" + tx + ']';
 
         if (isCompleted(tx)) {
+            ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+            txIdMap.remove(tx.xidVersion(), tx);
+
             if (log.isDebugEnabled())
                 log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
@@ -894,9 +911,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void addCommittedTx(IgniteInternalTx tx) {
         addCommittedTx(tx, tx.xidVersion(), tx.nearXidVersion());
+    }
 
-        if (!tx.local() && !tx.near() && tx.onePhaseCommit())
-            addCommittedTx(tx, tx.nearXidVersion(), null);
+    /**
+     * @param tx Committed transaction.
+     */
+    public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturnCompletableWrapper ret) {
+        addCommittedTxReturn(tx, tx.nearXidVersion(), null, ret);
     }
 
     /**
@@ -921,7 +942,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (nearXidVer != null)
             xidVer = new CommittedVersion(xidVer, nearXidVer);
 
-        Boolean committed0 = completedVersHashMap.putIfAbsent(xidVer, true);
+        Object committed0 = completedVersHashMap.putIfAbsent(xidVer, true);
 
         if (committed0 == null && (tx == null || tx.needsCompletedVersions())) {
             Boolean b = completedVersSorted.putIfAbsent(xidVer, true);
@@ -929,7 +950,47 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert b == null;
         }
 
-        return committed0 == null || committed0;
+        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
+
+        return committed0 == null || committed;
+    }
+
+    /**
+     * @param tx Tx.
+     * @param xidVer Completed transaction version.
+     * @param nearXidVer Optional near transaction ID.
+     * @param retVal Invoke result.
+     */
+    private void addCommittedTxReturn(
+        IgniteInternalTx tx,
+        GridCacheVersion xidVer,
+        @Nullable GridCacheVersion nearXidVer,
+        GridCacheReturnCompletableWrapper retVal
+    ) {
+        assert retVal != null;
+
+        if (nearXidVer != null)
+            xidVer = new CommittedVersion(xidVer, nearXidVer);
+
+        UUID nodeId = tx.otherNodeId(); // Originating node.
+
+        assert completedVersHashMap.get(xidVer) == null || completedVersHashMap.get(xidVer).equals(Boolean.TRUE);
+
+        completedVersHashMap.put(xidVer, retVal);
+
+        if (!cctx.localNodeId().equals(nodeId)) { // No reason to keep failover map if current node is originating.
+            Collection<GridCacheVersion> txs = nodesToTxs.get(nodeId);
+
+            if (txs == null) {
+                Collection<GridCacheVersion> txs0 = new GridConcurrentHashSet<>();
+
+                Collection<GridCacheVersion> txsPrev = nodesToTxs.putIfAbsent(nodeId, txs0);
+
+                txs = txsPrev != null ? txsPrev : txs0;
+            }
+
+            txs.add(xidVer);
+        }
     }
 
     /**
@@ -941,7 +1002,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         IgniteInternalTx tx,
         GridCacheVersion xidVer
     ) {
-        Boolean committed0 = completedVersHashMap.putIfAbsent(xidVer, false);
+        Object committed0 = completedVersHashMap.putIfAbsent(xidVer, false);
 
         if (committed0 == null && (tx == null || tx.needsCompletedVersions())) {
             Boolean b = completedVersSorted.putIfAbsent(xidVer, false);
@@ -949,7 +1010,50 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert b == null;
         }
 
-        return committed0 == null || !committed0;
+        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
+
+        return committed0 == null || !committed;
+    }
+
+    /**
+     * @param xidVer xidVer Completed transaction version.
+     * @return Tx result.
+     */
+    public GridCacheReturnCompletableWrapper getCommittedTxReturn(GridCacheVersion xidVer) {
+        Object retVal = completedVersHashMap.get(xidVer);
+
+        // Will gain true in regular case or GridCacheReturn in onePhaseCommit case.
+        if (!Boolean.TRUE.equals(retVal)) {
+            assert !Boolean.FALSE.equals(retVal); // Method should be used only after 'committed' checked.
+
+            return (GridCacheReturnCompletableWrapper)retVal;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param xidVer xidVer Completed transaction version.
+     */
+    public void removeTxReturn(GridCacheVersion xidVer, UUID nodeId) {
+        Object prev = completedVersHashMap.get(xidVer);
+
+        if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
+            return;
+
+        assert prev instanceof GridCacheReturnCompletableWrapper;
+
+        boolean res = completedVersHashMap.replace(xidVer, prev, true);
+
+        assert res;
+
+        if (nodeId != null) { // Not a local node.
+            Collection<GridCacheVersion> vers = nodesToTxs.get(nodeId);
+
+            boolean rmv = vers.remove(xidVer);
+
+            assert rmv;
+        }
     }
 
     /**
@@ -1089,7 +1193,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * so we don't do it here.
          */
 
-        Boolean committed = completedVersHashMap.get(tx.xidVersion());
+        Object committed0 = completedVersHashMap.get(tx.xidVersion());
+
+        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         // 1. Make sure that committed version has been recorded.
         if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
@@ -1236,7 +1342,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction to finish.
      * @param commit {@code True} if transaction is committed, {@code false} if rolled back.
      */
-    public void fastFinishTx(IgniteInternalTx tx, boolean commit) {
+    public void fastFinishTx(GridNearTxLocal tx, boolean commit) {
         assert tx != null;
         assert tx.writeMap().isEmpty();
         assert tx.optimistic() || tx.readMap().isEmpty();
@@ -1247,16 +1353,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 1. Notify evictions.
             notifyEvitions(tx);
 
-            // 2. Remove obsolete entries.
+            // 2. Evict near entries.
+            if (!tx.readMap().isEmpty()) {
+                for (IgniteTxEntry entry : tx.readMap().values())
+                    tx.evictNearEntry(entry, false);
+            }
+
+            // 3. Remove obsolete entries.
             removeObsolete(tx);
 
-            // 3. Remove from per-thread storage.
+            // 4. Remove from per-thread storage.
             clearThreadMap(tx);
 
-            // 4. Clear context.
+            // 5. Clear context.
             resetContext();
 
-            // 5. Update metrics.
+            // 6. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system()) {
                     if (commit)
@@ -1669,12 +1781,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         boolean committed = false;
 
-        for (Map.Entry<GridCacheVersion, Boolean> entry : completedVersHashMap.entrySet()) {
+        for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
             if (entry.getKey() instanceof CommittedVersion) {
                 CommittedVersion comm = (CommittedVersion)entry.getKey();
 
                 if (comm.nearVer.equals(xidVer)) {
-                    committed = entry.getValue();
+                    committed = !entry.getValue().equals(Boolean.FALSE);
 
                     break;
                 }
@@ -1806,8 +1918,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         // Not all transactions were found. Need to scan committed versions to check
         // if transaction was already committed.
-        for (Map.Entry<GridCacheVersion, Boolean> e : completedVersHashMap.entrySet()) {
-            if (!e.getValue())
+        for (Map.Entry<GridCacheVersion, Object> e : completedVersHashMap.entrySet()) {
+            if (e.getValue().equals(Boolean.FALSE))
                 continue;
 
             GridCacheVersion ver = e.getKey();
@@ -1872,8 +1984,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * transactions were prepared (invalidates transaction if it is not fully prepared).
      *
      * @param tx Transaction.
+     * @param failedNodeIds Failed nodes IDs.
      */
-    public void commitIfPrepared(IgniteInternalTx tx) {
+    public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
@@ -1881,7 +1994,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         GridCacheTxRecoveryFuture fut = new GridCacheTxRecoveryFuture(
             cctx,
             tx,
-            tx.originatingNodeId(),
+            failedNodeIds,
             tx.transactionNodes());
 
         cctx.mvcc().addFuture(fut, fut.futureId());
@@ -2147,7 +2260,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
                             if (tx.state() == PREPARED)
-                                commitIfPrepared(tx);
+                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
                             else {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
@@ -2155,7 +2268,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                     prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
                                             if (tx.state() == PREPARED)
-                                                commitIfPrepared(tx);
+                                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
                                             else if (tx.setRollbackOnly())
                                                 tx.rollbackAsync();
                                         }
