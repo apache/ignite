@@ -141,7 +141,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test non-closed escape sequence.
      */
-    public void testFailedOnInvalidSequence1() {
+    public void testFailedOnNonClosedEscapeSequence() {
         checkFail("select {fn func1(field1, {fn func2(field2), field3)} from SomeTable;");
     }
 
@@ -150,6 +150,19 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testFailedOnClosingNotOpenedSequence() {
         checkFail("select {fn func1(field1, func2(field2)}, field3)} from SomeTable;");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testFunctionEscapeSequenceWithWhitespaces() throws Exception {
+        check("func1()", "{ fn func1()}");
+
+        check("func1()", "{    fn  func1()}");
+
+        check("func1()", "{ \n fn  func1()}");
+
+        checkFail("{ \n func1()}");
     }
 
     /**

@@ -90,18 +90,18 @@ public class OdbcEscapeUtils {
 
                     if (nested == null)
                         // Found sequence without nesting, process it.
-                        parseRes = parseExpression(text, openPos, curPos - openPos);
+                        parseRes = parseExpression(text, openPos, curPos + 1 - openPos);
                     else {
                         // Special case to process nesting.
                         String res0 = appendNested(text, openPos, curPos + 1, nested);
 
                         nested = null;
 
-                        parseRes = parseExpression(res0, 0, res0.length()-1);
+                        parseRes = parseExpression(res0, 0, res0.length());
                     }
 
                     if (earlyExit)
-                        return new OdbcEscapeParseResult(startPos, curPos - startPos + 1, parseRes);
+                        return new OdbcEscapeParseResult(startPos, curPos + 1 - startPos, parseRes);
                     else
                         res.append(parseRes);
 
@@ -137,23 +137,21 @@ public class OdbcEscapeUtils {
         char firstChar = text.charAt(startPos);
 
         if (firstChar == '{') {
-            char lastChar = text.charAt(startPos + len);
+            char lastChar = text.charAt(startPos + len - 1);
 
             if (lastChar != '}')
                 throw new IgniteException("Failed to parse escape sequence because it is not enclosed: " +
                     substring(text, startPos, len));
 
-            OdbcEscapeType typ = sequenceType(text, startPos, len);
+            OdbcEscapeToken token = parseToken(text, startPos, len);
 
-            switch (typ) {
-                case FN:
-                    return parseScalarExpression(text, startPos, len);
+            switch (token.type()) {
+                case SCALAR_FUNCTION:
+                    return parseScalarExpression(text, startPos, len, token);
 
-                default: {
-                    assert false : "Unknown expression type: " + typ;
-
-                    return null;
-                }
+                default:
+                    throw new IgniteException("Unsupported escape sequence token [text=" +
+                        substring(text, startPos, len) + ", token=" + token.type().body() + ']');
             }
         }
         else {
@@ -161,8 +159,60 @@ public class OdbcEscapeUtils {
             if (startPos == 0 || text.length() == len)
                 return text;
             else
-                return text.substring(startPos, startPos + len);
+                return substring(text, startPos, len);
         }
+    }
+
+    /**
+     * Get escape sequence info.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @return Escape sequence info.
+     */
+    private static OdbcEscapeToken parseToken(String text, int startPos, int len) {
+        assert validSubstring(text, startPos, len);
+        assert text.charAt(startPos) == '{';
+
+        int pos = startPos + 1;
+
+        while (Character.isWhitespace(text.charAt(pos)))
+            pos++;
+
+        OdbcEscapeType curTyp = null;
+        boolean empty = false;
+
+        for (OdbcEscapeType typ : OdbcEscapeType.sortedValues()) {
+            if (text.startsWith(typ.body(), pos)) {
+                pos += typ.body().length();
+
+                if (typ == OdbcEscapeType.LIKE)
+                    throw new IgniteException("LIKE escape sequence is not supported yet.");
+                else {
+                    empty = (startPos + len == pos + 1);
+
+                    if (!empty && typ.delimited()) {
+                        char charAfter = text.charAt(pos);
+
+                        if (!Character.isWhitespace(charAfter))
+                            throw new IgniteException("Unexpected escape sequence token: " +
+                                substring(text, startPos, len));
+                    }
+                }
+
+                curTyp = typ;
+
+                break;
+            }
+        }
+
+        if (curTyp == null)
+            throw new IgniteException("Unsupported escape sequence: " + substring(text, startPos, len));
+
+        if (empty && !curTyp.allowEmpty())
+            throw new IgniteException("Escape sequence cannot be empty: " + substring(text, startPos, len));
+
+        return new OdbcEscapeToken(curTyp, pos - (startPos + 1));
     }
 
     /**
@@ -171,12 +221,16 @@ public class OdbcEscapeUtils {
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
+     * @param token Token.
      * @return Parsed expression.
      */
-    private static String parseScalarExpression(String text, int startPos, int len) {
+    private static String parseScalarExpression(String text, int startPos, int len, OdbcEscapeToken token) {
         assert validSubstring(text, startPos, len);
 
-        return substring(text, startPos + 3, len - 3).trim();
+        int startPos0 = startPos + 1 /* open brace */ + token.length() /* token. */;
+        int len0 = len - 1 /* open brace */ - token.length() /* token */ - 1 /* close brace */;
+
+        return substring(text, startPos0, len0).trim();
     }
 
     /**
@@ -209,23 +263,6 @@ public class OdbcEscapeUtils {
         res.append(text, curPos, endPos);
 
         return res.toString();
-    }
-
-    /**
-     * Get escape sequence type.
-     *
-     * @param text Text.
-     * @param startPos Start position.
-     * @return Escape sequence type.
-     */
-    private static OdbcEscapeType sequenceType(String text, int startPos, int len) {
-        assert validSubstring(text, startPos, len);
-        assert text.charAt(startPos) == '{';
-
-        if (text.startsWith("fn", startPos + 1))
-            return OdbcEscapeType.FN;
-
-        throw new IgniteException("Unsupported escape sequence: " + text.substring(startPos, startPos + len));
     }
 
     /**
