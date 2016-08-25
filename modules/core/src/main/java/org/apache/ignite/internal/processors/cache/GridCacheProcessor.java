@@ -3573,15 +3573,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<String> actualCacheNames = new HashSet<>();
 
         if (cacheNames == null)
-            for (String cacheName : caches.keySet())
+            for (String cacheName : caches.keySet()) {
+                if (CU.isSystemCache(cacheName))
+                    continue;
+
                 actualCacheNames.add(cacheName);
-        else {
+            }
+        else
             actualCacheNames.addAll(cacheNames);
-            actualCacheNames.add(CU.ATOMICS_CACHE_NAME);
-            actualCacheNames.add(CU.MARSH_CACHE_NAME);
-            actualCacheNames.add(CU.SYS_CACHE_HADOOP_MR);
-            actualCacheNames.add(CU.UTILITY_CACHE_NAME);
-        }
 
         BackupFuture backupFut = new BackupFuture(backupId, ctx.localNodeId(), actualCacheNames);
 
