@@ -17,15 +17,6 @@
 
 package org.apache.ignite.logger.java;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
-import org.apache.ignite.logger.LoggerWorkDirectoryAware;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +27,14 @@ import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerWorkDirectoryAware;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.FINE;
 import static java.util.logging.Level.FINEST;
@@ -123,7 +122,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDi
 
     /**
      * Creates new logger.
-     *
      */
     public JavaLogger() {
         this(!isConfigured());
@@ -239,7 +237,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDi
             else {
                 Handler[] handlers = Logger.getLogger("").getHandlers();
 
-                if  (!F.isEmpty(handlers)) {
+                if (!F.isEmpty(handlers)) {
                     for (Handler h : handlers) {
                         if (h instanceof ConsoleHandler)
                             impl.removeHandler(h);
@@ -363,7 +361,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDi
 
         JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
 
-        if (fileHnd == null)
+        if (fileHnd == null || workDir == null)
             return;
 
         try {
@@ -399,7 +397,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDi
 
         JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
 
-        if (fileHnd == null)
+        if (fileHnd == null || nodeId == null)
             return;
 
         try {
@@ -409,7 +407,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDi
             throw new RuntimeException("Failed to enable file handler.", e);
         }
     }
-
 
     /**
      * Returns first found handler of specified class type or {@code null} if that handler isn't configured.

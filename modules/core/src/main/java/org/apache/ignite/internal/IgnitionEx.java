@@ -1818,26 +1818,6 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            // Ensure invariant.
-            // It's a bit dirty - but this is a result of late refactoring
-            // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getGridName());
-
-            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
-
-            myCfg.setNodeId(nodeId);
-
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), cfg.getWorkDirectory(), nodeId);
-
-            assert cfgLog != null;
-
-            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
-
-            // Initialize factory's log.
-            log = cfgLog.getLogger(G.class);
-
-            myCfg.setGridLogger(cfgLog);
-
             // Check Ignite home folder (after log is available).
             if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
@@ -1847,6 +1827,30 @@ public class IgnitionEx {
             }
 
             myCfg.setIgniteHome(ggHome);
+
+            String workDir = U.getValidWorkDir(ggHome, cfg.getWorkDirectory());
+
+            myCfg.setWorkDirectory(workDir);
+
+            // Ensure invariant.
+            // It's a bit dirty - but this is a result of late refactoring
+            // and I don't want to reshuffle a lot of code.
+            assert F.eq(name, cfg.getGridName());
+
+            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
+            myCfg.setNodeId(nodeId);
+
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), workDir, nodeId);
+
+            assert cfgLog != null;
+
+            cfgLog = new GridLoggerProxy(cfgLog, null, name, U.id8(nodeId));
+
+            // Initialize factory's log.
+            log = cfgLog.getLogger(G.class);
+
+            myCfg.setGridLogger(cfgLog);
 
             // Validate segmentation configuration.
             SegmentationPolicy segPlc = cfg.getSegmentationPolicy();

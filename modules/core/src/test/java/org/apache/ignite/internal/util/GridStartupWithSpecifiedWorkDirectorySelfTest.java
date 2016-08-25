@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,12 +65,13 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
      * @param log Grid logger.
      * @return Grid configuration.
      */
-    private IgniteConfiguration getConfiguration(IgniteLogger log) {
+    private IgniteConfiguration getConfiguration(IgniteLogger log) throws IgniteCheckedException {
         // We can't use U.getIgniteHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
-        assert ggHome != null;
+        if(ggHome != null)
+            U.nullifyHomeDirectory();
 
         U.setIgniteHome(null);
 
@@ -82,6 +84,10 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
         disc.setIpFinder(IP_FINDER);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        String workDir = U.getValidWorkDir(null, null);
+
+        cfg.setWorkDirectory(workDir);
 
         cfg.setGridLogger(log);
         cfg.setDiscoverySpi(disc);
@@ -156,7 +162,8 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                     X.println("Stopping grid " + g.cluster().localNode().id());
                 }
             }
-        } finally {
+        }
+        finally {
             U.delete(new File(tmpWorkDir));
         }
     }
