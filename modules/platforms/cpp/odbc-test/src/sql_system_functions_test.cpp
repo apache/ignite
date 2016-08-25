@@ -15,38 +15,17 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   include <windows.h>
-#endif
-
-#include <sql.h>
-#include <sqlext.h>
-
-#include <vector>
-#include <string>
-
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
 #endif
 
 #include <boost/test/unit_test.hpp>
 
-#include "ignite/ignite.h"
-#include "ignite/ignition.h"
-#include "ignite/impl/binary/binary_utils.h"
-
-#include "test_type.h"
-#include "test_utils.h"
 #include "sql_function_test_suite_fixture.h"
 
 using namespace ignite;
-using namespace ignite::cache;
-using namespace ignite::cache::query;
-using namespace ignite::common;
 
 using namespace boost::unit_test;
-
-using ignite::impl::binary::BinaryUtils;
 
 BOOST_FIXTURE_TEST_SUITE(SqlSystemFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
 
