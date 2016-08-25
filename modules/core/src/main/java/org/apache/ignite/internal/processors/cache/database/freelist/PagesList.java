@@ -654,8 +654,9 @@ public abstract class PagesList extends DataStructure {
     /**
      * @param pageId Page ID.
      * @param buf Byte buffer.
+     * @throws IgniteCheckedException If failed.
      */
-    private void recyclePage(long pageId, ByteBuffer buf) {
+    private void recyclePage(long pageId, ByteBuffer buf) throws IgniteCheckedException {
         pageId = PageIdUtils.rotatePageId(pageId);
 
         PageIO.setPageId(buf, pageId);

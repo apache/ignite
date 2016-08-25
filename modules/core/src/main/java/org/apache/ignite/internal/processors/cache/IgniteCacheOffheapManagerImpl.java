@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListOld;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
@@ -105,7 +106,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.shared().database().checkpointReadLock();
 
             try {
-                reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
+                reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
                 freeList = new FreeList(cctx, reuseList);
 
                 metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
@@ -193,9 +194,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             freeList.pages(pagesList);
 
-            reuseList.pages(pagesList);
-
-            reuseList.destroy();
+            // TODO drop the following code
+            ((ReuseListOld)reuseList).pages(pagesList);
+            ((ReuseListOld)reuseList).destroy();
 
             freeList.destroy();
 

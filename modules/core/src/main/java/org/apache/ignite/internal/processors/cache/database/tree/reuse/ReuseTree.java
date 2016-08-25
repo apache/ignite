@@ -43,7 +43,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
      */
     public ReuseTree(
         String name,
-        ReuseList reuseList,
+        ReuseListOld reuseList,
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
