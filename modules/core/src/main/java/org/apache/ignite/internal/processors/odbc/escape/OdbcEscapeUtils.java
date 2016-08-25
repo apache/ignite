@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.odbc.escape;
 
-import org.apache.ignite.IgniteException;
-
 import java.util.LinkedList;
+import java.util.regex.Pattern;
+import org.apache.ignite.IgniteException;
 
 /**
  * ODBC escape sequence parse.
  */
 public class OdbcEscapeUtils {
+
+    /** GUID regexp pattern */
+    private static final Pattern GUID_PATTERN = Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
+
     /**
      * Parse escape sequence.
      *
@@ -149,6 +153,9 @@ public class OdbcEscapeUtils {
                 case SCALAR_FUNCTION:
                     return parseScalarExpression(text, startPos, len, token);
 
+                case GUID:
+                    return parseGuidExpression(text, startPos, len, token);
+
                 default:
                     throw new IgniteException("Unsupported escape sequence token [text=" +
                         substring(text, startPos, len) + ", token=" + token.type().body() + ']');
@@ -231,6 +238,29 @@ public class OdbcEscapeUtils {
         int len0 = len - 1 /* open brace */ - token.length() /* token */ - 1 /* close brace */;
 
         return substring(text, startPos0, len0).trim();
+    }
+
+    /**
+     * Parse concrete expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @param token Token.
+     * @return Parsed expression.
+     */
+    private static String parseGuidExpression(String text, int startPos, int len, OdbcEscapeToken token) {
+        assert validSubstring(text, startPos, len);
+
+        int startPos0 = startPos + 1 /* open brace */ + token.length() /* token. */;
+        int len0 = len - 1 /* open brace */ - token.length() /* token */ - 1 /* close brace */;
+
+        String val = substring(text, startPos0, len0).trim();
+
+        if (!GUID_PATTERN.matcher(val).matches())
+            throw new IgniteException("Invalid guid escape sequence: " + substring(text, startPos, len));
+
+        return "uuid(" + val + ")";
     }
 
     /**

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
 
 /**
  * Scalar function escape sequence parser tests.
@@ -163,6 +162,54 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         check("func1()", "{ \n fn  func1()}");
 
         checkFail("{ \n func1()}");
+    }
+
+    public void testGuidEscapeSequence() {
+        check(
+            "select uuid('12345678-9abc-def0-1234-123456789abc') from SomeTable;",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;"
+        );
+
+        check(
+            "select uuid('12345678-9abc-def0-1234-123456789abc')",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "uuid('12345678-9abc-def0-1234-123456789abc')",
+            "{guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        checkFail("select {guid '1234567-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '1234567-8123-4123-4123-4123456789abc'}");
+
+        checkFail("select {guid '12345678-9abc-defg-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-12345678-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-1234-1234-1234-123456789abcdef'}");
+
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void tesGuidEscapeSequenceWithWhitespaces() throws Exception {
+        check(
+            "uuid('12345678-9abc-def0-1234-123456789abc')",
+            "{ guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "uuid('12345678-9abc-def0-1234-123456789abc')",
+            "{    guid  '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "uuid('12345678-9abc-def0-1234-123456789abc')",
+            "{  \n guid\n'12345678-9abc-def0-1234-123456789abc'}"
+        );
     }
 
     /**
