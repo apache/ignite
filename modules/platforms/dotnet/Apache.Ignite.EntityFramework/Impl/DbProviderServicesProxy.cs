@@ -32,7 +32,8 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbProviderServices _services;
         private readonly TransactionInterceptor _interceptor;
 
-        public DbProviderServicesProxy(DbProviderServices services, TransactionInterceptor txInterceptor, IgniteEntityFrameworkCachingPolicy policy)
+        public DbProviderServicesProxy(DbProviderServices services, TransactionInterceptor txInterceptor, 
+            IgniteEntityFrameworkCachingPolicy policy)
         {
             _services = services;
             _interceptor = txInterceptor;
@@ -40,9 +41,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
 
+        public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
+        {
+            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(prototype));
+        }
+
         protected override DbCommandDefinition CreateDbCommandDefinition(DbProviderManifest providerManifest, DbCommandTree commandTree)
         {
-            return _services.CreateCommandDefinition(providerManifest, commandTree);
+            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree));
         }
 
         protected override string GetDbProviderManifestToken(DbConnection connection)
@@ -58,11 +64,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         public override void RegisterInfoMessageHandler(DbConnection connection, Action<string> handler)
         {
             _services.RegisterInfoMessageHandler(connection, handler);
-        }
-
-        public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
-        {
-            return _services.CreateCommandDefinition(prototype);
         }
 
         protected override DbSpatialDataReader GetDbSpatialDataReader(DbDataReader fromReader, string manifestToken)

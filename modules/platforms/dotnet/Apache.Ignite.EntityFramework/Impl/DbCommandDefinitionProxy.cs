@@ -21,11 +21,11 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Entity.Core.Common;
     using System.Diagnostics;
 
-    public class CommandDefinitionProxy : DbCommandDefinition
+    internal class DbCommandDefinitionProxy : DbCommandDefinition
     {
         private readonly DbCommandDefinition _definition;
 
-        public CommandDefinitionProxy(DbCommandDefinition definition)
+        public DbCommandDefinitionProxy(DbCommandDefinition definition)
         {
             Debug.Assert(definition != null);
 
