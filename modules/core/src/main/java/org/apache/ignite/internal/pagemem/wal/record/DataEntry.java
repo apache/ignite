@@ -76,6 +76,10 @@ public class DataEntry {
         de.partId = txEntry.key().partition();
         de.partCnt = txEntry.updateCounter();
 
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert de.op() == GridCacheOperation.CREATE || de.op() == GridCacheOperation.UPDATE ||
+            de.op() == GridCacheOperation.DELETE : de.op();
+
         return de;
     }
 
@@ -113,6 +117,9 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
+
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**
