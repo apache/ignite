@@ -451,12 +451,14 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
                 if (!F.isEmpty(writeMap)) {
+                    GridCacheReturn ret = null;
+
                     if (!near() && !local() && onePhaseCommit())
-                        if (needReturnValue())
-                            cctx.tm().addCommittedTxReturn(this,
-                                new GridCacheReturnCompletableWrapper(
-                                    new GridCacheReturn(null,
-                                        cctx.localNodeId().equals(otherNodeId()), true, null, true)));
+                        if (needReturnValue()) {
+                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
+
+                            cctx.tm().addCommittedTxReturn(this, new GridCacheReturnCompletableWrapper());
+                        }
                         else
                             cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
 
@@ -497,7 +499,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
-                                        applyTransformClosures(txEntry, false);
+                                        applyTransformClosures(txEntry, false, ret);
 
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
@@ -695,9 +697,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     }
 
                     if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                        GridCacheReturnCompletableWrapper ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+                        GridCacheReturnCompletableWrapper wrapper =
+                            cctx.tm().getCommittedTxReturn(this.nearXidVersion());
 
-                        ret.markInitialized();
+                        wrapper.initialize(ret);
                     }
                 }
 

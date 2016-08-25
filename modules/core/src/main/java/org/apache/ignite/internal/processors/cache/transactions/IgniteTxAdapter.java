@@ -1321,7 +1321,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         if (intercept || !F.isEmpty(e.entryProcessors()))
                             e.cached().unswap(false);
 
-                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false);
+                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
                         GridCacheContext cacheCtx = e.context();
 
@@ -1485,7 +1485,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
-        boolean metrics) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        boolean metrics,
+        GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1495,7 +1496,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (F.isEmpty(txEntry.entryProcessors())) {
             if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion()).raw();
+                assert ret != null;
 
                 ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
             }
@@ -1568,8 +1569,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 if (!near() && !local() && onePhaseCommit() & needReturnValue()) {
-                    GridCacheReturn ret = cctx.tm().getCommittedTxReturn(this.nearXidVersion()).raw();
-
                     assert ret != null;
 
                     if (err != null || procRes != null)

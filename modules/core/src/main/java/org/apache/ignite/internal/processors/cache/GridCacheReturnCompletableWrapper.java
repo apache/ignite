@@ -17,69 +17,66 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Provides initialized GridCacheReturn.
  */
 public class GridCacheReturnCompletableWrapper {
-    /** Initialized flag. */
-    private volatile boolean init;
+    /** Completable wrapper upd. */
+    private static final AtomicReferenceFieldUpdater<GridCacheReturnCompletableWrapper, Object> COMPLETABLE_WRAPPER_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridCacheReturnCompletableWrapper.class, Object.class, "o");
 
-    /** Return value. */
-    private final GridCacheReturn ret;
-
-    /** Future. */
-    private final AtomicReference<GridFutureAdapter<GridCacheReturn>> fut = new AtomicReference<>();
-
-    /**
-     * @param ret Return.
-     */
-    public GridCacheReturnCompletableWrapper(GridCacheReturn ret) {
-        this.ret = ret;
-    }
+    /** */
+    private volatile Object o;
 
     /**
      * Marks as initialized.
+     *
+     * @param ret Return.
      */
-    public void markInitialized() {
-        this.init = true;
+    public void initialize(GridCacheReturn ret) {
+        final Object obj = this.o;
 
-        GridFutureAdapter<GridCacheReturn> fut = this.fut.get();
+        if (obj == null) {
+            boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, null, ret);
 
-        if (fut != null)
-            fut.onDone(ret);
+            if (!res)
+                initialize(ret);
+        }
+        else if (obj instanceof GridFutureAdapter) {
+            ((GridFutureAdapter)obj).onDone(ret);
+
+            boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, obj, ret);
+
+            assert res;
+        }
+        else
+            throw new IllegalStateException("GridCacheReturnCompletableWrapper can't be reinitialized");
     }
 
     /**
      * Allows wait for properly initialized value..
      */
     public IgniteInternalFuture<GridCacheReturn> fut() {
-        GridFutureAdapter<GridCacheReturn> resFut;
-        GridFutureAdapter<GridCacheReturn> oldFut = this.fut.get();
+        final Object obj = this.o;
 
-        if (oldFut != null)
-            resFut = oldFut;
-        else {
-            GridFutureAdapter<GridCacheReturn> newFut = new GridFutureAdapter<>();
+        if (obj instanceof GridCacheReturn)
+            return new GridFinishedFuture<>((GridCacheReturn)obj);
+        else if (obj instanceof IgniteInternalFuture)
+            return (IgniteInternalFuture)obj;
+        else if (obj == null) {
+            boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, null, new GridFutureAdapter<>());
 
-            fut.compareAndSet(null, newFut);
-
-            resFut = fut.get();
+            if (res)
+                return (IgniteInternalFuture)this.o;
+            else
+                return fut();
         }
-
-        if (this.init)
-            resFut.onDone(ret);
-
-        return resFut;
-    }
-
-    /**
-     * Raw return value, possible not properly initialized yet.
-     */
-    public GridCacheReturn raw() {
-        return ret;
+        else
+            throw new IllegalStateException();
     }
 }
