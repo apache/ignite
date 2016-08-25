@@ -168,6 +168,7 @@
     <ClCompile Include="..\..\src\queries_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
+    <ClCompile Include="..\..\src\sql_aggregate_functions_test.cpp" />
     <ClCompile Include="..\..\src\sql_function_test_suite_fixture.cpp" />
     <ClCompile Include="..\..\src\sql_numeric_functions_test.cpp" />
     <ClCompile Include="..\..\src\sql_string_functions_test.cpp" />
