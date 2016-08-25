@@ -25,18 +25,13 @@ import org.apache.ignite.internal.processors.cache.database.DataStructure;
  */
 public interface ReuseList {
     /**
-     * @param pageId Page ID to recycle.
-     */
-    public void addForRecycle(long pageId) throws IgniteCheckedException;
-
-    /**
      * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
     public void addForRecycle(ReuseBag bag) throws IgniteCheckedException;
 
     /**
-     * TODO drop client from signature
+     * TODO drop client and bag from the signature
      *
      * @param client Client.
      * @param bag Reuse bag.

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesLis
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridArrays;
 
@@ -189,13 +188,10 @@ public abstract class PagesList extends DataStructure {
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param reuseList Reuse list.
      * @param wal Write ahead log manager.
      */
-    public PagesList(int cacheId, PageMemory pageMem, ReuseList reuseList, IgniteWriteAheadLogManager wal) {
-        super(cacheId, pageMem, reuseList, wal);
-
-        assert reuseList != null;
+    public PagesList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) {
+        super(cacheId, pageMem, wal);
     }
 
     /**
@@ -274,7 +270,7 @@ public abstract class PagesList extends DataStructure {
      * @param headId Head page ID.
      */
     private void metaAddStripeHead(int bucket, long headId) {
-
+        // TODO
     }
 
     /**
@@ -367,6 +363,38 @@ public abstract class PagesList extends DataStructure {
         assert len != 0;
 
         return len == 1 ? tails[0] : tails[randomInt(len)];
+    }
+
+    /**
+     * @param bucket Bucket index.
+     * @return Number of pages stored in this list.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long storedPagesCount(int bucket) throws IgniteCheckedException {
+        long res = 0;
+
+        long[] tails = getBucket(bucket);
+
+        for (long pageId : tails) {
+            try (Page page = page(pageId)) {
+                ByteBuffer buf = page.getForRead();
+
+                try {
+                    PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
+
+                    int cnt = io.getCount(buf);
+
+                    assert cnt >= 0;
+
+                    res += cnt;
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -466,6 +494,11 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
+    /**
+     * @param dataPageBuf Data page buffer.
+     * @param bucket Bucket index.
+     * @throws IgniteCheckedException If failed.
+     */
     protected final void removeDataPage(ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
         long dataPageId = getPageId(dataPageBuf);
 
@@ -661,7 +694,7 @@ public abstract class PagesList extends DataStructure {
 
         PageIO.setPageId(buf, pageId);
 
-        reuseList.addForRecycle(pageId);
+        reuseList.addForRecycle(new SingletonReuseBag(pageId));
     }
 
     /**
@@ -688,5 +721,34 @@ public abstract class PagesList extends DataStructure {
          */
         protected abstract boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io, X arg, int intArg)
             throws IgniteCheckedException;
+    }
+
+    /**
+     *
+     */
+    private static class SingletonReuseBag implements ReuseBag {
+        /** */
+        long pageId;
+
+        /**
+         * @param pageId Page ID.
+         */
+        public SingletonReuseBag(long pageId) {
+            this.pageId = pageId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addFreePage(long pageId) {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long pollFreePage() {
+            long res = pageId;
+
+            pageId = 0L;
+
+            return res;
+        }
     }
 }

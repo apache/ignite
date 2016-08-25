@@ -82,7 +82,7 @@ public class PagesListNodeIO extends PageIO {
         buf.putLong(PREV_PAGE_ID_OFF, prevId);
     }
 
-    private int getCount(ByteBuffer buf) {
+    public int getCount(ByteBuffer buf) {
         return buf.getShort(CNT_OFF);
     }
 

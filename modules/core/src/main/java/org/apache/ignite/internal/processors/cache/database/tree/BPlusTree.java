@@ -589,7 +589,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, reuseList, wal);
+        super(cacheId, pageMem, wal);
 
         assert !F.isEmpty(name);
 
@@ -605,6 +605,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         this.leafIos = leafIos;
         this.metaPageId = metaPageId;
         this.name = name;
+        this.reuseList = reuseList;
     }
 
     /**

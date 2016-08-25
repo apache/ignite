@@ -45,25 +45,22 @@ public abstract class DataStructure {
     protected final IgniteWriteAheadLogManager wal;
 
     /** */
-    protected final ReuseList reuseList;
+    protected ReuseList reuseList;
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param reuseList Reuse list.
      * @param wal Write ahead log manager.
      */
     public DataStructure(
         int cacheId,
         PageMemory pageMem,
-        ReuseList reuseList,
         IgniteWriteAheadLogManager wal
     ) {
         assert pageMem != null;
 
         this.cacheId = cacheId;
         this.pageMem = pageMem;
-        this.reuseList = reuseList;
         this.wal = wal;
     }
 

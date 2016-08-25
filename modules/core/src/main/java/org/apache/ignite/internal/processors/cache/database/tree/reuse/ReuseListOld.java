@@ -125,13 +125,6 @@ public final class ReuseListOld implements ReuseList {
     }
 
     /**
-     * @param pageId Page ID to recycle.
-     */
-    @Override public void addForRecycle(long pageId) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * @param collector List to add pages.
      * @throws IgniteCheckedException If failed.
      */
