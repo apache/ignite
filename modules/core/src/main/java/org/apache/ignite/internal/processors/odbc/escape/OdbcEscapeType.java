@@ -22,5 +22,7 @@ package org.apache.ignite.internal.processors.odbc.escape;
  */
 public enum OdbcEscapeType {
     /** Scalar function. */
-    FN
+    FN,
+    /** Guid. */
+    GUID
 }

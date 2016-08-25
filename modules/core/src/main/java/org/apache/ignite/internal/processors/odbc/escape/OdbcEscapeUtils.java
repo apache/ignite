@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.odbc.escape;
 
-import org.apache.ignite.IgniteException;
-
 import java.util.LinkedList;
+import java.util.regex.Pattern;
+import org.apache.ignite.IgniteException;
 
 /**
  * ODBC escape sequence parse.
  */
 public class OdbcEscapeUtils {
+
+    public static final Pattern GUID_PATTERN = Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'");
+
     /**
      * Parse escape sequence.
      *
@@ -97,7 +100,7 @@ public class OdbcEscapeUtils {
 
                         nested = null;
 
-                        parseRes = parseExpression(res0, 0, res0.length()-1);
+                        parseRes = parseExpression(res0, 0, res0.length() - 1);
                     }
 
                     if (earlyExit)
@@ -148,6 +151,8 @@ public class OdbcEscapeUtils {
             switch (typ) {
                 case FN:
                     return parseScalarExpression(text, startPos, len);
+                case GUID:
+                    return parseGuidExpression(text, startPos, len);
 
                 default: {
                     assert false : "Unknown expression type: " + typ;
@@ -177,6 +182,41 @@ public class OdbcEscapeUtils {
         assert validSubstring(text, startPos, len);
 
         return substring(text, startPos + 3, len - 3).trim();
+    }
+
+    /**
+     * Parse concrete expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseGuidExpression(String text, int startPos, int len) {
+        assert validSubstring(text, startPos, len);
+
+        String value = substring(text, startPos + 5, len - 5).trim();
+
+        if (!validGuid(value))
+            throw new IgniteException("Failed to parse GUID escape sequence: " + substring(text, startPos, len));
+
+        StringBuilder sb = new StringBuilder(34).append("0x");
+
+        char ch;
+
+        int i = 1;
+
+        while ((ch = value.charAt(i)) != '\'') {
+            if (ch != '-')
+                sb.append(ch);
+            i++;
+        }
+
+        return sb.toString();
+    }
+
+    private static boolean validGuid(String value) {
+        return GUID_PATTERN.matcher(value).matches();
     }
 
     /**
@@ -224,6 +264,8 @@ public class OdbcEscapeUtils {
 
         if (text.startsWith("fn", startPos + 1))
             return OdbcEscapeType.FN;
+        else if (text.startsWith("guid", startPos + 1))
+            return OdbcEscapeType.GUID;
 
         throw new IgniteException("Unsupported escape sequence: " + text.substring(startPos, startPos + len));
     }
