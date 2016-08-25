@@ -31,18 +31,24 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
 
     /**
      * @param kernalCtx Kernal context.
+     * @param cacheName Cache name.
      * @param binaryEnabled Binary enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.
      */
     public CacheObjectBinaryContext(GridKernalContext kernalCtx,
+        String cacheName,
         boolean cpyOnGet,
         boolean storeVal,
         boolean binaryEnabled,
         boolean depEnabled) {
-        super(kernalCtx, binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
-            new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
+        super(kernalCtx,
+            cacheName,
+            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper() : new GridCacheDefaultAffinityKeyMapper(),
+            cpyOnGet,
+            storeVal,
+            depEnabled);
 
         this.binaryEnabled = binaryEnabled;
     }

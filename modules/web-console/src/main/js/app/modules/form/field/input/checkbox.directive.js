@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import template from './checkbox.jade!';
+import templateUrl from './checkbox.jade';
 
-export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];
@@ -40,9 +40,8 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (gu
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
     };
 
@@ -59,7 +58,7 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (gu
             value: '=ngModel'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['^form', '?^igniteFormField']

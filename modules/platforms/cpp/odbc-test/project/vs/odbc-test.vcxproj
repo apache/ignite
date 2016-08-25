@@ -157,7 +157,6 @@
     <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp" />
-    <ClCompile Include="..\..\..\odbc\src\decimal.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
@@ -169,13 +168,16 @@
     <ClCompile Include="..\..\src\queries_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
+    <ClCompile Include="..\..\src\sql_string_functions_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />
+    <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

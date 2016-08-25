@@ -251,7 +251,7 @@ public class HibernateL2CacheExample {
             SecondLevelCacheStatistics stats =
                 sesFactory.getStatistics().getSecondLevelCacheStatistics(entityName);
 
-            System.out.println("\t\tL2 cache entries: " + stats.getEntries());
+            System.out.println("\t\tPuts: " + stats.getPutCount());
             System.out.println("\t\tHits: " + stats.getHitCount());
             System.out.println("\t\tMisses: " + stats.getMissCount());
         }
