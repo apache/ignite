@@ -17,17 +17,19 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Data.Entity;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
     /// Integration test with temporary SQL CE database.
     /// </summary>
-    public class EntityFrameworkSecondLevelCacheTest
+    public class EntityFrameworkSecondLevelCacheTest : IEventListener<CacheEvent>
     {
         /** */
         private static readonly string TempFile = Path.GetTempFileName();
@@ -35,11 +37,22 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         /** */
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
+        /** */
+        private readonly ConcurrentStack<CacheEvent> _events;
+
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
             // Start Ignite.
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            // Subscribe to cache events.
+            var events = ignite.GetEvents();
+            events.EnableLocal(EventType.CacheObjectPut, EventType.CacheObjectRead, EventType.CacheObjectExpired);
+            events.LocalListen(this);
 
             // Create SQL CE database in a temp file.
             using (var context = new BloggingContext(ConnectionString))
@@ -49,6 +62,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -79,6 +95,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(2, context.SaveChanges());
 
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+
+                // TODO: How do we check if there was a cache hit?
             }
         }
 
@@ -120,6 +138,13 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public int BlogId { get; set; }
             public virtual Blog Blog { get; set; }
+        }
+
+        public bool Invoke(CacheEvent evt)
+        {
+            _events.Push(evt);
+
+            return true;
         }
     }
 }
