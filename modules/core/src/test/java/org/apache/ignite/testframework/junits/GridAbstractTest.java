@@ -1326,6 +1326,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setConnectorConfiguration(null);
 
+        cfg.setWorkDirectory(rsrcs.getWorkDir());
+
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));

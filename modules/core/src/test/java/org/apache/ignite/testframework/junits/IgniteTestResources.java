@@ -221,6 +221,13 @@ public class IgniteTestResources {
     }
 
     /**
+     * @return Ignite home.
+     */
+    public String getWorkDir() {
+        return workDir;
+    }
+
+    /**
      * @return MBean server.
      */
     public MBeanServer getMBeanServer() {
