@@ -25,11 +25,14 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using NUnit.Framework;
 
     /// <summary>
-    /// Integration test with in-memory database.
+    /// Integration test with temporary SQL CE database.
     /// </summary>
     public class EntityFrameworkSecondLevelCacheTest
     {
+        /** */
         private static readonly string TempFile = Path.GetTempFileName();
+        
+        /** */
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
         [TestFixtureSetUp]
