@@ -297,18 +297,31 @@ public class GridSqlQuerySplitter {
     /** */
     private static GridCacheTwoStepQuery splitDelete(GridSqlDelete del, Object[] params, boolean collocatedGrpBy,
         boolean distributedJoins) {
+        GridSqlSelect mapQry = mapQueryForDelete(del);
+
+        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
+        res.initialStatement(del);
+
+        return res;
+    }
+
+    /**
+     *
+     * @param update
+     * @return
+     */
+    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
 
-        GridSqlTable tbl = null;
+        Set<GridSqlTable> tbls = new HashSet<>();
 
-        if (del.from() instanceof GridSqlTable)
-            tbl = (GridSqlTable) del.from();
-        else if (del.from() instanceof GridSqlAlias)
-            tbl = del.from().child(0);
+        collectAllGridTablesInTarget(del.from(), tbls);
 
-        A.notNull(tbl, "Failed to determine target table for DELETE");
+        A.ensure(tbls.size() == 1, "Failed to determine target table for DELETE");
+
+        GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
@@ -329,26 +342,37 @@ public class GridSqlQuerySplitter {
         mapQry.where(del.where());
         mapQry.limit(del.limit());
 
-        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.initialStatement(del);
-
-        return res;
+        return mapQry;
     }
 
     /** */
     private static GridCacheTwoStepQuery splitUpdate(GridSqlUpdate update, Object[] params, boolean collocatedGrpBy,
         boolean distributedJoins) {
+        GridSqlSelect mapQry = mapQueryForUpdate(update);
+
+        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
+        res.initialStatement(update);
+
+        return res;
+    }
+
+    /**
+     *
+     * @param update
+     * @return
+     */
+    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
-        GridSqlTable tbl = null;
 
-        if (update.target() instanceof GridSqlTable)
-            tbl = (GridSqlTable) update.target();
-        else if (update.target() instanceof GridSqlAlias)
-            tbl = update.target().child(0);
+        Set<GridSqlTable> tbls = new HashSet<>();
 
-        A.notNull(tbl, "Failed to determine target table for UPDATE");
+        collectAllGridTablesInTarget(update.target(), tbls);
+
+        A.ensure(tbls.size() == 1, "Failed to determine target table for DELETE");
+
+        GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
@@ -379,10 +403,7 @@ public class GridSqlQuerySplitter {
         mapQry.where(update.where());
         mapQry.limit(update.limit());
 
-        GridCacheTwoStepQuery res = splitQuery(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.initialStatement(update);
-
-        return res;
+        return mapQry;
     }
 
     /**
@@ -681,6 +702,21 @@ public class GridSqlQuerySplitter {
                 }
                 else if (el instanceof GridSqlSubquery)
                     collectAllTables(((GridSqlSubquery)el).select(), schemas, tbls);
+
+                return false;
+            }
+        });
+    }
+
+    /**
+     * @param from From element.
+     * @param tbls Tables.
+     */
+    public static void collectAllGridTablesInTarget(GridSqlElement from, final Set<GridSqlTable> tbls) {
+        findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
+            @Override public boolean apply(GridSqlElement el) {
+                if (el instanceof GridSqlTable)
+                    tbls.add((GridSqlTable)el);
 
                 return false;
             }

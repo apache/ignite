@@ -89,6 +89,20 @@ public interface GridQueryIndexing {
         Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
 
     /**
+     * Performs SQL DML operation (generally used by JDBC drivers).
+     *
+     * @param cctx Space name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param filter Space name and key filter.
+     * @param enforceJoinOrder Enforce join order of tables in the query.
+     * @return Query result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridQueryFieldsResult updateLocalSqlFields(GridCacheContext cctx, String qry,
+                                                      Object[] params, IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
+
+    /**
      * Executes regular query.
      *
      * @param spaceName Space name.

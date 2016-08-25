@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.util.GridSerializableIterator;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1369,7 +1369,7 @@ public class GridReduceQueryExecutor {
     /**
      * Trivial iterator to return number of items affected by modifying query operation.
      */
-    public static class UpdateResIter implements GridSerializableIterator<List<?>> {
+    public static class UpdateResIter extends GridCloseableIteratorAdapter<List<?>> {
         /** */
         private final int res;
 
@@ -1382,23 +1382,18 @@ public class GridReduceQueryExecutor {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
             return !used;
         }
 
         /** {@inheritDoc} */
-        @Override public List<?> next() {
+        @Override protected List<?> onNext() throws IgniteCheckedException {
             if (!used) {
                 used = true;
                 return Collections.singletonList(res);
             }
 
             throw new NoSuchElementException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            throw new UnsupportedOperationException();
         }
     }
 }

@@ -886,9 +886,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      * @param qry Query.
+     * @param isQry
      * @return Iterator.
      */
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry,
+                                                 final boolean isQry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -901,8 +903,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String sql = qry.getSql();
                     Object[] args = qry.getArgs();
 
-                    final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder());
+                    final GridQueryFieldsResult res = isQry ?
+                        idx.queryLocalSqlFields(space, sql, F.asList(args), idx.backupFilter(requestTopVer.get(), null),
+                            qry.isEnforceJoinOrder()) :
+                        idx.updateLocalSqlFields(cctx, sql, args, idx.backupFilter(requestTopVer.get(), null),
+                            qry.isEnforceJoinOrder());
 
                     sendQueryExecutedEvent(sql, args);
 
