@@ -18,6 +18,8 @@
 namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
     using System.Diagnostics;
@@ -101,15 +103,31 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            var parameters = string.Join("|",
-                Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
+            // TODO: Check policy
 
-            var cacheKey = string.Format("READ-{0}-{1}-{2}", Connection.Database, CommandText, parameters);
+            var cacheKey = GetKey();
 
             Console.WriteLine(cacheKey);
 
-            // TODO: Caching
-            return _command.ExecuteReader(behavior);
+            var reader = _command.ExecuteReader(behavior);
+
+            if (reader.RecordsAffected > 0)
+                return reader;  // Queries that modify anything are never cached.
+
+
+            var res = new DataReaderResult(reader);
+
+            // TODO: Cache result
+
+            return res.CreateReader();
+        }
+
+        private string GetKey()
+        {
+            var parameters = string.Join("|",
+                Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
+
+            return string.Format("{0}:{1}|{2}", Connection.Database, CommandText, parameters);
         }
 
 #if !NET40

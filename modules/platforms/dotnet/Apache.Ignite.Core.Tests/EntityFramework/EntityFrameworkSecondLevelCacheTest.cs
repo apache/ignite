@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                // TODO: How do we check if there was a cache hit?
+                // TODO: How do we check if there was a cache hit? Using events!
             }
         }
 
