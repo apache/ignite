@@ -157,6 +157,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        System.setProperty("GRIDGAIN_DB_WAL_MODE", "LOG_ONLY");
+
         long seed = 1464583813940L; // System.currentTimeMillis();
 
         info("Seed: " + seed + "L");
@@ -185,7 +187,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     };
 
     public void testGradualRandomPutAllRemoveAll() {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         IgniteCache<Integer, DbValue> cache = ig.cache(null);
@@ -709,7 +710,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testPutGetRandomUniqueMultipleObjects() throws Exception {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         final IgniteCache<Integer, DbValue> cache = ig.cache(null);
@@ -825,7 +825,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testPutGetRandomNonUniqueMultipleObjects() throws Exception {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         final IgniteCache<Integer, DbValue> cache = ig.cache(null);
@@ -874,7 +873,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testPutGetRemoveMultipleForward() throws Exception {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         final IgniteCache<Integer, DbValue> cache = ig.cache(null);
@@ -969,7 +967,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     }
 
     public void testPutGetRemoveMultipleBackward() throws Exception {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         final IgniteCache<Integer, DbValue> cache = ig.cache(null);
@@ -1061,7 +1058,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testObjectKey() throws Exception {
-        fail();//TODO
         IgniteEx ig = grid(0);
 
         final IgniteCache<DbKey, DbValue> cache = ig.cache("non-primitive");
