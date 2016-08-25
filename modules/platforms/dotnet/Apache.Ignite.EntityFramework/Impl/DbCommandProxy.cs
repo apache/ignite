@@ -124,6 +124,10 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         private string GetKey()
         {
+            if (string.IsNullOrEmpty(CommandText))
+                throw new NotSupportedException("Ignite Entity Framework Caching " +
+                                                "requires non-empty DbCommand.CommandText.");
+
             var parameters = string.Join("|",
                 Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
 
