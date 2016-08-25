@@ -20,7 +20,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Collections.Generic;
     using System.Data.Common;
     using System.Data.Entity;
+    using System.Data.Entity.Infrastructure;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
@@ -47,8 +49,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void Test()
         {
-            var conn = Effort.DbConnectionFactory.CreateTransient();
-            var context = new BloggingContext(conn);
+            var context = CreateTempDatabase();
             context.Database.Log = s => Debug.WriteLine(s);
 
             Assert.IsEmpty(context.Blogs);
@@ -69,7 +70,25 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
         }
 
-        public class MyDbConfiguration : IgniteDbConfiguration
+        private static BloggingContext CreateTempDatabase()
+        {
+            // TODO: Delete this file afterwards.
+            var filePath = Path.GetTempFileName();
+            File.Delete(filePath);
+            var connectionString = "Datasource = " + filePath;
+
+#pragma warning disable 618
+            //Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+#pragma warning restore 618
+
+            var context = new BloggingContext(connectionString);
+
+            context.Database.Create();
+
+            return context;
+        }
+
+        private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
             {
@@ -78,10 +97,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
 
         [DbConfigurationType(typeof(MyDbConfiguration))]
-        public class BloggingContext : DbContext
+        private class BloggingContext : DbContext
         {
-            internal BloggingContext(DbConnection connection)
-                : base(connection, true)
+            public BloggingContext(string nameOrConnectionString) : base(nameOrConnectionString)
             {
                 // No-op.
             }
@@ -91,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             public virtual DbSet<Post> Posts { get; set; }
         }
 
-        public class Blog
+        private class Blog
         {
             public int BlogId { get; set; }
             public string Name { get; set; }
@@ -100,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             public virtual List<Post> Posts { get; set; }
         }
 
-        public class Post
+        private class Post
         {
             public int PostId { get; set; }
             public string Title { get; set; }
