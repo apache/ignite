@@ -282,7 +282,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the fields query.
         /// </summary>
-        private SqlFieldsQuery GetFieldsQuery(string text, object[] args)
+        internal SqlFieldsQuery GetFieldsQuery(string text, object[] args)
         {
             return new SqlFieldsQuery(text, _local, args)
             {
