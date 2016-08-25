@@ -22,5 +22,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     /// </summary>
     public class EntityFrameworkSecondLevelCacheTest
     {
+        // https://www.stevefenton.co.uk/2015/11/using-an-in-memory-database-as-a-test-double-with-entity-framework/
     }
 }
