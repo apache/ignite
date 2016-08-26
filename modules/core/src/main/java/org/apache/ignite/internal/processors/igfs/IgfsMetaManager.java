@@ -140,7 +140,7 @@ public class IgfsMetaManager extends IgfsManager {
     private GridEventStorageManager evts;
 
     /** Local node. */
-    private ClusterNode locNode;
+    private volatile ClusterNode locNode;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -235,12 +235,13 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Check whether remote task execution is needed.
+     * Check whether remote task execution is needed for read-only operation.
      *
      * @return {@code True} if remote task execution is needed.
      */
     boolean isReadRemote() {
-        return isRunRemote(false, IgfsUtils.ROOT_ID);
+        return client ||
+            cfg.isColocateMetadata() && !metaCache.affinity().isPrimaryOrBackup(localNode(), IgfsUtils.ROOT_ID);
     }
 
     /**
@@ -249,49 +250,19 @@ public class IgfsMetaManager extends IgfsManager {
      * @return {@code True} if remote task execution is needed.
      */
     boolean isModifyRemote() {
-        return isRunRemote(true, IgfsUtils.ROOT_ID);
+        return client || cfg.isColocateMetadata() && !metaCache.affinity().isPrimary(localNode(), IgfsUtils.ROOT_ID);
     }
 
     /**
-     * Check whether remote task execution is needed.
+     * Check whether remote task execution is needed for the given ID.
      *
      * @param fileId Identifier of the modified file.
      * @return {@code True} if remote task execution is needed.
      */
-    boolean isModifyRemote(IgniteUuid fileId) {
-        return isRunRemote(true, fileId);
-    }
+    private boolean isModifyRemote(IgniteUuid fileId) {
+        assert fileId != null;
 
-    /**
-     * Check whether remote task execution is needed.
-     *
-     * @param path Modified path.
-     * @return {@code True} if remote task execution is needed.
-     */
-    boolean isModifyRemote(IgfsPath path) {
-        IgniteUuid fileId = null;
-        try {
-            fileId = fileId(path);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Cannot get file ID for specified path", e);
-        }
-        return isRunRemote(false, fileId == null ? IgfsUtils.ROOT_ID : fileId);
-    }
-
-    /**
-     * Check whether remote task execution is needed.
-     *
-     * @param mutate {@code true} if the operation update anything.
-     * @param affKey Affinity key,
-     * @return {@code True} if remote task execution is needed.
-     */
-    private boolean isRunRemote(boolean mutate, IgniteUuid affKey) {
-        return client
-            || !mutate && cfg.isColocateMetadata()
-                && !metaCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), affKey)
-            || mutate && (IgfsUtils.ROOT_ID == affKey || cfg.isColocateMetadata())
-                && !metaCache.affinity().isPrimary(igfsCtx.kernalContext().discovery().localNode(), affKey);
+        return client || !metaCache.affinity().isPrimary(localNode(), fileId);
     }
 
     /**
@@ -301,12 +272,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result.
      */
     <T> T runRemote(IgfsClientAbstractCallable<T> task) {
-        try {
-            return runRemote(IgfsUtils.ROOT_ID, task);
-        }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
-        }
+        return runRemote(IgfsUtils.ROOT_ID, task);
     }
 
     /**
@@ -348,6 +314,20 @@ public class IgfsMetaManager extends IgfsManager {
         assert remoteCompute0 != null;
 
         return remoteCompute0;
+    }
+
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    private ClusterNode localNode() {
+        ClusterNode locNode0 = locNode;
+
+        if (locNode0 == null)
+            locNode0 = igfsCtx.kernalContext().discovery().localNode();
+
+        return locNode0;
     }
 
     /**
@@ -686,7 +666,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (del)
             return IgfsUtils.DELETE_LOCK_ID;
 
-        return IgniteUuid.fromUuid(locNode.id());
+        return IgniteUuid.fromUuid(localNode().id());
     }
 
     /**
@@ -1949,8 +1929,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgfsPath evtPath = parent0;
 
                 while (!parentPath.equals(evtPath)) {
-                    pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
-                        EventType.EVT_IGFS_DIR_CREATED));
+                    pendingEvts.addFirst(new IgfsEvent(evtPath, localNode(), EventType.EVT_IGFS_DIR_CREATED));
 
                     evtPath = evtPath.parent();
 
@@ -2007,7 +1986,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Record CREATE event if needed.
         if (oldId == null && evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
-            pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
+            pendingEvts.add(new IgfsEvent(path, localNode(), EventType.EVT_IGFS_FILE_CREATED));
 
         return new IgfsCreateResult(newInfo, out);
     }
@@ -2084,7 +2063,7 @@ public class IgfsMetaManager extends IgfsManager {
                             }
 
                             if (evts.isRecordable(EventType.EVT_IGFS_FILE_OPENED_WRITE))
-                                pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_OPENED_WRITE));
+                                pendingEvts.add(new IgfsEvent(path, localNode(), EventType.EVT_IGFS_FILE_OPENED_WRITE));
 
                             return new IgfsCreateResult(lockedInfo, outT1.get());
                         }
@@ -2310,7 +2289,8 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsPath evtPath = path;
 
                             while (!parentPath.equals(evtPath)) {
-                                pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EventType.EVT_IGFS_DIR_CREATED));
+                                pendingEvts.addFirst(new IgfsEvent(evtPath, localNode(),
+                                    EventType.EVT_IGFS_DIR_CREATED));
 
                                 evtPath = evtPath.parent();
 
@@ -2407,11 +2387,11 @@ public class IgfsMetaManager extends IgfsManager {
                                 pendingEvts.add(new IgfsEvent(
                                     src,
                                     destInfo == null ? dest : new IgfsPath(dest, src.name()),
-                                    locNode,
+                                    localNode(),
                                     EventType.EVT_IGFS_FILE_RENAMED));
                         }
                         else if (evts.isRecordable(EventType.EVT_IGFS_DIR_RENAMED))
-                            pendingEvts.add(new IgfsEvent(src, dest, locNode, EventType.EVT_IGFS_DIR_RENAMED));
+                            pendingEvts.add(new IgfsEvent(src, dest, localNode(), EventType.EVT_IGFS_DIR_RENAMED));
 
                         return true;
                     }
@@ -2767,7 +2747,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     strict,
                                     created);
 
-                                assert strict && info != null || !strict;
+                                assert !strict || info != null;
 
                                 if (info != null)
                                     infos.put(path, info);
@@ -2776,7 +2756,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     if (parentPath.equals(firstParentPath))
                                         infos.put(firstParentPath, idToInfo.get(pathToId.get(firstParentPath)));
                                     else {
-                                        assert strict && created.get(parentPath) != null || !strict;
+                                        assert !strict || created.get(parentPath) != null;
 
                                         if (created.get(parentPath) != null)
                                             infos.put(parentPath, created.get(parentPath));

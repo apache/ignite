@@ -608,7 +608,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(props, "props");
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
-        if (meta.isModifyRemote(path))
+        if (meta.isModifyRemote())
             return meta.runRemote(new IgfsClientUpdateCallable(cfg.getName(), path, props));
 
         return safeOp(new Callable<IgfsFile>() {
@@ -1136,7 +1136,7 @@ public final class IgfsImpl implements IgfsEx {
         if (accessTime == -1 && modificationTime == -1)
             return;
 
-        if (meta.isModifyRemote(path)) {
+        if (meta.isModifyRemote()) {
             meta.runRemote(new IgfsClientSetTimesCallable(cfg.getName(), path, accessTime, modificationTime));
 
             return;
