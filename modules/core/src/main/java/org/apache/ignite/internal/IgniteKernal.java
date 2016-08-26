@@ -97,7 +97,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -383,7 +382,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final IgniteEvents events(ClusterGroup grp) {
-        return ((ClusterGroupAdapter) grp).events();
+        return ((ClusterGroupAdapter)grp).events();
     }
 
     /** {@inheritDoc} */
@@ -671,8 +670,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService restExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -1564,7 +1562,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgr.start();
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to start manager: " + mgr , e);
+            U.error(log, "Failed to start manager: " + mgr, e);
 
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
@@ -1677,15 +1675,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Font name "Small Slant"
             if (log.isInfoEnabled()) {
                 log.info(NL + NL +
-                        ">>>    __________  ________________  " + NL +
-                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
-                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                        ">>> " + NL +
-                        ">>> " + ver + NL +
-                        ">>> " + COPYRIGHT + NL +
-                        ">>> " + NL +
-                        ">>> Ignite documentation: " + "http://" + SITE + NL
+                    ">>>    __________  ________________  " + NL +
+                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                    ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                    ">>> " + NL +
+                    ">>> " + ver + NL +
+                    ">>> " + COPYRIGHT + NL +
+                    ">>> " + NL +
+                    ">>> Ignite documentation: " + "http://" + SITE + NL
                 );
             }
 
@@ -1899,7 +1897,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.
-            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
                 GridComponent comp = it.previous();
 
                 try {
@@ -1976,7 +1974,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 errOnStop = false;
 
             // Stop components in reverse order.
-            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
                 GridComponent comp = it.previous();
 
                 try {
@@ -2229,11 +2227,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
                 "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
 
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()){
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
             if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
                 throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
                     "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
-                    "[cache="+ccfg.getName()+"]");
+                    "[cache=" + ccfg.getName() + "]");
         }
     }
 
@@ -2843,7 +2841,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
+        IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
         guard();
 
         try {
@@ -2870,7 +2869,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
-        try{
+        try {
             IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
@@ -2976,15 +2975,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
-        try {
-            return ctx.cache().startBackup(cacheNames);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         guard();
 
@@ -3017,8 +3007,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create) {
         guard();
 
         try {
@@ -3111,8 +3100,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg) {
         guard();
 
         try {
@@ -3128,8 +3116,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg) {
         guard();
 
         try {
@@ -3183,7 +3170,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         List<GridComponent> comps = ctx.components();
 
-        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
             GridComponent comp = it.previous();
 
             try {

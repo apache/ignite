@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.backup.BackupMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
@@ -117,12 +116,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return null;
     }
 
-    public void submitBackupFuture(BackupFuture backupFuture) {
-        backupFuture.initFut().onDone(new IgniteCheckedException("Backup is not supported"));
-        backupFuture.onDone(new IgniteCheckedException("Backup is not supported"));
-        // No-op.
-    }
-
     /**
      * @param discoEvt Before exchange for the given discovery event.
      */
@@ -150,7 +143,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Backup init future or {@code null} if backup is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startBackup(BackupMessage backupMsg, ClusterNode initiator)
+    @Nullable public IgniteInternalFuture startLocalBackup(BackupMessage backupMsg, ClusterNode initiator)
         throws IgniteCheckedException {
         return null;
     }

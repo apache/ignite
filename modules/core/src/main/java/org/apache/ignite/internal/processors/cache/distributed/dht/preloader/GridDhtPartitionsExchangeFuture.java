@@ -503,7 +503,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             IgniteInternalFuture backupInitFut = null;
 
             if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                backupInitFut = cctx.database().startBackup(backupMsg, discoEvt.eventNode());
+                backupInitFut = cctx.database().startLocalBackup(backupMsg, discoEvt.eventNode());
             }
 
             try {
