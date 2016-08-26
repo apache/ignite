@@ -740,8 +740,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     }
 
     /**
+     * Check root property update.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
         final IgfsPath rootPath = new IgfsPath("/");

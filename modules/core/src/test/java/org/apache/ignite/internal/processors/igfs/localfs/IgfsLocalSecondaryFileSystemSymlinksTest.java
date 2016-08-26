@@ -41,21 +41,27 @@ public class IgfsLocalSecondaryFileSystemSymlinksTest extends IgfsAbstractBaseSe
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
+
     /** */
     private static final String FS_EXT_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "ext";
 
-    private File dirLinkDest = new File(FS_EXT_DIR + File.separatorChar + "extdir");
+    /** */
+    private final File dirLinkDest = new File(FS_EXT_DIR + File.separatorChar + "extdir");
 
-    private File fileLinkDest = new File(FS_EXT_DIR + File.separatorChar + "extdir" + File.separatorChar + "filedest");
+    /** */
+    private final File fileLinkDest =
+        new File(FS_EXT_DIR + File.separatorChar + "extdir" + File.separatorChar + "filedest");
 
-    private File dirLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "dir");
+    /** */
+    private final File dirLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "dir");
 
-    private File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
+    /** */
+    private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
 
 
     /**
-     *
+     * Constructor.
      */
     public IgfsLocalSecondaryFileSystemSymlinksTest() {
         super(IgfsMode.DUAL_SYNC);
@@ -131,6 +137,7 @@ public class IgfsLocalSecondaryFileSystemSymlinksTest extends IgfsAbstractBaseSe
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testListPathForSymlink() throws Exception {
         createSymlinks();
 

@@ -477,7 +477,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
 
         if (files != null) {
             for (IgfsPath file : files) {
-                try (OutputStream os = igfs.create(file, true)) {
+                try (OutputStream ignored = igfs.create(file, true)) {
                     // No-op.
                 }
 
