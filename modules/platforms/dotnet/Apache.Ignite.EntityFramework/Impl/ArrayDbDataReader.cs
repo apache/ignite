@@ -108,10 +108,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var bytes = (byte[]) GetValue(ordinal);
 
-            // TODO: Bounds check. See the docs!
-            Array.Copy(bytes, dataOffset, buffer, bufferOffset, length);
+            var size = Math.Min(buffer.Length - bufferOffset, bytes.Length - dataOffset);
 
-            return bytes.Length;
+            Array.Copy(bytes, dataOffset, buffer, bufferOffset, size);
+
+            return size;
         }
 
         public override char GetChar(int ordinal)
