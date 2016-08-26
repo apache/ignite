@@ -55,8 +55,8 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setMetaCacheConfig(cacheConfiguration(null));
-        igfsCfg.setDataCacheConfig(cacheConfiguration(null));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(null));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(null));
 
         cfg.setFileSystemConfiguration(igfsCfg);
 

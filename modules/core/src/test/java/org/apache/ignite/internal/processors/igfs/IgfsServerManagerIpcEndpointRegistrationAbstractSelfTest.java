@@ -175,8 +175,8 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         metaCacheCfg.setCacheMode(CacheMode.REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        igfsConfiguration.setMetaCacheConfig(metaCacheCfg);
-        igfsConfiguration.setDataCacheConfig(dataCacheCfg);
+        igfsConfiguration.setMetaCacheConfiguration(metaCacheCfg);
+        igfsConfiguration.setDataCacheConfiguration(dataCacheCfg);
 
         if (endPntCfg != null)
             igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);

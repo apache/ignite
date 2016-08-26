@@ -279,8 +279,8 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        igfsCfg.setDataCacheConfig(dataCacheCfg);
-        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -392,8 +392,8 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
-        cfg.setDataCacheConfig(dataCacheConfiguration());
-        cfg.setMetaCacheConfig(metaCacheConfiguration());
+        cfg.setDataCacheConfiguration(dataCacheConfiguration());
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration());
 
         return cfg;
     }

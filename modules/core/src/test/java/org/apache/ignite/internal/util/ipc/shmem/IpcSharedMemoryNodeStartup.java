@@ -80,8 +80,8 @@ public class IpcSharedMemoryNodeStartup {
         dataCacheCfg.setEvictionPolicy(null);
         dataCacheCfg.setBackups(0);
 
-        igfsCfg.setMetaCacheConfig(metaCacheCfg);
-        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
 
         cfg.setFileSystemConfiguration(igfsCfg);
 

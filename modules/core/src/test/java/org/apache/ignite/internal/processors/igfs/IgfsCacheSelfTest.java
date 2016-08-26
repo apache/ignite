@@ -59,8 +59,8 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setMetaCacheConfig(cacheConfiguration("meta"));
-        igfsCfg.setDataCacheConfig(cacheConfiguration("data"));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration("data"));
 
         cfg.setFileSystemConfiguration(igfsCfg);
 

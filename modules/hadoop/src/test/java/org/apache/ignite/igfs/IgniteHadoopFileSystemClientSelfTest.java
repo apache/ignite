@@ -80,8 +80,8 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheConfig(dataCacheConfiguration());
-        igfsCfg.setMetaCacheConfig(metaCacheConfiguration());
+        igfsCfg.setDataCacheConfiguration(dataCacheConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaCacheConfiguration());
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
 

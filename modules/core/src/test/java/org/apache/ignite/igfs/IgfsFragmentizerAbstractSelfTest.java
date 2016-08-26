@@ -72,8 +72,8 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setFragmentizerThrottlingBlockLength(16 * IGFS_BLOCK_SIZE);
         igfsCfg.setFragmentizerThrottlingDelay(10);
 
-        igfsCfg.setMetaCacheConfig(metaConfiguration());
-        igfsCfg.setDataCacheConfig(dataConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaConfiguration());
+        igfsCfg.setDataCacheConfiguration(dataConfiguration());
 
         cfg.setFileSystemConfiguration(igfsCfg);
 

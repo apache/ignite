@@ -299,8 +299,8 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         igfsCfg.setName(dfltIgfsName ? null : IGFS_NAME);
         igfsCfg.setPrefetchBlocks(1);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setDataCacheConfig(dataCacheCfg);
-        igfsCfg.setMetaCacheConfig(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 

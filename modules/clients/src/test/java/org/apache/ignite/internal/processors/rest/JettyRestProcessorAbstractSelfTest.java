@@ -2296,8 +2296,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         FileSystemConfiguration igfs = new FileSystemConfiguration();
 
         igfs.setName("igfs");
-        igfs.setDataCacheConfig(cacheIgfs_data);
-        igfs.setMetaCacheConfig(cacheIgfs_meta);
+        igfs.setDataCacheConfiguration(cacheIgfs_data);
+        igfs.setMetaCacheConfiguration(cacheIgfs_meta);
 
         igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
 

@@ -153,8 +153,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setName(igfsName);
         cfg.setBlockSize(igfsBlockSize);
-        cfg.setDataCacheConfig(dataCacheConfiguration());
-        cfg.setMetaCacheConfig(metaCacheConfiguration());
+        cfg.setDataCacheConfiguration(dataCacheConfiguration());
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration());
         cfg.setFragmentizerEnabled(false);
 
         return cfg;

@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -78,6 +79,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         g1IgfsCfg1.setName("g1IgfsCfg1");
+
         g1IgfsCfg2.setName("g1IgfsCfg2");
 
         cfg.setFileSystemConfiguration(g1IgfsCfg1, g1IgfsCfg2);
@@ -109,17 +111,44 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         return res.toArray((T[]) Array.newInstance(cls, res.size()));
     }
 
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalIfNoCacheIsConfigured() throws Exception {
+        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
+
+        igfsCfg1.setName("igfs");
+        g1Cfg.setFileSystemConfiguration(igfsCfg1);
+        igfsCfg1.setDataCacheName("data-cache");
+
+        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
+        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
+
+        igfsCfg1.setName("igfs");
+        g1Cfg.setFileSystemConfiguration(igfsCfg1);
+        igfsCfg1.setMetaCacheName("meta-cache");
+
+        checkGridStartFails(g1Cfg, "Metadata cache is not configured locally for IGFS", true);
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testLocalIfAffinityMapperIsWrongClass() throws Exception {
 
         for (FileSystemConfiguration igfsCfg : g1Cfg.getFileSystemConfiguration()) {
-            igfsCfg.setDataCacheConfig(dataCache(1024));
-            igfsCfg.setMetaCacheConfig(metaCache());
+            igfsCfg.setDataCacheConfiguration(dataCache(1024));
+            igfsCfg.setMetaCacheConfiguration(metaCache());
 
-            igfsCfg.getMetaCacheConfig().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
-            igfsCfg.getDataCacheConfig().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+            igfsCfg.getMetaCacheConfiguration().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+            igfsCfg.getDataCacheConfiguration().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
         }
 
         checkGridStartFails(g1Cfg, "Invalid IGFS data cache configuration (key affinity mapper class should be", true);
@@ -141,8 +170,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
-        g1IgfsCfg1.setDataCacheConfig(dataCache(1024));
-        g1IgfsCfg1.getDataCacheConfig().setIndexedTypes(Integer.class, String.class);
+        g1IgfsCfg1.setDataCacheConfiguration(dataCache(1024));
+        g1IgfsCfg1.getDataCacheConfiguration().setIndexedTypes(Integer.class, String.class);
 
         checkGridStartFails(g1Cfg, "IGFS data cache cannot start with enabled query indexing", true);
     }
@@ -151,9 +180,9 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
-        g1IgfsCfg1.setMetaCacheConfig(metaCache());
+        g1IgfsCfg1.setMetaCacheConfiguration(metaCache());
 
-        g1IgfsCfg1.getMetaCacheConfig().setIndexedTypes(Integer.class, String.class);
+        g1IgfsCfg1.getMetaCacheConfiguration().setIndexedTypes(Integer.class, String.class);
 
         checkGridStartFails(g1Cfg, "IGFS metadata cache cannot start with enabled query indexing", true);
     }
@@ -203,7 +232,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         G.start(g1Cfg);
 
         for (FileSystemConfiguration igfsCfg : g2Cfg.getFileSystemConfiguration())
-            igfsCfg.setDataCacheConfig(dataCache(1000));
+            igfsCfg.setDataCacheConfiguration(dataCache(1000));
 
         checkGridStartFails(g2Cfg, "Affinity mapper group size should be the same on all nodes in grid for IGFS",
             false);
@@ -269,6 +298,36 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     public void testTooBigEndpointTcpPort() throws Exception {
         checkIvalidPort(65536);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPreConfiguredCache() throws Exception {
+        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
+        igfsCfg1.setName("igfs");
+
+        g1Cfg.setFileSystemConfiguration(igfsCfg1);
+
+        CacheConfiguration ccfgData = dataCache(1024);
+        ccfgData.setName("data-cache");
+        ccfgData.setRebalanceTimeout(10001);
+
+        CacheConfiguration ccfgMeta = metaCache();
+        ccfgMeta.setName("meta-cache");
+        ccfgMeta.setRebalanceTimeout(10002);
+
+        igfsCfg1.setDataCacheName("data-cache");
+        igfsCfg1.setMetaCacheName("meta-cache");
+
+        g1Cfg.setCacheConfiguration(ccfgData, ccfgMeta);
+
+        IgniteEx g = (IgniteEx)G.start(g1Cfg);
+
+        assertEquals(10001, g.cachex(g.igfsx("igfs").configuration().getDataCacheName())
+            .configuration().getRebalanceTimeout());
+        assertEquals(10002, g.cachex(g.igfsx("igfs").configuration().getMetaCacheName())
+            .configuration().getRebalanceTimeout());
     }
 
     /**

@@ -74,8 +74,8 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         igfsCfg.setName("igfs");
         igfsCfg.setManagementPort(FileSystemConfiguration.DFLT_MGMT_PORT + cnt);
-        igfsCfg.setDataCacheConfig(dataCacheConfiguration());
-        igfsCfg.setMetaCacheConfig(metaCacheConfiguration());
+        igfsCfg.setDataCacheConfiguration(dataCacheConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaCacheConfiguration());
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 

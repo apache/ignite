@@ -96,8 +96,8 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         metaCacheCfg.setEvictionPolicy(null);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        igfsCfg.setMetaCacheConfig(metaCacheCfg);
-        igfsCfg.setDataCacheConfig(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
 
         return igfsCfg;
     }

@@ -145,8 +145,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         metaCfg.setRebalanceMode(SYNC);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
-        igfsCfg.setMetaCacheConfig(metaCfg);
-        igfsCfg.setDataCacheConfig(dataCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCfg);
+        igfsCfg.setDataCacheConfiguration(dataCfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

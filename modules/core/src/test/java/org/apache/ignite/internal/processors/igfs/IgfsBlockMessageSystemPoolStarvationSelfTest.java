@@ -242,8 +242,8 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
         igfsCfg.setFragmentizerEnabled(false);
         igfsCfg.setBlockSize(1024);
-        igfsCfg.setDataCacheConfig(dataCcfg);
-        igfsCfg.setMetaCacheConfig(metaCcfg);
+        igfsCfg.setDataCacheConfiguration(dataCcfg);
+        igfsCfg.setMetaCacheConfiguration(metaCcfg);
 
         // Ignite configuration.
         IgniteConfiguration cfg = getConfiguration(name);

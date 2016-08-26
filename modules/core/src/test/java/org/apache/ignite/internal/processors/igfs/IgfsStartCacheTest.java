@@ -85,8 +85,8 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
             metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            igfsCfg.setMetaCacheConfig(metaCacheCfg);
-            igfsCfg.setDataCacheConfig(dataCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
 
             cfg.setFileSystemConfiguration(igfsCfg);
         }

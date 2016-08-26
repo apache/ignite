@@ -86,8 +86,8 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setDataCacheConfig(cacheConfiguration(gridName, "data"));
-        igfsCfg.setMetaCacheConfig(cacheConfiguration(gridName, "meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(gridName, "data"));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(gridName, "meta"));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 

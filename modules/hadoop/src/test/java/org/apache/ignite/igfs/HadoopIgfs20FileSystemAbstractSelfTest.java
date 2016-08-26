@@ -205,8 +205,8 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            igfsCfg.setDataCacheConfig(dataCacheCfg);
-            igfsCfg.setMetaCacheConfig(metaCacheCfg);
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -301,8 +301,8 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setPrefetchBlocks(1);
         cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
-        cfg.setMetaCacheConfig(metaCacheConfiguration(gridName));
-        cfg.setDataCacheConfig(dataCacheConfiguration(gridName));
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(gridName));
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(gridName));
 
         if (mode != PRIMARY)
             cfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(secondaryFileSystemUriPath(),

@@ -248,8 +248,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            igfsCfg.setDataCacheConfig(dataCacheCfg);
-            igfsCfg.setMetaCacheConfig(metaCacheCfg);
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -385,8 +385,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setDataCacheConfig(dataCacheConfiguration(gridName));
-        cfg.setMetaCacheConfig(metaCacheConfiguration(gridName));
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(gridName));
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(gridName));
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
