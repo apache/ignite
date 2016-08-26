@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     }, "myCache", null)));
             Ignition.StopAll(true);
             Assert.IsTrue(ex.Message.Contains(
-                    "IgniteEntityFrameworkCache requires Transactional cache. Specified 'myCache' cache is Atomic."));
+                    "requires Transactional cache. Specified 'myCache' cache is Atomic."));
 
             // Existing instance
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
