@@ -67,17 +67,21 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
         {
-            // TODO: When is this called? Need to propagate CommandInfo
-            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(prototype), _cache);
+            var proxy = prototype as DbCommandProxy;
+
+            if (proxy == null)
+                return _services.CreateCommandDefinition(prototype);
+
+            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(proxy.InnerCommand), _cache, 
+                proxy.CommandInfo);
         }
 
         /** <inheritDoc /> */
         protected override DbCommandDefinition CreateDbCommandDefinition(DbProviderManifest providerManifest, 
             DbCommandTree commandTree)
         {
-            // TODO: Get affected entity sets from the command tree
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree), 
-                _cache);
+                _cache, new DbCommandInfo(commandTree));
         }
 
         /** <inheritDoc /> */

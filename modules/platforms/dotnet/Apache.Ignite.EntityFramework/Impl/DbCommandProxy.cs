@@ -34,13 +34,27 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly IDbCache _cache;
 
-        public DbCommandProxy(DbCommand command, IDbCache cache)
+        /** */
+        private DbCommandInfo _info;
+
+        public DbCommandProxy(DbCommand command, IDbCache cache, DbCommandInfo info)
         {
             Debug.Assert(command != null);
             Debug.Assert(cache != null);
 
             _command = command;
             _cache = cache;
+            _info = info;
+        }
+
+        public DbCommand InnerCommand
+        {
+            get { return _command; }
+        }
+
+        public DbCommandInfo CommandInfo
+        {
+            get { return _info; }
         }
 
         public override void Prepare()
