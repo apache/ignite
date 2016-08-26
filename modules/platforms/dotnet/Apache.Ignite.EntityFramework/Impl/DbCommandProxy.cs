@@ -111,7 +111,9 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var cacheKey = GetKey();
 
-            Console.WriteLine(cacheKey);
+            object cachedRes;
+            if (_cache.GetItem(cacheKey, out cachedRes))
+                return ((DataReaderResult) cachedRes).CreateReader();
 
             var reader = _command.ExecuteReader(behavior);
 
@@ -121,9 +123,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var res = new DataReaderResult(reader);
 
-            _cache.PutItem(cacheKey, res, new [] {"TODO"},);
-
-            // TODO: Cache result
+            _cache.PutItem(cacheKey, res, new [] {"TODO"}, DateTimeOffset.MaxValue);
 
             return res.CreateReader();
         }

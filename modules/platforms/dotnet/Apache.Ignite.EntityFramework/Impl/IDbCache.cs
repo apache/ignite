@@ -26,7 +26,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         bool GetItem(string key, out object value);
 
         void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
-            TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration);
+            DateTimeOffset absoluteExpiration);
 
         void InvalidateSets(IEnumerable<string> entitySets);
         void InvalidateItem(string key);

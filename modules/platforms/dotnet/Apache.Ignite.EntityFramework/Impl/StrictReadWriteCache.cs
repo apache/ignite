@@ -81,7 +81,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         /** <inheritdoc /> */
         public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
-            TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration)
+            DateTimeOffset absoluteExpiration)
         {
             if (dependentEntitySets == null)
                 return;
@@ -89,7 +89,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             // TODO: It is possible to put old data to cache because of a race between PutItem and Invalidate
             // Looks like versioning is the only way to resolve this
 
-            var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
+            var cache = GetCacheWithExpiry(absoluteExpiration);
 
             using (var tx = TxStart())
             {
@@ -183,16 +183,8 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
         // ReSharper disable once UnusedParameter.Local
-        private ICache<string, object> GetCacheWithExpiry(TimeSpan slidingExpiration, 
-            DateTimeOffset absoluteExpiration)
+        private ICache<string, object> GetCacheWithExpiry(DateTimeOffset absoluteExpiration)
         {
-            if (slidingExpiration != TimeSpan.MaxValue)
-            {
-                // Sliding expiration requires that "touch" operations (like Get)
-                // are performed on WithExpiryPolicy cache instance, which is not possible here
-                throw new NotSupportedException(GetType() + " does not support sliding expiration.");
-            }
-
             if (absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
 
