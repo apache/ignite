@@ -187,6 +187,17 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO: Test all kinds of field types (to test serialization and reader)
         }
 
+        private class ArrayReaderTest
+        {
+            public byte Byte { get; set; }
+            public sbyte SByte { get; set; }
+            public short Short { get; set; }
+            public ushort Ushort { get; set; }
+            public int Int { get; set; }
+
+            // TODO
+        }
+
         public bool Invoke(CacheEvent evt)
         {
             _events.Push(evt);
