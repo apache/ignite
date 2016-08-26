@@ -202,6 +202,23 @@ namespace ignite
     }
 
     template<>
+    void SqlTestSuiteFixture::CheckSingleResult<ignite::Guid>(const char* request, const ignite::Guid& expected)
+    {
+        SQLGUID res;
+
+        memset(&res, 0, sizeof(res));
+
+        CheckSingleResult0(request, SQL_C_GUID, &res, 0, 0);
+
+        BOOST_CHECK_EQUAL(res.Data1, expected.GetMostSignificantBits() & 0xFFFFFFFF00000000ULL >> 32);
+        BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000ULL >> 16);
+        BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFULL);
+
+        for (int i = 0; i < sizeof(res.Data4); ++i)
+            BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFULL << (8 * i))) >> (8 * i));
+    }
+
+    template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };

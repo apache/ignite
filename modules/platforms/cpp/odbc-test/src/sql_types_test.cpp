@@ -29,9 +29,13 @@ using namespace boost::unit_test;
 
 BOOST_FIXTURE_TEST_SUITE(SqlTypesTestSuite, ignite::SqlTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestSystemFunctionDatabase)
+BOOST_AUTO_TEST_CASE(TestGuid)
 {
-    CheckSingleResult<std::string>("SELECT {fn DATABASE()}");
+    CheckSingleResult<std::string>("SELECT {guid '04CC382A-0B82-F520-08D0-07A0620C0004'}",
+        "04CC382A-0B82-F520-08D0-07A0620C0004");
+
+    CheckSingleResult<Guid>("SELECT {guid '04CC382A-0B82-F520-08D0-07A0620C0004'}",
+        Guid(0x04CC382A0B82F520LL, 0x08D007A0620C0004LL));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
