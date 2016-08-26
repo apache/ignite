@@ -82,6 +82,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.IsEmpty(context.Blogs);
                 Assert.IsEmpty(context.Posts);
 
+                Assert.AreEqual(2, _events.Count);
+
                 context.Blogs.Add(new Blog
                 {
                     BlogId = 1,
@@ -95,6 +97,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(2, context.SaveChanges());
 
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+
+                Assert.AreEqual(3, _events.Count);
 
                 // TODO: How do we check if there was a cache hit? Using events!
             }
