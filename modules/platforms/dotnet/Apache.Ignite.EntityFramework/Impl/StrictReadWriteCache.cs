@@ -124,10 +124,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             {
                 var sets = _dependencyCache.GetAll(Sort(entitySets));
 
-                // Remove all cached queries that depend on specific entity set
-                // TODO: Use a single RemoveAll (should be faster)
-                foreach (var dependentKeys in sets)
-                    _cache.RemoveAll(dependentKeys.Value);
+                // Remove all cached queries that depend on specific entity set.
+                // Single RemoveAll is faster.
+                _cache.RemoveAll(sets.SelectMany(x => x.Value));
 
                 // Do not remove dependency information: same query always depends on same entity sets
 
