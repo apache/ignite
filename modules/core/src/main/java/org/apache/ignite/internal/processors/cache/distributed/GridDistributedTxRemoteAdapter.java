@@ -457,7 +457,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (needReturnValue()) {
                             ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
 
-                            cctx.tm().addCommittedTxReturn(this, new GridCacheReturnCompletableWrapper());
+                            UUID origNodeId = otherNodeId(); // Originating node.
+
+                            cctx.tm().addCommittedTxReturn(this,
+                                new GridCacheReturnCompletableWrapper(
+                                    !cctx.localNodeId().equals(origNodeId) ? origNodeId : null));
                         }
                         else
                             cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);

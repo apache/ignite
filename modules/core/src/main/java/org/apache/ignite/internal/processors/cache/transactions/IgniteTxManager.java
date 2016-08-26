@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -170,10 +168,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
             PER_SEGMENT_Q);
 
-    /** Committed but not acknowledged one phase commit transactions per node. */
-    private final ConcurrentHashMap<UUID, Collection<GridCacheVersion>> nodesToTxs =
-        new ConcurrentHashMap<>();
-
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
 
@@ -216,11 +210,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     for (TxDeadlockFuture fut : deadlockDetectFuts.values())
                         fut.onNodeLeft(nodeId);
 
-                    Collection<GridCacheVersion> txs = nodesToTxs.remove(nodeId);
+                    for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
+                        Object obj = entry.getValue();
 
-                    if (txs != null)
-                        for (GridCacheVersion tx : txs)
-                            removeTxReturn(tx, /*nodesToTxs already cleared.*/ null);
+                        if (obj instanceof GridCacheReturnCompletableWrapper &&
+                            nodeId.equals(((GridCacheReturnCompletableWrapper)obj).getNodeId()))
+                            removeTxReturn(entry.getKey());
+                    }
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -972,25 +968,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (nearXidVer != null)
             xidVer = new CommittedVersion(xidVer, nearXidVer);
 
-        UUID nodeId = tx.otherNodeId(); // Originating node.
-
         assert completedVersHashMap.get(xidVer) == null || completedVersHashMap.get(xidVer).equals(Boolean.TRUE);
 
         completedVersHashMap.put(xidVer, retVal);
-
-        if (!cctx.localNodeId().equals(nodeId)) { // No reason to keep failover map if current node is originating.
-            Collection<GridCacheVersion> txs = nodesToTxs.get(nodeId);
-
-            if (txs == null) {
-                Collection<GridCacheVersion> txs0 = new GridConcurrentHashSet<>();
-
-                Collection<GridCacheVersion> txsPrev = nodesToTxs.putIfAbsent(nodeId, txs0);
-
-                txs = txsPrev != null ? txsPrev : txs0;
-            }
-
-            txs.add(xidVer);
-        }
     }
 
     /**
@@ -1035,7 +1015,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @param xidVer xidVer Completed transaction version.
      */
-    public void removeTxReturn(GridCacheVersion xidVer, UUID nodeId) {
+    public void removeTxReturn(GridCacheVersion xidVer) {
         Object prev = completedVersHashMap.get(xidVer);
 
         if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
@@ -1046,14 +1026,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         boolean res = completedVersHashMap.replace(xidVer, prev, true);
 
         assert res;
-
-        if (nodeId != null) { // Not a local node.
-            Collection<GridCacheVersion> vers = nodesToTxs.get(nodeId);
-
-            boolean rmv = vers.remove(xidVer);
-
-            assert rmv;
-        }
     }
 
     /**

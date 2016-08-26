@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -32,6 +33,23 @@ public class GridCacheReturnCompletableWrapper {
 
     /** */
     private volatile Object o;
+
+    /** Node id. */
+    private final UUID nodeId;
+
+    /**
+     * @param nodeId Node id.
+     */
+    public GridCacheReturnCompletableWrapper(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     *
+     */
+    public UUID getNodeId() {
+        return nodeId;
+    }
 
     /**
      * Marks as initialized.

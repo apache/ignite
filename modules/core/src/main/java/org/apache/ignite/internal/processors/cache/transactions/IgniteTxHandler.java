@@ -1008,7 +1008,7 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing dht tx one phase commit ack request [nodeId=" + nodeId + ", req=" + req + ']');
 
-        ctx.tm().removeTxReturn(req.version(), nodeId);
+        ctx.tm().removeTxReturn(req.version());
     }
 
     /**
@@ -1268,7 +1268,7 @@ public class IgniteTxHandler {
                             res.returnValue(ctx.tm().getCommittedTxReturn(req.version()).fut().get());
 
                             if (res.returnValue() != null)
-                                ctx.tm().removeTxReturn(req.version(), nodeId);
+                                ctx.tm().removeTxReturn(req.version());
                         }
                         catch (IgniteCheckedException e) {
                             if (txFinishMsgLog.isDebugEnabled()) {

@@ -473,7 +473,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     // No-op.
                 }
                 else if (backup.isLocal())
-                    cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                    cctx.tm().removeTxReturn(tx.xidVersion());
                 else {
                     try {
                         if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0 &&
@@ -538,7 +538,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                                     tx.implicitSingleResult(retVal);
 
-                                    cctx.tm().removeTxReturn(tx.xidVersion(), null);
+                                    cctx.tm().removeTxReturn(tx.xidVersion());
                                 }
 
                                 if (tx.syncMode() == FULL_SYNC) {

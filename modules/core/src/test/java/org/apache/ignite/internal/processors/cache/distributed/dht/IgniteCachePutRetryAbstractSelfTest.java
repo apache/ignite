@@ -478,19 +478,10 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             Map completedVersHashMap = U.field(tm, "completedVersHashMap");
 
-            Map<UUID, Collection> nodesToTxs = U.field(tm, "nodesToTxs");
-
             for (Object o : completedVersHashMap.values())
                 assertTrue("completedVersHashMap contains" + o.getClass() + " instead of boolean. " +
                     "These values should be replaced by boolean after onePhaseCommit finished. " +
                     "[node=" + i + "]", o instanceof Boolean);
-
-            for (Map.Entry<UUID, Collection> nodeVers : nodesToTxs.entrySet()) {
-                assertEquals(nodeVers.getKey(), grid(0).context().localNodeId());
-
-                assertEquals("nodesToTxs should be empty since all tx finished. [node=" + i + "]", 0,
-                    nodeVers.getValue().size());
-            }
         }
     }
 
