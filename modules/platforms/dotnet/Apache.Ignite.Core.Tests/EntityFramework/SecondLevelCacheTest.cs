@@ -46,6 +46,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            // Prepare SQL CE support.
+            // Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+
             // Start Ignite.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 

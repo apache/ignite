@@ -36,16 +36,16 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestConfigurationAndStartup()
         {
             // Run in a separate process because EF caches DbConfiguration statically and other tests may fail.
-            if (Environment.GetEnvironmentVariable(GetType().FullName) != "true")
-            {
-                Environment.SetEnvironmentVariable(GetType().FullName, "true");
+            //if (Environment.GetEnvironmentVariable(GetType().FullName) != "true")
+            //{
+            //    Environment.SetEnvironmentVariable(GetType().FullName, "true");
 
-                TestUtils.RunTestInNewProcess(GetType().FullName, "TestConfigurationAndStartup");
+            //    TestUtils.RunTestInNewProcess(GetType().FullName, "TestConfigurationAndStartup");
 
-                return;
-            }
+            //    return;
+            //}
 
-            Debugger.Launch();
+            //Debugger.Launch();
 
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
             Assert.IsNull(Ignition.TryGetIgnite());
