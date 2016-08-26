@@ -52,13 +52,13 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private static final int DFLT_EVT_BUFFER_TIMEOUT = 10;
 
     /** Event buffer. */
-    private BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
+    private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
 
     /** Remote Listener id. */
     private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
-    private volatile boolean stopped = true;
+    private static volatile boolean stopped = true;
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
@@ -70,13 +70,10 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private TaskLocalListener locLsnr = new TaskLocalListener();
 
     /** Ignite grid configuration file. */
-    private String igniteCfgFile;
+    private static String igniteCfgFile;
 
     /** Cache name. */
     private String cacheName;
-
-    /** Ignite instance. **/
-    private Ignite ignite;
 
     /**
      * Sets Event Batch Size.
@@ -121,7 +118,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         this.stopped = false;
 
-        ignite = new IgniteContext(igniteCfgFile).getIgnite();
+        Ignite ignite = IgniteSource.IgniteContext.getIgnite();
 
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
@@ -146,6 +143,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             return;
 
         stopped = true;
+
+        Ignite ignite = IgniteSource.IgniteContext.getIgnite();
 
         if (rmtLsnrId != null)
             ignite.events(ignite.cluster().forCacheNodes(cacheName))
@@ -189,16 +188,15 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /**
      * Ignite context initializing grid on demand.
      */
-    private class IgniteContext {
-        /** Ignite configuration file. */
-        private String igniteCfgFile;
+    private static class IgniteContext {
+        /** Constructor. */
+        private IgniteContext() {
+        }
 
-        /** Constructor.
-         *
-         * @param igniteCfgFile Ignite configuration file.
-         * */
-        private IgniteContext(String igniteCfgFile) {
-            this.igniteCfgFile = igniteCfgFile;
+        /** Instance holder. */
+        private static class Holder {
+            /** Ignite. */
+            private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
         }
 
         /**
@@ -206,8 +204,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
          *
          * @return Grid instance.
          */
-        private Ignite getIgnite() {
-            return Ignition.start(igniteCfgFile);
+        private static Ignite getIgnite() {
+            return IgniteSource.IgniteContext.Holder.IGNITE;
         }
     }
 
@@ -228,4 +226,5 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             return true;
         }
     }
+
 }

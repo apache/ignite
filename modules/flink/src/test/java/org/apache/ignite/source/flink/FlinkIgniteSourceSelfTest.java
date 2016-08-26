@@ -30,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Tests for {@link IgniteSource}.
  */
@@ -51,7 +54,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
 
         cfg.setClientMode(false);
@@ -60,7 +63,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -71,17 +74,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testFlinkIgniteSource() throws Exception {
-        checkIgniteSource(10, null);
-    }
-
-    /**
-     * Tests for the Flink source for large batch.
-     * Ignite started in source based on what is specified in the configuration file.
-     *
-     * @throws Exception
-     */
-    public void testFlinkIgniteSourceWithLargeBatch() throws Exception {
-        checkIgniteSource(100, null);
+        checkIgniteSource(1, 1, null);
     }
 
     /**
@@ -91,7 +84,17 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testFlinkIgniteSourceWithFilter() throws Exception {
-        checkIgniteSource(10, new IgnitePredicateInteger());
+        checkIgniteSource(1, 1, new IgnitePredicateInteger());
+    }
+
+    /**
+     * Tests for the Flink source for large batch.
+     * Ignite started in source based on what is specified in the configuration file.
+     *
+     * @throws Exception
+     */
+    public void testFlinkIgniteSourceWithLargeBatch() throws Exception {
+        checkIgniteSource(100, 1, null);
     }
 
     /**
@@ -99,10 +102,11 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * Ignite started in source based on what is specified in the configuration file.
      *
      * @param evtCount event count to process.
+     * @param parallelismCnt DataStreamSource parallelism count
      * @param filter IgnitePredicate filter to filter events.
      * @throws Exception
      */
-    private void checkIgniteSource(int evtCount, IgnitePredicate<CacheEvent> filter) throws Exception {
+    private void checkIgniteSource(int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -119,12 +123,15 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
 
-        DataStream<CacheEvent> stream = env.addSource(igniteSrc);
+        DataStream<CacheEvent> stream = env.addSource(igniteSrc).setParallelism(parallelismCnt);
 
         int cnt = 0;
 
+        Map<Integer, Integer> eventMap = new HashMap<>();
+
         while (cnt < evtCount)  {
             cache.put(cnt, cnt);
+            eventMap.put(cnt, cnt);
 
             cnt++;
         }
@@ -140,22 +147,16 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
                 sinkEvtCntr++;
 
                 assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < evtCount);
+                Integer k = Integer.parseInt(cacheEvt.newValue().toString());
+                assertTrue(eventMap.containsKey(k));
 
-                if(sinkEvtCntr == 10)
+                if(sinkEvtCntr == evtCount)
                     igniteSrc.stop();
             }
         });
 
-        try {
-            env.execute();
-        }
-        catch (Exception e){
-            log.error(">>> Unable to process stream due to exception.", e);
-        }
-        finally {
-            igniteSrc.stop();
-        }
+        env.execute();
+        igniteSrc.stop();
     }
 }
 
