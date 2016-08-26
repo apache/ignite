@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
-import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE;
 
 /**
  * Hadoop process base.

@@ -392,7 +392,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                     // Read up all the process output.
                     while ((line = rdr.readLine()) != null) {
                         if (log.isDebugEnabled())
-                            log.debug("Tracing process [" + proc.toString() + "] output:"  + line);
+                            log.debug("Tracing process [proc=" + proc + ", childProcId=" + childProcId
+                                + "] output:"  + line);
 
                         if ("Started".equals(line)) {
                             // Process started successfully, it should not write anything more to the output stream.
