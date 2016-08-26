@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -1653,73 +1656,120 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             List<DataEntry> walEntries = null;
 
-            for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                try {
-                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
-
-                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
-
-                    if (plc != null) {
-                        ttl = CU.toTtl(plc.getExpiryForCreation());
-
-                        if (ttl == CU.TTL_ZERO)
-                            continue;
-                        else if (ttl == CU.TTL_NOT_CHANGED)
-                            ttl = 0;
-
-                        expiryTime = CU.toExpireTime(ttl);
-                    }
-
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        ttl,
-                        expiryTime,
-                        false,
-                        topVer,
-                        GridDrType.DR_LOAD,
-                        false);
-
-                    cctx.evicts().touch(entry, topVer);
-
-                    CU.unwindEvicts(cctx);
-
-                    if (walEnabled) {
-                        if (walEntries == null)
-                            walEntries = new ArrayList<>(entries.size());
-
-                        walEntries.add(new DataEntry(
-                            cctx.cacheId(),
-                            e.getKey(),
-                            e.getValue(),
-                            GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            entry.partition(),
-                            0
-                        ));
-                    }
-
-                    entry.onUnlock();
-                }
-                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException ex) {
-                    IgniteLogger log = cache.unwrap(Ignite.class).log();
-
-                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
-                }
-            }
+            Collection<Integer> reservedParts = new HashSet<>();
+            Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
-                if (walEnabled) {
-                    WALPointer ptr = cctx.shared().wal().log(new DataRecord(walEntries));
+                for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    try {
+                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                    cctx.shared().wal().fsync(ptr);
+                        // Try reserve partition first;
+                        {
+                            int p = cctx.affinity().partition(e.getKey());
+
+                            if (ignoredParts.contains(p))
+                                continue;
+
+                            if (!reservedParts.contains(p)) {
+                                GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
+
+                                if (!part.reserve()) {
+                                    ignoredParts.add(p);
+
+                                    continue;
+                                }
+                                else {
+                                    // We must not allow to read from RENTING partitions.
+                                    if (part.state() == GridDhtPartitionState.RENTING) {
+                                        part.release();
+
+                                        ignoredParts.add(p);
+
+                                        continue;
+                                    }
+
+                                    reservedParts.add(p);
+                                }
+                            }
+                        }
+
+                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
+
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            ttl,
+                            expiryTime,
+                            false,
+                            topVer,
+                            GridDrType.DR_LOAD,
+                            false);
+
+                        cctx.evicts().touch(entry, topVer);
+
+                        CU.unwindEvicts(cctx);
+
+                        if (walEnabled) {
+                            if (walEntries == null)
+                                walEntries = new ArrayList<>(entries.size());
+
+                            walEntries.add(new DataEntry(
+                                cctx.cacheId(),
+                                e.getKey(),
+                                e.getValue(),
+                                GridCacheOperation.CREATE,
+                                null,
+                                ver,
+                                entry.partition(),
+                                0
+                            ));
+                        }
+
+                        entry.onUnlock();
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        ignoredParts.add(cctx.affinity().partition(e.getKey()));
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
+                    catch (IgniteCheckedException ex) {
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    }
                 }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
+            finally {
+                for (Integer part : reservedParts) {
+                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, topVer, false);
+
+                    assert locPart != null : "Evicted reserved partition: " + locPart;
+
+                    locPart.release();
+                }
+
+                try {
+                    if (walEnabled) {
+                        WALPointer ptr = cctx.shared().wal().log(new DataRecord(walEntries));
+
+                        cctx.shared().wal().fsync(ptr);
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
+                }
             }
         }
     }
