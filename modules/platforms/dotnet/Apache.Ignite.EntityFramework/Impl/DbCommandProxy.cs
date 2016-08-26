@@ -18,8 +18,6 @@
 namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
-    using System.Collections;
-    using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
     using System.Diagnostics;
@@ -30,13 +28,19 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// </summary>
     internal class DbCommandProxy : DbCommand
     {
+        /** */
         private readonly DbCommand _command;
 
-        public DbCommandProxy(DbCommand command)
+        /** */
+        private readonly IDbCache _cache;
+
+        public DbCommandProxy(DbCommand command, IDbCache cache)
         {
             Debug.Assert(command != null);
+            Debug.Assert(cache != null);
 
             _command = command;
+            _cache = cache;
         }
 
         public override void Prepare()
@@ -116,6 +120,8 @@ namespace Apache.Ignite.EntityFramework.Impl
 
 
             var res = new DataReaderResult(reader);
+
+            _cache.PutItem(cacheKey, res, new [] {"TODO"},);
 
             // TODO: Cache result
 
