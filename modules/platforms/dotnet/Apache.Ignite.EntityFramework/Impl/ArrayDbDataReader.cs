@@ -66,7 +66,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override bool NextResult()
         {
-            throw new NotSupportedException();
+            return false;  // multiple result sets are not supported
         }
 
         public override bool Read()
