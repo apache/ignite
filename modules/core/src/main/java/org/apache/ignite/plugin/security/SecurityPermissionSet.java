@@ -20,6 +20,7 @@ package org.apache.ignite.plugin.security;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.LessNamingBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * Property {@link #defaultAllowAll()} specifies whether to allow or deny
  * cache and task operations if they were not explicitly specified.
  */
-public interface SecurityPermissionSet extends Serializable {
+public interface SecurityPermissionSet extends Serializable, LessNamingBean {
     /**
      * Flag indicating whether to allow or deny cache and task operations
      * if they were not explicitly specified.

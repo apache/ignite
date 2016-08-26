@@ -20,8 +20,8 @@ include ../../../../../../../../../app/helpers/jade/mixins.jade
 
 div
     .details-row
-        +number('Base interval:', model + '.baseSleepTimeMs', 'baseSleepTimeMs', 'true', '1000', '0', 'Initial amount of time in ms to wait between retries')
+        +number('Base interval:', model + '.baseSleepTimeMs', 'expBaseSleepTimeMs', 'true', '1000', '0', 'Initial amount of time in ms to wait between retries')
     .details-row
-        +number-min-max('Max retries:', model + '.maxRetries', 'maxRetries', 'true', '10', '0', '29', 'Max number of times to retry')
+        +number-min-max('Max retries:', model + '.maxRetries', 'expMaxRetries', 'true', '10', '0', '29', 'Max number of times to retry')
     .details-row
-        +number('Max interval:', model + '.maxSleepMs', 'maxSleepMs', 'true', 'Integer.MAX_VALUE', '0', 'Max time in ms to sleep on each retry')
+        +number('Max interval:', model + '.maxSleepMs', 'expMaxSleepMs', 'true', 'Integer.MAX_VALUE', '0', 'Max time in ms to sleep on each retry')

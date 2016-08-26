@@ -139,8 +139,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create new instance of specified class.
         /// </summary>
         /// <param name="typeName">Class name</param>
+        /// <param name="props">Properties to set.</param>
         /// <returns>New Instance.</returns>
-        public static T CreateInstance<T>(string typeName)
+        public static T CreateInstance<T>(string typeName, IEnumerable<KeyValuePair<string, object>> props = null)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -149,7 +150,12 @@ namespace Apache.Ignite.Core.Impl
             if (type == null)
                 throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return (T) Activator.CreateInstance(type);
+            var res = (T)Activator.CreateInstance(type);
+
+            if (props != null)
+                SetProperties(res, props);
+
+            return res;
         }
 
         /// <summary>

@@ -16,61 +16,17 @@
  */
 
 import gulp from 'gulp';
-import jspm from 'jspm';
-import util from 'gulp-util';
-import sequence from 'gulp-sequence';
-import htmlReplace from 'gulp-html-replace';
+import webpack from 'webpack';
+import webpackConfig from '../webpack';
+import WebpackDevServer from 'webpack-dev-server';
 
-import { srcDir, destDir, igniteModulesTemp } from '../paths';
-
-const options = {
-    minify: true
-};
-
-if (util.env.debug)
-    delete options.minify;
-
-if (util.env.debug || util.env.sourcemaps)
-    options.sourceMaps = true;
-
-gulp.task('bundle', ['eslint', 'bundle:ignite']);
-
-// Package all external dependencies and ignite-console.
-gulp.task('bundle:ignite', (cb) => {
-    if (util.env.debug)
-        return sequence('bundle:ignite:vendors', 'bundle:ignite:app', cb);
-
-    return sequence('bundle:ignite:app-min', 'bundle:ignite:app-min:replace', cb);
+gulp.task('bundle', (cb) => {
+    if (process.env.NODE_ENV === 'development') {
+        // Important! Call webpack and WebpackDevServer must be inline.
+        new WebpackDevServer(webpack(webpackConfig), webpackConfig.devServer)
+            .listen(webpackConfig.devServer.port, 'localhost', cb);
+    }
+    else
+        webpack(webpackConfig, cb);
 });
 
-gulp.task('bundle:ignite:vendors', () => {
-    const exclude = [
-        `${srcDir}/**/*`,
-        `${srcDir}/**/*!jade`,
-        './controllers/**/*.js',
-        './generator/**/*.js',
-        './public/**/*!css',
-        `${igniteModulesTemp}/**/*`,
-        `${igniteModulesTemp}/**/*!jade`,
-        `${igniteModulesTemp}/**/*!css`
-    ].map((item) => `[${item}]`).join(' - ');
-
-    return jspm.bundle(`${srcDir}/index - ${exclude}`, `${destDir}/vendors.js`, options);
-});
-
-gulp.task('bundle:ignite:app', () =>
-    jspm.bundle(`${srcDir}/index - ${destDir}/vendors`, `${destDir}/app.js`, options)
-);
-
-gulp.task('bundle:ignite:app-min', () =>
-    jspm.bundleSFX(`${srcDir}/index`, `${destDir}/app.min.js`, options)
-);
-
-gulp.task('bundle:ignite:app-min:replace', () =>
-    gulp.src('./build/index.html')
-        .pipe(htmlReplace({
-            css: 'app.min.css',
-            js: 'app.min.js'
-        }))
-        .pipe(gulp.dest('./build'))
-);
