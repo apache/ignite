@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -1371,29 +1370,21 @@ public class GridReduceQueryExecutor {
      */
     public static class UpdateResIter extends GridCloseableIteratorAdapter<List<?>> {
         /** */
-        private final int res;
-
-        /** */
-        private boolean used;
+        private final Iterator<List> it;
 
         /** */
         public UpdateResIter(int res) {
-            this.res = res;
+            it = Collections.singletonList((List)Collections.singletonList(res)).iterator();
         }
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            return !used;
+            return it.hasNext();
         }
 
         /** {@inheritDoc} */
         @Override protected List<?> onNext() throws IgniteCheckedException {
-            if (!used) {
-                used = true;
-                return Collections.singletonList(res);
-            }
-
-            throw new NoSuchElementException();
+            return it.next();
         }
     }
 }

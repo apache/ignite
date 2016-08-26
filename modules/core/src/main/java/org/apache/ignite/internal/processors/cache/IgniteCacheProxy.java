@@ -509,7 +509,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     }
                 }, false);
 
-            return new QueryCursorImpl<>(iter, true);
+            return new QueryCursorImpl<>(iter);
         }
 
         final CacheQueryFuture<Map.Entry<K, V>> fut;
@@ -572,7 +572,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             @Override protected void onClose() throws IgniteCheckedException {
                 fut.cancel();
             }
-        }, true);
+        });
     }
 
     /**
@@ -683,7 +683,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             return ctx.kernalContext().query().queryLocal(ctx, p,
                                 opCtxCall != null && opCtxCall.isKeepBinary());
                         }
-                    }, true);
+                    });
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
@@ -699,8 +699,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 Boolean isJdbcQry = p instanceof JdbcSqlFieldsQuery ? ((JdbcSqlFieldsQuery) p).isQuery() : null;
 
-                A.ensure(isJdbcQry == null || (isJdbcQry == isQry), "Query type mismatch - " +
-                    "expected " + (isQry ? "non query" : "query"));
+                if (isJdbcQry != null && (isJdbcQry != isQry))
+                    throw new CacheException("Query type mismatch - expected " + (isQry ? "non query" : "query"));
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal() && isQry)
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p, isQry);

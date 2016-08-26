@@ -915,7 +915,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         @Override public Iterator<List<?>> iterator() {
                             return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
                         }
-                    }, true);
+                    });
 
                     cursor.fieldsMeta(res.metaData());
 

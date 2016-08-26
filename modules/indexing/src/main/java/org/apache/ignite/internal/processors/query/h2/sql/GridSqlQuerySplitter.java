@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValue
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.command.Prepared;
@@ -163,7 +163,7 @@ public class GridSqlQuerySplitter {
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, Object[] injectKeysFilter,
-                                              boolean collocatedGrpBy, boolean distributedJoins) {
+                                              boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
@@ -191,9 +191,9 @@ public class GridSqlQuerySplitter {
         Object[] params,
         final boolean collocatedGrpBy,
         final boolean distributedJoins
-    ) {
+    ) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
-        A.ensure(gridStmt instanceof GridSqlQuery, "SQL query expected");
+        X.ensureX(gridStmt instanceof GridSqlQuery, "SQL query expected");
 
         return splitQuery((GridSqlQuery) gridStmt, params, collocatedGrpBy,
             distributedJoins && !isCollocated(query(prepared)));
@@ -246,10 +246,10 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins If distributed joins enabled.    @return Two step query.
      */
     private static GridCacheTwoStepQuery splitUpdateQuery(Prepared prepared, Object[] params, Object[] keysFilter,
-                                                          boolean collocatedGrpBy, final boolean distributedJoins) {
+        boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
-        A.ensure(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
+        X.ensureX(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
             gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete, "SQL update operation expected");
 
         if (gridStmt instanceof GridSqlUpdate)
@@ -266,7 +266,7 @@ public class GridSqlQuerySplitter {
         if (gridStmt instanceof GridSqlMerge)
             target = ((GridSqlMerge)gridStmt).into();
 
-        A.notNull(target, "Failed to retrieve target for SQL update operation");
+        X.ensureX(target != null, "Failed to retrieve target for SQL update operation");
 
         Set<String> tbls = new HashSet<>();
         Set<String> schemas = new HashSet<>();
@@ -299,7 +299,7 @@ public class GridSqlQuerySplitter {
     /** */
     @SuppressWarnings("ConstantConditions")
     private static GridCacheTwoStepQuery splitDelete(GridSqlDelete del, Object[] params, Object[] keysFilter,
-                                                     boolean collocatedGrpBy, boolean distributedJoins) {
+        boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
 
@@ -319,7 +319,8 @@ public class GridSqlQuerySplitter {
      * @param keysParamIdx Index for .
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx)
+        throws IgniteCheckedException {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
@@ -328,13 +329,13 @@ public class GridSqlQuerySplitter {
 
         collectAllGridTablesInTarget(del.from(), tbls);
 
-        A.ensure(tbls.size() == 1, "Failed to determine target table for DELETE");
+        X.ensureX(tbls.size() == 1, "Failed to determine target table for DELETE");
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
-        A.notNull(gridTbl, "Failed to determine target grid table for DELETE");
+        X.ensureX(gridTbl != null, "Failed to determine target grid table for DELETE");
 
         Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
 
@@ -362,7 +363,7 @@ public class GridSqlQuerySplitter {
     /** */
     @SuppressWarnings("ConstantConditions")
     private static GridCacheTwoStepQuery splitUpdate(GridSqlUpdate update, Object[] params, Object[] keysFilter,
-                                                     boolean collocatedGrpBy, boolean distributedJoins) {
+        boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
 
@@ -382,7 +383,8 @@ public class GridSqlQuerySplitter {
      * @param keysParamIdx Index of new param for the array of keys.
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx)
+        throws IgniteCheckedException {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
@@ -391,13 +393,13 @@ public class GridSqlQuerySplitter {
 
         collectAllGridTablesInTarget(update.target(), tbls);
 
-        A.ensure(tbls.size() == 1, "Failed to determine target table for UPDATE");
+        X.ensureX(tbls.size() == 1, "Failed to determine target table for UPDATE");
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
-        A.notNull(gridTbl, "Failed to determine target grid table for UPDATE");
+        X.ensureX(gridTbl != null, "Failed to determine target grid table for UPDATE");
 
         Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
 

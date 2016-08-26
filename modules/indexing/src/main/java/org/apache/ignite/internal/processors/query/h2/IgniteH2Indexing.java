@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -134,7 +133,6 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -891,7 +889,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 GridSqlQuerySplitter.collectAllGridTablesInTarget(into, tbls);
 
-                A.ensureX(tbls.size() == 1, "Failed to determine target table for MERGE or INSERT");
+                if (tbls.size() != 1)
+                    throw new CacheException("Failed to determine target table for MERGE or INSERT");
 
                 GridSqlTable tbl = tbls.iterator().next();
 
@@ -934,7 +933,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 };
 
-                QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it, true);
+                QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it);
 
                 if (stmt instanceof GridSqlUpdate)
                     return doUpdate(cctx, (GridSqlUpdate) stmt, cur);
@@ -1100,13 +1099,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
-
-        A.ensure(qry.tables().size() == 1, "SQL update operations don't support more than one table");
+        if (qry.tables().size() != 1)
+            throw new CacheException("SQL update operations don't support more than one table");
 
         String tbl = qry.tables().iterator().next();
 
         TableDescriptor desc = tableDescriptorForNativeName(tbl, schema(cctx.name()));
-        A.notNull(desc, "Table descriptor not found [tbl=" + tbl + ']');
+        if (desc == null)
+            throw new CacheException("Table descriptor not found [tbl=" + tbl + ']');
 
         if (qry.initialStatement() instanceof GridSqlMerge)
             return doMerge(cctx, (GridSqlMerge)qry.initialStatement(), desc, qry.reduceQuery().parameters());
@@ -1168,7 +1168,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     private int doInsert(GridCacheContext cctx, GridSqlInsert ins, TableDescriptor desc, Object[] params)
         throws IgniteCheckedException {
-        A.ensure(!F.isEmpty(ins.rows()) && ins.query() == null, "SQL INSERT from SELECT is not supported");
+        if (F.isEmpty(ins.rows()) || ins.query() != null)
+            throw new CacheException("SQL MERGE from SELECT is not supported");
 
         GridSqlColumn[] cols = ins.columns();
 
@@ -1218,7 +1219,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, TableDescriptor desc, GridSqlColumn[] cols,
         GridSqlElement[] row, Object[] params) throws IgniteCheckedException {
         for (GridSqlElement rowEl : row)
-            A.ensure(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
+            X.ensureX(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
                 "SQL INSERT and MERGE statements support literal values only");
 
         Class<?> keyCls = U.firstNotNull(U.classForName(desc.type().keyTypeName(), null), desc.type().keyClass());
@@ -1250,7 +1251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Object colVal = getLiteralValue(row[i], params);
 
                 if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    X.ensureX(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
                         "[keyCls=" + desc.type().keyTypeName() + ']');
 
                     key = colVal;
@@ -1258,7 +1259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    A.ensure(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
+                    X.ensureX(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valType=" + desc.type().valueTypeName() + ']');
 
                     val = colVal;
@@ -1267,7 +1268,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 GridQueryProperty prop = desc.type().property(cols[i].columnName());
 
-                A.notNull(prop, "Property '" + cols[i].columnName() + "' not found.");
+                X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
 
                 prop.setValue(keyBuilder, valBuilder, colVal);
             }
@@ -1297,7 +1298,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Object colVal = getLiteralValue(row[i], params);
 
                 if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    A.ensure(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    X.ensureX(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
                         "[keyCls=" + keyCls.getName() + ']');
 
                     key = colVal;
@@ -1305,7 +1306,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    A.ensure(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
+                    X.ensureX(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valCls=" + valCls.getName() + ']');
 
                     val = colVal;
@@ -1316,8 +1317,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        A.notNull(key, "Key for INSERT or MERGE must not be null");
-        A.notNull(val, "Value for INSERT or MERGE must not be null");
+        X.ensureX(key != null, "Key for INSERT or MERGE must not be null");
+        X.ensureX(val != null, "Value for INSERT or MERGE must not be null");
 
         return new IgniteBiTuple<>(key, val);
     }
@@ -1327,13 +1328,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
      * @return literal object value.
      */
-    private static Object getLiteralValue(GridSqlElement element, Object[] params) {
+    private static Object getLiteralValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
         if (element instanceof GridSqlConst)
             return ((GridSqlConst)element).value().getObject();
         else if (element instanceof GridSqlParameter)
             return params[((GridSqlParameter)element).index()];
         else
-            throw new IllegalArgumentException("Unexpected SQL literal type [cls=" + element.getClass().getName() + ']');
+            throw new IgniteCheckedException("Unexpected SQL literal type [cls=" + element.getClass().getName() + ']');
     }
 
     /**
@@ -1438,7 +1439,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry) {
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry)
+        throws IgniteCheckedException {
         String type = qry.getType();
         String space = cctx.name();
 
@@ -1487,7 +1489,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
 
         // No metadata for SQL queries.
-        return new QueryCursorImpl<Cache.Entry<K,V>>(converted, true) {
+        return new QueryCursorImpl<Cache.Entry<K,V>>(converted) {
             @Override public void close() {
                 res.close();
             }
@@ -1504,7 +1506,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry)
+        throws IgniteCheckedException {
         Object[] errKeys = null;
 
         int items = 0;
@@ -1516,19 +1519,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (items == 0)
                     return r.get1();
                 else {
-                    A.ensure(!r.get1().isResultSet(), "");
+                    X.ensureX(!r.get1().isResultSet(), "Unexpected result set in results of UPDATE or DELETE");
                     int cnt = (Integer) r.get1().getAll().get(0).get(0);
-                    return new QueryCursorImpl<>(updateResult(items + cnt), false);
+                    return QueryCursorImpl.forUpdateResult(items + cnt);
                 }
             }
             else {
-                A.ensure(!r.get1().isResultSet(), "");
+                X.ensureX(!r.get1().isResultSet(), "Unexpected result set in results of UPDATE or DELETE");
                 items += (Integer) r.get1().getAll().get(0).get(0);
                 errKeys = r.get2();
             }
         }
 
-        throw new CacheException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
+        throw new IgniteCheckedException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
     }
 
     /**
@@ -1540,7 +1543,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Pair [Query results cursor; keys that have failed to be processed (for UPDATE and DELETE only)]
      */
     private IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> queryTwoStep0(GridCacheContext<?,?> cctx, SqlFieldsQuery qry,
-        Object[] failedKeys) {
+        Object[] failedKeys) throws IgniteCheckedException {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1604,8 +1607,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                boolean injectFailedKeys = !F.isEmpty(failedKeys);
-
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
                     failedKeys, grpByCollocated, distributedJoins);
 
@@ -1668,10 +1669,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder),
-            twoStepQry.initialStatement() instanceof GridSqlQuery
-        );
+        Iterable<List<?>> qryRes = runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder);
+
+        QueryCursorImpl<List<?>> cursor = twoStepQry.initialStatement() instanceof GridSqlQuery ?
+            new QueryCursorImpl<>(qryRes) : QueryCursorImpl.forUpdateResult((Integer) qryRes.iterator().next().get(0));
 
         cursor.fieldsMeta(meta);
 
@@ -1680,7 +1681,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
-        A.notNull(twoStepQry.initialStatement(), "Source statement undefined");
+        X.ensureX(twoStepQry.initialStatement() != null, "Source statement undefined");
 
         IgniteBiTuple<Integer, Object[]> updateRes = null;
 
@@ -1691,8 +1692,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
 
         if (updateRes != null)
-            return new IgniteBiTuple<>(new QueryCursorImpl<>(updateResult(updateRes.get1() - updateRes.get2().length),
-                false), updateRes.get2());
+            return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(updateRes.get1() - updateRes.get2().length),
+                updateRes.get2());
 
         return new IgniteBiTuple<>(cursor, null);
     }
@@ -1709,7 +1710,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridSqlQuerySplitter.collectAllGridTablesInTarget(updTarget, tbls);
 
-        A.ensureX(tbls.size() == 1, "Failed to determine target table for UPDATE");
+        if (tbls.size() != 1)
+            throw new CacheException("Failed to determine target table for UPDATE");
 
         GridSqlTable tbl = tbls.iterator().next();
 
@@ -1750,7 +1752,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings("unchecked")
-    private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor) {
+    private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor)
+        throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
         int res = 0;
 
@@ -1768,19 +1771,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res++;
         }
 
-        try {
-            Map<Object, EntryProcessorResult<Boolean>> delRes = cctx.cache().invokeAll(m);
+        Map<Object, EntryProcessorResult<Boolean>> delRes = cctx.cache().invokeAll(m);
 
-            if (F.isEmpty(delRes))
-                return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
+        if (F.isEmpty(delRes))
+            return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
 
-            Object[] errKeys = delRes.keySet().toArray();
+        Object[] errKeys = delRes.keySet().toArray();
 
-            return new IgniteBiTuple<>(res, errKeys);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException("Failed to perform SQL DELETE", e);
-        }
+        return new IgniteBiTuple<>(res, errKeys);
     }
 
     /**
@@ -1791,7 +1789,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Cursor corresponding to results of UPDATE (contains number of items affected).
      */
     @SuppressWarnings("unchecked")
-    private IgniteBiTuple<Integer, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update, QueryCursorImpl<List<?>> cursor) {
+    private IgniteBiTuple<Integer, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
+        QueryCursorImpl<List<?>> cursor) throws IgniteCheckedException {
         GridSqlTable tbl = null;
 
         GridSqlElement target = update.target();
@@ -1845,7 +1844,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     newVal = GridUnsafe.allocateInstance(valCls);
                 }
                 catch (InstantiationException ex) {
-                    throw new CacheException("Failed to perform SQL UPDATE", ex);
+                    throw new IgniteCheckedException("Failed to perform SQL UPDATE", ex);
                 }
 
             // Skip key and value - that's why we start off with 2nd column
@@ -1895,9 +1894,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Object[] errKeys = updRes.keySet().toArray();
 
             return new IgniteBiTuple<>(res, errKeys);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException("Failed to perform SQL UPDATE", e);
         }
         finally {
             cctx.operationContextPerCall(opCtx);
@@ -3793,30 +3789,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             entryModifier.apply(entry);
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Iterable<List<?>> updateResult(int b) {
-        return new UpdateResIterable(b);
-    }
-
-    /**
-     *
-     */
-    private final static class UpdateResIterable<T> implements Iterable<List> {
-        /** */
-        private final List<List> l;
-
-        /** */
-        private UpdateResIterable(T v) {
-            this.l = Collections.singletonList((List) Collections.singletonList(v));
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Iterator<List> iterator() {
-            return l.iterator();
         }
     }
 

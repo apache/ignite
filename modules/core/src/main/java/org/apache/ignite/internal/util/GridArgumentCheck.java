@@ -111,18 +111,6 @@ public class GridArgumentCheck {
     }
 
     /**
-     * Checks if given argument's condition is equal to {@code true}, otherwise
-     * throws {@link IgniteCheckedException} exception.
-     *
-     * @param cond Argument's value condition to check.
-     * @param desc Description of the condition to be used in error message.
-     */
-    public static void ensureX(boolean cond, String desc) throws IgniteCheckedException {
-        if (!cond)
-            throw new IgniteCheckedException(INVALID_ARG_MSG_PREFIX + desc);
-    }
-
-    /**
      * Checks that given collection is not empty.
      *
      * @param c Collection.

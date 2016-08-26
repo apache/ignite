@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -47,9 +48,16 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /**
      * @param iterExec Query executor.
+     */
+    public QueryCursorImpl(Iterable<T> iterExec) {
+        this(iterExec, true);
+    }
+
+    /**
+     * @param iterExec Query executor.
      * @param isResSet Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    public QueryCursorImpl(Iterable<T> iterExec, boolean isResSet) {
+    private QueryCursorImpl(Iterable<T> iterExec, boolean isResSet) {
         this.iterExec = iterExec;
         this.isResSet = isResSet;
     }
@@ -113,6 +121,17 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 }
             }
         }
+    }
+
+    /**
+     * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
+     *
+     * @param res Update result to wrap.
+     * @return Resulting Iterable.
+     */
+    @SuppressWarnings("unchecked")
+    public static QueryCursorImpl<List<?>> forUpdateResult(int itemsCnt) {
+        return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), false);
     }
 
     /**
