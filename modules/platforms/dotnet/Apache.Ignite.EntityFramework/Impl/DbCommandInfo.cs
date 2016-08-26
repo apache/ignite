@@ -20,6 +20,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Collections.Generic;
     using System.Data.Entity.Core.Common.CommandTrees;
     using System.Diagnostics;
+    using System.Linq;
 
     /// <summary>
     /// Command info.
@@ -92,9 +93,36 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         private static string[] GetAffectedEntitySets(DbModificationCommandTree tree)
         {
-            Debug.Assert(tree != null);
-            //tree.Target.Expression.
-            return new[] {"TODO"};
+            var visitor = new ScanExpressionVisitor();
+
+            tree.Target.Expression.Accept(visitor);
+
+            return visitor.EntitySets.ToArray();
+        }
+
+        /// <summary>
+        /// Visits Scan expressions and collects entity set names.
+        /// </summary>
+        private class ScanExpressionVisitor : BasicCommandTreeVisitor
+        {
+            /** */
+            private readonly List<string> _entitySets = new List<string>();
+
+            /// <summary>
+            /// Gets the entity sets.
+            /// </summary>
+            public IEnumerable<string> EntitySets
+            {
+                get { return _entitySets; }
+            }
+
+            /** <inheritdoc /> */
+            public override void Visit(DbScanExpression expression)
+            {
+                _entitySets.Add(expression.Target.Name);
+
+                base.Visit(expression);
+            }
         }
     }
 }
