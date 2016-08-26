@@ -17,10 +17,11 @@
 
 package org.apache.ignite.schema.test.generator;
 
-import java.io.File;
 import org.apache.ignite.schema.generator.CodeGenerator;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.test.AbstractSchemaImportTest;
+
+import java.io.File;
 
 /**
  * Tests for POJO generator.
@@ -56,12 +57,7 @@ public class CodeGeneratorTest extends AbstractSchemaImportTest {
         }
 
         assertTrue("Generated POJOs does not contains schema.", containsSchema);
-    }
 
-    /**
-     * Test that configuration generated correctly.
-     */
-    public void testConfigGeneration() throws Exception {
         CodeGenerator.snippet(pojos, TEST_PACKAGE, true, true, OUT_DIR_PATH, YES_TO_ALL);
 
         assertTrue("Generated configuration is differ from expected", compareFiles("CacheConfig", TEST_PATH, GEN_PTRN));
