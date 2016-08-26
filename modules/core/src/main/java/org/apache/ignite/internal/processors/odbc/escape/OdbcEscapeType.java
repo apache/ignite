@@ -63,8 +63,8 @@ public enum OdbcEscapeType {
     /** Escape sequence body. */
     private final String body;
 
-    /** Whether token must be delimited from the rest of escape sequence. */
-    private final boolean delimited;
+    /** Whether this is a standard token with no special handling. */
+    private final boolean standard;
 
     /** Whether empty escape sequence is allowed. */
     private final boolean allowEmpty;
@@ -73,12 +73,12 @@ public enum OdbcEscapeType {
      * Constructor.
      *
      * @param body Escape sequence body.
-     * @param delimited Whether token must be delimited from the rest of escape sequence.
+     * @param standard Whether this is a standard token with no special handling.
      * @param allowEmpty Whether empty escape sequence is allowed.
      */
-    OdbcEscapeType(String body, boolean delimited, boolean allowEmpty) {
+    OdbcEscapeType(String body, boolean standard, boolean allowEmpty) {
         this.body = body;
-        this.delimited = delimited;
+        this.standard = standard;
         this.allowEmpty = allowEmpty;
     }
 
@@ -90,10 +90,10 @@ public enum OdbcEscapeType {
     }
 
     /**
-     * @return Whether token must be delimited from the rest of escape sequence.
+     * @return Whether this is a standard token with no special handling.
      */
-    public boolean delimited() {
-        return delimited;
+    public boolean standard() {
+        return standard;
     }
 
     /**

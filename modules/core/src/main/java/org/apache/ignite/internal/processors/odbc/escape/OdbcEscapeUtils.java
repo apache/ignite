@@ -20,11 +20,19 @@ package org.apache.ignite.internal.processors.odbc.escape;
 import org.apache.ignite.IgniteException;
 
 import java.util.LinkedList;
+import java.util.regex.Pattern;
 
 /**
  * ODBC escape sequence parse.
  */
 public class OdbcEscapeUtils {
+
+    /**
+     * GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc'
+     */
+    private static final Pattern GUID_PATTERN =
+        Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
+
     /**
      * Parse escape sequence.
      *
@@ -145,14 +153,11 @@ public class OdbcEscapeUtils {
 
             OdbcEscapeToken token = parseToken(text, startPos, len);
 
-            switch (token.type()) {
-                case SCALAR_FUNCTION:
-                    return parseScalarExpression(text, startPos, len, token);
-
-                default:
-                    throw new IgniteException("Unsupported escape sequence token [text=" +
-                        substring(text, startPos, len) + ", token=" + token.type().body() + ']');
-            }
+            if (token.type().standard())
+                return parseStandardExpression(text, startPos, len, token);
+            else
+                throw new IgniteException("Unsupported escape sequence token [text=" +
+                    substring(text, startPos, len) + ", token=" + token.type().body() + ']');
         }
         else {
             // Nothing to escape, return original string.
@@ -191,7 +196,7 @@ public class OdbcEscapeUtils {
                 else {
                     empty = (startPos + len == pos + 1);
 
-                    if (!empty && typ.delimited()) {
+                    if (!empty && typ.standard()) {
                         char charAfter = text.charAt(pos);
 
                         if (!Character.isWhitespace(charAfter))
@@ -216,21 +221,61 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse concrete expression.
+     * Parse standard token.
      *
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
      * @param token Token.
-     * @return Parsed expression.
+     * @return Result.
      */
-    private static String parseScalarExpression(String text, int startPos, int len, OdbcEscapeToken token) {
+    private static String parseStandardExpression(String text, int startPos, int len, OdbcEscapeToken token) {
         assert validSubstring(text, startPos, len);
 
+        // Get expression borders.
         int startPos0 = startPos + 1 /* open brace */ + token.length() /* token. */;
         int len0 = len - 1 /* open brace */ - token.length() /* token */ - 1 /* close brace */;
 
-        return substring(text, startPos0, len0).trim();
+        switch (token.type()) {
+            case SCALAR_FUNCTION:
+                return parseScalarExpression(text, startPos0, len0);
+
+            case GUID:
+                return parseGuidExpression(text, startPos0, len0);
+
+            default:
+                throw new IgniteException("Unsupported escape sequence token [text=" +
+                    substring(text, startPos, len) + ", token=" + token.type().body() + ']');
+        }
+    }
+
+    /**
+     * Parse scalar function expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseScalarExpression(String text, int startPos, int len) {
+        return substring(text, startPos, len).trim();
+    }
+
+    /**
+     * Parse concrete expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseGuidExpression(String text, int startPos, int len) {
+        String val = substring(text, startPos, len).trim();
+
+        if (!GUID_PATTERN.matcher(val).matches())
+            throw new IgniteException("Invalid GUID escape sequence: " + substring(text, startPos, len));
+
+        return val;
     }
 
     /**

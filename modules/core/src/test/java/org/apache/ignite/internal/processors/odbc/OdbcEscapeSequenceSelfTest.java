@@ -25,18 +25,23 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.concurrent.Callable;
 
 /**
- * Scalar function escape sequence parser tests.
+ * Escape sequence parser tests.
  */
 public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple cases.
      */
-    public void testSimple() {
+    public void testTrivial() {
         check(
             "select * from table;",
             "select * from table;"
         );
+    }
 
+    /**
+     * Test escape sequence series.
+     */
+    public void testSimpleFunction() throws Exception {
         check(
             "test()",
             "{fn test()}"
@@ -51,12 +56,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select test() from table;",
             "select {fn test()} from table;"
         );
-    }
 
-    /**
-     * Test escape sequence series.
-     */
-    public void testSimpleFunction() throws Exception {
         check(
             "func(field1) func(field2)",
             "{fn func(field1)} {fn func(field2)}"
@@ -139,20 +139,15 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test non-closed escape sequence.
+     * Test invalid escape sequence.
      */
-    public void testFailedOnNonClosedEscapeSequence() {
+    public void testFailedOnInvalidFunctionSequence() {
         checkFail("select {fn func1(field1, {fn func2(field2), field3)} from SomeTable;");
+
+        checkFail("select {fn func1(field1, fn func2(field2)}, field3)} from SomeTable;");
     }
 
-    /**
-     * Test closing undeclared escape sequence.
-     */
-    public void testFailedOnClosingNotOpenedSequence() {
-        checkFail("select {fn func1(field1, func2(field2)}, field3)} from SomeTable;");
-    }
-
-    /**
+     /**
      * Test escape sequences with additional whitespace characters
      */
     public void testFunctionEscapeSequenceWithWhitespaces() throws Exception {
@@ -163,6 +158,65 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         check("func1()", "{ \n fn  func1()}");
 
         checkFail("{ \n func1()}");
+    }
+
+    /**
+     * Test guid escape sequences
+     */
+    public void testGuidEscapeSequence() {
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "select '12345678-9abc-def0-1234-123456789abc' from SomeTable;",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;"
+        );
+
+        check(
+            "select '12345678-9abc-def0-1234-123456789abc'",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        checkFail("select {guid '1234567-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '1234567-8123-4123-4123-4123456789abc'}");
+
+        checkFail("select {guid '12345678-9abc-defg-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-12345678-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-1234-1234-1234-123456789abcdef'}");
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidGuidSequence() {
+        checkFail("select {guid '12345678-9abc-def0-1234-123456789abc' from SomeTable;");
+
+        checkFail("select guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testGuidEscapeSequenceWithWhitespaces() throws Exception {
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{ guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{    guid  '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{  \n guid\n'12345678-9abc-def0-1234-123456789abc'}"
+        );
     }
 
     /**
