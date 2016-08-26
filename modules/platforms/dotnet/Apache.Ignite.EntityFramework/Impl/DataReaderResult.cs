@@ -43,18 +43,20 @@ namespace Apache.Ignite.EntityFramework.Impl
             try
             {
                 _data = ReadAll(reader).ToArray();
+
+                _schema = new DataReaderField[reader.FieldCount];
+
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    _schema[i] = new DataReaderField(reader.GetName(i), reader.GetFieldType(i), 
+                        reader.GetDataTypeName(i));
+                }
             }
             finally 
             {
                 reader.Dispose();
             }
 
-            _schema = new DataReaderField[reader.FieldCount];
-
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                _schema[i] = new DataReaderField(reader.GetName(i), reader.GetFieldType(i), reader.GetDataTypeName(i));
-            }
         }
 
         /// <summary>
