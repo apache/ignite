@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.igfs.localfs;
+package org.apache.ignite.internal.processors.igfs.localfs;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Tests to check
  */
-public class LocalSecondaryFileSystemSymlinksTest extends IgfsAbstractBaseSelfTest {
+public class IgfsLocalSecondaryFileSystemSymlinksTest extends IgfsAbstractBaseSelfTest {
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
@@ -57,7 +57,7 @@ public class LocalSecondaryFileSystemSymlinksTest extends IgfsAbstractBaseSelfTe
     /**
      *
      */
-    public LocalSecondaryFileSystemSymlinksTest() {
+    public IgfsLocalSecondaryFileSystemSymlinksTest() {
         super(IgfsMode.DUAL_SYNC);
     }
 

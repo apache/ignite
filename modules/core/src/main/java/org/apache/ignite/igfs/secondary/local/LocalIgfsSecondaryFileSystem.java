@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -108,36 +110,41 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         File f = fileForPath(path);
 
-        if (!recursive || !f.isDirectory())
+        if (!recursive)
             return f.delete();
         else
-            return deleteDirectory(f);
+            return deleteRecursive(f);
     }
 
     /**
      * Delete directory recursively.
      *
-     * @param dir Directory.
+     * @param f Directory.
      * @return {@code true} if successful.
      */
-    private boolean deleteDirectory(File dir) {
-        if (Files.isSymbolicLink(dir.toPath()))
-            return dir.delete();
+    private boolean deleteRecursive(File f) {
+        BasicFileAttributes attrs;
+        try {
+            attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class,
+                LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException e) {
+            return false;
+        }
 
-        File[] entries = dir.listFiles();
+        if (!attrs.isDirectory() || attrs.isSymbolicLink())
+            return f.delete();
+
+        File[] entries = f.listFiles();
 
         if (entries != null) {
             for (File entry : entries) {
-                if (entry.isDirectory())
-                    deleteDirectory(entry);
-                else {
-                    if (!entry.delete())
-                        return false;
-                }
+                boolean res = deleteRecursive(entry);
+                if (!res)
+                    return false;
             }
         }
 
-        return dir.delete();
+        return f.delete();
     }
 
     /** {@inheritDoc} */
