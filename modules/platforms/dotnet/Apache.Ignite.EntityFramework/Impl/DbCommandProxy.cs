@@ -118,7 +118,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
             if (!_info.IsQuery)
+            {
+                // TODO: Invalidate sets
+
                 return _command.ExecuteReader(behavior);
+            }
 
             // TODO: Check policy
 
@@ -159,6 +163,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override int ExecuteNonQuery()
         {
+            // TODO: Invalidate sets
             return _command.ExecuteNonQuery();
         }
 

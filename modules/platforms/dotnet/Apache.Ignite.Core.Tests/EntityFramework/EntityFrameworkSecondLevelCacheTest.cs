@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     {
         /** */
         private static readonly string TempFile = Path.GetTempFileName();
-        
+
         /** */
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
@@ -110,7 +110,14 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
-        private class MyDbConfiguration : IgniteDbConfiguration
+        [Test]
+        public void TestTx()
+        {
+            // TODO: Find out what's called within a TX.
+        }
+
+
+    private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
             {
