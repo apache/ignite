@@ -104,6 +104,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * @param evtCount event count to process.
      * @param parallelismCnt DataStreamSource parallelism count
      * @param filter IgnitePredicate filter to filter events.
+     *
      * @throws Exception
      */
     private void checkIgniteSource(int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {

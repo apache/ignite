@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Apache Flink Ignite source implemented as a RichParallelSourceFunction.
  */
@@ -226,5 +225,5 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             return true;
         }
     }
-
 }
+
