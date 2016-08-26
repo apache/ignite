@@ -22,5 +22,84 @@ package org.apache.ignite.internal.processors.odbc.escape;
  */
 public enum OdbcEscapeType {
     /** Scalar function. */
-    FN
+    SCALAR_FUNCTION("fn", true, false),
+
+    /** Outer join. */
+    OUTER_JOIN("oj", true, false),
+
+    /** Date. */
+    DATE("d", true, false),
+
+    /** Timestamp. */
+    TIMESTAMP("ts", true, false),
+
+    /** Time. */
+    TIME("t", true, false),
+
+    /** GUID. */
+    GUID("guid", true, false),
+
+    /** LIKE clause. */
+    LIKE("\'", false, true);
+
+    /** Values in convenient order. */
+    private static final OdbcEscapeType[] VALS = new OdbcEscapeType[] {
+        SCALAR_FUNCTION, // Assume that scalar functions are very frequent.
+        DATE, TIMESTAMP, // Date and timestamp are relatively frequent as well; also TS must go before T.
+        OUTER_JOIN,      // Joins are less frequent,
+        LIKE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
+    };
+
+    /**
+     * Get values in convenient order, where the most frequent values goes first, and "startsWith" invocation is
+     * enough to get type (i.e. "ts" goes before "t").
+     *
+     * @return Values.
+     */
+    public static OdbcEscapeType[] sortedValues() {
+        return VALS;
+    }
+
+    /** Escape sequence body. */
+    private final String body;
+
+    /** Whether this is a standard token with no special handling. */
+    private final boolean standard;
+
+    /** Whether empty escape sequence is allowed. */
+    private final boolean allowEmpty;
+
+    /**
+     * Constructor.
+     *
+     * @param body Escape sequence body.
+     * @param standard Whether this is a standard token with no special handling.
+     * @param allowEmpty Whether empty escape sequence is allowed.
+     */
+    OdbcEscapeType(String body, boolean standard, boolean allowEmpty) {
+        this.body = body;
+        this.standard = standard;
+        this.allowEmpty = allowEmpty;
+    }
+
+    /**
+     * @return Escape sequence body.
+     */
+    public String body() {
+        return body;
+    }
+
+    /**
+     * @return Whether this is a standard token with no special handling.
+     */
+    public boolean standard() {
+        return standard;
+    }
+
+    /**
+     * @return Whether empty escape sequence is allowed.
+     */
+    public boolean allowEmpty() {
+        return allowEmpty;
+    }
 }
