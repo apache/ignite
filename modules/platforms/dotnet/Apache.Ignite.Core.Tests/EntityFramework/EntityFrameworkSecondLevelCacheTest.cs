@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                Assert.AreEqual(3, _events.Count);
+                Assert.AreEqual(9, _events.Count);
             }
         }
 
