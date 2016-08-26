@@ -31,6 +31,21 @@ namespace ignite
     {
         namespace interop
         {
+            /**
+             * Operation result.
+             */
+            enum OperationResult
+            {
+                /** Null. */
+                ResultNull = 0,
+
+                /** Object. */
+                ResultObject = 1,
+
+                /** Error. */
+                ResultError = -1
+            };
+
             InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 env(env), javaRef(javaRef)
             {
@@ -116,8 +131,7 @@ namespace ignite
                 return false;
             }
 
-            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp,
-                IgniteError* err)
+            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
                 JniErrorInfo jniErr;
 
@@ -135,6 +149,29 @@ namespace ignite
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         ReadFrom(inMem.Get(), outOp);
+                }
+            }
+
+            void InteropTarget::OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> outInMem = env.Get()->AllocateMemory();
+
+                int64_t outInPtr = WriteTo(outInMem.Get(), inOp, err);
+
+                if (outInPtr)
+                {
+                    int64_t res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outInPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultObject)
+                        ReadFrom(outInMem.Get(), outOp);
+                    else if (res == ResultNull)
+                        outOp.SetNull();
+
+                    //Read and process error if res == ResultError here.
                 }
             }
         }

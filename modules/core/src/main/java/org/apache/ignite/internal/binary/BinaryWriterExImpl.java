@@ -17,18 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -37,6 +25,18 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -170,21 +170,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             return;
         }
 
-        if (enableReplace && desc.getWriteReplaceMethod() != null) {
-            Object replacedObj;
-
-            try {
-                replacedObj = desc.getWriteReplaceMethod().invoke(obj);
-            }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof BinaryObjectException)
-                    throw (BinaryObjectException)e.getTargetException();
-
-                throw new BinaryObjectException("Failed to execute writeReplace() method on " + obj, e);
-            }
+        if (enableReplace && desc.isWriteReplace()) {
+            Object replacedObj = desc.writeReplace(obj);
 
             if (replacedObj == null) {
                 out.writeByte(GridBinaryMarshaller.NULL);

@@ -178,13 +178,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TearDown]
         public void AfterTest()
         {
+            CacheTestStore.Reset();
+
             var cache = GetCache();
 
             cache.Clear();
 
-            Assert.IsTrue(cache.IsEmpty(), "Cache is not empty: " + cache.GetSize());
-
-            CacheTestStore.Reset();
+            Assert.IsTrue(cache.IsEmpty(),
+                "Cache is not empty: " +
+                string.Join(", ", cache.Select(x => string.Format("[{0}:{1}]", x.Key, x.Value))));
 
             TestUtils.AssertHandleRegistryHasItems(300, _storeCount, Ignition.GetIgnite(GridName));
 
@@ -210,6 +212,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
+
+            // Test exception in store
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() =>
+                cache.LoadCache(new CacheEntryFilter(), 100, 10)).InnerException);
         }
 
         [Test]
@@ -262,6 +269,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 Assert.AreEqual("val_" + i, cache.GetAsync(i).Result);
             }
+
+            // Test errors
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(
+                Assert.Throws<AggregateException>(
+                    () => cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait())
+                    .InnerException);
         }
 
         [Test]
@@ -282,6 +296,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("val", cache.Get(1));
 
             Assert.AreEqual(1, cache.GetSize());
+
+            // Test errors
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+
+            cache.LocalEvict(new[] { 1 });
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
         }
 
         [Test]
@@ -418,8 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             using (var tx = cache.Ignite.GetTransactions().TxStart())
             {
-                CacheTestStore.ExpCommit = true;
-
                 tx.AddMeta("meta", 100);
 
                 cache.Put(1, "val");
@@ -548,6 +567,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cacheName = TemplateStoreCacheName.Replace("*", Guid.NewGuid().ToString());
             
             return Ignition.GetIgnite(GridName).GetOrCreateCache<int, string>(cacheName);
+        }
+
+        private static void CheckCustomStoreError(Exception err)
+        {
+            var customErr = err as CacheTestStore.CustomStoreException ??
+                         err.InnerException as CacheTestStore.CustomStoreException;
+
+            Assert.IsNotNull(customErr);
+
+            Assert.AreEqual(customErr.Message, customErr.Details);
         }
     }
 

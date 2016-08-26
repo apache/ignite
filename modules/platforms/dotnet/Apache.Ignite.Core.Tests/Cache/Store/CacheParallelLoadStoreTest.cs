@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
 
             // check that items were processed in parallel
-            Assert.GreaterOrEqual(CacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount);
+            Assert.GreaterOrEqual(CacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount - 1);
         }
 
         /// <summary>
