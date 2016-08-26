@@ -24,7 +24,6 @@ import org.apache.ignite.lang.IgnitePredicate;
  * Ignite Predicate filter for {@link IgnitePredicate}.
  */
 public class IgnitePredicateInteger implements IgnitePredicate<CacheEvent> {
-
     /** Default max event new value. */
     private static final int MAX_EVT = 10;
 
@@ -36,9 +35,6 @@ public class IgnitePredicateInteger implements IgnitePredicate<CacheEvent> {
      */
     @Override
     public boolean apply(CacheEvent cacheEvt) {
-        if ((Integer)cacheEvt.newValue() < MAX_EVT)
-            return false;
-
-        return true;
+        return (Integer)cacheEvt.newValue() >= MAX_EVT;
     }
 }

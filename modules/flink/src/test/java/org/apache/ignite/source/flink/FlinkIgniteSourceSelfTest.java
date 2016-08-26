@@ -24,13 +24,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests for {@link IgniteSource}.
  */
+@SuppressWarnings("unchecked")
 public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** Grid Name. */
     private static final String GRID_NAME = "igniteServerNode";
@@ -67,61 +70,8 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    @SuppressWarnings("unchecked")
     public void testFlinkIgniteSource() throws Exception {
-        Ignite ignite = G.ignite(GRID_NAME);
-
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        env.getConfig().disableSysoutLogging();
-        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
-
-        IgniteCache cache = ignite.cache(TEST_CACHE);
-
-        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
-
-        igniteSrc.setEvtBatchSize(10);
-
-        igniteSrc.setEvtBufferTimeout(10);
-
-        igniteSrc.start("", "PUT");
-
-        DataStream<CacheEvent> stream = env.addSource(igniteSrc);
-
-        int cnt = 0;
-
-        while (cnt < 10)  {
-            cache.put(cnt, cnt);
-
-            cnt++;
-        }
-
-        X.println(">>> Printing stream results.");
-
-        stream.print();
-
-        stream.addSink(new SinkFunction<CacheEvent>() {
-            int sinkEvtCntr = 0;
-
-            @Override public void invoke(CacheEvent cacheEvt) throws Exception {
-                sinkEvtCntr++;
-                assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
-                if(sinkEvtCntr == 10){
-                    igniteSrc.stop();
-                }
-            }
-        });
-
-        try {
-            env.execute();
-        }
-        catch (Exception e){
-            log.error(">>> Unable to process stream due to exception.", e);
-        }
-        finally {
-            igniteSrc.stop();
-        }
+        checkIgniteSource(10, null);
     }
 
     /**
@@ -130,8 +80,29 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    @SuppressWarnings("unchecked")
     public void testFlinkIgniteSourceWithLargeBatch() throws Exception {
+        checkIgniteSource(100, null);
+    }
+
+    /**
+     * Tests for the Flink source with Integer Predicate Filter.
+     * Ignite started in source based on what is specified in the configuration file.
+     *
+     * @throws Exception
+     */
+    public void testFlinkIgniteSourceWithFilter() throws Exception {
+        checkIgniteSource(10, new IgnitePredicateInteger());
+    }
+
+    /**
+     * Validation for the Flink source with EventCount and IgnitePredicate Filter.
+     * Ignite started in source based on what is specified in the configuration file.
+     *
+     * @param evtCount event count to process.
+     * @param filter IgnitePredicate filter to filter events.
+     * @throws Exception
+     */
+    private void checkIgniteSource(int evtCount, IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -144,16 +115,15 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
 
         igniteSrc.setEvtBatchSize(10);
+        igniteSrc.setEvtBufTimeout(10);
 
-        igniteSrc.setEvtBufferTimeout(10);
-
-        igniteSrc.start("", "PUT");
+        igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
 
         DataStream<CacheEvent> stream = env.addSource(igniteSrc);
 
         int cnt = 0;
 
-        while (cnt < 100)  {
+        while (cnt < evtCount)  {
             cache.put(cnt, cnt);
 
             cnt++;
@@ -168,129 +138,12 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
             @Override public void invoke(CacheEvent cacheEvt) throws Exception {
                 sinkEvtCntr++;
+
                 assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 100);
-                if(sinkEvtCntr == 10){
+                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < evtCount);
+
+                if(sinkEvtCntr == 10)
                     igniteSrc.stop();
-                }
-            }
-        });
-
-        try {
-            env.execute();
-        }
-        catch (Exception e){
-            log.error(">>> Unable to process stream due to exception.", e);
-        }
-        finally {
-            igniteSrc.stop();
-        }
-    }
-
-    /**
-     * Tests for the Flink source with default settings.
-     * Ignite started in source based on what is specified in the configuration file.
-     *
-     * @throws Exception
-     */
-    @SuppressWarnings("unchecked")
-    public void testFlinkIgniteSourceWithDefaultSettings() throws Exception {
-        Ignite ignite = G.ignite(GRID_NAME);
-
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        env.getConfig().disableSysoutLogging();
-        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
-
-        IgniteCache cache = ignite.cache(TEST_CACHE);
-
-        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
-
-        igniteSrc.start("", "PUT");
-
-        DataStream<CacheEvent> stream = env.addSource(igniteSrc);
-
-        int cnt = 0;
-
-        while (cnt < 10)  {
-            cache.put(cnt, cnt);
-
-            cnt++;
-        }
-
-        X.println(">>> Printing stream results.");
-
-        stream.print();
-
-        stream.addSink(new SinkFunction<CacheEvent>() {
-            int sinkEvtCntr = 0;
-
-            @Override public void invoke(CacheEvent cacheEvt) throws Exception {
-                sinkEvtCntr++;
-                assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
-                if(sinkEvtCntr == 10){
-                    igniteSrc.stop();
-                }
-            }
-        });
-
-        try {
-            env.execute();
-        }
-        catch (Exception e){
-            log.error(">>> Unable to process stream due to exception.", e);
-        }
-        finally {
-            igniteSrc.stop();
-        }
-    }
-
-    /**
-     * Tests for the Flink source with Integer Predicate Filter.
-     * Ignite started in source based on what is specified in the configuration file.
-     *
-     * @throws Exception
-     */
-    @SuppressWarnings("unchecked")
-    public void testFlinkIgniteSourceWithFilter() throws Exception {
-        Ignite ignite = G.ignite(GRID_NAME);
-
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        env.getConfig().disableSysoutLogging();
-        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
-
-        IgniteCache cache = ignite.cache(TEST_CACHE);
-
-        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
-
-        igniteSrc.start(IgnitePredicateInteger.class.getName(), "PUT");
-
-        DataStream<CacheEvent> stream = env.addSource(igniteSrc);
-
-        int cnt = 0;
-
-        while (cnt < 10)  {
-            cache.put(cnt, cnt);
-
-            cnt++;
-        }
-
-        X.println(">>> Printing stream results.");
-
-        stream.print();
-
-        stream.addSink(new SinkFunction<CacheEvent>() {
-            int sinkEvtCntr = 0;
-
-            @Override public void invoke(CacheEvent cacheEvt) throws Exception {
-                sinkEvtCntr++;
-                assertNotNull(cacheEvt.newValue().toString());
-                assertTrue(Integer.parseInt(cacheEvt.newValue().toString()) < 10);
-                if(sinkEvtCntr == 10){
-                    igniteSrc.stop();
-                }
             }
         });
 
@@ -305,3 +158,5 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         }
     }
 }
+
+
