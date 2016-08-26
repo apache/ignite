@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -107,7 +108,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                         GridNioFilter[] filters =
                             (ctx.getOdbcExecutorService() != null) ?
                                 new GridNioFilter[] {
-                                    new OdbcNioFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
+                                    new GridNioAsyncNotifyFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
                                     new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
                                 }
                                 : new GridNioFilter[] {new GridNioCodecFilter(new OdbcBufferedParser(), log, false)};
