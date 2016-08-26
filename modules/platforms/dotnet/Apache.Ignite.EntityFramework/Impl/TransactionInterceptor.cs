@@ -33,7 +33,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <param name="cache">The cache.</param>
         public TransactionInterceptor(IDbCache cache)
         {
-            Debug.Assert(_cache != null);
+            Debug.Assert(cache != null);
 
             _cache = cache;
         }
