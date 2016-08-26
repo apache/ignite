@@ -107,6 +107,19 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
                 Assert.AreEqual(16, _events.Count);
+
+                // Delete post.
+                context.Posts.Remove(context.Posts.First());
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(1, context.Posts.Count());
+                Assert.AreEqual(22, _events.Count);
+
+                // Modify post.
+                context.Posts.Single().Title += " - updated";
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(1, context.Posts.Count(x => x.Title.EndsWith("updated")));
             }
         }
 
