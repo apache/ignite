@@ -40,7 +40,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         public DataReaderResult(IDataReader reader)
         {
-            _data = ReadAll(reader).ToArray();
+            try
+            {
+                _data = ReadAll(reader).ToArray();
+            }
+            finally 
+            {
+                reader.Dispose();
+            }
 
             _schema = new DataReaderField[reader.FieldCount];
 
