@@ -55,7 +55,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
 
     /** Remote Listener id. */
-    private static UUID rmtLsnrId;
+    private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
     private volatile boolean stopped = true;
