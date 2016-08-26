@@ -327,7 +327,11 @@ public class IgniteHadoopTestSuite extends TestSuite {
                                 out.flush();
                             }
 
-                            Files.setPosixFilePermissions(dest.toPath(), modeToPermissionSet(entry.getMode()));
+                            try {
+                                Files.setPosixFilePermissions(dest.toPath(), modeToPermissionSet(entry.getMode()));
+                            } catch (IOException e) {
+                                // swallow
+                            }
 
                             X.println("]");
                         }

@@ -143,6 +143,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         /** */
         int lastYear;
 
+        /** {@inheritDoc} */
         @Override protected void reduce(YearTemperature key, Iterable<Text> vals0, Context context)
             throws IOException, InterruptedException {
             X.println("___ : " + context.getTaskAttemptID() + " --> " + key);
