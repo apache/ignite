@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq.Impl
-{
-    using System;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Query;
+#include "test_utils.h"
 
-    /// <summary>
-    /// Cache proxy interface that allows query execution without key/value generic arguments.
-    /// </summary>
-    internal interface ICacheQueryProxy
+namespace ignite
+{
+
+    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
     {
-        /// <summary>
-        /// Queries separate entry fields.
-        /// </summary>
-        /// <typeparam name="T">Type of the result.</typeparam>
-        /// <param name="qry">SQL fields query.</param>
-        /// <param name="readerFunc">Reader function, takes raw reader and field count, returns typed result.</param>
-        /// <returns>
-        /// Cursor.
-        /// </returns>
-        IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc);
+        SQLCHAR sqlstate[7] = {};
+        SQLINTEGER nativeCode;
+
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT reallen = 0;
+
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+
+        return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
+            std::string(reinterpret_cast<char*>(message), reallen);
     }
 }
