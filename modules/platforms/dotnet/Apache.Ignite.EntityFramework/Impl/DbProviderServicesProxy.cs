@@ -67,6 +67,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
         {
+            // TODO: When is this called? Need to propagate CommandInfo
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(prototype), _cache);
         }
 
