@@ -470,13 +470,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     batchStoreCommit(writeMap().values());
 
-                    // Node that for near transactions we grab all entries.
-                    for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
-                        GridCacheContext cacheCtx = txEntry.context();
+                    try {
+                        // Node that for near transactions we grab all entries.
+                        for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
+                            GridCacheContext cacheCtx = txEntry.context();
 
-                        boolean replicate = cacheCtx.isDrEnabled();
+                            boolean replicate = cacheCtx.isDrEnabled();
 
-                        try {
                             while (true) {
                                 try {
                                     GridCacheEntryEx cached = txEntry.cached();
@@ -679,28 +679,30 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
                         }
-                        catch (Throwable ex) {
-                            // In case of error, we still make the best effort to commit,
-                            // as there is no way to rollback at this point.
-                            err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
-                                "(all transaction entries will be invalidated): " + CU.txString(this), ex);
-
-                            U.error(log, "Commit failed.", err);
-
-                            uncommit();
-
-                            state(UNKNOWN);
-
-                            if (ex instanceof Error)
-                                throw (Error)ex;
-                        }
                     }
+                    catch (Throwable ex) {
+                        // In case of error, we still make the best effort to commit,
+                        // as there is no way to rollback at this point.
+                        err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
+                            "(all transaction entries will be invalidated): " + CU.txString(this), ex);
 
-                    if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                        GridCacheReturnCompletableWrapper wrapper =
-                            cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+                        U.error(log, "Commit failed.", err);
 
-                        wrapper.initialize(ret);
+                        uncommit();
+
+                        state(UNKNOWN);
+
+                        if (ex instanceof Error)
+                            throw (Error)ex;
+
+                    }
+                    finally {
+                        if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
+                            GridCacheReturnCompletableWrapper wrapper =
+                                cctx.tm().getCommittedTxReturn(this.nearXidVersion());
+
+                            wrapper.initialize(ret);
+                        }
                     }
                 }
 
