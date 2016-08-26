@@ -107,7 +107,7 @@ namespace Apache.Ignite.EntityFramework
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
 
-            var efCache = new IgniteEntityFrameworkCache(cache);
+            var efCache = new StrictReadWriteCache(cache);
             var transactionHandler = new TransactionInterceptor(efCache);
 
             AddInterceptor(transactionHandler);

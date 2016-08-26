@@ -26,7 +26,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     {
         private readonly IDbCache _cache;
 
-        public TransactionInterceptor(IgniteEntityFrameworkCache cache)
+        public TransactionInterceptor(StrictReadWriteCache cache)
         {
             Debug.Assert(_cache != null);
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.EntityFramework
+namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
     using System.Collections.Generic;
@@ -27,12 +27,11 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
-    using Apache.Ignite.EntityFramework.Impl;
 
     /// <summary>
-    /// Ignite-base EntityFramework second-level cache.
+    /// Read-write cache with strict concurrency control.
     /// </summary>
-    public class IgniteEntityFrameworkCache : IDbCache
+    internal class StrictReadWriteCache : IDbCache
     {
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
@@ -55,13 +54,13 @@ namespace Apache.Ignite.EntityFramework
         private readonly object _syncRoot = new object();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteEntityFrameworkCache"/> class.
+        /// Initializes a new instance of the <see cref="StrictReadWriteCache"/> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
         [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters")]
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
             Justification = "Validation is present")]
-        public IgniteEntityFrameworkCache(ICache<string, object> cache)
+        public StrictReadWriteCache(ICache<string, object> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 

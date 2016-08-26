@@ -62,7 +62,7 @@
     <Compile Include="IgniteEntityFrameworkCachingPolicy.cs" />
     <Compile Include="Impl\IDbCache.cs" />
     <Compile Include="IgniteDbConfiguration.cs" />
-    <Compile Include="IgniteEntityFrameworkCache.cs" />
+    <Compile Include="Impl\StrictReadWriteCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
