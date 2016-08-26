@@ -152,7 +152,7 @@ public class IgfsMetaManager extends IgfsManager {
     private final boolean client;
 
     /** Compute facade for client tasks. */
-    private IgniteCompute remoteCompute;
+    private IgniteCompute rmtCompute;
 
     /**
      * Constructor.
@@ -333,7 +333,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Compute facade.
      */
     private IgniteCompute remoteCompute() {
-        IgniteCompute remoteCompute0 = remoteCompute;
+        IgniteCompute remoteCompute0 = rmtCompute;
 
         if (remoteCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
@@ -342,7 +342,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             remoteCompute0 = ignite.compute(cluster);
 
-            remoteCompute = remoteCompute0;
+            rmtCompute = remoteCompute0;
         }
 
         assert remoteCompute0 != null;
