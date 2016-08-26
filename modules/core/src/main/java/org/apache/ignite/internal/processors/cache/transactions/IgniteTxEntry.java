@@ -604,6 +604,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param oldVal Old value.
      */
     public void oldValue(@Nullable CacheObject oldVal, boolean hasReadVal) {
+        if (this.oldVal == null)
+            this.oldVal = new TxEntryValueHolder();
+
         this.oldVal.value(this.val.op(), oldVal, false, hasReadVal);
     }
 
