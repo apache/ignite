@@ -117,7 +117,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            if (!_info.IsQuery)
+            if (_info.IsModification)
             {
                 // TODO: Invalidate sets
 

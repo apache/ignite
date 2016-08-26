@@ -116,8 +116,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO: Find out what's called within a TX.
         }
 
-
-    private class MyDbConfiguration : IgniteDbConfiguration
+        private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
             {

@@ -26,7 +26,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     internal class DbCommandInfo
     {
         /** */
-        private readonly bool _isQuery;
+        private readonly bool _isModification;
 
         /** */
         private readonly IDbCache _cache;
@@ -39,16 +39,22 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
 
-            _isQuery = tree is DbQueryCommandTree;
+            _isModification = !(tree is DbQueryCommandTree);
+
+            if (_isModification)
+            {
+                // Modification command - collect affected entity sets.
+            }
+
             _cache = cache;
         }
 
         /// <summary>
         /// Gets a value indicating whether this command is a query and does not modify data.
         /// </summary>
-        public bool IsQuery
+        public bool IsModification
         {
-            get { return _isQuery; }
+            get { return _isModification; }
         }
 
         /// <summary>
