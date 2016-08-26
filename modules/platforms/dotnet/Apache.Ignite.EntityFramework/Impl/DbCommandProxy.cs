@@ -117,6 +117,9 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
+            if (!_info.IsQuery)
+                return _command.ExecuteReader(behavior);
+
             // TODO: Check policy
 
             var cacheKey = GetKey();
