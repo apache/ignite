@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
@@ -27,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     /// <summary>
     /// Tests the EF cache provider.
     /// </summary>
-    public class SecondLevelCacheInitializationTest
+    public class EntityFrameworkCacheInitializationTest
     {
         /// <summary>
         /// Tests the IgniteDbConfiguration.
@@ -35,18 +34,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestConfigurationAndStartup()
         {
-            // Run in a separate process because EF caches DbConfiguration statically and other tests may fail.
-            //if (Environment.GetEnvironmentVariable(GetType().FullName) != "true")
-            //{
-            //    Environment.SetEnvironmentVariable(GetType().FullName, "true");
-
-            //    TestUtils.RunTestInNewProcess(GetType().FullName, "TestConfigurationAndStartup");
-
-            //    return;
-            //}
-
-            //Debugger.Launch();
-
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
             Assert.IsNull(Ignition.TryGetIgnite());
 

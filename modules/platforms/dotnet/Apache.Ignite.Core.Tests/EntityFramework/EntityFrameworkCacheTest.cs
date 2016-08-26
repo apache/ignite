@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     /// <summary>
     /// Integration test with temporary SQL CE database.
     /// </summary>
-    public class SecondLevelCacheTest : IEventListener<CacheEvent>
+    public class EntityFrameworkCacheTest : IEventListener<CacheEvent>
     {
         /** */
         private static readonly string TempFile = Path.GetTempFileName();

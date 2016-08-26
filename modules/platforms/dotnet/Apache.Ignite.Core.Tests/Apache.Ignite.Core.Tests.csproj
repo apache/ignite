@@ -90,7 +90,7 @@
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
-    <Compile Include="EntityFramework\SecondLevelCacheTest.cs" />
+    <Compile Include="EntityFramework\EntityFrameworkCacheTest.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
     <Compile Include="TestAppConfig.cs" />
@@ -160,7 +160,7 @@
     <Compile Include="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="DeploymentTest.cs" />
-    <Compile Include="EntityFramework\SecondLevelCacheInitializationTest.cs" />
+    <Compile Include="EntityFramework\EntityFrameworkCacheInitializationTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
     <Compile Include="Examples\ExamplesTest.cs" />
