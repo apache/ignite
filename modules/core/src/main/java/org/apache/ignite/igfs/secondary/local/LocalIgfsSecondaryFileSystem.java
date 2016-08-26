@@ -124,10 +124,11 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      */
     private boolean deleteRecursive(File f) {
         BasicFileAttributes attrs;
+
         try {
-            attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class,
-                LinkOption.NOFOLLOW_LINKS);
-        } catch (IOException e) {
+            attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        }
+        catch (IOException ignore) {
             return false;
         }
 
@@ -139,6 +140,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (entries != null) {
             for (File entry : entries) {
                 boolean res = deleteRecursive(entry);
+
                 if (!res)
                     return false;
             }
