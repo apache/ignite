@@ -225,15 +225,19 @@ namespace ignite
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
-                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG |
-                    SQL_AF_COUNT | SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN |
-                    SQL_AF_SUM;
+                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_AVG | SQL_AF_COUNT |
+                    SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN | SQL_AF_SUM;
 #endif // SQL_AGGREGATE_FUNCTIONS
 
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN | 
+                    SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
+                    SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_MOD | SQL_FN_NUM_SIGN |
+                    SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN | SQL_FN_NUM_PI | SQL_FN_NUM_RAND |
+                    SQL_FN_NUM_DEGREES | SQL_FN_NUM_LOG10 | SQL_FN_NUM_POWER | SQL_FN_NUM_RADIANS | SQL_FN_NUM_ROUND |
+                    SQL_FN_NUM_TRUNCATE;
 #endif // SQL_NUMERIC_FUNCTIONS
 
 #ifdef SQL_STRING_FUNCTIONS
@@ -282,7 +286,7 @@ namespace ignite
 #ifdef SQL_SYSTEM_FUNCTIONS
                 // Bitmask enumerating the scalar system functions supported by the
                 // driver and associated data source.
-                intParams[SQL_SYSTEM_FUNCTIONS] = 0;
+                intParams[SQL_SYSTEM_FUNCTIONS] = SQL_FN_SYS_USERNAME | SQL_FN_SYS_DBNAME | SQL_FN_SYS_IFNULL;
 #endif // SQL_SYSTEM_FUNCTIONS
 
 #ifdef SQL_CONVERT_FUNCTIONS
