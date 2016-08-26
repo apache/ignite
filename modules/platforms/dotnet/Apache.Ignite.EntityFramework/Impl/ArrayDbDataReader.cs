@@ -163,10 +163,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var row = GetRow();
 
-            // TODO: Bounds check. See the docs!
-            Array.Copy(row, values, row.Length);
+            var size = Math.Min(row.Length, values.Length);
 
-            return row.Length;
+            Array.Copy(row, values, size);
+
+            return size;
         }
 
         public override bool IsDBNull(int ordinal)
