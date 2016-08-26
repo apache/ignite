@@ -33,11 +33,23 @@ public class OdbcConfiguration {
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+
     /** Endpoint address. */
     private String endpointAddr;
 
     /** Max number of opened cursors per connection. */
     private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
+
+    /** Idle timeout. */
+    private long idleTimeout = Long.MAX_VALUE;
+
+    /** Socket send buffer size. */
+    private int sockSndBufSize = DFLT_SOCK_BUF_SIZE;
+
+    /** Socket receive buffer size. */
+    private int sockRcvBufSize = DFLT_SOCK_BUF_SIZE;
 
     /**
      * Creates ODBC server configuration with all default values.
@@ -57,6 +69,9 @@ public class OdbcConfiguration {
 
         endpointAddr = cfg.getEndpointAddress();
         maxOpenCursors = cfg.getMaxOpenCursors();
+        idleTimeout = cfg.getIdleTimeout();
+        sockSndBufSize = cfg.getSocketSendBufferSize();
+        sockRcvBufSize = cfg.getSocketReceiveBufferSize();
     }
 
     /**
@@ -66,9 +81,9 @@ public class OdbcConfiguration {
      * <p>
      * The following address formats are permitted:
      * <ul>
-     *     <li>{@code hostname} - will use provided hostname and default port range;</li>
-     *     <li>{@code hostname:port} - will use provided hostname and port;</li>
-     *     <li>{@code hostname:port_from..port_to} - will use provided hostname and port range.</li>
+     * <li>{@code hostname} - will use provided hostname and default port range;</li>
+     * <li>{@code hostname:port} - will use provided hostname and port;</li>
+     * <li>{@code hostname:port_from..port_to} - will use provided hostname and port range.</li>
      * </ul>
      * <p>
      * When set to {@code null}, ODBC processor will be bound to {@link #DFLT_TCP_HOST} host and default port range.
@@ -112,6 +127,69 @@ public class OdbcConfiguration {
      */
     public OdbcConfiguration setMaxOpenCursors(int maxOpenCursors) {
         this.maxOpenCursors = maxOpenCursors;
+
+        return this;
+    }
+
+    /**
+     * Gets send buffer size.
+     *
+     * @return buffer size in bytes.
+     */
+    public int getSocketSendBufferSize() {
+        return sockSndBufSize;
+    }
+
+    /**
+     * Sets receive buffer size. See {@link #getSocketSendBufferSize()}.
+     *
+     * @param sockSndBufSize buffer size in bytes.
+     * @return This instance for chaining.
+     */
+    public OdbcConfiguration setSocketSendBufferSize(int sockSndBufSize) {
+        this.sockSndBufSize = sockSndBufSize;
+
+        return this;
+    }
+
+    /**
+     * Gets receive buffer size. Defaults to {@link #DFLT_SOCK_BUF_SIZE}.
+     *
+     * @return buffer size in bytes.
+     */
+    public int getSocketReceiveBufferSize() {
+        return sockRcvBufSize;
+    }
+
+    /**
+     * Sets receive buffer size. See {@link #getSocketReceiveBufferSize()}.
+     *
+     * @param sockRcvBufSize buffer size in bytes.
+     * @return This instance for chaining.
+     */
+    public OdbcConfiguration setSocketReceiveBufferSize(int sockRcvBufSize) {
+        this.sockRcvBufSize = sockRcvBufSize;
+
+        return this;
+    }
+
+    /**
+     * Gets idle timeout. Defaults to {@link #DFLT_SOCK_BUF_SIZE}.
+     *
+     * @return Idle timeout in milliseconds.
+     */
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
+     * Sets idle timeout.
+     *
+     * @param idleTimeout Idle timeout in milliseconds.
+     * @return This instance for chaining.
+     */
+    public OdbcConfiguration setIdleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
 
         return this;
     }
