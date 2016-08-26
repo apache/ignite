@@ -26,10 +26,17 @@ import java.util.regex.Pattern;
  * ODBC escape sequence parse.
  */
 public class OdbcEscapeUtils {
+    /** Odbc date regexp pattern: '2016-08-23' */
+    private static final Pattern DATE_PATTERN = Pattern.compile("^'\\d{4}-\\d{2}-\\d{2}'$");
 
-    /**
-     * GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc'
-     */
+    /** Odbc time regexp pattern: '14:33:44' */
+    private static final Pattern TIME_PATTERN = Pattern.compile("^'\\d{2}:\\d{2}:\\d{2}'$");
+
+    /** Odbc timestamp regexp pattern: '2016-08-23 14:33:44.12345' */
+    private static final Pattern TIMESTAMP_PATTERN =
+        Pattern.compile("^'\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(\\.\\d+)?'$");
+
+    /** GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc' */
     private static final Pattern GUID_PATTERN =
         Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
 
@@ -241,7 +248,16 @@ public class OdbcEscapeUtils {
                 return parseScalarExpression(text, startPos0, len0);
 
             case GUID:
-                return parseGuidExpression(text, startPos0, len0);
+                return parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+
+            case DATE:
+                return parseExpression(text, startPos0, len0, token.type(), DATE_PATTERN);
+
+            case TIME:
+                return parseExpression(text, startPos0, len0, token.type(), TIME_PATTERN);
+
+            case TIMESTAMP:
+                return parseExpression(text, startPos0, len0, token.type(), TIMESTAMP_PATTERN);
 
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
@@ -269,11 +285,11 @@ public class OdbcEscapeUtils {
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseGuidExpression(String text, int startPos, int len) {
+    private static String parseExpression(String text, int startPos, int len, OdbcEscapeType type, Pattern pattern) {
         String val = substring(text, startPos, len).trim();
 
-        if (!GUID_PATTERN.matcher(val).matches())
-            throw new IgniteException("Invalid GUID escape sequence: " + substring(text, startPos, len));
+        if (!pattern.matcher(val).matches())
+            throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
         return val;
     }
