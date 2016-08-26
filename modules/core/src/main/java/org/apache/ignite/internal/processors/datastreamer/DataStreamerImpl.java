@@ -1664,8 +1664,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        // Try reserve partition first;
-                        {
+                        if (!cctx.isLocal()) {
                             int p = cctx.affinity().partition(e.getKey());
 
                             if (ignoredParts.contains(p))
