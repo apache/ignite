@@ -20,7 +20,7 @@ namespace Apache.Ignite.EntityFramework
     /// <summary>
     /// Caching policy.
     /// </summary>
-    public class IgniteEntityFrameworkCachingPolicy
+    public interface IDbCachingPolicy
     {
         // TODO
     }

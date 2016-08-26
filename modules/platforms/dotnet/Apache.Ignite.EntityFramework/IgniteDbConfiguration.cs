@@ -67,9 +67,9 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="configurationSectionName">Name of the configuration section.</param>
         /// <param name="cacheName">Name of the cache.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IgniteEntityFrameworkCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(string configurationSectionName, string cacheName, IgniteEntityFrameworkCachingPolicy policy)
+        public IgniteDbConfiguration(string configurationSectionName, string cacheName, IDbCachingPolicy policy)
              : this(GetConfiguration(configurationSectionName, true), cacheName, policy)
         {
             // No-op.
@@ -80,10 +80,10 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IgniteEntityFrameworkCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
         public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
-            IgniteEntityFrameworkCachingPolicy policy)
+            IDbCachingPolicy policy)
             : this(GetOrStartIgnite(igniteConfiguration), cacheName, policy)
         {
             // No-op.
@@ -94,11 +94,11 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IgniteEntityFrameworkCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", 
             Justification = "Validation is present")]
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(IIgnite ignite, string cacheName, IgniteEntityFrameworkCachingPolicy policy)
+        public IgniteDbConfiguration(IIgnite ignite, string cacheName, IDbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
@@ -107,14 +107,14 @@ namespace Apache.Ignite.EntityFramework
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
 
-            var efCache = new StrictReadWriteCache(cache);
+            var efCache = new StrictReadWriteCache(cache);  // TODO: Configurable strategy
             var transactionHandler = new TransactionInterceptor(efCache);
 
             AddInterceptor(transactionHandler);
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
-                (services, a) => new DbProviderServicesProxy(services, transactionHandler, policy));
+                (services, a) => new DbProviderServicesProxy(services, transactionHandler, policy, efCache));
 
         }
 
