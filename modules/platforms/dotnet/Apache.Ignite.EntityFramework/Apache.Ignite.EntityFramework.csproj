@@ -60,7 +60,7 @@
     <Compile Include="Impl\DataReaderField.cs" />
     <Compile Include="Impl\TransactionInterceptor.cs" />
     <Compile Include="IgniteEntityFrameworkCachingPolicy.cs" />
-    <Compile Include="ICache.cs" />
+    <Compile Include="Impl\IDbCache.cs" />
     <Compile Include="IgniteDbConfiguration.cs" />
     <Compile Include="IgniteEntityFrameworkCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

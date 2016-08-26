@@ -24,7 +24,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Linq;
 
     /// <summary>
-    /// Result of a DbDataReader.
+    /// Cacheable result of a DbDataReader.
     /// </summary>
     [Serializable]
     internal class DataReaderResult

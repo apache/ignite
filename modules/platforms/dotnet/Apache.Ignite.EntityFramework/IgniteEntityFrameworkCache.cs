@@ -27,11 +27,12 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.EntityFramework.Impl;
 
     /// <summary>
     /// Ignite-base EntityFramework second-level cache.
     /// </summary>
-    public class IgniteEntityFrameworkCache : ICache
+    public class IgniteEntityFrameworkCache : IDbCache
     {
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;

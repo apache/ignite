@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
-    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
@@ -121,6 +120,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Ignition.StopAll(true);
         }
 
+        /*
         /// <summary>
         /// Tests put/get/invalidate operations.
         /// </summary>
@@ -195,5 +195,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             return new IgniteEntityFrameworkCache(cache);
         }
+        */
     }
 }

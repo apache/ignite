@@ -20,13 +20,16 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data;
     using System.Data.Common;
     using System.Data.Entity.Infrastructure.Interception;
+    using System.Diagnostics;
 
     internal class TransactionInterceptor : IDbTransactionInterceptor
     {
-        private readonly IgniteEntityFrameworkCache _cache;
+        private readonly IDbCache _cache;
 
         public TransactionInterceptor(IgniteEntityFrameworkCache cache)
         {
+            Debug.Assert(_cache != null);
+
             _cache = cache;
         }
 

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.EntityFramework
+namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
     using System.Collections.Generic;
 
-    public interface ICache
+    internal interface IDbCache
     {
         // TODO: Do we even need an interface?
         bool GetItem(string key, out object value);
