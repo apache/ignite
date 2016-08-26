@@ -251,20 +251,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      * Test date escape sequences with additional whitespace characters
      */
     public void testDateEscapeSequenceWithWhitespaces() throws Exception {
-        check(
-            "'2016-08-26'",
-            "{ d '2016-08-26'}"
-        );
+        check("'2016-08-26'", "{ d '2016-08-26'}");
 
-        check(
-            "'2016-08-26'",
-            "{   d  '2016-08-26'}"
-        );
+        check("'2016-08-26'", "{   d  '2016-08-26'}");
 
-        check(
-            "'2016-08-26'",
-            "{ \n d\n'2016-08-26'}"
-        );
+        check("'2016-08-26'", "{ \n d\n'2016-08-26'}");
     }
 
     /**
@@ -277,6 +268,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
 
         checkFail("{d '2016-08-26}");
 
+        checkFail("{d '16-08-26'}");
+
+        checkFail("{d '2016/08/02'}");
+
         checkFail("select {d '2016-08-26' from table;");
 
         checkFail("select {}d '2016-08-26'} from table;");
@@ -286,19 +281,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      * Test date escape sequences
      */
     public void testTimeEscapeSequence() throws Exception {
-        check(
-            "'13:15:08'",
-            "{t '13:15:08'}"
-        );
+        check("'13:15:08'", "{t '13:15:08'}");
 
-        check(
-            "select '13:15:08'",
-            "select {t '13:15:08'}"
-        );
+        check("select '13:15:08'", "select {t '13:15:08'}");
 
-        check(
-            "select '13:15:08' from table;",
-            "select {t '13:15:08'} from table;"
+        check("select '13:15:08' from table;", "select {t '13:15:08'} from table;"
         );
     }
 
@@ -306,20 +293,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      * Test date escape sequences with additional whitespace characters
      */
     public void testTimeEscapeSequenceWithWhitespaces() throws Exception {
-        check(
-            "'13:15:08'",
-            "{ t '13:15:08'}"
-        );
+        check("'13:15:08'", "{ t '13:15:08'}");
 
-        check(
-            "'13:15:08'",
-            "{   t  '13:15:08'}"
-        );
+        check("'13:15:08'", "{   t  '13:15:08'}");
 
-        check(
-            "'13:15:08'",
-            "{ \n t\n'13:15:08'}"
-        );
+        check("'13:15:08'", "{ \n t\n'13:15:08'}");
     }
 
     /**
@@ -331,6 +309,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         checkFail("{t 13:15:08'}");
 
         checkFail("{t '13:15:08}");
+
+        checkFail("{t '13 15:08'}");
+
+        checkFail("{t '3:15:08'}");
 
         checkFail("select {t '13:15:08' from table;");
 
@@ -384,7 +366,15 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
 
         checkFail("{ts '2016-08-26 13:15:08}");
 
-        checkFail("{t s '2016-08-26 13:15:08'}");
+        checkFail("{ts '16-08-26 13:15:08'}");
+
+        checkFail("{ts '2016-08-26 3:25:08'}");
+
+        checkFail("{ts '2016-08 26 03:25:08'}");
+
+        checkFail("{ts '2016-08-26 03 25:08'}");
+
+        checkFail("{t s '2016-08-26 13:15:08''}");
 
         checkFail("select {ts '2016-08-26 13:15:08' from table;");
 
