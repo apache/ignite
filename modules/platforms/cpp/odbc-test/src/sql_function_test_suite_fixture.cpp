@@ -139,7 +139,12 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
 
-        BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(res), static_cast<size_t>(resLen)), expected);
+        std::string actual;
+
+        if (resLen > 0)
+            actual.assign(reinterpret_cast<char*>(res), static_cast<size_t>(resLen));
+
+        BOOST_CHECK_EQUAL(actual, expected);
     }
 
     template<>
