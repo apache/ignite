@@ -99,8 +99,8 @@ public class DatabaseMetadataParser {
             if (!children.isEmpty()) {
                 parent.children(children);
 
-                res.add(parent);
-                res.addAll(children);
+                res.add(parent); // Add schema description.
+                res.addAll(children); // Add tables in schema.
             }
         }
 

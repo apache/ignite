@@ -39,12 +39,25 @@ namespace ignite
     {
         /**
          * Binary reader.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryReader
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
              *
              * @param impl Implementation.
              */
@@ -308,11 +321,11 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::common::SafeArray<char> arr(len + 1);
+                    ignite::common::FixedSizeArray<char> arr(len + 1);
 
-                    ReadString(fieldName, arr.target, len + 1);
+                    ReadString(fieldName, arr.GetData(), static_cast<int32_t>(arr.GetSize()));
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
                 else
                     return std::string();
