@@ -557,7 +557,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         cmd.add(workDir.getAbsolutePath());
 
         if (log.isDebugEnabled())
-            log.debug("Start process [cmd=" + cmd + ", workDir=" + workDir + ']');
+            log.debug("Starting external process [cmd=" + cmd + ", workDir=" + workDir + ']');
 
         return new ProcessBuilder(cmd)
             .redirectErrorStream(true)
