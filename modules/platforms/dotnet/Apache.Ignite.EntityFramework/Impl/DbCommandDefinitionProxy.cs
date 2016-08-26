@@ -37,8 +37,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(definition != null);
 
             var proxy = definition as DbCommandDefinitionProxy;
-
             _definition = proxy != null ? proxy._definition : definition;
+
             _info = info;
         }
 

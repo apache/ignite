@@ -58,7 +58,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(txInterceptor != null);
             Debug.Assert(cache != null);
 
-            _services = services;
+            var proxy = services as DbProviderServicesProxy;
+            _services = proxy != null ? proxy._services : services;
+
             _interceptor = txInterceptor;
             _policy = policy;
             _cache = cache;
