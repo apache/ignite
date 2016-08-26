@@ -188,6 +188,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     public void testFailedOnInvalidGuidSequence() {
         checkFail("select {guid'12345678-9abc-def0-1234-123456789abc'}");
 
+        checkFail("select {guid 12345678-9abc-def0-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-9abc-def0-1234-123456789abc}");
+
         checkFail("select {guid '12345678-9abc-def0-1234-123456789abc' from SomeTable;");
 
         checkFail("select guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;");
@@ -228,17 +232,17 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testDateEscapeSequence() throws Exception {
         check(
-            "PARSEDATETIME('2016-08-26', 'yyyy-MM-dd')",
+            "'2016-08-26'",
             "{d '2016-08-26'}"
         );
 
         check(
-            "select PARSEDATETIME('2016-08-26', 'yyyy-MM-dd')",
+            "select '2016-08-26'",
             "select {d '2016-08-26'}"
         );
 
         check(
-            "select PARSEDATETIME('2016-08-26', 'yyyy-MM-dd') from table;",
+            "select '2016-08-26' from table;",
             "select {d '2016-08-26'} from table;"
         );
     }
@@ -248,17 +252,17 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testDateEscapeSequenceWithWhitespaces() throws Exception {
         check(
-            "PARSEDATETIME('2016-08-26', 'yyyy-MM-dd')",
+            "'2016-08-26'",
             "{ d '2016-08-26'}"
         );
 
         check(
-            "PARSEDATETIME('2016-08-26', 'yyyy-MM-dd')",
+            "'2016-08-26'",
             "{   d  '2016-08-26'}"
         );
 
         check(
-            "PARSEDATETIME('2016-08-26', 'yyyy-MM-dd')",
+            "'2016-08-26'",
             "{ \n d\n'2016-08-26'}"
         );
     }
@@ -268,6 +272,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testFailedOnInvalidDateSequence() {
         checkFail("{d'2016-08-26'}");
+
+        checkFail("{d 2016-08-26'}");
+
+        checkFail("{d '2016-08-26}");
 
         checkFail("select {d '2016-08-26' from table;");
 
@@ -279,17 +287,17 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testTimeEscapeSequence() throws Exception {
         check(
-            "PARSEDATETIME('13:15:08', 'HH-mm-ss')",
+            "'13:15:08'",
             "{t '13:15:08'}"
         );
 
         check(
-            "select PARSEDATETIME('13:15:08', 'HH-mm-ss')",
+            "select '13:15:08'",
             "select {t '13:15:08'}"
         );
 
         check(
-            "select PARSEDATETIME('13:15:08', 'HH-mm-ss') from table;",
+            "select '13:15:08' from table;",
             "select {t '13:15:08'} from table;"
         );
     }
@@ -299,17 +307,17 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testTimeEscapeSequenceWithWhitespaces() throws Exception {
         check(
-            "PARSEDATETIME('13:15:08', 'HH-mm-ss')",
+            "'13:15:08'",
             "{ t '13:15:08'}"
         );
 
         check(
-            "PARSEDATETIME('13:15:08', 'HH-mm-ss')",
+            "'13:15:08'",
             "{   t  '13:15:08'}"
         );
 
         check(
-            "PARSEDATETIME('13:15:08', 'HH-mm-ss')",
+            "'13:15:08'",
             "{ \n t\n'13:15:08'}"
         );
     }
@@ -319,6 +327,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testFailedOnInvalidTimeSequence() {
         checkFail("{t'13:15:08'}");
+
+        checkFail("{t 13:15:08'}");
+
+        checkFail("{t '13:15:08}");
 
         checkFail("select {t '13:15:08' from table;");
 
@@ -330,17 +342,17 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testTimestampEscapeSequence() throws Exception {
         check(
-            "PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss')",
+            "'2016-08-26 13:15:08'",
             "{ts '2016-08-26 13:15:08'}"
         );
 
         check(
-            "select PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss')",
+            "select '2016-08-26 13:15:08'",
             "select {ts '2016-08-26 13:15:08'}"
         );
 
         check(
-            "select PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss') from table;",
+            "select '2016-08-26 13:15:08' from table;",
             "select {ts '2016-08-26 13:15:08'} from table;"
         );
     }
@@ -349,15 +361,15 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      * Test timestamp escape sequences with additional whitespace characters
      */
     public void testTimestampEscapeSequenceWithWhitespaces() throws Exception {
-        check("PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss')",
+        check("'2016-08-26 13:15:08'",
             "{ ts '2016-08-26 13:15:08'}"
         );
 
-        check("PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss')",
+        check("'2016-08-26 13:15:08'",
             "{   ts  '2016-08-26 13:15:08'}"
         );
 
-        check("PARSEDATETIME('2016-08-26 13:15:08', 'yyyy-MM-dd HH-mm-ss')",
+        check("'2016-08-26 13:15:08'",
             "{ \n ts\n'2016-08-26 13:15:08'}"
         );
     }
@@ -367,6 +379,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testFailedOnInvalidTimestampSequence() {
         checkFail("{ts'2016-08-26 13:15:08'}");
+
+        checkFail("{ts 2016-08-26 13:15:08'}");
+
+        checkFail("{ts '2016-08-26 13:15:08}");
 
         checkFail("{t s '2016-08-26 13:15:08'}");
 

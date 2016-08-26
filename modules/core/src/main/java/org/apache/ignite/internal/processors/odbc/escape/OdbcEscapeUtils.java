@@ -244,13 +244,9 @@ public class OdbcEscapeUtils {
                 return parseGuidExpression(text, startPos0, len0);
 
             case DATE:
-                return parseDateExpression(text, startPos0, len0);
-
             case TIME:
-                return parseTimeExpression(text, startPos0, len0);
-
             case TIMESTAMP:
-                return parseTimestampExpression(text, startPos0, len0);
+                return parseDateTimeExpression(text, startPos0, len0, token.type());
 
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
@@ -295,47 +291,13 @@ public class OdbcEscapeUtils {
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseDateExpression(String text, int startPos, int len) {
+    private static String parseDateTimeExpression(String text, int startPos, int len, OdbcEscapeType type) {
         String val = substring(text, startPos, len).trim();
 
         if(val.charAt(0) !='\'' || val.charAt(val.length()-1)!='\'')
-            throw new IgniteException("Invalid date escape sequence: " + substring(text, startPos, len));
+            throw new IgniteException("Invalid "+type+ " escape sequence: " + substring(text, startPos, len));
 
-        return "PARSEDATETIME("+val+", 'yyyy-MM-dd')";
-    }
-
-    /**
-     * Parse time expression.
-     *
-     * @param text Text.
-     * @param startPos Start position.
-     * @param len Length.
-     * @return Parsed expression.
-     */
-    private static String parseTimeExpression(String text, int startPos, int len) {
-        String val = substring(text, startPos, len).trim();
-
-        if(val.charAt(0) !='\'' || val.charAt(val.length()-1)!='\'')
-            throw new IgniteException("Invalid date escape sequence: " + substring(text, startPos, len));
-
-        return "PARSEDATETIME("+val+", 'HH-mm-ss')";
-    }
-
-    /**
-     * Parse timestamp expression.
-     *
-     * @param text Text.
-     * @param startPos Start position.
-     * @param len Length.
-     * @return Parsed expression.
-     */
-    private static String parseTimestampExpression(String text, int startPos, int len) {
-        String val = substring(text, startPos, len).trim();
-
-        if(val.charAt(0) !='\'' || val.charAt(val.length()-1)!='\'')
-            throw new IgniteException("Invalid date escape sequence: " + substring(text, startPos, len));
-
-        return "PARSEDATETIME("+val+", 'yyyy-MM-dd HH-mm-ss')";
+        return val;
     }
 
     /**
