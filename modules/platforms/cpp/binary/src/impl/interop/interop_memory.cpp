@@ -129,11 +129,11 @@ namespace ignite
             {
                 Length(memPtr, val);
             }
-                
+
             InteropUnpooledMemory::InteropUnpooledMemory(int32_t cap)
             {
                 memPtr = static_cast<int8_t*>(malloc(IGNITE_MEM_HDR_LEN));
-                
+
                 Data(memPtr, malloc(cap));
                 Capacity(memPtr, cap);
                 Length(memPtr, 0);
