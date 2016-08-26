@@ -329,6 +329,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         );
 
         check(
+            "'2016-08-26 13:15:08.123456'",
+            "{ts '2016-08-26 13:15:08.123456'}"
+        );
+
+        check(
             "select '2016-08-26 13:15:08'",
             "select {ts '2016-08-26 13:15:08'}"
         );
@@ -360,6 +365,8 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      * Test invalid escape sequence.
      */
     public void testFailedOnInvalidTimestampSequence() {
+        checkFail("{ts '2016-08-26 13:15:08,12345'}");
+
         checkFail("{ts'2016-08-26 13:15:08'}");
 
         checkFail("{ts 2016-08-26 13:15:08'}");
