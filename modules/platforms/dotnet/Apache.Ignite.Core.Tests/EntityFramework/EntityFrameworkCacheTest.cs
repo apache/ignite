@@ -138,6 +138,13 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO: 
         }
 
+        [Test]
+        public void TestCacheReader()
+        {
+            // Tests all kinds of entity field types to cover ArrayDbDataReader
+            
+        }
+
         private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
