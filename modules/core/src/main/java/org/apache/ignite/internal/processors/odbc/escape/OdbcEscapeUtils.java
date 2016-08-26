@@ -275,7 +275,7 @@ public class OdbcEscapeUtils {
         if (!GUID_PATTERN.matcher(val).matches())
             throw new IgniteException("Invalid GUID escape sequence: " + substring(text, startPos, len));
 
-        return val;
+        return "CAST(" + val + " AS UUID)";
     }
 
     /**
