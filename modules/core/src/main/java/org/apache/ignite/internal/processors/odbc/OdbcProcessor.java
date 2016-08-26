@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
@@ -103,6 +104,14 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
+                        GridNioFilter[] filters =
+                            (ctx.getOdbcExecutorService() != null) ?
+                                new GridNioFilter[] {
+                                    new OdbcNioFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
+                                    new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
+                                }
+                                : new GridNioFilter[] {new GridNioCodecFilter(new OdbcBufferedParser(), log, false)};
+
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
                             .port(port)
@@ -115,7 +124,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .byteOrder(ByteOrder.nativeOrder())
                             .socketSendBufferSize(DFLT_SOCK_BUF_SIZE)
                             .socketReceiveBufferSize(DFLT_SOCK_BUF_SIZE)
-                            .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
+                            .filters(filters)
                             .directMode(false)
                             .idleTimeout(Long.MAX_VALUE)
                             .build();

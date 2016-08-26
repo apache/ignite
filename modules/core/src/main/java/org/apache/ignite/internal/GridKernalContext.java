@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -68,6 +64,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 /**
  *
@@ -523,6 +524,15 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of ODBC requests.
+     *
+     * @return Thread pool implementation to be used for processing of client
+     *      messages.
+     */
+    public ExecutorService getOdbcExecutorService();
 
     /**
      * Gets exception registry.

@@ -33,6 +33,12 @@ public class OdbcConfiguration {
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
+    /** Default size of management thread pool. */
+    public static final int DFLT_ODBC_THREAD_POOL_SIZE = 4;
+
+    /** Rebalance thread pool size. */
+    private int odbcThreadPoolSize = DFLT_ODBC_THREAD_POOL_SIZE;
+
     /** Endpoint address. */
     private String endpointAddr;
 
@@ -57,6 +63,7 @@ public class OdbcConfiguration {
 
         endpointAddr = cfg.getEndpointAddress();
         maxOpenCursors = cfg.getMaxOpenCursors();
+        odbcThreadPoolSize = cfg.getOdbcThreadPoolSize();
     }
 
     /**
@@ -112,6 +119,31 @@ public class OdbcConfiguration {
      */
     public OdbcConfiguration setMaxOpenCursors(int maxOpenCursors) {
         this.maxOpenCursors = maxOpenCursors;
+
+        return this;
+    }
+
+    /**
+     * Size of thread pool that is in charge of processing odbc tasks.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_ODBC_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size to be used
+     */
+    public int getOdbcThreadPoolSize() {
+        return odbcThreadPoolSize;
+    }
+
+
+    /**
+     * Sets system thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see OdbcConfiguration#getOdbcThreadPoolSize() ()
+     * @return {@code this} for chaining.
+     */
+    public OdbcConfiguration setOdbcThreadPoolSize(int poolSize) {
+        odbcThreadPoolSize = poolSize;
 
         return this;
     }

@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -91,6 +77,21 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
@@ -306,6 +307,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService odbcExecSvc;
+
+    /** */
+    @GridToStringExclude
     protected IgniteStripedThreadPoolExecutor callbackExecSvc;
 
     /** */
@@ -367,6 +372,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param odbcExecSvc ODBC executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -384,6 +390,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService odbcExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
@@ -401,6 +408,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+        this.odbcExecSvc = odbcExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
         marshCtx = new MarshallerContextImpl(plugins);
@@ -925,6 +933,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getOdbcExecutorService() {
+        return odbcExecSvc;
     }
 
     /** {@inheritDoc} */
