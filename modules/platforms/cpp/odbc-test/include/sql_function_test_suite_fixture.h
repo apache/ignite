@@ -161,6 +161,9 @@ namespace ignite
     void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected);
 
     template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected);
+
+    template<>
     void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request);
 
     template<>
