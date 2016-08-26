@@ -72,7 +72,7 @@
                     <!-- Set number of prefetch blocks. -->
                     <property name="prefetchBlocks" value="32"/>
 
-                    <property name="metaCacheConfig">
+                    <property name="metaCacheConfiguration">
                         <bean class="org.apache.ignite.configuration.CacheConfiguration">
                             <property name="cacheMode" value="REPLICATED"/>
                             <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -80,7 +80,7 @@
                         </bean>
                     </property>
 
-                    <property name="dataCacheConfig">
+                    <property name="dataCacheConfiguration">
                         <bean class="org.apache.ignite.configuration.CacheConfiguration">
                             <property name="cacheMode" value="PARTITIONED"/>
                             <property name="atomicityMode" value="TRANSACTIONAL"/>

@@ -73,7 +73,7 @@
                     <property name="name" value="igfs"/>
 
                     <!-- IGFS internal meta cache configuration. -->
-                    <property name="metaCacheConfig">
+                    <property name="metaCacheConfiguration">
                         <bean class="org.apache.ignite.configuration.CacheConfiguration">
                             <property name="cacheMode" value="REPLICATED"/>
                             <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -81,7 +81,7 @@
                     </property>
 
                     <!-- IGFS internal data cache configuration. -->
-                    <property name="dataCacheConfig">
+                    <property name="dataCacheConfiguration">
                         <bean class="org.apache.ignite.configuration.CacheConfiguration">
                             <property name="atomicityMode" value="TRANSACTIONAL"/>
                         </bean>
