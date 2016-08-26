@@ -373,6 +373,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
+        assert expireTime >= 0;
+
         dataStore(part).update(key, partId, val, ver, expireTime);
     }
 
