@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-#include "sql_function_test_suite_fixture.h"
+#include "sql_test_suite_fixture.h"
 
 #include "test_utils.h"
 
 namespace ignite
 {
-    SqlFunctionTestSuiteFixture::SqlFunctionTestSuiteFixture():
+    SqlTestSuiteFixture::SqlTestSuiteFixture():
         testCache(0),
         env(NULL),
         dbc(NULL),
@@ -94,7 +94,7 @@ namespace ignite
         BOOST_REQUIRE(stmt != NULL) ;
     }
 
-    SqlFunctionTestSuiteFixture::~SqlFunctionTestSuiteFixture()
+    SqlTestSuiteFixture::~SqlTestSuiteFixture()
     {
         // Releasing statement handle.
         SQLFreeHandle(SQL_HANDLE_STMT, stmt);
@@ -109,7 +109,7 @@ namespace ignite
         ignite::Ignition::Stop(grid.GetName(), true);
     }
 
-    void SqlFunctionTestSuiteFixture::CheckSingleResult0(const char* request,
+    void SqlTestSuiteFixture::CheckSingleResult0(const char* request,
         SQLSMALLINT type, void* column, SQLLEN bufSize, SQLLEN* resSize) const
     {
         SQLRETURN ret;
@@ -132,7 +132,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
         SQLLEN resLen = 0;
@@ -148,31 +148,31 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
     {
         CheckSingleResultNum0<int64_t>(request, expected, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
     {
         CheckSingleResultNum0<int32_t>(request, expected, SQL_C_SLONG);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
     {
         CheckSingleResultNum0<int16_t>(request, expected, SQL_C_SSHORT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected)
     {
         CheckSingleResultNum0<int8_t>(request, expected, SQL_C_STINYINT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected)
     {
         SQLFLOAT res = 0;
 
@@ -182,7 +182,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected)
     {
         SQLDOUBLE res = 0;
 
@@ -192,7 +192,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected)
     {
         SQLCHAR res = 0;
 
@@ -202,7 +202,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
         SQLLEN resLen = 0;
@@ -211,31 +211,31 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
     {
         CheckSingleResultNum0<int64_t>(request, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
     {
         CheckSingleResultNum0<int32_t>(request, SQL_C_SLONG);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
     {
         CheckSingleResultNum0<int16_t>(request, SQL_C_SSHORT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request)
     {
         CheckSingleResultNum0<int8_t>(request, SQL_C_STINYINT);
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request)
     {
         SQLFLOAT res = 0;
 
@@ -243,7 +243,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<double>(const char* request)
     {
         SQLDOUBLE res = 0;
 
