@@ -27,28 +27,23 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbCommandDefinition _definition;
 
         /** */
-        private readonly IDbCache _cache;
-
-        /** */
         private readonly DbCommandInfo _info;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandDefinitionProxy"/> class.
         /// </summary>
-        public DbCommandDefinitionProxy(DbCommandDefinition definition, IDbCache cache, DbCommandInfo info)
+        public DbCommandDefinitionProxy(DbCommandDefinition definition, DbCommandInfo info)
         {
             Debug.Assert(definition != null);
-            Debug.Assert(cache != null);
 
             _definition = definition;
-            _cache = cache;
             _info = info;
         }
 
         /** <inheritDoc /> */
         public override DbCommand CreateCommand()
         {
-            return new DbCommandProxy(_definition.CreateCommand(), _cache, _info);
+            return new DbCommandProxy(_definition.CreateCommand(), _info);
         }
     }
 }

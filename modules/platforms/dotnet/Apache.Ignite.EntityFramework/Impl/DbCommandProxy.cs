@@ -32,18 +32,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbCommand _command;
 
         /** */
-        private readonly IDbCache _cache;
+        private readonly DbCommandInfo _info;
 
-        /** */
-        private DbCommandInfo _info;
-
-        public DbCommandProxy(DbCommand command, IDbCache cache, DbCommandInfo info)
+        public DbCommandProxy(DbCommand command, DbCommandInfo info)
         {
             Debug.Assert(command != null);
-            Debug.Assert(cache != null);
+            Debug.Assert(info != null);
 
             _command = command;
-            _cache = cache;
             _info = info;
         }
 
@@ -126,7 +122,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             var cacheKey = GetKey();
 
             object cachedRes;
-            if (_cache.GetItem(cacheKey, out cachedRes))
+            if (_info.Cache.GetItem(cacheKey, out cachedRes))
                 return ((DataReaderResult) cachedRes).CreateReader();
 
             var reader = _command.ExecuteReader(behavior);
@@ -137,7 +133,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var res = new DataReaderResult(reader);
 
-            _cache.PutItem(cacheKey, res, new [] {"TODO"}, DateTimeOffset.MaxValue);
+            _info.Cache.PutItem(cacheKey, res, new [] {"TODO"}, DateTimeOffset.MaxValue);
 
             return res.CreateReader();
         }

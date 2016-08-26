@@ -18,6 +18,7 @@
 namespace Apache.Ignite.EntityFramework.Impl
 {
     using System.Data.Entity.Core.Common.CommandTrees;
+    using System.Diagnostics;
 
     /// <summary>
     /// Command info.
@@ -27,13 +28,19 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly bool _isQuery;
 
+        /** */
+        private readonly IDbCache _cache;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
-        /// <param name="tree">The tree.</param>
-        public DbCommandInfo(DbCommandTree tree)
+        public DbCommandInfo(DbCommandTree tree, IDbCache cache)
         {
+            Debug.Assert(tree != null);
+            Debug.Assert(cache != null);
+
             _isQuery = tree is DbQueryCommandTree;
+            _cache = cache;
         }
 
         /// <summary>
@@ -42,6 +49,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         public bool IsQuery
         {
             get { return _isQuery; }
+        }
+
+        /// <summary>
+        /// Gets or sets the cache.
+        /// </summary>
+        public IDbCache Cache
+        {
+            get { return _cache; }
         }
     }
 }

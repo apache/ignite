@@ -72,7 +72,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (proxy == null)
                 return _services.CreateCommandDefinition(prototype);
 
-            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(proxy.InnerCommand), _cache, 
+            return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(proxy.InnerCommand), 
                 proxy.CommandInfo);
         }
 
@@ -81,7 +81,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             DbCommandTree commandTree)
         {
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree), 
-                _cache, new DbCommandInfo(commandTree));
+                new DbCommandInfo(commandTree, _cache));
         }
 
         /** <inheritDoc /> */
