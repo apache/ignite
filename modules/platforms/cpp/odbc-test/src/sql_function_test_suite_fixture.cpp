@@ -249,4 +249,12 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_DOUBLE, &res, 0, 0);
     }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<Date>(const char* request)
+    {
+        SQL_DATE_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+    }
 }
