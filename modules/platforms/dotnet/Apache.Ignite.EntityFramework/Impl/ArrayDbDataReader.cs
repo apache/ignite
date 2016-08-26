@@ -106,53 +106,63 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
         {
-            var bytes = (byte[]) GetValue(ordinal);
+            Debug.Assert(buffer != null);
 
-            var size = Math.Min(buffer.Length - bufferOffset, bytes.Length - dataOffset);
+            var data = (byte[]) GetValue(ordinal);
 
-            Array.Copy(bytes, dataOffset, buffer, bufferOffset, size);
+            var size = Math.Min(buffer.Length - bufferOffset, data.Length - dataOffset);
+
+            Array.Copy(data, dataOffset, buffer, bufferOffset, size);
 
             return size;
         }
 
         public override char GetChar(int ordinal)
         {
-            throw new NotImplementedException();
+            return (char) GetValue(ordinal);
         }
 
         public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
         {
-            throw new NotImplementedException();
+            Debug.Assert(buffer != null);
+
+            var data = (char[]) GetValue(ordinal);
+
+            var size = Math.Min(buffer.Length - bufferOffset, data.Length - dataOffset);
+
+            Array.Copy(data, dataOffset, buffer, bufferOffset, size);
+
+            return size;
         }
 
         public override Guid GetGuid(int ordinal)
         {
-            throw new NotImplementedException();
+            return (Guid) GetValue(ordinal);
         }
 
         public override short GetInt16(int ordinal)
         {
-            throw new NotImplementedException();
+            return (short) GetValue(ordinal);
         }
 
         public override int GetInt32(int ordinal)
         {
-            throw new NotImplementedException();
+            return (int) GetValue(ordinal);
         }
 
         public override long GetInt64(int ordinal)
         {
-            throw new NotImplementedException();
+            return (long) GetValue(ordinal);
         }
 
         public override DateTime GetDateTime(int ordinal)
         {
-            throw new NotImplementedException();
+            return (DateTime) GetValue(ordinal);
         }
 
         public override string GetString(int ordinal)
         {
-            throw new NotImplementedException();
+            return (string) GetValue(ordinal);
         }
 
         public override object GetValue(int ordinal)
@@ -200,17 +210,17 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override decimal GetDecimal(int ordinal)
         {
-            throw new NotImplementedException();
+            return (decimal) GetValue(ordinal);
         }
 
         public override double GetDouble(int ordinal)
         {
-            throw new NotImplementedException();
+            return (double) GetValue(ordinal);
         }
 
         public override float GetFloat(int ordinal)
         {
-            throw new NotImplementedException();
+            return (float) GetValue(ordinal);
         }
 
         public override string GetName(int ordinal)
