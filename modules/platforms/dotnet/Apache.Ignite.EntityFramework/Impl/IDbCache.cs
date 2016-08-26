@@ -29,6 +29,5 @@ namespace Apache.Ignite.EntityFramework.Impl
             DateTimeOffset absoluteExpiration);
 
         void InvalidateSets(IEnumerable<string> entitySets);
-        void InvalidateItem(string key);
     }
 }

@@ -150,12 +150,6 @@ namespace Apache.Ignite.EntityFramework.Impl
             return res;
         }
 
-        /** <inheritdoc /> */
-        public void InvalidateItem(string key)
-        {
-            _cache.Remove(key);
-        }
-
         /// <summary>
         /// Appends element to array and returns resulting array.
         /// </summary>

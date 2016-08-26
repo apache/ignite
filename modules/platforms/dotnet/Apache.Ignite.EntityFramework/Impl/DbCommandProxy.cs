@@ -119,7 +119,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             if (_info.IsModification)
             {
-                // TODO: Invalidate sets
+                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
 
                 return _command.ExecuteReader(behavior);
             }
@@ -140,7 +140,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var res = new DataReaderResult(reader);
 
-            _info.Cache.PutItem(cacheKey, res, new [] {"TODO"}, DateTimeOffset.MaxValue);
+            _info.Cache.PutItem(cacheKey, res, _info.AffectedEntitySets, DateTimeOffset.MaxValue);
 
             return res.CreateReader();
         }
