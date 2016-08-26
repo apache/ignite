@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.EntityFramework.Impl
 {
+    using System.Collections.Generic;
     using System.Data.Entity.Core.Common.CommandTrees;
     using System.Diagnostics;
 
@@ -31,6 +32,9 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly IDbCache _cache;
 
+        /** */
+        private readonly string[] _affectedEntitySets;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
@@ -44,7 +48,17 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (_isModification)
             {
                 // Modification command - collect affected entity sets.
+
+                var modify = tree as DbModificationCommandTree;
+
+                if (modify != null)
+                    _affectedEntitySets = GetAffectedEntitySets(modify);
+                else
+                    // Functions (stored procedures) are not supported.
+                    Debug.Assert(tree is DbFunctionCommandTree);
             }
+            else
+                _affectedEntitySets = null;
 
             _cache = cache;
         }
@@ -63,6 +77,24 @@ namespace Apache.Ignite.EntityFramework.Impl
         public IDbCache Cache
         {
             get { return _cache; }
+        }
+
+        /// <summary>
+        /// Gets the affected entity sets.
+        /// </summary>
+        public ICollection<string> AffectedEntitySets
+        {
+            get { return _affectedEntitySets; }
+        }
+
+        /// <summary>
+        /// Gets the affected entity sets.
+        /// </summary>
+        private static string[] GetAffectedEntitySets(DbModificationCommandTree tree)
+        {
+            Debug.Assert(tree != null);
+            //tree.Target.Expression.
+            return new[] {"TODO"};
         }
     }
 }
