@@ -64,37 +64,43 @@ namespace Apache.Ignite.EntityFramework.Impl
             _cache = cache;
         }
 
-
+        /** <inheritDoc /> */
         public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
         {
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(prototype));
         }
 
+        /** <inheritDoc /> */
         protected override DbCommandDefinition CreateDbCommandDefinition(DbProviderManifest providerManifest, DbCommandTree commandTree)
         {
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree));
         }
 
+        /** <inheritDoc /> */
         protected override string GetDbProviderManifestToken(DbConnection connection)
         {
             return _services.GetProviderManifestToken(connection);
         }
 
+        /** <inheritDoc /> */
         protected override DbProviderManifest GetDbProviderManifest(string manifestToken)
         {
             return _services.GetProviderManifest(manifestToken);
         }
 
+        /** <inheritDoc /> */
         public override void RegisterInfoMessageHandler(DbConnection connection, Action<string> handler)
         {
             _services.RegisterInfoMessageHandler(connection, handler);
         }
 
+        /** <inheritDoc /> */
         protected override DbSpatialDataReader GetDbSpatialDataReader(DbDataReader fromReader, string manifestToken)
         {
             return _services.GetSpatialDataReader(fromReader, manifestToken);
         }
 
+        /** <inheritDoc /> */
         protected override DbSpatialServices DbGetSpatialServices(string manifestToken)
         {
             return _services.GetSpatialServices(manifestToken);
@@ -104,31 +110,37 @@ namespace Apache.Ignite.EntityFramework.Impl
             _services.SetParameterValue(parameter, parameterType, value);
         }
 
+        /** <inheritDoc /> */
         protected override string DbCreateDatabaseScript(string providerManifestToken, StoreItemCollection storeItemCollection)
         {
             return _services.CreateDatabaseScript(providerManifestToken, storeItemCollection);
         }
 
+        /** <inheritDoc /> */
         protected override void DbCreateDatabase(DbConnection connection, int? commandTimeout, StoreItemCollection storeItemCollection)
         {
             _services.CreateDatabase(connection, commandTimeout, storeItemCollection);
         }
 
+        /** <inheritDoc /> */
         protected override bool DbDatabaseExists(DbConnection connection, int? commandTimeout, StoreItemCollection storeItemCollection)
         {
             return _services.DatabaseExists(connection, commandTimeout, storeItemCollection);
         }
 
+        /** <inheritDoc /> */
         protected override void DbDeleteDatabase(DbConnection connection, int? commandTimeout, StoreItemCollection storeItemCollection)
         {
             _services.DeleteDatabase(connection, commandTimeout, storeItemCollection);
         }
 
+        /** <inheritDoc /> */
         public override object GetService(Type type, object key)
         {
             return _services.GetService(type, key);
         }
 
+        /** <inheritDoc /> */
         public override IEnumerable<object> GetServices(Type type, object key)
         {
             return _services.GetServices(type, key);

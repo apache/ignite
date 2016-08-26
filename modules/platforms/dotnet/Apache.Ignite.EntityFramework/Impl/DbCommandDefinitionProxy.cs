@@ -23,8 +23,12 @@ namespace Apache.Ignite.EntityFramework.Impl
 
     internal class DbCommandDefinitionProxy : DbCommandDefinition
     {
+        /** */
         private readonly DbCommandDefinition _definition;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbCommandDefinitionProxy"/> class.
+        /// </summary>
         public DbCommandDefinitionProxy(DbCommandDefinition definition)
         {
             Debug.Assert(definition != null);
@@ -32,6 +36,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             _definition = definition;
         }
 
+        /** <inheritDoc /> */
         public override DbCommand CreateCommand()
         {
             return new DbCommandProxy(_definition.CreateCommand());

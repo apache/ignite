@@ -24,60 +24,75 @@ namespace Apache.Ignite.EntityFramework.Impl
 
     internal class TransactionInterceptor : IDbTransactionInterceptor
     {
+        /** */
         private readonly IDbCache _cache;
 
-        public TransactionInterceptor(StrictReadWriteCache cache)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionInterceptor"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        public TransactionInterceptor(IDbCache cache)
         {
             Debug.Assert(_cache != null);
 
             _cache = cache;
         }
 
+        /** <inheritDoc /> */
         public void ConnectionGetting(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void ConnectionGot(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void IsolationLevelGetting(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void IsolationLevelGot(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void Committing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void Disposing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.
         }
 
+        /** <inheritDoc /> */
         public void RolledBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op.

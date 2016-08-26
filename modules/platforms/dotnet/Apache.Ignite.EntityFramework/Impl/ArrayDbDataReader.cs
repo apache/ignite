@@ -54,21 +54,25 @@ namespace Apache.Ignite.EntityFramework.Impl
             _schema = schema;
         }
 
+        /** <inheritDoc /> */
         public override void Close()
         {
             _closed = true;
         }
 
+        /** <inheritDoc /> */
         public override DataTable GetSchemaTable()
         {
             throw new NotSupportedException();
         }
 
+        /** <inheritDoc /> */
         public override bool NextResult()
         {
             return false;  // multiple result sets are not supported
         }
 
+        /** <inheritDoc /> */
         public override bool Read()
         {
             if (_pos >= _data.Length - 1)
@@ -79,31 +83,37 @@ namespace Apache.Ignite.EntityFramework.Impl
             return true;
         }
 
+        /** <inheritDoc /> */
         public override int Depth
         {
             get { return 1; }
         }
 
+        /** <inheritDoc /> */
         public override bool IsClosed
         {
             get { return _closed; }
         }
 
+        /** <inheritDoc /> */
         public override int RecordsAffected
         {
             get { return 0; }
         }
 
+        /** <inheritDoc /> */
         public override bool GetBoolean(int ordinal)
         {
             return (bool) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override byte GetByte(int ordinal)
         {
             return (byte) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
         {
             Debug.Assert(buffer != null);
@@ -117,11 +127,13 @@ namespace Apache.Ignite.EntityFramework.Impl
             return size;
         }
 
+        /** <inheritDoc /> */
         public override char GetChar(int ordinal)
         {
             return (char) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
         {
             Debug.Assert(buffer != null);
@@ -135,41 +147,49 @@ namespace Apache.Ignite.EntityFramework.Impl
             return size;
         }
 
+        /** <inheritDoc /> */
         public override Guid GetGuid(int ordinal)
         {
             return (Guid) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override short GetInt16(int ordinal)
         {
             return (short) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override int GetInt32(int ordinal)
         {
             return (int) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override long GetInt64(int ordinal)
         {
             return (long) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override DateTime GetDateTime(int ordinal)
         {
             return (DateTime) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override string GetString(int ordinal)
         {
             return (string) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override object GetValue(int ordinal)
         {
             return GetRow()[ordinal];
         }
 
+        /** <inheritDoc /> */
         public override int GetValues(object[] values)
         {
             var row = GetRow();
@@ -181,6 +201,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             return size;
         }
 
+        /** <inheritDoc /> */
         public override bool IsDBNull(int ordinal)
         {
             var val = GetValue(ordinal);
@@ -188,46 +209,55 @@ namespace Apache.Ignite.EntityFramework.Impl
             return val == null || val == DBNull.Value;
         }
 
+        /** <inheritDoc /> */
         public override int FieldCount
         {
             get { return _schema.Length; }
         }
 
+        /** <inheritDoc /> */
         public override object this[int ordinal]
         {
             get { return GetValue(ordinal); }
         }
 
+        /** <inheritDoc /> */
         public override object this[string name]
         {
             get { return GetValue(GetOrdinal(name)); }
         }
 
+        /** <inheritDoc /> */
         public override bool HasRows
         {
             get { return _data.Length > 0; }
         }
 
+        /** <inheritDoc /> */
         public override decimal GetDecimal(int ordinal)
         {
             return (decimal) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override double GetDouble(int ordinal)
         {
             return (double) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override float GetFloat(int ordinal)
         {
             return (float) GetValue(ordinal);
         }
 
+        /** <inheritDoc /> */
         public override string GetName(int ordinal)
         {
             return _schema[ordinal].Name;
         }
 
+        /** <inheritDoc /> */
         public override int GetOrdinal(string name)
         {
             for (int i = 0; i < _schema.Length; i++)
@@ -239,21 +269,27 @@ namespace Apache.Ignite.EntityFramework.Impl
             throw new InvalidOperationException("Field not found: " + name);
         }
 
+        /** <inheritDoc /> */
         public override string GetDataTypeName(int ordinal)
         {
             return _schema[ordinal].DataType;
         }
 
+        /** <inheritDoc /> */
         public override Type GetFieldType(int ordinal)
         {
             return _schema[ordinal].FieldType;
         }
 
+        /** <inheritDoc /> */
         public override IEnumerator GetEnumerator()
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Gets the row.
+        /// </summary>
         private object[] GetRow()
         {
             if (_pos < 0)
