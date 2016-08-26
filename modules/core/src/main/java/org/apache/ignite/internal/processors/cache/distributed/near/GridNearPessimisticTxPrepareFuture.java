@@ -291,6 +291,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     }
 
                     fut.onError(e);
+
+                    break;
                 }
             }
         }
