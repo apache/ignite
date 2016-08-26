@@ -1382,8 +1382,11 @@ public class IgniteTxHandler {
                                 try {
                                     GridCacheEntryEx cached = entry.cached();
 
-                                    if (cached == null)
+                                    if (cached == null) {
                                         cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+
+                                        entry.cached(cached);
+                                    }
 
                                     CacheObject val = cached.innerGet(
                                         /*ver*/null,
@@ -1405,7 +1408,7 @@ public class IgniteTxHandler {
 
                                     break;
                                 }
-                                catch (GridCacheEntryRemovedException e) {
+                                catch (GridCacheEntryRemovedException ignore) {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 

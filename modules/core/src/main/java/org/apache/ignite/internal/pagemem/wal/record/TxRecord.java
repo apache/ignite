@@ -28,7 +28,7 @@ public class TxRecord extends WALRecord {
      */
     public enum TxAction {
         /** Transaction begin. */
-        BIGIN,
+        BEGIN,
 
         /** Transaction prepare. */
         PREPARE,
