@@ -48,8 +48,13 @@ namespace ignite
                  * @param type Type name.
                  * @param sql SQL string.
                  */
-                SqlQuery(const std::string& type, const std::string& sql)
-                    : type(type), sql(sql), pageSize(1024),  loc(false), args()
+                SqlQuery(const std::string& type, const std::string& sql) :
+                    type(type),
+                    sql(sql),
+                    pageSize(1024),
+                    loc(false),
+                    distributedJoins(false),
+                    args()
                 {
                     // No-op.
                 }
@@ -60,13 +65,18 @@ namespace ignite
                  * @param other Other instance.
                  */
                 SqlQuery(const SqlQuery& other) :
-                    type(other.type), sql(other.sql), pageSize(other.pageSize),
-                    loc(other.loc), args()
+                    type(other.type),
+                    sql(other.sql),
+                    pageSize(other.pageSize),
+                    loc(other.loc),
+                    distributedJoins(other.distributedJoins),
+                    args()
                 {
                     args.reserve(other.args.size());
 
-                    for (std::vector<QueryArgumentBase*>::const_iterator i = other.args.begin(); 
-                        i != other.args.end(); ++i)
+                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+
+                    for (Iter i = other.args.begin(); i != other.args.end(); ++i)
                         args.push_back((*i)->Copy());
                 }
 
@@ -81,11 +91,7 @@ namespace ignite
                     {
                         SqlQuery tmp(other);
 
-                        std::swap(type, tmp.type);
-                        std::swap(sql, tmp.sql);
-                        std::swap(pageSize, tmp.pageSize);
-                        std::swap(loc, tmp.loc);
-                        std::swap(args, tmp.args);
+                        Swap(tmp);
                     }
 
                     return *this;
@@ -96,7 +102,9 @@ namespace ignite
                  */
                 ~SqlQuery()
                 {
-                    for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
+                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+
+                    for (Iter it = args.begin(); it != args.end(); ++it)
                         delete *it;
                 }
 
@@ -113,6 +121,7 @@ namespace ignite
                         std::swap(sql, other.sql);
                         std::swap(pageSize, other.pageSize);
                         std::swap(loc, other.loc);
+                        std::swap(distributedJoins, other.distributedJoins);
                         std::swap(args, other.args);
                     }
                 }
@@ -198,6 +207,29 @@ namespace ignite
                 }
 
                 /**
+                 * Check if distributed joins are enabled for this query.
+                 *
+                 * @return True If distributed joind enabled.
+                 */
+                bool IsDistributedJoins() const
+                {
+                    return distributedJoins;
+                }
+
+                /**
+                 * Specify if distributed joins are enabled for this query.
+                 *
+                 * When disabled, join results will only contain colocated data (joins work locally).
+                 * When enabled, joins work as expected, no matter how the data is distributed.
+                 *
+                 * @param enabled Distributed joins enabled.
+                 */
+                void SetDistributedJoins(bool enabled)
+                {
+                    distributedJoins = enabled;
+                }
+
+                /**
                  * Add argument.
                  *
                  * Template argument type should be copy-constructable and
@@ -228,6 +260,8 @@ namespace ignite
 
                     for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
+
+                    writer.WriteBool(distributedJoins);
                 }
 
             private:
@@ -242,6 +276,9 @@ namespace ignite
 
                 /** Local flag. */
                 bool loc;
+
+                /** Distributed joins flag. */
+                bool distributedJoins;
 
                 /** Arguments. */
                 std::vector<QueryArgumentBase*> args;

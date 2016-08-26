@@ -105,6 +105,33 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         this.baseFunc = baseFunc;
     }
 
+    /**
+     * Gets the user func object.
+     *
+     * @return User func object.
+     */
+    public Object getUserFunc() {
+        return userFunc;
+    }
+
+    /**
+     * Gets the base func.
+     *
+     * @return Base func.
+     */
+    public AffinityFunction getBaseFunc() {
+        return baseFunc;
+    }
+
+    /**
+     * Gets the override flags.
+     *
+     * @return The override flags
+     */
+    public byte getOverrideFlags() {
+        return overrideFlags;
+    }
+
     /** {@inheritDoc} */
     @Override public void reset() {
         // userFunc is always in initial state (it is serialized only once on start).

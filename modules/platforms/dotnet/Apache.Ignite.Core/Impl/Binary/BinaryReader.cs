@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
@@ -721,29 +720,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Read object.
                     Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
 
-                    object obj;
-
-                    var sysSerializer = desc.Serializer as IBinarySystemTypeSerializer;
-
-                    if (sysSerializer != null)
-                        obj = sysSerializer.ReadInstance(this);
-                    else
-                    {
-                        try
-                        {
-                            obj = FormatterServices.GetUninitializedObject(desc.Type);
-
-                            // Save handle.
-                            AddHandle(pos, obj);
-                        }
-                        catch (Exception e)
-                        {
-                            throw new BinaryObjectException("Failed to create type instance: " +
-                                                        desc.Type.AssemblyQualifiedName, e);
-                        }
-
-                        desc.Serializer.ReadBinary(obj, this);
-                    }
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
                     _curStruct.UpdateReaderStructure();
 
@@ -755,18 +732,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curSchema = oldSchema;
                     _curSchemaMap = oldSchemaMap;
 
-                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    if (wrappedSerializable != null) 
-                        return (T) wrappedSerializable.Item;
-
-                    var wrappedDateTime = obj as DateTimeHolder;
-
-                    if (wrappedDateTime != null)
-                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
-                    
-                    return (T) obj;
+                    return obj;
                 }
             }
             finally

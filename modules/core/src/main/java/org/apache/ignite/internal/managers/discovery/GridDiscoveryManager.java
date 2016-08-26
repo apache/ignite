@@ -2225,7 +2225,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (log.isInfoEnabled())
                         log.info("Client node reconnected to topology: " + node);
 
-                    ackTopology(topVer.topologyVersion(), true);
+                    if (!isLocDaemon)
+                        ackTopology(topVer.topologyVersion(), true);
 
                     break;
                 }
