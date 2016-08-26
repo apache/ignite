@@ -17,184 +17,171 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
-    using System;
-    using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Data.Entity;
+    using System.IO;
+    using System.Linq;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests the EF cache provider.
+    /// Integration test with temporary SQL CE database.
     /// </summary>
-    public class SecondLevelCacheTest
+    public class SecondLevelCacheTest : IEventListener<CacheEvent>
     {
-        // TODO: Integrated test with EF code first! This is a must! With multithreading, etc.
-        // https://www.stevefenton.co.uk/2015/11/using-an-in-memory-database-as-a-test-double-with-entity-framework/
+        /** */
+        private static readonly string TempFile = Path.GetTempFileName();
+
+        /** */
+        private static readonly string ConnectionString = "Datasource = " + TempFile;
+
+        /** */
+        private readonly ConcurrentStack<CacheEvent> _events = new ConcurrentStack<CacheEvent>();
 
         /// <summary>
-        /// Fixture setup.
+        /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
-        }
-
-        /// <summary>
-        /// Test teardown.
-        /// </summary>
-        [TearDown]
-        public void TearDown()
-        {
-            Ignition.StopAll(true);
-        }
-
-        /// <summary>
-        /// Tests the IgniteDbConfiguration.
-        /// </summary>
-        [Test]
-        public void TestConfigurationAndStartup()
-        {
-            Assert.IsNull(Ignition.TryGetIgnite());
-
-            // Test default config (picks up app.config section)
-            CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
-
-            // Specific config section
-            CheckCacheAndStop("myGrid2", "cacheName2", 
-                new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
-
-            // Specific config section, nonexistent cache
-            CheckCacheAndStop("myGrid2", "newCache", 
-                new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
-
-            // In-code configuration
-            CheckCacheAndStop("myGrid3", "myCache",
-                new IgniteDbConfiguration(new IgniteConfiguration
-                {
-                    GridName = "myGrid3",
-                    CacheConfiguration = new[]
-                    {
-                        new CacheConfiguration
-                        {
-                            Name = "myCache",
-                            CacheMode = CacheMode.Replicated,
-                            AtomicityMode = CacheAtomicityMode.Transactional
-                        }
-                    }
-                }, "myCache", null), CacheMode.Replicated);
-
-            // Non-transactional cache
-            var ex = Assert.Throws<ArgumentException>(() =>
-                CheckCacheAndStop("myGrid5", "myCache",
-                    new IgniteDbConfiguration(new IgniteConfiguration
-                    {
-                        GridName = "myGrid5",
-                        CacheConfiguration = new[] {new CacheConfiguration("myCache")}
-                    }, "myCache", null)));
-            Ignition.StopAll(true);
-            Assert.IsTrue(ex.Message.Contains(
-                    "requires Transactional cache. Specified 'myCache' cache is Atomic."));
-
-            // Existing instance
+            // Start Ignite.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, "123", null));
+
+            // Subscribe to cache events.
+            var events = ignite.GetEvents();
+            events.EnableLocal(EventType.CacheObjectPut, EventType.CacheObjectRead, EventType.CacheObjectExpired);
+            events.LocalListen(this, EventType.CacheAll);
+
+            // Create SQL CE database in a temp file.
+            using (var context = new BloggingContext(ConnectionString))
+            {
+                File.Delete(TempFile);
+                context.Database.Create();
+            }
         }
 
         /// <summary>
-        /// Checks that specified cache exists and stops all Ignite instances.
+        /// Fixture tear down.
         /// </summary>
-        // ReSharper disable once UnusedParameter.Local
-        private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg,
-            CacheMode cacheMode = CacheMode.Partitioned)
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
         {
-            Assert.IsNotNull(cfg);
-
-            var ignite = Ignition.TryGetIgnite(gridName);
-            Assert.IsNotNull(ignite);
-
-            var cache = ignite.GetCache<object, object>(cacheName);
-            Assert.IsNotNull(cache);
-            Assert.AreEqual(cacheMode, cache.GetConfiguration().CacheMode);
-
             Ignition.StopAll(true);
+            File.Delete(TempFile);
         }
 
-        /*
-        /// <summary>
-        /// Tests put/get/invalidate operations.
-        /// </summary>
         [Test]
-        public void TestPutGetInvalidate()
+        public void Test()
         {
-            var cache = CreateEfCache();
+            using (var context = new BloggingContext(ConnectionString))
+            {
+                //context.Database.Log = s => Debug.WriteLine(s);
 
-            // Missing value
-            object val;
-            Assert.IsFalse(cache.GetItem("1", out val));
-            Assert.IsNull(val);
+                Assert.IsEmpty(context.Blogs);
+                Assert.IsEmpty(context.Posts);
 
-            // Put
-            cache.PutItem("1", "val", new [] {"persons"}, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            Assert.IsTrue(cache.GetItem("1", out val));
-            Assert.AreEqual("val", val);
+                // Each query generates 3 events: get, put key-val, put dependency.
+                Assert.AreEqual(6, _events.Count);
 
-            // Overwrite
-            cache.PutItem("1", "val1", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            Assert.IsTrue(cache.GetItem("1", out val));
-            Assert.AreEqual("val1", val);
+                context.Blogs.Add(new Blog
+                {
+                    BlogId = 1,
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "My First Post", Content = "Hello World!"}
+                    }
+                });
 
-            // Invalidate
-            cache.InvalidateItem("1");
-            Assert.IsFalse(cache.GetItem("1", out val));
+                Assert.AreEqual(2, context.SaveChanges());
 
-            // Invalidate sets
-            cache.PutItem("1", "val1", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            cache.PutItem("2", "val2", new[] { "address" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            cache.PutItem("3", "val2", new[] { "companies", "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            cache.InvalidateSets(new[] {"cars", "persons"});
+                // Check that query works.
+                Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(11, _events.Count);
 
-            Assert.IsFalse(cache.GetItem("1", out val));
-            Assert.IsTrue(cache.GetItem("2", out val));
-            Assert.IsFalse(cache.GetItem("3", out val));
+                // Add new post to check invalidation.
+                context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(16, _events.Count);
+
+                // Delete post.
+                context.Posts.Remove(context.Posts.First());
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(1, context.Posts.Count());
+                Assert.AreEqual(22, _events.Count);
+
+                // Modify post.
+                context.Posts.Single().Title += " - updated";
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(1, context.Posts.Count(x => x.Title.EndsWith("updated")));
+            }
         }
 
-        /// <summary>
-        /// Tests expiration logic.
-        /// </summary>
+        [Test]
+        public void TestTx()
+        {
+            // TODO: Find out what's called within a TX.
+        }
+
         [Test]
         public void TestExpiration()
         {
-            var cache = CreateEfCache();
-            object val;
-
-            // Absolute expiration
-            cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.Now.AddMilliseconds(300));
-            Assert.IsTrue(cache.GetItem("1", out val));
-            Thread.Sleep(150);
-            Assert.IsTrue(cache.GetItem("1", out val));
-            Thread.Sleep(150);
-            Assert.IsFalse(cache.GetItem("1", out val));
-
-            // Sliding expiration: not supported
-            Assert.Throws<NotSupportedException>(
-                () => cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
-                    DateTimeOffset.Now.AddMilliseconds(300)));
+            // TODO: 
         }
 
-        /// <summary>
-        /// Creates the EntityFramework cache.
-        /// </summary>
-        private static ICache CreateEfCache()
+        private class MyDbConfiguration : IgniteDbConfiguration
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            var cache = ignite.CreateCache<string, object>(new CacheConfiguration("efCache")
+            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
             {
-                AtomicityMode = CacheAtomicityMode.Transactional
-            });
-
-            return new IgniteEntityFrameworkCache(cache);
+            }
         }
-        */
+
+
+        [DbConfigurationType(typeof(MyDbConfiguration))]
+        private class BloggingContext : DbContext
+        {
+            public BloggingContext(string nameOrConnectionString) : base(nameOrConnectionString)
+            {
+                // No-op.
+            }
+
+
+            public virtual DbSet<Blog> Blogs { get; set; }
+            public virtual DbSet<Post> Posts { get; set; }
+        }
+
+        private class Blog
+        {
+            public int BlogId { get; set; }
+            public string Name { get; set; }
+            public string Url { get; set; }
+
+            public virtual List<Post> Posts { get; set; }
+        }
+
+        private class Post
+        {
+            public int PostId { get; set; }
+            public string Title { get; set; }
+            public string Content { get; set; }
+
+            public int BlogId { get; set; }
+            public virtual Blog Blog { get; set; }
+
+            // TODO: Test all kinds of field types (to test serialization and reader)
+        }
+
+        public bool Invoke(CacheEvent evt)
+        {
+            _events.Push(evt);
+
+            return true;
+        }
     }
 }
