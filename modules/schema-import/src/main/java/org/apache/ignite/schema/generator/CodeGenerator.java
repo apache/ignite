@@ -256,6 +256,17 @@ public class CodeGenerator {
     }
 
     /**
+     * Ensure that all folders for packages exist.
+     *
+     * @param pkg Packages.
+     * @throws IOException If failed to ensure.
+     */
+    private static void ensurePackages(File pkg) throws IOException {
+        if (!pkg.exists() && !pkg.mkdirs())
+            throw new IOException("Failed to create folders for package: " + pkg);
+    }
+
+    /**
      * Generate java class code.
      *
      * @param pojo POJO descriptor.
@@ -275,8 +286,7 @@ public class CodeGenerator {
 
         checkValidJavaIdentifier(type, false, "Type", type);
 
-        if (!pkgFolder.exists() && !pkgFolder.mkdirs())
-            throw new IOException("Failed to create folders for package: " + pkg);
+        ensurePackages(pkgFolder);
 
         File out = new File(pkgFolder, type + ".java");
 
@@ -566,6 +576,8 @@ public class CodeGenerator {
     public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
         boolean generateAliases, String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
+
+        ensurePackages(pkgFolder);
 
         File cacheCfg = new File(pkgFolder, "CacheConfig.java");
 
