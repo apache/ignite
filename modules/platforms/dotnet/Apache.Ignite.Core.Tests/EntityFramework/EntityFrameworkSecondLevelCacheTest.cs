@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.IsEmpty(context.Blogs);
                 Assert.IsEmpty(context.Posts);
 
-                // Each query generates 3 events: get, put key-val, put dependency
+                // Each query generates 3 events: get, put key-val, put dependency.
                 Assert.AreEqual(6, _events.Count);
 
                 context.Blogs.Add(new Blog
@@ -97,11 +97,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.AreEqual(2, context.SaveChanges());
 
-                // TODO: Check invalidation events
-                // INSERT should not be cached
-
+                // Check that query works.
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(9, _events.Count);
 
+                // Add new post to check invalidation.
+                context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
+                Assert.AreEqual(1, context.SaveChanges());
+
+                Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
                 Assert.AreEqual(9, _events.Count);
             }
         }
