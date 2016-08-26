@@ -253,7 +253,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
-    private static int DFLT_QRY_RERUN_ATTEMPTS = 4;
+    /** */
+    private static int DFLT_DML_RERUN_ATTEMPTS = 4;
 
     /**
      * Command in H2 prepared statement.
@@ -831,7 +832,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int items = 0;
 
-        for (int i = 0; i < DFLT_QRY_RERUN_ATTEMPTS; i++) {
+        for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
             IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, qry, params, errKeys, filters, enforceJoinOrder);
 
             if (F.isEmpty(r.get2())) {
@@ -1178,7 +1179,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteCheckedException("Duplicate key during INSERT [key=" + t.getKey());
+                throw new IgniteCheckedException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>(ins.rows().size());
@@ -1191,10 +1192,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
-            if (res == null)
-                return rows.size();
-
-            if (!res.isEmpty()) {
+            if (!F.isEmpty(res)) {
                 Object[] errKeys = res.keySet().toArray();
 
                 throw new IgniteCheckedException("Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']');
@@ -1228,30 +1226,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object key = null;
         Object val = null;
 
-        boolean isKeyLiteral = GridQueryProcessor.isSqlType(keyCls);
-        boolean isValLiteral = GridQueryProcessor.isSqlType(valCls);
+        boolean isKeySqlType = GridQueryProcessor.isSqlType(keyCls);
+        boolean isValSqlType = GridQueryProcessor.isSqlType(valCls);
 
         if (cctx.binaryMarshaller()) {
             //TODO change this logic when there's available the way of generating hash codes for new binary objects
             // As for now, we accept as keys only classes present locally (because we have to deserialize built key
             // to obtain hash code) and standard types (because they are read literally from SQL and are always present).
             // Both must override equals/hashCode (thus, arrays can't be used as keys although they are standard).
-            if ((!isKeyLiteral && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls))
+            if ((!isKeySqlType && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls))
                 throw new UnsupportedOperationException("Currently only SQL types or local types " +
                     "with overridden equals/hashCode methods may be used as keys " +
                     "in SQL DML operations w/binary marshalling.");
 
-            BinaryObjectBuilder keyBuilder = !isKeyLiteral ? cctx.grid().binary().builder(desc.type().keyTypeName()) :
+            BinaryObjectBuilder keyBuilder = !isKeySqlType ? cctx.grid().binary().builder(desc.type().keyTypeName()) :
                 null;
 
-            BinaryObjectBuilder valBuilder = !isValLiteral ? cctx.grid().binary().builder(desc.type().valueTypeName()) :
+            BinaryObjectBuilder valBuilder = !isValSqlType ? cctx.grid().binary().builder(desc.type().valueTypeName()) :
                 null;
 
             for (int i = 0; i < cols.length; i++) {
                 Object colVal = getLiteralValue(row[i], params);
 
                 if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    X.ensureX(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    X.ensureX(isKeySqlType, "Unable to use literal value '" + colVal + "' as non literal key " +
                         "[keyCls=" + desc.type().keyTypeName() + ']');
 
                     key = colVal;
@@ -1259,7 +1257,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    X.ensureX(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
+                    X.ensureX(isValSqlType, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valType=" + desc.type().valueTypeName() + ']');
 
                     val = colVal;
@@ -1276,18 +1274,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             //TODO change these statements when there's available the way of generating hash codes for new binary objects
 
             // We have to deserialize for the object to have hash code
-            if (!isKeyLiteral)
+            if (!isKeySqlType)
                 key = keyBuilder.build().deserialize();
 
-            if (!isValLiteral)
+            if (!isValSqlType)
                 val = valBuilder.build();
         }
         else {
             try {
-                if (!isKeyLiteral)
+                if (!isKeySqlType)
                     key = GridUnsafe.allocateInstance(keyCls);
 
-                if (!isValLiteral)
+                if (!isValSqlType)
                     val = GridUnsafe.allocateInstance(valCls);
             }
             catch (InstantiationException e) {
@@ -1298,7 +1296,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Object colVal = getLiteralValue(row[i], params);
 
                 if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    X.ensureX(isKeyLiteral, "Unable to use literal value '" + colVal + "' as non literal key " +
+                    X.ensureX(isKeySqlType, "Unable to use literal value '" + colVal + "' as non literal key " +
                         "[keyCls=" + keyCls.getName() + ']');
 
                     key = colVal;
@@ -1306,7 +1304,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    X.ensureX(isValLiteral, "Unable to use literal value '" + colVal + "' as non literal value " +
+                    X.ensureX(isValSqlType, "Unable to use literal value '" + colVal + "' as non literal value " +
                         "[valCls=" + valCls.getName() + ']');
 
                     val = colVal;
@@ -1334,7 +1332,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (element instanceof GridSqlParameter)
             return params[((GridSqlParameter)element).index()];
         else
-            throw new IgniteCheckedException("Unexpected SQL literal type [cls=" + element.getClass().getName() + ']');
+            throw new IgniteCheckedException("Unexpected SQL expression type [cls=" + element.getClass().getName() + ']');
     }
 
     /**
@@ -1512,7 +1510,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int items = 0;
 
-        for (int i = 0; i < DFLT_QRY_RERUN_ATTEMPTS; i++) {
+        for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
             IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, errKeys);
 
             if (F.isEmpty(r.get2())) {
