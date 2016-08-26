@@ -44,22 +44,26 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
 
-            _isModification = !(tree is DbQueryCommandTree);
+            var qryTree = tree as DbQueryCommandTree;
 
-            if (_isModification)
+            if (qryTree != null)
             {
-                // Modification command - collect affected entity sets.
+                _isModification = false;
+
+                _affectedEntitySets = GetAffectedEntitySets(qryTree.Query);
+            }
+            else
+            {
+                _isModification = true;
 
                 var modify = tree as DbModificationCommandTree;
 
                 if (modify != null)
-                    _affectedEntitySets = GetAffectedEntitySets(modify);
+                    _affectedEntitySets = GetAffectedEntitySets(modify.Target.Expression);
                 else
                     // Functions (stored procedures) are not supported.
                     Debug.Assert(tree is DbFunctionCommandTree);
             }
-            else
-                _affectedEntitySets = null;
 
             _cache = cache;
         }
@@ -91,11 +95,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the affected entity sets.
         /// </summary>
-        private static string[] GetAffectedEntitySets(DbModificationCommandTree tree)
+        private static string[] GetAffectedEntitySets(DbExpression expression)
         {
             var visitor = new ScanExpressionVisitor();
 
-            tree.Target.Expression.Accept(visitor);
+            expression.Accept(visitor);
 
             return visitor.EntitySets.ToArray();
         }
