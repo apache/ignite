@@ -156,7 +156,7 @@ class GridUnsafeLru {
      * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
-        return lrus[addIdx.getAndIncrement() % cnt].offer(part, addr, hash);
+        return lrus[Math.abs(addIdx.getAndIncrement()) % cnt].offer(part, addr, hash);
     }
 
     /**
@@ -165,7 +165,7 @@ class GridUnsafeLru {
      * @return Queue node address.
      */
     long prePoll() {
-        int idx = rmvIdx.getAndIncrement();
+        int idx = Math.abs(rmvIdx.getAndIncrement());
 
         // Must try to poll from each LRU.
         for (int i = 0; i < lrus.length; i++) {
