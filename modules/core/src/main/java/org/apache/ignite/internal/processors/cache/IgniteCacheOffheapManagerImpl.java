@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeListNew;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListOld;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
@@ -108,7 +109,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             try {
                 reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
-                freeList = new FreeListOld(cctx, reuseList);
+                //freeList = new FreeListOld(cctx, reuseList);
+                freeList = new FreeListNew(cacheId, pageMem, reuseList, cctx, cctx.shared().wal());
 
                 metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
                     cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());
@@ -198,11 +200,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 GridLongList pagesList = new GridLongList();
 
                 // TODO drop the following code -->
-                ((FreeListOld)freeList).pages(pagesList);
-                ((ReuseListOld)reuseList).pages(pagesList);
-
-                ((ReuseListOld)reuseList).destroy();
-                ((FreeListOld)freeList).destroy();
+//                ((FreeListOld)freeList).pages(pagesList);
+//                ((ReuseListOld)reuseList).pages(pagesList);
+//
+//                ((ReuseListOld)reuseList).destroy();
+//                ((FreeListOld)freeList).destroy();
                 // TODO drop the following code --^
 
                 for (int i = 0; i < pagesList.size(); i++) {

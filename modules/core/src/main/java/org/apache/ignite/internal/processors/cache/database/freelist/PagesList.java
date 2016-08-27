@@ -359,24 +359,26 @@ public abstract class PagesList extends DataStructure {
 
         long[] tails = getBucket(bucket);
 
-        // Step == 2 because we store both tails of the same list.
-        for (int i = 0; i < tails.length; i += 2) {
-            long pageId = tails[i];
+        if (tails != null) {
+            // Step == 2 because we store both tails of the same list.
+            for (int i = 0; i < tails.length; i += 2) {
+                long pageId = tails[i];
 
-            try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead();
+                try (Page page = page(pageId)) {
+                    ByteBuffer buf = page.getForRead();
 
-                try {
-                    PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
+                    try {
+                        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
 
-                    int cnt = io.getCount(buf);
+                        int cnt = io.getCount(buf);
 
-                    assert cnt >= 0;
+                        assert cnt >= 0;
 
-                    res += cnt;
-                }
-                finally {
-                    page.releaseRead();
+                        res += cnt;
+                    }
+                    finally {
+                        page.releaseRead();
+                    }
                 }
             }
         }
@@ -431,7 +433,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket) throws IgniteCheckedException {
-        assert isReuseBucket(bucket);
+        //assert isReuseBucket(bucket);
 
         long tailId = getPageForTake(bucket);
 

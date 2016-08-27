@@ -60,8 +60,8 @@ public final class ReuseListNew extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
-        if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
-            throw new IllegalStateException();
+//        if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
+//            throw new IllegalStateException();
 
         return takeEmptyPage(0);
     }
