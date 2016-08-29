@@ -116,9 +116,9 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
      * @throws IgniteCheckedException If failed.
      */
     private Page allocateDataPage(int part) throws IgniteCheckedException {
-        long pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
+        long pageId = pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
 
-        return pageMem.page(cctx.cacheId(), pageId);
+        return pageMem.page(cacheId, pageId);
     }
 
     /** {@inheritDoc} */
@@ -132,14 +132,14 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
             int bucket = bucket(freeSpace);
 
-            long pageId = takeEmptyPage(bucket);
+            long pageId = takePage(bucket);
 
             boolean newPage = pageId == 0;
 
-            if (newPage)
-                System.out.println("Allocate new page");
-            else
-                System.out.println("Found page " + pageId + ", bucket=" + bucket);
+//            if (newPage)
+//                System.out.println("Allocate new page");
+//            else
+//                System.out.println("Found page " + pageId + ", bucket=" + bucket);
 
             try (Page page = newPage ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -203,9 +203,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
-            throw new IllegalStateException();
-
         return takeEmptyPage(REUSE_BUCKET);
     }
 
@@ -256,7 +253,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
                         put(null, buf, bucket);
 
-                        System.out.println("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
+                        //System.out.println("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
                     }
 
                     // Avoid boxing with garbage generation for usual case.
@@ -355,7 +352,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     int oldBucket = bucket(oldFreeSpace);
 
                     if (oldBucket != newBucket) {
-                        System.out.println("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
+                        //System.out.println("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
 
                         removeDataPage(buf, oldBucket);
 
@@ -363,7 +360,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     }
                 }
                 else {
-                    System.out.println("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
+                    //System.out.println("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
 
                     put(null, buf, newBucket);
                 }

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridArrays;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.database.tree.io.PageIO.getPageId;
@@ -149,14 +150,10 @@ public abstract class PagesList extends DataStructure {
 
             try {
                 while ((nextId = bag.pollFreePage()) != 0L) {
-                    System.out.println("Put next " + nextId);
-
                     int idx = io.addPage(prevBuf, nextId);
 
                     if (idx == -1) { // Attempt to add page failed: the node page is full.
                         Page next = page(nextId);
-
-                        System.out.println("Overflow, reuse " + nextId);
 
                         ByteBuffer nextBuf = next.getForWrite();
 
@@ -276,7 +273,7 @@ public abstract class PagesList extends DataStructure {
         for (;;) {
             long[] tails = getBucket(bucket);
 
-            assert tails.length > 0; // Tail must exist to be updated.
+            assert !F.isEmpty(tails) : Arrays.toString(tails); // Tail must exist to be updated.
 
             idx = findTailIndex(tails, oldTailId, idx);
 
@@ -437,6 +434,8 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket) throws IgniteCheckedException {
+        assert isReuseBucket(bucket);
+
         long tailId = getPageForTake(bucket);
 
         if (tailId == 0L)
@@ -485,6 +484,53 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
+    protected final long takePage(int bucket) throws IgniteCheckedException {
+        assert !isReuseBucket(bucket);
+
+        for (;;) {
+            long tailId = getPageForTake(bucket);
+
+            if (tailId == 0L)
+                return 0L;
+
+            try (Page tail = page(tailId)) {
+                long prevId;
+                long nextId;
+
+                long recycleId = 0L;
+
+                ByteBuffer tailBuf = tail.getForWrite();
+
+                try {
+                    PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(tailBuf);
+
+                    long pageId = io.takeAnyPage(tailBuf);
+
+                    if (pageId != 0L)
+                        return pageId;
+
+                    // If the page is empty, we have to try to drop it and link next and previous with each other.
+                    nextId = io.getNextId(tailBuf);
+                    prevId = io.getPreviousId(tailBuf);
+
+                    // If there are no next page, then we can try to merge without releasing current write lock,
+                    // because if we will need to lock previous page, the locking order will be already correct.
+                    if (nextId == 0L)
+                        recycleId = mergeNoNext(tailBuf, tailId, prevId, bucket);
+                }
+                finally {
+                    tail.releaseWrite(true);
+                }
+
+                if (recycleId != 0L)
+                    reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+
+                if (nextId != 0L)
+                    merge(tailId, tail, nextId, bucket);
+            }
+        }
+    }
+
     /**
      * @param dataPageBuf Data page buffer.
      * @param bucket Bucket index.
@@ -497,12 +543,16 @@ public abstract class PagesList extends DataStructure {
 
         long pageId = dataIO.getFreeListPageId(dataPageBuf);
 
+        assert pageId != 0;
+
         // Reset free list page ID.
         dataIO.setFreeListPageId(dataPageBuf, 0L);
 
         try (Page page = page(pageId)) {
             long prevId;
             long nextId;
+
+            long recycleId = 0L;
 
             ByteBuffer buf = page.getForWrite();
 
@@ -521,11 +571,14 @@ public abstract class PagesList extends DataStructure {
                 // If there are no next page, then we can try to merge without releasing current write lock,
                 // because if we will need to lock previous page, the locking order will be already correct.
                 if (nextId == 0L)
-                    mergeNoNext(buf, pageId, prevId, bucket);
+                    recycleId = mergeNoNext(buf, pageId, prevId, bucket);
             }
             finally {
                 page.releaseWrite(true);
             }
+
+            if (recycleId != 0L)
+                reuseList.addForRecycle(new SingletonReuseBag(recycleId));
 
             // Perform a fair merge after lock release (to have a correct locking order).
             if (nextId != 0L)
@@ -540,16 +593,16 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @throws IgniteCheckedException If failed.
      */
-    private void mergeNoNext(ByteBuffer buf, long pageId, long prevId, int bucket)
+    private long mergeNoNext(ByteBuffer buf, long pageId, long prevId, int bucket)
         throws IgniteCheckedException {
         // If we do not have a next page (we are tail) and we are on reuse bucket,
         // then we can leave as is as well, because it is normal to have an empty tail page here.
         if (isReuseBucket(bucket))
-            return;
+            return 0L;
 
         if (prevId != 0L) { // Cut tail if we have a previous page.
             try (Page prev = page(prevId)) {
-                Boolean ok = writePage(prevId, prev, cutTail, null, 0);
+                Boolean ok = writePage(prevId, prev, cutTail, null, bucket);
 
                 assert ok; // Because we keep lock on current tail and do a world consistency check.
             }
@@ -557,7 +610,11 @@ public abstract class PagesList extends DataStructure {
         else // If we don't have a previous, then we are tail page of free list, just drop the stripe.
             updateTail(bucket, pageId, 0L);
 
-        recyclePage(pageId, buf);
+        pageId = PageIdUtils.rotatePageId(pageId);
+
+        PageIO.setPageId(buf, pageId);
+
+        return pageId;
     }
 
     /**
@@ -579,6 +636,8 @@ public abstract class PagesList extends DataStructure {
                 ByteBuffer nextBuf = next == null ? null : next.getForWrite();
                 ByteBuffer buf = page.getForWrite();
 
+                long recycleId = 0L;
+
                 try {
                     if (getPageId(buf) != pageId)
                         return; // Someone has merged or taken our empty page concurrently. Nothing to do here.
@@ -590,7 +649,7 @@ public abstract class PagesList extends DataStructure {
 
                     // Check if we see a consistent state of the world.
                     if (io.getNextId(buf) == nextId) {
-                        doMerge(pageId, io, buf, nextId, nextBuf, bucket);
+                        recycleId = doMerge(pageId, io, buf, nextId, nextBuf, bucket);
 
                         write = true;
 
@@ -605,6 +664,9 @@ public abstract class PagesList extends DataStructure {
                         next.releaseWrite(write);
 
                     page.releaseWrite(write);
+
+                    if (recycleId != 0L)
+                        reuseList.addForRecycle(new SingletonReuseBag(recycleId));
                 }
             }
         }
@@ -619,12 +681,12 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @throws IgniteCheckedException If failed.
      */
-    private void doMerge(long pageId, PagesListNodeIO io, ByteBuffer buf, long nextId, ByteBuffer nextBuf, int bucket)
+    private long doMerge(long pageId, PagesListNodeIO io, ByteBuffer buf, long nextId, ByteBuffer nextBuf, int bucket)
         throws IgniteCheckedException {
         long prevId = io.getPreviousId(buf);
 
         if (nextId == 0L)
-            mergeNoNext(buf, pageId, prevId, bucket);
+            return mergeNoNext(buf, pageId, prevId, bucket);
         else {
             // No one must be able to merge it while we keep a reference.
             assert getPageId(nextBuf) == nextId;
@@ -633,6 +695,9 @@ public abstract class PagesList extends DataStructure {
                 // These references must be updated at the same time in write locks.
                 assert PagesListNodeIO.VERSIONS.forPage(nextBuf).getPreviousId(nextBuf) == pageId;
 
+                PagesListNodeIO nextIO = PagesListNodeIO.VERSIONS.forPage(nextBuf);
+                nextIO.setPreviousId(nextBuf, 0);
+
                 // Drop the page from meta: replace current head with next page.
                 // It is a bit hacky, but method updateTail should work here.
                 updateTail(bucket, pageId, nextId);
@@ -640,7 +705,10 @@ public abstract class PagesList extends DataStructure {
             else // Do a fair merge: link previous and next to each other.
                 fairMerge(prevId, pageId, nextId, nextBuf);
 
-            recyclePage(pageId, buf);
+            pageId = PageIdUtils.rotatePageId(pageId);
+            PageIO.setPageId(buf, pageId);
+
+            return pageId;
         }
     }
 
