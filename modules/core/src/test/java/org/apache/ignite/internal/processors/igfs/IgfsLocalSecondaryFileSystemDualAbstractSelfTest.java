@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
@@ -62,8 +63,8 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     private final String TEST_GROUP = System.getProperty("IGFS_LOCAL_FS_TEST_GROUP", "igfs_grp_0");
 
     /** */
-    private final Boolean PROPERTIES_SUPPORT = Boolean.parseBoolean(
-        System.getProperty("IGFS_LOCAL_FS_PROPERTIES_SUPPORT", "false"));
+    private final Boolean PROPERTIES_SUPPORT =
+        IgniteSystemProperties.getBoolean("IGFS_LOCAL_FS_PROPERTIES_SUPPORT", false);
 
 
     /** Constructor.
