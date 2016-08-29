@@ -25,18 +25,23 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.concurrent.Callable;
 
 /**
- * Scalar function escape sequence parser tests.
+ * Escape sequence parser tests.
  */
 public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple cases.
      */
-    public void testSimple() {
+    public void testTrivial() {
         check(
             "select * from table;",
             "select * from table;"
         );
+    }
 
+    /**
+     * Test escape sequence series.
+     */
+    public void testSimpleFunction() throws Exception {
         check(
             "test()",
             "{fn test()}"
@@ -51,12 +56,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select test() from table;",
             "select {fn test()} from table;"
         );
-    }
 
-    /**
-     * Test escape sequence series.
-     */
-    public void testSimpleFunction() throws Exception {
         check(
             "func(field1) func(field2)",
             "{fn func(field1)} {fn func(field2)}"
@@ -139,17 +139,253 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test non-closed escape sequence.
+     * Test invalid escape sequence.
      */
-    public void testFailedOnInvalidSequence1() {
+    public void testFailedOnInvalidFunctionSequence() {
+        checkFail("{fnfunc1()}");
+
         checkFail("select {fn func1(field1, {fn func2(field2), field3)} from SomeTable;");
+
+        checkFail("select {fn func1(field1, fn func2(field2)}, field3)} from SomeTable;");
     }
 
     /**
-     * Test closing undeclared escape sequence.
+     * Test escape sequences with additional whitespace characters
      */
-    public void testFailedOnClosingNotOpenedSequence() {
-        checkFail("select {fn func1(field1, func2(field2)}, field3)} from SomeTable;");
+    public void testFunctionEscapeSequenceWithWhitespaces() throws Exception {
+        check("func1()", "{ fn func1()}");
+
+        check("func1()", "{    fn  func1()}");
+
+        check("func1()", "{ \n fn\nfunc1()}");
+
+        checkFail("{ \n func1()}");
+    }
+
+    /**
+     * Test guid escape sequences
+     */
+    public void testGuidEscapeSequence() {
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "select '12345678-9abc-def0-1234-123456789abc' from SomeTable;",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;"
+        );
+
+        check(
+            "select '12345678-9abc-def0-1234-123456789abc'",
+            "select {guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidGuidSequence() {
+        checkFail("select {guid'12345678-9abc-def0-1234-123456789abc'}");
+
+        checkFail("select {guid 12345678-9abc-def0-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-9abc-def0-1234-123456789abc}");
+
+        checkFail("select {guid '12345678-9abc-def0-1234-123456789abc' from SomeTable;");
+
+        checkFail("select guid '12345678-9abc-def0-1234-123456789abc'} from SomeTable;");
+
+        checkFail("select {guid '1234567-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '1234567-8123-4123-4123-4123456789abc'}");
+
+        checkFail("select {guid '12345678-9abc-defg-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-12345678-1234-1234-1234-123456789abc'}");
+
+        checkFail("select {guid '12345678-1234-1234-1234-123456789abcdef'}");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testGuidEscapeSequenceWithWhitespaces() throws Exception {
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{ guid '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{    guid  '12345678-9abc-def0-1234-123456789abc'}"
+        );
+
+        check(
+            "'12345678-9abc-def0-1234-123456789abc'",
+            "{  \n guid\n'12345678-9abc-def0-1234-123456789abc'}"
+        );
+    }
+
+    /**
+     * Test date escape sequences
+     */
+    public void testDateEscapeSequence() throws Exception {
+        check(
+            "'2016-08-26'",
+            "{d '2016-08-26'}"
+        );
+
+        check(
+            "select '2016-08-26'",
+            "select {d '2016-08-26'}"
+        );
+
+        check(
+            "select '2016-08-26' from table;",
+            "select {d '2016-08-26'} from table;"
+        );
+    }
+
+    /**
+     * Test date escape sequences with additional whitespace characters
+     */
+    public void testDateEscapeSequenceWithWhitespaces() throws Exception {
+        check("'2016-08-26'", "{ d '2016-08-26'}");
+
+        check("'2016-08-26'", "{   d  '2016-08-26'}");
+
+        check("'2016-08-26'", "{ \n d\n'2016-08-26'}");
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidDateSequence() {
+        checkFail("{d'2016-08-26'}");
+
+        checkFail("{d 2016-08-26'}");
+
+        checkFail("{d '2016-08-26}");
+
+        checkFail("{d '16-08-26'}");
+
+        checkFail("{d '2016/08/02'}");
+
+        checkFail("select {d '2016-08-26' from table;");
+
+        checkFail("select {}d '2016-08-26'} from table;");
+    }
+
+    /**
+     * Test date escape sequences
+     */
+    public void testTimeEscapeSequence() throws Exception {
+        check("'13:15:08'", "{t '13:15:08'}");
+
+        check("select '13:15:08'", "select {t '13:15:08'}");
+
+        check("select '13:15:08' from table;", "select {t '13:15:08'} from table;"
+        );
+    }
+
+    /**
+     * Test date escape sequences with additional whitespace characters
+     */
+    public void testTimeEscapeSequenceWithWhitespaces() throws Exception {
+        check("'13:15:08'", "{ t '13:15:08'}");
+
+        check("'13:15:08'", "{   t  '13:15:08'}");
+
+        check("'13:15:08'", "{ \n t\n'13:15:08'}");
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidTimeSequence() {
+        checkFail("{t'13:15:08'}");
+
+        checkFail("{t 13:15:08'}");
+
+        checkFail("{t '13:15:08}");
+
+        checkFail("{t '13 15:08'}");
+
+        checkFail("{t '3:15:08'}");
+
+        checkFail("select {t '13:15:08' from table;");
+
+        checkFail("select {}t '13:15:08'} from table;");
+    }
+
+    /**
+     * Test timestamp escape sequences
+     */
+    public void testTimestampEscapeSequence() throws Exception {
+        check(
+            "'2016-08-26 13:15:08'",
+            "{ts '2016-08-26 13:15:08'}"
+        );
+
+        check(
+            "'2016-08-26 13:15:08.123456'",
+            "{ts '2016-08-26 13:15:08.123456'}"
+        );
+
+        check(
+            "select '2016-08-26 13:15:08'",
+            "select {ts '2016-08-26 13:15:08'}"
+        );
+
+        check(
+            "select '2016-08-26 13:15:08' from table;",
+            "select {ts '2016-08-26 13:15:08'} from table;"
+        );
+    }
+
+    /**
+     * Test timestamp escape sequences with additional whitespace characters
+     */
+    public void testTimestampEscapeSequenceWithWhitespaces() throws Exception {
+        check("'2016-08-26 13:15:08'",
+            "{ ts '2016-08-26 13:15:08'}"
+        );
+
+        check("'2016-08-26 13:15:08'",
+            "{   ts  '2016-08-26 13:15:08'}"
+        );
+
+        check("'2016-08-26 13:15:08'",
+            "{ \n ts\n'2016-08-26 13:15:08'}"
+        );
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidTimestampSequence() {
+        checkFail("{ts '2016-08-26 13:15:08,12345'}");
+
+        checkFail("{ts'2016-08-26 13:15:08'}");
+
+        checkFail("{ts 2016-08-26 13:15:08'}");
+
+        checkFail("{ts '2016-08-26 13:15:08}");
+
+        checkFail("{ts '16-08-26 13:15:08'}");
+
+        checkFail("{ts '2016-08-26 3:25:08'}");
+
+        checkFail("{ts '2016-08 26 03:25:08'}");
+
+        checkFail("{ts '2016-08-26 03 25:08'}");
+
+        checkFail("{t s '2016-08-26 13:15:08''}");
+
+        checkFail("select {ts '2016-08-26 13:15:08' from table;");
+
+        checkFail("select {}ts '2016-08-26 13:15:08'} from table;");
     }
 
     /**
