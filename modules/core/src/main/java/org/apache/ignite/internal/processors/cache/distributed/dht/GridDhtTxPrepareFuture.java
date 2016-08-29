@@ -351,25 +351,38 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                // Send old value in case if rebalancing is not finished.
-                final boolean sndOldVal = !cacheCtx.isLocal() && !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
-
                 CacheObject val = null;
 
-                if (sndOldVal) {
-                    val = getCurrentValue(txEntry, hasFilters);
+                boolean readOld = hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM;
 
-                    if (val != null)
-                        val.valueBytes(cacheCtx.cacheObjectContext());
+                if (readOld) {
+                    cached.unswap(retVal);
 
-                    txEntry.oldValue(val, true);
-                }
+                    boolean readThrough = !txEntry.skipStore() &&
+                        (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
 
-                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
-                    if (!sndOldVal)
-                        val = getCurrentValue(txEntry, hasFilters);
+                    boolean evt = retVal || txEntry.op() == TRANSFORM;
+
+                    EntryProcessor entryProc = null;
+
+                    if (evt && txEntry.op() == TRANSFORM)
+                        entryProc = F.first(txEntry.entryProcessors()).get1();
 
                     final boolean keepBinary = txEntry.keepBinary();
+
+                    val = cached.innerGet(
+                        null,
+                        tx,
+                        /*swap*/true,
+                        readThrough,
+                        /*metrics*/retVal,
+                        /*event*/evt,
+                        /*tmp*/false,
+                        tx.subjectId(),
+                        entryProc,
+                        tx.resolveTaskName(),
+                        null,
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -452,6 +465,32 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     else
                         ret.success(txEntry.op() != DELETE || cached.hasValue());
                 }
+
+                // Send old value in case if rebalancing is not finished.
+                final boolean sndOldVal = !cacheCtx.isLocal() && !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
+
+                if (sndOldVal) {
+                    if (val == null && !readOld) {
+                        val = cached.innerGet(
+                            null,
+                            tx,
+                            /*swap*/true,
+                            /*readThrough*/false,
+                            /*metrics*/false,
+                            /*event*/false,
+                            /*tmp*/false,
+                            /*subjectId*/tx.subjectId(),
+                            /*transformClo*/null,
+                            /*taskName*/null,
+                            /*expiryPlc*/null,
+                            /*keepBinary*/true);
+                    }
+
+                    if (val != null) {
+                        txEntry.oldValue(val);
+                        txEntry.oldValueOnPrimary(true);
+                    }
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
@@ -460,52 +499,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
             }
         }
-    }
-
-    /**
-     * Load current value.
-     *
-     * @param txEntry TX entry.
-     * @param hasFilters Has filters flag.
-     * @return Current value.
-     * @throws IgniteCheckedException
-     * @throws GridCacheEntryRemovedException
-     */
-    private CacheObject getCurrentValue(
-        final IgniteTxEntry txEntry,
-        final boolean hasFilters
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        final GridCacheContext cacheCtx = txEntry.context();
-
-        final GridCacheEntryEx cached = txEntry.cached();
-
-        cached.unswap(retVal);
-
-        boolean readThrough = !txEntry.skipStore() &&
-            (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
-
-        boolean evt = retVal || txEntry.op() == TRANSFORM;
-
-        EntryProcessor entryProc = null;
-
-        if (evt && txEntry.op() == TRANSFORM)
-            entryProc = F.first(txEntry.entryProcessors()).get1();
-
-        final boolean keepBinary = txEntry.keepBinary();
-
-        return cached.innerGet(
-            null,
-            tx,
-            /*swap*/true,
-            readThrough,
-            /*metrics*/retVal,
-            /*event*/evt,
-            /*tmp*/false,
-            tx.subjectId(),
-            entryProc,
-            tx.resolveTaskName(),
-            null,
-            keepBinary);
     }
 
     /**

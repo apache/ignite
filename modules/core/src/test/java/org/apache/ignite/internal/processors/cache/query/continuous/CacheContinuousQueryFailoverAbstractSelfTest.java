@@ -320,71 +320,95 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If fail.
      */
     public void testRebalance() throws Exception {
-        final IgniteEx ignite = startGrid(1);
+        for (int iter = 0; iter < 5; iter++) {
+            log.info("Iteration: " + iter);
 
-        final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("testCache");
+            final IgniteEx ignite = startGrid(1);
 
-        ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setCacheMode(cacheMode());
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg.setBackups(2);
+            final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("testCache");
 
-        final IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
+            ccfg.setAtomicityMode(atomicityMode());
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            ccfg.setCacheMode(cacheMode());
+            ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+            ccfg.setBackups(2);
 
-        for (int i = 0; i < 10_000; i++)
-            cache.put(i, i);
+            final IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
 
-        final ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+            final int KEYS = 10_000;
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
-            @Override public void onUpdated(
-                final Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> cacheEntryEvts) throws CacheEntryListenerException {
-                for (final CacheEntryEvent<? extends Integer, ? extends Integer> evt : cacheEntryEvts) {
-                    final Integer oldVal = evt.getOldValue();
+            for (int i = 0; i < KEYS; i++)
+                cache.put(i, i);
 
-                    final Integer val = evt.getValue();
+            final ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-                    assert val == oldVal + 1 : "[val=" + val + ", oldVal=" + oldVal + "]";
+            final AtomicBoolean err = new AtomicBoolean();
+
+            final AtomicInteger cntr = new AtomicInteger();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                @Override public void onUpdated(
+                    final Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> cacheEntryEvts) {
+                    try {
+                        for (final CacheEntryEvent<? extends Integer, ? extends Integer> evt : cacheEntryEvts) {
+                            final Integer oldVal = evt.getOldValue();
+
+                            final Integer val = evt.getValue();
+
+                            assertNotNull("No old value: " + evt, oldVal);
+                            assertEquals("Unexpected old value: " + evt, (Integer)(oldVal + 1), val);
+
+                            cntr.incrementAndGet();
+                        }
+                    }
+                    catch (Throwable e) {
+                        err.set(true);
+
+                        error("Unexpected error: " + e, e);
+                    }
                 }
-            }
-        });
+            });
 
-        final QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
+            final QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
 
-        final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
+            final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
 
-                for (int i = 0; i < 10_000; i++)
-                    cache.put(i, i + 1);
+                    for (int i = 0; i < KEYS && !err.get(); i++)
+                        cache.put(i, i + 1);
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
 
-        final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
+            final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
 
-                for (int i = 2; i <= 5; i++)
-                    startGrid(i);
+                    for (int i = 2; i <= 5 && !err.get(); i++)
+                        startGrid(i);
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
 
-        latch.countDown();
+            latch.countDown();
 
-        updFut.get();
-        rebFut.get();
+            updFut.get();
+            rebFut.get();
 
-        cur.close();
+            assertFalse("Unexpected error during test", err.get());
+
+            assertTrue(cntr.get() > 0);
+
+            cur.close();
+
+            stopAllGrids();
+        }
     }
-
-
 
     /**
      * @param ignite Ignite.

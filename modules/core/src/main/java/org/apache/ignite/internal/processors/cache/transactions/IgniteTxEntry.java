@@ -117,7 +117,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Old value before update. */
     @GridToStringInclude
-    private TxEntryValueHolder oldVal = new TxEntryValueHolder();
+    private CacheObject oldVal;
 
     /** Transform. */
     @GridToStringInclude
@@ -501,7 +501,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @param oldValOnPrimary {@code True} If old value for 'invoke' operation was non null on primary node.
+     * @param oldValOnPrimary {@code True} If old value for was non null on primary node.
      */
     public void oldValueOnPrimary(boolean oldValOnPrimary) {
         setFlag(oldValOnPrimary, OLD_VAL_ON_PRIMARY);
@@ -590,24 +590,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Old value.
      */
     @Nullable public CacheObject oldValue() {
-        return oldVal == null ? null : oldVal.value();
-    }
-
-    /**
-     * @return {@code True} if old value present.
-     */
-    public boolean hasOldValue() {
-        return oldVal != null && oldVal.hasValue();
+        return oldVal;
     }
 
     /**
      * @param oldVal Old value.
      */
-    public void oldValue(@Nullable CacheObject oldVal, boolean hasReadVal) {
-        if (this.oldVal == null)
-            this.oldVal = new TxEntryValueHolder();
-
-        this.oldVal.value(this.val.op(), oldVal, false, hasReadVal);
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
     }
 
     /**

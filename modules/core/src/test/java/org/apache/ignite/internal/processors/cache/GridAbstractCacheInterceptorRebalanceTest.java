@@ -17,33 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.Cache;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
 public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridCommonAbstractTest {
+    /** */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final String CACHE_NAME = "test_cache";
 
@@ -51,7 +54,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     private static final int CNT = 10_000;
 
     /** */
-    private static volatile boolean inited;
+    private static volatile boolean failed;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
@@ -61,13 +64,13 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         ccfg.setInterceptor(new RebalanceInterceptor());
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
         ccfg.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg);
-        cfg.setLateAffinityAssignment(true);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -78,116 +81,105 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     protected abstract CacheAtomicityMode atomicityMode();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        inited = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
      * @throws Exception If fail.
      */
     public void testRebalanceUpdate() throws Exception {
-        final IgniteEx ignite = startGrid(1);
+        for (int iter = 0; iter < 5; iter++) {
+            log.info("Iteration: " + iter);
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            failed = false;
 
-        for (int i = 0; i < CNT; i++)
-            cache.put(i, i);
+            final IgniteEx ignite = startGrid(1);
 
-        inited = true;
+            final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+            for (int i = 0; i < CNT; i++)
+                cache.put(i, i);
 
-        final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
+            final CountDownLatch latch = new CountDownLatch(1);
 
-                for (int j = 1; j <= 3; j++) {
-                    for (int i = 0; i < CNT; i++) {
-                        if (i % 2 == 0) {
-                            try (Transaction tx = ignite.transactions()
-                                .txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                                cache.put(i, i + j);
+            final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
 
-                                tx.commit();
+                    for (int j = 1; j <= 3; j++) {
+                        for (int i = 0; i < CNT; i++) {
+                            if (i % 2 == 0) {
+                                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    cache.put(i, i + j);
+
+                                    tx.commit();
+                                }
                             }
+                            else
+                                cache.put(i, i + j);
                         }
-                        else
-                            cache.put(i, i + j);
                     }
+
+                    return null;
                 }
+            });
 
-                return null;
-            }
-        });
+            final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
 
-        final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
+                    for (int i = 2; i < 5; i++)
+                        startGrid(i);
 
-                for (int i = 2; i < 5; i++)
-                    startGrid(i);
+                    return null;
+                }
+            });
 
-                return null;
-            }
-        });
+            latch.countDown();
 
-        latch.countDown();
+            updFut.get();
+            rebFut.get();
 
-        updFut.get();
-        rebFut.get();
+            stopAllGrids();
 
-        stopAllGrids();
+            assertFalse(failed);
+        }
     }
 
     /**
      *
      */
-    private static class RebalanceInterceptor implements CacheInterceptor<Integer, Integer> {
+    private static class RebalanceInterceptor extends CacheInterceptorAdapter<Integer, Integer> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Nullable @Override public Integer onBeforePut(final Cache.Entry entry, final Integer newVal) {
-            if (inited && entry.getValue() == null) {
-                fail("Null old value [newVal=" + newVal + "]");
+            try {
+                boolean first = entry.getKey().equals(newVal);
+
+                if (first)
+                    assertNull("Expected null old value: " + entry, entry.getValue());
+                else {
+                    Integer old = (Integer)entry.getValue();
+
+                    assertNotNull("Null old value: " + entry, old);
+                    assertEquals("Unexpected old value: " + entry, newVal.intValue(), old + 1);
+                }
 
                 return newVal;
             }
+            catch (Throwable e) {
+                failed = true;
 
-            final int old = inited ? (Integer) entry.getValue() : 0;
+                System.out.println("Unexpected error: " + e);
+                e.printStackTrace(System.out);
 
-            if (!inited)
-                assert entry.getValue() == null;
-            else
-                assertEquals(newVal.intValue(), old + 1);
-
-            return newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterPut(final Cache.Entry entry) {
-
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Integer onGet(final Integer key, @Nullable final Integer val) {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(
-            final Cache.Entry<Integer, Integer> entry) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterRemove(final Cache.Entry<Integer, Integer> entry) {
-
+                return newVal;
+            }
         }
     }
 }

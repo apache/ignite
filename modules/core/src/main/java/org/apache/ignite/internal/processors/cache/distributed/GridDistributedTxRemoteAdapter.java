@@ -561,7 +561,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
-                                                txEntry.hasOldValue(),
+                                                txEntry.oldValueOnPrimary(),
                                                 txEntry.oldValue(),
                                                 topVer,
                                                 null,
