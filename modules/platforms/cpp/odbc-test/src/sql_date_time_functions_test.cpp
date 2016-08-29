@@ -105,13 +105,13 @@ BOOST_AUTO_TEST_CASE(TestExtract)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
     CheckSingleResult<int32_t>("SELECT {fn EXTRACT(YEAR FROM timestampField)} FROM TestType", 2016);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(MONTH FROM timestampField)} FROM TestType", 8);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(DAY FROM timestampField)} FROM TestType", 29);
+    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(MONTH FROM timestampField)} FROM TestType", 2);
+    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(DAY FROM timestampField)} FROM TestType", 24);
     CheckSingleResult<int32_t>("SELECT {fn EXTRACT(HOUR FROM timestampField)} FROM TestType", 13);
     CheckSingleResult<int32_t>("SELECT {fn EXTRACT(MINUTE FROM timestampField)} FROM TestType", 45);
     CheckSingleResult<int32_t>("SELECT {fn EXTRACT(SECOND FROM timestampField)} FROM TestType", 23);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(TestHour)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TestMinute)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -143,22 +143,22 @@ BOOST_AUTO_TEST_CASE(TestMonth)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn MONTH(timestampField)} FROM TestType", 8);
+    CheckSingleResult<int32_t>("SELECT {fn MONTH(timestampField)} FROM TestType", 2);
 }
 
 BOOST_AUTO_TEST_CASE(TestMonthname)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
-    CheckSingleResult<std::string>("SELECT {fn MONTHNAME(timestampField)} FROM TestType", "August");
+    CheckSingleResult<std::string>("SELECT {fn MONTHNAME(timestampField)} FROM TestType", "February");
 }
 
 BOOST_AUTO_TEST_CASE(TestNow)
@@ -170,18 +170,18 @@ BOOST_AUTO_TEST_CASE(TestQuarter)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn QUARTER(timestampField)} FROM TestType", 3);
+    CheckSingleResult<int32_t>("SELECT {fn QUARTER(timestampField)} FROM TestType", 1);
 }
 
 BOOST_AUTO_TEST_CASE(TestSecond)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -192,18 +192,18 @@ BOOST_AUTO_TEST_CASE(TestWeek)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn WEEK(timestampField)} FROM TestType", 36);
+    CheckSingleResult<int32_t>("SELECT {fn WEEK(timestampField)} FROM TestType", 9);
 }
 
 BOOST_AUTO_TEST_CASE(TestYear)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 8, 29, 13, 45, 23, 580695103);
+    in.timestampField = impl::binary::BinaryUtils::MakeTimestampLocal(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
