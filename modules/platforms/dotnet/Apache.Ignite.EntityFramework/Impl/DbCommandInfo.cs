@@ -19,6 +19,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 {
     using System.Collections.Generic;
     using System.Data.Entity.Core.Common.CommandTrees;
+    using System.Data.Entity.Core.Metadata.Edm;
     using System.Diagnostics;
     using System.Linq;
 
@@ -34,12 +35,15 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly IDbCache _cache;
 
         /** */
-        private readonly string[] _affectedEntitySets;
+        private readonly EntitySetBase[] _affectedEntitySets;
+
+        /** */
+        private readonly DbCachingPolicy _policy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
-        public DbCommandInfo(DbCommandTree tree, IDbCache cache)
+        public DbCommandInfo(DbCommandTree tree, IDbCache cache, DbCachingPolicy policy)
         {
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
@@ -66,6 +70,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
 
             _cache = cache;
+            _policy = policy;
         }
 
         /// <summary>
@@ -87,15 +92,23 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the affected entity sets.
         /// </summary>
-        public ICollection<string> AffectedEntitySets
+        public ICollection<EntitySetBase> AffectedEntitySets
         {
             get { return _affectedEntitySets; }
         }
 
         /// <summary>
+        /// Gets the policy.
+        /// </summary>
+        public DbCachingPolicy Policy
+        {
+            get { return _policy; }
+        }
+
+        /// <summary>
         /// Gets the affected entity sets.
         /// </summary>
-        private static string[] GetAffectedEntitySets(DbExpression expression)
+        private static EntitySetBase[] GetAffectedEntitySets(DbExpression expression)
         {
             var visitor = new ScanExpressionVisitor();
 
@@ -110,12 +123,12 @@ namespace Apache.Ignite.EntityFramework.Impl
         private class ScanExpressionVisitor : BasicCommandTreeVisitor
         {
             /** */
-            private readonly List<string> _entitySets = new List<string>();
+            private readonly List<EntitySetBase> _entitySets = new List<EntitySetBase>();
 
             /// <summary>
             /// Gets the entity sets.
             /// </summary>
-            public IEnumerable<string> EntitySets
+            public IEnumerable<EntitySetBase> EntitySets
             {
                 get { return _entitySets; }
             }
@@ -123,7 +136,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             /** <inheritdoc /> */
             public override void Visit(DbScanExpression expression)
             {
-                _entitySets.Add(expression.Target.Name);
+                _entitySets.Add(expression.Target);
 
                 base.Visit(expression);
             }

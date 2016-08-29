@@ -68,6 +68,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /// <summary>
+        /// Gets the row count.
+        /// </summary>
+        public int RowCount
+        {
+            get { return _data.Length; }
+        }
+
+        /// <summary>
         /// Reads all data from the reader.
         /// </summary>
         private static IEnumerable<object[]> ReadAll(IDataReader reader)

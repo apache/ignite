@@ -137,10 +137,24 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (reader.RecordsAffected > 0)
                 return reader;  // Queries that modify anything are never cached.
 
+            // Check if cacheable
+            var policy = _info.Policy;
 
+            if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters))
+                return reader;
+
+            // Read into memory.
             var res = new DataReaderResult(reader);
 
-            _info.Cache.PutItem(cacheKey, res, _info.AffectedEntitySets, DateTimeOffset.MaxValue);
+            // Check if specific row count is cacheable.
+            if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
+                return res.CreateReader();
+
+            var expiration = policy != null
+                ? policy.GetExpirationTimeout(_info.AffectedEntitySets, CommandText, Parameters)
+                : TimeSpan.MaxValue;
+
+            _info.Cache.PutItem(cacheKey, res, _info.AffectedEntitySets, expiration);
 
             return res.CreateReader();
         }

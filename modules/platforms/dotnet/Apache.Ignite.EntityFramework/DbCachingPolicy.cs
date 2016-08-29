@@ -19,6 +19,7 @@ namespace Apache.Ignite.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using System.Data.Common;
     using System.Data.Entity.Core.Metadata.Edm;
 
     /// <summary>
@@ -35,33 +36,33 @@ namespace Apache.Ignite.EntityFramework
         /// <returns>
         /// <c>true</c> if the specified query can be cached; otherwise, <c>false</c>.
         /// </returns>
-        protected virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
-            IEnumerable<KeyValuePair<string, object>> parameters)
+        protected internal virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
+            DbParameterCollection parameters)
         {
             return true;
         }
 
         /// <summary>
-        /// Gets the minimum and maximum number of rows that should be cached.
+        /// Determines whether specified number of rows should be cached.
         /// </summary>
         /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
         /// <param name="sql">SQL statement for the query.</param>
         /// <param name="parameters">Query parameters.</param>
-        /// <param name="minCacheableRows">The minimum number of cacheable rows.</param>
-        /// <param name="maxCacheableRows">The maximum number of cacheable rows.</param>
-        protected virtual void GetCacheableRows(ICollection<EntitySetBase> affectedEntitySets, string sql,
-            IEnumerable<KeyValuePair<string, object>> parameters,
-            out int minCacheableRows, out int maxCacheableRows)
+        /// <param name="rowCount">The count of fetched rows.</param>
+        protected internal virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
+            DbParameterCollection parameters, int rowCount)
         {
-            minCacheableRows = 0;
-            maxCacheableRows = int.MaxValue;
+            return true;
         }
 
         /// <summary>
         /// Gets the absolute expiration timeout for a given query.
         /// </summary>
         /// <param name="affectedEntitySets">Entity sets affected by the command.</param>
-        protected virtual TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets)
+        /// <param name="sql">SQL statement for the query.</param>
+        /// <param name="parameters">Query parameters.</param>
+        protected internal virtual TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets, 
+            string sql, DbParameterCollection parameters)
         {
             return TimeSpan.MaxValue;
         }
@@ -73,8 +74,8 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="sql">SQL statement for the query.</param>
         /// <param name="parameters">Query parameters.</param>
         /// <returns></returns>
-        protected virtual DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
-            string sql, IEnumerable<KeyValuePair<string, object>> parameters)
+        protected internal virtual DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
+            string sql, DbParameterCollection parameters)
         {
             return DbCachingStrategy.ReadWrite;
         }

@@ -83,7 +83,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             DbCommandTree commandTree)
         {
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree), 
-                new DbCommandInfo(commandTree, _cache));
+                new DbCommandInfo(commandTree, _cache, _policy));
         }
 
         /** <inheritDoc /> */

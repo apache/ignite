@@ -19,6 +19,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Data.Entity.Core.Metadata.Edm;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
@@ -80,14 +81,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritdoc /> */
-        public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
-            DateTimeOffset absoluteExpiration)
+        public void PutItem(string key, object value, ICollection<EntitySetBase> dependentEntitySets, 
+            TimeSpan absoluteExpiration)
         {
             if (dependentEntitySets == null)
                 return;
 
             // TODO: It is possible to put old data to cache because of a race between PutItem and Invalidate
-            // Looks like versioning is the only way to resolve this
+            // Need to have a hook BEFORE the query starts.
 
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
@@ -99,7 +100,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 // Update the entitySet -> key[] mapping
                 // With a finite set of cached queries, we will reach a point when all dependencies are populated,
                 // so _dependencyCache won't be updated on PutItem any more.
-                foreach (var entitySet in Sort(dependentEntitySets))
+                foreach (var entitySet in GetSortedEntitySetNames(dependentEntitySets))
                 {
                     string[] keys;
 
@@ -118,11 +119,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritdoc /> */
-        public void InvalidateSets(IEnumerable<string> entitySets)
+        public void InvalidateSets(ICollection<EntitySetBase> entitySets)
         {
             using (var tx = TxStart())
             {
-                var sets = _dependencyCache.GetAll(Sort(entitySets));
+                var sets = _dependencyCache.GetAll(GetSortedEntitySetNames(entitySets));
 
                 // Remove all cached queries that depend on specific entity set.
                 // Single RemoveAll is faster.
@@ -140,9 +141,12 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Sorts the strings.
         /// </summary>
-        private static List<string> Sort(IEnumerable<string> strings)
+        private static List<string> GetSortedEntitySetNames(ICollection<EntitySetBase> sets)
         {
-            var res = strings.ToList();
+            var res = new List<string>(sets.Count);
+
+            foreach (var entitySetBase in sets)
+                res.Add(entitySetBase.Name);
 
             res.Sort();
 
@@ -176,9 +180,9 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
         // ReSharper disable once UnusedParameter.Local
-        private ICache<string, object> GetCacheWithExpiry(DateTimeOffset absoluteExpiration)
+        private ICache<string, object> GetCacheWithExpiry(TimeSpan absoluteExpiration)
         {
-            if (absoluteExpiration == DateTimeOffset.MaxValue)
+            if (absoluteExpiration == TimeSpan.MaxValue)
                 return _cache;
 
             // Round up to 0.1 of a second so that we share expiry caches
@@ -223,12 +227,12 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the seconds.
         /// </summary>
-        private static long GetSeconds(DateTimeOffset ts)
+        private static long GetSeconds(TimeSpan ts)
         {
-            if (ts == DateTimeOffset.MaxValue)
+            if (ts == TimeSpan.MaxValue)
                 return long.MaxValue;
 
-            var seconds = (ts - DateTimeOffset.Now).TotalSeconds;
+            var seconds = ts.TotalSeconds;
 
             if (seconds < 0)
                 seconds = 0;
