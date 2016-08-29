@@ -631,10 +631,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridResourceProcessor resourceProcessor = ctx.kernalContext().resource();
-
-        resourceProcessor.inject(entryProcessor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
-
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
                 return entryProcessor;
@@ -704,15 +700,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         if (keyCheck)
             validateCacheKeys(keys);
-
-        GridResourceProcessor resourceProcessor = ctx.kernalContext().resource();
-
-        try {
-            resourceProcessor.inject(entryProcessor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
-        }
-        catch (IgniteCheckedException e) {
-           return new GridFinishedFuture<>(e);
-        }
 
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
@@ -959,10 +946,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             if (op == UPDATE)
                 val = ctx.toCacheObject(val);
-            else if (op == TRANSFORM && val instanceof EntryProcessor) {
-                GridResourceProcessor rsrcProcessor = ctx.kernalContext().resource();
-                rsrcProcessor.inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
-            }
+            else if (op == TRANSFORM)
+                ctx.kernalContext().resource().inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
 
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -1120,8 +1105,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
 
                     if (op == TRANSFORM) {
-                        GridResourceProcessor rsrcProcessor = ctx.kernalContext().resource();
-                        rsrcProcessor.inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
+                        ctx.kernalContext().resource().inject(val,
+                            GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR,
+                            ctx.name());
 
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             (EntryProcessor<Object, Object, Object>)val;

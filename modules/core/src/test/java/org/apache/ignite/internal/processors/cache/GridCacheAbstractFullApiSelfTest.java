@@ -296,7 +296,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Boolean clientMode = grid(i).configuration().isClientMode();
 
-            if (clientMode != null && clientMode)
+            if (clientMode)
                 continue;
 
             grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
@@ -304,14 +304,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             break;
         }
 
-        for (
-            int i = 0; i < gridCount(); i++)
-
-            info("Grid " + i + ": " + grid(i).
-
-                localNode().
-
-                id());
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
     /**
@@ -5481,21 +5475,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         doTransformResourceInjection(ignite, cache.withAsync());
 
         if (txEnabled()) {
-            doTransformResourceInjection(ignite, cache);
-            doTransformResourceInjection(ignite, cache.withAsync());
+            doTransformResourceInjectionInTx(ignite, cache);
+            doTransformResourceInjectionInTx(ignite, cache.withAsync());
+        }
+    }
 
-            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    IgniteTransactions txs = ignite.transactions();
+    /**
+     * @param ignite Node.
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                IgniteTransactions txs = ignite.transactions();
 
-                    try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                        log.info("Start transaction: " + concurrency + ", " + isolation);
+                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                    doTransformResourceInjection(ignite, cache);
 
-                        doTransformResourceInjection(ignite, cache);
-                        doTransformResourceInjection(ignite, cache.withAsync());
-
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
             }
         }
@@ -5531,21 +5529,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Test invokeAll method for map of pairs (key, entryProcessor)
+     * Tests invokeAll method for map of pairs (key, entryProcessor).
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
      */
     private void checkResourceInjectionOnInvokeAllMap(IgniteCache<String, Integer> cache,
         Collection<ResourceType> required) {
-
         Map<String, EntryProcessorResult<Integer>> results;
-
-        EntryProcessor entryProcessor = new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor();
 
         Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
 
-        map.put(UUID.randomUUID().toString(), entryProcessor);
-        map.put(UUID.randomUUID().toString(), entryProcessor);
-        map.put(UUID.randomUUID().toString(), entryProcessor);
-        map.put(UUID.randomUUID().toString(), entryProcessor);
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
 
         results = cache.invokeAll(map);
 
@@ -5555,25 +5553,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(map.size(), results.size());
 
         for (EntryProcessorResult<Integer> res : results.values()) {
-            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+            Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(res.get()).notInjected(required);
 
-            if (!notInjected1.isEmpty())
-                fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
+            if (!notInjected.isEmpty())
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
         }
     }
 
     /**
-     * Test invokeAll method for set of keys
+     * Tests invokeAll method for set of keys.
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
      */
     private void checkResourceInjectionOnInvokeAll(IgniteCache<String, Integer> cache,
         Collection<ResourceType> required) {
-
         Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString()));
 
-        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys,
+            new ResourceInjectionEntryProcessor());
 
         if (cache.isAsync())
             results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
@@ -5589,7 +5590,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Test invoke for single key
+     * Tests invoke for single key.
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
      */
     private void checkResourceInjectionOnInvoke(IgniteCache<String, Integer> cache,
         Collection<ResourceType> required) {
@@ -5602,8 +5606,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             flags = cache.<Integer>future().get();
 
         assertTrue("Processor result is null", flags != null);
-
-        log.info("Injection flag: " + Integer.toBinaryString(flags));
 
         Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
 
@@ -5698,6 +5700,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         /** */
         protected transient DummyService svc;
 
+        /**
+         * @param ignite Ignite.
+         */
         @IgniteInstanceResource
         public void setIgnite(Ignite ignite) {
             assert ignite != null;
@@ -5709,6 +5714,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             this.ignite = ignite;
         }
 
+        /**
+         * @param cacheName Cache name.
+         */
         @CacheNameResource
         public void setCacheName(String cacheName) {
             checkSet();
@@ -5718,6 +5726,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             this.cacheName = cacheName;
         }
 
+        /**
+         * @param log Logger.
+         */
         @LoggerResource
         public void setLoggerResource(IgniteLogger log) {
             assert log != null;
@@ -5729,6 +5740,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             this.log = log;
         }
 
+        /**
+         * @param svc Service.
+         */
         @ServiceResource(serviceName = SERVICE_NAME1)
         public void setDummyService(DummyService svc) {
             assert svc != null;

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Entry processor wrapper injecting Ignite resources into target processor before processing.
+ * Entry processor wrapper injecting Ignite resources into target processor before execution.
  */
 public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProcessor<K, V, T>, Serializable {
     /** */
@@ -53,10 +53,10 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
         if (!injected) {
             GridCacheContext cctx = entry.unwrap(GridCacheContext.class);
 
-            GridResourceProcessor rsrcProcessor = cctx.kernalContext().resource();
+            GridResourceProcessor rsrc = cctx.kernalContext().resource();
 
             try {
-                rsrcProcessor.inject(delegate, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, cctx.name());
+                rsrc.inject(delegate, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, cctx.name());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -79,18 +79,18 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
      * Wraps EntryProcessor if needed.
      *
      * @param ctx Context.
-     * @param processor Entry processor.
-     * @return Wrapped entry processor if wrapping is needed.
+     * @param proc Entry proc.
+     * @return Wrapped entry proc if wrapping is needed.
      */
     public static <K, V, T> EntryProcessor<K, V, T> wrap(GridKernalContext ctx,
-        @Nullable EntryProcessor<K, V, T> processor) {
-        if (processor == null || processor instanceof EntryProcessorResourceInjectorProxy)
-            return processor;
+        @Nullable EntryProcessor<K, V, T> proc) {
+        if (proc == null || proc instanceof EntryProcessorResourceInjectorProxy)
+            return proc;
 
         GridResourceProcessor rsrcProcessor = ctx.resource();
 
-        return rsrcProcessor.isAnnotationsPresent(null, processor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
-            new EntryProcessorResourceInjectorProxy<>(processor) : processor;
+        return rsrcProcessor.isAnnotationsPresent(null, proc, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
+            new EntryProcessorResourceInjectorProxy<>(proc) : proc;
     }
 
     /**
@@ -100,8 +100,6 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
      * @return Unwrapped entry processor.
      */
     static Object unwrap(Object obj) {
-        return obj == null || !(obj instanceof EntryProcessorResourceInjectorProxy) ?
-            obj :
-            ((EntryProcessorResourceInjectorProxy)obj).delegate();
+        return (obj instanceof EntryProcessorResourceInjectorProxy) ? ((EntryProcessorResourceInjectorProxy)obj).delegate() : obj;
     }
 }

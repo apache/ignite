@@ -597,9 +597,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Ensure that events were recorded on the given nodes.
      *
+     * @param cClsName Entry processor class name.
      * @param ids Event IDs.
      */
-    private void checkEventNodeIdsStrict(String closureClassName, UUID... ids) {
+    private void checkEventNodeIdsStrict(String cClsName, UUID... ids) {
         if (ids == null)
             assertTrue(evts.isEmpty());
         else {
@@ -610,7 +611,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
                 for (CacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
-                        assertEquals(closureClassName, evt.closureClassName());
+                        assertEquals(cClsName, evt.closureClassName());
 
                         foundEvt = evt;
 
@@ -643,7 +644,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * Transform closure.
      */
     private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
-
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
             e.setValue(e.getValue() + 1);

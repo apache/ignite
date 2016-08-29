@@ -142,7 +142,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
                     assertTrue(
                         "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                            + ", local entries " + entrySet(jcache(fi).localEntries()),
+                        + ", local entries " + entrySet(jcache(fi).localEntries()),
                         GridTestUtils.waitForCondition(
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
