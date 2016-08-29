@@ -32,7 +32,7 @@ namespace Apache.Ignite.EntityFramework
         /// Use this when you expect concurrent cache reads, but no concurrent cache updates 
         /// (only one thread is expected to update data at a time).
         /// </summary>
-        NonStrictReadWrite,
+        //  NonStrictReadWrite,  // TODO: Do we need this?
         
         /// <summary>
         /// Strict read-write cache, can be used with concurrent updates, but incurs the most overhead.
