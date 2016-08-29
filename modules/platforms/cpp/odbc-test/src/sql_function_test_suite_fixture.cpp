@@ -257,4 +257,12 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
     }
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request)
+    {
+        SQL_TIMESTAMP_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+    }
 }

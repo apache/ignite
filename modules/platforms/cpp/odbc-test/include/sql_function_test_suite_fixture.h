@@ -186,6 +186,9 @@ namespace ignite
 
     template<>
     void SqlFunctionTestSuiteFixture::CheckSingleResult<Date>(const char* request);
+
+    template<>
+    void SqlFunctionTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE
