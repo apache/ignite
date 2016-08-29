@@ -129,7 +129,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             var cacheKey = GetKey();
 
             object cachedRes;
-            if (_info.Cache.GetItem(cacheKey, out cachedRes))
+            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, out cachedRes))
                 return ((DataReaderResult) cachedRes).CreateReader();
 
             var reader = _command.ExecuteReader(behavior);

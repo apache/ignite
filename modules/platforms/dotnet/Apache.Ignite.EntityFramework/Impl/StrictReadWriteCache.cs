@@ -21,13 +21,11 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Collections.Generic;
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Linq;
+    using System.Text;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Read-write cache with strict concurrency control.
@@ -40,12 +38,8 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** Main cache: stores SQL -> QueryResult mappings. */
         private readonly ICache<string, object> _cache;
 
-        /** 
-         * Dependency cache: stores EntitySet -> SQL[] mappings. 
-         * Each query uses one or more EntitySets (SQL tables). This cache tracks which queries should be 
-         * removed from cache when specific entity set (table) gets updated.
-         */
-        private readonly ICache<string, string[]> _dependencyCache;
+        /** Entity set version cache. */
+        private readonly ICache<string, long> _entitySetVersions;
 
         /** Cached caches per (expiry_seconds * 10). */
         private volatile Dictionary<long, ICache<string, object>> _expiryCaches =
@@ -65,19 +59,16 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 
-            var atomicityMode = cache.GetConfiguration().AtomicityMode;
-            IgniteArgumentCheck.Ensure(atomicityMode == CacheAtomicityMode.Transactional, "cache",
-                string.Format(CultureInfo.InvariantCulture, "{0} requires {1} cache. Specified '{2}' cache is {3}.",
-                    GetType(), CacheAtomicityMode.Transactional, cache.Name, atomicityMode));
-
             _cache = cache;
-            _dependencyCache = cache.Ignite.GetCache<string, string[]>(cache.Name);  // same cache with different types
+            _entitySetVersions = cache.Ignite.GetCache<string, long>(cache.Name);  // same cache with different types
         }
 
         /** <inheritdoc /> */
-        public bool GetItem(string key, out object value)
+        public bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, out object value)
         {
-            return _cache.TryGet(key, out value);
+            var verKey = GetVersionedKey(key, dependentEntitySets);
+
+            return _cache.TryGet(verKey, out value);
         }
 
         /** <inheritdoc /> */
@@ -87,92 +78,18 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (dependentEntitySets == null)
                 return;
 
-            // TODO: It is possible to put old data to cache because of a race between PutItem and Invalidate
-            // Need to have a hook BEFORE the query starts.
+            var verKey = GetVersionedKey(key, dependentEntitySets);
 
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
-            using (var tx = TxStart())
-            {
-                // Put the value
-                cache.Put(key, value);
-
-                // Update the entitySet -> key[] mapping
-                // With a finite set of cached queries, we will reach a point when all dependencies are populated,
-                // so _dependencyCache won't be updated on PutItem any more.
-                foreach (var entitySet in GetSortedEntitySetNames(dependentEntitySets))
-                {
-                    string[] keys;
-
-                    if (!_dependencyCache.TryGet(entitySet, out keys))
-                    {
-                        _dependencyCache.Put(entitySet, new[] {key});
-                    }
-                    else if (!keys.Contains(entitySet))
-                    {
-                        _dependencyCache.Put(entitySet, Append(keys, key));
-                    }
-                }
-
-                tx.Commit();
-            }
+            cache[verKey] = value;
         }
 
         /** <inheritdoc /> */
         public void InvalidateSets(ICollection<EntitySetBase> entitySets)
         {
-            using (var tx = TxStart())
-            {
-                var sets = _dependencyCache.GetAll(GetSortedEntitySetNames(entitySets));
-
-                // Remove all cached queries that depend on specific entity set.
-                // Single RemoveAll is faster.
-                _cache.RemoveAll(sets.SelectMany(x => x.Value));
-
-                // Do not remove dependency information: same query always depends on same entity sets
-
-                // TODO: This is not correct, because parameter values are embedded, 
-                // so we can have infinite number of queries
-
-                tx.Commit();
-            }
-        }
-
-        /// <summary>
-        /// Sorts the strings.
-        /// </summary>
-        private static List<string> GetSortedEntitySetNames(ICollection<EntitySetBase> sets)
-        {
-            var res = new List<string>(sets.Count);
-
-            foreach (var entitySetBase in sets)
-                res.Add(entitySetBase.Name);
-
-            res.Sort();
-
-            return res;
-        }
-
-        /// <summary>
-        /// Appends element to array and returns resulting array.
-        /// </summary>
-        private static string[] Append(string[] array, string element)
-        {
-            var len = array.Length;
-            var keys = new string[len + 1];
-            Array.Copy(array, 0, keys, 0, len);
-            keys[len] = element;
-            return keys;
-        }
-
-        /// <summary>
-        /// Starts the transaction
-        /// </summary>
-        /// <returns></returns>
-        private ITransaction TxStart()
-        {
-            return _cache.Ignite.GetTransactions()
-                .TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.RepeatableRead);
+            // TODO: Increase versions for all sets with a processor.
+            // Use a background worker to purge outdated keys.
         }
 
         /// <summary>
@@ -238,6 +155,22 @@ namespace Apache.Ignite.EntityFramework.Impl
                 seconds = 0;
 
             return (long) (seconds * 10);
+        }
+
+        /// <summary>
+        /// Gets the versioned key.
+        /// </summary>
+        private string GetVersionedKey(string key, IEnumerable<EntitySetBase> sets)
+        {
+            // LINQ Select allocates less that a new List<> will do.
+            var versions = _entitySetVersions.GetAll(sets.Select(x => x.Name));
+
+            var sb = new StringBuilder(key);
+
+            foreach (var ver in versions.Values)
+                sb.AppendFormat("_{0}", ver);
+
+            return sb.ToString();
         }
     }
 }

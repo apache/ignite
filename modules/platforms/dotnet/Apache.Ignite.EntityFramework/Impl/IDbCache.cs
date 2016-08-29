@@ -24,7 +24,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     internal interface IDbCache
     {
         // TODO: Do we even need an interface?
-        bool GetItem(string key, out object value);
+        bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, out object value);
 
         void PutItem(string key, object value, ICollection<EntitySetBase> dependentEntitySets, 
             TimeSpan absoluteExpiration);
