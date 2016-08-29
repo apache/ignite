@@ -179,6 +179,7 @@
     <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
+    <Compile Include="Impl\Collections\KeyValueDirtyTrackedCollection.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
