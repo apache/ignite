@@ -33,7 +33,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     internal class DbProviderServicesProxy : DbProviderServices
     {
         /** */
-        private readonly IDbCachingPolicy _policy;
+        private readonly DbCachingPolicy _policy;
         
         /** */
         private readonly DbProviderServices _services;
@@ -52,7 +52,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <param name="policy">The policy.</param>
         /// <param name="cache">The cache.</param>
         public DbProviderServicesProxy(DbProviderServices services, TransactionInterceptor txInterceptor, 
-            IDbCachingPolicy policy, IDbCache cache)
+            DbCachingPolicy policy, IDbCache cache)
         {
             Debug.Assert(services != null);
             Debug.Assert(txInterceptor != null);

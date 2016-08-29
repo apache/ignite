@@ -67,9 +67,9 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="configurationSectionName">Name of the configuration section.</param>
         /// <param name="cacheName">Name of the cache.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(string configurationSectionName, string cacheName, IDbCachingPolicy policy)
+        public IgniteDbConfiguration(string configurationSectionName, string cacheName, DbCachingPolicy policy)
              : this(GetConfiguration(configurationSectionName, true), cacheName, policy)
         {
             // No-op.
@@ -80,10 +80,10 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
         public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
-            IDbCachingPolicy policy)
+            DbCachingPolicy policy)
             : this(GetOrStartIgnite(igniteConfiguration), cacheName, policy)
         {
             // No-op.
@@ -94,11 +94,11 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="IDbCachingPolicy"/>.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", 
             Justification = "Validation is present")]
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(IIgnite ignite, string cacheName, IDbCachingPolicy policy)
+        public IgniteDbConfiguration(IIgnite ignite, string cacheName, DbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
