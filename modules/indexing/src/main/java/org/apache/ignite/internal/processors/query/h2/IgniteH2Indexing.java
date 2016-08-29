@@ -1229,46 +1229,70 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean isKeySqlType = GridQueryProcessor.isSqlType(keyCls);
         boolean isValSqlType = GridQueryProcessor.isSqlType(valCls);
 
+        Object[] rowValues = new Object[cols.length];
+
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        for (int i = 0; i < cols.length; i++) {
+            Object colVal = getColumnValue(row[i], params);
+
+            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                key = colVal;
+                keyColIdx = i;
+            }
+
+            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                val = colVal;
+                valColIdx = i;
+            }
+
+            rowValues[i] = colVal;
+        }
+
         if (cctx.binaryMarshaller()) {
             //TODO change this logic when there's available the way of generating hash codes for new binary objects
             // As for now, we accept as keys only classes present locally (because we have to deserialize built key
             // to obtain hash code) and standard types (because they are read literally from SQL and are always present).
             // Both must override equals/hashCode (thus, arrays can't be used as keys although they are standard).
-            if ((!isKeySqlType && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls))
+            if (key == null && ((!isKeySqlType && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls)))
                 throw new UnsupportedOperationException("Currently only SQL types or local types " +
-                    "with overridden equals/hashCode methods may be used as keys " +
+                    "with overridden equals/hashCode methods may be used in keys construction from fields " +
                     "in SQL DML operations w/binary marshalling.");
 
-            BinaryObjectBuilder keyBuilder = !isKeySqlType ? cctx.grid().binary().builder(desc.type().keyTypeName()) :
-                null;
+            BinaryObjectBuilder keyBuilder = null;
 
-            BinaryObjectBuilder valBuilder = !isValSqlType ? cctx.grid().binary().builder(desc.type().valueTypeName()) :
-                null;
+            if (!isKeySqlType) {
+                if (key != null) {
+                    BinaryObject keyBin = cctx.grid().binary().toBinary(key);
+
+                    keyBuilder = cctx.grid().binary().builder(keyBin);
+                }
+                else
+                    keyBuilder = cctx.grid().binary().builder(desc.type().keyTypeName());
+            }
+
+            BinaryObjectBuilder valBuilder = null;
+
+            if (!isValSqlType) {
+                if (val != null) {
+                    BinaryObject valBin = cctx.grid().binary().toBinary(val);
+
+                    valBuilder = cctx.grid().binary().builder(valBin);
+                }
+                else
+                    valBuilder = cctx.grid().binary().builder(desc.type().valueTypeName());
+            }
 
             for (int i = 0; i < cols.length; i++) {
-                Object colVal = getLiteralValue(row[i], params);
-
-                if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    X.ensureX(isKeySqlType, "Unable to use literal value '" + colVal + "' as non literal key " +
-                        "[keyCls=" + desc.type().keyTypeName() + ']');
-
-                    key = colVal;
+                if (i == keyColIdx || i == valColIdx)
                     continue;
-                }
-
-                if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    X.ensureX(isValSqlType, "Unable to use literal value '" + colVal + "' as non literal value " +
-                        "[valType=" + desc.type().valueTypeName() + ']');
-
-                    val = colVal;
-                    continue;
-                }
 
                 GridQueryProperty prop = desc.type().property(cols[i].columnName());
 
                 X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
 
-                prop.setValue(keyBuilder, valBuilder, colVal);
+                prop.setValue(keyBuilder, valBuilder, rowValues[i]);
             }
 
             //TODO change these statements when there's available the way of generating hash codes for new binary objects
@@ -1293,25 +1317,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             for (int i = 0; i < cols.length; i++) {
-                Object colVal = getLiteralValue(row[i], params);
-
-                if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                    X.ensureX(isKeySqlType, "Unable to use literal value '" + colVal + "' as non literal key " +
-                        "[keyCls=" + keyCls.getName() + ']');
-
-                    key = colVal;
+                if (i == keyColIdx || i == valColIdx)
                     continue;
-                }
 
-                if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                    X.ensureX(isValSqlType, "Unable to use literal value '" + colVal + "' as non literal value " +
-                        "[valCls=" + valCls.getName() + ']');
-
-                    val = colVal;
-                    continue;
-                }
-
-                desc.type().setValue(cols[i].columnName(), key, val, colVal);
+                desc.type().setValue(cols[i].columnName(), key, val, rowValues[i]);
             }
         }
 
@@ -1322,11 +1331,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Gets value of this element, if it's a {@link GridSqlConst}, or gets a param by index if element
+     * is a {@link GridSqlParameter}
+     *
      * @param element SQL element.
      * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
-     * @return literal object value.
+     * @return column value.
      */
-    private static Object getLiteralValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
+    private static Object getColumnValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
         if (element instanceof GridSqlConst)
             return ((GridSqlConst)element).value().getObject();
         else if (element instanceof GridSqlParameter)
