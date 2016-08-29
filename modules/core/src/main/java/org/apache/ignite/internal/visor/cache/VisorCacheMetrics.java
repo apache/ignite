@@ -22,13 +22,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for {@link CacheMetrics}.
  */
-public class VisorCacheMetrics implements Serializable {
+public class VisorCacheMetrics implements Serializable, LessNamingBean {
     /** */
     private static final float MICROSECONDS_IN_SECOND = 1_000_000;
 

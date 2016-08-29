@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,14 +99,6 @@ public interface IgfsEx extends IgniteFileSystem {
     public long groupBlockSize();
 
     /**
-     * Asynchronously await for all entries existing in trash to be removed.
-     *
-     * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
-
-    /**
      * Gets client file system log directory.
      *
      * @return Client file system log directory or {@code null} in case no client connections have been created yet.
@@ -151,4 +142,11 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return Secondary file system wrapper.
      */
     public IgfsSecondaryFileSystem asSecondary();
+
+    /**
+     * Await for any pending finished writes on the children paths.
+     *
+     * @param paths Paths to check.
+     */
+    public void await(IgfsPath... paths);
 }

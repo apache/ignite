@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './secondary.jade!';
+import templateUrl from './secondary.jade';
 
 export default ['igniteConfigurationIgfsSecondary', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
