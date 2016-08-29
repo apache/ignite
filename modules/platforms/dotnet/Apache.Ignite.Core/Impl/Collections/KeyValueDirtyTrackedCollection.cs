@@ -17,16 +17,62 @@
 
 namespace Apache.Ignite.Core.Impl.Collections
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
     /// </summary>
-    public class KeyValueDirtyTrackedCollection : ICollection, IEnumerable, IBinarizable
+    public class KeyValueDirtyTrackedCollection : ICollection, IBinarizable  // TODO: Generic?
     {
         // TODO: Keep deserialized while not needed.
-        private readonly Dictionary<object,object> _dict = new Dictionary<object, object>();
+        private readonly Dictionary<object, Entry> _dict = new Dictionary<object, Entry>();
+
+        public IEnumerator GetEnumerator()
+        {
+            foreach (var entry in _dict)
+                entry.Value.IsDirty = true;
+
+            return _dict.Select(x => new DictionaryEntry(x.Key, x.Value.Value)).GetEnumerator();
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        public int Count
+        {
+            get { return _dict.Count; }
+        }
+
+        public object SyncRoot
+        {
+            get { throw new NotSupportedException(); }
+        }
+
+        public bool IsSynchronized
+        {
+            get { return false; }
+        }
+
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new NotImplementedException();
+        }
+
+        private class Entry
+        {
+            public object Value;
+            public bool IsDirty;
+        }
     }
 }
