@@ -388,6 +388,72 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         checkFail("select {}ts '2016-08-26 13:15:08'} from table;");
     }
 
+
+    /**
+     * Test escape sequence series.
+     */
+    public void testOuterJoinFunction() throws Exception {
+        check(
+            "t OUTER JOIN t2 ON t.id=t2.id",
+            "{oj t OUTER JOIN t2 ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from t OUTER JOIN t2 ON t.id=t2.id",
+            "select * from {oj t OUTER JOIN t2 ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from t OUTER JOIN t2 ON t.id=t2.id ORDER BY t2.id",
+            "select * from {oj t OUTER JOIN t2 ON t.id=t2.id} ORDER BY t2.id"
+        );
+    }
+
+    /**
+     * Test simple nested escape sequences. Depth = 2.
+     */
+    public void testNestedOuterJoin() throws Exception {
+        check(
+            "t OUTER JOIN (t2 OUTER JOIN t3 ON t2.id=t3.id) ON t.id=t2.id",
+            "{oj t OUTER JOIN ({oj t2 OUTER JOIN t3 ON t2.id=t3.id}) ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from t OUTER JOIN (t2 OUTER JOIN t3 ON t2.id=t3.id) ON t.id=t2.id",
+            "select * from {oj t OUTER JOIN ({oj  t2 OUTER JOIN t3 ON t2.id=t3.id}) ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from t OUTER JOIN (t2 OUTER JOIN t3 ON t2.id=t3.id) ON t.id=t2.id ORDER BY t2.id",
+            "select * from {oj t OUTER JOIN ({oj t2 OUTER JOIN t3 ON t2.id=t3.id}) ON t.id=t2.id} ORDER BY t2.id"
+        );
+    }
+
+    /**
+     * Test nested escape sequences. Depth > 2.
+     */
+    public void testDeepNestedOuterJoin() {
+        check(
+            "t OUTER JOIN (t2 OUTER JOIN (t3 OUTER JOIN t4 ON t3.id=t4.id) ON t2.id=t3.id) ON t.id=t2.id",
+            "{oj t OUTER JOIN ({oj t2 OUTER JOIN ({oj t3 OUTER JOIN t4 ON t3.id=t4.id}) ON t2.id=t3.id}) ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from " +
+                "t OUTER JOIN (t2 OUTER JOIN (t3 OUTER JOIN t4 ON t3.id=t4.id) ON t2.id=t3.id) ON t.id=t2.id",
+            "select * from " +
+                "{oj t OUTER JOIN ({oj t2 OUTER JOIN ({oj t3 OUTER JOIN t4 ON t3.id=t4.id}) ON t2.id=t3.id})" +
+                " ON t.id=t2.id}"
+        );
+
+        check(
+            "select * from t OUTER JOIN (t2 OUTER JOIN (t3 OUTER JOIN t4 ON t3.id=t4.id) " +
+                "ON t2.id=t3.id) ON t.id=t2.id ORDER BY t4.id",
+            "select * from {oj t OUTER JOIN ({oj t2 OUTER JOIN ({oj t3 OUTER JOIN t4 ON t3.id=t4.id}) " +
+                "ON t2.id=t3.id}) ON t.id=t2.id} ORDER BY t4.id"
+        );
+    }
+
     /**
      * Check parsing logic.
      *
