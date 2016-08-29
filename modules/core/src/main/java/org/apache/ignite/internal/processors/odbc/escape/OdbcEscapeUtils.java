@@ -259,7 +259,7 @@ public class OdbcEscapeUtils {
 
             case ESCAPE:
             case ESCAPE_WO_TOKEN:
-                return parseLikeEscapeCharExpression(text, startPos0, len0);
+                return parseLikeEscCharacterExpression(text, startPos0, len0);
 
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
@@ -280,14 +280,14 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse like escape character expression.
+     * Parse LIKE escape character expression.
      *
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseLikeEscapeCharExpression(String text, int startPos, int len) {
+    private static String parseLikeEscCharacterExpression(String text, int startPos, int len) {
         return "ESCAPE " + substring(text, startPos, len).trim();
     }
 
