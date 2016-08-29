@@ -178,6 +178,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// TODO: Replace with a Java processor.
         /// </summary>
+        [Serializable]
         private class AddOneProcessor : ICacheEntryProcessor<string, long, object, object>
         {
             public object Process(IMutableCacheEntry<string, long> entry, object arg)

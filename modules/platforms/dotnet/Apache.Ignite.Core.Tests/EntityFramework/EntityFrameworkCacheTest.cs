@@ -102,8 +102,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.IsEmpty(context.Blogs);
                 Assert.IsEmpty(context.Posts);
 
-                // Each query generates 3 events: get, put key-val, put dependency.
-                Assert.AreEqual(6, _events.Count);
+                // Each query generates 2 events: put key-val, put dependency.
+                Assert.AreEqual(2, _events.Count);
 
                 context.Blogs.Add(new Blog
                 {
@@ -119,21 +119,21 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 // Check that query works.
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-                Assert.AreEqual(11, _events.Count);
+                Assert.AreEqual(4, _events.Count);
 
                 // Add new post to check invalidation.
                 context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, context.SaveChanges());
 
                 Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-                Assert.AreEqual(16, _events.Count);
+                Assert.AreEqual(6, _events.Count);
 
                 // Delete post.
                 context.Posts.Remove(context.Posts.First());
                 Assert.AreEqual(1, context.SaveChanges());
 
                 Assert.AreEqual(1, context.Posts.Count());
-                Assert.AreEqual(22, _events.Count);
+                Assert.AreEqual(8, _events.Count);
 
                 // Modify post.
                 context.Posts.Single().Title += " - updated";
