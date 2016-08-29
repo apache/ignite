@@ -29,7 +29,7 @@ namespace Apache.Ignite.AspNet
     using Apache.Ignite.Core.Log;
 
     /// <summary>
-    /// ASP.NET Session-State Store Provider that use Ignite distributed cache as an underlying storage.
+    /// ASP.NET Session-State Store Provider that uses Ignite distributed cache as an underlying storage.
     /// <para />
     /// You can either start Ignite yourself, and provide <c>gridName</c> attribute, 
     /// or provide <c>igniteConfigurationSectionName</c> attribute to start Ignite automatically from specified
