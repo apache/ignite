@@ -69,6 +69,7 @@ ignite_odbc_tests_SOURCES = \
     src/sql_system_functions_test.cpp \
     src/sql_operators_test.cpp \
     src/sql_value_expressions.cpp \
+    src/sql_date_time_functions_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
