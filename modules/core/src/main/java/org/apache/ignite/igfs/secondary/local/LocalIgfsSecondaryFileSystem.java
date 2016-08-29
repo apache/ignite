@@ -108,7 +108,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                 attrs.setGroup(grp);
             }
             catch (IOException e) {
-                // Swallow.
+                throw new IgfsException("Update the '" + IgfsUtils.PROP_GROUP_NAME + "' property is failed.", e);
             }
         }
 
@@ -126,7 +126,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                 attrs.setPermissions(permSet);
             }
             catch (IOException e) {
-                // Swallow.
+                throw new IgfsException("Update the '" + IgfsUtils.PROP_PERMISSION + "' property is failed.", e);
             }
         }
 
@@ -366,10 +366,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /**
-     * @param path
-     * @param f
-     * @param posixFileAttributes
-     * @return
+     * @param path IGFS path
+     * @param f File object
+     * @param posixFileAttributes File attributes.
+     * @return File information for specified path or {@code null} if such path does not exist.
      */
     private static IgfsFile info(IgfsPath path, File f, PosixFileAttributes posixFileAttributes) {
         boolean isDir = f.isDirectory();
