@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        internal KeyValueDirtyTrackedCollection(BinaryReader binaryReader)
+        internal KeyValueDirtyTrackedCollection(IBinaryRawReader binaryReader)
         {
             throw new NotImplementedException();
         }

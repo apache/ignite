@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.AspNet;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
@@ -596,6 +597,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, w => new ObjectInfoHolder(w));
             AddSystemType(0, w => new KeyValueDirtyTrackedCollection(w));
+            AddSystemType(0, w => new BinarizableSessionStateStoreData(w));
         }
     }
 }
