@@ -291,7 +291,7 @@ public class OdbcEscapeUtils {
         if (!pattern.matcher(val).matches())
             throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
-        return val;
+        return "CAST(" + val + " AS UUID)";
     }
 
     /**

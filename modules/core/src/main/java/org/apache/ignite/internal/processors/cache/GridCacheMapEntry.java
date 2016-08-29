@@ -4493,17 +4493,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @return All MVCC local candidates.
+     * @return All MVCC local and non near candidates.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable public synchronized List<GridCacheMvccCandidate> mvccAllLocal() {
         GridCacheMvcc mvcc = extras != null ? extras.mvcc() : null;
 
         if (mvcc == null)
             return null;
 
-        List<GridCacheMvccCandidate> locs = mvcc.allLocal();
+        List<GridCacheMvccCandidate> allLocs = mvcc.allLocal();
 
-        return (locs == null || locs.isEmpty()) ? null : new ArrayList<>(locs);
+        if (allLocs == null || allLocs.isEmpty())
+            return null;
+
+        List<GridCacheMvccCandidate> locs = new ArrayList<>(allLocs.size());
+
+        for (int i = 0; i < allLocs.size(); i++) {
+            GridCacheMvccCandidate loc = allLocs.get(i);
+
+            if (!loc.nearLocal())
+                locs.add(loc);
+        }
+
+        return locs.isEmpty() ? null : locs;
     }
 
     /**

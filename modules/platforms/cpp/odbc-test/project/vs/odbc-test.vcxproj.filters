@@ -85,9 +85,6 @@
     <ClCompile Include="..\..\src\sql_numeric_functions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sql_function_test_suite_fixture.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sql_aggregate_functions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -97,7 +94,13 @@
     <ClCompile Include="..\..\src\sql_operators_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sql_value_expressions.cpp">
+    <ClCompile Include="..\..\src\sql_types_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql_test_suite_fixture.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql_value_expressions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\sql_date_time_functions_test.cpp">
@@ -114,7 +117,7 @@
     <ClInclude Include="..\..\include\test_utils.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\sql_function_test_suite_fixture.h">
+    <ClInclude Include="..\..\include\sql_test_suite_fixture.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
