@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -466,8 +465,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 ClusterNode backup = cctx.discovery().node(backupId);
 
-                GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(tx.xidVersion());
-
                 // Nothing to do if backup has left the grid.
                 if (backup == null) {
                     // No-op.
@@ -475,15 +472,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 else if (backup.isLocal())
                     cctx.tm().removeTxReturn(tx.xidVersion());
                 else {
-                    try {
-                        if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0 &&
-                            !cctx.kernalContext().isStopping())
-                            cctx.io().send(backup, ackReq, tx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send one phase commit ack to backup node [backup=" +
-                            backup + ']', e);
-                    }
+                    if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0 && !cctx.kernalContext().isStopping())
+                        cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
                 }
             }
         }

@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -32,9 +35,10 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Lock or transaction version. */
+    /** Lock or transaction versions. */
     @GridToStringInclude
-    protected GridCacheVersion ver;
+    @GridDirectCollection(GridCacheVersion.class)
+    protected Collection<GridCacheVersion> vers;
 
     /**
      * Default constructor.
@@ -44,17 +48,17 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
     /**
      *
-     * @param ver Near Tx xid Version.
+     * @param vers Near Tx xid Versions.
      */
-    public GridDhtTxOnePhaseCommitAckRequest(GridCacheVersion ver) {
-        this.ver = ver;
+    public GridDhtTxOnePhaseCommitAckRequest(Collection<GridCacheVersion> vers) {
+        this.vers = vers;
     }
 
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
-        return ver;
+    public Collection<GridCacheVersion> versions() {
+        return vers;
     }
 
     /** {@inheritDoc} */
@@ -83,7 +87,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -105,7 +109,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                ver = reader.readMessage("ver");
+                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,6 +128,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 4;
     }
 }

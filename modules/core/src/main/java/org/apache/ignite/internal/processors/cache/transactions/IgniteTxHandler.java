@@ -646,7 +646,6 @@ public class IgniteTxHandler {
                     ", node=" + nodeId + ']');
             }
 
-
             fut.onResult(nodeId, res);
         }
     }
@@ -1008,7 +1007,8 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing dht tx one phase commit ack request [nodeId=" + nodeId + ", req=" + req + ']');
 
-        ctx.tm().removeTxReturn(req.version());
+        for (GridCacheVersion ver : req.versions())
+            ctx.tm().removeTxReturn(ver);
     }
 
     /**
@@ -1580,8 +1580,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     protected void processCheckPreparedTxRequest(final UUID nodeId,
-        final GridCacheTxRecoveryRequest req)
-    {
+        final GridCacheTxRecoveryRequest req) {
         if (txRecoveryMsgLog.isDebugEnabled()) {
             txRecoveryMsgLog.debug("Received tx recovery request [txId=" + req.nearXidVersion() +
                 ", node=" + nodeId + ']');
