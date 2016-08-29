@@ -19,7 +19,6 @@ namespace Apache.Ignite.EntityFramework
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Data.Entity.Core.Metadata.Edm;
 
     /// <summary>
@@ -36,7 +35,7 @@ namespace Apache.Ignite.EntityFramework
         /// <returns>
         /// <c>true</c> if the specified query can be cached; otherwise, <c>false</c>.
         /// </returns>
-        protected internal virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
+        protected virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
             IEnumerable<KeyValuePair<string, object>> parameters)
         {
             return true;
@@ -45,10 +44,13 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the minimum and maximum number of rows that should be cached.
         /// </summary>
-        /// <param name="affectedEntitySets">Entity sets affected by the command.</param>
+        /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
+        /// <param name="sql">SQL statement for the query.</param>
+        /// <param name="parameters">Query parameters.</param>
         /// <param name="minCacheableRows">The minimum number of cacheable rows.</param>
         /// <param name="maxCacheableRows">The maximum number of cacheable rows.</param>
-        protected internal virtual void GetCacheableRows(ReadOnlyCollection<EntitySetBase> affectedEntitySets,
+        protected virtual void GetCacheableRows(ICollection<EntitySetBase> affectedEntitySets, string sql,
+            IEnumerable<KeyValuePair<string, object>> parameters,
             out int minCacheableRows, out int maxCacheableRows)
         {
             minCacheableRows = 0;
@@ -56,12 +58,25 @@ namespace Apache.Ignite.EntityFramework
         }
 
         /// <summary>
-        /// Gets the absolute expiration timeout for a given command definition.
+        /// Gets the absolute expiration timeout for a given query.
         /// </summary>
         /// <param name="affectedEntitySets">Entity sets affected by the command.</param>
-        protected internal virtual TimeSpan GetExpirationTimeout(ReadOnlyCollection<EntitySetBase> affectedEntitySets)
+        protected virtual TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets)
         {
             return TimeSpan.MaxValue;
+        }
+
+        /// <summary>
+        /// Gets the caching strategy for a give query.
+        /// </summary>
+        /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
+        /// <param name="sql">SQL statement for the query.</param>
+        /// <param name="parameters">Query parameters.</param>
+        /// <returns></returns>
+        protected virtual DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
+            string sql, IEnumerable<KeyValuePair<string, object>> parameters)
+        {
+            return DbCachingStrategy.ReadWrite;
         }
     }
 }
