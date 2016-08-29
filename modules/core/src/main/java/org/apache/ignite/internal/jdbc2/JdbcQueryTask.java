@@ -188,7 +188,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             List<Object> row0 = new ArrayList<>(row.size());
 
             for (Object val : row)
-                row0.add(JdbcUtils.sqlType(val) ? val : val.toString());
+                row0.add(val == null || JdbcUtils.isSqlType(val.getClass()) ? val : val.toString());
 
             rows.add(row0);
 
