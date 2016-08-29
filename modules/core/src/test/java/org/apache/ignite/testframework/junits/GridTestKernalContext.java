@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +28,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Test context.
@@ -49,19 +50,20 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
         super(new GridLoggerProxy(log, null, null, null),
-                new IgniteKernal(null),
-                cfg,
-                new GridKernalGatewayImpl(null),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                U.allPluginProviders());
+            new IgniteKernal(null),
+            cfg,
+            new GridKernalGatewayImpl(null),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            U.allPluginProviders());
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 
@@ -87,7 +89,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     public void stop(boolean cancel) throws IgniteCheckedException {
         List<GridComponent> comps = components();
 
-        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
             GridComponent comp = it.previous();
 
             comp.stop(cancel);
@@ -108,13 +110,12 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
-
     /**
      * Sets executor service.
      *
      * @param execSvc Executor service
      */
-    public void setExecutorService(ExecutorService execSvc){
+    public void setExecutorService(ExecutorService execSvc) {
         this.execSvc = execSvc;
     }
 }
