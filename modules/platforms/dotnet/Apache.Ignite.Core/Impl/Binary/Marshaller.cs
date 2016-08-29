@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
@@ -594,6 +595,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, w => new AffinityKey(w), "affKey");
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, w => new ObjectInfoHolder(w));
+            AddSystemType(0, w => new KeyValueDirtyTrackedCollection(w));
         }
     }
 }

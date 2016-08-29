@@ -22,14 +22,24 @@ namespace Apache.Ignite.Core.Impl.Collections
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
     /// </summary>
-    public class KeyValueDirtyTrackedCollection : ICollection, IBinarizable  // TODO: Generic?
+    public class KeyValueDirtyTrackedCollection : ICollection, IBinaryWriteAware  // TODO: Generic?
     {
         // TODO: Keep deserialized while not needed.
         private readonly Dictionary<object, Entry> _dict = new Dictionary<object, Entry>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
+        /// </summary>
+        /// <param name="binaryReader">The binary reader.</param>
+        internal KeyValueDirtyTrackedCollection(BinaryReader binaryReader)
+        {
+            throw new NotImplementedException();
+        }
 
         public IEnumerator GetEnumerator()
         {
