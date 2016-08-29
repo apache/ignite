@@ -76,6 +76,12 @@
     <ClCompile Include="..\..\src\queries_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_string_functions_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test_utils.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -83,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h">
       <Filter>Code\TeamCity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\test_utils.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
