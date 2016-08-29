@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
@@ -496,6 +499,53 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove() throws Exception {
+        fail("This test hangs");
+
+        MAX_PER_PAGE = 2;
+
+        final TestTree tree = createTestTree(true);
+
+        for (long i = 0; i < 200_000; i++)
+            tree.put(i);
+
+        final AtomicInteger id = new AtomicInteger(0);
+
+        info("Remove...");
+
+        final int threads = 16;
+
+        // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int id0 = id.getAndIncrement();
+
+                int base = id0 * 1000;
+
+                for (long i = base; i < base + 1000; i++) {
+                    tree.remove(i);
+
+                    if (i >= 0 && i % 100 == 0)
+                        info("Done: " + (i - base));
+                }
+
+                base = (threads + id0) * 1000;
+
+                for (long i = base; i < base + 1000; i += 2) {
+                    tree.remove(i);
+
+                    if (i >= 0 && i % 100 == 0)
+                        info("Done: " + (i - base));
+                }
+
+                return null;
+            }
+        }, threads, "remove");
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
@@ -742,7 +792,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         long[] sizes = new long[CPUS];
 
         for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 64 * MB / CPUS;
+            sizes[i] = 1024 * MB / CPUS;
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE);
 
