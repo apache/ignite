@@ -17,6 +17,8 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * ODBC configuration.
  */
@@ -201,5 +203,10 @@ public class OdbcConfiguration {
         this.idleConnTimeout = idleConnTimeout;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcConfiguration.class, this);
     }
 }
