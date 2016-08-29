@@ -20,7 +20,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Data;
     using System.Data.Entity;
+    using System.Data.Entity.Core.EntityClient;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Events;
@@ -164,9 +167,24 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 context.Tests.Add(test);
                 context.SaveChanges();
 
-                var test0 = context.Tests.Single(x => x.Bool);
-
+                // Check default deserialization.
+                var test0 = context.Tests.Where(x => x.Bool);
                 Assert.AreEqual(test, test0);
+
+                // Check reader.
+                using (var connection = (EntityConnection) context.Database.Connection)
+                {
+                    var command = connection.CreateCommand();
+                    command.CommandText = "SELECT VALUE entity FROM BloggingContext.ArrayReaderTests AS entity";
+
+                    connection.Open();
+
+                    using (var reader = command.ExecuteReader(CommandBehavior.SequentialAccess))
+                    {
+                        Assert.IsTrue(reader.Read());
+                        Assert.AreEqual(56, reader.GetByte(0));
+                    }
+                }
             }
 
         }
