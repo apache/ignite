@@ -106,7 +106,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -118,6 +117,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
@@ -3397,7 +3397,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (ldr == null)
                             ldr = val.getCacheStoreFactory().getClass().getClassLoader();
 
-                        marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                        MarshallerUtils.marshalUnmarshal(ctx.gridName(), marshaller, val.getCacheStoreFactory(),
                             U.resolveClassLoader(ldr, ctx.config()));
                     }
                     catch (IgniteCheckedException e) {
@@ -3407,7 +3407,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 try {
-                    return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
+                    return MarshallerUtils.marshalUnmarshal(ctx.gridName(), marshaller, val,
+                        U.resolveClassLoader(ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration " +

@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -316,19 +317,25 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        Marshaller mrsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
-        if (keyValFilterBytes != null)
-            keyValFilter = mrsh.unmarshal(keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (keyValFilterBytes != null) {
+            keyValFilter = MarshallerUtils.unmarshal(ctx.gridName(), marsh, keyValFilterBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
         if (rdcBytes != null)
-            rdc = mrsh.unmarshal(rdcBytes, ldr);
+            rdc = MarshallerUtils.unmarshal(ctx.gridName(), marsh, rdcBytes, ldr);
 
-        if (transBytes != null)
-            trans = mrsh.unmarshal(transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (transBytes != null) {
+            trans = MarshallerUtils.unmarshal(ctx.gridName(), marsh, transBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
-        if (argsBytes != null)
-            args = mrsh.unmarshal(argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (argsBytes != null) {
+            args = MarshallerUtils.unmarshal(ctx.gridName(), marsh, argsBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
     }
 
     /** {@inheritDoc} */
@@ -343,9 +350,10 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc),
+        rdc = rdc != null ? MarshallerUtils.marshalUnmarshal(ctx.gridName(), marsh, rdc,
             U.resolveClassLoader(ctx.gridConfig())) : null;
-        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans),
+
+        trans = trans != null ? MarshallerUtils.marshalUnmarshal(ctx.gridName(), marsh, trans,
             U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 

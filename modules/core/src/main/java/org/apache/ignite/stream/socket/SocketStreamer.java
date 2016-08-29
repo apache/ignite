@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamTupleExtractor;
@@ -163,7 +164,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             }
 
             @Override public void onMessage(GridNioSession ses, byte[] msg) {
-                addMessage(converter.convert(msg));
+                addMessage(converter.convert(msg, ses.gridName()));
             }
         };
 
@@ -218,9 +219,9 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
         private static final JdkMarshaller MARSH = new JdkMarshaller();
 
         /** {@inheritDoc} */
-        @Override public T convert(byte[] msg) {
+        @Override public T convert(byte[] msg, final String gridName) {
             try {
-                return MARSH.unmarshal(msg, null);
+                return MarshallerUtils.unmarshal(gridName, MARSH, msg, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

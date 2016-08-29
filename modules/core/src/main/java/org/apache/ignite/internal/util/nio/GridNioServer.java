@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -196,6 +197,9 @@ public class GridNioServer<T> {
         }
     }
 
+    /** Grid name */
+    private String gridName;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -260,6 +264,7 @@ public class GridNioServer<T> {
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
         this.msgQueueLsnr = msgQueueLsnr;
+        this.gridName = gridName;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -1639,7 +1644,8 @@ public class GridNioServer<T> {
                     req.accepted(),
                     sndQueueLimit,
                     writeBuf,
-                    readBuf);
+                    readBuf,
+                    gridName);
 
                 Map<Integer, ?> meta = req.meta();
 

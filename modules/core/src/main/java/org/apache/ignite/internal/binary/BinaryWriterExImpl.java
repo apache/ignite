@@ -35,7 +35,9 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -138,6 +140,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
+        String oldName = IgniteUtils.setCurrentIgniteName(ctx.configuration().getGridName());
+
+        try {
+            marshal0(obj, enableReplace);
+        }
+        finally {
+            IgniteUtils.restoreCurrentIgniteName(oldName);
+        }
+    }
+
+    /**
+     * @param obj Object.
+     * @param enableReplace Object replacing enabled flag.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    private void marshal0(Object obj, boolean enableReplace) throws BinaryObjectException {
         assert obj != null;
 
         Class<?> cls = obj.getClass();
@@ -157,7 +175,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
-                byte[] arr = ctx.optimizedMarsh().marshal(obj);
+                byte[] arr = MarshallerUtils.marshal(ctx.configuration().getGridName(), ctx.optimizedMarsh(), obj);
 
                 writeInt(arr.length);
 

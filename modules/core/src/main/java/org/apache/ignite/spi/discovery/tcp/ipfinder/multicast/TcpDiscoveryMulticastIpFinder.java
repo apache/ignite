@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -593,7 +594,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                             AddressResponse addrRes;
 
                             try {
-                                addrRes = new AddressResponse(data);
+                                addrRes = new AddressResponse(data, getGridName());
                             }
                             catch (IgniteCheckedException e) {
                                 LT.warn(log, e, "Failed to deserialize multicast response.");
@@ -638,6 +639,15 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             return new T2<>(rmtAddrs, sndErr);
         }
+    }
+
+    /**
+     * get Ignite configuration if possible.
+     *
+     * @return Ignite config or {@code null}.
+     */
+    @Nullable private String getGridName() {
+        return ignite == null ? null : ignite.name();
     }
 
     /** {@inheritDoc} */
@@ -688,14 +698,16 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param addrs Addresses discovery SPI binds to.
          * @throws IgniteCheckedException If marshalling failed.
          */
-        private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
+        private AddressResponse(Collection<InetSocketAddress> addrs, final String gridName) throws IgniteCheckedException {
             this.addrs = addrs;
 
-            byte[] addrsData = marsh.marshal(addrs);
+            byte[] addrsData = MarshallerUtils.marshal(gridName, marsh, addrs);
+
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
-                throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
+                throw new IgniteCheckedException("Too long data packet [size=" + data.length +
+                    ", max=" + MAX_DATA_LENGTH + "]");
 
             System.arraycopy(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
@@ -703,14 +715,16 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /**
          * @param data Message data.
+         * @param gridName Grid name.
          * @throws IgniteCheckedException If unmarshalling failed.
          */
-        private AddressResponse(byte[] data) throws IgniteCheckedException {
+        private AddressResponse(byte[] data, final String gridName) throws IgniteCheckedException {
             assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
             this.data = data;
 
-            addrs = marsh.unmarshal(Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
+            addrs = MarshallerUtils.unmarshal(gridName, marsh,
+                    Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
         }
 
         /**
@@ -829,7 +843,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             AddressResponse res;
 
             try {
-                res = new AddressResponse(addrs);
+                res = new AddressResponse(addrs, gridName);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to prepare multicast message.", e);

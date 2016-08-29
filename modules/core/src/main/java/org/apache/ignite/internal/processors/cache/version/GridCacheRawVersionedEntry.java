@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -191,7 +192,8 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         unmarshalKey(ctx, marsh);
 
         if (val == null && valBytes != null) {
-            val = marsh.unmarshal(valBytes, U.resolveClassLoader(ctx.kernalContext().config()));
+            val = MarshallerUtils.unmarshal(ctx.kernalContext().gridName(), marsh, valBytes,
+                U.resolveClassLoader(ctx.kernalContext().config()));
 
             val.finishUnmarshal(ctx, null);
         }
@@ -222,7 +224,8 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (key == null) {
             assert keyBytes != null;
 
-            key = marsh.unmarshal(keyBytes, U.resolveClassLoader(ctx.kernalContext().config()));
+            key = MarshallerUtils.unmarshal(ctx.kernalContext().gridName(), marsh, keyBytes,
+                U.resolveClassLoader(ctx.kernalContext().config()));
 
             key.finishUnmarshal(ctx, null);
         }
@@ -239,13 +242,13 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (keyBytes == null) {
             key.prepareMarshal(ctx);
 
-            keyBytes = marsh.marshal(key);
+            keyBytes = MarshallerUtils.marshal(ctx.kernalContext().gridName(), marsh, key);
         }
 
         if (valBytes == null && val != null) {
             val.prepareMarshal(ctx);
 
-            valBytes = marsh.marshal(val);
+            valBytes = MarshallerUtils.marshal(ctx.kernalContext().gridName(), marsh, val);
         }
     }
 

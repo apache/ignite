@@ -23,7 +23,9 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -106,7 +108,7 @@ public class CacheInvokeDirectResult implements Message {
         key.prepareMarshal(ctx.cacheObjectContext());
 
         if (err != null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = CU.marshal(ctx, err);
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
@@ -120,8 +122,10 @@ public class CacheInvokeDirectResult implements Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (errBytes != null) {
+            err = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), errBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
         if (res != null)
             res.finishUnmarshal(ctx.cacheObjectContext(), ldr);

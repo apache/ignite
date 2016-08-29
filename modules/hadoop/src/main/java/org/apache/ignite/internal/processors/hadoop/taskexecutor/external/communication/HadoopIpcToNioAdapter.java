@@ -62,14 +62,15 @@ public class HadoopIpcToNioAdapter<T> {
      * @param log Log.
      * @param endp Endpoint.
      * @param lsnr Listener.
+     * @param gridname Ignite config.
      * @param filters Filters.
      */
     public HadoopIpcToNioAdapter(IgniteLogger log, IpcEndpoint endp, boolean accepted,
-        GridNioServerListener<T> lsnr, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, String gridname, GridNioFilter... filters) {
         this.endp = endp;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, accepted);
+        ses = new GridNioSessionImpl(chain, null, null, accepted, gridname);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 

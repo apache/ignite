@@ -23,6 +23,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractMarshaller;
@@ -87,6 +89,22 @@ public class JdkMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
+        GridByteArrayOutputStream out = null;
+
+        try {
+            out = new GridByteArrayOutputStream(DFLT_BUFFER_SIZE);
+
+            marshal(obj, out);
+
+            return out.toByteArray();
+        }
+        finally {
+            U.close(out, null);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
@@ -111,6 +129,20 @@ public class JdkMarshaller extends AbstractMarshaller {
         }
         finally{
             U.closeQuiet(objIn);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        GridByteArrayInputStream in = null;
+
+        try {
+            in = new GridByteArrayInputStream(arr, 0, arr.length);
+
+            return unmarshal(in, clsLdr);
+        }
+        finally {
+            U.close(in, null);
         }
     }
 

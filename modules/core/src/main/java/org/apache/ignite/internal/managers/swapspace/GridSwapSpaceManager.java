@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.swapspace.SwapContext;
@@ -400,7 +401,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
         if (swapBytes == null)
             return null;
 
-        return marsh.unmarshal(swapBytes, ldr != null ? ldr : U.gridClassLoader());
+        return MarshallerUtils.unmarshal(ctx.gridName(), marsh, swapBytes, ldr != null ? ldr : U.gridClassLoader());
     }
 
     /**
@@ -411,7 +412,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @throws IgniteCheckedException If failed.
      */
     private byte[] marshal(Object obj) throws IgniteCheckedException {
-        return ctx.config().getMarshaller().marshal(obj);
+        return MarshallerUtils.marshal(ctx, obj);
     }
 
     /**

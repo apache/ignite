@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
@@ -913,7 +914,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
                         null,
-                        loc ? null : marsh.marshal(attrs),
+                        loc ? null : MarshallerUtils.marshal(ctx, attrs),
                         attrs);
 
                     // Make sure to go through IO manager always, since order
@@ -1029,7 +1030,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(),
+                MarshallerUtils.<Map<?, ?>>unmarshal(ctx.gridName(), marsh, msg.getAttributesBytes(),
                     U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
@@ -1305,7 +1306,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                        topic = MarshallerUtils.unmarshal(ctx.gridName(), marsh, req.topicBytes(),
+                            U.resolveClassLoader(ctx.config()));
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
@@ -1313,7 +1315,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     ctx.io().send(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
-                            loc ? null : marsh.marshal(siblings)),
+                            loc ? null : MarshallerUtils.marshal(ctx, siblings)),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {

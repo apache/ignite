@@ -77,6 +77,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -288,7 +289,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if (msg.data() == null && msg.dataBytes() != null) {
                     try {
-                        msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                        msg.data(MarshallerUtils.unmarshal(ctx.gridName(), marsh, msg.dataBytes(),
+                            U.resolveClassLoader(ctx.config())));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -676,7 +678,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     reqData.className(clsName);
                     reqData.deploymentInfo(new GridDeploymentInfoBean(dep));
 
-                    reqData.p2pMarshal(marsh);
+                    reqData.p2pMarshal(marsh, ctx);
                 }
 
                 // Handle peer deployment for other handler-specific objects.
@@ -733,7 +735,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     if (msg.data() == null && msg.dataBytes() != null) {
                         try {
-                            msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                            msg.data(MarshallerUtils.unmarshal(ctx.gridName(), marsh, msg.dataBytes(),
+                                U.resolveClassLoader(ctx.config())));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -976,7 +979,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (dep == null)
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-                    data.p2pUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    data.p2pUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()), ctx);
                 }
 
                 hnd.p2pUnmarshal(node.id(), ctx);
@@ -1321,7 +1324,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!msg.messages() &&
             msg.data() != null &&
             (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
-            msg.dataBytes(marsh.marshal(msg.data()));
+            msg.dataBytes(MarshallerUtils.marshal(ctx, msg.data()));
 
         for (ClusterNode node : nodes) {
             int cnt = 0;

@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import java.net.InetSocketAddress;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
+
+import java.net.InetSocketAddress;
 
 /**
  * Mock nio session with disabled functionality for testing parser.
@@ -137,6 +138,11 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
 
     /** {@inheritDoc} */
     @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String gridName() {
         return null;
     }
 }

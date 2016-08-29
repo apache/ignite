@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -34,18 +35,21 @@ public abstract class IgfsCommunicationMessage implements Message {
 
     /**
      * @param marsh Marshaller.
+     * @param kernalCtx Kernal ctx.
      * @throws IgniteCheckedException In case of error.
      */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    public void prepareMarshal(Marshaller marsh, final GridKernalContext kernalCtx) throws IgniteCheckedException {
         // No-op.
     }
 
     /**
      * @param marsh Marshaller.
      * @param ldr Class loader.
+     * @param kernalCtx Kernal ctx.
      * @throws IgniteCheckedException In case of error.
      */
-    public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr,
+        final GridKernalContext kernalCtx) throws IgniteCheckedException {
         // No-op.
     }
 

@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -124,7 +126,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (err != null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = CU.marshal(ctx, err);
 
         metaDataBytes = marshalCollection(metadata, cctx);
         dataBytes = marshalCollection(data, cctx);
@@ -145,8 +147,10 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (errBytes != null) {
+            err = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), errBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
         metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
         data = unmarshalCollection(dataBytes, ctx, ldr);

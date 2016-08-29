@@ -27,7 +27,9 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -183,15 +185,17 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         super.prepareMarshal(ctx);
 
         if (topic != null)
-            topicBytes = ctx.marshaller().marshal(topic);
+            topicBytes = CU.marshal(ctx, topic);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (topicBytes != null)
-            topic = ctx.marshaller().unmarshal(topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (topicBytes != null) {
+            topic = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), topicBytes,
+                U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
     }
 
     /** {@inheritDoc} */

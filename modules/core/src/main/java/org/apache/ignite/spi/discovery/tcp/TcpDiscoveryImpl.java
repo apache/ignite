@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,12 +27,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -325,5 +329,28 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * Marshal object.
+     *
+     * @param obj Object.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected byte[] marshal(Object obj) throws IgniteCheckedException {
+        return MarshallerUtils.marshal(spi.ignite().name(), spi.marsh, obj);
+    }
+
+    /**
+     * Unmarshal object.
+     *
+     * @param in Input stream.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <T> T unmarshal(InputStream in) throws IgniteCheckedException {
+        return MarshallerUtils.unmarshal(spi.ignite().configuration().getGridName(), spi.marsh, in,
+            U.resolveClassLoader(spi.ignite().configuration()));
     }
 }

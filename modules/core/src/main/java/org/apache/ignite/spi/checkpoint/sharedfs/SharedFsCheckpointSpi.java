@@ -323,7 +323,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                         log.debug("Checking checkpoint file: " + file.getAbsolutePath());
 
                     try {
-                        SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
+                        SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log, ignite.configuration());
 
                         if (data.getHost().equals(host)) {
                             files.put(file, new SharedFsTimeData(data.getExpireTime(), file.lastModified(),
@@ -386,7 +386,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         if (file.exists())
             try {
-                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
+                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log, ignite.configuration());
 
                 return data != null ?
                     data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -434,7 +434,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
             try {
                 SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
-                    marsh, log);
+                    marsh, log, ignite.configuration());
             }
             catch (IOException e) {
                 // Select next shared directory if exists, otherwise throw exception

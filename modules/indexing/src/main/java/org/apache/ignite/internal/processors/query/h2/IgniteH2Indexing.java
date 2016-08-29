@@ -76,6 +76,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
@@ -1535,13 +1536,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     protected JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
                 @Override public byte[] serialize(Object obj) throws Exception {
-                    return marshaller.marshal(obj);
+                    if (ctx != null)
+                        return MarshallerUtils.marshal(ctx, obj);
+                    else
+                        return marshaller.marshal(obj);
                 }
 
                 @Override public Object deserialize(byte[] bytes) throws Exception {
-                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
-
-                    return marshaller.unmarshal(bytes, clsLdr);
+                    if (ctx != null) {
+                        return MarshallerUtils.unmarshal(ctx.gridName(), marshaller, bytes,
+                            U.resolveClassLoader(ctx.config()));
+                    }
+                    else
+                        return marshaller.unmarshal(bytes, null);
                 }
             };
     }

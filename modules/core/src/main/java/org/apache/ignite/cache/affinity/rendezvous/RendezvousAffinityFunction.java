@@ -17,21 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -49,9 +34,26 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -335,7 +337,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-                byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
+                byte[] nodeHashBytes =
+                    MarshallerUtils.marshal(ignite.name(), ignite.configuration().getMarshaller(), nodeHash);
 
                 out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.

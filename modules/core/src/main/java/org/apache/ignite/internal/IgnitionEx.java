@@ -1279,17 +1279,21 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets the grid, which is owner of current thread. An Exception is thrown if
-     * current thread is not an {@link IgniteThread}.
+     * Gets a name of the grid from thread local config, which is owner of current thread.
      *
      * @return Grid instance related to current thread
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        if (Thread.currentThread() instanceof IgniteThread)
+        String name = U.getCurrentIgniteName();
+
+        if (U.isCurrentIgniteNameSet(name))
+            return gridx(name);
+        else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getGridName());
         else
-            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+            throw new IllegalArgumentException("Ignite grid name thread local must be set or" +
+                " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**

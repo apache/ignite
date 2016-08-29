@@ -377,5 +377,10 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public String gridName() {
+            return null;
+        }
     }
 }

@@ -26,7 +26,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.marshaller.AbstractMarshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -67,15 +66,6 @@ public class BinaryMarshaller extends AbstractMarshaller {
         catch (NoClassDefFoundError ignored) {
             return false;
         }
-    }
-
-    /**
-     * Returns currently set {@link MarshallerContext}.
-     *
-     * @return Marshaller context.
-     */
-    public MarshallerContext getContext() {
-        return ctx;
     }
 
     /**

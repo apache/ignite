@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,9 +64,11 @@ public class IgfsPaths implements Externalizable {
      * @param payload Payload.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
+     * @param igfsCtx Ignite FS context.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes)
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes,
+        final IgfsContext igfsCtx)
         throws IgniteCheckedException {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -75,7 +78,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-            new JdkMarshaller().marshal(payload, out);
+            MarshallerUtils.marshal(igfsCtx.kernalContext().gridName(), new JdkMarshaller(), payload, out);
 
             payloadBytes = out.toByteArray();
         }

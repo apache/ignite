@@ -514,8 +514,10 @@ public class WebSessionFilter implements Filter {
                 try {
                     final WebSessionEntity entity = binaryCache.get(sesId);
 
-                    if (entity != null)
-                        cached = new WebSessionV2(sesId, httpReq.getSession(false), false, ctx, entity, marshaller);
+                    if (entity != null) {
+                        cached = new WebSessionV2(sesId, httpReq.getSession(false), false, ctx, entity, marshaller,
+                            webSesIgnite.name());
+                    }
 
                     break;
                 }
@@ -698,7 +700,7 @@ public class WebSessionFilter implements Filter {
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
 
-        WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller);
+        WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller, webSesIgnite.name());
 
         final WebSessionEntity marshaledEntity = cached.marshalAttributes();
 
@@ -710,9 +712,9 @@ public class WebSessionFilter implements Filter {
                 final WebSessionEntity old = cache0.getAndPutIfAbsent(sesId, marshaledEntity);
 
                 if (old != null)
-                    cached = new WebSessionV2(sesId, ses, false, ctx, old, marshaller);
+                    cached = new WebSessionV2(sesId, ses, false, ctx, old, marshaller, webSesIgnite.name());
                 else
-                    cached = new WebSessionV2(sesId, ses, false, ctx, marshaledEntity, marshaller);
+                    cached = new WebSessionV2(sesId, ses, false, ctx, marshaledEntity, marshaller, webSesIgnite.name());
 
                 break;
             }
