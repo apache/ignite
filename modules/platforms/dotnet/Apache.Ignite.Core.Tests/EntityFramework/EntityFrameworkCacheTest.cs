@@ -81,6 +81,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
+        /// Sets up a test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            _events.Clear();
+        }
+
+        /// <summary>
         /// Tests the strict strategy.
         /// </summary>
         [Test]
