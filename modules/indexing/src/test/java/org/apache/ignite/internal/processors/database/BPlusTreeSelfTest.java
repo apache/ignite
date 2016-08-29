@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,6 +85,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** */
     private ReuseList reuseList;
+
+    /** */
+    private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
+
 
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
@@ -501,12 +507,26 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testMassiveRemove() throws Exception {
+    public void testMassiveRemove_true() throws Exception {
         fail("This test hangs");
 
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove_false() throws Exception {
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void doTestMassiveRemove(boolean canGetRow) throws Exception {
         MAX_PER_PAGE = 2;
 
-        final TestTree tree = createTestTree(true);
+        final TestTree tree = createTestTree(canGetRow);
 
         for (long i = 0; i < 200_000; i++)
             tree.put(i);
@@ -515,34 +535,43 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         info("Remove...");
 
-        final int threads = 16;
+        try {
+            final int threads = 16;
 
-        // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                int id0 = id.getAndIncrement();
+            // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int id0 = id.getAndIncrement();
 
-                int base = id0 * 1000;
+                    int base = id0 * 1000;
 
-                for (long i = base; i < base + 1000; i++) {
-                    tree.remove(i);
+                    for (long i = base; i < base + 1000; i++) {
+                        tree.remove(i);
 
-                    if (i >= 0 && i % 100 == 0)
-                        info("Done: " + (i - base));
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    base = (threads + id0) * 1000;
+
+                    for (long i = base; i < base + 1000; i += 2) {
+                        tree.remove(i);
+
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    return null;
                 }
-
-                base = (threads + id0) * 1000;
-
-                for (long i = base; i < base + 1000; i += 2) {
-                    tree.remove(i);
-
-                    if (i >= 0 && i % 100 == 0)
-                        info("Done: " + (i - base));
-                }
-
-                return null;
-            }
-        }, threads, "remove");
+            }, threads, "remove");
+        }
+        finally {
+            rmvdIds.clear();
+        }
     }
 
     /**
@@ -770,11 +799,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx), null);
+            Long row = srcIo.getLookupRow(null, src, srcIdx);
+
+            assertFalse(rmvdIds.contains(row));
+
+            store(dst, dstIdx, row, null);
         }
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            assertFalse(rmvdIds.toString(), rmvdIds.contains(row));
+
             buf.putLong(off, row);
         }
 
