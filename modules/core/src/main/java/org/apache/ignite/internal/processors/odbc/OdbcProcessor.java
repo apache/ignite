@@ -114,7 +114,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .socketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize())
                             .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                             .directMode(false)
-                            .idleTimeout(odbcCfg.getIdleTimeout())
+                            .idleTimeout(odbcCfg.getIdleConnectionTimeout())
                             .build();
 
                         srv0.start();
