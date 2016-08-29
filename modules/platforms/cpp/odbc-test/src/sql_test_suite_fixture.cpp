@@ -271,7 +271,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<Date>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request)
     {
         SQL_DATE_STRUCT res;
 
@@ -279,7 +279,7 @@ namespace ignite
     }
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request)
     {
         SQL_TIMESTAMP_STRUCT res;
 

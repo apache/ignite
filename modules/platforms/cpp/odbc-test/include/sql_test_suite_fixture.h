@@ -185,13 +185,13 @@ namespace ignite
     void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<double>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<Date>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE
