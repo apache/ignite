@@ -69,60 +69,70 @@ public class OdbcEscapeUtils {
         int plainPos = startPos;
         int openPos = -1;
 
+        char literalDelim = 0;
+
         LinkedList<OdbcEscapeParseResult> nested = null;
 
         while (curPos < text.length()) {
             char curChar = text.charAt(curPos);
 
-            if (curChar == '{') {
-                if (openPos == -1) {
-                    // Top-level opening brace. Append previous portion and remember current position.
-                    res.append(text, plainPos, curPos);
-
-                    openPos = curPos;
-                }
-                else {
-                    // Nested opening brace -> perform recursion.
-                    OdbcEscapeParseResult nestedRes = parse0(text, curPos, true);
-
-                    if (nested == null)
-                        nested = new LinkedList<>();
-
-                    nested.add(nestedRes);
-
-                    curPos += nestedRes.originalLength() - 1;
-
-                    plainPos = curPos + 1;
-                }
+            if (curChar == '\'' || curChar == '"') {
+                if (literalDelim == 0)
+                    literalDelim = curChar;
+                else if (curChar == literalDelim && text.charAt(curPos - 1) != '\\')
+                    literalDelim = 0;
             }
-            else if (curChar == '}') {
-                if (openPos == -1)
-                    // Close without open -> exception.
-                    throw new IgniteException("Malformed escape sequence " +
-                        "(closing curly brace without opening curly brace): " + text);
-                else {
-                    String parseRes;
+            else if (literalDelim == 0) {
+                if (curChar == '{') {
+                    if (openPos == -1) {
+                        // Top-level opening brace. Append previous portion and remember current position.
+                        res.append(text, plainPos, curPos);
 
-                    if (nested == null)
-                        // Found sequence without nesting, process it.
-                        parseRes = parseExpression(text, openPos, curPos + 1 - openPos);
-                    else {
-                        // Special case to process nesting.
-                        String res0 = appendNested(text, openPos, curPos + 1, nested);
-
-                        nested = null;
-
-                        parseRes = parseExpression(res0, 0, res0.length());
+                        openPos = curPos;
                     }
+                    else {
+                        // Nested opening brace -> perform recursion.
+                        OdbcEscapeParseResult nestedRes = parse0(text, curPos, true);
 
-                    if (earlyExit)
-                        return new OdbcEscapeParseResult(startPos, curPos + 1 - startPos, parseRes);
-                    else
-                        res.append(parseRes);
+                        if (nested == null)
+                            nested = new LinkedList<>();
 
-                    openPos = -1;
+                        nested.add(nestedRes);
 
-                    plainPos = curPos + 1;
+                        curPos += nestedRes.originalLength() - 1;
+
+                        plainPos = curPos + 1;
+                    }
+                }
+                else if (curChar == '}') {
+                    if (openPos == -1)
+                        // Close without open -> exception.
+                        throw new IgniteException("Malformed escape sequence " +
+                            "(closing curly brace without opening curly brace): " + text);
+                    else {
+                        String parseRes;
+
+                        if (nested == null)
+                            // Found sequence without nesting, process it.
+                            parseRes = parseExpression(text, openPos, curPos + 1 - openPos);
+                        else {
+                            // Special case to process nesting.
+                            String res0 = appendNested(text, openPos, curPos + 1, nested);
+
+                            nested = null;
+
+                            parseRes = parseExpression(res0, 0, res0.length());
+                        }
+
+                        if (earlyExit)
+                            return new OdbcEscapeParseResult(startPos, curPos + 1 - startPos, parseRes);
+                        else
+                            res.append(parseRes);
+
+                        openPos = -1;
+
+                        plainPos = curPos + 1;
+                    }
                 }
             }
 
@@ -131,6 +141,9 @@ public class OdbcEscapeUtils {
 
         if (openPos != -1)
             throw new IgniteException("Malformed escape sequence (closing curly brace missing): " + text);
+
+        if(literalDelim!=0)
+            throw new IgniteException("Literal expression (closing "+(literalDelim=='"'?"double-":"")+"quote missing): " + text);
 
         if (curPos > plainPos)
             res.append(text, plainPos, curPos);
