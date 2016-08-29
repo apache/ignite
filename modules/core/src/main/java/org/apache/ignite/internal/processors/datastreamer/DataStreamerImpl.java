@@ -64,6 +64,9 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -72,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -1111,7 +1115,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
     private void checkSecurityPermission(SecurityPermission perm)
-        throws org.apache.ignite.plugin.security.SecurityException{
+        throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 
@@ -1281,13 +1285,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
             if (timeout == DFLT_UNLIMIT_TIMEOUT)
                 U.acquire(sem);
-            else
-                if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to add parallel operation.");
+            else if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to add parallel operation.");
 
-                    throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
-                }
+                throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
+            }
         }
 
         /**
@@ -1315,7 +1318,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             try {
                 incrementActiveTasks();
-            } catch (IgniteDataStreamerTimeoutException e) {
+            }
+            catch (IgniteDataStreamerTimeoutException e) {
                 curFut.onDone(e);
                 throw e;
             }
@@ -1582,7 +1586,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (depCls != null)
                     cls0 = depCls;
                 else {
-                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext();) {
+                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext(); ) {
                         Object o = it.next();
 
                         if (o != null)
@@ -1648,6 +1652,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ExpiryPolicy plc = cctx.expiry();
 
+            boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
+
+            List<DataEntry> walEntries = null;
+
             Collection<Integer> reservedParts = new HashSet<>();
             Collection<Integer> ignoredParts = new HashSet<>();
 
@@ -1656,8 +1664,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        // Try reserve partition first;
-                        {
+                        if (!cctx.isLocal()) {
                             int p = cctx.affinity().partition(e.getKey());
 
                             if (ignoredParts.contains(p))
@@ -1712,6 +1719,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         CU.unwindEvicts(cctx);
 
+                        if (walEnabled) {
+                            if (walEntries == null)
+                                walEntries = new ArrayList<>(entries.size());
+
+                            walEntries.add(new DataEntry(
+                                cctx.cacheId(),
+                                e.getKey(),
+                                e.getValue(),
+                                GridCacheOperation.CREATE,
+                                null,
+                                ver,
+                                entry.partition(),
+                                0
+                            ));
+                        }
+
                         entry.onUnlock();
                     }
                     catch (GridDhtInvalidPartitionException ignored) {
@@ -1734,6 +1757,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     assert locPart != null : "Evicted reserved partition: " + locPart;
 
                     locPart.release();
+                }
+
+                try {
+                    if (walEnabled) {
+                        WALPointer ptr = cctx.shared().wal().log(new DataRecord(walEntries));
+
+                        cctx.shared().wal().fsync(ptr);
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
                 }
             }
         }
