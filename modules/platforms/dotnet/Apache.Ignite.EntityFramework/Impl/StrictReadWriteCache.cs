@@ -88,8 +88,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritdoc /> */
         public void InvalidateSets(ICollection<EntitySetBase> entitySets)
         {
-            // TODO: Increase versions for all sets with a processor.
-            // Use a background worker to purge outdated keys.
+            // Increase version for each dependent entity set.
+            _entitySetVersions.InvokeAll(entitySets.Select(x => x.Name), new AddOneProcessor(), null);
+
+            // TODO: Use a background worker to purge outdated keys.
         }
 
         /// <summary>
@@ -171,6 +173,19 @@ namespace Apache.Ignite.EntityFramework.Impl
                 sb.AppendFormat("_{0}", ver);
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// TODO: Replace with a Java processor.
+        /// </summary>
+        private class AddOneProcessor : ICacheEntryProcessor<string, long, object, object>
+        {
+            public object Process(IMutableCacheEntry<string, long> entry, object arg)
+            {
+                entry.Value++;
+
+                return null;
+            }
         }
     }
 }
