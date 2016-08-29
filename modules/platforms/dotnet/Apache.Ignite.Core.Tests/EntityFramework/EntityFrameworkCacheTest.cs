@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data;
     using System.Data.Entity;
     using System.Data.Entity.Core.EntityClient;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Events;
