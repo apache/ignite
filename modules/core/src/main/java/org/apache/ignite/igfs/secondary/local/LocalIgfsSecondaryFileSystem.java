@@ -17,6 +17,15 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.nio.file.FileSystems;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -26,6 +35,7 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,6 +67,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** Path that will be added to each passed path. */
     private String workDir;
 
+    private static final PosixFilePermission[] POSIX_FILE_PERMISSIONS = PosixFilePermission.values();
+
     /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
      *
@@ -78,7 +90,54 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        throw new UnsupportedOperationException("Update operation is not yet supported.");
+        if (props == null || props.isEmpty())
+            return info(path);
+
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            return null;
+
+        PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
+        String groupName = props.get(IgfsUtils.PROP_GROUP_NAME);
+
+        if (groupName != null) {
+            try {
+                UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+                GroupPrincipal grp = lookupService.lookupPrincipalByGroupName(groupName);
+                attrs.setGroup(grp);
+            }
+            catch (IOException e) {
+                // Swallow.
+            }
+        }
+
+        String strPerm = props.get(IgfsUtils.PROP_PERMISSION);
+        if (strPerm != null) {
+            int perm = Integer.parseInt(strPerm, 8);
+            Set<PosixFilePermission> permSet = new HashSet<>(9);
+
+            for (int i = 0; i < POSIX_FILE_PERMISSIONS.length; ++i) {
+                if ((perm & (1 << i)) != 0)
+                    permSet.add(POSIX_FILE_PERMISSIONS[i]);
+            }
+
+            try {
+                attrs.setPermissions(permSet);
+            }
+            catch (IOException e) {
+                // Swallow.
+            }
+        }
+
+        PosixFileAttributes readAttrs = null;
+        try {
+            readAttrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class).readAttributes();
+        } catch (IOException e) {
+            // Swallow.
+        }
+
+        return info(path, f, readAttrs);
     }
 
     /** {@inheritDoc} */
@@ -158,6 +217,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
+        update(path, props);
     }
 
     /**
@@ -259,7 +319,9 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        return create0(path, overwrite, bufSize);
+        OutputStream os = create0(path, overwrite, bufSize);
+        update(path, props);
+        return os;
     }
 
     /** {@inheritDoc} */
@@ -270,11 +332,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             boolean exists = file.exists();
 
-            if (exists)
-                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+            if (exists) {
+                OutputStream os = new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+                update(path, props);
+                return os;
+            }
             else {
                 if (create)
-                    return create0(path, false, bufSize);
+                    return create(path, bufSize, false, 0, 0, props);
                 else
                     throw new IgfsPathNotFoundException("Failed to append to file because it doesn't exist: " + path);
             }
@@ -291,12 +356,30 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (!f.exists())
             return null;
 
+        PosixFileAttributes attrs = null;
+        try {
+            attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class).readAttributes();
+        } catch (IOException e) {
+            // Swallow.
+        }
+        return info(path, f, attrs);
+    }
+
+    /**
+     * @param path
+     * @param f
+     * @param posixFileAttributes
+     * @return
+     */
+    private static IgfsFile info(IgfsPath path, File f, PosixFileAttributes posixFileAttributes) {
         boolean isDir = f.isDirectory();
 
+        Map<String, String> props = getPropertiesPosixFileAttributes(posixFileAttributes);
+
         if (isDir)
-            return new LocalFileSystemIgfsFile(path, false, true, 0, f.lastModified(), 0, null);
+            return new LocalFileSystemIgfsFile(path, false, true, 0, f.lastModified(), 0, props);
         else
-            return new LocalFileSystemIgfsFile(path, f.isFile(), false, 0, f.lastModified(), f.length(), null);
+            return new LocalFileSystemIgfsFile(path, f.isFile(), false, 0, f.lastModified(), f.length(), props);
     }
 
     /** {@inheritDoc} */
@@ -402,5 +485,27 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
+    }
+
+    /**
+     * @param attrs Attributes view.
+     * @return IGFS properties map.
+     */
+    private static Map<String, String> getPropertiesPosixFileAttributes(PosixFileAttributes attrs) {
+        if (attrs == null)
+            return null;
+
+        Map<String, String> props = new HashMap<>();
+
+        props.put(IgfsUtils.PROP_USER_NAME, attrs.owner().getName());
+        props.put(IgfsUtils.PROP_GROUP_NAME, attrs.group().getName());
+
+        int perm = 0;
+        for(PosixFilePermission p : attrs.permissions())
+            perm |= (1 << 8 - p.ordinal());
+
+        props.put(IgfsUtils.PROP_PERMISSION, '0' + Integer.toOctalString(perm));
+
+        return props;
     }
 }
