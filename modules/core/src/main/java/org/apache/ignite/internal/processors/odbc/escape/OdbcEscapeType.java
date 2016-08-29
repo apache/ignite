@@ -39,15 +39,18 @@ public enum OdbcEscapeType {
     /** GUID. */
     GUID("guid", true, false),
 
-    /** LIKE clause. */
-    LIKE("\'", false, true);
+    /** LIKE escape character clause. */
+    ESCAPE_WO_TOKEN("\'", false, true),
+
+    /** LIKE escape character clause. */
+    ESCAPE("escape", true, true);
 
     /** Values in convenient order. */
     private static final OdbcEscapeType[] VALS = new OdbcEscapeType[] {
         SCALAR_FUNCTION, // Assume that scalar functions are very frequent.
         DATE, TIMESTAMP, // Date and timestamp are relatively frequent as well; also TS must go before T.
         OUTER_JOIN,      // Joins are less frequent,
-        LIKE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
+        ESCAPE_WO_TOKEN, ESCAPE, TIME, GUID // ESCAPE, ESCAPE_WO_TOKEN, TIME and GUID are even less frequent.
     };
 
     /**

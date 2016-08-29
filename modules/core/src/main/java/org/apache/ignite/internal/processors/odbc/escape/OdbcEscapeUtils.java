@@ -160,11 +160,11 @@ public class OdbcEscapeUtils {
 
             OdbcEscapeToken token = parseToken(text, startPos, len);
 
-            if (token.type().standard())
-                return parseStandardExpression(text, startPos, len, token);
-            else
+//            if (token.type().standard())
+            return parseStandardExpression(text, startPos, len, token);
+           /* else
                 throw new IgniteException("Unsupported escape sequence token [text=" +
-                    substring(text, startPos, len) + ", token=" + token.type().body() + ']');
+                    substring(text, startPos, len) + ", token=" + token.type().body() + ']');*/
         }
         else {
             // Nothing to escape, return original string.
@@ -196,11 +196,9 @@ public class OdbcEscapeUtils {
 
         for (OdbcEscapeType typ : OdbcEscapeType.sortedValues()) {
             if (text.startsWith(typ.body(), pos)) {
-                pos += typ.body().length();
+                if (typ != OdbcEscapeType.ESCAPE_WO_TOKEN) {
+                    pos += typ.body().length();
 
-                if (typ == OdbcEscapeType.LIKE)
-                    throw new IgniteException("LIKE escape sequence is not supported yet.");
-                else {
                     empty = (startPos + len == pos + 1);
 
                     if (!empty && typ.standard()) {
@@ -259,6 +257,10 @@ public class OdbcEscapeUtils {
             case TIMESTAMP:
                 return parseExpression(text, startPos0, len0, token.type(), TIMESTAMP_PATTERN);
 
+            case ESCAPE:
+            case ESCAPE_WO_TOKEN:
+                return parseLikeEscapeCharExpression(text, startPos0, len0);
+
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
                     substring(text, startPos, len) + ", token=" + token.type().body() + ']');
@@ -275,6 +277,18 @@ public class OdbcEscapeUtils {
      */
     private static String parseScalarExpression(String text, int startPos, int len) {
         return substring(text, startPos, len).trim();
+    }
+
+    /**
+     * Parse like escape character expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseLikeEscapeCharExpression(String text, int startPos, int len) {
+        return "ESCAPE " + substring(text, startPos, len).trim();
     }
 
     /**
