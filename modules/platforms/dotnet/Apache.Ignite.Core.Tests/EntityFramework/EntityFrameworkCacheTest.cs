@@ -156,13 +156,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     Double = 7.8d,
                     Float = -4.5f,
                     Guid = Guid.NewGuid(),
-                    Int = -8,
+                    ArrayReaderTestId = -8,
                     Long = 3,
-                    SByte = 4,
-                    Short = 5,
-                    UInt = 6,
-                    ULong = 7,
-                    Ushort = 8
+                    Short = 5
                 };
 
                 context.Tests.Add(test);
@@ -229,13 +225,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         private class ArrayReaderTest
         {
             public byte Byte { get; set; }
-            public sbyte SByte { get; set; }
             public short Short { get; set; }
-            public ushort Ushort { get; set; }
-            public int Int { get; set; }
-            public uint UInt { get; set; }
+            public int ArrayReaderTestId { get; set; }
             public long Long { get; set; }
-            public ulong ULong { get; set; }
             public float Float { get; set; }
             public double Double { get; set; }
             public decimal Decimal { get; set; }
@@ -246,11 +238,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             private bool Equals(ArrayReaderTest other)
             {
-                return Byte == other.Byte && SByte == other.SByte && Short == other.Short && Ushort == other.Ushort &&
-                       Int == other.Int && UInt == other.UInt && Long == other.Long && ULong == other.ULong &&
-                       Float.Equals(other.Float) && Double.Equals(other.Double) && Decimal == other.Decimal &&
-                       Bool == other.Bool && Char == other.Char && Guid.Equals(other.Guid) &&
-                       DateTime.Equals(other.DateTime);
+                return Byte == other.Byte && Short == other.Short &&
+                       ArrayReaderTestId == other.ArrayReaderTestId && Long == other.Long && 
+                       Float.Equals(other.Float) && Double.Equals(other.Double) && 
+                       Decimal == other.Decimal && Bool == other.Bool && Char == other.Char && 
+                       Guid.Equals(other.Guid) && DateTime.Equals(other.DateTime);
             }
 
             public override bool Equals(object obj)
@@ -266,13 +258,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 unchecked
                 {
                     var hashCode = Byte.GetHashCode();
-                    hashCode = (hashCode*397) ^ SByte.GetHashCode();
                     hashCode = (hashCode*397) ^ Short.GetHashCode();
-                    hashCode = (hashCode*397) ^ Ushort.GetHashCode();
-                    hashCode = (hashCode*397) ^ Int;
-                    hashCode = (hashCode*397) ^ (int) UInt;
+                    hashCode = (hashCode*397) ^ ArrayReaderTestId;
                     hashCode = (hashCode*397) ^ Long.GetHashCode();
-                    hashCode = (hashCode*397) ^ ULong.GetHashCode();
                     hashCode = (hashCode*397) ^ Float.GetHashCode();
                     hashCode = (hashCode*397) ^ Double.GetHashCode();
                     hashCode = (hashCode*397) ^ Decimal.GetHashCode();
