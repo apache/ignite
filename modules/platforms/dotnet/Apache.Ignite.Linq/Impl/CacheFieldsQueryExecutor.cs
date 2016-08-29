@@ -75,38 +75,6 @@ namespace Apache.Ignite.Linq.Impl
             _enforceJoinOrder = enforceJoinOrder;
         }
 
-        /// <summary>
-        /// Gets the local flag.
-        /// </summary>
-        public bool Local
-        {
-            get { return _local; }
-        }
-
-        /// <summary>
-        /// Gets the size of the page.
-        /// </summary>
-        public int PageSize
-        {
-            get { return _pageSize; }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether distributed joins are enabled.
-        /// </summary>
-        public bool EnableDistributedJoins
-        {
-            get { return _enableDistributedJoins; }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether join order should be enforced.
-        /// </summary>
-        public bool EnforceJoinOrder
-        {
-            get { return _enforceJoinOrder; }
-        }
-
         /** <inheritdoc /> */
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
@@ -282,7 +250,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the fields query.
         /// </summary>
-        private SqlFieldsQuery GetFieldsQuery(string text, object[] args)
+        internal SqlFieldsQuery GetFieldsQuery(string text, object[] args)
         {
             return new SqlFieldsQuery(text, _local, args)
             {

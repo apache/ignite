@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -1171,6 +1170,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);
 
+            var str = query.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?), Arguments=[10], " +
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
+
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
 
@@ -1184,11 +1188,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 
+            str = fieldsQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0.Name from \"\".Person as _T0, Arguments=[], Local=False, PageSize=1024, " +
+                            "EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+            
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
-                .Where(x => x.Key > 10);
+                .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
+
             query = (ICacheQueryable) distrQuery;
+
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
+
+            str = distrQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (((_T0._key > ?) and (_T0.age1 > ?)) " +
+                            "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
         }
 
         /// <summary>
