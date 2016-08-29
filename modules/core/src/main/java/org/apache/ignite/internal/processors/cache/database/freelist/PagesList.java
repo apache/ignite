@@ -149,10 +149,14 @@ public abstract class PagesList extends DataStructure {
 
             try {
                 while ((nextId = bag.pollFreePage()) != 0L) {
+                    System.out.println("Put next " + nextId);
+
                     int idx = io.addPage(prevBuf, nextId);
 
                     if (idx == -1) { // Attempt to add page failed: the node page is full.
                         Page next = page(nextId);
+
+                        System.out.println("Overflow, reuse " + nextId);
 
                         ByteBuffer nextBuf = next.getForWrite();
 
@@ -433,8 +437,6 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket) throws IgniteCheckedException {
-        //assert isReuseBucket(bucket);
-
         long tailId = getPageForTake(bucket);
 
         if (tailId == 0L)

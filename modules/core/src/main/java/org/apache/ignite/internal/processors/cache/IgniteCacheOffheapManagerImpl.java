@@ -110,7 +110,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             try {
                 reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
                 //freeList = new FreeListOld(cctx, reuseList);
-                freeList = new FreeListNew(cacheId, pageMem, reuseList, cctx, cctx.shared().wal());
+                freeList = new FreeListNew(cacheId, pageMem, reuseList, cctx);
 
                 metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
                     cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());

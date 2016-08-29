@@ -146,7 +146,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /**
-     * @param cacheObjectType Cache object type.
+     * @param cacheObjType Cache object type.
      * @param buf Buffer to write value to.
      * @param off Offset in source binary data.
      * @param len Length of the data to write.
@@ -155,7 +155,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} if data were successfully written.
      * @throws IgniteCheckedException If failed.
      */
-    public static boolean putValue(byte cacheObjectType, final ByteBuffer buf, int off, int len,
+    public static boolean putValue(byte cacheObjType, final ByteBuffer buf, int off, int len,
         byte[] valBytes, final int start) throws IgniteCheckedException {
         int dataLen = valBytes.length;
 
@@ -166,7 +166,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
         if (off == 0 && len >= headSize) {
             buf.putInt(dataLen);
-            buf.put(cacheObjectType);
+            buf.put(cacheObjType);
 
             len -= headSize;
         }
@@ -179,12 +179,12 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
             head.order(buf.order());
 
             head.putInt(dataLen);
-            head.put(cacheObjectType);
+            head.put(cacheObjType);
 
             head.position(off);
 
             if (len < head.capacity())
-                head.limit(Math.min(len, head.capacity() - off));
+                head.limit(off + Math.min(len, head.capacity() - off));
 
             buf.put(head);
 

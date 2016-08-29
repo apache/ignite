@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
@@ -35,13 +33,11 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.database.tree.io.PageIO.getPageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
@@ -60,28 +56,32 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private final AtomicReferenceArray<long[]> buckets = new AtomicReferenceArray<>(BUCKETS);
 
     /** */
-    private final AtomicLongArray bitmap = new AtomicLongArray(BUCKETS / 64);
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final GridCacheContext<?, ?> cctx;
+    private final int minSizeForBucket;
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
-     * @param wal Write ahead log.
+     * @param cctx Cache context.
      */
-    public FreeListNew(int cacheId, PageMemory pageMem, ReuseList reuseList, GridCacheContext<?, ?> cctx, IgniteWriteAheadLogManager wal) {
-        super(cacheId, pageMem, wal);
-
+    public FreeListNew(int cacheId,
+        PageMemory pageMem,
+        ReuseList reuseList,
+        GridCacheContext<?, ?> cctx) {
+        super(cacheId, pageMem, cctx.shared().wal());
         this.reuseList = reuseList == null ? this : reuseList;
         this.cctx = cctx;
 
         int pageSize = pageMem.pageSize();
 
-        assert U.isPow2(pageSize);
+        minSizeForBucket = pageSize - 1;
+
+        assert U.isPow2(pageSize) : pageSize;
         assert U.isPow2(BUCKETS);
-        assert BUCKETS <= pageSize;
+        assert BUCKETS <= pageSize : pageSize;
 
         int shift = 0;
 
@@ -93,11 +93,23 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         this.shift = shift;
     }
 
+    /**
+     * @param freeSpace Page free space.
+     * @return Bucket.
+     */
     private int bucket(int freeSpace) {
         assert freeSpace > 0: freeSpace;
 
-        return freeSpace >>> shift;
+        int bucket = freeSpace >>> shift;
+
+        if (bucket == REUSE_BUCKET)
+            bucket = 0;
+
+        assert bucket >= 0 && bucket < BUCKETS && !isReuseBucket(bucket) : bucket;
+
+        return bucket;
     }
+
     /**
      * @param part Partition.
      * @return Page.
@@ -111,36 +123,32 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        int bucket = 1;
-
-        System.out.println("insert, pages count before: " + storedPagesCount(bucket));
+        int rowSize = getRowSize(cctx.cacheObjectContext(), row);
 
         int written = 0;
 
         do {
+            int freeSpace = Math.min(minSizeForBucket, rowSize - written);
+
+            int bucket = bucket(freeSpace);
+
             long pageId = takeEmptyPage(bucket);
 
-            boolean newPage = false;
+            boolean newPage = pageId == 0;
 
-            if (pageId == 0) {
-                newPage = true;
-            }
+            if (newPage)
+                System.out.println("Allocate new page");
             else
-                System.out.println("Take page: " + pageId);
+                System.out.println("Found page " + pageId + ", bucket=" + bucket);
 
-            try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
+            try (Page page = newPage ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
                 DataPageIO init = newPage ? DataPageIO.VERSIONS.latest() : null;
-
-                if (newPage)
-                    System.out.println("Allocated page: " + page.id());
 
                 written = writePage(page.id(), page, writeRow, init, wal, row, written);
             }
         }
         while (written != COMPLETE);
-
-        System.out.println("insert, pages count after: " + storedPagesCount(bucket));
     }
 
     /** */
@@ -148,9 +156,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
-        // TODO port from old impl + use methods `put` and `removeDataPage` instead of trees
-        System.out.println("remove, pages count before: " + storedPagesCount(1));
-
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -159,7 +164,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         long nextLink;
 
         try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
-            nextLink = writePage(pageId, page, removeRow, null, itemId);
+            nextLink = writePage(pageId, page, rmvRow, null, itemId);
         }
 
         while (nextLink != 0) {
@@ -167,10 +172,9 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             pageId = PageIdUtils.pageId(nextLink);
 
             try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
-                nextLink = writePage(pageId, page, removeRow, null, itemId);
+                nextLink = writePage(pageId, page, rmvRow, null, itemId);
             }
         }
-        System.out.println("remove, pages count after: " + storedPagesCount(1));
     }
 
     /** {@inheritDoc} */
@@ -192,7 +196,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        put(bag, null, 0);
+        put(bag, null, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */
@@ -202,7 +206,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
             throw new IllegalStateException();
 
-        return takeEmptyPage(0);
+        return takeEmptyPage(REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */
@@ -230,36 +234,30 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
             new PageHandler<CacheDataRow, DataPageIO, Integer>() {
                 @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
-                        throws IgniteCheckedException {
+                    throws IgniteCheckedException {
                     CacheObjectContext coctx = cctx.cacheObjectContext();
 
                     int rowSize = getRowSize(coctx, row);
-                    int freeSpace0 = io.getFreeSpace(buf);
+                    int oldFreeSpace = io.getFreeSpace(buf);
 
-                    assert freeSpace0 > 0: freeSpace0;
+                    assert oldFreeSpace > 0 : oldFreeSpace;
 
                     // If the full row does not fit into this page write only a fragment.
-                    written = (written == 0 && freeSpace0 >= rowSize) ? addRow(coctx, page, buf, io, row, rowSize):
-                            addRowFragment(coctx, page, buf, io, row, written, rowSize);
+                    written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(coctx, page, buf, io, row, rowSize):
+                        addRowFragment(coctx, page, buf, io, row, written, rowSize);
 
                     // Reread free space after update.
-                    int freeSpace = io.getFreeSpace(buf);
+                    int newFreeSpace = io.getFreeSpace(buf);
 
-                    if (freeSpace > 0) {
-                        long dataPageId = getPageId(buf);
-                        System.out.println("Add data page: " + dataPageId + ", spaceBefore: " + freeSpace0 + ", freeSpace: " + freeSpace + " written  " + (freeSpace0 - freeSpace) + " row: " + rowSize);
+                    // System.out.println("Write page=" + pageId + ", old free " + oldFreeSpace + ", newFree " + newFreeSpace + " written " + (oldFreeSpace - newFreeSpace));
 
-                        put(null, buf, 1);
+                    if (newFreeSpace > 0) {
+                        int bucket = bucket(newFreeSpace);
+
+                        put(null, buf, bucket);
+
+                        System.out.println("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
                     }
-                    else {
-                        long dataPageId = getPageId(buf);
-                        System.out.println("No free space after add: " + dataPageId + ", spaceBefore: " + freeSpace0 + ", freeSpace: " + freeSpace + " written " + (freeSpace0 - freeSpace) + " row: " + rowSize);
-
-                        io.setFreeListPageId(buf, 0);
-                    }
-
-                    // Put our free item back to tree.
-                    // tree(row.partition()).put(new FreeItem(freeSpace, pageId));
 
                     // Avoid boxing with garbage generation for usual case.
                     return written == rowSize ? COMPLETE : written;
@@ -336,8 +334,8 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             };
 
     /** */
-    private final PageHandler<FreeTree, DataPageIO, Long> removeRow = new PageHandler<FreeTree, DataPageIO, Long>() {
-        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, FreeTree tree, int itemId)
+    private final PageHandler<Void, DataPageIO, Long> rmvRow = new PageHandler<Void, DataPageIO, Long>() {
+        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, Void arg, int itemId)
                 throws IgniteCheckedException {
             int oldFreeSpace = io.getFreeSpace(buf);
 
@@ -351,30 +349,25 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             int newFreeSpace = io.getFreeSpace(buf);
 
             if (newFreeSpace > 0) {
-                long freeListPageId = io.getFreeListPageId(buf);
+                int newBucket = bucket(newFreeSpace);
 
-                if (freeListPageId == 0) {
-                    System.out.println("Add page after remove: " + PageIO.getPageId(buf) + ", freeSpaceBefore: " + oldFreeSpace + ", freeSpace: " + newFreeSpace + " freed " + (newFreeSpace - oldFreeSpace ));
+                if (oldFreeSpace > 0) {
+                    int oldBucket = bucket(oldFreeSpace);
 
-                    put(null, buf, 1);
+                    if (oldBucket != newBucket) {
+                        System.out.println("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
+
+                        removeDataPage(buf, oldBucket);
+
+                        put(null, buf, newBucket);
+                    }
                 }
-                else
-                    System.out.println("After remove, page already added: " + PageIO.getPageId(buf) + ", freeSpaceBefore: " + oldFreeSpace + ", freeSpace: " + newFreeSpace + " freed " + (newFreeSpace - oldFreeSpace));
-            }
-            else
-                System.out.println("No free space after remove: " + PageIO.getPageId(buf) + ", freeSpace: " + newFreeSpace + " freed " + (newFreeSpace - oldFreeSpace));
+                else {
+                    System.out.println("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
 
-//             Move page to the new position with respect to the new free space.
-//            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, pageId));
-//
-//            // If item is null, then it was removed concurrently by insertRow, because
-//            // in removeRow we own the write lock on this page. Thus we can be sure that
-//            // insertRow will update position correctly after us.
-//            if (item != null) {
-//                FreeItem old = tree.put(new FreeItem(newFreeSpace, pageId));
-//
-//                assert old == null;
-//            }
+                    put(null, buf, newBucket);
+                }
+            }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
