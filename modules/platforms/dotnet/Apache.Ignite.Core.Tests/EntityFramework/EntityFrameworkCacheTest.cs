@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
