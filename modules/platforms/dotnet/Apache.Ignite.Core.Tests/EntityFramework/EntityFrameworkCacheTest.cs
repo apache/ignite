@@ -80,8 +80,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             File.Delete(TempFile);
         }
 
+        /// <summary>
+        /// Tests the strict strategy.
+        /// </summary>
         [Test]
-        public void Test()
+        public void TestStrictStrategy()
         {
             using (var context = new BloggingContext(ConnectionString))
             {
@@ -131,18 +134,27 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
+        /// <summary>
+        /// Tests transactions.
+        /// </summary>
         [Test]
         public void TestTx()
         {
             // TODO: Find out what's called within a TX.
         }
 
+        /// <summary>
+        /// Tests the expiration.
+        /// </summary>
         [Test]
         public void TestExpiration()
         {
             // TODO: 
         }
 
+        /// <summary>
+        /// Tests the cache reader.
+        /// </summary>
         [Test]
         public void TestCacheReader()
         {
