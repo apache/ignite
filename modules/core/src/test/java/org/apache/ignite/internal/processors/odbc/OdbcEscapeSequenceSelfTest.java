@@ -455,6 +455,37 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidOuterJoinSequence() {
+        checkFail("{ojt OUTER JOIN t2 ON t.id=t2.id}");
+
+        checkFail("select {oj t OUTER JOIN ({oj t2 OUTER JOIN t3 ON t2.id=t3.id) ON t.id=t2.id} from SomeTable;");
+
+        checkFail("select oj t OUTER JOIN t2 ON t.id=t2.id} from SomeTable;");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testOuterJoinSequenceWithWhitespaces() throws Exception {
+        check(
+            "t OUTER JOIN t2 ON t.id=t2.id",
+            "{ oj t OUTER JOIN t2 ON t.id=t2.id}"
+        );
+
+        check(
+            "t OUTER JOIN t2 ON t.id=t2.id",
+            "{    oj  t OUTER JOIN t2 ON t.id=t2.id}"
+        );
+
+        check(
+            "t OUTER JOIN t2 ON t.id=t2.id",
+            "  \n { oj\nt OUTER JOIN t2 ON t.id=t2.id}"
+        );
+    }
+
+    /**
      * Check parsing logic.
      *
      * @param exp Expected result.
