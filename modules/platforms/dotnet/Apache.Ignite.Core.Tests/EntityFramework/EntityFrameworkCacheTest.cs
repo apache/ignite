@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Data.Entity;
@@ -142,7 +143,46 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestCacheReader()
         {
             // Tests all kinds of entity field types to cover ArrayDbDataReader
-            
+
+            using (var context = new BloggingContext(ConnectionString))
+            {
+                var test = new ArrayReaderTest
+                {
+                    DateTime = DateTime.Today,
+                    Bool = true,
+                    Byte = 56,
+                    Char = 'z',
+                    Decimal = (decimal) 5.6,
+                    Double = 7.8d,
+                    Float = -4.5f,
+                    Guid = Guid.NewGuid(),
+                    Int = -8,
+                    Long = 3,
+                    SByte = 4,
+                    Short = 5,
+                    UInt = 6,
+                    ULong = 7,
+                    Ushort = 8
+                };
+
+                context.Tests.Add(test);
+                context.SaveChanges();
+
+                var test0 = context.Tests.Single(x => x.Bool);
+
+                Assert.AreEqual(test, test0);
+            }
+
+        }
+
+        /// <summary>
+        /// Invoked when event occurs.
+        /// </summary>
+        public bool Invoke(CacheEvent evt)
+        {
+            _events.Push(evt);
+
+            return true;
         }
 
         private class MyDbConfiguration : IgniteDbConfiguration
@@ -164,6 +204,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public virtual DbSet<Blog> Blogs { get; set; }
             public virtual DbSet<Post> Posts { get; set; }
+            public virtual DbSet<ArrayReaderTest> Tests { get; set; }
         }
 
         private class Blog
@@ -183,8 +224,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public int BlogId { get; set; }
             public virtual Blog Blog { get; set; }
-
-            // TODO: Test all kinds of field types (to test serialization and reader)
         }
 
         private class ArrayReaderTest
@@ -194,15 +233,56 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             public short Short { get; set; }
             public ushort Ushort { get; set; }
             public int Int { get; set; }
+            public uint UInt { get; set; }
+            public long Long { get; set; }
+            public ulong ULong { get; set; }
+            public float Float { get; set; }
+            public double Double { get; set; }
+            public decimal Decimal { get; set; }
+            public bool Bool { get; set; }
+            public char Char { get; set; }
+            public Guid Guid { get; set; }
+            public DateTime DateTime { get; set; }
 
-            // TODO
-        }
+            private bool Equals(ArrayReaderTest other)
+            {
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short && Ushort == other.Ushort &&
+                       Int == other.Int && UInt == other.UInt && Long == other.Long && ULong == other.ULong &&
+                       Float.Equals(other.Float) && Double.Equals(other.Double) && Decimal == other.Decimal &&
+                       Bool == other.Bool && Char == other.Char && Guid.Equals(other.Guid) &&
+                       DateTime.Equals(other.DateTime);
+            }
 
-        public bool Invoke(CacheEvent evt)
-        {
-            _events.Push(evt);
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((ArrayReaderTest) obj);
+            }
 
-            return true;
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = Byte.GetHashCode();
+                    hashCode = (hashCode*397) ^ SByte.GetHashCode();
+                    hashCode = (hashCode*397) ^ Short.GetHashCode();
+                    hashCode = (hashCode*397) ^ Ushort.GetHashCode();
+                    hashCode = (hashCode*397) ^ Int;
+                    hashCode = (hashCode*397) ^ (int) UInt;
+                    hashCode = (hashCode*397) ^ Long.GetHashCode();
+                    hashCode = (hashCode*397) ^ ULong.GetHashCode();
+                    hashCode = (hashCode*397) ^ Float.GetHashCode();
+                    hashCode = (hashCode*397) ^ Double.GetHashCode();
+                    hashCode = (hashCode*397) ^ Decimal.GetHashCode();
+                    hashCode = (hashCode*397) ^ Bool.GetHashCode();
+                    hashCode = (hashCode*397) ^ Char.GetHashCode();
+                    hashCode = (hashCode*397) ^ Guid.GetHashCode();
+                    hashCode = (hashCode*397) ^ DateTime.GetHashCode();
+                    return hashCode;
+                }
+            }
         }
     }
 }
