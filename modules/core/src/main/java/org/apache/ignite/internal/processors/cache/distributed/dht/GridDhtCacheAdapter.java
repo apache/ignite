@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -545,8 +546,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry = entryEx(key, false);
 
-                    entry.initialValue(cacheVal, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
-                        replicate ? DR_LOAD : DR_NONE);
+                    entry.initialValue(cacheVal,
+                        ver,
+                        ttl,
+                        CU.EXPIRE_TIME_CALCULATE,
+                        false,
+                        topVer,
+                        replicate ? DR_LOAD : DR_NONE,
+                        false);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to put cache value: " + entry, e);
@@ -813,6 +820,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             req.addDeploymentInfo());
                     }
                 }
+                catch (NodeStoppingException e) {
+                    return;
+                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
 
@@ -877,6 +887,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     Collection<GridCacheEntryInfo> entries = fut.get();
 
                     res.entries(entries);
+                }
+                catch (NodeStoppingException e) {
+                    return;
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
@@ -1210,16 +1223,34 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
+     * @param keepBinary Keep binary flag.
      * @return Local entries iterator.
      */
-    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary, final boolean backup) {
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+        final boolean backup,
+        final boolean keepBinary) {
+        return localEntriesIterator(primary,
+            backup,
+            keepBinary,
+            ctx.affinity().affinityTopologyVersion());
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param keepBinary Keep binary flag.
+     * @param topVer Specified affinity topology version.
+     * @return Local entries iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+        final boolean backup,
+        final boolean keepBinary,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(entries().iterator(), !ctx.keepBinary());
+            return iterator(entries().iterator(), !keepBinary);
         else {
-            final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
             Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {
@@ -1280,7 +1311,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             };
 
-            return iterator(it, !ctx.keepBinary());
+            return iterator(it, !keepBinary);
         }
     }
 
@@ -1345,7 +1376,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next instanceof GridCacheMapEntry && (!((GridCacheMapEntry)next).visitable(CU.empty0())))
                         continue;
 
-                    entry = next.wrapLazyValue();
+                    entry = next.wrapLazyValue(ctx.keepBinary());
 
                     return;
                 }

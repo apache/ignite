@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './shared.jade!';
+import templateUrl from './shared.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryShared', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
