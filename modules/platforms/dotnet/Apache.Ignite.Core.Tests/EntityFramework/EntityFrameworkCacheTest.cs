@@ -143,32 +143,34 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestCacheReader()
         {
             // Tests all kinds of entity field types to cover ArrayDbDataReader
+            var test = new ArrayReaderTest
+            {
+                DateTime = DateTime.Today,
+                Bool = true,
+                Byte = 56,
+                String = "z",
+                Decimal = (decimal) 5.6,
+                Double = 7.8d,
+                Float = -4.5f,
+                Guid = Guid.NewGuid(),
+                ArrayReaderTestId = -8,
+                Long = 3,
+                Short = 5
+            };
 
             using (var context = new BloggingContext(ConnectionString))
             {
-                var test = new ArrayReaderTest
-                {
-                    DateTime = DateTime.Today,
-                    Bool = true,
-                    Byte = 56,
-                    Char = 'z',
-                    Decimal = (decimal) 5.6,
-                    Double = 7.8d,
-                    Float = -4.5f,
-                    Guid = Guid.NewGuid(),
-                    ArrayReaderTestId = -8,
-                    Long = 3,
-                    Short = 5
-                };
-
                 context.Tests.Add(test);
                 context.SaveChanges();
+            }
 
+            // Use new context to ensure no first-level caching.
+            using (var context = new BloggingContext(ConnectionString))
+            {
                 // Check default deserialization.
                 var test0 = context.Tests.Single(x => x.Bool);
                 Assert.AreEqual(test, test0);
             }
-
         }
 
         /// <summary>
@@ -232,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             public double Double { get; set; }
             public decimal Decimal { get; set; }
             public bool Bool { get; set; }
-            public char Char { get; set; }
+            public string String { get; set; }
             public Guid Guid { get; set; }
             public DateTime DateTime { get; set; }
 
@@ -241,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 return Byte == other.Byte && Short == other.Short &&
                        ArrayReaderTestId == other.ArrayReaderTestId && Long == other.Long && 
                        Float.Equals(other.Float) && Double.Equals(other.Double) && 
-                       Decimal == other.Decimal && Bool == other.Bool && Char == other.Char && 
+                       Decimal == other.Decimal && Bool == other.Bool && String == other.String && 
                        Guid.Equals(other.Guid) && DateTime.Equals(other.DateTime);
             }
 
@@ -265,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     hashCode = (hashCode*397) ^ Double.GetHashCode();
                     hashCode = (hashCode*397) ^ Decimal.GetHashCode();
                     hashCode = (hashCode*397) ^ Bool.GetHashCode();
-                    hashCode = (hashCode*397) ^ Char.GetHashCode();
+                    hashCode = (hashCode*397) ^ String.GetHashCode();
                     hashCode = (hashCode*397) ^ Guid.GetHashCode();
                     hashCode = (hashCode*397) ^ DateTime.GetHashCode();
                     return hashCode;
