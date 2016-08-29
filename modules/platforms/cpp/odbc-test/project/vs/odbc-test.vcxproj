@@ -169,13 +169,24 @@
     <ClCompile Include="..\..\src\queries_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
+    <ClCompile Include="..\..\src\sql_aggregate_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_test_suite_fixture.cpp" />
+    <ClCompile Include="..\..\src\sql_numeric_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_operators_test.cpp" />
+    <ClCompile Include="..\..\src\sql_string_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_system_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_types_test.cpp" />
+    <ClCompile Include="..\..\src\sql_value_expressions_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\sql_test_suite_fixture.h" />
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />
+    <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

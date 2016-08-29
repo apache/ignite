@@ -47,6 +47,13 @@ namespace ignite
             static const ProtocolVersion VERSION_UNKNOWN;
 
             /**
+             * Get string to version map.
+             *
+             * @return String to version map.
+             */
+            static const StringToVersionMap& GetMap();
+
+            /**
              * Get current version.
              *
              * @return Current version.
@@ -84,6 +91,13 @@ namespace ignite
              * @return True if the version is unknown.
              */
             bool IsUnknown() const;
+
+            /**
+             * Check if the distributed joins supported.
+             *
+             * @retuen True if the distributed joins supported.
+             */
+            bool IsDistributedJoinsSupported() const;
 
             /**
              * Comparison operator.
@@ -152,10 +166,12 @@ namespace ignite
              *
              * @param major Major version.
              * @param minor Minor version.
-             * @param maintenance Maintenance version.
+             * @param revision Revision.
              * @return Int value for the version.
              */
-            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t maintenance);
+            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t revision);
+
+            ProtocolVersion();
 
             /** String to version map. */
             static const StringToVersionMap stringToVersionMap;

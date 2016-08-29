@@ -1355,11 +1355,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private class ServiceEntriesListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
-            depExe.submit(new BusyRunnable() {
-                @Override public void run0() {
-                    onSystemCacheUpdated(deps);
-                }
-            });
+            if (!busyLock.enterBusy())
+                return;
+
+            try {
+                depExe.submit(new BusyRunnable() {
+                    @Override public void run0() {
+                        onSystemCacheUpdated(deps);
+                    }
+                });
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
     }
 
