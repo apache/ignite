@@ -157,8 +157,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty("GRIDGAIN_DB_WAL_MODE", "LOG_ONLY"); //TODO move to siblings
-
         long seed = 1464583813940L; // System.currentTimeMillis();
 
         info("Seed: " + seed + "L");
