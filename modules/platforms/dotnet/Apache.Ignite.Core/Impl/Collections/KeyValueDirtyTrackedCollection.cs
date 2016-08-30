@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Collections
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -78,8 +79,8 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </returns>
         public IEnumerator GetEnumerator()
         {
-            foreach (var entry in _dict)
-                entry.Value.IsDirty = true;
+            foreach (var entry in _dict.Values)
+                SetDirtyOnRead(entry);
 
             return _dict.Select(x => new DictionaryEntry(x.Key, x.Value.Value)).GetEnumerator();
         }
@@ -104,8 +105,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 if (!_dict.TryGetValue(key, out entry))
                     return null;
 
-                // TODO: Check for immutable type
-                entry.IsDirty = true;
+                SetDirtyOnRead(entry);
 
                 return entry.Value;
             }
@@ -135,8 +135,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var entry = _list[index];
 
-                // TODO: Check for immutable type
-                entry.IsDirty = true;
+                SetDirtyOnRead(entry);
 
                 return entry.Value;
             }
@@ -174,6 +173,29 @@ namespace Apache.Ignite.Core.Impl.Collections
                 raw.WriteObject(entry.Key);
                 raw.WriteObject(entry.Value.Value);
             }
+        }
+
+        private static void SetDirtyOnRead(Entry entry)
+        {
+            var type = entry.Value.GetType();
+
+            if (IsImmutable(type))
+                return;
+
+            entry.IsDirty = true;
+        }
+
+        private static bool IsImmutable(Type type)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;  // Unwrap nullable.
+
+            if (type.IsPrimitive)
+                return true;
+
+            if (type == typeof(string) || type == typeof(DateTime) || type == typeof(Guid) || type == typeof(decimal))
+                return true;
+
+            return false;
         }
 
         private class Entry
