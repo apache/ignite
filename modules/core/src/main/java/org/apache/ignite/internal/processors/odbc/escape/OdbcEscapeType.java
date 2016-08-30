@@ -40,12 +40,16 @@ public enum OdbcEscapeType {
     GUID("guid", true, false),
 
     /** LIKE clause. */
-    LIKE("\'", false, true);
+    LIKE("\'", false, true),
+
+    /** Stored procedure call */
+    CALL("call", true, false);
 
     /** Values in convenient order. */
     private static final OdbcEscapeType[] VALS = new OdbcEscapeType[] {
         SCALAR_FUNCTION, // Assume that scalar functions are very frequent.
         DATE, TIMESTAMP, // Date and timestamp are relatively frequent as well; also TS must go before T.
+        CALL, //TODO: ignite-3743: choose convenient place in array
         OUTER_JOIN,      // Joins are less frequent,
         LIKE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
     };
