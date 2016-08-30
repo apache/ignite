@@ -412,7 +412,7 @@ namespace Apache.Ignite.AspNet
 
                 // TODO: Dedicated type. 
                 var lockNodeId = (Guid) arg[0];
-                var lockId = (int) arg[1];
+                var lockId = (long) arg[1];
                 var lockTime = (DateTime) arg[2];  // pas time from client to avoid doing this in Java.
 
                 var data = entry.Value;
@@ -449,8 +449,8 @@ namespace Apache.Ignite.AspNet
 
                 if (val != null)
                 {
-                    var lockNodeId = (Guid)arg[0];
-                    var lockId = (int)arg[1];
+                    var lockNodeId = (Guid) arg[0];
+                    var lockId = (long) arg[1];
 
                     if (val.LockNodeId != lockNodeId)
                         throw new InvalidOperationException("Invalid lock node id TODO");
