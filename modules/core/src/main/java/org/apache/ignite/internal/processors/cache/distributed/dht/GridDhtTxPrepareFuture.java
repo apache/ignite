@@ -351,7 +351,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                CacheObject val = null;
+                CacheObject val;
+                CacheObject oldVal = null;
 
                 boolean readOld = hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM;
 
@@ -370,7 +371,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     final boolean keepBinary = txEntry.keepBinary();
 
-                    val = cached.innerGet(
+                    val = oldVal = cached.innerGet(
                         null,
                         tx,
                         /*swap*/true,
@@ -470,8 +471,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 final boolean sndOldVal = !cacheCtx.isLocal() && !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
 
                 if (sndOldVal) {
-                    if (val == null && !readOld) {
-                        val = cached.innerGet(
+                    if (oldVal == null && !readOld) {
+                        oldVal = cached.innerGet(
                             null,
                             tx,
                             /*swap*/true,
@@ -486,10 +487,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             /*keepBinary*/true);
                     }
 
-                    if (val != null) {
-                        txEntry.oldValue(val);
-                        txEntry.oldValueOnPrimary(true);
-                    }
+                    if (oldVal != null)
+                        txEntry.oldValue(oldVal, true);
                 }
             }
             catch (IgniteCheckedException e) {

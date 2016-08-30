@@ -60,6 +60,8 @@ public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheInterceptorAtomicRebalanceTest.class);
         suite.addTestSuite(GridCacheInterceptorTransactionalRebalanceTest.class);
+        suite.addTestSuite(GridCacheInterceptorAtomicOffheapRebalanceTest.class);
+        suite.addTestSuite(GridCacheInterceptorTransactionalOffheapRebalanceTest.class);
 
         return suite;
     }

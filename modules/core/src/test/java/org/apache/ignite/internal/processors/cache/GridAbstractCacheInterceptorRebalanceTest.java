@@ -20,13 +20,21 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -54,7 +62,16 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     private static final int CNT = 10_000;
 
     /** */
+    private static final int TEST_ITERATIONS = 5;
+
+    /** */
+    private static final int NODES = 5;
+
+    /** */
     private static volatile boolean failed;
+
+    /** */
+    private static CacheInterceptor<Integer, Integer> interceptor;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
@@ -62,7 +79,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setInterceptor(new RebalanceInterceptor());
+        ccfg.setInterceptor(interceptor);
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
@@ -80,6 +97,11 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      */
     protected abstract CacheAtomicityMode atomicityMode();
 
+    /**
+     * @return Cache memory mode;
+     */
+    protected abstract CacheMemoryMode memoryMode();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -91,7 +113,94 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @throws Exception If fail.
      */
     public void testRebalanceUpdate() throws Exception {
-        for (int iter = 0; iter < 5; iter++) {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                cache.put(key, val);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testRebalanceUpdateInvoke() throws Exception {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        final UpdateEntryProcessor proc = new UpdateEntryProcessor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                cache.invoke(key, proc, val);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testRebalanceRemoveInvoke() throws Exception {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        final RemoveEntryProcessor proc = new RemoveEntryProcessor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                cache.invoke(key, proc, val);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testRebalanceRemove() throws Exception {
+        interceptor = new RebalanceRemoveInterceptor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                cache.remove(key);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testPutIfAbsent() throws Exception {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                cache.putIfAbsent(key, val);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testGetAndPut() throws Exception {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        testRebalance(new Operation() {
+            @Override public void run(final IgniteCache<Integer, Integer> cache, final Integer key, final Integer val) {
+                final Integer old = cache.getAndPut(key, val);
+
+                assert val == old + 1 : "Unexpected old value: " + old;
+            }
+        });
+    }
+
+    /**
+     * @param operation Operation to be tested.
+     * @throws Exception If fail.
+     */
+    private void testRebalance(final Operation operation) throws Exception {
+        interceptor = new RebalanceUpdateInterceptor();
+
+        for (int iter = 0; iter < TEST_ITERATIONS; iter++) {
             log.info("Iteration: " + iter);
 
             failed = false;
@@ -113,13 +222,13 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
                         for (int i = 0; i < CNT; i++) {
                             if (i % 2 == 0) {
                                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    cache.put(i, i + j);
+                                    operation.run(cache, i, i + j);
 
                                     tx.commit();
                                 }
                             }
                             else
-                                cache.put(i, i + j);
+                                operation.run(cache, i, i + j);
                         }
                     }
 
@@ -131,7 +240,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
                 @Override public Object call() throws Exception {
                     latch.await();
 
-                    for (int i = 2; i < 5; i++)
+                    for (int i = 2; i < NODES; i++)
                         startGrid(i);
 
                     return null;
@@ -152,7 +261,45 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      *
      */
-    private static class RebalanceInterceptor extends CacheInterceptorAdapter<Integer, Integer> {
+    private interface Operation {
+        /**
+         * @param cache Cache.
+         * @param key Key.
+         * @param val Value.
+         */
+        void run(IgniteCache<Integer, Integer> cache, Integer key, Integer val);
+    }
+
+    /**
+     *
+     */
+    private static class UpdateEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer process(final MutableEntry<Integer, Integer> entry,
+            final Object... arguments) throws EntryProcessorException {
+            entry.setValue((Integer) arguments[0]);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer process(final MutableEntry<Integer, Integer> entry,
+            final Object... arguments) throws EntryProcessorException {
+            entry.remove();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RebalanceUpdateInterceptor extends CacheInterceptorAdapter<Integer, Integer> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -169,17 +316,41 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
                     assertNotNull("Null old value: " + entry, old);
                     assertEquals("Unexpected old value: " + entry, newVal.intValue(), old + 1);
                 }
-
-                return newVal;
             }
             catch (Throwable e) {
                 failed = true;
 
                 System.out.println("Unexpected error: " + e);
                 e.printStackTrace(System.out);
-
-                return newVal;
             }
+
+            return newVal;
         }
     }
+
+    /**
+     *
+     */
+    private static class RebalanceRemoveInterceptor extends CacheInterceptorAdapter<Integer, Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(
+            final Cache.Entry<Integer, Integer> entry) {
+            try {
+                assertNotNull("Null old value: " + entry, entry.getValue());
+                assertEquals("Unexpected old value: " + entry, entry.getKey(), entry.getValue());
+            }
+            catch (Throwable t) {
+                failed = true;
+
+                System.out.println("Unexpected error: " + t);
+                t.printStackTrace(System.out);
+            }
+
+            return new T2<>(true, null);
+        }
+    }
+
 }

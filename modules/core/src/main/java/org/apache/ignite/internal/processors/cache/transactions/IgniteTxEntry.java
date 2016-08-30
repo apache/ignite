@@ -117,7 +117,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Old value before update. */
     @GridToStringInclude
-    private CacheObject oldVal;
+    private TxEntryValueHolder oldVal = new TxEntryValueHolder();
 
     /** Transform. */
     @GridToStringInclude
@@ -590,14 +590,21 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return Old value.
      */
     @Nullable public CacheObject oldValue() {
-        return oldVal;
+        return oldVal != null ? oldVal.value() : null;
     }
 
     /**
      * @param oldVal Old value.
      */
-    public void oldValue(CacheObject oldVal) {
-        this.oldVal = oldVal;
+    public void oldValue(CacheObject oldVal, boolean hasOldVal) {
+        if (this.oldVal == null)
+            this.oldVal = new TxEntryValueHolder();
+
+        this.oldVal.value(op(), oldVal, hasOldVal, hasOldVal);
+    }
+
+    public boolean hasOldValue() {
+        return oldVal != null && oldVal.hasValue();
     }
 
     /**
