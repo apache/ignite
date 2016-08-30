@@ -131,7 +131,8 @@ struct OdbcFetchBenchmark
             val.boolField = (i8Dist(rng) & 1) != 0;
             val.guidField = ignite::Guid(i64Dist(rng), i64Dist(rng));
             val.dateField = ignite::Date(i64Dist(rng));
-            val.timestampField = ignite::Timestamp(i64Dist(rng), i32Dist(rng));
+            val.timestampField = ignite::Timestamp(i32Dist(rng), i32Dist(rng,
+                boost::random::uniform_int_distribution<int32_t>::param_type(0, 999999999)));
 
             testCache.Put(i, val);
         }
@@ -221,6 +222,29 @@ struct OdbcFetchBenchmark
     void Prepare()
     {
         OdbcConnect("driver={Apache Ignite};server=127.0.0.1;port=11111;cache=cache");
+
+        SQLRETURN ret;
+
+        ret = SQLBindCol(stmt, 1, SQL_C_STINYINT, &i8Field, 0, 0);
+        ret = SQLBindCol(stmt, 2, SQL_C_SSHORT, &i16Field, 0, 0);
+        ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &i32Field, 0, 0);
+        ret = SQLBindCol(stmt, 4, SQL_C_SBIGINT, &i64Field, 0, 0);
+        ret = SQLBindCol(stmt, 5, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+        ret = SQLBindCol(stmt, 6, SQL_C_FLOAT, &floatField, 0, 0);
+        ret = SQLBindCol(stmt, 7, SQL_C_DOUBLE, &doubleField, 0, 0);
+        ret = SQLBindCol(stmt, 8, SQL_C_DATE, &dateField, 0, 0);
+        ret = SQLBindCol(stmt, 9, SQL_C_TIMESTAMP, &timestampField, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        SQLCHAR req[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+            "floatField, doubleField, boolField, dateField, timestampField FROM TestType";
+
+        ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
     }
 
     void Cleanup()
@@ -230,9 +254,51 @@ struct OdbcFetchBenchmark
 
     void Run()
     {
+        SQLRETURN ret;
+
+        for (int64_t i = 0; i < recordsNum; ++i)
+        {
+            ret = SQLFetch(stmt);
+
+            if (!SQL_SUCCEEDED(ret))
+                ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+        }
     }
 
 private:
+    /** Column. */
+    SQLINTEGER i8Field;
+
+    /** Column. */
+    SQLINTEGER i16Field;
+
+    /** Column. */
+    SQLINTEGER i32Field;
+
+    /** Column. */
+    SQLBIGINT i64Field;
+
+    /** Column. */
+    SQLCHAR strField[1024];
+
+    /** Column length. */
+    SQLLEN strFieldLen;
+
+    /** Column. */
+    SQLFLOAT floatField;
+
+    /** Column. */
+    SQLDOUBLE doubleField;
+
+    /** Column. */
+    SQLINTEGER boolField;
+
+    /** Column. */
+    SQL_DATE_STRUCT dateField;
+
+    /** Column. */
+    SQL_TIMESTAMP_STRUCT timestampField;
+
     /** Test node. */
     ignite::Ignite node;
 
@@ -251,7 +317,7 @@ private:
 
 int main()
 {
-    IGNITE_RUN_BENCHMARK(OdbcFetchBenchmark<10000>, 1, 1);
+    IGNITE_RUN_BENCHMARK(OdbcFetchBenchmark<10000>, 10, 10);
 
     return 0;
 }
