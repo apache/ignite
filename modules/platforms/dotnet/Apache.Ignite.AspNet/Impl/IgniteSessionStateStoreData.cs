@@ -78,7 +78,7 @@ namespace Apache.Ignite.AspNet.Impl
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BinaryReader(stream))
             {
-                return reader.ReadBoolean() ? HttpStaticObjectsCollection.Deserialize(reader) : null;
+                return HttpStaticObjectsCollection.Deserialize(reader);
             }
         }
 
