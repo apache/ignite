@@ -150,24 +150,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
-        /// Tests the transactional requirement.
-        /// </summary>
-        [Test]
-        public void TestTransactionalRequirement()
-        {
-            var provider = new IgniteSessionStateStoreProvider();
-
-            var ex = Assert.Throws<IgniteException>(() =>
-                provider.Initialize("testName2", new NameValueCollection
-                {
-                    {SectionNameAttr, "igniteConfiguration2"},
-                    {CacheNameAttr, "cacheName2"}
-                }));
-
-            Assert.IsTrue(ex.Message.Contains("Transactional mode is required."));
-        }
-
-        /// <summary>
         /// Tests the caching.
         /// </summary>
         [Test]
@@ -326,9 +308,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 Assert.AreEqual("Apache.Ignite.AspNet.IgniteSessionStateStoreProvider initialized: " +
                                 "gridName=, cacheName=, applicationId=", logs[1]);
 
-                Assert.AreEqual("GetItemExclusive session store data not found: id=1, url=/, timeout=0", logs[4]);
+                Assert.AreEqual("GetItemExclusive session store data not found: id=1, url=/, timeout=0", logs[3]);
 
-                Assert.AreEqual("SetAndReleaseItemExclusive: id=1, url=/, timeout=0", logs[6]);
+                Assert.AreEqual("SetAndReleaseItemExclusive: id=1, url=/, timeout=0", logs[5]);
             }
         }
 
@@ -417,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(42, data.Timeout);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
-            Assert.IsNotNull(lockId);
+            Assert.IsNull(lockId);
             Assert.AreEqual(SessionStateActions.None, actions);
 
             provider.ResetItemTimeout(HttpContext, Id);
