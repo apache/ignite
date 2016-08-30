@@ -1730,6 +1730,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 GridCacheOperation.CREATE,
                                 null,
                                 ver,
+                                expiryTime,
                                 entry.partition(),
                                 0
                             ));
