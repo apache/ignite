@@ -21,6 +21,7 @@ namespace Apache.Ignite.AspNet
     using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Threading;
     using System.Web;
     using System.Web.SessionState;
@@ -452,11 +453,15 @@ namespace Apache.Ignite.AspNet
                     var lockNodeId = (Guid) arg[0];
                     var lockId = (long) arg[1];
 
-                    if (val.LockNodeId != lockNodeId)
+                    if (val.LockNodeId == null)
+                        throw new InvalidOperationException("LockNodeId is null.");
+
+                    if (val.LockNodeId.Value != lockNodeId)
                         throw new InvalidOperationException("Invalid lock node id TODO");
 
                     if (val.LockId != lockId)
-                        throw new InvalidOperationException("Invalid lock id TODO");
+                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, 
+                            "Invalid lock id: expected {0} but was {1}", lockId, val.LockId));
 
                     val.LockNodeId = null;
 
