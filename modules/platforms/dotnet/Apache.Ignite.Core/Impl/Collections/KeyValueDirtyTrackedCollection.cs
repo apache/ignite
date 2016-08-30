@@ -133,7 +133,10 @@ namespace Apache.Ignite.Core.Impl.Collections
         {
             get
             {
-                var entry = _dict[key];
+                Entry entry;
+
+                if (!_dict.TryGetValue(key, out entry))
+                    return null;
 
                 // TODO: Check for immutable type
                 entry.IsDirty = true;
