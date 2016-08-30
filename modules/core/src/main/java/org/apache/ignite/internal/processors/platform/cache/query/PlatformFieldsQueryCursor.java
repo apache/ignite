@@ -42,6 +42,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
         assert vals != null;
 
         int rowSizePos = writer.reserveInt();
+
         writer.writeInt(vals.size());
 
         for (Object val : vals)
