@@ -127,6 +127,7 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -1134,7 +1135,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new CacheException("SQL MERGE from SELECT is not supported");
 
         // This check also protects us from attempts to update key or its fields directly -
-        // when no key except cache one can be used, it will serve only for uniqueness checks,
+        // when no key except cache key can be used, it will serve only for uniqueness checks,
         // not for updates.
         GridSqlColumn[] keys = gridStmt.keys();
         if (keys.length != 1 || !keys[0].columnName().equalsIgnoreCase(KEY_FIELD_NAME))
@@ -1142,15 +1143,48 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridSqlColumn[] cols = gridStmt.columns();
 
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        for (int i = 0; i < cols.length; i++) {
+            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                keyColIdx = i;
+                continue;
+            }
+
+            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                valColIdx = i;
+                continue;
+            }
+
+            GridQueryProperty prop = desc.type().property(cols[i].columnName());
+
+            X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
+
+            if (prop.key())
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        Supplier keySupplier = createSupplier(cctx, desc, keyColIdx, hasKeyProps, true);
+        Supplier valSupplier = createSupplier(cctx, desc, valColIdx, hasValProps, false);
+
+        // If we have just one item to put, just do so
         if (gridStmt.rows().size() == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, gridStmt.rows().get(0), params);
+            IgniteBiTuple t = rowToKeyValue(cctx, desc, keySupplier, valSupplier, keyColIdx, valColIdx, cols,
+                gridStmt.rows().get(0), params);
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
         }
         else {
             Map<Object, Object> rows = new LinkedHashMap<>(gridStmt.rows().size());
             for (GridSqlElement[] row : gridStmt.rows()) {
-                IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, row, params);
+                IgniteBiTuple t = rowToKeyValue(cctx, desc, keySupplier, valSupplier, keyColIdx, valColIdx, cols,
+                    row, params);
                 rows.put(t.getKey(), t.getValue());
             }
             cctx.cache().putAll(rows);
@@ -1174,8 +1208,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridSqlColumn[] cols = ins.columns();
 
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        for (int i = 0; i < cols.length; i++) {
+            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                keyColIdx = i;
+                continue;
+            }
+
+            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                valColIdx = i;
+                continue;
+            }
+
+            GridQueryProperty prop = desc.type().property(cols[i].columnName());
+
+            X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
+
+            if (prop.key())
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        Supplier keySupplier = createSupplier(cctx, desc, keyColIdx, hasKeyProps, true);
+        Supplier valSupplier = createSupplier(cctx, desc, valColIdx, hasValProps, false);
+
+        // If we have just one item to put, simply do putIfAbsent
         if (ins.rows().size() == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, ins.rows().get(0), params);
+            IgniteBiTuple t = rowToKeyValue(cctx, desc, keySupplier, valSupplier, keyColIdx, valColIdx, cols,
+                ins.rows().get(0), params);
+
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
@@ -1185,7 +1252,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>(ins.rows().size());
 
             for (GridSqlElement[] row : ins.rows()) {
-                final IgniteBiTuple t = rowToKeyValue(cctx, desc, cols, row, params);
+                final IgniteBiTuple t = rowToKeyValue(cctx, desc, keySupplier, valSupplier, keyColIdx, valColIdx, cols,
+                    row, params);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
             }
@@ -1207,6 +1275,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param desc Table descriptor.
+     * @param keySupplier Key instantiation method.
+     * @param valSupplier Key instantiation method.
+     * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
+     * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
      * @param cols Query cols.
      * @param row Row to process.
      * @param params Params to fill {@link GridSqlParameter}s.
@@ -1214,120 +1286,158 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, TableDescriptor desc, GridSqlColumn[] cols,
-        GridSqlElement[] row, Object[] params) throws IgniteCheckedException {
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, TableDescriptor desc, Supplier keySupplier,
+        Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, GridSqlElement[] row, Object[] params)
+        throws IgniteCheckedException {
         for (GridSqlElement rowEl : row)
             X.ensureX(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
-                "SQL INSERT and MERGE statements support literal values only");
-
-        Class<?> keyCls = U.firstNotNull(U.classForName(desc.type().keyTypeName(), null), desc.type().keyClass());
-        Class<?> valCls = desc.type().valueClass();
-
-        Object key = null;
-        Object val = null;
-
-        boolean isKeySqlType = GridQueryProcessor.isSqlType(keyCls);
-        boolean isValSqlType = GridQueryProcessor.isSqlType(valCls);
+                "SQL INSERT and MERGE statements support const values and params only");
 
         Object[] rowValues = new Object[cols.length];
 
-        int keyColIdx = -1;
-        int valColIdx = -1;
+        for (int i = 0; i < cols.length; i++)
+            rowValues[i] = getColumnValue(row[i], params);
 
-        for (int i = 0; i < cols.length; i++) {
-            Object colVal = getColumnValue(row[i], params);
-
-            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                key = colVal;
-                keyColIdx = i;
-            }
-
-            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                val = colVal;
-                valColIdx = i;
-            }
-
-            rowValues[i] = colVal;
-        }
-
-        if (cctx.binaryMarshaller()) {
-            //TODO change this logic when there's available the way of generating hash codes for new binary objects
-            // As for now, we accept as keys only classes present locally (because we have to deserialize built key
-            // to obtain hash code) and standard types (because they are read literally from SQL and are always present).
-            // Both must override equals/hashCode (thus, arrays can't be used as keys although they are standard).
-            if (key == null && ((!isKeySqlType && keyCls == Object.class) || !U.overridesEqualsAndHashCode(keyCls)))
-                throw new UnsupportedOperationException("Currently only SQL types or local types " +
-                    "with overridden equals/hashCode methods may be used in keys construction from fields " +
-                    "in SQL DML operations w/binary marshalling.");
-
-            BinaryObjectBuilder keyBuilder = null;
-
-            if (!isKeySqlType) {
-                if (key != null) {
-                    BinaryObject keyBin = cctx.grid().binary().toBinary(key);
-
-                    keyBuilder = cctx.grid().binary().builder(keyBin);
-                }
-                else
-                    keyBuilder = cctx.grid().binary().builder(desc.type().keyTypeName());
-            }
-
-            BinaryObjectBuilder valBuilder = null;
-
-            if (!isValSqlType) {
-                if (val != null) {
-                    BinaryObject valBin = cctx.grid().binary().toBinary(val);
-
-                    valBuilder = cctx.grid().binary().builder(valBin);
-                }
-                else
-                    valBuilder = cctx.grid().binary().builder(desc.type().valueTypeName());
-            }
-
-            for (int i = 0; i < cols.length; i++) {
-                if (i == keyColIdx || i == valColIdx)
-                    continue;
-
-                GridQueryProperty prop = desc.type().property(cols[i].columnName());
-
-                X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
-
-                prop.setValue(keyBuilder, valBuilder, rowValues[i]);
-            }
-
-            //TODO change these statements when there's available the way of generating hash codes for new binary objects
-
-            // We have to deserialize for the object to have hash code
-            if (!isKeySqlType)
-                key = keyBuilder.build().deserialize();
-
-            if (!isValSqlType)
-                val = valBuilder.build();
-        }
-        else {
-            try {
-                if (!isKeySqlType)
-                    key = GridUnsafe.allocateInstance(keyCls);
-
-                if (!isValSqlType)
-                    val = GridUnsafe.allocateInstance(valCls);
-            }
-            catch (InstantiationException e) {
-                throw new IgniteCheckedException("Failed to allocate key or value for SQL statement", e);
-            }
-
-            for (int i = 0; i < cols.length; i++) {
-                if (i == keyColIdx || i == valColIdx)
-                    continue;
-
-                desc.type().setValue(cols[i].columnName(), key, val, rowValues[i]);
-            }
-        }
+        Object key = keySupplier.apply(rowValues);
+        Object val = valSupplier.apply(rowValues);
 
         X.ensureX(key != null, "Key for INSERT or MERGE must not be null");
         X.ensureX(val != null, "Value for INSERT or MERGE must not be null");
 
+        for (int i = 0; i < cols.length; i++) {
+            if (i == keyColIdx || i == valColIdx)
+                continue;
+
+            desc.type().setValue(cols[i].columnName(), key, val, rowValues[i]);
+        }
+
+        if (cctx.binaryMarshaller()) {
+            if (key instanceof BinaryObjectBuilder) {
+                key = ((BinaryObjectBuilder) key).build();
+
+                // TODO change/remove these statements when there's a way to generate hash codes for new binary objects
+                // We have to deserialize for the object to have hash code,
+                // but we do so only if we've constructed binary key ourselves.
+                if (keyColIdx == -1)
+                    key = ((BinaryObject) key).deserialize();
+            }
+
+            if (val instanceof BinaryObjectBuilder)
+                val = ((BinaryObjectBuilder) val).build();
+        }
+
         return new IgniteBiTuple<>(key, val);
+    }
+
+    /**
+     * Detect appropriate method of instantiating key or value (take from param, create binary builder,
+     * invoke default ctor, or allocate).
+     *
+     * @param cctx Cache context.
+     * @param desc Table descriptor.
+     * @param colIdx Column index if key or value is present in columns list, {@code -1} if it's not.
+     * @param hasProps Whether column list affects individual properties of key or value.
+     * @param key Whether supplier should be created for key or for value.
+     * @return Closure returning key or value.
+     * @throws IgniteCheckedException
+     */
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    private Supplier createSupplier(final GridCacheContext<?, ?> cctx, TableDescriptor desc,
+        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
+        final String typeName = key ? desc.type().keyTypeName() : desc.type().valueTypeName();
+
+        //Try to find class for the key locally.
+        final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.type().keyTypeName(), null), desc.type().keyClass())
+            : desc.type().valueClass();
+
+        boolean isSqlType = GridQueryProcessor.isSqlType(cls);
+
+        // If we don't need to construct anything from scratch, just return value from array.
+        if (isSqlType || !hasProps || !cctx.binaryMarshaller()) {
+            if (colIdx != -1)
+                return new Supplier() {
+                    /** {@inheritDoc} */
+                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                        return arg[colIdx];
+                    }
+                };
+            else if (isSqlType)
+                // Non constructable keys and values (SQL types) must be present in the query explicitly.
+                throw new IgniteCheckedException((key ? "Key" : "Value") + " is missing from query");
+        }
+
+        if (cctx.binaryMarshaller()) {
+            // We can't (yet) generate a hash code for a class that is not present locally and
+            // for which we don't have an explicitly set object in binary form.
+            if (key && colIdx == -1 && (cls == Object.class || !U.overridesEqualsAndHashCode(cls)))
+                throw new UnsupportedOperationException("Currently only local types with overridden equals/hashCode " +
+                    "methods may be used in keys construction from fields in SQL DML operations w/binary marshalling.");
+
+            if (colIdx != -1) {
+                // If we have key or value explicitly present in query, create new builder upon them...
+                return new Supplier() {
+                    /** {@inheritDoc} */
+                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                        BinaryObject bin = cctx.grid().binary().toBinary(arg[colIdx]);
+
+                        return cctx.grid().binary().builder(bin);
+                    }
+                };
+            }
+            else {
+                // ...and if we don't, just create a new builder.
+                return new Supplier() {
+                    /** {@inheritDoc} */
+                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                        return cctx.grid().binary().builder(typeName);
+                    }
+                };
+            }
+        }
+        else {
+            Constructor<?> ctor;
+
+            try {
+                ctor = cls.getDeclaredConstructor();
+                ctor.setAccessible(true);
+            }
+            catch (NoSuchMethodException | SecurityException ignored) {
+                ctor = null;
+            }
+
+            if (ctor != null) {
+                final Constructor<?> ctor0 = ctor;
+
+                // Use default ctor, if it's present...
+                return new Supplier() {
+                    /** {@inheritDoc} */
+                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                        try {
+                            return ctor0.newInstance();
+                        }
+                        catch (Exception e) {
+                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
+                                (key ? "key" : "value"), e);
+                        }
+                    }
+                };
+            }
+            else {
+                // ...or allocate new instance with unsafe, if it's not
+                return new Supplier() {
+                    /** {@inheritDoc} */
+                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                        try {
+                            return GridUnsafe.allocateInstance(cls);
+                        }
+                        catch (InstantiationException e) {
+                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
+                                (key ? "key" : "value"), e);
+                        }
+                    }
+                };
+            }
+        }
     }
 
     /**
@@ -3827,4 +3937,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             e.setValue(val);
         }
     };
+
+    /**
+     * Method to construct new values for keys and values.
+     */
+    private interface Supplier extends GridPlainClosure<Object[], Object> {
+        // No-op.
+    }
 }
