@@ -87,6 +87,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     );
                 }
 
+                assertParameter(odbcCfg.getIdleConnectionTimeout() >= 0, "connectionTimeout should be >= 0");
+
                 InetAddress host;
 
                 try {

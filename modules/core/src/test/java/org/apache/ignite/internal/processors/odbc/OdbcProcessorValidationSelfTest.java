@@ -115,6 +115,36 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test connection parameters: sendBufferSize, receiveBufferSize, connectionTimeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConnectionParams() throws Exception {
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketReceiveBufferSize(4 * 1024).setIdleConnectionTimeout(0), true);
+
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketSendBufferSize(4 * 1024).setIdleConnectionTimeout(Long.MAX_VALUE), true);
+
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketReceiveBufferSize(4 * 1024).setSocketSendBufferSize(4 * 1024)
+            .setIdleConnectionTimeout(3 * 1000), true);
+    }
+
+    /**
+     * Test invalid connection parameters: sendBufferSize, receiveBufferSize, connectionTimeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testInvalidConnectionParams() throws Exception {
+        check(new OdbcConfiguration().setSocketReceiveBufferSize(-64 * 1024), false);
+
+        check(new OdbcConfiguration().setSocketSendBufferSize(-64 * 1024), false);
+
+        check(new OdbcConfiguration().setIdleConnectionTimeout(-1), false);
+    }
+
+    /**
      * Perform check.
      *
      * @param odbcCfg ODBC configuration.
