@@ -80,27 +80,27 @@ namespace Apache.Ignite.AspNet.Impl
         }
 
         /// <summary>
-        /// Gets or sets the lock node identifier.
+        /// Gets or sets the lock node id. Null means not locked.
         /// </summary>
-        public Guid LockNodeId
+        public Guid? LockNodeId
         {
             get { return _data.LockNodeId; }
             set { _data.LockNodeId = value; }
         }
 
         /// <summary>
-        /// Gets or sets the lock thread identifier.
+        /// Gets or sets the lock id.
         /// </summary>
-        public int LockThreadId
+        public long LockId
         {
-            get { return _data.LockThreadId; }
-            set { _data.LockThreadId = value; }
+            get { return _data.LockId; }
+            set { _data.LockId = value; }
         }
 
         /// <summary>
         /// Gets or sets the lock time.
         /// </summary>
-        public DateTime LockTime
+        public DateTime? LockTime
         {
             get { return _data.LockTime; }
             set { _data.LockTime = value; }

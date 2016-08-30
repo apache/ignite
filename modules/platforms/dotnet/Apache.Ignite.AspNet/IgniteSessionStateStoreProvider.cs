@@ -21,6 +21,7 @@ namespace Apache.Ignite.AspNet
     using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet.Impl;
@@ -51,10 +52,13 @@ namespace Apache.Ignite.AspNet
         private volatile string _applicationId;
 
         /** */
-        private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
+        private volatile ExpiryCacheHolder<string, BinarizableSessionStateStoreData> _expiryCacheHolder;
 
         /** */
         private volatile ILogger _log;
+
+        /** */
+        private static long _lockId;
 
         /// <summary>
         /// Initializes the provider.
@@ -67,9 +71,9 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, BinarizableSessionStateStoreData>(config, GetType());
 
-            _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
+            _expiryCacheHolder = new ExpiryCacheHolder<string, BinarizableSessionStateStoreData>(cache);
 
             _applicationId = config[ApplicationId];
 
@@ -195,56 +199,42 @@ namespace Apache.Ignite.AspNet
 
             actions = SessionStateActions.None;  // Our items never need initialization.
             lockAge = TimeSpan.Zero;
+            lockId = Interlocked.Increment(ref _lockId);
 
             var key = GetKey(id);
 
-            var cacheLock = Cache.Lock(key);
-            lockId = cacheLock;
+            var lockResult = Cache.Invoke(key, new LockEntryProcessor(),
+                new[] {Cache.Ignite.GetCluster().GetLocalNode().Id, lockId, DateTime.UtcNow});
 
-            try
+            if (lockResult == null)
             {
-                var lockObtained = cacheLock.TryEnter();
-                locked = !lockObtained;   // locked means "was already locked"
-
-                if (locked)
-                {
-                    // Already locked: return lock age.
-                    Log("GetItemExclusive already locked", id, context);
-
-                    lockAge = GetLockAge(key);
-
-                    lockId = null;
-                    cacheLock.Dispose();
-
-                    return null;
-                }
-
-                // Locked successfully, update lock age.
-                Log("GetItemExclusive locked successfully", id, context);
-
-                SetLockAge(key);
-
-                object existingData;
-
-                if (Cache.TryGet(key, out existingData))
-                {
-                    // Item found, return it.
-                    Log("GetItemExclusive session store data found", id, context);
-
-                    return new IgniteSessionStateStoreData((BinarizableSessionStateStoreData) existingData);
-                }
-
-                // Item not found - return null.
                 Log("GetItemExclusive session store data not found", id, context);
+
+                locked = false;
 
                 return null;
             }
-            catch (Exception)
-            {
-                cacheLock.Dispose();
 
-                throw;
+            var data = lockResult as BinarizableSessionStateStoreData;
+
+            if (data == null)
+            {
+                // Already locked.
+                Log("GetItemExclusive already locked", id, context);
+
+                locked = true;
+
+                lockAge = (DateTime)lockResult - DateTime.UtcNow;
+
+                return null;
             }
+
+
+            Log("GetItemExclusive session store data found", id, context);
+
+            locked = false;
+
+            return new IgniteSessionStateStoreData(data);
         }
 
         /// <summary>
@@ -257,12 +247,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("ReleaseItemExclusive", id, context);
 
-            RemoveLockAge(GetKey(id));
-
-            var cacheLock = (ICacheLock)lockId;
-
-            cacheLock.Exit();
-            cacheLock.Dispose();
+            // TODO: Entry processor that releases the lock.
         }
 
         /// <summary>
@@ -360,7 +345,7 @@ namespace Apache.Ignite.AspNet
         /// <summary>
         /// Gets the cache.
         /// </summary>
-        private ICache<string, object> Cache
+        private ICache<string, BinarizableSessionStateStoreData> Cache
         {
             get
             {
@@ -379,44 +364,6 @@ namespace Apache.Ignite.AspNet
         private string GetKey(string sessionId)
         {
             return _applicationId == null ? sessionId : ApplicationId + "." + sessionId;
-        }
-
-        /// <summary>
-        /// Gets the lock age key.
-        /// </summary>
-        private static string GetLockAgeKey(string key)
-        {
-            return "lock_" + key;
-        }
-
-        /// <summary>
-        /// Gets the lock age.
-        /// </summary>
-        private TimeSpan GetLockAge(string key)
-        {
-            var k = GetLockAgeKey(key);
-
-            object lockDate;
-            if (Cache.TryGet(k, out lockDate))
-                return DateTime.UtcNow - (DateTime) lockDate;
-
-            return TimeSpan.Zero;
-        }
-
-        /// <summary>
-        /// Sets the lock age for the specified key to zero.
-        /// </summary>
-        private void SetLockAge(string key)
-        {
-            Cache[GetLockAgeKey(key)] = DateTime.UtcNow;
-        }
-
-        /// <summary>
-        /// Removes the lock age.
-        /// </summary>
-        private void RemoveLockAge(string key)
-        {
-            Cache.Remove(GetLockAgeKey(key));
         }
 
         /// <summary>
@@ -456,5 +403,48 @@ namespace Apache.Ignite.AspNet
 
             log.Trace("{0}: id={1}, url={2}, timeout={3}", method, id, ctx.Request.Path, timeout);
         }
+
+        // TODO: Implement this in Java.
+        [Serializable]
+        private class LockEntryProcessor :
+            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
+        {
+            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
+            {
+                // Arg contains lock info: node id + thread id
+                // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
+                // or null (when not exists)
+
+                if (!entry.Exists)
+                    return null;
+
+                // TODO: Dedicated type. 
+                var lockNodeId = (Guid) arg[0];
+                var lockId = (int) arg[1];
+                var lockTime = (DateTime) arg[2];  // pas time from client to avoid doing this in Java.
+
+                var data = entry.Value;
+
+                Debug.Assert(data != null);
+
+                if (data.LockNodeId != null)
+                {
+                    // Already locked: return lock time.
+                    Debug.Assert(data.LockTime != null);
+
+                    return data.LockTime;
+                }
+
+                // Not locked: lock and return result
+                data.LockNodeId = lockNodeId;
+                data.LockId = lockId;
+                data.LockTime = lockTime;
+
+                entry.Value = data;
+
+                return data;
+            }
+        }
+
     }
 }

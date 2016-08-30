@@ -38,10 +38,10 @@ namespace Apache.Ignite.Core.Impl.AspNet
         internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
         {
             Timeout = reader.ReadInt();
-            LockNodeId = reader.ReadGuid() ?? Guid.Empty;
-            LockThreadId = reader.ReadInt();
-            LockTime = reader.ReadTimestamp() ?? DateTime.UtcNow;
-            _items = new KeyValueDirtyTrackedCollection(reader);
+            LockNodeId = reader.ReadGuid();
+            LockId = reader.ReadLong();
+            LockTime = reader.ReadTimestamp();
+            _items = reader.ReadObject<KeyValueDirtyTrackedCollection>();
             StaticObjects = reader.ReadByteArray();
         }
 
@@ -74,19 +74,19 @@ namespace Apache.Ignite.Core.Impl.AspNet
         public int Timeout { get; set; }
 
         /// <summary>
-        /// Gets or sets the lock node identifier.
+        /// Gets or sets the lock node id. Null means not locked.
         /// </summary>
-        public Guid LockNodeId { get; set; }
+        public Guid? LockNodeId { get; set; }
 
         /// <summary>
-        /// Gets or sets the lock thread identifier.
+        /// Gets or sets the lock id.
         /// </summary>
-        public int LockThreadId { get; set; }
+        public long LockId { get; set; }
 
         /// <summary>
         /// Gets or sets the lock time.
         /// </summary>
-        public DateTime LockTime { get; set; }
+        public DateTime? LockTime { get; set; }
 
         /// <summary>
         /// Writes this object to the given writer.
@@ -98,9 +98,9 @@ namespace Apache.Ignite.Core.Impl.AspNet
 
             raw.WriteInt(Timeout);
             raw.WriteGuid(LockNodeId);
-            raw.WriteInt(LockThreadId);
+            raw.WriteLong(LockId);
             raw.WriteTimestamp(LockTime);
-            Items.WriteBinary(writer);
+            raw.WriteObject(Items);
             raw.WriteByteArray(StaticObjects);
         }
     }
