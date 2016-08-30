@@ -1653,14 +1653,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             ExpiryPolicy plc = cctx.expiry();
 
             boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
-
-            List<DataEntry> walEntries = null;
+            WALPointer ptr = null;
 
             Collection<Integer> reservedParts = new HashSet<>();
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    cctx.shared().database().checkpointReadLock();
+
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
@@ -1706,6 +1707,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             expiryTime = CU.toExpireTime(ttl);
                         }
 
+                        if (walEnabled) {
+                            ptr = cctx.shared().wal().log(new DataRecord(new DataEntry(
+                                cctx.cacheId(),
+                                e.getKey(),
+                                e.getValue(),
+                                GridCacheOperation.CREATE,
+                                null,
+                                ver,
+                                entry.partition(),
+                                0
+                            )));
+                        }
+
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
@@ -1718,22 +1732,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         cctx.evicts().touch(entry, topVer);
 
                         CU.unwindEvicts(cctx);
-
-                        if (walEnabled) {
-                            if (walEntries == null)
-                                walEntries = new ArrayList<>(entries.size());
-
-                            walEntries.add(new DataEntry(
-                                cctx.cacheId(),
-                                e.getKey(),
-                                e.getValue(),
-                                GridCacheOperation.CREATE,
-                                null,
-                                ver,
-                                entry.partition(),
-                                0
-                            ));
-                        }
 
                         entry.onUnlock();
                     }
@@ -1748,6 +1746,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                     }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
                 }
             }
             finally {
@@ -1760,11 +1761,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 try {
-                    if (walEnabled) {
-                        WALPointer ptr = cctx.shared().wal().log(new DataRecord(walEntries));
-
+                    if (walEnabled && ptr != null)
                         cctx.shared().wal().fsync(ptr);
-                    }
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
