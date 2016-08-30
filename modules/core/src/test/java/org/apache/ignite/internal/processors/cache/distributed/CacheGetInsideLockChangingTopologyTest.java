@@ -219,6 +219,8 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         Ignite srv = startGrid(NEW_NODE);
 
+        awaitPartitionMapExchange();
+
         try {
             Integer key = primaryKey(srv.cache(cacheName));
 
@@ -267,6 +269,8 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
         final int NEW_NODE = SRVS + CLIENTS;
 
         Ignite srv = startGrid(NEW_NODE);
+
+        awaitPartitionMapExchange();
 
         try {
             Integer key = primaryKey(srv.cache(cacheName));
@@ -319,6 +323,8 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
         final int NEW_NODE = SRVS + CLIENTS;
 
         Ignite srv = startGrid(NEW_NODE);
+
+        awaitPartitionMapExchange();
 
         try {
             Integer key = primaryKey(srv.cache(cacheName));

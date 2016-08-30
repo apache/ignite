@@ -21,13 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
@@ -70,25 +69,20 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -113,7 +107,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
     /** */
-    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.6");
+    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.7");
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -126,15 +120,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** */
     private final ConcurrentHashMap8<Integer, BinaryTypeImpl> clientMetaDataCache;
-
-    /** Predicate to filter binary meta data in utility cache. */
-    private final CacheEntryPredicate metaPred = new CacheEntryPredicateAdapter() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public boolean apply(GridCacheEntryEx e) {
-            return e.key().value(e.context().cacheObjectContext(), false) instanceof BinaryMetadataKey;
-        }
-    };
 
     /** */
     private BinaryContext binaryCtx;
@@ -151,9 +136,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** Metadata updates collected before metadata cache is initialized. */
     private final Map<Integer, BinaryMetadata> metaBuf = new ConcurrentHashMap<>();
-
-    /** */
-    private UUID metaCacheQryId;
 
     /**
      * @param ctx Kernal context.
@@ -258,6 +240,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        if (clientNode && !ctx.isDaemon()) {
+            ctx.continuous().registerStaticRoutine(
+                CU.UTILITY_CACHE_NAME,
+                new MetaDataEntryListener(),
+                new MetaDataEntryFilter(),
+                null);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
         IgniteCacheProxy<Object, Object> proxy = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
@@ -273,12 +266,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         if (clientNode) {
             assert !metaDataCache.context().affinityNode();
-
-            metaCacheQryId = metaDataCache.context().continuousQueries().executeInternalQuery(
-                new MetaDataEntryListener(),
-                new MetaDataEntryFilter(),
-                false,
-                true);
 
             while (true) {
                 ClusterNode oldestSrvNode =
@@ -296,16 +283,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
-                try {
-                    CacheQueryFuture<Map.Entry<BinaryMetadataKey, BinaryMetadata>> fut = qry.execute();
+                try (GridCloseableIterator<Map.Entry<BinaryMetadataKey, BinaryMetadata>> entries = qry.executeScanQuery()) {
+                    for (Map.Entry<BinaryMetadataKey, BinaryMetadata> e : entries) {
+                        assert e.getKey() != null : e;
+                        assert e.getValue() != null : e;
 
-                    Map.Entry<BinaryMetadataKey, BinaryMetadata> next;
-
-                    while ((next = fut.next()) != null) {
-                        assert next.getKey() != null : next;
-                        assert next.getValue() != null : next;
-
-                        addClientCacheMetaData(next.getKey(), next.getValue());
+                        addClientCacheMetaData(e.getKey(), e.getValue());
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -362,14 +345,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel);
-
-        if (metaCacheQryId != null)
-            metaDataCache.context().continuousQueries().cancelInternalQuery(metaCacheQryId);
     }
 
     /**
@@ -515,7 +490,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
-        if (obj0 instanceof BinaryObject)
+        if (obj0 instanceof BinaryObjectImpl)
             ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
@@ -526,6 +501,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public GridBinaryMarshaller marshaller() {
         return binaryMarsh;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        if (binaryCtx == null)
+            return null;
+
+        return binaryCtx.affinityKeyFieldName(typeId(keyType));
     }
 
     /** {@inheritDoc} */
@@ -636,14 +619,23 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             });
         else {
-            return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
-                new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
-                    private static final long serialVersionUID = 0L;
+            try {
+                Iterator<Cache.Entry<Object, Object>> it =
+                    metaDataCache.delegate().scanIterator(false, MetaDataPredicate.INSTANCE);
 
-                    @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
-                        return e.getValue().wrap(binaryCtx);
-                    }
-                });
+                Collection<BinaryType> res = new ArrayList<>();
+
+                while (it.hasNext()) {
+                    Cache.Entry<Object, Object> e = it.next();
+
+                    res.add(((BinaryMetadata)e.getValue()).wrap(binaryCtx));
+                }
+
+                return res;
+            }
+            catch (IgniteCheckedException e) {
+                throw new BinaryObjectException(e);
+            }
         }
     }
 
@@ -679,7 +671,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public Object affinityKey(BinaryObject po) {
         try {
-            BinaryType meta = po.type();
+            BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
@@ -741,6 +733,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
+            cfg.getName(),
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             binaryEnabled,
@@ -773,21 +766,38 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
+    @Override public KeyCacheObject toCacheKeyObject(
+        CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj
+    ) {
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
-            return super.toCacheKeyObject(ctx, obj, userObj);
+            return super.toCacheKeyObject(ctx, cctx, obj, userObj);
 
-        if (obj instanceof KeyCacheObject)
-            return (KeyCacheObject)obj;
+        if (obj instanceof KeyCacheObject) {
+            KeyCacheObject key = (KeyCacheObject)obj;
 
-        if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
-            obj = toBinary(obj);
+            if (key instanceof BinaryObjectImpl) {
+                // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
+                key = key.copy(partition(ctx, cctx, key));
+            }
+            else if (key.partition() == -1)
+                // Assume others KeyCacheObjects can not be reused for another cache.
+                key.partition(partition(ctx, cctx, key));
 
-            if (obj instanceof BinaryObject)
-                return (BinaryObjectImpl)obj;
+            return key;
         }
 
-        return toCacheKeyObject0(obj, userObj);
+        obj = toBinary(obj);
+
+        if (obj instanceof BinaryObjectImpl) {
+            ((BinaryObjectImpl)obj).partition(partition(ctx, cctx, obj));
+
+            return (KeyCacheObject)obj;
+        }
+
+        return toCacheKeyObject0(ctx, cctx, obj, userObj);
     }
 
     /** {@inheritDoc} */
@@ -801,8 +811,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         obj = toBinary(obj);
 
-        if (obj instanceof BinaryObject)
-            return (BinaryObjectImpl)obj;
+        if (obj instanceof CacheObject)
+            return (CacheObject)obj;
 
         return toCacheObject0(obj, userObj);
     }
@@ -811,6 +821,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
+            return new BinaryEnumObjectImpl(binaryContext(), bytes);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -821,20 +833,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
         return super.toKeyCacheObject(ctx, type, bytes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
-        throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
-            return super.toCacheObject(ctx, valPtr, tmp);
-
-        Object val = unmarshal(valPtr, !tmp);
-
-        if (val instanceof BinaryObjectOffheapImpl)
-            return (BinaryObjectOffheapImpl)val;
-
-        return new CacheObjectImpl(val, null);
     }
 
     /** {@inheritDoc} */
@@ -1006,6 +1004,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     static class MetaDataPredicate implements IgniteBiPredicate<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** */
+        static MetaDataPredicate INSTANCE = new MetaDataPredicate();
 
         /** {@inheritDoc} */
         @Override public boolean apply(Object key, Object val) {

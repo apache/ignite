@@ -27,9 +27,9 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
  */
 public class GridResourceJobContextInjector extends GridResourceBasicInjector<ComputeJobContext> {
     /**
-     * Creates GridComputeJobContext injector.
+     * Creates ComputeJobContext injector.
      *
-     * @param rsrc GridComputeJobContext resource to inject.
+     * @param rsrc ComputeJobContext resource to inject.
      */
     GridResourceJobContextInjector(ComputeJobContext rsrc) {
         super(rsrc);

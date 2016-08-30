@@ -41,7 +41,7 @@ public class VisorCacheV2 extends VisorCache {
         if (c != null && c instanceof VisorCacheV2) {
             GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
 
-            // Cache was not started.
+            // Process only started caches.
             if (ca != null && ca.context().started())
                 ((VisorCacheV2)c).near = ca.context().isNear();
         }

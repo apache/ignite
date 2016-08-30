@@ -61,6 +61,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCacheFromConfig")]
         public static extern void* ProcessorGetOrCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateNearCache")]
+        public static extern void* ProcessorCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateNearCache")]
+        public static extern void* ProcessorGetOrCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDestroyCache")]
         public static extern void ProcessorDestroyCache(void* ctx, void* obj, sbyte* name);
 
@@ -93,8 +99,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void* ProcessorAtomicLong(void* ctx, void* obj, sbyte* name, long initVal,
             [MarshalAs(UnmanagedType.U1)] bool create);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAtomicSequence")]
+        public static extern void* ProcessorAtomicSequence(void* ctx, void* obj, sbyte* name, long initVal,
+            [MarshalAs(UnmanagedType.U1)] bool create);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAtomicReference")]
+        public static extern void* ProcessorAtomicReference(void* ctx, void* obj, sbyte* name, long memPtr,
+            [MarshalAs(UnmanagedType.U1)] bool create);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
         public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetCacheNames")]
+        public static extern void ProcessorGetCacheNames(void* ctx, void* obj, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorLoggerIsLevelEnabled")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ProcessorLoggerIsLevelEnabled(void* ctx, void* obj, int level);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorLoggerLog")]
+        public static extern void ProcessorLoggerLog(void* ctx, void* obj, int level, sbyte* messsage, sbyte* category, sbyte* errorInfo);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
@@ -256,6 +280,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForYoungest")]
         public static extern void* ProjectionForYoungest(void* ctx, void* obj);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForServers")]
+        public static extern void* ProjectionForServers(void* ctx, void* obj);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionResetMetrics")]
         public static extern void ProjectionResetMetrics(void* ctx, void* obj);
 
@@ -373,6 +400,35 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongClose")]
         public static extern void AtomicLongClose(void* ctx, void* target);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceGet")]
+        public static extern long AtomicSequenceGet(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceIncrementAndGet")]
+        public static extern long AtomicSequenceIncrementAndGet(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceAddAndGet")]
+        public static extern long AtomicSequenceAddAndGet(void* ctx, void* target, long value);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceGetBatchSize")]
+        public static extern int AtomicSequenceGetBatchSize(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceSetBatchSize")]
+        public static extern void AtomicSequenceSetBatchSize(void* ctx, void* target, int size);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceIsClosed")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool AtomicSequenceIsClosed(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceClose")]
+        public static extern void AtomicSequenceClose(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicReferenceIsClosed")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool AtomicReferenceIsClosed(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicReferenceClose")]
+        public static extern void AtomicReferenceClose(void* ctx, void* target);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableCancel")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableCancel(void* ctx, void* target);
@@ -380,5 +436,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableIsCancelled(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteSetConsoleHandler")]
+        public static extern void SetConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
+        public static extern int RemoveConsoleHandler(void* consoleHandler);
     }
 }

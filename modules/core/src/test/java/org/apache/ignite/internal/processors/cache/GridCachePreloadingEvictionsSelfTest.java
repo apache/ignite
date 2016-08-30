@@ -82,7 +82,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         partCacheCfg.setNearConfiguration(null);
         partCacheCfg.setEvictSynchronized(true);
-        partCacheCfg.setSwapEnabled(false);
         partCacheCfg.setEvictionPolicy(null);
         partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
         partCacheCfg.setEvictMaxOverflowRatio(0.99f);
@@ -108,7 +107,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
+            final IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -129,7 +128,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
+                            Cache.Entry<Integer, Object> entry = cache1.getEntry(i);
 
                             if (entry != null)
                                 ignite1.cache(null).localEvict(Collections.<Object>singleton(entry.getKey()));

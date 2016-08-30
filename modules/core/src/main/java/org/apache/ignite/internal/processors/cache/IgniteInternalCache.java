@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -38,6 +39,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -910,7 +912,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Collection of cached values.
      */
-    public Collection<V> values();
+    public Iterable<V> values();
 
     /**
      * Gets set of all entries cached on this node. You can remove
@@ -980,9 +982,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
-     * be swapped to offheap, and then to disk.
      *
      * @param key Key to evict from cache.
      * @return {@code True} if entry could be evicted, {@code false} otherwise.
@@ -993,9 +992,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
-     * be swapped to offheap, and then to disk.
      *
      * @param keys Keys to evict.
      */
@@ -1004,9 +1000,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
      * entries from local cache. It does not remove entries from
@@ -1022,9 +1015,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
-     * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
@@ -1039,9 +1029,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Clears entries from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
@@ -1453,6 +1440,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition.
+     * @param peekModes Peek modes.
+     * @return Local cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Global cache size.
      * @throws IgniteCheckedException If failed.
@@ -1467,6 +1462,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Global cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long sizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Future.
      */
@@ -1477,6 +1480,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes);
+
+    /**
+     * @param partition partiton
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(int partition, CachePeekMode[] peekModes);
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
@@ -1517,17 +1527,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long primarySizeLong();
 
     /**
-     * This method unswaps cache entries by given keys, if any, from swap storage
-     * into memory.
-     * <h2 class="header">Transactions</h2>
-     * This method is not transactional.
-     *
-     * @param keys Keys to promote entries for.
-     * @throws IgniteCheckedException If promote failed.
-     */
-    public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
-
-    /**
      * Gets configuration bean for this cache.
      *
      * @return Configuration bean for this cache.
@@ -1543,26 +1542,40 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Affinity<K> affinity();
 
     /**
-     * Gets metrics (statistics) for this cache.
+     * Gets whole cluster metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
-    public CacheMetrics metrics();
+    public CacheMetrics clusterMetrics();
 
     /**
-     * Gets metrics (statistics) for this cache.
+     * Gets cluster group metrics (statistics) for this cache.
+     *
+     * @param grp Cluster group.
+     * @return Cache metrics.
+     */
+    public CacheMetrics clusterMetrics(ClusterGroup grp);
+
+    /**
+     * Gets local metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
-    public CacheMetricsMXBean mxBean();
+    public CacheMetrics localMetrics();
 
     /**
-     * Gets size (in bytes) of all entries swapped to disk.
+     * Gets whole cluster metrics (statistics) for this cache.
      *
-     * @return Size (in bytes) of all entries swapped to disk.
-     * @throws IgniteCheckedException In case of error.
+     * @return Cache metrics.
      */
-    public long overflowSize() throws IgniteCheckedException;
+    public CacheMetricsMXBean clusterMxBean();
+
+    /**
+     * Gets local metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets number of cache entries stored in off-heap memory.
@@ -1577,22 +1590,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Allocated memory size.
      */
     public long offHeapAllocatedSize();
-
-    /**
-     * Gets size in bytes for swap space.
-     *
-     * @return Size in bytes.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long swapSize() throws IgniteCheckedException;
-
-    /**
-     * Gets number of swap entries (keys).
-     *
-     * @return Number of entries stored in swap.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long swapKeys() throws IgniteCheckedException;
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
@@ -1658,85 +1655,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If remove failed.
      */
     public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
-     * {@code 'oldVal'} passed in.
-     * <p>
-     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key to store in cache.
-     * @param oldVal Old value to match.
-     * @param newVal Value to be associated with the given key.
-     * @return Future for the replace operation. The future will return object containing actual old value and success
-     *      flag.
-     * @throws NullPointerException If either key or value are {@code null}.
-     */
-    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
-
-    /**
-     * Stores given key-value pair in cache only if only if the previous value is equal to the
-     * {@code 'oldVal'} passed in.
-     * <p>
-     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key to store in cache.
-     * @param oldVal Old value to match.
-     * @param newVal Value to be associated with the given key.
-     * @return Object containing actual old value and success flag.
-     * @throws NullPointerException If either key or value are {@code null}.
-     * @throws IgniteCheckedException If replace operation failed.
-     */
-    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
-
-    /**
-     * Removes given key mapping from cache if one exists and value is equal to the passed in value.
-     * <p>
-     * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#delete(Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key whose mapping is to be removed from cache.
-     * @param val Value to match against currently cached value.
-     * @return Object containing actual old value and success flag.
-     * @throws NullPointerException if the key or value is {@code null}.
-     * @throws IgniteCheckedException If remove failed.
-     */
-    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
-     * <p>
-     * This method will return {@code true} if remove did occur, which means that all optionally
-     * provided filters have passed and there was something to remove, {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#delete(Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key whose mapping is to be removed from cache.
-     * @param val Value to match against currently cached value.
-     * @return Future for the remove operation. The future will return object containing actual old value and success
-     *      flag.
-     * @throws NullPointerException if the key or value is {@code null}.
-     */
-    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
 
     /**
      * Gets value from cache. Will go to primary node even if this is a backup.
@@ -1810,12 +1728,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean isMongoMetaCache();
 
     /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
+     * @param keepBinary Keep binary flag.
+     * @param p Optional key/value predicate.
+     * @return Scan query iterator.
+     * @throws IgniteCheckedException If failed.
      */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
+    public Iterator<Cache.Entry<K, V>> scanIterator(boolean keepBinary, @Nullable IgniteBiPredicate<Object, Object> p)
+        throws IgniteCheckedException;
 
     /**
      * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
@@ -1827,6 +1746,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return New projection based on this one, but with the specified expiry policy.
      */
     public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteInternalCache<K, V> withNoRetries();
 
     /**
      * @param key Key.
@@ -1951,7 +1875,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public V getTopologySafe(K key) throws IgniteCheckedException;
 
     /**
-     * Tries to put value in cache. Will fail with {@link GridCacheTryPutFailedException}
+     * Tries to get and put value in cache. Will fail with {@link GridCacheTryPutFailedException}
      * if topology exchange is in progress.
      *
      * @param key Key.
@@ -1959,7 +1883,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Old value.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException;
+    @Nullable public V tryGetAndPut(K key, V val) throws IgniteCheckedException;
 
     /**
      * @param topVer Locked topology version.

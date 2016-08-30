@@ -30,7 +30,6 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -51,7 +50,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -123,8 +121,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         acfg.setBackups(1);
 
         cfg.setAtomicConfiguration(acfg);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         cfg.setIncludeEventTypes(new int[0]);
 
@@ -486,9 +482,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                 while (!finished.get()) {
                     stopGrid(3);
 
-                    U.sleep(300);
-
                     startGrid(3);
+
+                    awaitPartitionMapExchange();
                 }
 
                 return null;

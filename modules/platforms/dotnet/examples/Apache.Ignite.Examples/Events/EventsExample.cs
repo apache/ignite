@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Events;
-using Apache.Ignite.ExamplesDll.Compute;
-using Apache.Ignite.ExamplesDll.Events;
-
 namespace Apache.Ignite.Examples.Events
 {
+    using System;
+    using System.Linq;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Compute;
+    using Apache.Ignite.ExamplesDll.Events;
 
     /// <summary>
     /// Example demonstrating Ignite events.
@@ -38,7 +36,7 @@ namespace Apache.Ignite.Examples.Events
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class EventsExample
@@ -49,19 +47,15 @@ namespace Apache.Ignite.Examples.Events
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine(">>> Events example started.");
                 Console.WriteLine();
 
                 // Local listen example
                 Console.WriteLine(">>> Listening for a local event...");
+
+                ignite.GetEvents().EnableLocal(EventType.TaskExecutionAll);
 
                 var listener = new LocalListener();
                 ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);

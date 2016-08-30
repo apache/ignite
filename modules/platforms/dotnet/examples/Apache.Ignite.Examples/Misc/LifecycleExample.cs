@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Lifecycle;
-using Apache.Ignite.Core.Resource;
-
 namespace Apache.Ignite.Examples.Misc
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Resource;
+
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation
     /// to be able to hook into Apache lifecycle. Example bean will output occurred lifecycle 
@@ -50,9 +52,14 @@ namespace Apache.Ignite.Examples.Misc
 
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" },
-                LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] {"127.0.0.1:47500"}
+                    }
+                },
+                LifecycleBeans = new List<ILifecycleBean> {lifecycleExampleBean}
             };
 
             // Provide lifecycle bean to configuration.
@@ -93,7 +100,7 @@ namespace Apache.Ignite.Examples.Misc
                 if (evt == LifecycleEventType.AfterNodeStart)
                     Started = true;
                 else if (evt == LifecycleEventType.AfterNodeStop)
-                    Started = false;          
+                    Started = false;
             }
 
             /// <summary>

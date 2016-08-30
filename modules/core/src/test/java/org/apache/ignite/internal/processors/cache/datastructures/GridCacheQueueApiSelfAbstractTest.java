@@ -27,11 +27,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -605,6 +610,102 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityRun() throws Exception {
+        final CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(false);
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
+
+        try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        queue1.affinityRun(new IgniteRunnable() {
+                            @Override public void run() {
+                                // No-op.
+                            }
+                        });
+
+                        return null;
+                    }
+                },
+                IgniteException.class,
+                "Failed to execute affinityRun() for non-collocated queue: " + queue1.name() +
+                    ". This operation is supported only for collocated queues.");
+        }
+
+        colCfg.setCollocated(true);
+
+        try (final IgniteQueue<Integer> queue2 = grid(0).queue("Queue2", 0, colCfg)) {
+            queue2.add(100);
+
+            queue2.affinityRun(new IgniteRunnable() {
+                @IgniteInstanceResource
+                private IgniteEx ignite;
+
+                @Override public void run() {
+                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                        ignite.cluster().localNode(), "Queue2"));
+
+                    assertEquals(100, queue2.take().intValue());
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCall() throws Exception {
+        final CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(false);
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
+
+        try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        queue1.affinityCall(new IgniteCallable<Object>() {
+                            @Override public Object call() {
+                                return null;
+                            }
+                        });
+
+                        return null;
+                    }
+                },
+                IgniteException.class,
+                "Failed to execute affinityCall() for non-collocated queue: " + queue1.name() +
+                    ". This operation is supported only for collocated queues.");
+        }
+
+        colCfg.setCollocated(true);
+
+        try (final IgniteQueue<Integer> queue2 = grid(0).queue("Queue2", 0, colCfg)) {
+            queue2.add(100);
+
+            Integer res = queue2.affinityCall(new IgniteCallable<Integer>() {
+                @IgniteInstanceResource
+                private IgniteEx ignite;
+
+                @Override public Integer call() {
+                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                        ignite.cluster().localNode(), "Queue2"));
+
+                    return queue2.take();
+                }
+            });
+
+            assertEquals(100, res.intValue());
+        }
+    }
+
+    /**
      *  Test class with the same hash code.
      */
     private static class SameHashItem implements Serializable {
@@ -642,4 +743,5 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
             return S.toString(SameHashItem.class, this);
         }
     }
+
 }

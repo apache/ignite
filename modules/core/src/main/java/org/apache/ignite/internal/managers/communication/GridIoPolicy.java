@@ -43,6 +43,12 @@ public class GridIoPolicy {
     /** Marshaller cache execution pool. */
     public static final byte MARSH_CACHE_POOL = 6;
 
+    /** IGFS pool. */
+    public static final byte IGFS_POOL = 7;
+
+    /** Pool for handling distributed index range requests. */
+    public static final byte IDX_POOL = 8;
+
     /**
      * Defines the range of reserved pools that are not available for plugins.
      * @param key The key.

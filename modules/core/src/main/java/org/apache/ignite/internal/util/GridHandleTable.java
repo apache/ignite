@@ -92,8 +92,11 @@ public class GridHandleTable {
         if (size >= next.length)
             growEntries();
 
-        if (size >= threshold)
+        if (size >= threshold) {
             growSpine();
+
+            idx = hash(obj) % spine.length;
+        }
 
         insert(obj, size, idx);
 

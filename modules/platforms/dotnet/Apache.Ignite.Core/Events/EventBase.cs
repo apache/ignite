@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base event implementation.
@@ -196,7 +195,7 @@ namespace Apache.Ignite.Core.Events
         public override string ToString()
         {
             return string.Format(CultureInfo.InvariantCulture, 
-                "CacheEntry [Name={0}, Type={1}, Timestamp={2}, Message={3}]", Name, Type, Timestamp, Message);
+                "{0} [Name={1}, Type={2}, Timestamp={3}, Message={4}]", GetType().Name, Name, Type, Timestamp, Message);
         }
 
         /// <summary>

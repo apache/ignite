@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Provides mapping between Java and .NET basic types.
@@ -43,7 +44,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (double), "java.lang.Double"},
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
-            {typeof (Guid), "java.util.UUID"}
+            {typeof (Guid), "java.util.UUID"},
+            {typeof (DateTime), "java.sql.Timestamp"},
+            {typeof (DateTime?), "java.sql.Timestamp"},
+        };
+
+        /** */
+        private static readonly Dictionary<Type, Type> IndirectMappingTypes = new Dictionary<Type, Type>
+        {
+            {typeof (sbyte), typeof (byte)},
+            {typeof (ushort), typeof (short)},
+            {typeof (uint), typeof (int)},
+            {typeof (ulong), typeof (long)}
         };
 
         /** */
@@ -64,6 +76,24 @@ namespace Apache.Ignite.Core.Impl.Binary
             string res;
 
             return NetToJava.TryGetValue(type, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Logs a warning for indirectly mapped types.
+        /// </summary>
+        public static void LogIndirectMappingWarning(Type type, ILogger log, string logInfo)
+        {
+            if (type == null)
+                return;
+
+            Type directType;
+            if (!IndirectMappingTypes.TryGetValue(type, out directType))
+                return;
+
+            log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
+                     "This may cause issues in SQL queries. " +
+                     "You can use '{3}' instead to achieve direct mapping.",
+                logInfo, type, NetToJava[type], directType);
         }
 
         /// <summary>

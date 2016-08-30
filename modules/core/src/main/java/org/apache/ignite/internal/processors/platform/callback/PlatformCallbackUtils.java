@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.callback;
 
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+
 /**
  * Platform callback utility methods. Implemented in target platform. All methods in this class must be
  * package-visible and invoked only through {@link PlatformCallbackGateway}.
@@ -442,7 +444,6 @@ public class PlatformCallbackUtils {
     static native void serviceCancel(long envPtr, long svcPtr, long memPtr);
 
     /**
-     /**
      * Invokes service method.
      *
      * @param envPtr Environment pointer.
@@ -480,6 +481,96 @@ public class PlatformCallbackUtils {
      * @return Long result.
      */
     static native long extensionCallbackInLongLongOutLong(long envPtr, int typ, long arg1, long arg2);
+
+    /**
+     * Notifies platform about client disconnect.
+     *
+     * @param envPtr Environment pointer.
+     */
+    static native void onClientDisconnected(long envPtr);
+
+    /**
+     * Notifies platform about client reconnect.
+     *
+     * @param envPtr Environment pointer.
+     * @param clusterRestarted Cluster restarted flag.
+     */
+    static native void onClientReconnected(long envPtr, boolean clusterRestarted);
+
+    /**
+     * Initializes affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
+     * @return Affinity function pointer.
+     */
+    static native long affinityFunctionInit(long envPtr, long memPtr, PlatformAffinityFunctionTarget baseFunc);
+
+    /**
+     * Gets the partition from affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with key object.
+     * @return Partition number for a given key.
+     */
+    static native int affinityFunctionPartition(long envPtr, long ptr, long memPtr);
+
+    /**
+     * Assigns the affinity partitions.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param outMemPtr Pointer to a stream with affinity context.
+     * @param inMemPtr Pointer to a stream with result.
+     */
+    static native void affinityFunctionAssignPartitions(long envPtr, long ptr, long outMemPtr, long inMemPtr);
+
+    /**
+     * Removes the node from affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with node id.
+     */
+    static native void affinityFunctionRemoveNode(long envPtr, long ptr, long memPtr);
+
+    /**
+     * Destroys the affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     */
+    static native void affinityFunctionDestroy(long envPtr, long ptr);
+
+    /**
+     * Redirects the console output.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    static native void consoleWrite(String str, boolean isErr);
+
+    /**
+     * Logs to the native logger.
+     *
+     * @param envPtr Environment pointer.
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Error info.
+     * @param memPtr Pointer to optional payload (serialized exception).
+     */
+    static native void loggerLog(long envPtr, int level, String message, String category, String errorInfo, long memPtr);
+
+    /**
+     * Gets a value indicating whether native logger has specified level enabled.
+     *
+     * @param envPtr Environment pointer.
+     * @param level Log level.
+     */
+    static native boolean loggerIsLevelEnabled(long envPtr, int level);
 
     /**
      * Private constructor.

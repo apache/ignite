@@ -17,97 +17,50 @@
 
 namespace Apache.Ignite.Config
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using Apache.Ignite.Core;
+    using System.Linq;
 
     /// <summary>
     /// Configurator which uses application configuration.
     /// </summary>
-    internal class AppSettingsConfigurator : IConfigurator<NameValueCollection>
+    internal static class AppSettingsConfigurator
     {
         /** Common configuration property prefix. */
-        private static readonly string CfgPrefix = "Ignite.".ToLower();
+        private const string CfgPrefix = "Ignite.";
 
         /** Configuration property: Ignite home. */
-        private static readonly string CfgHome = "Home".ToLower();
-
-        /** Configuration property: Spring config URL. */
-        private static readonly string CfgSpringCfgUrl = "SpringConfigUrl".ToLower();
-
-        /** Configuration property: Path to JVM dll. */
-        private static readonly string CfgJvmDll = "JvmDll".ToLower();
-
-        /** Configuration property: JVM classpath. */
-        private static readonly string CfgJvmClasspath = "JvmClasspath".ToLower();
-
-        /** Configuration property: suppress warnings flag. */
-        private static readonly string CfgSuppressWarn = "SuppressWarnings".ToLower();
+        private const string CfgHome = "Home";
 
         /** Configuration property: JVM option prefix. */
-        private static readonly string CfgJvmOptPrefix = "JvmOption".ToLower();
+        private const string CfgJvmOptPrefix = "JvmOption";
 
         /** Configuration property: assembly prefix. */
-        private static readonly string CfgAssemblyPrefix = "Assembly".ToLower();
+        private const string CfgAssemblyPrefix = "Assembly";
 
-        /** Configuration property: JVM min memory. */
-        private static readonly string CfgJvmMinMem = "JvmInitialMemoryMB".ToLower();
-
-        /** Configuration property: JVM max memory. */
-        private static readonly string CfgJvmMaxMem = "JvmMaxMemoryMB".ToLower();
-
-        /** <inheritDoc /> */
-        public void Configure(IgniteConfiguration cfg, NameValueCollection src)
+        /// <summary>
+        /// Gets the arguments in split form.
+        /// </summary>
+        public static IEnumerable<Tuple<string, string>> GetArgs(NameValueCollection args)
         {
-            var jvmOpts = new List<string>();
-            var assemblies = new List<string>();
+            return args.AllKeys
+                .Where(x => x.StartsWith(CfgPrefix, StringComparison.OrdinalIgnoreCase))
+                .Select(k => Tuple.Create(Replace(k), args[k]));
+        }
 
-            foreach (string key in src.Keys)
-            {
-                var key0 = key.ToLower();
+        /// <summary>
+        /// Replaces the appsettings-specific keys with common arg name.
+        /// </summary>
+        private static string Replace(string key)
+        {
+            key = key.Substring(CfgPrefix.Length);
 
-                if (key0.StartsWith(CfgPrefix))
-                {
-                    key0 = key0.Substring(CfgPrefix.Length);
+            key = key.Equals(CfgHome, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdIgniteHome : key;
+            key = key.StartsWith(CfgJvmOptPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdJvmOpt : key;
+            key = key.StartsWith(CfgAssemblyPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdAssembly : key;
 
-                    var val = src[key];
-
-                    if (CfgHome.Equals(key0))
-                        cfg.IgniteHome = val;
-                    else if (CfgSpringCfgUrl.Equals(key0))
-                        cfg.SpringConfigUrl = val;
-                    else if (CfgJvmDll.Equals(key0))
-                        cfg.JvmDllPath = val;
-                    else if (CfgJvmClasspath.Equals(key0))
-                        cfg.JvmClasspath = val;
-                    else if (CfgSuppressWarn.Equals(key0))
-                        cfg.SuppressWarnings = val != null && bool.TrueString.ToLower().Equals(val.ToLower());
-                    else if (key0.StartsWith(CfgJvmOptPrefix))
-                        jvmOpts.Add(val);
-                    else if (key0.StartsWith(CfgAssemblyPrefix))
-                        assemblies.Add(val);
-                    else if (CfgJvmMinMem.Equals(key0))
-                        cfg.JvmInitialMemoryMb = ConfigValueParser.ParseInt(val, key);
-                    else if (CfgJvmMaxMem.Equals(key0))
-                        cfg.JvmMaxMemoryMb = ConfigValueParser.ParseInt(val, key);
-                }
-            }
-
-            if (jvmOpts.Count > 0)
-            {
-                if (cfg.JvmOptions == null)
-                    cfg.JvmOptions = jvmOpts;
-                else
-                    jvmOpts.ForEach(val => cfg.JvmOptions.Add(val));
-            }
-
-            if (assemblies.Count > 0)
-            {
-                if (cfg.Assemblies == null)
-                    cfg.Assemblies = assemblies;
-                else
-                    assemblies.ForEach(val => cfg.Assemblies.Add(val));
-            }
+            return key;
         }
     }
 }

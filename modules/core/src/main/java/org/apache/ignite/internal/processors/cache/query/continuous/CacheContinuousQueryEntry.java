@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.nio.ByteBuffer;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridCodegenConverter;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -61,18 +62,26 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** */
+    @GridCodegenConverter(
+        type = byte.class,
+        get = "evtType != null ? (byte)evtType.ordinal() : -1",
+        set = "eventTypeFromOrdinal($val$)"
+    )
     private EventType evtType;
 
     /** Key. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : key")
     private KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
     private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
     /** Cache name. */
@@ -187,10 +196,37 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     void markFiltered() {
         flags |= FILTERED_ENTRY;
-        newVal = null;
-        oldVal = null;
-        key = null;
         depInfo = null;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Size include this event and filtered.
+     */
+    public int size() {
+        return filteredEvts != null ? filteredEvts.size() + 1 : 1;
+    }
+
+    /**
+     * @return If entry filtered then will return light-weight <i><b>new entry</b></i> without values and key
+     * (avoid to huge memory consumption), otherwise {@code this}.
+     */
+    CacheContinuousQueryEntry forBackupQueue() {
+        if (!isFiltered())
+            return this;
+
+        CacheContinuousQueryEntry e =
+            new CacheContinuousQueryEntry(cacheId, null, null, null, null, keepBinary, part, updateCntr, null);
+
+        e.flags = flags;
+
+        return e;
     }
 
     /**
@@ -283,6 +319,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepare(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
     }
@@ -340,19 +381,19 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage("key", isFiltered() ? null : key))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("newVal", newVal))
+                if (!writer.writeMessage("newVal", isFiltered() ? null : newVal))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("oldVal", oldVal))
+                if (!writer.writeMessage("oldVal", isFiltered() ? null : oldVal))
                     return false;
 
                 writer.incrementState();
@@ -397,14 +438,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 1:
-                byte evtTypeOrd;
-
-                evtTypeOrd = reader.readByte("evtType");
+                evtType = eventTypeFromOrdinal(reader.readByte("evtType"));
 
                 if (!reader.isLastRead())
                     return false;
-
-                evtType = eventTypeFromOrdinal(evtTypeOrd);
 
                 reader.incrementState();
 

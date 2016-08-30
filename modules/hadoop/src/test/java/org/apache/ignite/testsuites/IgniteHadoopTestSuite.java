@@ -17,17 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import junit.framework.TestSuite;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -35,6 +24,11 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.hadoop.HadoopClientProtocolEmbeddedSelfTest;
 import org.apache.ignite.client.hadoop.HadoopClientProtocolSelfTest;
+import org.apache.ignite.hadoop.cache.HadoopTxConfigCacheTest;
+import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.hadoop.util.BasicUserNameMapperSelfTest;
+import org.apache.ignite.hadoop.util.ChainedUserNameMapperSelfTest;
+import org.apache.ignite.hadoop.util.KerberosUserNameMapperSelfTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualAsyncTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualSyncTest;
 import org.apache.ignite.igfs.HadoopFIleSystemFactorySelfTest;
@@ -56,7 +50,6 @@ import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualSyncSelf
 import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest;
 import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
 import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryModeSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoaderTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommandLineTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultMapReducePlannerSelfTest;
@@ -64,8 +57,11 @@ import org.apache.ignite.internal.processors.hadoop.HadoopFileSystemsTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopGroupingTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceErrorResilienceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopNoHadoopMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSnappyFullMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSnappyTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSortingTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapperSelfTest;
@@ -74,7 +70,8 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTasksV1Test;
 import org.apache.ignite.internal.processors.hadoop.HadoopTasksV2Test;
 import org.apache.ignite.internal.processors.hadoop.HadoopV2JobSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopValidationSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSnappyFullMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopWeightedMapReducePlannerTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopWeightedPlannerMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipListSelfTest;
@@ -82,6 +79,18 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataSt
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 import static org.apache.ignite.testframework.GridTestUtils.modeToPermissionSet;
 
@@ -100,6 +109,15 @@ public class IgniteHadoopTestSuite extends TestSuite {
         final ClassLoader ldr = TestSuite.class.getClassLoader();
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedMapReducePlannerTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(BasicUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(KerberosUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ChainedUserNameMapperSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
@@ -125,7 +143,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemSecondaryModeSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientSelfTest.class.getName())));
@@ -141,7 +158,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
@@ -161,6 +177,9 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
 
@@ -178,6 +197,9 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
+
         return suite;
     }
 
@@ -236,15 +258,15 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         X.println("tmp: " + tmpPath);
 
-        File install = new File(tmpPath + File.separatorChar + "__hadoop");
+        final File install = new File(tmpPath + File.separatorChar + "__hadoop");
 
-        File home = new File(install, destName);
+        final File home = new File(install, destName);
 
         X.println("Setting " + homeVariable + " to " + home.getAbsolutePath());
 
         System.setProperty(homeVariable, home.getAbsolutePath());
 
-        File successFile = new File(home, "__success");
+        final File successFile = new File(home, "__success");
 
         if (home.exists()) {
             if (successFile.exists()) {
@@ -256,7 +278,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
             X.println(appName + " distribution is invalid and it will be deleted.");
 
             if (!U.delete(home))
-                throw new IOException("Failed to delete directory: " + install.getAbsolutePath());
+                throw new IOException("Failed to delete directory: " + home.getAbsolutePath());
         }
 
         for (String url : urls) {
@@ -320,7 +342,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
             catch (Exception e) {
                 e.printStackTrace();
 
-                U.delete(install);
+                U.delete(home);
             }
         }
 

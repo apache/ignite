@@ -75,6 +75,8 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             startGrid(2);
             startGrid(3);
 
+            awaitPartitionMapExchange();
+
             Map<Integer, Collection<UUID>> mapping = new HashMap<>();
 
             for (int i = 0; i < 4; i++) {

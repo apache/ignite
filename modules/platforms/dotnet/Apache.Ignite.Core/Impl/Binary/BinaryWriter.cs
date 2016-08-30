@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary writer implementation.
@@ -87,11 +88,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteBoolean(string fieldName, bool val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeBool);
+            WriteBooleanField(val);
+        }
 
+        /// <summary>
+        /// Writes the boolean field.
+        /// </summary>
+        /// <param name="val">if set to <c>true</c> [value].</param>
+        internal void WriteBooleanField(bool val)
+        {
             _stream.WriteByte(BinaryUtils.TypeBool);
             _stream.WriteBool(val);
         }
-        
+
         /// <summary>
         /// Write boolean value.
         /// </summary>
@@ -142,7 +151,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteByte(string fieldName, byte val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeBool);
+            WriteByteField(val);
+        }
 
+        /// <summary>
+        /// Write byte field value.
+        /// </summary>
+        /// <param name="val">Byte value.</param>
+        internal void WriteByteField(byte val)
+        {
             _stream.WriteByte(BinaryUtils.TypeByte);
             _stream.WriteByte(val);
         }
@@ -197,7 +214,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteShort(string fieldName, short val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeShort);
+            WriteShortField(val);
+        }
 
+        /// <summary>
+        /// Write short field value.
+        /// </summary>
+        /// <param name="val">Short value.</param>
+        internal void WriteShortField(short val)
+        {
             _stream.WriteByte(BinaryUtils.TypeShort);
             _stream.WriteShort(val);
         }
@@ -252,7 +277,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteChar(string fieldName, char val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeChar);
+            WriteCharField(val);
+        }
 
+        /// <summary>
+        /// Write char field value.
+        /// </summary>
+        /// <param name="val">Char value.</param>
+        internal void WriteCharField(char val)
+        {
             _stream.WriteByte(BinaryUtils.TypeChar);
             _stream.WriteChar(val);
         }
@@ -307,7 +340,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteInt(string fieldName, int val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeInt);
+            WriteIntField(val);
+        }
 
+        /// <summary>
+        /// Writes the int field.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        internal void WriteIntField(int val)
+        {
             _stream.WriteByte(BinaryUtils.TypeInt);
             _stream.WriteInt(val);
         }
@@ -362,7 +403,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteLong(string fieldName, long val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeLong);
+            WriteLongField(val);
+        }
 
+        /// <summary>
+        /// Writes the long field.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        internal void WriteLongField(long val)
+        {
             _stream.WriteByte(BinaryUtils.TypeLong);
             _stream.WriteLong(val);
         }
@@ -417,7 +466,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteFloat(string fieldName, float val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeFloat);
+            WriteFloatField(val);
+        }
 
+        /// <summary>
+        /// Writes the float field.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        internal void WriteFloatField(float val)
+        {
             _stream.WriteByte(BinaryUtils.TypeFloat);
             _stream.WriteFloat(val);
         }
@@ -472,7 +529,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteDouble(string fieldName, double val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeDouble);
+            WriteDoubleField(val);
+        }
 
+        /// <summary>
+        /// Writes the double field.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        internal void WriteDoubleField(double val)
+        {
             _stream.WriteByte(BinaryUtils.TypeDouble);
             _stream.WriteDouble(val);
         }
@@ -907,13 +972,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeArray);
 
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArray);
-                BinaryUtils.WriteArray(val, this);
-            }
+            WriteArray(val);
         }
 
         /// <summary>
@@ -936,6 +995,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 _stream.WriteByte(BinaryUtils.TypeArray);
                 BinaryUtils.WriteArray(val, this);
             }
@@ -950,10 +1012,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteCollection(val);
+            WriteCollection(val);
         }
 
         /// <summary>
@@ -962,8 +1021,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            WriteByte(BinaryUtils.TypeCollection);
-            BinaryUtils.WriteCollection(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
+                WriteByte(BinaryUtils.TypeCollection);
+                BinaryUtils.WriteCollection(val, this);
+            }
         }
 
         /// <summary>
@@ -975,10 +1042,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteDictionary(val);
+            WriteDictionary(val);
         }
 
         /// <summary>
@@ -987,8 +1051,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteByte(BinaryUtils.TypeDictionary);
-            BinaryUtils.WriteDictionary(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
+                WriteByte(BinaryUtils.TypeDictionary);
+                BinaryUtils.WriteDictionary(val, this);
+            }
         }
 
         /// <summary>
@@ -1094,7 +1166,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var pos = _stream.Position;
 
                 // Dealing with handles.
-                if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
+                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
                     return;
 
                 // Skip header length as not everything is known now
@@ -1133,6 +1205,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? BinaryObjectHeader.Flag.UserType
                         : BinaryObjectHeader.Flag.None;
 
+                    if (Marshaller.CompactFooter && desc.UserType)
+                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+
                     var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
                     if (hasSchema)
@@ -1142,6 +1217,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // Calculate and write header.
                         if (_curRawPos > 0)
                             _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                        // Update schema in type descriptor
+                        if (desc.Schema.Get(schemaId) == null)
+                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                     }
                     else
                         schemaOffset = BinaryObjectHeader.Size;
@@ -1183,7 +1262,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler == null)  // We did our best, object cannot be marshalled.
                     throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
                 
-                handler(this, obj);
+                if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
+                    return;
+
+                handler.Write(this, obj);
             }
         }
 
@@ -1198,72 +1280,40 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Types check sequence is designed to minimize comparisons for the most frequent types.
 
             if (type == typeof(int))
-            {
-                _stream.WriteByte(BinaryUtils.TypeInt);
-                _stream.WriteInt((int)(object)val);
-            }
+                WriteIntField(TypeCaster<int>.Cast(val));
             else if (type == typeof(long))
-            {
-                _stream.WriteByte(BinaryUtils.TypeLong);
-                _stream.WriteLong((long)(object)val);
-            }
+                WriteLongField(TypeCaster<long>.Cast(val));
             else if (type == typeof(bool))
-            {
-                _stream.WriteByte(BinaryUtils.TypeBool);
-                _stream.WriteBool((bool)(object)val);
-            }
+                WriteBooleanField(TypeCaster<bool>.Cast(val));
             else if (type == typeof(byte))
-            {
-                _stream.WriteByte(BinaryUtils.TypeByte);
-                _stream.WriteByte((byte)(object)val);
-            }
+                WriteByteField(TypeCaster<byte>.Cast(val));
             else if (type == typeof(short))
-            {
-                _stream.WriteByte(BinaryUtils.TypeShort);
-                _stream.WriteShort((short)(object)val);
-            }
-            else if (type == typeof (char))
-            {
-                _stream.WriteByte(BinaryUtils.TypeChar);
-                _stream.WriteChar((char)(object)val);
-            }
+                WriteShortField(TypeCaster<short>.Cast(val));
+            else if (type == typeof(char))
+                WriteCharField(TypeCaster<char>.Cast(val));
             else if (type == typeof(float))
-            {
-                _stream.WriteByte(BinaryUtils.TypeFloat);
-                _stream.WriteFloat((float)(object)val);
-            }
+                WriteFloatField(TypeCaster<float>.Cast(val));
             else if (type == typeof(double))
-            {
-                _stream.WriteByte(BinaryUtils.TypeDouble);
-                _stream.WriteDouble((double)(object)val);
-            }
+                WriteDoubleField(TypeCaster<double>.Cast(val));
             else if (type == typeof(sbyte))
             {
-                sbyte val0 = (sbyte)(object)val;
-
-                _stream.WriteByte(BinaryUtils.TypeByte);
-                _stream.WriteByte(*(byte*)&val0);
+                var val0 = TypeCaster<sbyte>.Cast(val);
+                WriteByteField(*(byte*)&val0);
             }
             else if (type == typeof(ushort))
             {
-                ushort val0 = (ushort)(object)val;
-
-                _stream.WriteByte(BinaryUtils.TypeShort);
-                _stream.WriteShort(*(short*)&val0);
+                var val0 = TypeCaster<ushort>.Cast(val);
+                WriteShortField(*(short*) &val0);
             }
             else if (type == typeof(uint))
             {
-                uint val0 = (uint)(object)val;
-
-                _stream.WriteByte(BinaryUtils.TypeInt);
-                _stream.WriteInt(*(int*)&val0);
+                var val0 = TypeCaster<uint>.Cast(val);
+                WriteIntField(*(int*)&val0);
             }
             else if (type == typeof(ulong))
             {
-                ulong val0 = (ulong)(object)val;
-
-                _stream.WriteByte(BinaryUtils.TypeLong);
-                _stream.WriteLong(*(long*)&val0);
+                var val0 = TypeCaster<ulong>.Cast(val);
+                WriteLongField(*(long*)&val0);
             }
             else
                 throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
@@ -1315,7 +1365,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_hnds == null)
             {
                 // Cache absolute handle position.
-                _hnds = new BinaryHandleDictionary<object, long>(obj, pos);
+                _hnds = new BinaryHandleDictionary<object, long>(obj, pos, ReferenceEqualityComparer<object>.Instance);
 
                 return false;
             }
@@ -1447,18 +1497,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryType meta;
 
                 if (_metas.TryGetValue(desc.TypeId, out meta))
-                {
-                    if (fields != null)
-                    {
-                        IDictionary<string, int> existingFields = meta.GetFieldsMap();
-
-                        foreach (KeyValuePair<string, int> field in fields)
-                        {
-                            if (!existingFields.ContainsKey(field.Key))
-                                existingFields[field.Key] = field.Value;
-                        }
-                    }
-                }
+                    meta.UpdateFields(fields);
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }

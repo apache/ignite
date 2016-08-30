@@ -93,7 +93,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long expirationTime() {
+    @Override public long expireTime() {
         if (expirationTime == 0) {
             long p = ptr;
 
@@ -170,7 +170,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
             }
         }
         else
-            assert false : col;
+            throw new IllegalStateException("Column: " + col);
 
         Data data = Data.create(null, bytes);
 
@@ -377,5 +377,20 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     /** {@inheritDoc} */
     @Override protected void addOffheapRowId(SB sb) {
         sb.a('-').a(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj instanceof GridH2KeyValueRowOffheap) {
+            GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)obj;
+
+            if (pointer() == row.pointer())
+                return true;
+        }
+
+        return false;
     }
 }

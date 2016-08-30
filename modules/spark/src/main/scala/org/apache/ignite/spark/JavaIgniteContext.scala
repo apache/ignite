@@ -34,10 +34,16 @@ import scala.reflect.ClassTag
  * @tparam V Value type.
  */
 class JavaIgniteContext[K, V](
-    @scala.transient val sc: JavaSparkContext,
-    val cfgF: IgniteOutClosure[IgniteConfiguration]) extends Serializable {
+    @transient val sc: JavaSparkContext,
+    val cfgF: IgniteOutClosure[IgniteConfiguration],
+    standalone: Boolean = true
+    ) extends Serializable {
 
-    @transient val ic: IgniteContext[K, V] = new IgniteContext[K, V](sc.sc, () => cfgF.apply())
+    @transient val ic: IgniteContext = new IgniteContext(sc.sc, () => cfgF.apply(), standalone)
+
+    def this(sc: JavaSparkContext, cfgF: IgniteOutClosure[IgniteConfiguration]) {
+        this(sc, cfgF, true)
+    }
 
     def this(sc: JavaSparkContext, springUrl: String) {
         this(sc, new IgniteOutClosure[IgniteConfiguration] {
@@ -46,14 +52,14 @@ class JavaIgniteContext[K, V](
     }
 
     def fromCache(cacheName: String): JavaIgniteRDD[K, V] =
-        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheName, null))
+        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheName, null, false))
 
     def fromCache(cacheCfg: CacheConfiguration[K, V]) =
-        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheCfg.getName, cacheCfg))
+        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheCfg.getName, cacheCfg, false))
 
     def ignite(): Ignite = ic.ignite()
 
-    def close() = ic.close()
+    def close(shutdownIgniteOnWorkers:Boolean = false) = ic.close(shutdownIgniteOnWorkers)
 
     private[spark] def fakeClassTag[T]: ClassTag[T] = ClassTag.AnyRef.asInstanceOf[ClassTag[T]]
 

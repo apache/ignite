@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -37,6 +49,7 @@ import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -52,18 +65,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -76,13 +79,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Maxim number of removed locks. */
     private static final int MAX_REMOVED_LOCKS = 10240;
 
+    /** */
+    private static final int MAX_NESTED_LSNR_CALLS = getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, 5);
+
     /** Pending locks per thread. */
-    private final ThreadLocal<LinkedList<GridCacheMvccCandidate>> pending =
-        new ThreadLocal<LinkedList<GridCacheMvccCandidate>>() {
-            @Override protected LinkedList<GridCacheMvccCandidate> initialValue() {
-                return new LinkedList<>();
-            }
-        };
+    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
 
     /** Pending near local locks and topology version per thread. */
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
@@ -116,6 +117,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Finish futures. */
     private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
 
+    /** Nested listener calls. */
+    private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
+        @Override protected Integer initialValue() {
+            return 0;
+        }
+    };
+
     /** Logger. */
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
@@ -128,60 +136,26 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked"})
-        @Override public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate prev,
-            GridCacheMvccCandidate owner) {
-            assert entry != null;
-            assert owner != prev : "New and previous owner are identical instances: " + owner;
-            assert owner == null || prev == null || !owner.version().equals(prev.version()) :
-                "New and previous owners have identical versions [owner=" + owner + ", prev=" + prev + ']';
+        @Override public void onOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate prev,
+            final GridCacheMvccCandidate owner) {
+            int nested = nestedLsnrCalls.get();
 
-            if (log.isDebugEnabled())
-                log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ", prev=" +
-                    prev + ']');
+            if (nested < MAX_NESTED_LSNR_CALLS) {
+                nestedLsnrCalls.set(nested + 1);
 
-            if (owner != null && (owner.local() || owner.nearLocal())) {
-                Collection<GridCacheMvccFuture<?>> futCol = mvccFuts.get(owner.version());
-
-                if (futCol != null) {
-                    ArrayList<GridCacheMvccFuture<?>> futColCp;
-
-                    synchronized (futCol) {
-                        futColCp = new ArrayList<>(futCol.size());
-
-                        futColCp.addAll(futCol);
-                    }
-
-                    // Must invoke onOwnerChanged outside of synchronization block.
-                    for (GridCacheMvccFuture<?> fut : futColCp) {
-                        if (!fut.isDone()) {
-                            GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
-
-                            // Since this method is called outside of entry synchronization,
-                            // we can safely invoke any method on the future.
-                            // Also note that we don't remove future here if it is done.
-                            // The removal is initiated from within future itself.
-                            if (mvccFut.onOwnerChanged(entry, owner))
-                                return;
-                        }
-                    }
+                try {
+                    notifyOwnerChanged(entry, prev, owner);
+                }
+                finally {
+                    nestedLsnrCalls.set(nested);
                 }
             }
-
-            if (log.isDebugEnabled())
-                log.debug("Lock future not found for owner change callback (will try transaction futures) [owner=" +
-                    owner + ", prev=" + prev + ", entry=" + entry + ']');
-
-            // If no future was found, delegate to transaction manager.
-            if (cctx.tm().onOwnerChanged(entry, owner)) {
-                if (log.isDebugEnabled())
-                    log.debug("Found transaction for changed owner: " + owner);
-            }
-            else if (log.isDebugEnabled())
-                log.debug("Failed to find transaction for changed owner: " + owner);
-
-            if (!finishFuts.isEmptyx()) {
-                for (FinishLockFuture f : finishFuts)
-                    f.recheck(entry);
+            else {
+                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                    @Override public void run() {
+                        notifyOwnerChanged(entry, prev, owner);
+                    }
+                }, true);
             }
         }
 
@@ -201,6 +175,68 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 locked.remove(entry.txKey());
         }
     };
+
+    /**
+     * @param entry Entry to notify callback for.
+     * @param prev Previous lock owner.
+     * @param owner Current lock owner.
+     */
+    private void notifyOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate prev,
+        final GridCacheMvccCandidate owner) {
+        assert entry != null;
+        assert owner != prev : "New and previous owner are identical instances: " + owner;
+        assert owner == null || prev == null || !owner.version().equals(prev.version()) :
+            "New and previous owners have identical versions [owner=" + owner + ", prev=" + prev + ']';
+
+        if (log.isDebugEnabled())
+            log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ", prev=" +
+                prev + ']');
+
+        if (owner != null && (owner.local() || owner.nearLocal())) {
+            Collection<GridCacheMvccFuture<?>> futCol = mvccFuts.get(owner.version());
+
+            if (futCol != null) {
+                ArrayList<GridCacheMvccFuture<?>> futColCp;
+
+                synchronized (futCol) {
+                    futColCp = new ArrayList<>(futCol.size());
+
+                    futColCp.addAll(futCol);
+                }
+
+                // Must invoke onOwnerChanged outside of synchronization block.
+                for (GridCacheMvccFuture<?> fut : futColCp) {
+                    if (!fut.isDone()) {
+                        final GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
+
+                        // Since this method is called outside of entry synchronization,
+                        // we can safely invoke any method on the future.
+                        // Also note that we don't remove future here if it is done.
+                        // The removal is initiated from within future itself.
+                        if (mvccFut.onOwnerChanged(entry, owner))
+                            return;
+                    }
+                }
+            }
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Lock future not found for owner change callback (will try transaction futures) [owner=" +
+                owner + ", prev=" + prev + ", entry=" + entry + ']');
+
+        // If no future was found, delegate to transaction manager.
+        if (cctx.tm().onOwnerChanged(entry, owner)) {
+            if (log.isDebugEnabled())
+                log.debug("Found transaction for changed owner: " + owner);
+        }
+        else if (log.isDebugEnabled())
+            log.debug("Failed to find transaction for changed owner: " + owner);
+
+        if (!finishFuts.isEmptyx()) {
+            for (FinishLockFuture f : finishFuts)
+                f.recheck(entry);
+        }
+    }
 
     /** Discovery listener. */
     @GridToStringExclude private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -460,7 +496,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             Collection<GridCacheMvccFuture<?>> old = mvccFuts.get(fut.version());
 
             if (old == null) {
-                Collection<GridCacheMvccFuture<?>> col = new HashSet<GridCacheMvccFuture<?>>(U.capacity(4), 0.75f) {
+                Collection<GridCacheMvccFuture<?>> col = new HashSet<GridCacheMvccFuture<?>>(U.capacity(1), 0.75f) {
                     {
                         // Make sure that we add future to queue before
                         // adding queue to the map of futures.
@@ -623,6 +659,25 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Gets futures for given lock ID.
+     *
+     * @param ver Lock ID.
+     * @return Futures.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public Collection<GridCacheMvccFuture<?>> mvccFutures(GridCacheVersion ver) {
+        Collection<GridCacheMvccFuture<?>> futs = this.mvccFuts.get(ver);
+
+        if (futs != null) {
+            synchronized (futs) {
+                return new ArrayList<>(futs);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param futId Future ID.
      * @return Found future.
      */
@@ -683,7 +738,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Remote candidates.
      */
     public Collection<GridCacheMvccCandidate> remoteCandidates() {
-        Collection<GridCacheMvccCandidate> rmtCands = new LinkedList<>();
+        Collection<GridCacheMvccCandidate> rmtCands = new ArrayList<>();
 
         for (GridDistributedCacheEntry entry : locked())
             rmtCands.addAll(entry.remoteMvccSnapshot());
@@ -697,7 +752,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Local candidates.
      */
     public Collection<GridCacheMvccCandidate> localCandidates() {
-        Collection<GridCacheMvccCandidate> locCands = new LinkedList<>();
+        Collection<GridCacheMvccCandidate> locCands = new ArrayList<>();
 
         for (GridDistributedCacheEntry entry : locked()) {
             try {
@@ -726,7 +781,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (cacheCtx.isNear() || cand.singleImplicit())
             return true;
 
-        LinkedList<GridCacheMvccCandidate> queue = pending.get();
+        Deque<GridCacheMvccCandidate> queue = pending.get();
+
+        if (queue == null)
+            pending.set(queue = new ArrayDeque<>());
 
         GridCacheMvccCandidate prev = null;
 
@@ -751,7 +809,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Reset MVCC context.
      */
     public void contextReset() {
-        pending.set(new LinkedList<GridCacheMvccCandidate>());
+        pending.set(null);
     }
 
     /**

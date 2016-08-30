@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Cache
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Exception thrown from non-transactional cache in case when update succeeded only partially.

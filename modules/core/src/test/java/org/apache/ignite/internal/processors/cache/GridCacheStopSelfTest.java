@@ -82,8 +82,6 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(atomic ? ATOMIC : TRANSACTIONAL);
 
-        ccfg.setSwapEnabled(true);
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;

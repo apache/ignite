@@ -49,8 +49,6 @@ namespace Apache.Ignite
         /// </summary>
         internal static void Main(string[] args)
         {
-            IgniteConfiguration cfg;
-
             bool svc = false;
             bool install = false;
 
@@ -59,7 +57,7 @@ namespace Apache.Ignite
                 // Check for special cases.
                 if (args.Length > 0)
                 {
-                    string first = args[0].ToLower();
+                    string first = args[0].ToLowerInvariant();
 
                     if (Help.Contains(first))
                     {
@@ -91,19 +89,15 @@ namespace Apache.Ignite
 
                 if (!svc)
                 {
-                    // Pick application configuration.
-                    cfg = new IgniteConfiguration();
-
-                    new AppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
-
-                    // Pick command line arguments.
-                    new ArgsConfigurator().Configure(cfg, args);
+                    // Pick application configuration first, command line arguments second.
+                    var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
+                        .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
 
                     if (install)
-                        IgniteService.DoInstall(cfg);
+                        IgniteService.DoInstall(allArgs);
                     else
                     {
-                        Ignition.Start(cfg);
+                        Ignition.Start(Configurator.GetConfiguration(allArgs));
 
                         IgniteManager.DestroyJvm();
                     }
@@ -113,16 +107,14 @@ namespace Apache.Ignite
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR: " + e.Message);
+                Console.WriteLine("ERROR: " + e);
 
                 Environment.Exit(-1);
             }
 
             // If we are here, then this is a service call.
-            cfg = new IgniteConfiguration();
-
             // Use only arguments, not app.config.
-            new ArgsConfigurator().Configure(cfg, args);
+            var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
 
             ServiceBase.Run(new IgniteService(cfg));
         }
@@ -134,17 +126,19 @@ namespace Apache.Ignite
         {
             Console.WriteLine("Usage: Apache.Ignite.exe [/install] [/uninstall] [-options]");
             Console.WriteLine("");
-            Console.WriteLine("\t/install [-options]    installs Ignite Windows service with provided options");
-            Console.WriteLine("\t/uninstall             uninstalls Ignite Windows service");
+            Console.WriteLine("\t/install [-options]    installs Ignite Windows service with provided options.");
+            Console.WriteLine("\t/uninstall             uninstalls Ignite Windows service.");
             Console.WriteLine("");
             Console.WriteLine("Options:");
-            Console.WriteLine("\t-IgniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used)");
-            Console.WriteLine("\t-springConfigUrl       path to spring configuration file (if not provided \"config/default-config.xml\" is used)");
-            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used)");
-            Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here)");
-            Console.WriteLine("\t-suppressWarnings      wether to print warnings");
-            Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM");
-            Console.WriteLine("\t-assembly=userLib.dll  additional .Net assemblies");
+            Console.WriteLine("\t-IgniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used).");
+            Console.WriteLine("\t-ConfigSectionName     name of the IgniteConfigurationSection in app.config to use.");
+            Console.WriteLine("\t-ConfigFileName        path to the app.config file (if not provided Apache.Ignite.exe.config is used).");
+            Console.WriteLine("\t-springConfigUrl       path to Spring configuration file.");
+            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
+            Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here).");
+            Console.WriteLine("\t-suppressWarnings      whether to print warnings.");
+            Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM.");
+            Console.WriteLine("\t-assembly=userLib.dll  additional .NET assemblies to be loaded.");
             Console.WriteLine("\t-jvmInitialMemoryMB    Initial Java heap size, in megabytes. Maps to -Xms Java parameter. Defaults to 512.");
             Console.WriteLine("\t-jvmMaxMemoryMB        Maximum Java heap size, in megabytes. Maps to -Xmx Java parameter. Defaults to 1024.");
             Console.WriteLine("");

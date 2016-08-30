@@ -54,7 +54,6 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
         cfg.setEvictSynchronized(false);
 
         cfg.setAtomicityMode(atomicityMode());
-        cfg.setSwapEnabled(true);
 
         return cfg;
     }

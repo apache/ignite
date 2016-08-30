@@ -24,21 +24,28 @@
 
 namespace ignite
 {
-    namespace examples 
+    namespace examples
     {
-        struct Organization 
+        struct Organization
         {
-            Organization()
-            {
-                name = "";
-                addr = Address();
-            }
-            
-            Organization(std::string name, Address addr) : name(name), addr(addr) 
+            Organization() :
+                name(), addr()
             {
                 // No-op.
             }
-            
+
+            Organization(const std::string& name) :
+                name(name), addr()
+            {
+                // No-op.
+            }
+
+            Organization(const std::string& name, Address addr) :
+                name(name), addr(addr)
+            {
+                // No-op.
+            }
+
             std::string ToString() 
             {
                 std::ostringstream oss;
@@ -47,10 +54,10 @@ namespace ignite
 
                 return oss.str();
             }
-            
+
             std::string name;
             Address addr;
-        };    
+        };
     }
 }
 
@@ -101,11 +108,11 @@ namespace ignite
             {
                 std::string name = reader.ReadString("name");
                 ignite::examples::Address addr = reader.ReadObject<ignite::examples::Address>("addr");
-                                
+
                 return ignite::examples::Organization(name, addr);
             }
-        };    
-    }    
+        };
+    }
 }
 
 #endif

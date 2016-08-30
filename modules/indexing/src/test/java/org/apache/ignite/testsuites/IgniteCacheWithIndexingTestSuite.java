@@ -18,15 +18,19 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
+import org.apache.ignite.internal.processors.cache.CacheIndexingOffheapCleanupTest;
+import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAndSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapAtomicPartitionedSelfTest;
@@ -50,7 +54,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
         suite.addTestSuite(CacheTtlOffheapAtomicLocalSelfTest.class);
@@ -70,6 +73,11 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
         suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
+        suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
+        suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
+        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
+        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
+        suite.addTestSuite(CacheIndexingOffheapCleanupTest.class);
 
         return suite;
     }

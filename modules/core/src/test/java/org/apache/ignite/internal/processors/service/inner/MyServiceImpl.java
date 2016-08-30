@@ -29,6 +29,11 @@ class MyServiceImpl implements MyService {
     }
 
     /** {@inheritDoc} */
+    @Override public int hashCode(Object dummy) {
+        return HASH;
+    }
+
+    /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
         // No-op.
     }
@@ -41,5 +46,10 @@ class MyServiceImpl implements MyService {
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) throws Exception {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return HASH;
     }
 }

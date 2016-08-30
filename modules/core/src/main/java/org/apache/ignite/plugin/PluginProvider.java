@@ -76,6 +76,14 @@ public interface PluginProvider<C extends PluginConfiguration> {
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx Plugin context.
+     */
+    public CachePluginProvider createCacheProvider(CachePluginContext ctx);
+
+    /**
      * Starts grid component.
      *
      * @param ctx Plugin context.
@@ -127,16 +135,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *      sent for this component.
      */
     public void receiveDiscoveryData(UUID nodeId, Serializable data);
-
-    /**
-     * @param cctx Cache context.
-     */
-    public void onBeforeCacheStart(GridCacheContext cctx);
-
-    /**
-     * @param cctx Cache context.
-     */
-    public void onAfterCacheStop(GridCacheContext cctx);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

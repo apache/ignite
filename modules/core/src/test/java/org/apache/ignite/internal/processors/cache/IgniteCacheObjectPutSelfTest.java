@@ -73,12 +73,13 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
         IgniteCacheObjectProcessor co = ignite.context().cacheObjects();
         GridCacheAdapter<Object, Object> iCache = ignite.context().cache().internalCache(CACHE_NAME);
-        CacheObjectContext coCtx = iCache.context().cacheObjectContext();
+        GridCacheContext<Object, Object> cacheCtx = iCache.context();
+        CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
 
         ByteBuffer buf = ByteBuffer.allocate(2048);
 
         for (int i = 0; i < 10; i++) {
-            KeyCacheObject key = co.toCacheKeyObject(coCtx, i, false);
+            KeyCacheObject key = co.toCacheKeyObject(coCtx, cacheCtx, i, false);
 
             GridCacheEntryEx entry = iCache.peekEx(key);
 
@@ -114,12 +115,13 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
         IgniteCacheObjectProcessor co = ignite.context().cacheObjects();
         GridCacheAdapter<Object, Object> iCache = ignite.context().cache().internalCache(CACHE_NAME);
-        CacheObjectContext coCtx = iCache.context().cacheObjectContext();
+        GridCacheContext<Object, Object> cacheCtx = iCache.context();
+        CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
 
         ByteBuffer buf = ByteBuffer.allocate(2048);
 
         for (int i = 0; i < 10; i++) {
-            KeyCacheObject key = co.toCacheKeyObject(coCtx, new TestValue(i), false);
+            KeyCacheObject key = co.toCacheKeyObject(coCtx, cacheCtx, new TestValue(i), false);
 
             GridCacheEntryEx entry = iCache.peekEx(key);
 

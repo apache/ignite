@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.Serializable;
-import java.util.Arrays;
 
 /**
  * Contains tests for binary enums.
@@ -182,6 +185,46 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      */
     public void testNestedBuilderNotRegistered() throws Exception {
         checkNestedBuilder(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInstanceFromBytes() throws Exception {
+        startUp(true);
+
+        BinaryContext binCtx =
+            ((CacheObjectBinaryProcessorImpl)((IgniteKernal)node1).context().cacheObjects()).binaryContext();
+
+        int ord = EnumType.ONE.ordinal();
+
+        String clsName = EnumType.class.getName();
+
+        checkInstanceFromBytes(binCtx, ord, GridBinaryMarshaller.UNREGISTERED_TYPE_ID, clsName);
+
+        checkInstanceFromBytes(binCtx, ord, 42, null);
+    }
+
+    /**
+     * @param binCtx Binary context.
+     * @param ord Enum ordinal.
+     * @param typeId Type Id.
+     * @param clsName Class name.
+     */
+    private void checkInstanceFromBytes(BinaryContext binCtx, int ord, int typeId, String clsName)
+        throws IgniteCheckedException {
+
+        BinaryEnumObjectImpl srcBinEnum =new BinaryEnumObjectImpl(binCtx, typeId, clsName, ord);
+
+        Marshaller marsh = node1.configuration().getMarshaller();
+
+        byte[] bytes = marsh.marshal(srcBinEnum);
+
+        BinaryEnumObjectImpl binEnum = new BinaryEnumObjectImpl(binCtx, bytes);
+
+        assertEquals(clsName, binEnum.className());
+        assertEquals(typeId, binEnum.typeId());
+        assertEquals(ord, binEnum.enumOrdinal());
     }
 
     /**
@@ -439,7 +482,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /**
      * Enumeration for tests.
      */
-    public static enum EnumType {
+    public enum EnumType {
         ONE,
         TWO
     }

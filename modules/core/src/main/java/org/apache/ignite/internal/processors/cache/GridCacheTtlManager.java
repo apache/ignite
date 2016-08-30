@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -31,15 +37,54 @@ import org.jsr166.LongAdder8;
 
 /**
  * Eagerly removes expired entries from cache when
- * {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
+ * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
-    private final GridConcurrentSkipListSetEx pendingEntries = new GridConcurrentSkipListSetEx();
+    private  GridConcurrentSkipListSetEx pendingEntries;
 
-    /** Cleanup worker thread. */
+    /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Next expire time. */
+    private volatile long nextExpireTime = Long.MAX_VALUE;
+
+    /** Next expire time updater. */
+    private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
+        AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
+
+    /** */
+    private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
+        new IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion>() {
+            @Override public void applyx(GridCacheEntryEx entry, GridCacheVersion obsoleteVer)
+                throws IgniteCheckedException {
+                boolean touch = !entry.isNear();
+
+                while (true) {
+                    try {
+                        if (log.isTraceEnabled())
+                            log.trace("Trying to remove expired entry from cache: " + entry);
+
+                        if (entry.onTtlExpired(obsoleteVer))
+                            touch = false;
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException e0) {
+                        entry = entry.context().cache().entryEx(entry.key());
+
+                        touch = true;
+                    }
+                }
+
+                if (touch)
+                    entry.context().evicts().touch(entry, null);
+            }
+        };
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -54,6 +99,17 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             return;
 
         cleanupWorker = new CleanupWorker();
+
+        pendingEntries = cctx.config().getNearConfiguration() != null ? new GridConcurrentSkipListSetEx() : null;
+    }
+
+    /**
+     * @return {@code True} if eager expired entries cleanup is enabled for cache.
+     */
+    boolean eagerTtlEnabled() {
+        assert cctx != null : "Manager not started";
+
+        return cleanupWorker != null;
     }
 
     /** {@inheritDoc} */
@@ -73,49 +129,99 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      *
      * @param entry Entry to add.
      */
-    public void addTrackedEntry(GridCacheMapEntry entry) {
-        pendingEntries.add(new EntryWrapper(entry));
+    void addTrackedEntry(GridNearCacheEntry entry) {
+        assert Thread.holdsLock(entry);
+        assert cleanupWorker != null && pendingEntries != null;
+
+        EntryWrapper e = new EntryWrapper(entry);
+
+        pendingEntries.add(e);
+
+        onPendingEntryAdded(e.expireTime);
     }
 
     /**
      * @param entry Entry to remove.
      */
-    public void removeTrackedEntry(GridCacheMapEntry entry) {
+    void removeTrackedEntry(GridNearCacheEntry entry) {
         assert Thread.holdsLock(entry);
+        assert cleanupWorker != null && pendingEntries != null;
 
         pendingEntries.remove(new EntryWrapper(entry));
     }
 
+    /**
+     * @return The size of pending entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long pendingSize() throws IgniteCheckedException {
+        return (pendingEntries != null ? pendingEntries.sizex() : 0) + cctx.offheap().expiredSize();
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
-        X.println(">>>");
-        X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
-        X.println(">>>   pendingEntriesSize: " + pendingEntries.size());
+        try {
+            X.println(">>>");
+            X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+            X.println(">>>   pendingEntriesSize: " + pendingSize());
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to print statistics: " + e, e);
+        }
     }
 
     /**
      * Expires entries by TTL.
      */
     public void expire() {
-        long now = U.currentTimeMillis();
+        try {
+            long now = U.currentTimeMillis();
 
-        GridCacheVersion obsoleteVer = null;
+            if (nextExpireTime <= now) {
+                if (pendingEntries != null) {
+                    GridCacheVersion obsoleteVer = null;
 
-        for (int size = pendingEntries.sizex(); size > 0; size--) {
-            EntryWrapper e = pendingEntries.firstx();
+                    for (int size = pendingEntries.sizex(); size > 0; size--) {
+                        EntryWrapper e = pendingEntries.firstx();
 
-            if (e == null || e.expireTime > now)
-                return;
+                        if (e == null || e.expireTime > now)
+                            return;
 
-            if (pendingEntries.remove(e)) {
-                if (obsoleteVer == null)
-                    obsoleteVer = cctx.versions().next();
+                        if (pendingEntries.remove(e)) {
+                            if (obsoleteVer == null)
+                                obsoleteVer = cctx.versions().next();
 
-                if (log.isTraceEnabled())
-                    log.trace("Trying to remove expired entry from cache: " + e);
+                            expireC.apply(e.entry, obsoleteVer);
+                        }
+                    }
+                }
 
-                e.entry.onTtlExpired(obsoleteVer);
+                cctx.offheap().expire(expireC);
             }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to process entry expiration: " + e, e);
+        }
+    }
+
+    /**
+     * @param expireTime Entry expire time.
+     */
+    void onPendingEntryAdded(long expireTime) {
+        while (true) {
+            long nextExpireTime = this.nextExpireTime;
+
+            if (expireTime < nextExpireTime) {
+                if (nextExpireTimeUpdater.compareAndSet(this, nextExpireTime, expireTime)) {
+                    synchronized (mux) {
+                        mux.notifyAll();
+                    }
+
+                    break;
+                }
+            }
+            else
+                break;
         }
     }
 
@@ -126,7 +232,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /**
          * Creates cleanup worker.
          */
-        protected CleanupWorker() {
+        CleanupWorker() {
             super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
         }
 
@@ -135,18 +241,71 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             while (!isCancelled()) {
                 expire();
 
-                EntryWrapper first = pendingEntries.firstx();
+                long waitTime;
 
-                if (first != null) {
-                    long waitTime = first.expireTime - U.currentTimeMillis();
+                while (true) {
+                    long expireTime = nextExpireTime;
 
-                    if (waitTime > 0)
-                        U.sleep(waitTime);
+                    if (nextExpireTime == Long.MAX_VALUE)
+                        waitTime = 500;
+                    else
+                        waitTime = expireTime - U.currentTimeMillis();
+
+                    if (waitTime > 0) {
+                        synchronized (mux) {
+                            if (expireTime == nextExpireTime)
+                                mux.wait(waitTime);
+                        }
+                    }
+                    else
+                        break;
                 }
-                else
-                    U.sleep(500);
             }
         }
+    }
+
+    /**
+     * @param cctx1 First cache context.
+     * @param key1 Left key to compare.
+     * @param cctx2 Second cache context.
+     * @param key2 Right key to compare.
+     * @return Comparison result.
+     */
+    private static int compareKeys(GridCacheContext cctx1, CacheObject key1, GridCacheContext cctx2, CacheObject key2) {
+        int key1Hash = key1.hashCode();
+        int key2Hash = key2.hashCode();
+
+        int res = Integer.compare(key1Hash, key2Hash);
+
+        if (res == 0) {
+            key1 = (CacheObject)cctx1.unwrapTemporary(key1);
+            key2 = (CacheObject)cctx2.unwrapTemporary(key2);
+
+            try {
+                byte[] key1ValBytes = key1.valueBytes(cctx1.cacheObjectContext());
+                byte[] key2ValBytes = key2.valueBytes(cctx2.cacheObjectContext());
+
+                // Must not do fair array comparison.
+                res = Integer.compare(key1ValBytes.length, key2ValBytes.length);
+
+                if (res == 0) {
+                    for (int i = 0; i < key1ValBytes.length; i++) {
+                        res = Byte.compare(key1ValBytes[i], key2ValBytes[i]);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+
+                if (res == 0)
+                    res = Boolean.compare(cctx1.isNear(), cctx2.isNear());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -175,7 +334,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             int res = Long.compare(expireTime, o.expireTime);
 
             if (res == 0)
-                res = Long.compare(entry.startVersion(), o.entry.startVersion());
+                res = compareKeys(entry.context(), entry.key(), o.entry.context(), o.entry.key());
 
             return res;
         }
@@ -190,17 +349,22 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime && entry.startVersion() == that.entry.startVersion();
-
+            return expireTime == that.expireTime &&
+                compareKeys(entry.context(), entry.key(), that.entry.context(), that.entry.key()) == 0;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = (int)(expireTime ^ (expireTime >>> 32));
 
-            res = 31 * res + (int)(entry.startVersion() ^ (entry.startVersion() >>> 32));
+            res = 31 * res + entry.key().hashCode();
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EntryWrapper.class, this);
         }
     }
 
@@ -230,9 +394,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public boolean add(EntryWrapper e) {
             boolean res = super.add(e);
 
-            assert res;
-
-            size.increment();
+            if (res)
+                size.increment();
 
             return res;
         }

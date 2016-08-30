@@ -131,6 +131,13 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         backups = DFLT_BACKUPS;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @param g Grid.
      * @return Near cache.
@@ -191,14 +198,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         int priThreads = 2;
         int nearThreads = 2;
 
-        startGrids(gridCnt);
+        startGridsMultiThreaded(gridCnt, true);
 
-        try {
-            checkNearAndPrimary(gridCnt, priThreads, nearThreads);
-        }
-        finally {
-            stopAllGrids();
-        }
+        checkNearAndPrimary(gridCnt, priThreads, nearThreads);
     }
 
     /** @throws Exception If failed. */
@@ -211,14 +213,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         int priThreads = 5;
         int nearThreads = 5;
 
-        startGrids(gridCnt);
+        startGridsMultiThreaded(gridCnt, true);
 
-        try {
-            checkNearAndPrimary(gridCnt, priThreads, nearThreads);
-        }
-        finally {
-            stopAllGrids();
-        }
+        checkNearAndPrimary(gridCnt, priThreads, nearThreads);
     }
 
     /**
@@ -273,9 +270,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        final GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        final GridCacheEntryEx dhtEntry = dht(pri).entryEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
+
+        dhtEntry.unswap();
 
         assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
@@ -497,7 +496,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).cache(null);
 
-            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
+            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY);
 
             X.println("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -521,28 +520,18 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     public void testMultiNearAndPrimaryMultiNode() throws Exception {
         int gridCnt = 4;
 
-        startGrids(gridCnt);
+        startGridsMultiThreaded(gridCnt, true);
 
-        try {
-            checkNearAndPrimaryMultiNode(gridCnt);
-        }
-        finally {
-            stopAllGrids();
-        }
+        checkNearAndPrimaryMultiNode(gridCnt);
     }
 
     /** @throws Exception If failed. */
     public void testOneNearAndPrimaryMultiNode() throws Exception {
         int gridCnt = 2;
 
-        startGrids(gridCnt);
+        startGridsMultiThreaded(gridCnt, true);
 
-        try {
-            checkNearAndPrimaryMultiNode(gridCnt);
-        }
-        finally {
-            stopAllGrids();
-        }
+        checkNearAndPrimaryMultiNode(gridCnt);
     }
 
     /**
@@ -563,9 +552,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        GridCacheEntryEx dhtEntry = dht(pri).entryEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
+
+        dhtEntry.unswap();
 
         assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
@@ -585,7 +576,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).cache(null);
 
-            int cntr = cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
+            int cntr = cache.localPeek(CNTR_KEY);
 
             info("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 

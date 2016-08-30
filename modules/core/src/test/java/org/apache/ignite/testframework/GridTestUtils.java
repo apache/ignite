@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
@@ -172,13 +171,14 @@ public final class GridTestUtils {
      * @param sent Sent or received.
      */
     public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
-        IgnitePair<UUID> key = F.pair(from, to);
+        IgnitePair<UUID> key = new IgnitePair<>(from, to);
 
         IgnitePair<Queue<Message>> val = msgMap.get(key);
 
         if (val == null) {
             IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
-                val = F.<Queue<Message>>pair(new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+                val = new IgnitePair<Queue<Message>>(
+                    new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
 
             if (old != null)
                 val = old;
@@ -1782,10 +1782,6 @@ public final class GridTestUtils {
         }
 
         ccfg.setMemoryMode(memMode);
-        ccfg.setSwapEnabled(swap);
-
-        if (swap && cfg != null)
-            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (evictionPlc) {
             LruEvictionPolicy plc = new LruEvictionPolicy();

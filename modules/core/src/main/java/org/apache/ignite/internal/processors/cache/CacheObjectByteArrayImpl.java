@@ -76,16 +76,16 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        if (buf.remaining() < val.length + 5)
-            return false;
-
-        buf.putInt(val.length);
-        buf.put(cacheObjectType());
-        buf.put(val);
-
-        return true;
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, val, 0);
+    }
+
+    /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
         return val.length + 5;
     }
@@ -107,6 +107,11 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
         // No-op.
     }
 
@@ -176,6 +181,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen" + (val != null ? val.length : 0) + ']';
+        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
     }
 }

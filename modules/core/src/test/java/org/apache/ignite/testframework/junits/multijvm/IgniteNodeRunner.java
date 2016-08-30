@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
-import com.thoughtworks.xstream.XStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import com.thoughtworks.xstream.XStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -96,16 +96,19 @@ public class IgniteNodeRunner {
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
-    public static String storeToFile(IgniteConfiguration cfg) throws IOException {
+    public static String storeToFile(IgniteConfiguration cfg) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
-            cfg.setMBeanServer(null);
-            cfg.setMarshaller(null);
-            cfg.setDiscoverySpi(null);
-            cfg.setGridLogger(null);
+            IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
-            new XStream().toXML(cfg, out);
+            cfg0.setWorkDirectory(U.resolveWorkDirectory(null, false).getAbsolutePath());
+            cfg0.setMBeanServer(null);
+            cfg0.setMarshaller(null);
+            cfg0.setDiscoverySpi(null);
+            cfg0.setGridLogger(null);
+
+            new XStream().toXML(cfg0, out);
         }
 
         return fileName;

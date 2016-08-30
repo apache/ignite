@@ -35,6 +35,9 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BINARY = 100;
 
+    /** */
+    public static final byte TYPE_BINARY_ENUM = 101;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.
@@ -64,6 +67,17 @@ public interface CacheObject extends Message {
      * @throws IgniteCheckedException If failed.
      */
     public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @param ctx Cache object context.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException
+     */
+    public boolean putValue(ByteBuffer buf, int off, int len, CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @return Object type.

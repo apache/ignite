@@ -421,7 +421,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             String key = Integer.toString(i);
 
             if (affinity(c).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(Integer.valueOf(i), c.localPeek(key, CachePeekMode.ONHEAP));
+                assertEquals(Integer.valueOf(i), c.localPeek(key));
         }
     }
 

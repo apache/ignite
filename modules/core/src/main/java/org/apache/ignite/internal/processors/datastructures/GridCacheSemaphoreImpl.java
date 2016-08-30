@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -32,11 +34,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,11 +52,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Cache semaphore implementation based on AbstractQueuedSynchronizer.
- * Current implementation supports only unfair semaphores.
- * If any node fails after acquiring permissions on cache semaphore, there are two different behaviors controlled with the
- * parameter failoverSafe. If this parameter is true, other nodes can reacquire permits that were acquired by the failing node.
- * In case this parameter is false, IgniteInterruptedException is called on every node waiting on this semaphore.
+ * Cache semaphore implementation based on AbstractQueuedSynchronizer. Current implementation supports only unfair
+ * semaphores. If any node fails after acquiring permissions on cache semaphore, there are two different behaviors
+ * controlled with the parameter failoverSafe. If this parameter is true, other nodes can reacquire permits that were
+ * acquired by the failing node. In case this parameter is false, IgniteInterruptedException is called on every node
+ * waiting on this semaphore.
  */
 public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Externalizable {
     /** */
@@ -62,7 +66,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
+                return new IgniteBiTuple<>();
             }
         };
 
@@ -101,8 +105,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     /**
-     * Synchronization implementation for semaphore.
-     * Uses AQS state to represent permits.
+     * Synchronization implementation for semaphore. Uses AQS state to represent permits.
      */
     final class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 1192457210091910933L;
@@ -152,10 +155,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          * Get number of permits for node.
          *
          * @param nodeID Node ID.
-         * @return Number of permits node has acquired at this semaphore. Can be less than 0 if
-         * more permits were released than acquired on node.
+         * @return Number of permits node has acquired at this semaphore. Can be less than 0 if more permits were
+         * released than acquired on node.
          */
-        public int getPermitsForNode(UUID nodeID){
+        public int getPermitsForNode(UUID nodeID) {
             return nodeMap.containsKey(nodeID) ? nodeMap.get(nodeID) : 0;
         }
 
@@ -179,13 +182,39 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         }
 
         /**
+         * Set a flag indicating that it is not safe to continue using this semaphore. This is the case only if one of
+         * two things happened: 1. A node that previously acquired on this semaphore failed and semaphore is created in
+         * non-failoversafe mode; 2. Local node failed (is closed), so any any threads on this node waiting to acquire
+         * are notified, and semaphore is not safe to be used anymore.
+         *
+         * @return True is semaphore is not safe to be used anymore.
+         */
+        protected boolean isBroken() {
+            return broken;
+        }
+
+        /**
+         * Flag indicating that a node failed and it is not safe to continue using this semaphore. Any attempt to
+         * acquire on broken semaphore will result in {@linkplain IgniteInterruptedException}.
+         *
+         * @param broken True if semaphore should not be used anymore.
+         */
+        protected void setBroken(boolean broken) {
+            this.broken = broken;
+        }
+
+        /**
          * This method is used by the AQS to test if the current thread should block or not.
          *
          * @param acquires Number of permits to acquire.
          * @return Negative number if thread should block, positive if thread successfully acquires permits.
          */
         final int nonfairTryAcquireShared(int acquires) {
-            for (;;) {
+            for (; ; ) {
+                // If broken, return immediately, exception will be thrown anyway.
+                if (broken)
+                    return 1;
+
                 int available = getState();
 
                 int remaining = available - acquires;
@@ -208,7 +237,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
             if (releases == 0)
                 return true;
 
-            for (;;) {
+            for (; ; ) {
+                // If broken, return immediately, exception will be thrown anyway.
+                if (broken)
+                    return true;
+
                 int cur = getState();
 
                 int next = cur + releases;
@@ -227,7 +260,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          * @return Number of permits to drain.
          */
         final int drainPermits() {
-            for (;;) {
+            for (; ; ) {
+                // If broken, return immediately, exception will be thrown anyway.
+                if (broken)
+                    return 1;
 
                 int current = getState();
 
@@ -251,7 +287,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx,
                                 semView,
-                                    PESSIMISTIC, REPEATABLE_READ)
+                                PESSIMISTIC, REPEATABLE_READ)
                             ) {
                                 GridCacheSemaphoreState val = semView.get(key);
 
@@ -267,11 +303,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                     if (!draining) {
                                         UUID nodeID = ctx.localNodeId();
 
-                                        Map<UUID,Integer> map = val.getWaiters();
+                                        Map<UUID, Integer> map = val.getWaiters();
 
                                         int waitingCnt = expVal - newVal;
 
-                                        if(map.containsKey(nodeID))
+                                        if (map.containsKey(nodeID))
                                             waitingCnt += map.get(nodeID);
 
                                         map.put(nodeID, waitingCnt);
@@ -333,9 +369,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                     throw new IgniteCheckedException("Failed to find semaphore with given name: " +
                                         name);
 
-                                Map<UUID,Integer> map = val.getWaiters();
+                                Map<UUID, Integer> map = val.getWaiters();
 
-                                if(!map.containsKey(nodeId)){
+                                if (!map.containsKey(nodeId)) {
                                     tx.rollback();
 
                                     return false;
@@ -343,7 +379,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
                                 int numPermits = map.get(nodeId);
 
-                                if(numPermits > 0)
+                                if (numPermits > 0)
                                     val.setCount(val.getCount() + numPermits);
 
                                 map.remove(nodeId);
@@ -504,7 +540,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 sync.releaseFailedNode(nodeId);
             else {
                 // Interrupt every waiting thread if this semaphore is not failover safe.
-                sync.broken = true;
+                sync.setBroken(true);
 
                 for (Thread t : sync.getSharedQueuedThreads())
                     t.interrupt();
@@ -513,6 +549,48 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 sync.releaseShared(0);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        if (initGuard.get()) {
+            try {
+                // Wait while initialization is in progress.
+                U.await(initLatch);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.error("Failed waiting while initialization is completed.", e);
+            }
+        }
+        else {
+            // Preventing concurrent initialization.
+            if (initGuard.compareAndSet(false, true)) {
+                initLatch.countDown();
+
+                if (log.isDebugEnabled())
+                    log.debug("Semaphore wasn't initialized. Prevented further initialization.");
+
+                return;
+            }
+            else {
+                try {
+                    // Wait while initialization is in progress.
+                    U.await(initLatch);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.error("Failed waiting while initialization is completed.", e);
+                }
+            }
+        }
+
+        assert sync != null;
+
+        sync.setBroken(true);
+
+        // Try to notify any waiting threads.
+        sync.releaseShared(0);
     }
 
     /** {@inheritDoc} */
@@ -527,15 +605,17 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
     /** {@inheritDoc} */
     @Override public void acquire(int permits) throws IgniteInterruptedException {
+        ctx.kernalContext().gateway().readLock();
+
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
 
         try {
             initializeSemaphore();
 
-            if(isBroken())
-                Thread.currentThread().interrupt();
-
             sync.acquireSharedInterruptibly(permits);
+
+            if (isBroken())
+                throw new InterruptedException();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -543,10 +623,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void acquireUninterruptibly() {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeSemaphore();
 
@@ -555,10 +640,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void acquireUninterruptibly(int permits) {
+        ctx.kernalContext().gateway().readLock();
+
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
 
         try {
@@ -569,10 +659,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int availablePermits() {
+        ctx.kernalContext().gateway().readLock();
+
         int ret;
         try {
             initializeSemaphore();
@@ -603,12 +698,17 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
 
         return ret;
     }
 
     /** {@inheritDoc} */
     @Override public int drainPermits() {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeSemaphore();
 
@@ -617,32 +717,58 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean tryAcquire() {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeSemaphore();
 
-            return sync.nonfairTryAcquireShared(1) >= 0;
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
+            boolean result = sync.nonfairTryAcquireShared(1) >= 0;
 
-    /** {@inheritDoc} */
-    @Override public boolean tryAcquire(long timeout, TimeUnit unit) throws IgniteException {
-        try {
-            initializeSemaphore();
+            if (isBroken())
+                throw new InterruptedException();
 
-            return sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
+            return result;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
+        }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryAcquire(long timeout, TimeUnit unit) throws IgniteException {
+        ctx.kernalContext().gateway().readLock();
+
+        try {
+            initializeSemaphore();
+
+            boolean result = sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
+
+            if (isBroken())
+                throw new InterruptedException();
+
+            return result;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
@@ -653,6 +779,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
     /** {@inheritDoc} */
     @Override public void release(int permits) {
+        ctx.kernalContext().gateway().readLock();
+
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
 
         try {
@@ -663,10 +791,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean tryAcquire(int permits) {
+        ctx.kernalContext().gateway().readLock();
+
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
 
         try {
@@ -677,15 +810,25 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean tryAcquire(int permits, long timeout, TimeUnit unit) throws IgniteInterruptedException {
+        ctx.kernalContext().gateway().readLock();
+
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
         try {
             initializeSemaphore();
 
-            return sync.tryAcquireSharedNanos(permits, unit.toNanos(timeout));
+            boolean result = sync.tryAcquireSharedNanos(permits, unit.toNanos(timeout));
+
+            if (isBroken())
+                throw new InterruptedException();
+
+            return result;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -693,15 +836,32 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFailoverSafe() {
-        return sync.failoverSafe;
+        ctx.kernalContext().gateway().readLock();
+
+        try {
+            initializeSemaphore();
+
+            return sync.failoverSafe;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasQueuedThreads() {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeSemaphore();
 
@@ -710,10 +870,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int getQueueLength() {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeSemaphore();
 
@@ -722,11 +887,26 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isBroken(){
-        return sync.broken;
+    @Override public boolean isBroken() {
+        ctx.kernalContext().gateway().readLock();
+
+        try {
+            initializeSemaphore();
+
+            return sync.isBroken();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -741,6 +921,35 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(in.readUTF());
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            IgniteBiTuple<GridKernalContext, String> t = stash.get();
+
+            IgniteSemaphore sem = IgnitionEx.localIgnite().context().dataStructures().semaphore(
+                t.get2(),
+                0,
+                false,
+                false);
+
+            if (sem == null)
+                throw new IllegalStateException("Semaphore was not found on deserialization: " + t.get2());
+
+            return sem;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 
     /** {@inheritDoc} */

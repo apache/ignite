@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiClosure;
 
@@ -32,10 +31,6 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Retries. */
-    @GridToStringInclude
-    private Collection<Integer> invalidParts;
-
     /**
      * @param c Closure.
      * @param embedded Embedded.
@@ -45,8 +40,6 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
         IgniteInternalFuture<B> embedded
     ) {
         super(c, embedded);
-
-        invalidParts = Collections.emptyList();
     }
 
     /**
@@ -58,13 +51,11 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
         IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
     ) {
         super(embedded, c);
-
-        invalidParts = Collections.emptyList();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return invalidParts;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

@@ -88,7 +88,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 30));
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
 
         if (storeEnabled) {
             cacheCfg.setCacheStoreFactory(singletonFactory(new GridCacheTestStore()));
@@ -476,7 +475,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 if (tx != null)
                     tx.commit();
 
-                System.out.println(cache.metrics());
+                System.out.println(cache.localMetrics());
 
                 assertEquals("Hello", cache.get(1));
                 assertEquals("World", cache.get(2));

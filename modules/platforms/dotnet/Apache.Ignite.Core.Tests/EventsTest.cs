@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests
                     EventObjectType = typeof (CacheEvent),
                     GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
-                    EventCount = 1
+                    EventCount = 2
                 };
 
                 yield return new EventTestCase
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests
                     EventType = EventType.JobExecutionAll,
                     EventObjectType = typeof (JobEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
-                    EventCount = 9
+                    EventCount = 7
                 };
                 
                 yield return new EventTestCase
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests
 
             var qryResult = remoteQuery.Except(oldEvents).Cast<JobEvent>().ToList();
 
-            Assert.AreEqual(_grids.Length, qryResult.Count);
+            Assert.AreEqual(_grids.Length - 1, qryResult.Count);
 
             Assert.IsTrue(qryResult.All(x => x.Type == EventType.JobStarted));
         }
@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(true, cacheEvent.IsNear);
                 Assert.AreEqual(2, cacheEvent.Key);
                 Assert.AreEqual(expectedGridGuid, cacheEvent.Xid);
-                Assert.AreEqual(3, cacheEvent.LockId);
+                Assert.AreEqual(null, cacheEvent.LockId);
                 Assert.AreEqual(4, cacheEvent.NewValue);
                 Assert.AreEqual(true, cacheEvent.HasNewValue);
                 Assert.AreEqual(5, cacheEvent.OldValue);

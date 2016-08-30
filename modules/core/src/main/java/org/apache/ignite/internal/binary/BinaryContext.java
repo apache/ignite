@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -60,10 +35,47 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
+import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
+import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
+import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -74,12 +86,38 @@ import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
 /**
  * Binary context.
  */
 public class BinaryContext {
-    /** */
-    private static final ClassLoader dfltLdr = U.gridClassLoader();
+    /** System loader.*/
+    private static final ClassLoader sysLdr = U.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -89,11 +127,69 @@ public class BinaryContext {
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
+    /** Set of system classes that should be marshalled with BinaryMarshaller. */
+    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
+
+    /** Binarylizable system classes set initialization. */
+    static {
+        Set<String> sysClss = new HashSet<>();
+
+        // IGFS classes.
+        sysClss.add(IgfsPath.class.getName());
+
+        sysClss.add(IgfsBlockKey.class.getName());
+        sysClss.add(IgfsDirectoryInfo.class.getName());
+        sysClss.add(IgfsFileAffinityRange.class.getName());
+        sysClss.add(IgfsFileInfo.class.getName());
+        sysClss.add(IgfsFileMap.class.getName());
+        sysClss.add(IgfsListingEntry.class.getName());
+
+        sysClss.add(IgfsDataPutProcessor.class.getName());
+
+        sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
+        sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
+        sysClss.add(IgfsMetaFileLockProcessor.class.getName());
+        sysClss.add(IgfsMetaFileRangeDeleteProcessor.class.getName());
+        sysClss.add(IgfsMetaFileRangeUpdateProcessor.class.getName());
+        sysClss.add(IgfsMetaFileReserveSpaceProcessor.class.getName());
+        sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
+        sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
+        sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
+
+        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
+
+        sysClss.add(IgfsClientAffinityCallable.class.getName());
+        sysClss.add(IgfsClientDeleteCallable.class.getName());
+        sysClss.add(IgfsClientExistsCallable.class.getName());
+        sysClss.add(IgfsClientInfoCallable.class.getName());
+        sysClss.add(IgfsClientListFilesCallable.class.getName());
+        sysClss.add(IgfsClientListPathsCallable.class.getName());
+        sysClss.add(IgfsClientMkdirsCallable.class.getName());
+        sysClss.add(IgfsClientRenameCallable.class.getName());
+        sysClss.add(IgfsClientSetTimesCallable.class.getName());
+        sysClss.add(IgfsClientSizeCallable.class.getName());
+        sysClss.add(IgfsClientSummaryCallable.class.getName());
+        sysClss.add(IgfsClientUpdateCallable.class.getName());
+
+        // Closure processor classes.
+        sysClss.add(GridClosureProcessor.C1V2.class.getName());
+        sysClss.add(GridClosureProcessor.C1MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C2V2.class.getName());
+        sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C4V2.class.getName());
+        sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
+    }
+
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
-
-    /** Holds classes loaded by default class loader only. */
-    private final ConcurrentMap<Integer, BinaryClassDescriptor> userTypes = new ConcurrentHashMap8<>();
 
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
@@ -139,13 +235,6 @@ public class BinaryContext {
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
-
-    /**
-     * For {@link Externalizable}.
-     */
-    public BinaryContext() {
-        // No-op.
-    }
 
     /**
      * @param metaHnd Meta data handler.
@@ -208,16 +297,20 @@ public class BinaryContext {
         registerPredefinedType(LinkedHashMap.class, 0);
 
         // Classes with overriden default serialization flag.
-        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class));
+        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), false);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
 
+        registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
+            GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
+
         registerPredefinedType(BinaryObjectImpl.class, 0);
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
+        registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
@@ -254,7 +347,7 @@ public class BinaryContext {
     /**
      * @return Ignite configuration.
      */
-    public IgniteConfiguration configuration(){
+    public IgniteConfiguration configuration() {
         return igniteCfg;
     }
 
@@ -504,8 +597,41 @@ public class BinaryContext {
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null || !desc.registered())
+        if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
+        else if (!desc.registered()) {
+            if (!desc.userType()) {
+                BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
+                    this,
+                    desc.describedClass(),
+                    false,
+                    desc.typeId(),
+                    desc.typeName(),
+                    desc.affFieldKeyName(),
+                    desc.mapper(),
+                    desc.initialSerializer(),
+                    false,
+                    true
+                );
+
+                if (descByCls.replace(cls, desc, desc0)) {
+                    Collection<BinarySchema> schemas =
+                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
+
+                    BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
+                        desc0.typeName(),
+                        desc0.fieldsMeta(),
+                        desc0.affFieldKeyName(),
+                        schemas, desc0.isEnum());
+
+                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
+
+                    return desc0;
+                }
+            }
+            else
+                desc = registerUserClassDescriptor(desc);
+        }
 
         return desc;
     }
@@ -531,16 +657,7 @@ public class BinaryContext {
             return desc;
 
         if (ldr == null)
-            ldr = dfltLdr;
-
-        // If the type hasn't been loaded by default class loader then we mustn't return the descriptor from here
-        // giving a chance to a custom class loader to reload type's class.
-        if (userType && ldr.equals(dfltLdr)) {
-            desc = userTypes.get(typeId);
-
-            if (desc != null)
-                return desc;
-        }
+            ldr = sysLdr;
 
         Class cls;
 
@@ -551,14 +668,14 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -586,6 +703,11 @@ public class BinaryContext {
         String clsName = cls.getName();
 
         if (marshCtx.isSystemType(clsName)) {
+            BinarySerializer serializer = null;
+
+            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
+                serializer = new BinaryReflectiveSerializer();
+
             desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
@@ -593,7 +715,7 @@ public class BinaryContext {
                 clsName,
                 null,
                 SIMPLE_NAME_LOWER_CASE_MAPPER,
-                null,
+                serializer,
                 false,
                 true /* registered */
             );
@@ -656,14 +778,50 @@ public class BinaryContext {
                 new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
         }
 
-        // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
-        // might have reloaded described class.
-        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-            userTypes.put(typeId, desc);
-
         descByCls.put(cls, desc);
 
         typeId2Mapper.putIfAbsent(typeId, mapper);
+
+        return desc;
+    }
+
+    /**
+     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
+     *
+     * @param desc Old descriptor that should be re-registered.
+     * @return Class descriptor.
+     */
+    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
+        boolean registered;
+
+        try {
+            registered = marshCtx.registerClass(desc.typeId(), desc.describedClass());
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to register class.", e);
+        }
+
+        if (registered) {
+            BinarySerializer serializer = desc.initialSerializer();
+
+            if (serializer == null)
+                serializer = serializerForClass(desc.describedClass());
+
+            desc = new BinaryClassDescriptor(
+                this,
+                desc.describedClass(),
+                true,
+                desc.typeId(),
+                desc.typeName(),
+                desc.affFieldKeyName(),
+                desc.mapper(),
+                serializer,
+                true,
+                true
+            );
+
+            descByCls.put(desc.describedClass(), desc);
+        }
 
         return desc;
     }
@@ -774,7 +932,7 @@ public class BinaryContext {
 
         if (prevMap != null && !mapper.equals(prevMap))
             throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
-            + ", prevMap=" + prevMap + "]");
+                + ", prevMap=" + prevMap + "]");
 
         prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
 
@@ -867,15 +1025,16 @@ public class BinaryContext {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
-        return registerPredefinedType(cls, id, null);
+        return registerPredefinedType(cls, id, null, true);
     }
 
     /**
      * @param cls Class.
      * @param id Type ID.
+     * @param affFieldName Affinity field name.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
         String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
@@ -891,7 +1050,7 @@ public class BinaryContext {
             SIMPLE_NAME_LOWER_CASE_MAPPER,
             new BinaryReflectiveSerializer(),
             false,
-            true /* registered */
+            registered /* registered */
         );
 
         predefinedTypeNames.put(simpleClsName, id);
@@ -925,7 +1084,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = Class.forName(clsName);
+            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -971,16 +1130,17 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                true /* registered */
+                true
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-                userTypes.put(id, desc);
-
             descByCls.put(cls, desc);
+
+            // Registering in order to support the interoperability between Java, C++ and .Net.
+            // https://issues.apache.org/jira/browse/IGNITE-3455
+            predefinedTypes.put(id, desc);
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
@@ -1111,9 +1271,14 @@ public class BinaryContext {
      * @param ldr Class loader being undeployed.
      */
     public void onUndeploy(ClassLoader ldr) {
-        for (Class<?> cls : descByCls.keySet()) {
-            if (ldr.equals(cls.getClassLoader()))
-                descByCls.remove(cls);
+        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            // Never undeploy system types.
+            if (e.getValue().userType()) {
+                if (ldr.equals(e.getKey().getClassLoader()))
+                    it.remove();
+            }
         }
 
         U.clearClassCache(ldr);

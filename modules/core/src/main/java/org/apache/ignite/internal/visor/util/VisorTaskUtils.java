@@ -70,6 +70,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_DIR;
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED;
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
@@ -392,8 +393,13 @@ public class VisorTaskUtils {
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS,
-            EVT_MAPPER);
+        int[] evtTypes = all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS;
+
+        // Collect discovery events for Web Console.
+        if (evtOrderKey.startsWith("CONSOLE_"))
+            evtTypes = concat(evtTypes, EVTS_DISCOVERY);
+
+        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, evtTypes, EVT_MAPPER);
     }
 
     /**
@@ -434,11 +440,11 @@ public class VisorTaskUtils {
                     lastFound.set(true);
 
                 // Retains events by lastOrder, period and type.
-                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan && F.contains(evtTypes, e.type());
+                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan;
             }
         };
 
-        Collection<Event> evts = ignite.events().localQuery(p);
+        Collection<Event> evts = ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -1017,5 +1023,13 @@ public class VisorTaskUtils {
         }
 
         return bos.toByteArray();
+    }
+
+    /**
+     * @param msg Exception message.
+     * @return {@code true} if node failed to join grid.
+     */
+    public static boolean joinTimedOut(String msg) {
+        return msg != null && msg.startsWith("Join process timed out.");
     }
 }

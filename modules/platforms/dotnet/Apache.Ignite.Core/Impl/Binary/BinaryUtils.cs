@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
 
+        /** Type: platform object proxy. */
+        public const byte TypePlatformJavaObjectFactoryProxy = 99;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -242,6 +245,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Cached generic array read funcs. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>();
+
+        /** Flag indicating whether Guid struct is sequential in current runtime. */
+        private static readonly bool IsGuidSequential = GetIsGuidSequential();
+
+        /** Guid writer. */
+        public static readonly Action<Guid, IBinaryStream> WriteGuid = IsGuidSequential
+            ? (Action<Guid, IBinaryStream>)WriteGuidFast : WriteGuidSlow;
+
+        /** Guid reader. */
+        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
+
+        /** String mode environment variable. */
+        public const string IgniteBinaryMarshallerUseStringSerializationVer2 =
+            "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+        /** String mode. */
+        public static readonly bool UseStringSerializationVer2 =
+            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
 
         /// <summary>
         /// Default marshaller.
@@ -628,12 +650,177 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (char* chars = val)
             {
-                int byteCnt = Utf8.GetByteCount(chars, charCnt);
+                int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
                 stream.WriteInt(byteCnt);
 
                 stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
+        }
+
+        /// <summary>
+        /// Converts string to UTF8 bytes.
+        /// </summary>
+        /// <param name="chars">Chars.</param>
+        /// <param name="charCnt">Chars count.</param>
+        /// <param name="byteCnt">Bytes count.</param>
+        /// <param name="enc">Encoding.</param>
+        /// <param name="data">Data.</param>
+        /// <returns>Amount of bytes written.</returns>
+        public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        {
+            if (!UseStringSerializationVer2)
+                return enc.GetBytes(chars, charCnt, data, byteCnt);
+
+            int strLen = charCnt;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c, cnt;
+            // ReSharper restore TooWideLocalVariableScope
+
+            int position = 0;
+
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                c = *(chars + cnt);
+
+                if (c >= 0x0001 && c <= 0x007F)
+                    *(data + position++) = (byte)c;
+                else if (c > 0x07FF)
+                {
+                    *(data + position++) = (byte)(0xE0 | ((c >> 12) & 0x0F));
+                    *(data + position++) = (byte)(0x80 | ((c >> 6) & 0x3F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+                else
+                {
+                    *(data + position++) = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+            }
+
+            return position;
+        }
+
+        /// <summary>
+        /// Gets the UTF8 byte count.
+        /// </summary>
+        /// <param name="chars">The chars.</param>
+        /// <param name="strLen">Length of the string.</param>
+        /// <returns>UTF byte count.</returns>
+        private static unsafe int GetUtf8ByteCount(char* chars, int strLen)
+        {
+            int utfLen = 0;
+            int cnt;
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                var c = *(chars + cnt);
+
+                // ASCII
+                if (c >= 0x0001 && c <= 0x007F)
+                    utfLen++;
+                // Special symbols (surrogates)
+                else if (c > 0x07FF)
+                    utfLen += 3;
+                // The rest of the symbols.
+                else
+                    utfLen += 2;
+            }
+            return utfLen;
+        }
+
+        /// <summary>
+        /// Converts UTF8 bytes to string.
+        /// </summary>
+        /// <param name="arr">The bytes.</param>
+        /// <returns>Resulting string.</returns>
+        public static string Utf8BytesToString(byte[] arr)
+        {
+            if (!UseStringSerializationVer2)
+                return Utf8.GetString(arr);
+
+            int len = arr.Length, off = 0;
+            int c, charArrCnt = 0, total = len;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c2, c3;
+            // ReSharper restore TooWideLocalVariableScope
+            char[] res = new char[len];
+
+            // try reading ascii
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                if (c > 127)
+                    break;
+
+                off++;
+
+                res[charArrCnt++] = (char)c;
+            }
+
+            // read other
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                switch (c >> 4)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                        /* 0xxxxxxx*/
+                        off++;
+
+                        res[charArrCnt++] = (char)c;
+
+                        break;
+                    case 12:
+                    case 13:
+                        /* 110x xxxx   10xx xxxx*/
+                        off += 2;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 1];
+
+                        if ((c2 & 0xC0) != 0x80)
+                            throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                        res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                        break;
+                    case 14:
+                        /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                        off += 3;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 2];
+
+                        c3 = arr[off - 1];
+
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                            throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                            ((c2 & 0x3F) << 6) |
+                            ((c3 & 0x3F) << 0));
+
+                        break;
+                    default:
+                        /* 10xx xxxx,  1111 xxxx */
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+                }
+            }
+
+            return len == charArrCnt ? new string(res) : new string(res, 0, charArrCnt);
         }
 
         /**
@@ -645,7 +832,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             byte[] bytes = ReadByteArray(stream);
 
-            return bytes != null ? Utf8.GetString(bytes) : null;
+            return bytes != null ? Utf8BytesToString(bytes) : null;
         }
 
         /**
@@ -900,12 +1087,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             return vals;
         }
 
-        /**
-         * <summary>Write GUID.</summary>
-         * <param name="val">GUID.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static unsafe void WriteGuid(Guid val, IBinaryStream stream)
+        /// <summary>
+        /// Gets a value indicating whether <see cref="Guid"/> fields are stored sequentially in memory.
+        /// </summary>
+        /// <returns></returns>
+        private static unsafe bool GetIsGuidSequential()
+        {
+            // Check that bitwise conversion returns correct result
+            var guid = Guid.NewGuid();
+
+            var bytes = guid.ToByteArray();
+
+            var bytes0 = (byte*) &guid;
+
+            for (var i = 0; i < bytes.Length; i++)
+                if (bytes[i] != bytes0[i])
+                    return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidFast(Guid val, IBinaryStream stream)
         {
             var jguid = new JavaGuid(val);
 
@@ -913,13 +1121,47 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Write((byte*) ptr, 16);
         }
-        
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID</returns>
-         */
-        public static unsafe Guid? ReadGuid(IBinaryStream stream)
+
+        /// <summary>
+        /// Writes a guid byte by byte.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
+        {
+            var bytes = val.ToByteArray();
+            byte* jBytes = stackalloc byte[16];
+
+            jBytes[0] = bytes[6]; // c1
+            jBytes[1] = bytes[7]; // c2
+
+            jBytes[2] = bytes[4]; // b1
+            jBytes[3] = bytes[5]; // b2
+
+            jBytes[4] = bytes[0]; // a1
+            jBytes[5] = bytes[1]; // a2
+            jBytes[6] = bytes[2]; // a3
+            jBytes[7] = bytes[3]; // a4
+
+            jBytes[8] = bytes[15]; // k
+            jBytes[9] = bytes[14]; // j
+            jBytes[10] = bytes[13]; // i
+            jBytes[11] = bytes[12]; // h
+            jBytes[12] = bytes[11]; // g
+            jBytes[13] = bytes[10]; // f
+            jBytes[14] = bytes[9]; // e
+            jBytes[15] = bytes[8]; // d
+            
+            stream.Write(jBytes, 16);
+        }
+
+        /// <summary>
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidFast(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -931,7 +1173,43 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return *(Guid*) (&dotnetGuid);
         }
-        
+
+        /// <summary>
+        /// Reads a guid byte by byte.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidSlow(IBinaryStream stream)
+        {
+            byte* jBytes = stackalloc byte[16];
+
+            stream.Read(jBytes, 16);
+
+            var bytes = new byte[16];
+
+            bytes[0] = jBytes[4]; // a1
+            bytes[1] = jBytes[5]; // a2
+            bytes[2] = jBytes[6]; // a3
+            bytes[3] = jBytes[7]; // a4
+
+            bytes[4] = jBytes[2]; // b1
+            bytes[5] = jBytes[3]; // b2
+
+            bytes[6] = jBytes[0]; // c1
+            bytes[7] = jBytes[1]; // c2
+
+            bytes[8] = jBytes[15]; // d
+            bytes[9] = jBytes[14]; // e
+            bytes[10] = jBytes[13]; // f
+            bytes[11] = jBytes[12]; // g
+            bytes[12] = jBytes[11]; // h
+            bytes[13] = jBytes[10]; // i
+            bytes[14] = jBytes[9]; // j
+            bytes[15] = jBytes[8]; // k
+
+            return new Guid(bytes);
+        }
+
         /// <summary>
         /// Write GUID array.
         /// </summary>
@@ -1021,12 +1299,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var stream = ctx.Stream;
 
+            var pos = stream.Position;
+
             if (typed)
                 stream.ReadInt();
 
             int len = stream.ReadInt();
 
             var vals = new T[len];
+
+            ctx.AddHandle(pos - 1, vals);
 
             for (int i = 0; i < len; i++)
                 vals[i] = ctx.Deserialize<T>();
@@ -1107,6 +1389,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             byte colType = ctx.Stream.ReadByte();
@@ -1122,6 +1406,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 res = factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
                 adder = (col, elem) => ((ArrayList) col).Add(elem);
@@ -1184,12 +1470,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             // Skip dictionary type as we can do nothing with it here.
             ctx.Stream.ReadByte();
 
             var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             for (int i = 0; i < len; i++)
             {
@@ -1556,7 +1846,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
+                                              reader.ReadString());
 
             return null;
         }
@@ -1689,7 +1980,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private struct GuidAccessor
         {
             public readonly ulong ABC;
-            public readonly ulong DEGHIJK;
+            public readonly ulong DEFGHIJK;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
@@ -1699,21 +1990,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var l = val.CBA;
 
-                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
-                      ((l << 16) & 0x0000FFFF00000000);
+                if (BitConverter.IsLittleEndian)
+                    ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
+                else
+                    ABC = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
 
-                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+                // This is valid in any endianness (symmetrical)
+                DEFGHIJK = ReverseByteOrder(val.KJIHGFED);
             }
         }
 
         /// <summary>
         /// Struct with Java-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Explicit)]
         private struct JavaGuid
         {
-            public readonly ulong CBA;
-            public readonly ulong KJIHGED;
+            [FieldOffset(0)] public readonly ulong CBA;
+            [FieldOffset(8)] public readonly ulong KJIHGFED;
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
@@ -1721,17 +2019,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
-                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
 
                 var l = accessor.ABC;
 
-                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
-                      ((l >> 16) & 0x00000000FFFF0000);
+                if (BitConverter.IsLittleEndian)
+                    CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
+                else
+                    CBA = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
 
-                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+                // This is valid in any endianness (symmetrical)
+                KJIHGFED = ReverseByteOrder(accessor.DEFGHIJK);
             }
         }
     }

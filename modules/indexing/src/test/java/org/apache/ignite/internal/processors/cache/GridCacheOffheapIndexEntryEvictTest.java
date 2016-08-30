@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,8 +57,6 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setNetworkTimeout(2000);
-
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

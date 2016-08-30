@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
 import java.lang.reflect.Field;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -61,8 +62,10 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
 
         InetSocketAddress node1 = new InetSocketAddress(InetAddress.getLocalHost(), 1000);
         InetSocketAddress node2 = new InetSocketAddress(InetAddress.getLocalHost(), 1001);
+        InetSocketAddress node3 = new InetSocketAddress(
+            Inet6Address.getByName("2001:0db8:85a3:08d3:1319:47ff:fe3b:7fd3"), 1002);
 
-        List<InetSocketAddress> initAddrs = Arrays.asList(node1, node2);
+        List<InetSocketAddress> initAddrs = Arrays.asList(node1, node2, node3);
 
         finder.registerAddresses(Collections.singletonList(node1));
 
@@ -70,13 +73,13 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
 
         Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
 
-        for (int i = 0; i < 5 && addrs.size() != 2; i++) {
+        for (int i = 0; i < 5 && addrs.size() != 3; i++) {
             U.sleep(1000);
 
             addrs = finder.getRegisteredAddresses();
         }
 
-        assertEquals("Wrong collection size", 2, addrs.size());
+        assertEquals("Wrong collection size", 3, addrs.size());
 
         for (InetSocketAddress addr : initAddrs)
             assert addrs.contains(addr) : "Address is missing (got inconsistent addrs collection): " + addr;
@@ -85,13 +88,13 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
 
         addrs = finder.getRegisteredAddresses();
 
-        for (int i = 0; i < 5 && addrs.size() != 1; i++) {
+        for (int i = 0; i < 5 && addrs.size() != 2; i++) {
             U.sleep(1000);
 
             addrs = finder.getRegisteredAddresses();
         }
 
-        assertEquals("Wrong collection size", 1, addrs.size());
+        assertEquals("Wrong collection size", 2, addrs.size());
 
         finder.unregisterAddresses(finder.getRegisteredAddresses());
 

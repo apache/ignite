@@ -100,6 +100,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Maximum number of partitions. */
+    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
+
     /** Default size of rebalance thread pool. */
     @Deprecated
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
@@ -164,9 +167,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
     public static final long DFLT_OFFHEAP_MEMORY = -1;
 
-    /** Default value for 'swapEnabled' flag. */
-    public static final boolean DFLT_SWAP_ENABLED = false;
-
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
@@ -190,9 +190,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
-
-    /** Default memory mode. */
-    public static final CacheMemoryMode DFLT_MEMORY_MODE = CacheMemoryMode.ONHEAP_TIERED;
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
@@ -310,9 +307,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Off-heap memory size. */
     private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
 
-    /** */
-    private boolean swapEnabled = DFLT_SWAP_ENABLED;
-
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
@@ -330,9 +324,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
-
-    /** Memory mode. */
-    private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
     private AffinityKeyMapper affMapper;
@@ -453,7 +444,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        memMode = cc.getMemoryMode();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -476,7 +466,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
-        swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
@@ -544,6 +533,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets the near cache configuration to use on all cache nodes.
+     *
      * @param nearCfg Near cache configuration.
      * @return {@code this} for chaining.
      */
@@ -565,6 +556,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets write synchronization mode.
+     * <p>
+     * Default synchronization mode is {@link CacheWriteSynchronizationMode#PRIMARY_SYNC}.
      *
      * @param writeSync Write synchronization mode.
      * @return {@code this} for chaining.
@@ -1246,28 +1239,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Flag indicating whether Ignite should use swap storage by default. By default
-     * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
-     *
-     * @return {@code True} if swap storage is enabled.
-     */
-    public boolean isSwapEnabled() {
-        return swapEnabled;
-    }
-
-    /**
-     * Flag indicating whether swap storage is enabled or not.
-     *
-     * @param swapEnabled {@code True} if swap storage is enabled.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSwapEnabled(boolean swapEnabled) {
-        this.swapEnabled = swapEnabled;
-
-        return this;
-    }
-
-    /**
      * Gets maximum number of allowed concurrent asynchronous operations. If 0 returned then number
      * of concurrent asynchronous operations is unlimited.
      * <p>
@@ -1627,13 +1598,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
      * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
-     * <p>
-     * Default value is {@link #DFLT_MEMORY_MODE}.
      *
      * @return Memory mode.
      */
     public CacheMemoryMode getMemoryMode() {
-        return memMode;
+        return null;
     }
 
     /**
@@ -1643,7 +1612,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
-        this.memMode = memMode;
+        //this.memMode = memMode;
 
         return this;
     }
@@ -2292,6 +2261,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
+                if (mtd.isBridge())
+                    continue;
+
                 QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
                 QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 

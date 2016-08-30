@@ -205,13 +205,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return {@code True} if swap enabled.
-     */
-    public boolean swapEnabled() {
-        return ccfg.isSwapEnabled();
-    }
-
-    /**
      * @return Flag indicating whether eviction is synchronized.
      */
     public boolean evictSynchronized() {

@@ -47,7 +47,7 @@ import java.lang.annotation.Target;
  *     ...
  *     private ComputeJobContext jobCtx;
  *     ...
- *     &#64;IgniteJobContextResource
+ *     &#64;JobContextResource
  *     public void setJobContext(ComputeJobContext jobCtx) {
  *          this.jobCtx = jobCtx;
  *     }

@@ -145,7 +145,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             cc.setEvictionPolicy(plc);
             cc.setEvictSynchronized(false);
-            cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setRebalanceMode(NONE);
 

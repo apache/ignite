@@ -64,7 +64,7 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         cfg.setName(name)
         cfg.setCacheMode(CacheMode.PARTITIONED)
-        cfg.setSwapEnabled(true)
+        // TODO ignite-db-x removed  cfg.setSwapEnabled(true)
 
         cfg
     }

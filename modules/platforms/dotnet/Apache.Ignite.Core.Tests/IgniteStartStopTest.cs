@@ -118,52 +118,27 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNull(grid3.Name);
 
             Assert.AreSame(grid1, Ignition.GetIgnite("grid1"));
+            Assert.AreSame(grid1, Ignition.TryGetIgnite("grid1"));
 
             Assert.AreSame(grid2, Ignition.GetIgnite("grid2"));
+            Assert.AreSame(grid2, Ignition.TryGetIgnite("grid2"));
 
             Assert.AreSame(grid3, Ignition.GetIgnite(null));
+            Assert.AreSame(grid3, Ignition.TryGetIgnite(null));
+            Assert.AreSame(grid3, Ignition.TryGetIgnite());
 
-            try
-            {
-                Ignition.GetIgnite("invalid_name");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("invalid_name"));
+            Assert.IsNull(Ignition.TryGetIgnite("invalid_name"));
+
 
             Assert.IsTrue(Ignition.Stop("grid1", true));
-
-            try
-            {
-                Ignition.GetIgnite("grid1");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid1"));
 
             grid2.Dispose();
-
-            try
-            {
-                Ignition.GetIgnite("grid2");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid2"));
 
             grid3.Dispose();
-
-            try
-            {
-                Ignition.GetIgnite(null);
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid3"));
 
             foreach (var cfgName in cfgs)
             {
@@ -178,17 +153,8 @@ namespace Apache.Ignite.Core.Tests
 
             Ignition.StopAll(true);
 
-            foreach (var gridName in new List<string> { "grid1", "grid2", null })
-            {
-                try
-                {
-                    Ignition.GetIgnite(gridName);
-                }
-                catch (IgniteException e)
-                {
-                    Console.WriteLine("Expected exception: " + e);
-                }
-            }
+            foreach (var gridName in new List<string> {"grid1", "grid2", null})
+                Assert.Throws<IgniteException>(() => Ignition.GetIgnite(gridName));
         }
 
         /// <summary>
@@ -400,7 +366,7 @@ namespace Apache.Ignite.Core.Tests
             });
 
             // Wait for remote node to join
-            Assert.IsTrue(grid.WaitTopology(2, 30000));
+            Assert.IsTrue(grid.WaitTopology(2));
 
             // Wait some more for initialization
             Thread.Sleep(1000);

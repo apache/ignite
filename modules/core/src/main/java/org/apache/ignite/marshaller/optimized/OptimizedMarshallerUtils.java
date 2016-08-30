@@ -136,6 +136,9 @@ class OptimizedMarshallerUtils {
     static final byte CLS = 28;
 
     /** */
+    static final byte PROXY = 29;
+
+    /** */
     static final byte ENUM = 100;
 
     /** */

@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
+import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,10 +48,13 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     private static final long serialVersionUID = 0L;
 
     /** File system URI. */
-    protected String uri;
+    private String uri;
 
     /** File system config paths. */
-    protected String[] cfgPaths;
+    private String[] cfgPaths;
+
+    /** User name mapper. */
+    private UserNameMapper usrNameMapper;
 
     /** Configuration of the secondary filesystem, never null. */
     protected transient Configuration cfg;
@@ -65,8 +70,13 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public FileSystem get(String usrName) throws IOException {
-        return create0(IgfsUtils.fixUserName(usrName));
+    @Override public final FileSystem get(String name) throws IOException {
+        String name0 = IgfsUtils.fixUserName(name);
+
+        if (usrNameMapper != null)
+            name0 = IgfsUtils.fixUserName(usrNameMapper.map(name0));
+
+        return getWithMappedName(name0);
     }
 
     /**
@@ -76,7 +86,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      * @return File system.
      * @throws IOException If failed.
      */
-    protected FileSystem create0(String usrName) throws IOException {
+    protected FileSystem getWithMappedName(String usrName) throws IOException {
         assert cfg != null;
 
         try {
@@ -87,12 +97,12 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
             ClassLoader clsLdr = getClass().getClassLoader();
 
             if (ctxClsLdr == clsLdr)
-                return FileSystem.get(fullUri, cfg, usrName);
+                return create(usrName);
             else {
                 Thread.currentThread().setContextClassLoader(clsLdr);
 
                 try {
-                    return FileSystem.get(fullUri, cfg, usrName);
+                    return create(usrName);
                 }
                 finally {
                     Thread.currentThread().setContextClassLoader(ctxClsLdr);
@@ -104,6 +114,18 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
             throw new IOException("Failed to create file system due to interrupt.", e);
         }
+    }
+
+    /**
+     * Internal file system creation routine, invoked in correct class loader context.
+     *
+     * @param usrName User name.
+     * @return File system.
+     * @throws IOException If failed.
+     * @throws InterruptedException if the current thread is interrupted.
+     */
+    protected FileSystem create(String usrName) throws IOException, InterruptedException {
+        return FileSystem.get(fullUri, cfg, usrName);
     }
 
     /**
@@ -152,8 +174,34 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @param cfgPaths Paths to file system configuration files.
      */
-    public void setConfigPaths(String... cfgPaths) {
+    public void setConfigPaths(@Nullable String... cfgPaths) {
         this.cfgPaths = cfgPaths;
+    }
+
+    /**
+     * Get optional user name mapper.
+     * <p>
+     * When IGFS is invoked from Hadoop, user name is passed along the way to ensure that request will be performed
+     * with proper user context. User name is passed in a simple form and doesn't contain any extended information,
+     * such as host, domain or Kerberos realm. You may use name mapper to translate plain user name to full user
+     * name required by security engine of the underlying file system.
+     * <p>
+     * For example you may want to use {@link KerberosUserNameMapper} to user name from {@code "johndoe"} to
+     * {@code "johndoe@YOUR.REALM.COM"}.
+     *
+     * @return User name mapper.
+     */
+    @Nullable public UserNameMapper getUserNameMapper() {
+        return usrNameMapper;
+    }
+
+    /**
+     * Set optional user name mapper. See {@link #getUserNameMapper()} for more information.
+     *
+     * @param usrNameMapper User name mapper.
+     */
+    public void setUserNameMapper(@Nullable UserNameMapper usrNameMapper) {
+        this.usrNameMapper = usrNameMapper;
     }
 
     /** {@inheritDoc} */
@@ -189,11 +237,15 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
                 throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
             }
         }
+
+        if (usrNameMapper != null && usrNameMapper instanceof LifecycleAware)
+            ((LifecycleAware)usrNameMapper).start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        // No-op.
+        if (usrNameMapper != null && usrNameMapper instanceof LifecycleAware)
+            ((LifecycleAware)usrNameMapper).stop();
     }
 
     /** {@inheritDoc} */
@@ -208,6 +260,8 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
         }
         else
             out.writeInt(-1);
+
+        out.writeObject(usrNameMapper);
     }
 
     /** {@inheritDoc} */
@@ -222,5 +276,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
             for (int i = 0; i < cfgPathsCnt; i++)
                 cfgPaths[i] = U.readString(in);
         }
+
+        usrNameMapper = (UserNameMapper)in.readObject();
     }
 }

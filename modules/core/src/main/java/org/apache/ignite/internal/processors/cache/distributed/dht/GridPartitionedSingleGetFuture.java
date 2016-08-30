@@ -362,9 +362,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             GridCacheEntryEx entry;
 
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() || colocated.context().isDatabaseEnabled() ?
-                    colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                entry = colocated.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -376,8 +374,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
+                            null,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -392,14 +389,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
-                            /*swap*/true,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -412,7 +407,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeIfObsolete(key);
+                            colocated.removeEntry(entry);
                     }
                     else {
                         if (!skipVals && cctx.config().isStatisticsEnabled())
@@ -556,12 +551,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             }
 
             if (canRemap) {
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
-                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
-                    @Override public void applyx(IgniteInternalFuture<Long> fut) {
+                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
+                            AffinityTopologyVersion topVer = fut.get();
 
                             remap(topVer);
                         }

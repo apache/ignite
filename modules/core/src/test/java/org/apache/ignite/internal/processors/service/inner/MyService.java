@@ -23,8 +23,19 @@ import org.apache.ignite.services.Service;
  * Service.
  */
 public interface MyService extends Service {
+    /** Custom hash code. */
+    public static int HASH = 12345;
+
     /**
      * @return Some value.
      */
     int hello();
+
+    /**
+     * hashCode() method with a dummy argument.
+     *
+     * @param dummy Argument.
+     * @return Hash code.
+     */
+    int hashCode(Object dummy);
 }

@@ -1,0 +1,40 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+.popover.settings(tabindex='-1' style='width: 300px')
+    .arrow
+    h3.popover-title(style='color: black') Chart settings
+    button.close(id='chart-settings-close' ng-click='$hide()') &times;
+    .popover-content
+        form.form-horizontal.chart-settings(name='chartSettingsForm' novalidate)
+            .form-group.chart-settings
+                -var btnClass = 'col.value < 0 ? "btn-success" : "btn-default"'
+
+                label All columns (drag columns to axis)
+                ul.chart-settings-columns-list(dnd-list='paragraph.chartColumns' dnd-allowed-types='[]')
+                    li(ng-repeat='col in paragraph.chartColumns track by $index')
+                        .btn.btn-default.btn-chart-column-movable(ng-class=btnClass dnd-draggable='col' dnd-effect-allowed='copy') {{col.label}}
+                label X axis (accept only one column)
+                ul.chart-settings-columns-list(dnd-list='paragraph.chartKeyCols' dnd-drop='chartAcceptKeyColumn(paragraph, item)')
+                    li(ng-repeat='col in paragraph.chartKeyCols track by $index')
+                        .btn.btn-default.btn-chart-column(ng-class=btnClass) {{col.label}}
+                            i.fa.fa-close(ng-click='chartRemoveKeyColumn(paragraph, $index)')
+                label Y axis (accept only numeric columns)
+                ul.chart-settings-columns-list(dnd-list='paragraph.chartValCols' dnd-drop='chartAcceptValColumn(paragraph, item)')
+                    li(ng-repeat='col in paragraph.chartValCols track by $index')
+                        .btn.btn-default.btn-chart-column(ng-style='chartColor($index)') {{col.label}}
+                            button.btn-chart-column-agg-fx.select-toggle(ng-change='applyChartSettings(paragraph)' ng-show='paragraphTimeSpanVisible(paragraph)' ng-style='chartColor($index)' ng-model='col.aggFx' placeholder='...' bs-select bs-options='item for item in aggregateFxs' data-container='false' tabindex='-1')
+                            i.fa.fa-close(ng-click='chartRemoveValColumn(paragraph, $index)')

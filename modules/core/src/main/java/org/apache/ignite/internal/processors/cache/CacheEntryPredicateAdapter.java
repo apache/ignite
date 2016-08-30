@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
+    private static final long serialVersionUID = 4647110502545358709L;
+
+    /** */
     protected transient boolean locked;
 
     /** {@inheritDoc} */
@@ -87,11 +90,11 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
      * @return Value.
      */
     @Nullable protected CacheObject peekVisibleValue(GridCacheEntryEx entry) {
-        try {
-            return locked ? entry.rawGetOrUnmarshal(true) : entry.peekVisibleValue();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return locked ? entry.rawGet() : entry.peekVisibleValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 }

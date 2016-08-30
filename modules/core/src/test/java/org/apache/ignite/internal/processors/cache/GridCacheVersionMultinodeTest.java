@@ -240,9 +240,11 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
                 if (cache instanceof GridNearCacheAdapter)
                     cache = ((GridNearCacheAdapter<Object, Object>)cache).dht();
 
-                e = cache.peekEx(key);
+                e = cache.entryEx(key);
 
-                assertNotNull(e);
+                e.unswap();
+
+                assertNotNull(e.rawGet());
             }
             else
                 e = cache.peekEx(key);

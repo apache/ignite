@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentE
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheDistributedEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEntryEqualsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
@@ -68,6 +69,7 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));
         suite.addTest(new TestSuite(GridCacheMemoryModeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheSynchronousEvictionsFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
 
         return suite;
     }

@@ -40,4 +40,12 @@ public @interface IgniteSpiConsistencyChecked {
      */
     @SuppressWarnings("JavaDoc")
     public boolean optional();
+
+    /**
+     * If false, skip consistency checks for client cluster nodes. Could be useful
+     * for SwapSpaceSpi for example, since client nodes has no data at all, so they
+     * don't need to be consistent with server nodes.
+     */
+    @SuppressWarnings("JavaDoc")
+    public boolean checkClient() default true;
 }

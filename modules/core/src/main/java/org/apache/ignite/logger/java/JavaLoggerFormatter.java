@@ -68,7 +68,7 @@ public class JavaLoggerFormatter extends Formatter {
             record.getLevel() + "][" +
             threadName + "][" +
             logName + "] " +
-            record.getMessage() +
+            formatMessage(record) +
             (ex == null ? "\n" : ex);
     }
 

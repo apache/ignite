@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
     /// <summary>
@@ -66,15 +68,29 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Marshaller marsh = new Marshaller(cfg);
 
                 // 3. Marshal all data and ensure deserialized object is fine.
-                foreach (BranchedType obj in objs)
+                // Use single stream to test object offsets
+                using (var stream = new BinaryHeapStream(128))
                 {
-                    Console.WriteLine(">>> Write object [mode=" + obj.mode + ']');
+                    var writer = marsh.StartMarshal(stream);
 
-                    byte[] data = marsh.Marshal(obj);
+                    foreach (var obj in objs)
+                    {
+                        Console.WriteLine(">>> Write object [mode=" + obj.mode + ']');
 
-                    BranchedType other = marsh.Unmarshal<BranchedType>(data);
+                        writer.WriteObject(obj);
 
-                    Assert.IsTrue(obj.Equals(other));
+                    }
+
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    var reader = marsh.StartUnmarshal(stream);
+
+                    foreach (var obj in objs)
+                    {
+                        var other = reader.ReadObject<BranchedType>();
+
+                        Assert.IsTrue(obj.Equals(other));
+                    }
                 }
                 
                 Console.WriteLine();
@@ -206,30 +222,30 @@ namespace Apache.Ignite.Core.Tests.Binary
                     break;
 
                 case 2:
-                    f2 = reader.ReadInt("f2");
-                    f3 = reader.ReadInt("f3");
                     f4 = reader.ReadInt("f4");
+                    f3 = reader.ReadInt("f3");
+                    f2 = reader.ReadInt("f2");
 
                     break;
 
                 case 3:
+                    f5 = reader.ReadInt("f5");
                     f2 = reader.ReadInt("f2");
                     f3 = reader.ReadInt("f3");
-                    f5 = reader.ReadInt("f5");
 
                     break;
 
                 case 4:
-                    f2 = reader.ReadInt("f2");
-                    f3 = reader.ReadInt("f3");
                     f5 = reader.ReadInt("f5");
                     f6 = reader.ReadInt("f6");
+                    f2 = reader.ReadInt("f2");
+                    f3 = reader.ReadInt("f3");
 
                     break;
 
                 case 5:
-                    f2 = reader.ReadInt("f2");
                     f3 = reader.ReadInt("f3");
+                    f2 = reader.ReadInt("f2");
                     f7 = reader.ReadInt("f7");
 
                     break;

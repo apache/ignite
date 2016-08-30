@@ -20,6 +20,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Employee.
@@ -34,27 +35,38 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <param name="salary">Salary.</param>
         /// <param name="address">Address.</param>
         /// <param name="departments">Departments.</param>
-        public Employee(string name, long salary, Address address, ICollection<string> departments)
+        public Employee(string name, long salary, Address address, ICollection<string> departments, 
+            int organizationId = 0)
         {
             Name = name;
             Salary = salary;
             Address = address;
             Departments = departments;
+            OrganizationId = organizationId;
         }
 
         /// <summary>
         /// Name.
         /// </summary>
+        [QuerySqlField]
         public string Name { get; set; }
+
+        /// <summary>
+        /// Organization id.
+        /// </summary>
+        [QuerySqlField(IsIndexed = true)]
+        public int OrganizationId { get; set; }
 
         /// <summary>
         /// Salary.
         /// </summary>
+        [QuerySqlField]
         public long Salary { get; set; }
 
         /// <summary>
         /// Address.
         /// </summary>
+        [QuerySqlField]
         public Address Address { get; set; }
 
         /// <summary>
@@ -68,9 +80,9 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <returns>
         /// A string that represents the current object.
         /// </returns>
-        override public string ToString()
+        public override string ToString()
         {
-            return string.Format("{0} [name={1}, salary={2}, address={3}, departments={4}]", typeof(Employee).Name, 
+            return string.Format("{0} [name={1}, salary={2}, address={3}, departments={4}]", typeof(Employee).Name,
                 Name, Salary, Address, CollectionToString(Departments));
         }
 
@@ -83,8 +95,8 @@ namespace Apache.Ignite.ExamplesDll.Binary
             if (col == null)
                 return "null";
 
-            var elements = col.Any() 
-                ? col.Select(x => x.ToString()).Aggregate((x, y) => x + ", " + y) 
+            var elements = col.Any()
+                ? col.Select(x => x.ToString()).Aggregate((x, y) => x + ", " + y)
                 : string.Empty;
 
             return string.Format("[{0}]", elements);

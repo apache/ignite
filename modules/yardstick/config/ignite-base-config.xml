@@ -37,8 +37,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="ATOMIC"/>
-
-                    <property name="swapEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -47,8 +45,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="ATOMIC"/>
-
-                    <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
                 </bean>
@@ -59,8 +55,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="ATOMIC"/>
-
-                    <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
@@ -73,8 +67,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="swapEnabled" value="false"/>
-
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -83,8 +75,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
@@ -97,8 +87,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="swapEnabled" value="false"/>
-
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
                 </bean>
@@ -109,8 +97,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="ATOMIC"/>
-
-                    <property name="swapEnabled" value="false"/>
 
                     <property name="indexedTypes">
                         <list>
@@ -132,8 +118,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="ATOMIC"/>
-
-                    <property name="swapEnabled" value="false"/>
 
                     <property name="typeMetadata">
                         <list>
@@ -178,8 +162,6 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
 
-                    <property name="swapEnabled" value="false"/>
-
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
                     <property name="indexedTypes">
@@ -199,8 +181,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="swapEnabled" value="false"/>
                 </bean>
             </list>
         </property>

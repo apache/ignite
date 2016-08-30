@@ -22,7 +22,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.Collection;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -93,7 +92,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
             else
                 from = DEFAULT_FROM;
 
-
             int to;
 
             if (req0.to() != -1) {
@@ -113,12 +111,26 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
             File logFile;
 
             try {
-                if (req0.path() != null)
-                    logFile = new File(req0.path());
+                if (req0.path() != null) {
+                    if (log.fileName() != null) {
+                        if (!req0.path().equals(log.fileName())) {
+                            return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                                "Request parameter 'path' must contain a path to valid log file."));
+                        }
+                        else
+                            logFile = new File(req0.path());
+                    }
+                    else if (req0.path().startsWith(ctx.config().getIgniteHome()))
+                        logFile = new File(req0.path());
+                    else {
+                        return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                            "Request parameter 'path' must contain a path to valid log file."));
+                    }
+                }
+                else if (log.fileName() == null)
+                    logFile = new File(ctx.config().getIgniteHome() + "/work/log/ignite.log");
                 else
-                    logFile = new File(log.fileName() == null ?
-                        ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" :
-                        log.fileName());
+                    logFile = new File(log.fileName());
             }
             catch (InvalidPathException e) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
@@ -150,7 +162,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     private String readLog(int from, int to, File logFile) throws IgniteCheckedException {
         StringBuilder content = new StringBuilder();
 
-        try (BufferedReader reader =  new BufferedReader(new FileReader(logFile))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
             String line;
 
             int start = 0;
@@ -161,6 +173,10 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
 
                 start++;
             }
+
+            if (content.length() == 0)
+                throw new IgniteCheckedException("Request parameter 'from' and 'to' are for lines that " +
+                    "do not exist in log file.");
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

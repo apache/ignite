@@ -55,6 +55,7 @@ public class BinaryMetadata implements Externalizable {
     private String affKeyFieldName;
 
     /** Schemas associated with type. */
+    @GridToStringInclude
     private Collection<BinarySchema> schemas;
 
     /** Whether this is enum type. */

@@ -18,21 +18,13 @@
 namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Organization.
     /// </summary>
-    [Serializable]
     public class Organization
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public Organization()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -51,6 +43,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// Name.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public string Name { get; set; }
 
         /// <summary>
@@ -77,7 +70,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <filterpriority>2</filterpriority>
         public override string ToString()
         {
-            return string.Format("{0} [name={1}, address={2}, type={3}, lastUpdated={4}]", typeof (Organization).Name,
+            return string.Format("{0} [name={1}, address={2}, type={3}, lastUpdated={4}]", typeof(Organization).Name,
                 Name, Address, Type, LastUpdated);
         }
     }

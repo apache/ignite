@@ -66,9 +66,9 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     }
 
     /**
-     * @return Exchange ID.
+     * @return Exchange ID. {@code Null} if message doesn't belong to exchange process.
      */
-    public GridDhtPartitionExchangeId exchangeId() {
+    @Nullable public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
 

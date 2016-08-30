@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Event;
-using Apache.Ignite.Core.Cache.Query.Continuous;
-using Apache.Ignite.ExamplesDll.Datagrid;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.ExamplesDll.Datagrid;
+
     /// <summary>
     /// This example demonstrates continuous query API.
     /// <para />
@@ -36,29 +36,26 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class ContinuousQueryExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_continuous_query";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
-                JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache continuous query example started.");
 
-                var cache = ignite.GetOrCreateCache<int, string>("cache_continuous_query");
+                var cache = ignite.GetOrCreateCache<int, string>(CacheName);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -187,14 +188,17 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
 
     /**
      * @param updateSeq New update sequence value.
+     * @param topVer Current topology version.
      * @return Old update sequence value.
      */
-    public long updateSequence(long updateSeq) {
+    public long updateSequence(long updateSeq, AffinityTopologyVersion topVer) {
         long old = this.updateSeq;
 
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
+
+        top = topVer;
 
         return old;
     }
@@ -228,12 +232,11 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
             int ordinal = entry.getValue().ordinal();
 
-            assert ordinal == (ordinal & 0x3);
-            assert entry.getKey() == (entry.getKey() & 0x3FFF);
+            assert ordinal == (ordinal & 0xFF);
+            assert entry.getKey() >= 0 && entry.getKey() <= CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
 
-            int coded = (ordinal << 14) | entry.getKey();
-
-            out.writeShort((short)coded);
+            out.write(ordinal);
+            out.writeShort((short)(int)entry.getKey());
 
             i++;
         }
@@ -261,10 +264,9 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         map = U.newHashMap(size);
 
         for (int i = 0; i < size; i++) {
-            int entry = in.readShort() & 0xFFFF;
+            int ordinal = in.readByte() & 0xFF;
 
-            int part = entry & 0x3FFF;
-            int ordinal = entry >> 14;
+            int part = in.readShort() & 0xFFFF;
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }

@@ -74,8 +74,10 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Static
             else
                 writer.WriteInt(0);
         }
-        
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Gets the type code to be used in Java to determine ip finder type.
+        /// </summary>
         protected override byte TypeCode
         {
             get { return TypeCodeVmIpFinder; }

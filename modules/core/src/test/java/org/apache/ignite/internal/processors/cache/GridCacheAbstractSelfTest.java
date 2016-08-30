@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -30,7 +29,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -43,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -52,7 +49,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -66,11 +62,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
-    /** Store map. */
-    protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
-
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static TestCacheStoreStrategy storeStgy;
 
     /**
      * @return Grids count to start.
@@ -88,6 +84,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
+        initStoreStrategy();
+
         startGrids(cnt);
 
         awaitPartitionMapExchange();
@@ -97,7 +95,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        map.clear();
+        if (storeStgy != null)
+            storeStgy.resetStore();
+    }
+
+    /**
+     * Initializes {@link #storeStgy} with respect to the nature of the test.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    void initStoreStrategy() throws IgniteCheckedException {
+        if (storeStgy == null)
+            storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -171,32 +180,12 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         throw e;
                 }
             }
-
-            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        resetStore();
-    }
-
-    /**
-     * Cleans up cache store.
-     */
-    protected void resetStore() {
-        map.clear();
-    }
-
-    /**
-     * Put entry to cache store.
-     *
-     * @param key Key.
-     * @param val Value.
-     */
-    protected void putToStore(Object key, Object val) {
-        map.put(key, val);
+        storeStgy.resetStore();
     }
 
     /** {@inheritDoc} */
@@ -228,16 +217,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        CacheStore<?, ?> store = cacheStore();
+        if (storeStgy != null) {
+            Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
 
-        if (store != null) {
-            cfg.setCacheStoreFactory(new TestStoreFactory());
-            cfg.setReadThrough(true);
-            cfg.setWriteThrough(true);
-            cfg.setLoadPreviousValue(true);
+            CacheStore<?, ?> store = storeFactory.create();
+
+            if (store != null) {
+                cfg.setCacheStoreFactory(storeFactory);
+                cfg.setReadThrough(true);
+                cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
+                storeStgy.updateCacheConfiguration(cfg);
+            }
         }
 
-        cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
@@ -287,31 +280,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
-    }
-
-    /**
-     * @return Write through storage emulator.
-     */
-    protected static CacheStore<?, ?> cacheStore() {
-        return new CacheStoreAdapter<Object, Object>() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-                Object... args) {
-                for (Map.Entry<Object, Object> e : map.entrySet())
-                    clo.apply(e.getKey(), e.getValue());
-            }
-
-            @Override public Object load(Object key) {
-                return map.get(key);
-            }
-
-            @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
-                map.put(e.getKey(), e.getValue());
-            }
-
-            @Override public void delete(Object key) {
-                map.remove(key);
-            }
-        };
     }
 
     /**
@@ -418,8 +386,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Value.
      */
     @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localPeek(key, CachePeekMode.ONHEAP);
+        return cache.localPeek(key);
     }
 
     /**
@@ -556,12 +523,4 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Serializable factory.
-     */
-    protected static class TestStoreFactory implements Factory<CacheStore> {
-        @Override public CacheStore create() {
-            return cacheStore();
-        }
-    }
 }

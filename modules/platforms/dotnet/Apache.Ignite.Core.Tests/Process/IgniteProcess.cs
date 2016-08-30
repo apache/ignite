@@ -162,7 +162,6 @@ namespace Apache.Ignite.Core.Tests.Process
             params string[] args)
         {
             Debug.Assert(!string.IsNullOrEmpty(exePath));
-            Debug.Assert(!string.IsNullOrEmpty(ggHome));
 
             // 1. Define process start configuration.
             var sb = new StringBuilder();
@@ -173,19 +172,17 @@ namespace Apache.Ignite.Core.Tests.Process
             var procStart = new ProcessStartInfo
             {
                 FileName = exePath,
-                Arguments = sb.ToString()
+                Arguments = sb.ToString(),
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
-            if (!string.IsNullOrEmpty(ggHome))
+            if (ggHome != null)
                 procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
 
             procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
-
-            procStart.CreateNoWindow = true;
-            procStart.UseShellExecute = false;
-
-            procStart.RedirectStandardOutput = true;
-            procStart.RedirectStandardError = true;
 
             var workDir = Path.GetDirectoryName(exePath);
 
@@ -222,6 +219,22 @@ namespace Apache.Ignite.Core.Tests.Process
         public void Kill()
         {
             _proc.Kill();
+        }
+
+        /// <summary>
+        /// Suspends the process.
+        /// </summary>
+        public void Suspend()
+        {
+            _proc.Suspend();
+        }
+
+        /// <summary>
+        /// Resumes the process.
+        /// </summary>
+        public void Resume()
+        {
+            _proc.Resume();
         }
 
         /// <summary>

@@ -94,5 +94,25 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
             }
         }
+
+        /// <summary>
+        /// Gets all schemas.
+        /// </summary>
+        public IEnumerable<KeyValuePair<int, int[]>> GetAll()
+        {
+            if (_schema1 == null)
+                yield break;
+
+            yield return new KeyValuePair<int, int[]>(_schemaId1, _schema1);
+
+            if (_schema2 == null)
+                yield break;
+
+            yield return new KeyValuePair<int, int[]>(_schemaId2, _schema2);
+
+            if (_schemas != null)
+                foreach (var pair in _schemas)
+                    yield return pair;
+        }
     }
 }

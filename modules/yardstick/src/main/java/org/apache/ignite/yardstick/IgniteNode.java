@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -136,6 +137,8 @@ public class IgniteNode implements BenchmarkServer {
             cc.setWriteThrough(args.isStoreEnabled());
 
             cc.setWriteBehindEnabled(args.isWriteBehind());
+
+            BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
         }
 
         TransactionConfiguration tc = c.getTransactionConfiguration();
@@ -149,6 +152,18 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         c.setCommunicationSpi(commSpi);
+
+        if (args.getPageSize() != DatabaseConfiguration.DFLT_PAGE_SIZE) {
+            DatabaseConfiguration dbCfg = c.getDatabaseConfiguration();
+
+            if (dbCfg == null) {
+                dbCfg = new DatabaseConfiguration();
+
+                c.setDatabaseConfiguration(dbCfg);
+            }
+
+            dbCfg.setPageSize(args.getPageSize());
+        }
 
         ignite = IgniteSpring.start(c, appCtx);
 

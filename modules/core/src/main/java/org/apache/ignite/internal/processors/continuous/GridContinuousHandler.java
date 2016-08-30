@@ -116,6 +116,11 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
 
     /**
+     * Node which started routine leave topology.
+     */
+    public void onNodeLeft();
+
+    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */
@@ -154,8 +159,10 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public String cacheName();
 
     /**
+     * @param cntrsPerNode Init state partition counters for node.
      * @param cntrs Init state for partition counters.
      * @param topVer Topology version.
      */
-    public void updateCounters(AffinityTopologyVersion topVer, Map<Integer, Long> cntrs);
+    public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs);
 }

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
@@ -239,6 +240,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteInt(0);
         }
 
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log, string logInfo)
+        {
+            Debug.Assert(log != null);
+            Debug.Assert(logInfo != null);
+
+            logInfo += string.Format(", QueryEntity '{0}:{1}'", _keyTypeName ?? "", _valueTypeName ?? "");
+
+            JavaTypes.LogIndirectMappingWarning(_keyType, log, logInfo);
+            JavaTypes.LogIndirectMappingWarning(_valueType, log, logInfo);
+
+            var fields = Fields;
+            if (fields != null)
+            {
+                foreach (var field in fields)
+                    field.Validate(log, logInfo);
+            }
+        }
 
         /// <summary>
         /// Rescans the attributes in <see cref="KeyType"/> and <see cref="ValueType"/>.
@@ -314,15 +335,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
+                    // No dot notation for indexes
+                    if (attr.IsIndexed)
+                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
+                            attr.IndexGroups));
+
                     // Dot notation is required for nested SQL fields
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
                     fields.Add(new QueryField(columnName, memberInfo.Value));
-
-                    if (attr.IsIndexed)
-                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
-                            attr.IndexGroups));
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }
@@ -358,8 +380,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             if (type.IsPrimitive)
                 yield break;
 
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                               BindingFlags.DeclaredOnly;
+            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                                              BindingFlags.DeclaredOnly;
 
             while (type != typeof (object) && type != null)
             {

@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -33,9 +36,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
     /**
-     * @return Owner.
+     * Gets indexing.
+     *
+     * @return indexing.
      */
-    public IgniteH2Indexing owner();
+    public IgniteH2Indexing indexing();
+
+    /**
+     * Gets type descriptor.
+     *
+     * @return Type descriptor.
+     */
+    public GridQueryTypeDescriptor type();
+
+    /**
+     * Gets cache context for this row descriptor.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<?, ?> context();
+
+    /**
+     * @return Cache configuration.
+     */
+    public CacheConfiguration configuration();
 
     /**
      * Creates new row.
@@ -47,8 +71,14 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
+    public GridH2Row createRow(KeyCacheObject key, int part, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException;
+
+    /**
+     * @param link Link to get row for.
+     * @return Cached row.
+     */
+    public GridH2Row cachedRow(long link);
 
     /**
      * @param key Cache key.
@@ -93,7 +123,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     /**
      * @param row Deserialized offheap row to cache in heap.
      */
-    public void cache(GridH2KeyValueRowOffheap row);
+    public void cache(GridH2Row row);
 
     /**
      * @param ptr Offheap pointer to remove from cache.

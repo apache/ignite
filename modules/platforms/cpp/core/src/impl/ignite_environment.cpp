@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
+#include "ignite/impl/interop/interop_external_memory.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
@@ -53,7 +54,23 @@ namespace ignite
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
             delete ptr;
-        } 
+        }
+
+        /**
+         * Memory reallocate callback.
+         *
+         * @param target Target environment.
+         * @param memPtr Memory pointer.
+         * @param cap Required capasity.
+         */
+        void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
+        {
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+
+            mem.Get()->Reallocate(cap);
+        }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
             metaMgr(new BinaryTypeManager())
@@ -80,18 +97,20 @@ namespace ignite
             hnds.onStart = OnStart;
             hnds.onStop = OnStop;
 
+            hnds.memRealloc = MemoryReallocate;
+
             hnds.error = NULL;
 
             return hnds;
         }
-            
+
         void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
-                
+
             latch->CountDown();
         }
-        
+
         const char* IgniteEnvironment::InstanceName() const
         {
             return name;
@@ -104,7 +123,7 @@ namespace ignite
 
         SharedPointer<InteropMemory> IgniteEnvironment::AllocateMemory()
         {
-            SharedPointer<InteropMemory> ptr(new InteropUnpooledMemory(1024));
+            SharedPointer<InteropMemory> ptr(new InteropUnpooledMemory(DEFAULT_ALLOCATION_SIZE));
 
             return ptr;
         }
@@ -147,7 +166,7 @@ namespace ignite
             InteropInputStream stream(&mem);
 
             BinaryReaderImpl reader(&stream);
-            
+
             int32_t nameLen = reader.ReadString(NULL, 0);
 
             if (nameLen >= 0)

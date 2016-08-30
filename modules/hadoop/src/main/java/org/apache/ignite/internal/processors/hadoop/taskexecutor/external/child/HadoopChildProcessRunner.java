@@ -134,7 +134,7 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log);
+                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null);
 
                 job.initialize(true, nodeDesc.processId());
 
@@ -147,7 +147,7 @@ public class HadoopChildProcessRunner {
                     log.debug("External process initialized [initWaitTime=" +
                         (U.currentTimeMillis() - startTime) + ']');
 
-                initFut.onDone(null, null);
+                initFut.onDone();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize process: " + req, e);

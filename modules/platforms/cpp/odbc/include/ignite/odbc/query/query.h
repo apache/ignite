@@ -1,0 +1,119 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _IGNITE_ODBC_QUERY_QUERY
+#define _IGNITE_ODBC_QUERY_QUERY
+
+#include <stdint.h>
+
+#include <map>
+
+#include "ignite/odbc/diagnostic/diagnosable.h"
+#include "ignite/odbc/meta/column_meta.h"
+#include "ignite/odbc/common_types.h"
+#include "ignite/odbc/row.h"
+
+namespace ignite
+{
+    namespace odbc
+    {
+        namespace query
+        {
+            /**
+             * Query.
+             */
+            class Query
+            {
+            public:
+                /**
+                 * Destructor.
+                 */
+                virtual ~Query()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Execute query.
+                 *
+                 * @return True on success.
+                 */
+                virtual SqlResult Execute() = 0;
+
+                /**
+                 * Fetch next result row to application buffers.
+                 *
+                 * @param columnBindings Application buffers to put data to.
+                 * @return Operation result.
+                 */
+                virtual SqlResult FetchNextRow(app::ColumnBindingMap& columnBindings) = 0;
+
+                /**
+                 * Get data of the specified column in the result set.
+                 *
+                 * @param columnIdx Column index.
+                 * @param buffer Buffer to put column data to.
+                 * @return Operation result.
+                 */
+                virtual SqlResult GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer) = 0;
+
+                /**
+                 * Close query.
+                 *
+                 * @return True on success.
+                 */
+                virtual SqlResult Close() = 0;
+
+                /**
+                 * Get column metadata.
+                 *
+                 * @return Column metadata.
+                 */
+                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
+
+                /**
+                 * Check if data is available.
+                 *
+                 * @return True if data is available.
+                 */
+                virtual bool DataAvailable() const = 0;
+
+                /**
+                 * Get number of rows affected by the statement.
+                 *
+                 * @return Number of rows affected by the statement.
+                 */
+                virtual int64_t AffectedRows() const = 0;
+
+            protected:
+                /**
+                 * Constructor.
+                 */
+                Query(diagnostic::Diagnosable& diag) :
+                    diag(diag)
+                {
+                    // No-op.
+                }
+
+                /** Diagnostics collector. */
+                diagnostic::Diagnosable& diag;
+            };
+        }
+    }
+}
+
+#endif //_IGNITE_ODBC_QUERY_QUERY

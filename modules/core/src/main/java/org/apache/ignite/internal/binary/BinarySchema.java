@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -86,7 +89,7 @@ public class BinarySchema implements Externalizable {
      * @param schemaId Schema ID.
      * @param fieldIds Field IDs.
      */
-    private BinarySchema(int schemaId, List<Integer> fieldIds) {
+    public BinarySchema(int schemaId, List<Integer> fieldIds) {
         assert fieldIds != null;
 
         this.schemaId = schemaId;
@@ -211,6 +214,14 @@ public class BinarySchema implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinarySchema.class, this,
+            "ids", Arrays.toString(ids),
+            "names", Arrays.toString(names),
+            "idToOrderData", Arrays.toString(idToOrderData));
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         writeTo(out);
     }
@@ -258,6 +269,15 @@ public class BinarySchema implements Externalizable {
             fieldIds.add(in.readInt());
 
         initialize(fieldIds);
+    }
+
+    /**
+     * Gets field ids array.
+     *
+     * @return Field ids.
+     */
+    public int[] fieldIds() {
+        return ids;
     }
 
     /**

@@ -19,7 +19,9 @@ package org.apache.ignite.internal.binary;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -377,7 +379,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            byte[] strArr = val.getBytes(UTF_8);
+            byte[] strArr;
+
+            if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                strArr = BinaryUtils.strToUtf8Bytes(val);
+            else
+                strArr = val.getBytes(UTF_8);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
@@ -813,6 +820,38 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
                 doWriteString(val.getClass().getName());
             }
+        }
+    }
+
+    /**
+     * @param proxy Proxy.
+     */
+    public void doWriteProxy(Proxy proxy, Class<?>[] intfs) {
+        if (proxy == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+
+            out.unsafeWriteByte(GridBinaryMarshaller.PROXY);
+            out.unsafeWriteInt(intfs.length);
+
+            for (Class<?> intf : intfs) {
+                BinaryClassDescriptor desc = ctx.descriptorForClass(intf, false);
+
+                if (desc.registered())
+                    out.writeInt(desc.typeId());
+                else {
+                    out.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+
+                    doWriteString(intf.getName());
+                }
+            }
+
+            InvocationHandler ih = Proxy.getInvocationHandler(proxy);
+
+            assert ih != null;
+
+            doWriteObject(ih);
         }
     }
 

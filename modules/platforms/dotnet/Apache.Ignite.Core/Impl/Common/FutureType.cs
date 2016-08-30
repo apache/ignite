@@ -25,31 +25,31 @@ namespace Apache.Ignite.Core.Impl.Common
     [SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue", Justification = "Interoperability")]
     public enum FutureType
     {
-        /** Future type: byte. */
+        /// <summary> Future type: byte. </summary>
         Byte = 1,
 
-        /** Future type: boolean. */
+        /// <summary> Future type: boolean. </summary>
         Bool = 2,
 
-        /** Future type: short. */
+        /// <summary> Future type: short. </summary>
         Short = 3,
 
-        /** Future type: char. */
+        /// <summary> Future type: char. </summary>
         Char = 4,
 
-        /** Future type: int. */
+        /// <summary> Future type: int. </summary>
         Int = 5,
 
-        /** Future type: float. */
+        /// <summary> Future type: float. </summary>
         Float = 6,
 
-        /** Future type: long. */
+        /// <summary> Future type: long. </summary>
         Long = 7,
 
-        /** Future type: double. */
+        /// <summary> Future type: double. </summary>
         Double = 8,
 
-        /** Future type: object. */
+        /// <summary> Future type: object. </summary>
         Object = 9
     }
 }

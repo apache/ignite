@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -83,7 +84,10 @@ namespace Apache.Ignite.Core.Impl.Memory
 
         #region WRITE
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write byte.
+        /// </summary>
+        /// <param name="val">Byte value.</param>
         public void WriteByte(byte val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len1);
@@ -91,7 +95,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *(_data + curPos) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write byte array.
+        /// </summary>
+        /// <param name="val">Byte array.</param>
         public void WriteByteArray(byte[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -102,13 +109,19 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write bool.
+        /// </summary>
+        /// <param name="val">Bool value.</param>
         public void WriteBool(bool val)
         {
             WriteByte(val ? (byte)1 : (byte)0);
         }
-        
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Write bool array.
+        /// </summary>
+        /// <param name="val">Bool array.</param>
         public void WriteBoolArray(bool[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -119,7 +132,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write short.
+        /// </summary>
+        /// <param name="val">Short value.</param>
         public virtual void WriteShort(short val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len2);
@@ -127,7 +143,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((short*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write short array.
+        /// </summary>
+        /// <param name="val">Short array.</param>
         public virtual void WriteShortArray(short[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -138,7 +157,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write char.
+        /// </summary>
+        /// <param name="val">Char value.</param>
         public virtual void WriteChar(char val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len2);
@@ -146,7 +168,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((char*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write char array.
+        /// </summary>
+        /// <param name="val">Char array.</param>
         public virtual void WriteCharArray(char[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -157,7 +182,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write int.
+        /// </summary>
+        /// <param name="val">Int value.</param>
         public virtual void WriteInt(int val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len4);
@@ -165,7 +193,11 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((int*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write int to specific position.
+        /// </summary>
+        /// <param name="writePos">Position.</param>
+        /// <param name="val">Value.</param>
         [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "writePos+4")]
         public virtual void WriteInt(int writePos, int val)
         {
@@ -174,7 +206,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((int*)(_data + writePos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write int array.
+        /// </summary>
+        /// <param name="val">Int array.</param>
         public virtual void WriteIntArray(int[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -185,7 +220,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write long.
+        /// </summary>
+        /// <param name="val">Long value.</param>
         public virtual void WriteLong(long val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len8);
@@ -193,7 +231,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((long*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write long array.
+        /// </summary>
+        /// <param name="val">Long array.</param>
         public virtual void WriteLongArray(long[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -204,7 +245,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write float.
+        /// </summary>
+        /// <param name="val">Float value.</param>
         public virtual void WriteFloat(float val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len4);
@@ -212,7 +256,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((float*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write float array.
+        /// </summary>
+        /// <param name="val">Float array.</param>
         public virtual void WriteFloatArray(float[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -223,7 +270,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write double.
+        /// </summary>
+        /// <param name="val">Double value.</param>
         public virtual void WriteDouble(double val)
         {
             int curPos = EnsureWriteCapacityAndShift(Len8);
@@ -231,7 +281,10 @@ namespace Apache.Ignite.Core.Impl.Memory
             *((double*)(_data + curPos)) = val;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write double array.
+        /// </summary>
+        /// <param name="val">Double array.</param>
         public virtual void WriteDoubleArray(double[] val)
         {
             IgniteArgumentCheck.NotNull(val, "val");
@@ -242,7 +295,16 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write string.
+        /// </summary>
+        /// <param name="chars">Characters.</param>
+        /// <param name="charCnt">Char count.</param>
+        /// <param name="byteCnt">Byte count.</param>
+        /// <param name="encoding">Encoding.</param>
+        /// <returns>
+        /// Amounts of bytes written.
+        /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
@@ -251,10 +313,15 @@ namespace Apache.Ignite.Core.Impl.Memory
             
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
-            return encoding.GetBytes(chars, charCnt, _data + curPos, byteCnt);
+            return BinaryUtils.StringToUtf8Bytes(chars, charCnt, byteCnt, encoding, _data + curPos);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write arbitrary data.
+        /// </summary>
+        /// <param name="src">Source array.</param>
+        /// <param name="off">Offset</param>
+        /// <param name="cnt">Count.</param>
         public void Write(byte[] src, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(src, "src");
@@ -265,25 +332,40 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write arbitrary data.
+        /// </summary>
+        /// <param name="src">Source.</param>
+        /// <param name="cnt">Count.</param>
         public void Write(byte* src, int cnt)
         {
             CopyFromAndShift(src, cnt);
         }
-        
+
         #endregion WRITE
-        
+
         #region READ
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read byte.
+        /// </summary>
+        /// <returns>
+        /// Byte value.
+        /// </returns>
         public byte ReadByte()
         {
             int curPos = EnsureReadCapacityAndShift(Len1);
 
             return *(_data + curPos);
         }
-
-        /** <inheritdoc /> */
+        
+        /// <summary>
+        /// Read byte array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Byte array.
+        /// </returns>
         public byte[] ReadByteArray(int cnt)
         {
             int curPos = EnsureReadCapacityAndShift(cnt);
@@ -297,14 +379,25 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             return res;
         }
-        
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Read bool.
+        /// </summary>
+        /// <returns>
+        /// Bool value.
+        /// </returns>
         public bool ReadBool()
         {
             return ReadByte() == 1;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read bool array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Bool array.
+        /// </returns>
         public bool[] ReadBoolArray(int cnt)
         {
             bool[] res = new bool[cnt];
@@ -317,7 +410,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read short.
+        /// </summary>
+        /// <returns>
+        /// Short value.
+        /// </returns>
         public virtual short ReadShort()
         {
             int curPos = EnsureReadCapacityAndShift(Len2);
@@ -325,7 +423,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return *((short*)(_data + curPos));
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read short array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Short array.
+        /// </returns>
         public virtual short[] ReadShortArray(int cnt)
         {
             short[] res = new short[cnt];
@@ -338,7 +442,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read char.
+        /// </summary>
+        /// <returns>
+        /// Char value.
+        /// </returns>
         public virtual char ReadChar()
         {
             int curPos = EnsureReadCapacityAndShift(Len2);
@@ -346,7 +455,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return *((char*)(_data + curPos));
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read char array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Char array.
+        /// </returns>
         public virtual char[] ReadCharArray(int cnt)
         {
             char[] res = new char[cnt];
@@ -359,15 +474,26 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read int.
+        /// </summary>
+        /// <returns>
+        /// Int value.
+        /// </returns>
         public virtual int ReadInt()
         {
             int curPos = EnsureReadCapacityAndShift(Len4);
 
             return *((int*)(_data + curPos));
         }
-        
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Read int array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Int array.
+        /// </returns>
         public virtual int[] ReadIntArray(int cnt)
         {
             int[] res = new int[cnt];
@@ -380,15 +506,26 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read long.
+        /// </summary>
+        /// <returns>
+        /// Long value.
+        /// </returns>
         public virtual long ReadLong()
         {
             int curPos = EnsureReadCapacityAndShift(Len8);
 
             return *((long*)(_data + curPos));
         }
-        
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Read long array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Long array.
+        /// </returns>
         public virtual long[] ReadLongArray(int cnt)
         {
             long[] res = new long[cnt];
@@ -401,7 +538,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read float.
+        /// </summary>
+        /// <returns>
+        /// Float value.
+        /// </returns>
         public virtual float ReadFloat()
         {
             int curPos = EnsureReadCapacityAndShift(Len4);
@@ -409,7 +551,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return *((float*)(_data + curPos));
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read float array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Float array.
+        /// </returns>
         public virtual float[] ReadFloatArray(int cnt)
         {
             float[] res = new float[cnt];
@@ -422,7 +570,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read double.
+        /// </summary>
+        /// <returns>
+        /// Double value.
+        /// </returns>
         public virtual double ReadDouble()
         {
             int curPos = EnsureReadCapacityAndShift(Len8);
@@ -430,7 +583,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return *((double*)(_data + curPos));
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read double array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Double array.
+        /// </returns>
         public virtual double[] ReadDoubleArray(int cnt)
         {
             double[] res = new double[cnt];
@@ -443,7 +602,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read arbitrary data.
+        /// </summary>
+        /// <param name="dest">Destination array.</param>
+        /// <param name="off">Offset.</param>
+        /// <param name="cnt">Count.</param>
         public void Read(byte[] dest, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(dest, "dest");
@@ -454,7 +618,11 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read arbitrary data.
+        /// </summary>
+        /// <param name="dest">Destination.</param>
+        /// <param name="cnt">Count.</param>
         public void Read(byte* dest, int cnt)
         {
             CopyToAndShift(dest, cnt);
@@ -516,7 +684,19 @@ namespace Apache.Ignite.Core.Impl.Memory
             _pos = 0;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Seek to the given positoin.
+        /// </summary>
+        /// <param name="offset">Offset.</param>
+        /// <param name="origin">Seek origin.</param>
+        /// <returns>
+        /// Position.
+        /// </returns>
+        /// <exception cref="System.ArgumentException">
+        /// Unsupported seek origin:  + origin
+        /// or
+        /// Seek before origin:  + newPos
+        /// </exception>
         public int Seek(int offset, SeekOrigin origin)
         {
             int newPos;
@@ -651,26 +831,41 @@ namespace Apache.Ignite.Core.Impl.Memory
             return newCap;
         }
 
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Position.
+        /// </summary>
         public int Position
         {
             get { return _pos; }
         }
 
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Gets remaining bytes in the stream.
+        /// </summary>
+        /// <value>
+        /// Remaining bytes.
+        /// </value>
         public int Remaining
         {
             get { return _len - _pos; }
         }
 
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /** <inheritdoc /> */
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="PlatformMemoryStream"/> class.
+        /// </summary>
         ~PlatformMemoryStream()
         {
             Dispose(false);
@@ -698,14 +893,24 @@ namespace Apache.Ignite.Core.Impl.Memory
         #endregion
 
         #region ARRAYS
-
-        /** <inheritdoc /> */
+        
+        /// <summary>
+        /// Gets underlying array, avoiding copying if possible.
+        /// </summary>
+        /// <returns>
+        /// Underlying array.
+        /// </returns>
         public byte[] GetArray()
         {
             return GetArrayCopy();
         }
-
-        /** <inheritdoc /> */
+        
+        /// <summary>
+        /// Gets underlying data in a new array.
+        /// </summary>
+        /// <returns>
+        /// New array with data.
+        /// </returns>
         public byte[] GetArrayCopy()
         {
             byte[] res = new byte[_mem.Length];
@@ -718,7 +923,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return res;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Check whether array passed as argument is the same as the stream hosts.
+        /// </summary>
+        /// <param name="arr">Array.</param>
+        /// <returns>
+        ///   <c>True</c> if they are same.
+        /// </returns>
         public bool IsSameArray(byte[] arr)
         {
             return false;

@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.ExamplesDll.Compute;
-
 namespace Apache.Ignite.Examples.Compute
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
     using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Compute;
 
     /// <summary>
     /// Example demonstrating task execution.
@@ -35,7 +34,7 @@ namespace Apache.Ignite.Examples.Compute
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class TaskExample
@@ -46,13 +45,7 @@ namespace Apache.Ignite.Examples.Compute
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Task execution example started.");
@@ -85,7 +78,7 @@ namespace Apache.Ignite.Examples.Compute
         /// <returns>Collection of employees.</returns>
         private static ICollection<Employee> Employees()
         {
-            return new []
+            return new[]
             {
                 new Employee(
                     "James Wilson",

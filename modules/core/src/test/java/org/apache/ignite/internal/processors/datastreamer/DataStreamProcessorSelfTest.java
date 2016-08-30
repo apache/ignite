@@ -372,7 +372,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                         assertNotNull("Missing entry for key: " + key, entry);
                         assertEquals(new Integer((key < 100 ? -1 : key)),
-                            CU.value(entry.rawGetOrUnmarshal(false), cache0.context(), false));
+                            CU.value(entry.rawGet(), cache0.context(), false));
                     }
                 }
             }

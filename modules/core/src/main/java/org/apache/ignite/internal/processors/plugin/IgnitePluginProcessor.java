@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridPluginContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.Extension;
@@ -184,19 +183,6 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                     U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
             }
         }
-    }
-
-    /**
-     * @param ctx Cache context.
-     */
-    public void onBeforeCacheStart(GridCacheContext<?, ?> ctx) {
-        for (PluginProvider provider : plugins.values())
-            provider.onBeforeCacheStart(ctx);
-    }
-
-    public void onAfterCacheStop(GridCacheContext<?, ?> ctx) {
-        for (PluginProvider provider : plugins.values())
-            provider.onAfterCacheStop(ctx);
     }
 
     /**

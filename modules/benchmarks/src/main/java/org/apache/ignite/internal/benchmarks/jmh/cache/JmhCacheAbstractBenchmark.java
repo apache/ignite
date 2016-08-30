@@ -58,6 +58,9 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     /** Default amount of nodes. */
     protected static final int DFLT_DATA_NODES = 1;
 
+    /** Items count. */
+    protected static final int CNT = 100000;
+
     /** IP finder shared across nodes. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

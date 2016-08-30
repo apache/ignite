@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,7 +50,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -101,8 +101,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         if (testClientNode() && getTestGridName(0).equals(gridName))
             cfg.setClientMode(true);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -411,7 +409,14 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
                     cmp.set(barrier);
 
-                    barrier.await(60_000, TimeUnit.MILLISECONDS);
+                    try {
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
+                    }
+                    catch (TimeoutException e) {
+                        U.dumpThreads(log);
+
+                        fail("Failed to check cache content: " + e);
+                    }
 
                     log.info("Cache content check done.");
 

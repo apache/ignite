@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -170,6 +169,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
+
+            Assert.AreNotEqual(key1, key2);
 
             ContinuousQuery<int, BinarizableEntry> qry =
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
@@ -938,12 +939,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             CallbackEvent evt;
 
             Assert.IsTrue(CB_EVTS.TryTake(out evt, timeout));
+            Assert.AreEqual(0, CB_EVTS.Count);
 
-            Assert.AreEqual(1, evt.entries.Count);
+            var e = evt.entries.Single();
 
-            Assert.AreEqual(expKey, evt.entries.First().Key);
-            Assert.AreEqual(expOldVal, evt.entries.First().OldValue);
-            Assert.AreEqual(expVal, evt.entries.First().Value);
+            Assert.AreEqual(expKey, e.Key);
+            Assert.AreEqual(expOldVal, e.OldValue);
+            Assert.AreEqual(expVal, e.Value);
         }
 
         /// <summary>
@@ -992,20 +994,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             List<int> keys = new List<int>(cnt);
 
-            for (int i = startFrom; i < startFrom + 100000; i++)
-            {
-                if (aff.IsPrimary(node, i))
+            Assert.IsTrue(
+                TestUtils.WaitForCondition(() =>
                 {
-                    keys.Add(i);
+                    for (int i = startFrom; i < startFrom + 100000; i++)
+                    {
+                        if (aff.IsPrimary(node, i))
+                        {
+                            keys.Add(i);
 
-                    if (keys.Count == cnt)
-                        return keys;
-                }
-            }
+                            if (keys.Count == cnt)
+                                return true;
+                        }
+                    }
 
-            Assert.Fail("Failed to find " + cnt + " primary keys.");
+                    return false;
+                }, 5000), "Failed to find " + cnt + " primary keys.");
 
-            return null;
+
+            return keys;
         }
 
         /// <summary>
@@ -1049,6 +1056,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             public override bool Equals(object obj)
             {
                 return obj != null && obj is BinarizableEntry && ((BinarizableEntry)obj).val == val;
+            }
+
+            /** <inheritDoc /> */
+            public override string ToString()
+            {
+                return string.Format("BinarizableEntry [Val: {0}]", val);
             }
         }
 

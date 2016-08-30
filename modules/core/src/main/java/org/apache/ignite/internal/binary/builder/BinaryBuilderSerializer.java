@@ -50,6 +50,18 @@ class BinaryBuilderSerializer {
      * @param val Value.
      */
     public void writeValue(BinaryWriterExImpl writer, Object val) {
+        writeValue(writer, val, false, false);
+    }
+
+    /**     *
+     * @param writer Writer.
+     * @param val Value.
+     * @param forceCol Whether to force collection type.
+     * @param forceMap Whether to force map type.
+     */
+    public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
+        assert !(forceCol && forceMap);
+
         if (val == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
 
@@ -113,7 +125,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Collection) {
+        if (forceCol || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
@@ -129,7 +141,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Map) {
+        if (forceMap || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);

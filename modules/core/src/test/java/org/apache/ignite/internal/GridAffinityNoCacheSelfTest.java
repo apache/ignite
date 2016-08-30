@@ -101,12 +101,14 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @param key Key.
      */
-    private void checkAffinityImplCacheDeleted(Object key) {
+    private void checkAffinityImplCacheDeleted(Object key) throws InterruptedException {
         IgniteEx grid = grid(0);
 
         final String cacheName = "cacheToBeDeleted";
 
         grid(1).getOrCreateCache(cacheName);
+
+        awaitPartitionMapExchange();
 
         Affinity<Object> affinity = grid.affinity(cacheName);
 
@@ -116,7 +118,9 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         grid.cache(cacheName).destroy();
 
-        assertAffinityMethodsException(affinity, key, n);
+        awaitPartitionMapExchange();
+
+        assertAffinityMethodsException(grid.affinity(cacheName), key, n);
     }
 
     /**
@@ -263,6 +267,12 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
+            final CacheObjectContext ctx) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             throw new UnsupportedOperationException();
         }
@@ -285,6 +295,11 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
