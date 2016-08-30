@@ -39,7 +39,6 @@ namespace ignite
                  */
                 class IGNITE_IMPORT_EXPORT QueryBatch
                 {
-                    typedef common::concurrent::SharedPointer<IgniteEnvironment> EnvironmentSharedPtr;
                     typedef common::concurrent::SharedPointer<interop::InteropMemory> MemorySharedPtr;
 
                 public:
@@ -49,7 +48,7 @@ namespace ignite
                      * @param env Environment.
                      * @param mem Batch memory.
                      */
-                    QueryBatch(EnvironmentSharedPtr env, MemorySharedPtr mem) :
+                    QueryBatch(IgniteEnvironment& env, MemorySharedPtr mem) :
                         env(env),
                         mem(mem),
                         stream(mem.Get()),
@@ -122,7 +121,7 @@ namespace ignite
 
                 private:
                     /** Environment. */
-                    EnvironmentSharedPtr env;
+                    IgniteEnvironment& env;
 
                     /** Memomy containing the batch. */
                     MemorySharedPtr mem;
