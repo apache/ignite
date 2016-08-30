@@ -270,14 +270,22 @@ namespace Apache.Ignite.AspNet
         /// <param name="lockId">The lock identifier for the current request.</param>
         /// <param name="newItem">true to identify the session item as a new item; false to identify the session 
         /// item as an existing item.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item,
             object lockId, bool newItem)
         {
             Log("SetAndReleaseItemExclusive", id, context);
 
-            // This will put unlocked item, no need to release separately.
+            Debug.Assert(item != null);
+
+            var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
+
+            var data = ((IgniteSessionStateStoreData) item).Data;
+
+            data.LockNodeId = null;  // Unlock
+
             // TODO: Send only delta!
-            PutSessionStateStoreData(id, item);
+            cache[GetKey(id)] = data;
         }
 
         /// <summary>
@@ -337,9 +345,11 @@ namespace Apache.Ignite.AspNet
         {
             Log("CreateUninitializedItem", id, context, timeout);
 
-            var item = CreateNewStoreData(context, timeout);
+            var cache = _expiryCacheHolder.GetCacheWithExpiry((long) timeout * 60);
 
-            PutSessionStateStoreData(id, item);
+            var data = new BinarizableSessionStateStoreData();
+
+            cache[GetKey(id)] = data;
         }
 
         /// <summary>
@@ -373,23 +383,6 @@ namespace Apache.Ignite.AspNet
         private string GetKey(string sessionId)
         {
             return _applicationId == null ? sessionId : ApplicationId + "." + sessionId;
-        }
-
-        /// <summary>
-        /// Puts the session state store data to the Ignite cache with expiry.
-        /// </summary>
-        private void PutSessionStateStoreData(string id, SessionStateStoreData item)
-        {
-            Debug.Assert(item != null);
-
-            var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
-
-            var data = ((IgniteSessionStateStoreData) item).Data;
-
-            // Always put unlocked item. Only GetItemExclusive can lock an existing item.
-            data.LockNodeId = null;
-
-            cache[GetKey(id)] = data;
         }
 
         /// <summary>
