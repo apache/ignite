@@ -1071,6 +1071,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
         GridCacheContext ctx = cache.context();
 
+        if (!cache.isNear() && ctx.shared().wal() != null) {
+            try {
+                ctx.shared().wal().fsync(null);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to flush write-ahead log on cache stop " +
+                    "[cache=" + ctx.name() + "]", e);
+            }
+        }
+
         sharedCtx.removeCacheContext(ctx);
 
         cache.stop();
@@ -1109,6 +1119,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
+
+        ctx.kernalContext().cache().context().database().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 

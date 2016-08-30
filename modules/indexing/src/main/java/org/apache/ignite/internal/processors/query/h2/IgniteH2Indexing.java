@@ -2809,7 +2809,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 //            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
             preferSwapVal = true;
 
-            snapshotableIdx = schema.ccfg.isSnapshotableIndex() || schema.offheap != null;
+            // Index is not snapshotable in db-x.
+            snapshotableIdx = false;
         }
 
         /** {@inheritDoc} */
