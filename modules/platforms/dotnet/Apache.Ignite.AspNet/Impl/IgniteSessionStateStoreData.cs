@@ -27,10 +27,16 @@ namespace Apache.Ignite.AspNet.Impl
     /// </summary>
     internal class IgniteSessionStateStoreData : SessionStateStoreData
     {
+        /** */
         private readonly BinarizableSessionStateStoreData _data;
 
+        /** */
         private readonly IgniteSessionStateItemCollection _items;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteSessionStateStoreData"/> class.
+        /// </summary>
+        /// <param name="data">The data.</param>
         public IgniteSessionStateStoreData(BinarizableSessionStateStoreData data) 
             : base(null, DeserializeStaticObjects(data.StaticObjects), 0)
         {
@@ -38,28 +44,43 @@ namespace Apache.Ignite.AspNet.Impl
             _items = new IgniteSessionStateItemCollection(_data.Items);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteSessionStateStoreData"/> class.
+        /// </summary>
+        /// <param name="staticObjects">The static objects.</param>
+        /// <param name="timeout">The timeout.</param>
         public IgniteSessionStateStoreData(HttpStaticObjectsCollection staticObjects, int timeout) 
             : base(null, staticObjects, 0)
         {
-            // TODO: Copy statics
             _data = new BinarizableSessionStateStoreData
             {
                 Timeout = timeout
             };
+
             _items = new IgniteSessionStateItemCollection(_data.Items);
         }
 
+        /// <summary>
+        /// The session variables and values for the current session.
+        /// </summary>
         public override ISessionStateItemCollection Items
         {
             get { return _items; }
         }
 
+        /// <summary>
+        /// Gets and sets the amount of time, in minutes, allowed between requests before the session-state 
+        /// provider terminates the session.
+        /// </summary>
         public override int Timeout
         {
             get { return _data.Timeout; }
             set { _data.Timeout = value; }
         }
 
+        /// <summary>
+        /// Gets the data.
+        /// </summary>
         public BinarizableSessionStateStoreData Data
         {
             get
@@ -70,6 +91,9 @@ namespace Apache.Ignite.AspNet.Impl
             }
         }
 
+        /// <summary>
+        /// Deserializes the static objects.
+        /// </summary>
         private static HttpStaticObjectsCollection DeserializeStaticObjects(byte[] bytes)
         {
             if (bytes == null)
@@ -82,6 +106,9 @@ namespace Apache.Ignite.AspNet.Impl
             }
         }
 
+        /// <summary>
+        /// Serializes the static objects.
+        /// </summary>
         private byte[] SerializeStaticObjects()
         {
             if (StaticObjects == null)
@@ -96,36 +123,5 @@ namespace Apache.Ignite.AspNet.Impl
             }
 
         }
-
-        //public static byte[] Serialize(SessionStateStoreData data)
-        //{
-        //    Debug.Assert(data != null);
-
-        //    using (var stream = new MemoryStream())
-        //    using (var writer = new BinaryWriter(stream))
-        //    {
-        //        writer.Write(data.Timeout);
-
-        //        var items = data.Items as SessionStateItemCollection;
-
-        //        if (items != null)
-        //        {
-        //            writer.Write(true);
-        //            items.Serialize(writer);
-        //        }
-        //        else
-        //            writer.Write(false);
-
-        //        if (data.StaticObjects != null)
-        //        {
-        //            writer.Write(true);
-        //            data.StaticObjects.Serialize(writer);
-        //        }
-        //        else
-        //            writer.Write(false);
-
-        //        return stream.ToArray();
-        //    }
-        //}
     }
 }

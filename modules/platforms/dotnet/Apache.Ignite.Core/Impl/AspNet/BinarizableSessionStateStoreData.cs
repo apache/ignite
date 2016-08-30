@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.AspNet
 {
+    using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
@@ -37,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.AspNet
         internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
         {
             Timeout = reader.ReadInt();
+            LockNodeId = reader.ReadGuid() ?? Guid.Empty;
+            LockThreadId = reader.ReadInt();
+            LockTime = reader.ReadTimestamp() ?? DateTime.UtcNow;
             _items = new KeyValueDirtyTrackedCollection(reader);
             StaticObjects = reader.ReadByteArray();
         }
@@ -48,6 +52,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         {
             _items = new KeyValueDirtyTrackedCollection();
             StaticObjects = null;
+            LockTime = DateTime.UtcNow;
         }
 
         /// <summary>
@@ -69,6 +74,21 @@ namespace Apache.Ignite.Core.Impl.AspNet
         public int Timeout { get; set; }
 
         /// <summary>
+        /// Gets or sets the lock node identifier.
+        /// </summary>
+        public Guid LockNodeId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the lock thread identifier.
+        /// </summary>
+        public int LockThreadId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the lock time.
+        /// </summary>
+        public DateTime LockTime { get; set; }
+
+        /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
@@ -77,6 +97,9 @@ namespace Apache.Ignite.Core.Impl.AspNet
             var raw = (IBinaryRawWriter) writer;
 
             raw.WriteInt(Timeout);
+            raw.WriteGuid(LockNodeId);
+            raw.WriteInt(LockThreadId);
+            raw.WriteTimestamp(LockTime);
             Items.WriteBinary(writer);
             raw.WriteByteArray(StaticObjects);
         }
