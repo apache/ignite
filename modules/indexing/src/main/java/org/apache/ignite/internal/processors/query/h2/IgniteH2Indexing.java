@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -341,7 +342,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 c = DriverManager.getConnection(dbUrl);
             }
             catch (SQLException e) {
-                throw new IgniteException("Failed to initialize DB connection: " + dbUrl, e);
+                throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
             }
 
             conns.add(c);
@@ -467,7 +468,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 c.schema(schema);
             }
             catch (SQLException e) {
-                throw new IgniteCheckedException("Failed to set schema for DB connection for thread [schema=" +
+                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
                     schema + "]", e);
             }
             finally {
@@ -522,7 +523,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new IgniteCheckedException("Failed to execute statement: " + sql, e);
+            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
@@ -762,7 +763,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new IgniteCheckedException("Failed to drop database index table [type=" + tbl.type().name() +
+            throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", e);
         }
         finally {
@@ -815,7 +816,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     meta = meta(rs.getMetaData());
                 }
                 catch (SQLException e) {
-                    throw new IgniteCheckedException("Failed to get meta data.", e);
+                    throw new IgniteSQLException("Failed to get meta data.", e);
                 }
             }
 
@@ -847,7 +848,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        throw new IgniteCheckedException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
+        throw createSqlException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys),
+            ErrorCode.CONCURRENT_UPDATE_1);
     }
 
     /**
@@ -877,7 +879,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 prepStmt = (JdbcPreparedStatement) conn.prepareStatement(qry);
             }
             catch (SQLException e) {
-                throw new IgniteCheckedException(e);
+                onSqlException();
+
+                throw new IgniteSQLException(e);
             }
 
             Prepared p = GridSqlQueryParser.prepared(prepStmt);
@@ -893,7 +897,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridSqlQuerySplitter.collectAllGridTablesInTarget(into, tbls);
 
                 if (tbls.size() != 1)
-                    throw new CacheException("Failed to determine target table for MERGE or INSERT");
+                    throw createSqlException("Failed to determine target table for MERGE or INSERT",
+                        ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
                 GridSqlTable tbl = tbls.iterator().next();
 
@@ -1022,7 +1027,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             stmt = prepareStatement(conn, sql, useStmtCache);
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+            throw new IgniteSQLException("Failed to parse SQL query: " + sql, e);
         }
 
         switch (commandType(stmt)) {
@@ -1041,7 +1046,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return stmt.executeQuery();
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to execute SQL query.", e);
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute SQL query.", e);
         }
     }
 
@@ -1247,7 +1254,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteCheckedException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+                throw createSqlException("Duplicate key during INSERT [key=" + t.getKey() + ']',
+                    ErrorCode.DUPLICATE_KEY_1);
         }
         else {
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>(ins.rows().size());
@@ -1264,7 +1272,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!F.isEmpty(res)) {
                 Object[] errKeys = res.keySet().toArray();
 
-                throw new IgniteCheckedException("Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']');
+                throw createSqlException("Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']',
+                    ErrorCode.DUPLICATE_KEY_1);
             }
 
             return rows.size();
@@ -1291,8 +1300,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, GridSqlElement[] row, Object[] params)
         throws IgniteCheckedException {
         for (GridSqlElement rowEl : row)
-            X.ensureX(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter,
-                "SQL INSERT and MERGE statements support const values and params only");
+            if (!(rowEl instanceof GridSqlConst || rowEl instanceof GridSqlParameter))
+                throw new IgniteSQLException("SQL INSERT and MERGE statements support const values and params only");
 
         Object[] rowValues = new Object[cols.length];
 
@@ -1302,8 +1311,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object key = keySupplier.apply(rowValues);
         Object val = valSupplier.apply(rowValues);
 
-        X.ensureX(key != null, "Key for INSERT or MERGE must not be null");
-        X.ensureX(val != null, "Value for INSERT or MERGE must not be null");
+        if (key == null)
+            throw createSqlException("Key for INSERT or MERGE must not be null", ErrorCode.NULL_NOT_ALLOWED);
+
+        if (val == null)
+            throw createSqlException("Value for INSERT or MERGE must not be null", ErrorCode.NULL_NOT_ALLOWED);
 
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
@@ -1524,7 +1536,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
-            throw new CacheException("Failed to find SQL table for type: " + type.name());
+            throw createSqlException("Failed to find SQL table for type: " + type.name(), ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         String sql = generateQuery(qry, tbl);
 
@@ -1568,7 +1580,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         TableDescriptor tblDesc = tableDescriptor(type, space);
 
         if (tblDesc == null)
-            throw new CacheException("Failed to find SQL table for type: " + type);
+            throw createSqlException("Failed to find SQL table for type: " + type, ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         String sql;
 
@@ -1640,19 +1652,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (items == 0)
                     return r.get1();
                 else {
-                    X.ensureX(!r.get1().isResultSet(), "Unexpected result set in results of UPDATE or DELETE");
+                    if (r.get1().isResultSet())
+                        throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
+
                     int cnt = (Integer) r.get1().getAll().get(0).get(0);
                     return QueryCursorImpl.forUpdateResult(items + cnt);
                 }
             }
             else {
-                X.ensureX(!r.get1().isResultSet(), "Unexpected result set in results of UPDATE or DELETE");
+                if (r.get1().isResultSet())
+                    throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
+
                 items += (Integer) r.get1().getAll().get(0).get(0);
                 errKeys = r.get2();
             }
         }
 
-        throw new IgniteCheckedException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys));
+        throw createSqlException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys),
+            ErrorCode.CONCURRENT_UPDATE_1);
     }
 
     /**
@@ -1717,7 +1734,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             cachesCreated = true;
                         }
                         else
-                            throw new CacheException("Failed to parse query: " + sqlQry, e);
+                            throw new IgniteSQLException("Failed to parse query: " + sqlQry, e.getSQLState(),
+                                e.getErrorCode());
                     }
                 }
             }
@@ -1778,7 +1796,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Arrays.deepToString(qry.getArgs()) + "]", e);
             }
             catch (SQLException e) {
-                throw new CacheException(e);
+                throw new IgniteSQLException(e);
             }
             finally {
                 U.close(stmt, log);
@@ -1832,14 +1850,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridSqlQuerySplitter.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
-            throw new CacheException("Failed to determine target table for UPDATE");
+            throw createSqlException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
         if (updateAffectsKeyColumns(gridTbl, update.set().keySet()))
-            throw new CacheException("SQL UPDATE can't modify key or its fields directly");
+            throw createSqlException("SQL UPDATE can't modify key or its fields directly", ErrorCode.COLUMN_NOT_FOUND_1);
     }
 
     /**
@@ -1922,14 +1940,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             tbl = target.child(0);
 
         if (tbl == null)
-            throw new CacheException("Failed to determine target table for UPDATE");
+            throw createSqlException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         GridH2Table gridTbl = tbl.dataTable();
 
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
         if (desc == null)
-            throw new CacheException("Row descriptor undefined for table '" + gridTbl.getName() + "'");
+            throw createSqlException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+                ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         Class<?> valCls = U.classForName(desc.type().valueTypeName(), null);
 
@@ -1965,7 +1984,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     newVal = GridUnsafe.allocateInstance(valCls);
                 }
                 catch (InstantiationException ex) {
-                    throw new IgniteCheckedException("Failed to perform SQL UPDATE", ex);
+                    throw new IgniteSQLException("Failed to perform SQL UPDATE", ex);
                 }
 
             // Skip key and value - that's why we start off with 2nd column
@@ -2810,7 +2829,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new IgniteCheckedException(e);
+            throw new IgniteSQLException(e);
         }
     }
 
@@ -3944,5 +3963,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface Supplier extends GridPlainClosure<Object[], Object> {
         // No-op.
+    }
+
+    /**
+     * Create an {@link IgniteSQLException} bearing details meaningful to JDBC for more detailed
+     * exceptions in the driver.
+     *
+     * @param msg Message.
+     * @param code H2 status code.
+     * @return {@link IgniteSQLException} with given details.
+     * @see ErrorCode
+     */
+    private static IgniteSQLException createSqlException(String msg, int code) {
+        return new IgniteSQLException(msg, ErrorCode.getState(code), code);
     }
 }

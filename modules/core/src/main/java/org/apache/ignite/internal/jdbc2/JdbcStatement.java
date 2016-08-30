@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -124,6 +125,9 @@ public class JdbcStatement implements Statement {
 
             return rs;
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
         }
@@ -167,6 +171,9 @@ public class JdbcStatement implements Statement {
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             return updateCnt = updateCounterFromQueryResult(qryRes);
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
         }
         catch (SQLException e) {
             throw  e;
@@ -338,6 +345,9 @@ public class JdbcStatement implements Statement {
                 updateCnt = updateCounterFromQueryResult(res);
 
             return res.isQuery();
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
         }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
