@@ -47,7 +47,7 @@ public interface PageStore {
      * @param pageBuf Page buffer to read into.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public void read(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.
@@ -64,7 +64,7 @@ public interface PageStore {
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.
