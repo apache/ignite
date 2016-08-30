@@ -45,8 +45,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Initializes the cache from configuration.
         /// </summary>
-        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType,
-            bool forceTransactional = false)
+        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType)
         {
             Debug.Assert(config != null);
             Debug.Assert(callerType != null);
@@ -66,16 +65,7 @@ namespace Apache.Ignite.AspNet.Impl
 
                 var cacheConfiguration = new CacheConfiguration(cacheName);
 
-                if (forceTransactional)
-                    cacheConfiguration.AtomicityMode = CacheAtomicityMode.Transactional;
-
-                var cache = grid.GetOrCreateCache<TK, TV>(cacheConfiguration);
-
-                if (forceTransactional && cache.GetConfiguration().AtomicityMode != CacheAtomicityMode.Transactional)
-                    throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
-                        "Failed to initialize {0}: CacheAtomicityMode.Transactional mode is required.", callerType));
-
-                return cache;
+                return grid.GetOrCreateCache<TK, TV>(cacheConfiguration);
             }
             catch (Exception ex)
             {
