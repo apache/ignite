@@ -226,15 +226,38 @@ struct OdbcFetchBenchmark
         SQLRETURN ret;
 
         ret = SQLBindCol(stmt, 1, SQL_C_STINYINT, &i8Field, 0, 0);
-        ret = SQLBindCol(stmt, 2, SQL_C_SSHORT, &i16Field, 0, 0);
-        ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &i32Field, 0, 0);
-        ret = SQLBindCol(stmt, 4, SQL_C_SBIGINT, &i64Field, 0, 0);
-        ret = SQLBindCol(stmt, 5, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
-        ret = SQLBindCol(stmt, 6, SQL_C_FLOAT, &floatField, 0, 0);
-        ret = SQLBindCol(stmt, 7, SQL_C_DOUBLE, &doubleField, 0, 0);
-        ret = SQLBindCol(stmt, 8, SQL_C_DATE, &dateField, 0, 0);
-        ret = SQLBindCol(stmt, 9, SQL_C_TIMESTAMP, &timestampField, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
 
+        ret = SQLBindCol(stmt, 2, SQL_C_SSHORT, &i16Field, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &i32Field, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 4, SQL_C_SBIGINT, &i64Field, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 5, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 6, SQL_C_FLOAT, &floatField, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 7, SQL_C_DOUBLE, &doubleField, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 8, SQL_C_DATE, &dateField, 0, 0);
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt);
+
+        ret = SQLBindCol(stmt, 9, SQL_C_TIMESTAMP, &timestampField, 0, 0);
         if (!SQL_SUCCEEDED(ret))
             ThrowOdbcError(SQL_HANDLE_STMT, stmt);
 
@@ -317,7 +340,15 @@ private:
 
 int main()
 {
-    IGNITE_RUN_BENCHMARK(OdbcFetchBenchmark<10000>, 10, 10);
+    enum { rows = 10000 };
+
+    boost::chrono::milliseconds res = IGNITE_RUN_BENCHMARK(OdbcFetchBenchmark<rows>, 10, 10);
+
+    double rate = static_cast<double>(res.count());
+
+    rate /= boost::chrono::milliseconds(1000).count();
+
+    std::cout << ">>> Operations / second: " << (rows / rate) << std::endl;
 
     return 0;
 }

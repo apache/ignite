@@ -63,8 +63,10 @@ namespace ignite
     }
 
     template<typename T, typename D>
-    void RunBenchmark(const std::string& name, unsigned repeats, unsigned warmupRepeats = 5)
+    D RunBenchmark(const std::string& name, unsigned repeats, unsigned warmupRepeats = 5)
     {
+        D res;
+
         std::cout << std::endl;
         std::cout << ">>> Running benchmark " << name << "..." << std::endl;
         std::cout << std::endl;
@@ -91,7 +93,7 @@ namespace ignite
             std::cout << ">>> Repeats count: " << repeats << '.' << std::endl;
             std::cout << std::endl;
 
-            D res = Benchmark<T, D>(test, repeats);
+            res = Benchmark<T, D>(test, repeats);
 
             std::cout << ">>> Finished. Execution took " << res.count() << " " << UnitTitle<D>() << '.' << std::endl;
             std::cout << std::endl;
@@ -109,7 +111,7 @@ namespace ignite
             std::cerr << "Unknown error." << std::endl;
         }
 
-        std::cout << std::endl;
+        return res;
     }
 };
 
