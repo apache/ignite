@@ -69,6 +69,26 @@ namespace Apache.Ignite.Core.Impl.Collections
             get { return false; }
         }
 
+        public object this[object key]
+        {
+            get
+            {
+                var entry = _dict[key];
+
+                entry.IsDirty = true;
+
+                return entry.Value;
+            }
+            set
+            {
+                var entry = _dict[key];
+
+                entry.IsDirty = true;
+
+                entry.Value = key;
+            }
+        }
+
         public void WriteBinary(IBinaryWriter writer)
         {
             throw new NotImplementedException();
