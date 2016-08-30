@@ -76,8 +76,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -474,6 +474,7 @@ public class GridReduceQueryExecutor {
      * @param enforceJoinOrder Enforce join order of tables.
      * @return Cursor.
      */
+    @SuppressWarnings("unchecked")
     public Iterator<List<?>> query(
         GridCacheContext<?, ?> cctx,
         GridCacheTwoStepQuery qry,
@@ -693,7 +694,7 @@ public class GridReduceQueryExecutor {
                             else {
                                 int res = h2.executeSqlUpdateQuery(cctx, qry);
 
-                                return new UpdateResIter(res);
+                                return new IgniteSingletonIterator(Collections.singletonList(res));
                             }
                         }
                         finally {
@@ -1365,26 +1366,4 @@ public class GridReduceQueryExecutor {
         }
     }
 
-    /**
-     * Trivial iterator to return number of items affected by modifying query operation.
-     */
-    public static class UpdateResIter extends GridCloseableIteratorAdapter<List<?>> {
-        /** */
-        private final Iterator<List> it;
-
-        /** */
-        public UpdateResIter(int res) {
-            it = Collections.singletonList((List)Collections.singletonList(res)).iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            return it.hasNext();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<?> onNext() throws IgniteCheckedException {
-            return it.next();
-        }
-    }
 }
