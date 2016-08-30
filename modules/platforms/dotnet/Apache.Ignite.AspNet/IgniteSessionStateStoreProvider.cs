@@ -416,6 +416,7 @@ namespace Apache.Ignite.AspNet
         private class LockEntryProcessor :
             ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
         {
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
             {
                 // Arg contains lock info: node id + thread id
@@ -457,6 +458,7 @@ namespace Apache.Ignite.AspNet
         private class ReleaseLockEntryProcessor :
             ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
         {
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
             {
                 var val = entry.Value;

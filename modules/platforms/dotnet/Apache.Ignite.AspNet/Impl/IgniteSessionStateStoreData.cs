@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.AspNet.Impl
 {
-    using System;
     using System.IO;
     using System.Web;
     using System.Web.SessionState;
@@ -78,34 +77,6 @@ namespace Apache.Ignite.AspNet.Impl
             get { return _data.Timeout; }
             set { _data.Timeout = value; }
         }
-
-        /// <summary>
-        /// Gets or sets the lock node id. Null means not locked.
-        /// </summary>
-        public Guid? LockNodeId
-        {
-            get { return _data.LockNodeId; }
-            set { _data.LockNodeId = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the lock id.
-        /// </summary>
-        public long LockId
-        {
-            get { return _data.LockId; }
-            set { _data.LockId = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the lock time.
-        /// </summary>
-        public DateTime? LockTime
-        {
-            get { return _data.LockTime; }
-            set { _data.LockTime = value; }
-        }
-
 
         /// <summary>
         /// Gets the data.
