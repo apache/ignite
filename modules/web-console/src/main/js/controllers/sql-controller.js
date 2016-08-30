@@ -16,21 +16,27 @@
  */
 
 // Controller for SQL notebook screen.
-import consoleModule from 'controllers/common-module';
+export default ['sqlController', [
+    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
+        let stopTopology = null;
 
-consoleModule.controller('sqlController', [
-    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
-    function ($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
-        var stopTopology = null;
+        const _tryStopRefresh = function(paragraph) {
+            if (paragraph.rate && paragraph.rate.stopTime) {
+                $interval.cancel(paragraph.rate.stopTime);
 
-        $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+                delete paragraph.rate.stopTime;
+            }
+        };
+
+        const _stopTopologyRefresh = () => {
             $interval.cancel(stopTopology);
 
             if ($scope.notebook && $scope.notebook.paragraphs)
-                $scope.notebook.paragraphs.forEach(function (paragraph) {
-                    _tryStopRefresh(paragraph);
-                });
-        });
+                $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
+        };
+
+        $scope.$on('$stateChangeStart', _stopTopologyRefresh);
 
         $scope.caches = [];
 
@@ -40,7 +46,7 @@ consoleModule.controller('sqlController', [
 
         $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'SUM', 'AVG', 'COUNT'];
 
-        $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
+        $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
         $scope.loadingText = $root.IgniteDemoMode ? 'Demo grid is starting. Please wait...' : 'Loading notebook screen...';
 
@@ -51,14 +57,14 @@ consoleModule.controller('sqlController', [
         ];
 
         $scope.exportDropdown = [
-            { 'text': 'Export all', 'click': 'exportCsvAll(paragraph)' }
-            //{ 'text': 'Export all to CSV', 'click': 'exportCsvAll(paragraph)' },
-            //{ 'text': 'Export all to PDF', 'click': 'exportPdfAll(paragraph)' }
+            { text: 'Export all', click: 'exportCsvAll(paragraph)' }
+            // { 'text': 'Export all to CSV', 'click': 'exportCsvAll(paragraph)' },
+            // { 'text': 'Export all to PDF', 'click': 'exportPdfAll(paragraph)' }
         ];
 
         $scope.metadata = [];
 
-        $scope.metaFilter = "";
+        $scope.metaFilter = '';
 
         $scope.metaOptions = {
             nodeChildren: 'children',
@@ -69,43 +75,490 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? "&lt;default&gt;" : cacheName;
-
-        var _handleException = function(err) {
-            $common.showError(err);
-        };
+        $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? '<default>' : cacheName;
 
         // Time line X axis descriptor.
-        var TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
+        const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
         // Row index X axis descriptor.
-        var ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
+        const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
         // We need max 1800 items to hold history for 30 mins in case of refresh every second.
-        var HISTORY_LENGTH = 1800;
+        const HISTORY_LENGTH = 1800;
 
-        var MAX_VAL_COLS = IgniteChartColors.length;
+        const MAX_VAL_COLS = IgniteChartColors.length;
 
         $anchorScroll.yOffset = 55;
 
         $scope.chartColor = function(index) {
-            return {"color": "white", "background-color": IgniteChartColors[index]};
+            return {color: 'white', 'background-color': IgniteChartColors[index]};
         };
 
-        $scope.chartRemoveKeyColumn = function (paragraph, index) {
+        function _chartNumber(arr, idx, dflt) {
+            if (idx >= 0 && arr && arr.length > idx && _.isNumber(arr[idx]))
+                return arr[idx];
+
+            return dflt;
+        }
+
+        function _min(rows, idx, dflt) {
+            let min = _chartNumber(rows[0], idx, dflt);
+
+            _.forEach(rows, (row) => {
+                const v = _chartNumber(row, idx, dflt);
+
+                if (v < min)
+                    min = v;
+            });
+
+            return min;
+        }
+
+        function _max(rows, idx, dflt) {
+            let max = _chartNumber(rows[0], idx, dflt);
+
+            _.forEach(rows, (row) => {
+                const v = _chartNumber(row, idx, dflt);
+
+                if (v > max)
+                    max = v;
+            });
+
+            return max;
+        }
+
+        function _sum(rows, idx) {
+            let sum = 0;
+
+            _.forEach(rows, (row) => sum += _chartNumber(row, idx, 0));
+
+            return sum;
+        }
+
+        function _aggregate(rows, aggFx, idx, dflt) {
+            const len = rows.length;
+
+            switch (aggFx) {
+                case 'FIRST':
+                    return _chartNumber(rows[0], idx, dflt);
+
+                case 'LAST':
+                    return _chartNumber(rows[len - 1], idx, dflt);
+
+                case 'MIN':
+                    return _min(rows, idx, dflt);
+
+                case 'MAX':
+                    return _max(rows, idx, dflt);
+
+                case 'SUM':
+                    return _sum(rows, idx);
+
+                case 'AVG':
+                    return len > 0 ? _sum(rows, idx) / len : 0;
+
+                case 'COUNT':
+                    return len;
+
+                default:
+            }
+
+            return 0;
+        }
+
+        function _chartLabel(arr, idx, dflt) {
+            if (arr && arr.length > idx && _.isString(arr[idx]))
+                return arr[idx];
+
+            return dflt;
+        }
+
+        function _chartDatum(paragraph) {
+            let datum = [];
+
+            if (paragraph.chartColumnsConfigured()) {
+                paragraph.chartValCols.forEach(function(valCol) {
+                    let index = 0;
+                    let values = [];
+                    const colIdx = valCol.value;
+
+                    if (paragraph.chartTimeLineEnabled()) {
+                        const aggFx = valCol.aggFx;
+                        const colLbl = valCol.label + ' [' + aggFx + ']';
+
+                        if (paragraph.charts && paragraph.charts.length === 1)
+                            datum = paragraph.charts[0].data;
+
+                        const chartData = _.find(datum, {series: valCol.label});
+
+                        const leftBound = new Date();
+                        leftBound.setMinutes(leftBound.getMinutes() - parseInt(paragraph.timeLineSpan, 10));
+
+                        if (chartData) {
+                            const lastItem = _.last(paragraph.chartHistory);
+
+                            values = chartData.values;
+
+                            values.push({
+                                x: lastItem.tm,
+                                y: _aggregate(lastItem.rows, aggFx, colIdx, index++)
+                            });
+
+                            while (values.length > 0 && values[0].x < leftBound)
+                                values.shift();
+                        }
+                        else {
+                            _.forEach(paragraph.chartHistory, (history) => {
+                                if (history.tm >= leftBound) {
+                                    values.push({
+                                        x: history.tm,
+                                        y: _aggregate(history.rows, aggFx, colIdx, index++)
+                                    });
+                                }
+                            });
+
+                            datum.push({series: valCol.label, key: colLbl, values});
+                        }
+                    }
+                    else {
+                        index = paragraph.total;
+
+                        values = _.map(paragraph.rows, function(row) {
+                            const xCol = paragraph.chartKeyCols[0].value;
+
+                            const v = {
+                                x: _chartNumber(row, xCol, index),
+                                xLbl: _chartLabel(row, xCol, null),
+                                y: _chartNumber(row, colIdx, index)
+                            };
+
+                            index++;
+
+                            return v;
+                        });
+
+                        datum.push({series: valCol.label, key: valCol.label, values});
+                    }
+                });
+            }
+
+            return datum;
+        }
+
+        function _xX(d) {
+            return d.x;
+        }
+
+        function _yY(d) {
+            return d.y;
+        }
+
+        function _xAxisTimeFormat(d) {
+            return d3.time.format('%X')(new Date(d));
+        }
+
+        const _intClasses = ['java.lang.Byte', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
+
+        function _intType(cls) {
+            return _.includes(_intClasses, cls);
+        }
+
+        const _xAxisWithLabelFormat = function(paragraph) {
+            return function(d) {
+                const values = paragraph.charts[0].data[0].values;
+
+                const fmt = _intType(paragraph.chartKeyCols[0].type) ? 'd' : ',.2f';
+
+                const dx = values[d];
+
+                if (!dx)
+                    return d3.format(fmt)(d);
+
+                const lbl = dx.xLbl;
+
+                return lbl ? lbl : d3.format(fmt)(d);
+            };
+        };
+
+        function _xAxisLabel(paragraph) {
+            return _.isEmpty(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
+        }
+
+        const _yAxisFormat = function(d) {
+            const fmt = d < 1000 ? ',.2f' : '.3s';
+
+            return d3.format(fmt)(d);
+        };
+
+        function _updateCharts(paragraph) {
+            $timeout(() => _.forEach(paragraph.charts, (chart) => chart.api.update()), 100);
+        }
+
+        function _updateChartsWithData(paragraph, newDatum) {
+            $timeout(() => {
+                if (!paragraph.chartTimeLineEnabled()) {
+                    const chartDatum = paragraph.charts[0].data;
+
+                    chartDatum.length = 0;
+
+                    _.forEach(newDatum, (series) => chartDatum.push(series));
+                }
+
+                paragraph.charts[0].api.update();
+            });
+        }
+
+        function _yAxisLabel(paragraph) {
+            const cols = paragraph.chartValCols;
+
+            const tml = paragraph.chartTimeLineEnabled();
+
+            return _.isEmpty(cols) ? 'Y' : _.map(cols, function(col) {
+                let lbl = col.label;
+
+                if (tml)
+                    lbl += ' [' + col.aggFx + ']';
+
+                return lbl;
+            }).join(', ');
+        }
+
+        function _barChart(paragraph) {
+            const datum = _chartDatum(paragraph);
+
+            if (_.isEmpty(paragraph.charts)) {
+                const stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
+                    ? paragraph.chartsOptions.barChart.stacked
+                    : true;
+
+                const options = {
+                    chart: {
+                        type: 'multiBarChart',
+                        height: 400,
+                        margin: {left: 70},
+                        duration: 0,
+                        x: _xX,
+                        y: _yY,
+                        xAxis: {
+                            axisLabel: _xAxisLabel(paragraph),
+                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
+                            showMaxMin: false
+                        },
+                        yAxis: {
+                            axisLabel: _yAxisLabel(paragraph),
+                            tickFormat: _yAxisFormat
+                        },
+                        color: IgniteChartColors,
+                        stacked,
+                        showControls: true,
+                        legend: {
+                            vers: 'furious',
+                            margin: {right: -25}
+                        }
+                    }
+                };
+
+                paragraph.charts = [{options, data: datum}];
+
+                _updateCharts(paragraph);
+            }
+            else
+                _updateChartsWithData(paragraph, datum);
+        }
+
+        function _pieChartDatum(paragraph) {
+            const datum = [];
+
+            if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
+                paragraph.chartValCols.forEach(function(valCol) {
+                    let index = paragraph.total;
+
+                    const values = _.map(paragraph.rows, (row) => {
+                        const xCol = paragraph.chartKeyCols[0].value;
+
+                        const v = {
+                            x: xCol < 0 ? index : row[xCol],
+                            y: _chartNumber(row, valCol.value, index)
+                        };
+
+                        // Workaround for known problem with zero values on Pie chart.
+                        if (v.y === 0)
+                            v.y = 0.0001;
+
+                        index++;
+
+                        return v;
+                    });
+
+                    datum.push({series: paragraph.chartKeyCols[0].label, key: valCol.label, values});
+                });
+            }
+
+            return datum;
+        }
+
+        function _pieChart(paragraph) {
+            let datum = _pieChartDatum(paragraph);
+
+            if (datum.length === 0)
+                datum = [{values: []}];
+
+            paragraph.charts = _.map(datum, function(data) {
+                return {
+                    options: {
+                        chart: {
+                            type: 'pieChart',
+                            height: 400,
+                            duration: 0,
+                            x: _xX,
+                            y: _yY,
+                            showLabels: true,
+                            labelThreshold: 0.05,
+                            labelType: 'percent',
+                            donut: true,
+                            donutRatio: 0.35,
+                            legend: {
+                                vers: 'furious',
+                                margin: {
+                                    right: -25
+                                }
+                            }
+                        },
+                        title: {
+                            enable: true,
+                            text: data.key
+                        }
+                    },
+                    data: data.values
+                };
+            });
+
+            _updateCharts(paragraph);
+        }
+
+        function _lineChart(paragraph) {
+            const datum = _chartDatum(paragraph);
+
+            if (_.isEmpty(paragraph.charts)) {
+                const options = {
+                    chart: {
+                        type: 'lineChart',
+                        height: 400,
+                        margin: { left: 70 },
+                        duration: 0,
+                        x: _xX,
+                        y: _yY,
+                        xAxis: {
+                            axisLabel: _xAxisLabel(paragraph),
+                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
+                            showMaxMin: false
+                        },
+                        yAxis: {
+                            axisLabel: _yAxisLabel(paragraph),
+                            tickFormat: _yAxisFormat
+                        },
+                        color: IgniteChartColors,
+                        useInteractiveGuideline: true,
+                        legend: {
+                            vers: 'furious',
+                            margin: {
+                                right: -25
+                            }
+                        }
+                    }
+                };
+
+                paragraph.charts = [{options, data: datum}];
+
+                _updateCharts(paragraph);
+            }
+            else
+                _updateChartsWithData(paragraph, datum);
+        }
+
+        function _areaChart(paragraph) {
+            const datum = _chartDatum(paragraph);
+
+            if (_.isEmpty(paragraph.charts)) {
+                const style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
+                    ? paragraph.chartsOptions.areaChart.style
+                    : 'stack';
+
+                const options = {
+                    chart: {
+                        type: 'stackedAreaChart',
+                        height: 400,
+                        margin: {left: 70},
+                        duration: 0,
+                        x: _xX,
+                        y: _yY,
+                        xAxis: {
+                            axisLabel: _xAxisLabel(paragraph),
+                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
+                            showMaxMin: false
+                        },
+                        yAxis: {
+                            axisLabel: _yAxisLabel(paragraph),
+                            tickFormat: _yAxisFormat
+                        },
+                        color: IgniteChartColors,
+                        style,
+                        legend: {
+                            vers: 'furious',
+                            margin: {right: -25}
+                        }
+                    }
+                };
+
+                paragraph.charts = [{options, data: datum}];
+
+                _updateCharts(paragraph);
+            }
+            else
+                _updateChartsWithData(paragraph, datum);
+        }
+
+        function _chartApplySettings(paragraph, resetCharts) {
+            if (resetCharts)
+                paragraph.charts = [];
+
+            if (paragraph.chart() && paragraph.nonEmpty()) {
+                switch (paragraph.result) {
+                    case 'bar':
+                        _barChart(paragraph);
+                        break;
+
+                    case 'pie':
+                        _pieChart(paragraph);
+                        break;
+
+                    case 'line':
+                        _lineChart(paragraph);
+                        break;
+
+                    case 'area':
+                        _areaChart(paragraph);
+                        break;
+
+                    default:
+                }
+            }
+        }
+
+        $scope.chartRemoveKeyColumn = function(paragraph, index) {
             paragraph.chartKeyCols.splice(index, 1);
 
             _chartApplySettings(paragraph, true);
         };
 
-        $scope.chartRemoveValColumn = function (paragraph, index) {
+        $scope.chartRemoveValColumn = function(paragraph, index) {
             paragraph.chartValCols.splice(index, 1);
 
             _chartApplySettings(paragraph, true);
         };
 
         $scope.chartAcceptKeyColumn = function(paragraph, item) {
-            var accepted = _.findIndex(paragraph.chartKeyCols, item) < 0;
+            const accepted = _.findIndex(paragraph.chartKeyCols, item) < 0;
 
             if (accepted) {
                 paragraph.chartKeyCols = [item];
@@ -116,13 +569,20 @@ consoleModule.controller('sqlController', [
             return false;
         };
 
-        $scope.chartAcceptValColumn = function(paragraph, item) {
-            var valCols = paragraph.chartValCols;
+        const _numberClasses = ['java.math.BigDecimal', 'java.lang.Byte', 'java.lang.Double',
+            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
 
-            var accepted = _.findIndex(valCols, item) < 0 && item.value >= 0 && _numberType(item.type);
+        const _numberType = function(cls) {
+            return _.includes(_numberClasses, cls);
+        };
+
+        $scope.chartAcceptValColumn = function(paragraph, item) {
+            const valCols = paragraph.chartValCols;
+
+            const accepted = _.findIndex(valCols, item) < 0 && item.value >= 0 && _numberType(item.type);
 
             if (accepted) {
-                if (valCols.length == MAX_VAL_COLS - 1)
+                if (valCols.length === MAX_VAL_COLS - 1)
                     valCols.shift();
 
                 valCols.push(item);
@@ -135,23 +595,23 @@ consoleModule.controller('sqlController', [
 
         $scope.scrollParagraphs = [];
 
-        $scope.rebuildScrollParagraphs = function () {
-            $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function (paragraph) {
+        $scope.rebuildScrollParagraphs = function() {
+            $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function(paragraph) {
                 return {
-                    "text": paragraph.name,
-                    "click": 'scrollToParagraph("' + paragraph.id + '")'
+                    text: paragraph.name,
+                    click: 'scrollToParagraph("' + paragraph.id + '")'
                 };
             });
         };
 
-        $scope.scrollToParagraph = function (paragraphId) {
-            var idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
+        $scope.scrollToParagraph = function(paragraphId) {
+            const idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
 
             if (idx >= 0) {
                 if (!_.includes($scope.notebook.expandedParagraphs, idx))
                     $scope.notebook.expandedParagraphs.push(idx);
 
-                setTimeout(function () {
+                setTimeout(function() {
                     $scope.notebook.paragraphs[idx].ace.focus();
                 });
             }
@@ -165,64 +625,102 @@ consoleModule.controller('sqlController', [
 
         const _allColumn = () => true;
 
-        var paragraphId = 0;
+        let paragraphId = 0;
+
+        const _fullColName = function(col) {
+            const res = [];
+
+            if (col.schemaName)
+                res.push(col.schemaName);
+
+            if (col.typeName)
+                res.push(col.typeName);
+
+            res.push(col.fieldName);
+
+            return res.join('.');
+        };
 
         function enhanceParagraph(paragraph) {
-            paragraph.nonEmpty = function () {
+            paragraph.nonEmpty = function() {
                 return this.rows && this.rows.length > 0;
             };
 
-            paragraph.chart = function () {
-                return this.result != 'table' && this.result != 'none';
+            paragraph.chart = function() {
+                return this.result !== 'table' && this.result !== 'none';
             };
 
             paragraph.queryExecuted = () =>
                 paragraph.queryArgs && paragraph.queryArgs.query && !paragraph.queryArgs.query.startsWith('EXPLAIN ');
 
-            paragraph.table = function () {
-                return this.result == 'table';
+            paragraph.table = function() {
+                return this.result === 'table';
             };
 
-            paragraph.chartColumnsConfigured = function () {
+            paragraph.chartColumnsConfigured = function() {
                 return !_.isEmpty(this.chartKeyCols) && !_.isEmpty(this.chartValCols);
             };
 
-            paragraph.chartTimeLineEnabled = function () {
+            paragraph.chartTimeLineEnabled = function() {
                 return !_.isEmpty(this.chartKeyCols) && angular.equals(this.chartKeyCols[0], TIME_LINE);
             };
 
-            paragraph.timeLineSupported = function () {
-                return this.result != 'pie';
+            paragraph.timeLineSupported = function() {
+                return this.result !== 'pie';
             };
 
-            paragraph.refreshExecuting = function () {
-                return paragraph.rate && paragraph.rate.stopTime
+            paragraph.refreshExecuting = function() {
+                return paragraph.rate && paragraph.rate.stopTime;
             };
 
             Object.defineProperty(paragraph, 'gridOptions', { value: {
-                onRegisterApi: function(api) {
+                enableGridMenu: false,
+                enableColumnMenus: false,
+                flatEntityAccess: true,
+                fastWatch: true,
+                updateColumns(cols) {
+                    this.columnDefs = _.map(cols, (col) => {
+                        return {
+                            displayName: col.fieldName,
+                            headerTooltip: _fullColName(col),
+                            field: col.field,
+                            minWidth: 50,
+                            cellClass: 'cell-left'
+                        };
+                    });
+
+                    $timeout(() => this.api.core.notifyDataChange(uiGridConstants.dataChange.COLUMN));
+                },
+                updateRows(rows) {
+                    const sizeChanged = this.data.length !== rows.length;
+
+                    this.data = rows;
+
+                    if (sizeChanged) {
+                        const height = Math.min(rows.length, 15) * 30 + 47;
+
+                        // Remove header height.
+                        this.api.grid.element.css('height', height + 'px');
+
+                        $timeout(() => this.api.core.handleWindowResize());
+                    }
+                },
+                onRegisterApi(api) {
                     $animate.enabled(api.grid.element, false);
 
                     this.api = api;
-                },
-                enableGridMenu: false,
-                enableColumnMenus: false,
-                setRows: function(rows) {
-                    this.height = Math.min(rows.length, 15) * 30 + 42 + 'px';
-
-                    this.data = rows;
                 }
             }});
 
             Object.defineProperty(paragraph, 'chartHistory', {value: []});
         }
 
-        $scope.aceInit = function (paragraph) {
-            return function (editor) {
+        $scope.aceInit = function(paragraph) {
+            return function(editor) {
                 editor.setAutoScrollEditorIntoView(true);
                 editor.$blockScrolling = Infinity;
 
-                var renderer = editor.renderer;
+                const renderer = editor.renderer;
 
                 renderer.setHighlightGutterLine(false);
                 renderer.setShowPrintMargin(false);
@@ -234,25 +732,30 @@ consoleModule.controller('sqlController', [
                 editor.setTheme('ace/theme/chrome');
 
                 Object.defineProperty(paragraph, 'ace', { value: editor });
-            }
+            };
         };
 
-        var _setActiveCache = function () {
-            if ($scope.caches.length > 0)
-                _.forEach($scope.notebook.paragraphs, function (paragraph) {
+        const _setActiveCache = function() {
+            if ($scope.caches.length > 0) {
+                _.forEach($scope.notebook.paragraphs, (paragraph) => {
                     if (!_.find($scope.caches, {name: paragraph.cacheName}))
                         paragraph.cacheName = $scope.caches[0].name;
                 });
+            }
         };
 
-        const _refreshFn = () =>
+        const _updateTopology = () =>
             agentMonitor.topology()
                 .then((clusters) => {
                     agentMonitor.checkModal();
 
                     const caches = _.flattenDeep(clusters.map((cluster) => cluster.caches));
 
-                    $scope.caches = _.sortBy(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'), 'name');
+                    $scope.caches = _.sortBy(_.map(_.uniqBy(_.reject(caches, {mode: 'LOCAL'}), 'name'), (cache) => {
+                        cache.label = $scope.maskCacheName(cache.name);
+
+                        return cache;
+                    }), 'label');
 
                     _setActiveCache();
                 })
@@ -260,10 +763,25 @@ consoleModule.controller('sqlController', [
                     if (err.code === 2)
                         return agentMonitor.showNodeError('Agent is failed to authenticate in grid. Please check agent\'s login and password.');
 
-                    agentMonitor.showNodeError(err.message)}
-                );
+                    agentMonitor.showNodeError(err);
+                });
 
-        var loadNotebook = function (notebook) {
+        const _startTopologyRefresh = () => {
+            Loading.start('sqlLoading');
+
+            agentMonitor.awaitAgent()
+                .then(_updateTopology)
+                .finally(() => {
+                    if ($root.IgniteDemoMode)
+                        _.forEach($scope.notebook.paragraphs, $scope.execute);
+
+                    Loading.finish('sqlLoading');
+
+                    stopTopology = $interval(_updateTopology, 5000, 0, false);
+                });
+        };
+
+        const loadNotebook = function(notebook) {
             $scope.notebook = notebook;
 
             $scope.notebook_name = notebook.name;
@@ -274,56 +792,51 @@ consoleModule.controller('sqlController', [
             if (!$scope.notebook.paragraphs)
                 $scope.notebook.paragraphs = [];
 
-            _.forEach(notebook.paragraphs, function (paragraph) {
+            _.forEach(notebook.paragraphs, (paragraph) => {
                 paragraph.id = 'paragraph-' + paragraphId++;
 
                 enhanceParagraph(paragraph);
             });
 
-            if (!notebook.paragraphs || notebook.paragraphs.length == 0)
+            if (!notebook.paragraphs || notebook.paragraphs.length === 0)
                 $scope.addParagraph();
             else
                 $scope.rebuildScrollParagraphs();
 
             agentMonitor.startWatch({
-                    state: 'base.configuration.clusters',
-                    text: 'Back to Configuration',
-                    goal: 'execute sql statements'
-                })
-                .then(() => {
-                    $loading.start('sqlLoading');
+                state: 'base.configuration.clusters',
+                text: 'Back to Configuration',
+                goal: 'execute sql statements',
+                onDisconnect: () => {
+                    _stopTopologyRefresh();
 
-                    _refreshFn()
-                        .finally(() => {
-                            if ($root.IgniteDemoMode)
-                                _.forEach($scope.notebook.paragraphs, $scope.execute);
-
-                            $loading.finish('sqlLoading');
-
-                            stopTopology = $interval(_refreshFn, 5000, 0, false);
-                        });
-                });
+                    _startTopologyRefresh();
+                }
+            })
+            .then(_startTopologyRefresh);
         };
 
         QueryNotebooks.read($state.params.noteId)
             .then(loadNotebook)
-            .catch(function() {
+            .catch(() => {
                 $scope.notebookLoadFailed = true;
 
-                $loading.finish('sqlLoading');
+                Loading.finish('sqlLoading');
             });
 
-        $scope.renameNotebook = function (name) {
+        $scope.renameNotebook = function(name) {
             if (!name)
                 return;
 
-            if ($scope.notebook.name != name) {
+            if ($scope.notebook.name !== name) {
+                const prevName = $scope.notebook.name;
+
                 $scope.notebook.name = name;
 
                 QueryNotebooks.save($scope.notebook)
                     .then(function() {
-                        var idx = _.findIndex($root.notebooks, function (item) {
-                            return item._id == $scope.notebook._id;
+                        const idx = _.findIndex($root.notebooks, function(item) {
+                            return item._id === $scope.notebook._id;
                         });
 
                         if (idx >= 0) {
@@ -334,49 +847,53 @@ consoleModule.controller('sqlController', [
 
                         $scope.notebook.edit = false;
                     })
-                    .catch(_handleException);
+                    .catch((err) => {
+                        $scope.notebook.name = prevName;
+
+                        Messages.showError(err);
+                    });
             }
             else
-                $scope.notebook.edit = false
+                $scope.notebook.edit = false;
         };
 
-        $scope.removeNotebook = function () {
-            $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
-                .then(function () {
+        $scope.removeNotebook = function() {
+            Confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
+                .then(function() {
                     return QueryNotebooks.remove($scope.notebook);
                 })
-                .then(function (notebook) {
+                .then(function(notebook) {
                     if (notebook)
                         $state.go('base.sql.notebook', {noteId: notebook._id});
                     else
                         $state.go('base.configuration.clusters');
                 })
-                .catch(_handleException);
+                .catch(Messages.showError);
         };
 
-        $scope.renameParagraph = function (paragraph, newName) {
+        $scope.renameParagraph = function(paragraph, newName) {
             if (!newName)
                 return;
 
-            if (paragraph.name != newName) {
+            if (paragraph.name !== newName) {
                 paragraph.name = newName;
 
                 $scope.rebuildScrollParagraphs();
 
                 QueryNotebooks.save($scope.notebook)
-                    .then(function () { paragraph.edit = false; })
-                    .catch(_handleException);
+                    .then(() => paragraph.edit = false)
+                    .catch(Messages.showError);
             }
             else
-                paragraph.edit = false
+                paragraph.edit = false;
         };
 
-        $scope.addParagraph = function () {
-            var sz = $scope.notebook.paragraphs.length;
+        $scope.addParagraph = function() {
+            const sz = $scope.notebook.paragraphs.length;
 
-            var paragraph = {
+            const paragraph = {
                 id: 'paragraph-' + paragraphId++,
-                name: 'Query' + (sz ==0 ? '' : sz),
+                name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[0],
                 timeLineSpan: $scope.timeLineSpans[0],
@@ -403,12 +920,35 @@ consoleModule.controller('sqlController', [
 
             $anchorScroll();
 
-            setTimeout(function () {
+            setTimeout(function() {
                 paragraph.ace.focus();
             });
         };
 
-        $scope.setResult = function (paragraph, new_result) {
+        function _saveChartSettings(paragraph) {
+            if (!_.isEmpty(paragraph.charts)) {
+                const chart = paragraph.charts[0].api.getScope().chart;
+
+                if (!LegacyUtils.isDefined(paragraph.chartsOptions))
+                    paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
+
+                switch (paragraph.result) {
+                    case 'bar':
+                        paragraph.chartsOptions.barChart.stacked = chart.stacked();
+
+                        break;
+
+                    case 'area':
+                        paragraph.chartsOptions.areaChart.style = chart.style();
+
+                        break;
+
+                    default:
+                }
+            }
+        }
+
+        $scope.setResult = function(paragraph, new_result) {
             if (paragraph.result === new_result)
                 return;
 
@@ -418,6 +958,8 @@ consoleModule.controller('sqlController', [
 
             if (paragraph.chart())
                 _chartApplySettings(paragraph, true);
+            else
+                $timeout(() => paragraph.gridOptions.api.core.handleWindowResize());
         };
 
         $scope.resultEq = function(paragraph, result) {
@@ -425,16 +967,16 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.removeParagraph = function(paragraph) {
-            $confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
-                .then(function () {
+            Confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
+                .then(function() {
                     $scope.stopRefresh(paragraph);
 
-                    var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
-                        return paragraph == item;
+                    const paragraph_idx = _.findIndex($scope.notebook.paragraphs, function(item) {
+                        return paragraph === item;
                     });
 
-                    var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
-                        return paragraph_idx == item;
+                    const panel_idx = _.findIndex($scope.expandedParagraphs, function(item) {
+                        return paragraph_idx === item;
                     });
 
                     if (panel_idx >= 0)
@@ -445,73 +987,103 @@ consoleModule.controller('sqlController', [
                     $scope.rebuildScrollParagraphs();
 
                     QueryNotebooks.save($scope.notebook)
-                        .catch(_handleException);
+                        .catch(Messages.showError);
                 });
         };
 
         $scope.paragraphExpanded = function(paragraph) {
-            var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
-                return paragraph == item;
+            const paragraph_idx = _.findIndex($scope.notebook.paragraphs, function(item) {
+                return paragraph === item;
             });
 
-            var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
-                return paragraph_idx == item;
+            const panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function(item) {
+                return paragraph_idx === item;
             });
 
             return panel_idx >= 0;
         };
 
-        var _columnFilter = function(paragraph) {
+        const _columnFilter = function(paragraph) {
             return paragraph.disabledSystemColumns || paragraph.systemColumns ? _allColumn : _hideColumn;
         };
 
-        var _notObjectType = function(cls) {
-            return $common.isJavaBuiltInClass(cls);
+        const _notObjectType = function(cls) {
+            return LegacyUtils.isJavaBuiltInClass(cls);
         };
 
-        var _numberClasses = ['java.math.BigDecimal', 'java.lang.Byte', 'java.lang.Double',
-            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
+        function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
+            const retainedCols = [];
 
-        var _numberType = function(cls) {
-            return _.includes(_numberClasses, cls);
-        };
+            const availableCols = xAxis ? allCols : _.filter(allCols, function(col) {
+                return col.value >= 0;
+            });
 
-        var _intClasses = ['java.lang.Byte', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
+            if (availableCols.length > 0) {
+                curCols.forEach(function(curCol) {
+                    const col = _.find(availableCols, {label: curCol.label});
 
-        function _intType(cls) {
-            return _.includes(_intClasses, cls);
+                    if (col && acceptableType(col.type)) {
+                        col.aggFx = curCol.aggFx;
+
+                        retainedCols.push(col);
+                    }
+                });
+
+                // If nothing was restored, add first acceptable column.
+                if (_.isEmpty(retainedCols)) {
+                    let col;
+
+                    if (unwantedCols)
+                        col = _.find(availableCols, (avCol) => !_.find(unwantedCols, {label: avCol.label}) && acceptableType(avCol.type));
+
+                    if (!col)
+                        col = _.find(availableCols, (avCol) => acceptableType(avCol.type));
+
+                    if (col)
+                        retainedCols.push(col);
+                }
+            }
+
+            return retainedCols;
         }
 
-        var _rebuildColumns = function (paragraph) {
-            var columnDefs = [];
+        const _rebuildColumns = function(paragraph) {
+            _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function(colsByName, fieldName) {
+                const colsByTypes = _.groupBy(colsByName, 'typeName');
 
-            _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function (colsByName, fieldName) {
-                var colsByTypes = _.groupBy(colsByName, 'typeName');
-
-                var needType = _.keys(colsByTypes).length > 1;
+                const needType = _.keys(colsByTypes).length > 1;
 
                 _.forEach(colsByTypes, function(colsByType, typeName) {
-                    _.forEach(colsByType, function (col, ix) {
-                        col.fieldName = (needType && !$common.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
-                    })
+                    _.forEach(colsByType, function(col, ix) {
+                        col.fieldName = (needType && !LegacyUtils.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
+                    });
                 });
             });
 
-            _.forEach(paragraph.meta, function (col, idx) {
-                if (paragraph.columnFilter(col)) {
-                    if (_notObjectType(col.fieldTypeName))
-                        paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName, aggFx: $scope.aggregateFxs[0]});
+            const cols = [];
 
-                    columnDefs.push({
-                        displayName: col.fieldName,
-                        headerTooltip: _fullColName(col),
-                        field: paragraph.queryArgs.query ? '' + idx : col.fieldName,
-                        minWidth: 50
-                    });
+            _.forEach(paragraph.meta, (col, idx) => {
+                if (paragraph.columnFilter(col)) {
+                    col.field = paragraph.queryArgs.query ? idx.toString() : col.fieldName;
+
+                    cols.push(col);
                 }
             });
 
-            paragraph.gridOptions.columnDefs = columnDefs;
+            paragraph.gridOptions.updateColumns(cols);
+
+            paragraph.chartColumns = _.reduce(cols, (acc, col) => {
+                if (_notObjectType(col.fieldTypeName)) {
+                    acc.push({
+                        label: col.fieldName,
+                        type: col.fieldTypeName,
+                        aggFx: $scope.aggregateFxs[0],
+                        value: col.field
+                    });
+                }
+
+                return acc;
+            }, []);
 
             if (paragraph.chartColumns.length > 0) {
                 paragraph.chartColumns.push(TIME_LINE);
@@ -525,7 +1097,7 @@ consoleModule.controller('sqlController', [
             paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false, paragraph.chartKeyCols);
         };
 
-        $scope.toggleSystemColumns = function (paragraph) {
+        $scope.toggleSystemColumns = function(paragraph) {
             if (paragraph.disabledSystemColumns)
                 return;
 
@@ -538,72 +1110,34 @@ consoleModule.controller('sqlController', [
             _rebuildColumns(paragraph);
         };
 
-        function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
-            var retainedCols = [];
-
-            var availableCols = xAxis ? allCols : _.filter(allCols, function (col) {
-                return col.value >= 0;
-            });
-
-            if (availableCols.length > 0) {
-                curCols.forEach(function (curCol) {
-                    var col = _.find(availableCols, {label: curCol.label});
-
-                    if (col && acceptableType(col.type)) {
-                        col.aggFx = curCol.aggFx;
-
-                        retainedCols.push(col);
-                    }
-                });
-
-                // If nothing was restored, add first acceptable column.
-                if (_.isEmpty(retainedCols)) {
-                    var col;
-
-                    if (unwantedCols)
-                        col = _.find(availableCols, function (col) {
-                            return !_.find(unwantedCols, {label: col.label}) && acceptableType(col.type);
-                        });
-
-                    if (!col)
-                        col = _.find(availableCols, function (col) {
-                            return acceptableType(col.type);
-                        });
-
-                    if (col)
-                        retainedCols.push(col);
-                }
-            }
-
-            return retainedCols;
-        }
+        const _showLoading = (paragraph, enable) => paragraph.loading = enable;
 
         /**
          * @param {Object} paragraph Query
          * @param {{fieldsMetadata: Array, items: Array, queryId: int, last: Boolean}} res Query results.
          * @private
          */
-        var _processQueryResult = function (paragraph, res) {
-            var prevKeyCols = paragraph.chartKeyCols;
-            var prevValCols = paragraph.chartValCols;
+        const _processQueryResult = function(paragraph, res) {
+            const prevKeyCols = paragraph.chartKeyCols;
+            const prevValCols = paragraph.chartValCols;
 
             if (!_.eq(paragraph.meta, res.fieldsMetadata)) {
                 paragraph.meta = [];
 
                 paragraph.chartColumns = [];
 
-                if (!$common.isDefined(paragraph.chartKeyCols))
+                if (!LegacyUtils.isDefined(paragraph.chartKeyCols))
                     paragraph.chartKeyCols = [];
 
-                if (!$common.isDefined(paragraph.chartValCols))
+                if (!LegacyUtils.isDefined(paragraph.chartValCols))
                     paragraph.chartValCols = [];
 
                 if (res.fieldsMetadata.length <= 2) {
-                    var _key = _.find(res.fieldsMetadata, {fieldName: '_KEY'});
-                    var _val = _.find(res.fieldsMetadata, {fieldName: '_VAL'});
+                    const _key = _.find(res.fieldsMetadata, {fieldName: '_KEY'});
+                    const _val = _.find(res.fieldsMetadata, {fieldName: '_VAL'});
 
-                    paragraph.disabledSystemColumns = (res.fieldsMetadata.length == 2 && _key && _val) ||
-                        (res.fieldsMetadata.length == 1 && (_key || _val));
+                    paragraph.disabledSystemColumns = (res.fieldsMetadata.length === 2 && _key && _val) ||
+                        (res.fieldsMetadata.length === 1 && (_key || _val));
                 }
 
                 paragraph.columnFilter = _columnFilter(paragraph);
@@ -625,32 +1159,28 @@ consoleModule.controller('sqlController', [
             if (paragraph.queryArgs.query && paragraph.queryArgs.query.startsWith('EXPLAIN') && res.items) {
                 paragraph.rows = [];
 
-                res.items.forEach(function (row, i) {
-                    var line = res.items.length - 1 == i ? row[0] : row[0] + '\n';
+                res.items.forEach(function(row, i) {
+                    const line = res.items.length - 1 === i ? row[0] : row[0] + '\n';
 
-                    line.replace(/\"/g, '').split('\n').forEach(function (line) {
-                        paragraph.rows.push([line]);
-                    });
+                    line.replace(/\"/g, '').split('\n').forEach((ln) => paragraph.rows.push([ln]));
                 });
             }
             else
                 paragraph.rows = res.items;
 
-            paragraph.gridOptions.setRows(paragraph.rows);
+            paragraph.gridOptions.updateRows(paragraph.rows);
 
-            var chartHistory = paragraph.chartHistory;
+            const chartHistory = paragraph.chartHistory;
 
             // Clear history on query change.
-            var queryChanged = paragraph.prevQuery != paragraph.query;
+            const queryChanged = paragraph.prevQuery !== paragraph.query;
 
             if (queryChanged) {
                 paragraph.prevQuery = paragraph.query;
 
                 chartHistory.length = 0;
 
-                _.forEach(paragraph.charts, function (chart) {
-                    chart.data.length = 0;
-                })
+                _.forEach(paragraph.charts, (chart) => chart.data.length = 0);
             }
 
             // Add results to history.
@@ -665,15 +1195,15 @@ consoleModule.controller('sqlController', [
             if (paragraph.result === 'none' || !paragraph.queryExecuted())
                 paragraph.result = 'table';
             else if (paragraph.chart()) {
-                var resetCharts = queryChanged;
+                let resetCharts = queryChanged;
 
                 if (!resetCharts) {
-                    var curKeyCols = paragraph.chartKeyCols;
-                    var curValCols = paragraph.chartValCols;
+                    const curKeyCols = paragraph.chartKeyCols;
+                    const curValCols = paragraph.chartValCols;
 
                     resetCharts = !prevKeyCols || !prevValCols ||
-                        prevKeyCols.length != curKeyCols.length ||
-                        prevValCols.length != curValCols.length;
+                        prevKeyCols.length !== curKeyCols.length ||
+                        prevValCols.length !== curValCols.length;
                 }
 
                 _chartApplySettings(paragraph, resetCharts);
@@ -693,23 +1223,33 @@ consoleModule.controller('sqlController', [
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => agentMonitor.query(args.cacheName, args.pageSize, args.query))
                 .then(_processQueryResult.bind(this, paragraph))
-                .catch((err) => {
-                    paragraph.errMsg = err.message;
-                });
+                .catch((err) => paragraph.errMsg = err.message);
         };
 
-        const _showLoading = (paragraph, enable) => paragraph.loading = enable;
+        const _tryStartRefresh = function(paragraph) {
+            _tryStopRefresh(paragraph);
 
-        $scope.execute = function (paragraph) {
+            if (paragraph.rate && paragraph.rate.installed && paragraph.queryArgs) {
+                $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
+
+                _executeRefresh(paragraph);
+
+                const delay = paragraph.rate.value * paragraph.rate.unit;
+
+                paragraph.rate.stopTime = $interval(_executeRefresh, delay, 0, false, paragraph);
+            }
+        };
+
+        $scope.execute = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
             _showLoading(paragraph, true);
 
             _closeOldQuery(paragraph)
-                .then(function () {
+                .then(function() {
                     const args = paragraph.queryArgs = {
                         cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
@@ -718,7 +1258,7 @@ consoleModule.controller('sqlController', [
 
                     return agentMonitor.query(args.cacheName, args.pageSize, args.query);
                 })
-                .then(function (res) {
+                .then(function(res) {
                     _processQueryResult(paragraph, res);
 
                     _tryStartRefresh(paragraph);
@@ -730,25 +1270,35 @@ consoleModule.controller('sqlController', [
 
                     $scope.stopRefresh(paragraph);
                 })
-                .finally(function () {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
         $scope.queryExecuted = function(paragraph) {
-            return $common.isDefined(paragraph.queryArgs);
+            return LegacyUtils.isDefined(paragraph.queryArgs);
         };
 
-        $scope.explain = function (paragraph) {
+        const _cancelRefresh = function(paragraph) {
+            if (paragraph.rate && paragraph.rate.stopTime) {
+                delete paragraph.queryArgs;
+
+                paragraph.rate.installed = false;
+
+                $interval.cancel(paragraph.rate.stopTime);
+
+                delete paragraph.rate.stopTime;
+            }
+        };
+
+        $scope.explain = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
             _showLoading(paragraph, true);
 
             _closeOldQuery(paragraph)
-                .then(function () {
+                .then(function() {
                     const args = paragraph.queryArgs = {
                         cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
@@ -763,14 +1313,12 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
-        $scope.scan = function (paragraph) {
+        $scope.scan = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -791,10 +1339,25 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
+
+        function _updatePieChartsWithData(paragraph, newDatum) {
+            $timeout(() => {
+                _.forEach(paragraph.charts, function(chart) {
+                    const chartDatum = chart.data;
+
+                    chartDatum.length = 0;
+
+                    _.forEach(newDatum, function(series) {
+                        if (chart.options.title.text === series.key)
+                            _.forEach(series.values, (v) => chartDatum.push(v));
+                    });
+                });
+
+                _.forEach(paragraph.charts, (chart) => chart.api.update());
+            });
+        }
 
         $scope.nextPage = function(paragraph) {
             _showLoading(paragraph, true);
@@ -802,7 +1365,7 @@ consoleModule.controller('sqlController', [
             paragraph.queryArgs.pageSize = paragraph.pageSize;
 
             agentMonitor.next(paragraph.queryId, paragraph.pageSize)
-                .then(function (res) {
+                .then(function(res) {
                     paragraph.page++;
 
                     paragraph.total += paragraph.rows.length;
@@ -810,13 +1373,13 @@ consoleModule.controller('sqlController', [
                     paragraph.rows = res.items;
 
                     if (paragraph.chart()) {
-                        if (paragraph.result == 'pie')
+                        if (paragraph.result === 'pie')
                             _updatePieChartsWithData(paragraph, _pieChartDatum(paragraph));
                         else
                             _updateChartsWithData(paragraph, _chartDatum(paragraph));
                     }
 
-                    paragraph.gridOptions.setRows(paragraph.rows);
+                    paragraph.gridOptions.updateRows(paragraph.rows);
 
                     _showLoading(paragraph, false);
 
@@ -828,22 +1391,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
-                    paragraph.ace.focus();
-                });
-        };
-
-        var _fullColName = function(col) {
-            var res = [];
-
-            if (col.schemaName)
-                res.push(col.schemaName);
-            if (col.typeName)
-                res.push(col.typeName);
-
-            res.push(col.fieldName);
-
-            return res.join('.');
+                .finally(() => paragraph.ace.focus());
         };
 
         const _export = (fileName, columnFilter, meta, rows) => {
@@ -887,41 +1435,40 @@ consoleModule.controller('sqlController', [
                 csvContent += cols.join(';') + '\n';
             });
 
-            $common.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
+            LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
         };
 
         $scope.exportCsv = function(paragraph) {
             _export(paragraph.name + '.csv', paragraph.columnFilter, paragraph.meta, paragraph.rows);
 
-            //paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
+            // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
         $scope.exportPdf = function(paragraph) {
             paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
-        $scope.exportCsvAll = function (paragraph) {
+        $scope.exportCsvAll = function(paragraph) {
             const args = paragraph.queryArgs;
 
             agentMonitor.queryGetAll(args.cacheName, args.query)
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.columnFilter, res.fieldsMetadata, res.items))
+                .catch(Messages.showError)
                 .finally(() => paragraph.ace.focus());
         };
 
-        $scope.exportPdfAll = function(paragraph) {
-            //$http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
-            //    .success(function (item) {
-            //        _export(paragraph.name + '-all.csv', item.meta, item.rows);
-            //    })
-            //    .error(function (errMsg) {
-            //        $common.showError(errMsg);
-            //    });
-        };
+        // $scope.exportPdfAll = function(paragraph) {
+        //    $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        //        .success(function(item) {
+        //            _export(paragraph.name + '-all.csv', item.meta, item.rows);
+        //    })
+        //    .error(Messages.showError);
+        // };
 
-        $scope.rateAsString = function (paragraph) {
+        $scope.rateAsString = function(paragraph) {
             if (paragraph.rate && paragraph.rate.installed) {
-                var idx = _.findIndex($scope.timeUnit, function (unit) {
-                    return unit.value == paragraph.rate.unit;
+                const idx = _.findIndex($scope.timeUnit, function(unit) {
+                    return unit.value === paragraph.rate.unit;
                 });
 
                 if (idx >= 0)
@@ -933,41 +1480,7 @@ consoleModule.controller('sqlController', [
             return '';
         };
 
-        var _cancelRefresh = function (paragraph) {
-            if (paragraph.rate && paragraph.rate.stopTime) {
-                delete paragraph.queryArgs;
-
-                paragraph.rate.installed = false;
-
-                $interval.cancel(paragraph.rate.stopTime);
-
-                delete paragraph.rate.stopTime;
-            }
-        };
-
-        var _tryStopRefresh = function (paragraph) {
-            if (paragraph.rate && paragraph.rate.stopTime) {
-                $interval.cancel(paragraph.rate.stopTime);
-
-                delete paragraph.rate.stopTime;
-            }
-        };
-
-        var _tryStartRefresh = function (paragraph) {
-            _tryStopRefresh(paragraph);
-
-            if (paragraph.rate && paragraph.rate.installed && paragraph.queryArgs) {
-                $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
-
-                _executeRefresh(paragraph);
-
-                var delay = paragraph.rate.value * paragraph.rate.unit;
-
-                paragraph.rate.stopTime = $interval(_executeRefresh, delay, 0, false, paragraph);
-            }
-        };
-
-        $scope.startRefresh = function (paragraph, value, unit) {
+        $scope.startRefresh = function(paragraph, value, unit) {
             paragraph.rate.value = value;
             paragraph.rate.unit = unit;
             paragraph.rate.installed = true;
@@ -976,522 +1489,32 @@ consoleModule.controller('sqlController', [
                 _tryStartRefresh(paragraph);
         };
 
-        $scope.stopRefresh = function (paragraph) {
+        $scope.stopRefresh = function(paragraph) {
             paragraph.rate.installed = false;
 
             _tryStopRefresh(paragraph);
         };
 
-        function _chartNumber(arr, idx, dflt) {
-            if (idx >= 0 && arr && arr.length > idx && _.isNumber(arr[idx]))
-                return arr[idx];
-
-            return dflt;
-        }
-
-        function _chartLabel(arr, idx, dflt) {
-            if (arr && arr.length > idx && _.isString(arr[idx]))
-                return arr[idx];
-
-            return dflt;
-        }
-
-        function _min(rows, idx, dflt) {
-            var min = _chartNumber(rows[0], idx, dflt);
-
-            _.forEach(rows, function (row) {
-                var v = _chartNumber(row, idx, dflt);
-
-                if (v < min)
-                    min = v;
-            });
-
-            return min;
-        }
-
-        function _max(rows, idx, dflt) {
-            var max = _chartNumber(rows[0], idx, dflt);
-
-            _.forEach(rows, function (row) {
-                var v = _chartNumber(row, idx, dflt);
-
-                if (v > max)
-                    max = v;
-            });
-
-            return max;
-        }
-
-        function _sum(rows, idx) {
-            var sum = 0;
-
-            _.forEach(rows, function (row) {
-                sum += _chartNumber(row, idx, 0);
-            });
-
-            return sum;
-        }
-
-        function _aggregate(rows, aggFx, idx, dflt) {
-            var len = rows.length;
-
-            switch (aggFx) {
-                case  'FIRST':
-                    return _chartNumber(rows[0], idx, dflt);
-
-                case 'LAST':
-                    return _chartNumber(rows[len - 1], idx, dflt);
-
-                case 'MIN':
-                    return _min(rows, idx, dflt);
-
-                case 'MAX':
-                    return _max(rows, idx, dflt);
-
-                case 'SUM':
-                    return _sum(rows, idx);
-
-                case 'AVG':
-                    return len > 0 ? _sum(rows, idx) / len : 0;
-
-                case 'COUNT':
-                    return len;
-            }
-
-            return 0;
-        }
-
-        function _chartDatum(paragraph) {
-            var datum = [];
-
-            if (paragraph.chartColumnsConfigured()) {
-                paragraph.chartValCols.forEach(function (valCol) {
-                    var index = 0;
-                    var values = [];
-                    var colIdx = valCol.value;
-
-                    if (paragraph.chartTimeLineEnabled()) {
-                        var aggFx = valCol.aggFx;
-                        var colLbl = valCol.label + ' [' + aggFx + ']';
-
-                        if (paragraph.charts && paragraph.charts.length == 1)
-                            datum = paragraph.charts[0].data;
-
-                        var chartData = _.find(datum, {series: valCol.label});
-
-                        var leftBound = new Date();
-                        leftBound.setMinutes(leftBound.getMinutes() - parseInt(paragraph.timeLineSpan));
-
-                        if (chartData) {
-                            var lastItem = _.last(paragraph.chartHistory);
-
-                            values = chartData.values;
-
-                            values.push({
-                                x: lastItem.tm,
-                                y: _aggregate(lastItem.rows, aggFx, colIdx, index++)
-                            });
-
-                            while (values.length > 0 && values[0].x < leftBound)
-                                values.shift();
-                        }
-                        else {
-                            _.forEach(paragraph.chartHistory, function (history) {
-                                if (history.tm >= leftBound)
-                                    values.push({
-                                        x: history.tm,
-                                        y: _aggregate(history.rows, aggFx, colIdx, index++)
-                                    });
-                            });
-
-                            datum.push({series: valCol.label, key: colLbl, values: values});
-                        }
-                    }
-                    else {
-                        index = paragraph.total;
-
-                        values = _.map(paragraph.rows, function (row) {
-                            var xCol = paragraph.chartKeyCols[0].value;
-
-                            var v = {
-                                x: _chartNumber(row, xCol, index),
-                                xLbl: _chartLabel(row, xCol, undefined),
-                                y: _chartNumber(row, colIdx, index)
-                            };
-
-                            index++;
-
-                            return v;
-                        });
-
-                        datum.push({series: valCol.label, key: valCol.label, values: values});
-                    }
-                });
-            }
-
-            return datum;
-        }
-
-        function _pieChartDatum(paragraph) {
-            var datum = [];
-
-            if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
-                paragraph.chartValCols.forEach(function (valCol) {
-                    var index = paragraph.total;
-
-                    var values = _.map(paragraph.rows, function (row) {
-                        var xCol = paragraph.chartKeyCols[0].value;
-
-                        var v = {
-                            x: xCol < 0 ? index : row[xCol],
-                            y: _chartNumber(row, valCol.value, index)
-                        };
-
-                        index++;
-
-                        return v;
-                    });
-
-                    datum.push({series: paragraph.chartKeyCols[0].label, key: valCol.label, values: values});
-                });
-            }
-
-            return datum;
-        }
-
-        $scope.paragraphTimeSpanVisible = function (paragraph) {
+        $scope.paragraphTimeSpanVisible = function(paragraph) {
             return paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled();
         };
 
-        $scope.paragraphTimeLineSpan = function (paragraph) {
-          if (paragraph && paragraph.timeLineSpan)
-            return paragraph.timeLineSpan.toString();
+        $scope.paragraphTimeLineSpan = function(paragraph) {
+            if (paragraph && paragraph.timeLineSpan)
+                return paragraph.timeLineSpan.toString();
 
             return '1';
         };
 
-        function _saveChartSettings(paragraph) {
-            if (!_.isEmpty(paragraph.charts)) {
-                var chart = paragraph.charts[0].api.getScope().chart;
-
-                if (!$common.isDefined(paragraph.chartsOptions))
-                    paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
-
-                switch (paragraph.result) {
-                    case 'bar':
-                        paragraph.chartsOptions.barChart.stacked = chart.stacked();
-
-                        break;
-
-                    case 'area':
-                        paragraph.chartsOptions.areaChart.style = chart.style();
-
-                        break;
-                }
-            }
-        }
-
-        function _chartApplySettings(paragraph, resetCharts) {
-            if (resetCharts)
-                paragraph.charts = [];
-
-            if (paragraph.chart() && paragraph.nonEmpty()) {
-                switch (paragraph.result) {
-                    case 'bar':
-                        _barChart(paragraph);
-                        break;
-
-                    case 'pie':
-                        _pieChart(paragraph);
-                        break;
-
-                    case 'line':
-                        _lineChart(paragraph);
-                        break;
-
-                    case 'area':
-                        _areaChart(paragraph);
-                        break;
-                }
-            }
-        }
-
-        $scope.applyChartSettings = function (paragraph) {
+        $scope.applyChartSettings = function(paragraph) {
             _chartApplySettings(paragraph, true);
         };
 
-        function _xAxisLabel(paragraph) {
-            return _.isEmpty(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
-        }
-
-        function _yAxisLabel(paragraph) {
-            var cols = paragraph.chartValCols;
-
-            var tml = paragraph.chartTimeLineEnabled();
-
-            return _.isEmpty(cols) ? 'Y' : _.map(cols, function (col) {
-                var lbl = col.label;
-
-                if (tml)
-                 lbl += ' [' + col.aggFx + ']';
-
-                return lbl;
-            }).join(', ');
-        }
-
-        function _xX(d) {
-            return d.x;
-        }
-
-        function _yY(d) {
-            return d.y;
-        }
-
-        function _xAxisTimeFormat(d) {
-            return d3.time.format('%X')(new Date(d));
-        }
-
-        var _xAxisWithLabelFormat = function(paragraph) {
-            return function (d) {
-                var values = paragraph.charts[0].data[0].values;
-
-                var fmt = _intType(paragraph.chartKeyCols[0].type) ? 'd' : ',.2f';
-
-                var dx = values[d];
-
-                if (!dx)
-                    return d3.format(fmt)(d);
-
-                var lbl = dx.xLbl;
-
-                return lbl ? lbl : d3.format(fmt)(d);
-            }
-        };
-
-        var _yAxisFormat = function(d) {
-            var fmt = d < 1000 ? ',.2f' : '.3s';
-
-            return d3.format(fmt)(d);
-        };
-
-        function _updateCharts(paragraph) {
-            $timeout(function () {
-                _.forEach(paragraph.charts, function (chart) {
-                    chart.api.update();
-                });
-            }, 100);
-        }
-
-        function _updateChartsWithData(paragraph, newDatum) {
-            $timeout(function () {
-                if (!paragraph.chartTimeLineEnabled()) {
-                    var chartDatum = paragraph.charts[0].data;
-
-                    chartDatum.length = 0;
-
-                    _.forEach(newDatum, function (series) {
-                        chartDatum.push(series);
-                    })
-                }
-
-                paragraph.charts[0].api.update();
-            });
-        }
-
-        function _updatePieChartsWithData(paragraph, newDatum) {
-            $timeout(function () {
-                _.forEach(paragraph.charts, function (chart) {
-                    var chartDatum = chart.data;
-
-                    chartDatum.length = 0;
-
-                    _.forEach(newDatum, function (series) {
-                        if (chart.options.title.text == series.key)
-                            _.forEach(series.values, function (v) {
-                                chartDatum.push(v);
-                            });
-                    });
-                });
-
-                _.forEach(paragraph.charts, function (chart) {
-                    chart.api.update();
-                });
-            });
-        }
-
-        function _barChart(paragraph) {
-            var datum = _chartDatum(paragraph);
-
-            if (_.isEmpty(paragraph.charts)) {
-                var stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
-                    ? paragraph.chartsOptions.barChart.stacked
-                    : true;
-
-                var options = {
-                    chart: {
-                        type: 'multiBarChart',
-                        height: 400,
-                        margin: {left: 70},
-                        duration: 0,
-                        x: _xX,
-                        y: _yY,
-                        xAxis: {
-                            axisLabel: _xAxisLabel(paragraph),
-                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
-                            showMaxMin: false
-                        },
-                        yAxis: {
-                            axisLabel:  _yAxisLabel(paragraph),
-                            tickFormat: _yAxisFormat
-                        },
-                        color: IgniteChartColors,
-                        stacked: stacked,
-                        showControls: true,
-                        legend: {
-                            vers: 'furious',
-                            margin: {
-                                right: -25
-                            }
-                        }
-                    }
-                };
-
-                paragraph.charts = [{options: options, data: datum}];
-
-                _updateCharts(paragraph);
-            }
-            else
-                _updateChartsWithData(paragraph, datum);
-        }
-
-        function _pieChart(paragraph) {
-            var datum = _pieChartDatum(paragraph);
-
-            if (datum.length == 0)
-                datum = [{values: []}];
-
-            paragraph.charts = _.map(datum, function (data) {
-                return {
-                    options: {
-                        chart: {
-                            type: 'pieChart',
-                            height: 400,
-                            duration: 0,
-                            x: _xX,
-                            y: _yY,
-                            showLabels: true,
-                            labelThreshold: 0.05,
-                            labelType: 'percent',
-                            donut: true,
-                            donutRatio: 0.35,
-                            legend: {
-                                vers: 'furious',
-                                margin: {
-                                    right: -25
-                                }
-                            }
-                        },
-                        title: {
-                            enable: true,
-                            text: data.key
-                        }
-                    },
-                    data: data.values
-                }
-            });
-
-            _updateCharts(paragraph);
-        }
-
-        function _lineChart(paragraph) {
-            var datum = _chartDatum(paragraph);
-
-            if (_.isEmpty(paragraph.charts)) {
-                var options = {
-                    chart: {
-                        type: 'lineChart',
-                        height: 400,
-                        margin: { left: 70 },
-                        duration: 0,
-                        x: _xX,
-                        y: _yY,
-                        xAxis: {
-                            axisLabel: _xAxisLabel(paragraph),
-                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
-                            showMaxMin: false
-                        },
-                        yAxis: {
-                            axisLabel:  _yAxisLabel(paragraph),
-                            tickFormat: _yAxisFormat
-                        },
-                        color: IgniteChartColors,
-                        useInteractiveGuideline: true,
-                        legend: {
-                            vers: 'furious',
-                            margin: {
-                                right: -25
-                            }
-                        }
-                    }
-                };
-
-                paragraph.charts = [{options: options, data: datum}];
-
-                _updateCharts(paragraph);
-            }
-            else
-                _updateChartsWithData(paragraph, datum);
-        }
-
-        function _areaChart(paragraph) {
-            var datum = _chartDatum(paragraph);
-
-            if (_.isEmpty(paragraph.charts)) {
-                var style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
-                    ? paragraph.chartsOptions.areaChart.style
-                    : 'stack';
-
-            var options = {
-                chart: {
-                    type: 'stackedAreaChart',
-                    height: 400,
-                    margin: {left: 70},
-                    duration: 0,
-                    x: _xX,
-                    y: _yY,
-                    xAxis: {
-                        axisLabel: _xAxisLabel(paragraph),
-                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
-                        showMaxMin: false
-                    },
-                    yAxis: {
-                        axisLabel:  _yAxisLabel(paragraph),
-                        tickFormat: _yAxisFormat
-                    },
-                    color: IgniteChartColors,
-                    style: style,
-                    legend: {
-                        vers: 'furious',
-                        margin: {
-                            right: -25
-                        }
-                    }
-                }
-            };
-
-                paragraph.charts = [{options: options, data: datum}];
-
-                _updateCharts(paragraph);
-            }
-            else
-                _updateChartsWithData(paragraph, datum);
-        }
-
-        $scope.actionAvailable = function (paragraph, needQuery) {
+        $scope.actionAvailable = function(paragraph, needQuery) {
             return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
         };
 
-        $scope.actionTooltip = function (paragraph, action, needQuery) {
+        $scope.actionTooltip = function(paragraph, action, needQuery) {
             if ($scope.actionAvailable(paragraph, needQuery))
                 return;
 
@@ -1501,50 +1524,47 @@ consoleModule.controller('sqlController', [
             return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
         };
 
-        $scope.clickableMetadata = function (node) {
-            return node.type.slice(0, 5) != 'index';
+        $scope.clickableMetadata = function(node) {
+            return node.type.slice(0, 5) !== 'index';
         };
 
-        $scope.dblclickMetadata = function (paragraph, node) {
+        $scope.dblclickMetadata = function(paragraph, node) {
             paragraph.ace.insert(node.name);
 
-            setTimeout(function () {
+            setTimeout(function() {
                 paragraph.ace.focus();
             }, 1);
         };
 
-        $scope.importMetadata = function () {
-            $loading.start('loadingCacheMetadata');
+        $scope.importMetadata = function() {
+            Loading.start('loadingCacheMetadata');
 
             $scope.metadata = [];
 
             agentMonitor.metadata()
-                .then(function (metadata) {
-                    $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
-                        var cache = _.find($scope.caches, { name: meta.cacheName });
+                .then((metadata) => {
+                    $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
+                        const cache = _.find($scope.caches, { name: meta.cacheName });
 
-                            if (cache) {
-                                meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
+                        if (cache) {
+                            meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
+                            meta.displayName = (cache.sqlSchema || meta.maskedName) + '.' + meta.typeName;
 
-                                meta.displayMame = $scope.maskCacheName(meta.cacheName) + '.' + meta.typeName;
+                            if (cache.sqlSchema)
+                                meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
 
-                                if (cache.sqlSchema)
-                                    meta.children.unshift({type: 'plain', name: 'sqlSchema: ' + cache.sqlSchema});
-
-                                meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
-                            }
+                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});
+                        }
 
                         return cache;
                     }), 'name');
                 })
-                .catch((err) => _handleException(err))
-                .finally(function () {
-                    $loading.finish('loadingCacheMetadata');
-                });
+                .catch(Messages.showError)
+                .finally(() => Loading.finish('loadingCacheMetadata'));
         };
 
-        $scope.showResultQuery = function (paragraph) {
-            if ($common.isDefined(paragraph)) {
+        $scope.showResultQuery = function(paragraph) {
+            if (LegacyUtils.isDefined(paragraph)) {
                 const scope = $scope.$new();
 
                 if (_.isNil(paragraph.queryArgs.query)) {
@@ -1561,8 +1581,8 @@ consoleModule.controller('sqlController', [
                 }
 
                 // Show a basic modal from a controller
-                $modal({scope: scope, template: '/templates/message.html', placement:'center', show: true});
+                $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
             }
-        }
-    }]
-);
+        };
+    }
+]];

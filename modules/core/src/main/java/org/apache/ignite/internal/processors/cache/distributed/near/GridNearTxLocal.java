@@ -363,7 +363,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 return cacheCtx.colocated().loadAsync(
                     key,
                     readThrough,
-                    /*force primary*/needVer,
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -394,7 +394,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 return cacheCtx.colocated().loadAsync(
                     keys,
                     readThrough,
-                    /*force primary*/needVer,
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -857,19 +857,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     // Make sure that here are no exceptions.
                     prepareFut.get();
 
-                    fut0.finish();
+                    fut0.finish(true);
                 }
                 catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.onDone(e);
+                    fut0.finish(false);
 
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.onDone(e);
+                    fut0.finish(false);
                 }
             }
         });
@@ -917,7 +917,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
             }
 
-            fut.finish();
+            fut.finish(false);
         }
         else {
             prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -933,7 +933,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                     GridNearTxFinishFuture fut0 = rollbackFut;
 
-                    fut0.finish();
+                    fut0.finish(false);
                 }
             });
         }
@@ -1147,16 +1147,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys.
-     * @param implicit Implicit flag.
+     * @param retval Return value flag.
      * @param read Read flag.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
-        boolean implicit,
+        boolean retval,
         boolean read,
         long accessTtl,
         boolean skipStore,
@@ -1190,7 +1191,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             this,
             isInvalidate(),
             read,
-            /*retval*/false,
+            retval,
             isolation,
             accessTtl,
             CU.empty0(),
