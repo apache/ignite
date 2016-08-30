@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public KeyValueDirtyTrackedCollection()
         {
-            // No-op.
+            _dirtyAll = true;
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         private class Entry
         {
             public object Value;
-            public bool IsDirty = true;
+            public bool IsDirty;
         }
     }
 }
