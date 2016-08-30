@@ -100,10 +100,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         this.desc = desc;
     }
 
-    /**
-     * @return Expiration time of respective cache entry.
-     */
-    public long expirationTime() {
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
         return expirationTime;
     }
 
