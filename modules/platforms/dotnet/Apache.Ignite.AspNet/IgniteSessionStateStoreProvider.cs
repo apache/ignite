@@ -148,12 +148,37 @@ namespace Apache.Ignite.AspNet
         {
             Log("GetItem(id={0})", id);
 
-            // TODO: Get without locking!
-            var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
+            actions = SessionStateActions.None;
+            lockId = null;
+            lockAge = TimeSpan.Zero;
+            locked = false;
 
-            Log("GetItem(id={0})={1}", id, res == null ? "null" : res.ToString());
+            var key = GetKey(id);
+            BinarizableSessionStateStoreData data;
 
-            return res;
+            if (Cache.TryGet(key, out data))
+            {
+                locked = data.LockNodeId != null;
+
+                if (!locked)
+                {
+                    Log("GetItem session store data found", id, context);
+
+                    return new IgniteSessionStateStoreData(data);
+                }
+
+                Log("GetItem session store data locked", id, context);
+
+                Debug.Assert(data.LockTime != null);
+
+                lockAge = DateTime.UtcNow - data.LockTime.Value;
+
+                return null;
+            }
+
+            Log("GetItem session store data not found", id, context);
+
+            return null;
         }
 
         /// <summary>
@@ -208,7 +233,7 @@ namespace Apache.Ignite.AspNet
 
                 locked = true;
 
-                lockAge = (DateTime)lockResult - DateTime.UtcNow;
+                lockAge = DateTime.UtcNow - (DateTime)lockResult;
 
                 return null;
             }
