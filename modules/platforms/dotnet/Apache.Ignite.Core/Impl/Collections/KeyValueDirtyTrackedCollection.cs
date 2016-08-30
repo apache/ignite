@@ -136,7 +136,10 @@ namespace Apache.Ignite.Core.Impl.Collections
                 Entry entry;
 
                 if (!_dict.TryGetValue(key, out entry))
+                {
                     entry = new Entry();
+                    _dict[key] = entry;
+                }
 
                 entry.IsDirty = true;
 
