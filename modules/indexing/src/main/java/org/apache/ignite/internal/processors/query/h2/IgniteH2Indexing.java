@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1270,10 +1271,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
             if (!F.isEmpty(res)) {
-                Object[] errKeys = res.keySet().toArray();
+                SQLException resEx;
 
-                throw createSqlException("Failed to INSERT some keys [keys=" + Arrays.toString(errKeys) + ']',
-                    ErrorCode.DUPLICATE_KEY_1);
+                IgniteBiTuple<Object[], SQLException> splitRes = splitErrors(res);
+
+                // Everything left in errKeys is not erroneous keys, but duplicate keys
+                if (!F.isEmpty(splitRes.get1())) {
+                    resEx = new SQLException("Failed to INSERT some keys because they are already in cache " +
+                        "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
+                        ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1), ErrorCode.DUPLICATE_KEY_1);
+
+                    if (splitRes.get2() != null)
+                        resEx.setNextException(splitRes.get2());
+                }
+                else
+                    resEx = splitRes.get2();
+
+                throw new IgniteSQLException(resEx);
             }
 
             return rows.size();
@@ -1915,9 +1929,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (F.isEmpty(delRes))
             return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
 
-        Object[] errKeys = delRes.keySet().toArray();
+        SQLException resEx;
 
-        return new IgniteBiTuple<>(res, errKeys);
+        IgniteBiTuple<Object[], SQLException> splitRes = splitErrors(delRes);
+
+        if (splitRes.get2() == null)
+            return new IgniteBiTuple<>(res, splitRes.get1());
+
+        // Everything left in errKeys is not erroneous keys, but duplicate keys
+        if (!F.isEmpty(splitRes.get1())) {
+            resEx = new SQLException("Failed to UPDATE some keys because they were modified concurrently " +
+                "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
+                ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1), ErrorCode.CONCURRENT_UPDATE_1);
+
+            resEx.setNextException(splitRes.get2());
+        }
+        else
+            resEx = splitRes.get2();
+
+        throw new IgniteSQLException(resEx);
     }
 
     /**
@@ -2031,13 +2061,66 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (F.isEmpty(updRes))
                 return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
 
-            Object[] errKeys = updRes.keySet().toArray();
+            SQLException resEx;
 
-            return new IgniteBiTuple<>(res, errKeys);
+            IgniteBiTuple<Object[], SQLException> splitRes = splitErrors(updRes);
+
+            if (splitRes.get2() == null)
+                return new IgniteBiTuple<>(res, splitRes.get1());
+
+            // Everything left in errKeys is not erroneous keys, but duplicate keys
+            if (!F.isEmpty(splitRes.get1())) {
+                resEx = new SQLException("Failed to UPDATE some keys because they were modified concurrently " +
+                    "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
+                    ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1), ErrorCode.CONCURRENT_UPDATE_1);
+
+                resEx.setNextException(splitRes.get2());
+            }
+            else
+                resEx = splitRes.get2();
+
+            throw new IgniteSQLException(resEx);
         }
         finally {
             cctx.operationContextPerCall(opCtx);
         }
+    }
+
+    /**
+     * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
+     * processing yielded an exception.
+     *
+     * @param res Result of {@link GridCacheAdapter#invokeAll)}
+     * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
+     * null if all keys are duplicates/concurrently modified ones).
+     */
+    private static IgniteBiTuple<Object[], SQLException> splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
+        Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
+
+        SQLException currSqlEx = null;
+
+        SQLException firstSqlEx = null;
+
+        // Let's form a chain of SQL exceptions
+        for (Map.Entry<Object, EntryProcessorResult<Boolean>> e : res.entrySet()) {
+            try {
+                e.getValue().get();
+
+                errKeys.remove(e.getKey());
+            }
+            catch (EntryProcessorException ex) {
+                SQLException next = new SQLException("Failed to INSERT key '" + e.getKey() + "'", ex);
+
+                if (currSqlEx != null)
+                    currSqlEx.setNextException(next);
+                else
+                    firstSqlEx = next;
+
+                currSqlEx = next;
+            }
+        }
+
+        return new IgniteBiTuple<>(errKeys.toArray(), firstSqlEx);
     }
 
     /**
