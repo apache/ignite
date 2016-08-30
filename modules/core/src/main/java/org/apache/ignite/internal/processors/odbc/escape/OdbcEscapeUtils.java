@@ -105,14 +105,14 @@ public class OdbcEscapeUtils {
 
                     if (nested == null)
                         // Found sequence without nesting, process it.
-                        parseRes = parseExpression(text, openPos, curPos + 1 - openPos);
+                        parseRes = parseEscapeSequence(text, openPos, curPos + 1 - openPos);
                     else {
                         // Special case to process nesting.
                         String res0 = appendNested(text, openPos, curPos + 1, nested);
 
                         nested = null;
 
-                        parseRes = parseExpression(res0, 0, res0.length());
+                        parseRes = parseEscapeSequence(res0, 0, res0.length());
                     }
 
                     if (earlyExit)
@@ -139,14 +139,14 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse concrete expression.
+     * Parse escape sequence: {escape_sequence}.
      *
      * @param text Text.
      * @param startPos Start position within text.
      * @param len Length.
      * @return Result.
      */
-    private static String parseExpression(String text, int startPos, int len) {
+    private static String parseEscapeSequence(String text, int startPos, int len) {
         assert validSubstring(text, startPos, len);
 
         char firstChar = text.charAt(startPos);
@@ -228,7 +228,7 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse standard token.
+     * Parse standard expression: {TOKEN expression}
      *
      * @param text Text.
      * @param startPos Start position.
@@ -245,10 +245,13 @@ public class OdbcEscapeUtils {
 
         switch (token.type()) {
             case SCALAR_FUNCTION:
-                return parseScalarExpression(text, startPos0, len0);
+                return parseExpression(text, startPos0, len0);
 
-            case GUID:
-                return parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+            case GUID: {
+                String res = parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+
+                return "CAST(" + res + " AS UUID)";
+            }
 
             case DATE:
                 return parseExpression(text, startPos0, len0, token.type(), DATE_PATTERN);
@@ -259,6 +262,9 @@ public class OdbcEscapeUtils {
             case TIMESTAMP:
                 return parseExpression(text, startPos0, len0, token.type(), TIMESTAMP_PATTERN);
 
+            case OUTER_JOIN:
+                return parseExpression(text, startPos0, len0);
+
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
                     substring(text, startPos, len) + ", token=" + token.type().body() + ']');
@@ -266,19 +272,19 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse scalar function expression.
+     * Parse simple expression.
      *
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseScalarExpression(String text, int startPos, int len) {
+    private static String parseExpression(String text, int startPos, int len) {
         return substring(text, startPos, len).trim();
     }
 
     /**
-     * Parse concrete expression.
+     * Parse expression and validate against ODBC specification with regex pattern.
      *
      * @param text Text.
      * @param startPos Start position.
@@ -286,12 +292,12 @@ public class OdbcEscapeUtils {
      * @return Parsed expression.
      */
     private static String parseExpression(String text, int startPos, int len, OdbcEscapeType type, Pattern pattern) {
-        String val = substring(text, startPos, len).trim();
+        String val = parseExpression(text, startPos, len);
 
         if (!pattern.matcher(val).matches())
             throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
-        return "CAST(" + val + " AS UUID)";
+        return val;
     }
 
     /**
