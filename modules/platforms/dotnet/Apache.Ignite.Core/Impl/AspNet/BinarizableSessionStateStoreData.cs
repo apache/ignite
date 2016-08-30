@@ -36,16 +36,26 @@ namespace Apache.Ignite.Core.Impl.AspNet
             _staticObjects = new KeyValueDirtyTrackedCollection(reader);
         }
 
+        /// <summary>
+        /// Gets the items.
+        /// </summary>
         public KeyValueDirtyTrackedCollection Items
         {
             get { return _items; }
         }
 
+        /// <summary>
+        /// Gets the static objects.
+        /// </summary>
         public KeyValueDirtyTrackedCollection StaticObjects
         {
             get { return _staticObjects; }
         }
 
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
             throw new System.NotImplementedException();

@@ -41,6 +41,13 @@ namespace Apache.Ignite.Core.Impl.Collections
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through 
+        /// the collection.
+        /// </returns>
         public IEnumerator GetEnumerator()
         {
             foreach (var entry in _dict)
@@ -49,26 +56,50 @@ namespace Apache.Ignite.Core.Impl.Collections
             return _dict.Select(x => new DictionaryEntry(x.Key, x.Value.Value)).GetEnumerator();
         }
 
+        /// <summary>
+        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> 
+        /// to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+        /// </summary>
+        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of 
+        /// the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> 
+        /// must have zero-based indexing.</param>
+        /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
         public void CopyTo(Array array, int index)
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="T:System.Collections.ICollection" />.
+        /// </summary>
         public int Count
         {
             get { return _dict.Count; }
         }
 
+        /// <summary>
+        /// Gets an object that can be used to synchronize access 
+        /// to the <see cref="T:System.Collections.ICollection" />.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
         public object SyncRoot
         {
             get { throw new NotSupportedException(); }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection" /> 
+        /// is synchronized (thread safe).
+        /// </summary>
         public bool IsSynchronized
         {
             get { return false; }
         }
 
+        /// <summary>
+        /// Gets or sets the value with the specified key.
+        /// </summary>
         public object this[object key]
         {
             get
@@ -81,7 +112,10 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
             set
             {
-                var entry = _dict[key];
+                Entry entry;
+
+                if (!_dict.TryGetValue(key, out entry))
+                    entry = new Entry();
 
                 entry.IsDirty = true;
 
@@ -89,12 +123,11 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
         }
 
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ReadBinary(IBinaryReader reader)
         {
             throw new NotImplementedException();
         }
