@@ -146,7 +146,10 @@ class VisorConsole {
         batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
 
         val inputStream = batchStream match {
-            case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
+            case Some(cmd) =>
+                visor.batchMode = true
+
+                new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
             case None => new FileInputStream(FileDescriptor.in)
         }
 

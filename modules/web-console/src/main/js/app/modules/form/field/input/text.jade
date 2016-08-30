@@ -43,6 +43,6 @@ mixin feedback(isCheckPristine, error, errorMessage)
         data-ng-focus='tableReset()'
     )
 
-    +feedback(true, 'required', '{{ label.name }} could not be empty!')
+    +feedback(true, 'required', '{{ labelName }} could not be empty!')
 
     span.transclude-here

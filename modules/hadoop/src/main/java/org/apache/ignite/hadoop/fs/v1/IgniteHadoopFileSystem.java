@@ -309,7 +309,12 @@ public class IgniteHadoopFileSystem extends FileSystem {
             else
                 clientLog = IgfsLogger.disabledLogger();
 
-            modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            try {
+                modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            }
+            catch (IgniteCheckedException ice) {
+                throw new IOException(ice);
+            }
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 

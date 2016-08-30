@@ -47,9 +47,7 @@ if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
-if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
-
-set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
+if "%HADOOP_EDITION%" == "1" FOR /F "delims=" %%i IN ('%JAVA_HOME%\bin\java.exe -cp %IGNITE_HOME%\libs\ignite-hadoop\* org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain ";"' ) DO set IGNITE_HADOOP_CLASSPATH=%%i
 
 if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
 

@@ -98,5 +98,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal void* onClientDisconnected;
         internal void* ocClientReconnected;
+
+        internal void* affinityFunctionInit;
+        internal void* affinityFunctionPartition;
+        internal void* affinityFunctionAssignPartitions;
+        internal void* affinityFunctionRemoveNode;
+        internal void* affinityFunctionDestroy;
     }
 }
