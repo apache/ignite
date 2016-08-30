@@ -27,16 +27,16 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  * Backup future.
  */
 public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo {
-    /** */
+    /** Backup future ID. Timestamp when future was created. */
     private final long backupId;
 
-    /** */
+    /** Originating node ID. */
     private final UUID node;
 
-    /** */
+    /** Cases involved in full backup process. */
     private final Collection<String> cacheNames;
 
-    /** */
+    /** Init future. */
     private final GridFutureAdapter initFut = new GridFutureAdapter();
 
     /** */
@@ -44,9 +44,6 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
 
     /** */
     private final Collection<UUID> requiredAcks = new GridConcurrentHashSet<>();
-
-    /** */
-    private final Collection<UUID> receivedAcks = new GridConcurrentHashSet<>();
 
     /**
      * @param backupId Backup ID.
@@ -86,6 +83,7 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
 
     /**
      * Marks future as initialized.
+     *
      * @param requiredAcks Acks that are required for completion.
      */
     public void init(Collection<UUID> requiredAcks) {
@@ -102,7 +100,9 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
      * @param nodeId Ack sender.
      */
     public void onAckReceived(UUID nodeId) {
-        receivedAcks.add(nodeId);
+        assert initialized;
+
+        requiredAcks.remove(nodeId);
 
         checkCompleted();
     }
@@ -111,7 +111,7 @@ public class BackupFuture extends GridFutureAdapter<Void> implements BackupInfo 
      * Complete future if all requirements are fulfilled.
      */
     private void checkCompleted() {
-        if (initialized && receivedAcks.containsAll(requiredAcks))
+        if (initialized && requiredAcks.isEmpty())
             onDone();
     }
 

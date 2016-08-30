@@ -550,10 +550,11 @@ public interface Ignite extends AutoCloseable {
     public <K> Affinity<K> affinity(String cacheName);
 
     /**
-     * Starts backup process.
+     * Starts backup process. Allows in time only one backup process.
      *
      * @param cacheNames Cache names. {@code Null} to save all caches.
      * @return Backup future.
+     * @throws IgniteException If failed to start backup process.
      */
-    @Nullable public BackupFuture makeBackupAsync(Collection<String> cacheNames);
+    @Nullable public BackupFuture makeBackupAsync(Collection<String> cacheNames) throws IgniteException;
 }
