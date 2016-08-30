@@ -250,6 +250,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("SetAndReleaseItemExclusive", id, context);
 
+            // This will put unlocked item, no need to release separately.
             PutSessionStateStoreData(id, item);
         }
 
