@@ -212,15 +212,6 @@ namespace ignite
     }
 }
 
-/** Node started during the test. */
-Ignite grid = Ignite();
-
-/** Cache accessor. */
-Cache<int, QueryPerson> GetCache()
-{
-    return grid.GetCache<int, QueryPerson>("cache");
-}
-
 /**
  * Ensure that HasNext() fails.
  *
@@ -592,7 +583,7 @@ struct CacheQueryTestSuiteFixture
     /** Person cache accessor. */
     Cache<int, QueryPerson> GetPersonCache()
     {
-        return grid.GetCache<int, QueryPerson>("QueryPerson");
+        return grid.GetCache<int, QueryPerson>("cache");
     }
 
     /** Node started during the test. */
@@ -606,7 +597,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQuery)
 {    
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     SqlQuery qry("QueryPerson", "age < 20");
@@ -662,7 +653,7 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  */
 BOOST_AUTO_TEST_CASE(TestTextQuery)
 {
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     TextQuery qry("QueryPerson", "A1");
@@ -708,7 +699,7 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
 BOOST_AUTO_TEST_CASE(TestScanQuery)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     ScanQuery qry;
@@ -744,7 +735,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
 BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 {
     // Populate cache with data.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     int32_t partCnt = 256;   // Defined in configuration explicitly.   
     int32_t entryCnt = 1000; // Should be greater than partCnt.
@@ -793,7 +784,7 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -838,7 +829,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -883,7 +874,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -946,7 +937,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select name, age from QueryPerson");
@@ -1012,7 +1003,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday<'1990-01-01'");
@@ -1073,7 +1064,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday>'2070-01-01'");
@@ -1134,7 +1125,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday='2032-01-01'");
@@ -1186,7 +1177,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated<'2016-01-01 01:00:00'");
@@ -1247,7 +1238,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated>'2016-01-01 15:30:00'");
@@ -1310,7 +1301,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated='2016-01-01 09:18:00'");

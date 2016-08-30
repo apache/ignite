@@ -41,6 +41,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -108,35 +110,43 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         File f = fileForPath(path);
 
-        if (!recursive || !f.isDirectory())
+        if (!recursive)
             return f.delete();
         else
-            return deleteDirectory(f);
+            return deleteRecursive(f);
     }
 
     /**
      * Delete directory recursively.
      *
-     * @param dir Directory.
+     * @param f Directory.
      * @return {@code true} if successful.
      */
-    private boolean deleteDirectory(File dir) {
-        File[] entries = dir.listFiles();
+    private boolean deleteRecursive(File f) {
+        BasicFileAttributes attrs;
+
+        try {
+            attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        }
+        catch (IOException ignore) {
+            return false;
+        }
+
+        if (!attrs.isDirectory() || attrs.isSymbolicLink())
+            return f.delete();
+
+        File[] entries = f.listFiles();
 
         if (entries != null) {
             for (File entry : entries) {
-                if (entry.isDirectory())
-                    deleteDirectory(entry);
-                else if (entry.isFile()) {
-                    if (!entry.delete())
-                        return false;
-                }
-                else
-                    throw new UnsupportedOperationException("Symlink deletion is not yet supported: " + entry);
+                boolean res = deleteRecursive(entry);
+
+                if (!res)
+                    return false;
             }
         }
 
-        return dir.delete();
+        return f.delete();
     }
 
     /** {@inheritDoc} */
