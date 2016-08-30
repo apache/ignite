@@ -28,7 +28,8 @@ namespace Apache.Ignite.Core.Impl.AspNet
     public class BinarizableSessionStateStoreData : IBinaryWriteAware
     {
         private readonly KeyValueDirtyTrackedCollection _items;
-        private readonly KeyValueDirtyTrackedCollection _staticObjects;
+
+        private readonly byte[] _staticObjects;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
         {
             _items = new KeyValueDirtyTrackedCollection(reader);
-            _staticObjects = new KeyValueDirtyTrackedCollection(reader);
+            _staticObjects = reader.ReadByteArray();
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         public BinarizableSessionStateStoreData()
         {
             _items = new KeyValueDirtyTrackedCollection();
-            _staticObjects = new KeyValueDirtyTrackedCollection();
+            _staticObjects = null;
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <summary>
         /// Gets the static objects.
         /// </summary>
-        public KeyValueDirtyTrackedCollection StaticObjects
+        public byte[] StaticObjects
         {
             get { return _staticObjects; }
         }
