@@ -229,7 +229,7 @@ namespace ignite
                     // Needed for exception safety.
                     batch = 0;
 
-                    batch = new QueryBatch(env, inMem);
+                    batch = new QueryBatch(*env.Get(), inMem);
 
                     endReached = batch->IsEmpty();
 
