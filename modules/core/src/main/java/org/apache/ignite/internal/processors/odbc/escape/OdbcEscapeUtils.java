@@ -76,12 +76,9 @@ public class OdbcEscapeUtils {
         while (curPos < text.length()) {
             char curChar = text.charAt(curPos);
 
-            if (curChar == '\'') {
-                if (!insideLiteral)
-                    insideLiteral = true;
-                else if (text.charAt(curPos - 1) != '\\')
-                    insideLiteral = false;
-            }
+            if (curChar == '\'')
+                /* Escaped quote in odbc is two successive singe quotes. They'll flip flag twice without side-effect. */
+                insideLiteral = !insideLiteral;
             else if (!insideLiteral) {
                 if (curChar == '{') {
                     if (openPos == -1) {
@@ -173,11 +170,7 @@ public class OdbcEscapeUtils {
 
             OdbcEscapeToken token = parseToken(text, startPos, len);
 
-            if (token.type().standard())
-                return parseStandardExpression(text, startPos, len, token);
-            else
-                throw new IgniteException("Unsupported escape sequence token [text=" +
-                    substring(text, startPos, len) + ", token=" + token.type().body() + ']');
+            return parseEscapeSequence(text, startPos, len, token);
         }
         else {
             // Nothing to escape, return original string.
@@ -209,18 +202,17 @@ public class OdbcEscapeUtils {
 
         for (OdbcEscapeType typ : OdbcEscapeType.sortedValues()) {
             if (text.startsWith(typ.body(), pos)) {
-                if (typ != OdbcEscapeType.ESCAPE_WO_TOKEN) {
+                if (typ.standard())
                     pos += typ.body().length();
 
-                    empty = (startPos + len == pos + 1);
+                empty = (startPos + len == pos + 1);
 
-                    if (!empty && typ.standard()) {
-                        char charAfter = text.charAt(pos);
+                if (!empty && typ.standard()) {
+                    char charAfter = text.charAt(pos);
 
-                        if (!Character.isWhitespace(charAfter))
-                            throw new IgniteException("Unexpected escape sequence token: " +
-                                substring(text, startPos, len));
-                    }
+                    if (!Character.isWhitespace(charAfter))
+                        throw new IgniteException("Unexpected escape sequence token: " +
+                            substring(text, startPos, len));
                 }
 
                 curTyp = typ;
@@ -247,7 +239,7 @@ public class OdbcEscapeUtils {
      * @param token Token.
      * @return Result.
      */
-    private static String parseStandardExpression(String text, int startPos, int len, OdbcEscapeToken token) {
+    private static String parseEscapeSequence(String text, int startPos, int len, OdbcEscapeToken token) {
         assert validSubstring(text, startPos, len);
 
         // Get expression borders.

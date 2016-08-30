@@ -528,9 +528,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select '{' + {fn func()} + '}' from table;"
         );
 
+        // quoted two single quotes should be interpret as apostrophe
         check(
-            "select '{\\'{fn test()}\\'}' from table;",
-            "select '{\\'{fn test()}\\'}' from table;"
+            "select '{''{fn test()}''}' from table;",
+            "select '{''{fn test()}''}' from table;"
         );
 
         checkFail("'{fn test()}");
@@ -583,6 +584,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select * from t where value LIKE '\\%AAA%' ESCAPE '\\' ORDER BY id;",
             "select * from t where value LIKE '\\%AAA%' {escape '\\'} ORDER BY id;"
         );
+
+        check(
+            "select * from t where value LIKE '\\%AAA''s%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA''s%' {escape '\\'}"
+        );
     }
 
     /**
@@ -590,7 +596,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testLikeEscapeSequenceWithWhitespaces() throws Exception {
         check("ESCAPE '\\'", "{ '\\' }");
-        check("ESCAPE '\\'", "{ escape '\\' }");
+        check("ESCAPE '\\'", "{ escape '\\'}");
 
         check("ESCAPE '\\'", "{   '\\' }");
         check("ESCAPE '\\'", "{   escape   '\\' }");
@@ -602,7 +608,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
-    public void testLikeOnInvalidFunctionSequence() {
+    public void testLikeOnInvalidLikeEscapeSequence() {
+        checkFail("LIKE 'AAA's'");
+        checkFail("LIKE 'AAA\'s'");
+
         checkFail("LIKE '\\%AAA%' {escape'\\' }");
 
         checkFail("LIKE '\\%AAA%' {'\\' ORDER BY id");

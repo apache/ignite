@@ -40,10 +40,10 @@ public enum OdbcEscapeType {
     GUID("guid", true, false),
 
     /** LIKE escape character clause. */
-    ESCAPE_WO_TOKEN("\'", false, true),
+    ESCAPE_WO_TOKEN("\'", false, false),
 
     /** LIKE escape character clause. */
-    ESCAPE("escape", true, true);
+    ESCAPE("escape", true, false);
 
     /** Values in convenient order. */
     private static final OdbcEscapeType[] VALS = new OdbcEscapeType[] {
