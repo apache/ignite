@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -54,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -95,7 +93,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
@@ -136,8 +134,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Integer.getInteger(IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT, 500);
 
     /** One phase commit deferred ack request buffer size. */
-    private static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_SIZE =
-        Integer.getInteger(IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_SIZE, 256);
+    private static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE =
+        Integer.getInteger(IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE, 256);
 
     /** Version in which deadlock detection introduced. */
     public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.19");
@@ -184,8 +182,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
             PER_SEGMENT_Q);
 
-    /** Pending one phase commit ack requests. */
-    private ConcurrentMap<UUID, DeferredOnePhaseCommitAckRequestBuffer> pendingOnePhaseCommitAckRequests;
+    /** Pending one phase commit ack requests sender. */
+    private GridDeferredAckMessageSender deferredAckMessageSender;
 
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
@@ -266,7 +264,32 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txHnd = new IgniteTxHandler(cctx);
 
         if (!cctx.gridConfig().isClientMode())
-            pendingOnePhaseCommitAckRequests = new ConcurrentHashMap8<>();
+            deferredAckMessageSender = new GridDeferredAckMessageSender(cctx.time(), cctx.kernalContext().closure()) {
+                @Override public int getTimeout() {
+                    return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
+                }
+
+                @Override public int getBufferSize() {
+                    return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE;
+                }
+
+                @Override public void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers) {
+                    GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(vers);
+
+                    cctx.kernalContext().gateway().readLock();
+
+                    try {
+                        cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Failed to send one phase commit ack to backup node [backup=" +
+                            nodeId + ']', e);
+                    }
+                    finally {
+                        cctx.kernalContext().gateway().readUnlock();
+                    }
+                }
+            };
     }
 
     /** {@inheritDoc} */
@@ -2217,28 +2240,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param ver Version to ack.
      */
     public void sendDeferredAckResponse(UUID nodeId, GridCacheVersion ver) {
-        while (true) {
-            DeferredOnePhaseCommitAckRequestBuffer buf = pendingOnePhaseCommitAckRequests.get(nodeId);
-
-            if (buf == null) {
-                buf = new DeferredOnePhaseCommitAckRequestBuffer(nodeId);
-
-                DeferredOnePhaseCommitAckRequestBuffer old = pendingOnePhaseCommitAckRequests.putIfAbsent(nodeId, buf);
-
-                if (old == null) {
-                    // We have successfully added buffer to map.
-                    cctx.time().addTimeoutObject(buf);
-                }
-                else
-                    buf = old;
-            }
-
-            if (!buf.addRequest(ver))
-                // Some thread is sending filled up buffer, we can remove it.
-                pendingOnePhaseCommitAckRequests.remove(nodeId, buf);
-            else
-                break;
-        }
+        deferredAckMessageSender.sendDeferredAckMessage(nodeId, ver);
     }
 
     /**
@@ -2569,131 +2571,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 else
                     throw e;
             }
-        }
-    }
-
-    /**
-     * Deferred response buffer.
-     */
-    private class DeferredOnePhaseCommitAckRequestBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Filled atomic flag. */
-        private AtomicBoolean guard = new AtomicBoolean(false);
-
-        /** Request versions. */
-        private ConcurrentLinkedDeque8<GridCacheVersion> vers = new ConcurrentLinkedDeque8<>();
-
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /** Timeout ID. */
-        private final IgniteUuid timeoutId;
-
-        /** End time. */
-        private final long endTime;
-
-        /**
-         * @param nodeId Node ID to send message to.
-         */
-        private DeferredOnePhaseCommitAckRequestBuffer(UUID nodeId) {
-            this.nodeId = nodeId;
-
-            timeoutId = IgniteUuid.fromUuid(nodeId);
-
-            endTime = U.currentTimeMillis() + DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid timeoutId() {
-            return timeoutId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return endTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (guard.compareAndSet(false, true)) {
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        writeLock().lock();
-
-                        try {
-                            finish();
-                        }
-                        finally {
-                            writeLock().unlock();
-                        }
-                    }
-                });
-            }
-        }
-
-        /**
-         * Adds deferred request to buffer.
-         *
-         * @param ver Version to send.
-         * @return {@code True} if request was handled, {@code false} if this buffer is filled and cannot be used.
-         */
-        public boolean addRequest(GridCacheVersion ver) {
-            readLock().lock();
-
-            boolean snd = false;
-
-            try {
-                if (guard.get())
-                    return false;
-
-                vers.add(ver);
-
-                if (vers.sizex() > DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_SIZE && guard.compareAndSet(false, true))
-                    snd = true;
-            }
-            finally {
-                readLock().unlock();
-            }
-
-            if (snd) {
-                // Wait all threads in read lock to finish.
-                writeLock().lock();
-
-                try {
-                    finish();
-
-                    cctx.time().removeTimeoutObject(this);
-                }
-                finally {
-                    writeLock().unlock();
-                }
-            }
-
-            return true;
-        }
-
-        /**
-         * Sends deferred notification message and removes this buffer from pending responses map.
-         */
-        private void finish() {
-            GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(vers);
-
-            cctx.kernalContext().gateway().readLock();
-
-            try {
-                cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to send one phase commit ack to backup node [backup=" +
-                    nodeId + ']', e);
-            }
-            finally {
-                cctx.kernalContext().gateway().readUnlock();
-            }
-
-            pendingOnePhaseCommitAckRequests.remove(nodeId, this);
         }
     }
 }
