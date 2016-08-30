@@ -29,6 +29,8 @@ namespace Apache.Ignite.AspNet.Impl
     /// </summary>
     internal class IgniteSessionStateItemCollection : ISessionStateItemCollection
     {
+        // TODO: Dedicated test!
+
         private readonly KeyValueDirtyTrackedCollection _collection;
 
         public IgniteSessionStateItemCollection(KeyValueDirtyTrackedCollection collection)

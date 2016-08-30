@@ -121,7 +121,6 @@ namespace Apache.Ignite.AspNet.Impl
 
                 return stream.ToArray();
             }
-
         }
     }
 }
