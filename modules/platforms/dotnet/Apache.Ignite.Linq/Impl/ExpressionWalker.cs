@@ -118,6 +118,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public static T EvaluateExpression<T>(Expression expr)
         {
+            var constExpr = expr as ConstantExpression;
+
+            if (constExpr != null)
+                return (T)constExpr.Value;
+
             var memberExpr = expr as MemberExpression;
 
             if (memberExpr != null)
@@ -136,6 +141,11 @@ namespace Apache.Ignite.Linq.Impl
                     return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => CompileMemberReader(memberExpr))(target);
                 }
             }
+
+            // Case for compiled queries: return unchanged.
+            // ReSharper disable once CanBeReplacedWithTryCastAndCheckForNull
+            if (expr is ParameterExpression)
+                return (T) (object) expr;
 
             throw new NotSupportedException("Expression not supported: " + expr);
         }

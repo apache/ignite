@@ -31,7 +31,7 @@
 namespace ignite
 {
     /**
-     * This class defines a factory for the main Ignite API.
+     * This class defines a factory for the main %Ignite API.
      */
     class IGNITE_IMPORT_EXPORT Ignition
     {

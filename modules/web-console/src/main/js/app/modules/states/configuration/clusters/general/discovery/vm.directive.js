@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './vm.jade!';
+import templateUrl from './vm.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryVm', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
