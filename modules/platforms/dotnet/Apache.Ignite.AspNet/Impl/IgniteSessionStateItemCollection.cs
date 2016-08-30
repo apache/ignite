@@ -86,8 +86,8 @@ namespace Apache.Ignite.AspNet.Impl
 
         object ISessionStateItemCollection.this[int index]
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get { return _collection[index]; }
+            set { _collection[index] = value; }
         }
 
         public NameObjectCollectionBase.KeysCollection Keys

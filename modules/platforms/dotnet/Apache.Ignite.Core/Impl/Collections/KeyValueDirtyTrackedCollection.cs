@@ -31,7 +31,9 @@ namespace Apache.Ignite.Core.Impl.Collections
     public class KeyValueDirtyTrackedCollection : ICollection, IBinaryWriteAware  // TODO: Generic?
     {
         // TODO: Keep deserialized while not needed.
+        // TODO: Dedicated unit test
         private readonly Dictionary<object, Entry> _dict = new Dictionary<object, Entry>();
+        private readonly List<Entry> _list = new List<Entry>();
 
         private bool _dirtyAll;
 
@@ -140,7 +142,32 @@ namespace Apache.Ignite.Core.Impl.Collections
                 {
                     entry = new Entry();
                     _dict[key] = entry;
+                    _list.Add(entry);
                 }
+
+                entry.IsDirty = true;
+
+                entry.Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the value at the specified index.
+        /// </summary>
+        public object this[int index]
+        {
+            get
+            {
+                var entry = _list[index];
+
+                // TODO: Check for immutable type
+                entry.IsDirty = true;
+
+                return entry.Value;
+            }
+            set
+            {
+                var entry = _list[index];
 
                 entry.IsDirty = true;
 
