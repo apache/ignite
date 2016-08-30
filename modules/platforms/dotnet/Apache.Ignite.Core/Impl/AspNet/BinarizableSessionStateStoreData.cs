@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <param name="reader">The reader.</param>
         internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
         {
+            Timeout = reader.ReadInt();
             _items = new KeyValueDirtyTrackedCollection(reader);
             _staticObjects = reader.ReadByteArray();
         }
