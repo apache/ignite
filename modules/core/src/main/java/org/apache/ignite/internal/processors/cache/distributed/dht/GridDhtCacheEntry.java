@@ -574,8 +574,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
         try {
             synchronized (this) {
-                CacheObject prev = saveValueForIndexUnlocked();
-
                 // Call markObsolete0 to avoid recursive calls to clear if
                 // we are clearing dht local partition (onMarkedObsolete should not be called).
                 if (!markObsolete0(ver, false, extras)) {
@@ -593,11 +591,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isTraceEnabled()) {
                     log.trace("clearInternal [key=" + key +
                         ", entry=" + System.identityHashCode(this) +
-                        ", prev=" + prev +
                         ']');
                 }
 
-                removeValue(prev, ver);
+                removeValue();
 
                 // Give to GC.
                 update(null, 0L, 0L, ver, true);

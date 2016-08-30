@@ -167,7 +167,7 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean store(@Nullable String spaceName,
+    public void store(@Nullable String spaceName,
         GridQueryTypeDescriptor type,
         KeyCacheObject key,
         int partId,
@@ -184,22 +184,12 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
-
-    /**
-     * @param space Space name.
-     * @param key Key.
-     * @param partId Partition.
-     * @return Read versioned value.
-     */
-    IgniteBiTuple<CacheObject, GridCacheVersion> read(String space, KeyCacheObject key, int partId)
-        throws IgniteCheckedException;
-
-    /**
-     * @param space Space name.
-     * @return Primary key index.
-     */
-    public BPlusTree<?, ? extends CacheDataRow> pkIndex(String space);
+    public void remove(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.

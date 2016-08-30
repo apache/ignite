@@ -132,6 +132,12 @@ public abstract class PageIO {
     public static final short T_METASTORE_LEAF = 12;
 
     /** */
+    public static final short T_PENDING_REF_INNER = 13;
+
+    /** */
+    public static final short T_PENDING_REF_LEAF = 14;
+
+    /** */
     private final int ver;
 
     /** */

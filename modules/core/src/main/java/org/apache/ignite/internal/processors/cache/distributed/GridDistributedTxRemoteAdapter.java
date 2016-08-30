@@ -558,6 +558,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     op,
                                                     nearXidVersion(),
                                                     writeVersion(),
+                                                    0,
                                                     txEntry.key().partition(),
                                                     txEntry.updateCounter()
                                                 )
