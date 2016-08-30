@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     {
         // TODO: Keep deserialized while not needed.
         // TODO: Dedicated unit test
-        private readonly Dictionary<object, Entry> _dict = new Dictionary<object, Entry>();
+        private readonly Dictionary<string, int> _dict = new Dictionary<string, int>();
         private readonly List<Entry> _list = new List<Entry>();
 
         private bool _dirtyAll;
@@ -49,14 +49,14 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             for (var i = 0; i < count; i++)
             {
-                var key = binaryReader.ReadObject<object>();
+                var key = binaryReader.ReadString();
 
-                var entry = new Entry
+                var entry = new Entry(key)
                 {
                     Value = binaryReader.ReadObject<object>()
                 };
 
-                _dict[key] = entry;
+                _dict[key] = _list.Count;
 
                 _list.Add(entry);
             }
@@ -79,10 +79,10 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </returns>
         public IEnumerator GetEnumerator()
         {
-            foreach (var entry in _dict.Values)
+            foreach (var entry in _list)
                 SetDirtyOnRead(entry);
 
-            return _dict.Select(x => new DictionaryEntry(x.Key, x.Value.Value)).GetEnumerator();
+            return _dict.Select(x => new DictionaryEntry(x.Key, _list[x.Value])).GetEnumerator();
         }
 
         /// <summary>
@@ -96,13 +96,13 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// <summary>
         /// Gets or sets the value with the specified key.
         /// </summary>
-        public object this[object key]
+        public object this[string key]
         {
             get
             {
-                Entry entry;
+                var entry = GetEntry(key);
 
-                if (!_dict.TryGetValue(key, out entry))
+                if (entry == null)
                     return null;
 
                 SetDirtyOnRead(entry);
@@ -111,12 +111,12 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
             set
             {
-                Entry entry;
+                var entry = GetEntry(key);
 
-                if (!_dict.TryGetValue(key, out entry))
+                if (entry == null)
                 {
-                    entry = new Entry();
-                    _dict[key] = entry;
+                    entry = new Entry(key);
+                    _dict[key] = _list.Count;
                     _list.Add(entry);
                 }
 
@@ -124,6 +124,20 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 entry.Value = value;
             }
+        }
+
+        private Entry GetEntry(string key)
+        {
+            int index;
+
+            return !_dict.TryGetValue(key, out index) ? null : _list[index];
+        }
+
+        private int GetIndex(string key)
+        {
+            int index;
+
+            return !_dict.TryGetValue(key, out index) ? -1 : index;
         }
 
         /// <summary>
@@ -154,8 +168,16 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public bool IsDirty
         {
-            get { return _dirtyAll || _dict.Values.Any(x => x.IsDirty); }
+            get { return _dirtyAll || _list.Any(x => x.IsDirty); }
             set { _dirtyAll = value; }
+        }
+
+        /// <summary>
+        /// Gets the keys.
+        /// </summary>
+        public IEnumerable<string> Keys
+        {
+            get { return _dict.Keys; }
         }
 
         /// <summary>
@@ -171,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             foreach (var entry in _dict)
             {
                 raw.WriteObject(entry.Key);
-                raw.WriteObject(entry.Value.Value);
+                raw.WriteObject(_list[entry.Value]);
             }
         }
 
@@ -198,10 +220,52 @@ namespace Apache.Ignite.Core.Impl.Collections
             return false;
         }
 
+        /// <summary>
+        /// Removes the specified key.
+        /// </summary>
+        public void Remove(string key)
+        {
+            var index = GetIndex(key);
+
+            if (index < 0)
+                return;
+
+            _dict.Remove(key);
+            _list.RemoveAt(index);
+        }
+
+        /// <summary>
+        /// Removes at specified index.
+        /// </summary>
+        public void RemoveAt(int index)
+        {
+            var entry = _list[index];
+
+            _list.RemoveAt(index);
+            _dict.Remove(entry.Key);
+        }
+
+        /// <summary>
+        /// Clears this instance.
+        /// </summary>
+        public void Clear()
+        {
+            _list.Clear();
+            _dict.Clear();
+
+            _dirtyAll = true;
+        }
+
         private class Entry
         {
             public object Value;
             public bool IsDirty;
+            public readonly string Key;
+
+            public Entry(string key)
+            {
+                Key = key;
+            }
         }
     }
 }

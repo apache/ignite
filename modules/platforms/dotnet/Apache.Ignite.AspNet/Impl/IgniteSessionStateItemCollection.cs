@@ -67,17 +67,17 @@ namespace Apache.Ignite.AspNet.Impl
 
         public void Remove(string name)
         {
-            throw new NotImplementedException();
+            _collection.Remove(name);
         }
 
         public void RemoveAt(int index)
         {
-            throw new NotImplementedException();
+            _collection.RemoveAt(index);
         }
 
         public void Clear()
         {
-            throw new NotImplementedException();
+            _collection.Clear();
         }
 
         object ISessionStateItemCollection.this[string name]
@@ -94,7 +94,7 @@ namespace Apache.Ignite.AspNet.Impl
 
         public NameObjectCollectionBase.KeysCollection Keys
         {
-            get { throw new NotImplementedException(); }
+            get { return _collection.Keys; }
         }
 
         public bool Dirty
