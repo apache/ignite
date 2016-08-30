@@ -93,7 +93,7 @@ namespace ignite
                     jobject javaRef;
 
                     /** Current result batch. */
-                    ignite::common::concurrent::SharedPointer<QueryBatch> batch;
+                    QueryBatch* batch;
 
                     /** Whether cursor has no more elements available. */
                     bool endReached;

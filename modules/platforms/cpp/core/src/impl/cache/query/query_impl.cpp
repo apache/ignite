@@ -44,7 +44,7 @@ namespace ignite
                 QueryCursorImpl::QueryCursorImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                     env(env),
                     javaRef(javaRef),
-                    batch(),
+                    batch(0),
                     endReached(false),
                     iterCalled(false),
                     getAllCalled(false)
@@ -54,10 +54,13 @@ namespace ignite
 
                 QueryCursorImpl::~QueryCursorImpl()
                 {
-                    // 1. Close the cursor.
+                    // 1. Releasing memory.
+                    delete batch;
+
+                    // 2. Close the cursor.
                     env.Get()->Context()->QueryCursorClose(javaRef);
 
-                    // 2. Release Java reference.
+                    // 3. Release Java reference.
                     JniContext::Release(javaRef);
                 }
 
@@ -113,7 +116,7 @@ namespace ignite
                         return;
                     }
 
-                    batch.Get()->GetNext(op);
+                    batch->GetNext(op);
                 }
 
                 QueryFieldsRowImpl* QueryCursorImpl::GetNextRow(IgniteError& err)
@@ -136,7 +139,7 @@ namespace ignite
                         return 0;
                     }
 
-                    return batch.Get()->GetNextRow();
+                    return batch->GetNextRow();
                 }
 
                 void QueryCursorImpl::GetAll(OutputOperation& op, IgniteError& err)
@@ -201,9 +204,7 @@ namespace ignite
                 {
                     assert(iterCalled);
 
-                    QueryBatch *rawBatch = batch.Get();
-
-                    if (endReached || (rawBatch && rawBatch->Left() > 0))
+                    if (endReached || (batch && batch->Left() > 0))
                         return true;
 
                     endReached = !IteratorHasNext(err);
@@ -223,9 +224,14 @@ namespace ignite
                     if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                         return false;
 
-                    batch = SharedPointer<QueryBatch>(new QueryBatch(env, inMem));
+                    delete batch;
 
-                    endReached = batch.Get()->IsEmpty();
+                    // Needed for exception safety.
+                    batch = 0;
+
+                    batch = new QueryBatch(env, inMem);
+
+                    endReached = batch->IsEmpty();
 
                     return true;
                 }
