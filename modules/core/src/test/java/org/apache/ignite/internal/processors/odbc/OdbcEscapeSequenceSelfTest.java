@@ -389,7 +389,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test escape sequence series.
+     * Test non-escape sequences.
      */
     public void testNonEscapeSequence() throws Exception {
         check("'{fn test()}'", "'{fn test()}'");
