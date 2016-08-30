@@ -42,6 +42,16 @@ namespace Apache.Ignite.Core.Impl.Collections
         internal KeyValueDirtyTrackedCollection(IBinaryRawReader binaryReader)
         {
             Debug.Assert(binaryReader != null);
+
+            var count = binaryReader.ReadInt();
+
+            for (var i = 0; i < count; i++)
+            {
+                _dict[binaryReader.ReadObject<object>()] = new Entry
+                {
+                    Value = binaryReader.ReadObject<object>()
+                };
+            }
         }
 
         /// <summary>
@@ -149,13 +159,21 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
-            throw new NotImplementedException();
+            var raw = writer.GetRawWriter();
+
+            raw.WriteInt(_dict.Count);
+
+            foreach (var entry in _dict)
+            {
+                raw.WriteObject(entry.Key);
+                raw.WriteObject(entry.Value.Value);
+            }
         }
 
         private class Entry
         {
             public object Value;
-            public bool IsDirty;
+            public bool IsDirty = true;
         }
     }
 }

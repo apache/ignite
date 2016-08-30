@@ -77,7 +77,11 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
-            throw new System.NotImplementedException();
+            var raw = (IBinaryRawWriter) writer;
+
+            raw.WriteInt(Timeout);
+            raw.WriteObject(Items);
+            raw.WriteByteArray(StaticObjects);
         }
     }
 }
