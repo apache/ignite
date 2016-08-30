@@ -44,6 +44,7 @@ import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -60,6 +61,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -259,8 +261,7 @@ public class IgnitionEx {
      * Gets states of named grid. If name is {@code null}, then state of
      * default no-name grid is returned.
      *
-     * @param name Grid name. If name is {@code null}, then state of
-     *      default no-name grid is returned.
+     * @param name Grid name. If name is {@code null}, then state of default no-name grid is returned.
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
@@ -279,12 +280,11 @@ public class IgnitionEx {
      * Stops default grid. This method is identical to {@code G.stop(null, cancel)} apply.
      * Note that method does not wait for all tasks to be completed.
      *
-     * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link ComputeJob#cancel()}
-     *      method. Note that just like with {@link Thread#interrupt()}, it is
-     *      up to the actual job to exit from execution
-     * @return {@code true} if default grid instance was indeed stopped,
-     *      {@code false} otherwise (if it was not started).
+     * @param cancel If {@code true} then all jobs currently executing on default grid will be cancelled by calling
+     * {@link ComputeJob#cancel()} method. Note that just like with {@link Thread#interrupt()}, it is up to the actual
+     * job to exit from execution
+     * @return {@code true} if default grid instance was indeed stopped, {@code false} otherwise (if it was not
+     * started).
      */
     public static boolean stop(boolean cancel) {
         return stop(null, cancel, false);
@@ -297,18 +297,14 @@ public class IgnitionEx {
      * If wait parameter is set to {@code true} then grid will wait for all
      * tasks to be finished.
      *
-     * @param name Grid name. If {@code null}, then default no-name grid will
-     *      be stopped.
-     * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link ComputeJob#cancel()} method. Note that just like with
-     *      {@link Thread#interrupt()}, it is up to the actual job to exit from
-     *      execution. If {@code false}, then jobs currently running will not be
-     *      canceled. In either case, grid node will wait for completion of all
-     *      jobs running on it before stopping.
+     * @param name Grid name. If {@code null}, then default no-name grid will be stopped.
+     * @param cancel If {@code true} then all jobs currently will be cancelled by calling {@link ComputeJob#cancel()}
+     * method. Note that just like with {@link Thread#interrupt()}, it is up to the actual job to exit from execution.
+     * If {@code false}, then jobs currently running will not be canceled. In either case, grid node will wait for
+     * completion of all jobs running on it before stopping.
      * @param stopNotStarted If {@code true} and node start did not finish then interrupts starting thread.
-     * @return {@code true} if named grid instance was indeed found and stopped,
-     *      {@code false} otherwise (the instance with given {@code name} was
-     *      not found).
+     * @return {@code true} if named grid instance was indeed found and stopped, {@code false} otherwise (the instance
+     * with given {@code name} was not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
@@ -357,10 +353,9 @@ public class IgnitionEx {
      * instead of blanket operation. In most cases, the party that started the grid instance
      * should be responsible for stopping it.
      *
-     * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
-     *      method. Note that just like with {@link Thread#interrupt()}, it is
-     *      up to the actual job to exit from execution
+     * @param cancel If {@code true} then all jobs currently executing on all grids will be cancelled by calling {@link
+     * ComputeJob#cancel()} method. Note that just like with {@link Thread#interrupt()}, it is up to the actual job to
+     * exit from execution
      */
     public static void stopAll(boolean cancel) {
         IgniteNamedInstance dfltGrid0 = dfltGrid;
@@ -406,10 +401,9 @@ public class IgnitionEx {
      * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM Ignite's process.
      *
-     * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
-     *      method. Note that just like with {@link Thread#interrupt()}, it is
-     *      up to the actual job to exit from execution.
+     * @param cancel If {@code true} then all jobs currently executing on all grids will be cancelled by calling {@link
+     * ComputeJob#cancel()} method. Note that just like with {@link Thread#interrupt()}, it is up to the actual job to
+     * exit from execution.
      * @see Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
@@ -453,10 +447,9 @@ public class IgnitionEx {
      * Note that upon completion of this method, the JVM with forcefully exist with
      * exit code {@link Ignition#KILL_EXIT_CODE}.
      *
-     * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
-     *      method. Note that just like with {@link Thread#interrupt()}, it is
-     *      up to the actual job to exit from execution.
+     * @param cancel If {@code true} then all jobs currently executing on all grids will be cancelled by calling {@link
+     * ComputeJob#cancel()} method. Note that just like with {@link Thread#interrupt()}, it is up to the actual job to
+     * exit from execution.
      * @see Ignition#KILL_EXIT_CODE
      */
     public static void kill(boolean cancel) {
@@ -472,8 +465,8 @@ public class IgnitionEx {
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
-     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
-     *      also if default grid has already been started.
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown also if
+     * default grid has already been started.
      */
     public static Ignite start() throws IgniteCheckedException {
         return start((GridSpringResourceContext)null);
@@ -484,13 +477,12 @@ public class IgnitionEx {
      * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
-     * @param springCtx Optional Spring application context, possibly {@code null}.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @param springCtx Optional Spring application context, possibly {@code null}. Spring bean definitions for bean
+     * injection are taken from this context. If provided, this context can be injected into grid tasks and grid jobs
+     * using {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @return Started grid.
-     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
-     *      also if default grid has already been started.
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown also if
+     * default grid has already been started.
      */
     public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         URL url = U.resolveIgniteUrl(DFLT_CFG);
@@ -509,8 +501,8 @@ public class IgnitionEx {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * @return Started grid.
-     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
-     *      also if named grid has already been started.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown also if named grid has
+     * already been started.
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
         return start(cfg, null, true);
@@ -520,11 +512,11 @@ public class IgnitionEx {
      * Starts a grid with given configuration. If the grid is already started and failIfStarted set to TRUE
      * an exception will be thrown.
      *
-     * @param cfg Grid configuration. This cannot be {@code null}.
-     * failIfStarted Throw or not an exception if grid is already started.
+     * @param cfg Grid configuration. This cannot be {@code null}. failIfStarted Throw or not an exception if grid is
+     * already started.
      * @return Started grid.
-     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
-     *      also if named grid has already been started.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown also if named grid has
+     * already been started.
      */
     public static Ignite start(IgniteConfiguration cfg, boolean failIfStarted) throws IgniteCheckedException {
         return start(cfg, null, failIfStarted);
@@ -535,15 +527,15 @@ public class IgnitionEx {
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * @param springCtx Optional Spring application context, possibly {@code null}.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @param springCtx Optional Spring application context, possibly {@code null}. Spring bean definitions for bean
+     * injection are taken from this context. If provided, this context can be injected into grid tasks and grid jobs
+     * using {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @return Started grid.
-     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
-     *      also if named grid has already been started.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown also if named grid has
+     * already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg,
+        @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), true).grid();
@@ -554,16 +546,16 @@ public class IgnitionEx {
      * an exception will be thrown.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * @param springCtx Optional Spring application context, possibly {@code null}.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @param springCtx Optional Spring application context, possibly {@code null}. Spring bean definitions for bean
+     * injection are taken from this context. If provided, this context can be injected into grid tasks and grid jobs
+     * using {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @param failIfStarted Throw or not an exception if grid is already started.
      * @return Started grid.
-     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
-     *      also if named grid has already been started.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown also if named grid has
+     * already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
+        boolean failIfStarted) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
@@ -579,11 +571,10 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(@Nullable String springCfgPath) throws IgniteCheckedException {
         return springCfgPath == null ? start() : start(springCfgPath, null);
@@ -600,13 +591,13 @@ public class IgnitionEx {
      *
      * @param springCfgPath Spring XML configuration file path or URL.
      * @param gridName Grid name that will override default.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath,
+        @Nullable String gridName) throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -628,9 +619,8 @@ public class IgnitionEx {
      *
      * @param springCfgUrl Spring XML configuration file path or URL. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
     loadConfigurations(URL springCfgUrl) throws IgniteCheckedException {
@@ -648,9 +638,8 @@ public class IgnitionEx {
      *
      * @param springCfgStream Input stream contained Spring XML configuration. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
     loadConfigurations(InputStream springCfgStream) throws IgniteCheckedException {
@@ -668,9 +657,8 @@ public class IgnitionEx {
      *
      * @param springCfgPath Spring XML configuration file path. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
     loadConfigurations(String springCfgPath) throws IgniteCheckedException {
@@ -687,9 +675,8 @@ public class IgnitionEx {
      *
      * @param springCfgUrl Spring XML configuration file path or URL. This cannot be {@code null}.
      * @return First found configuration and Spring context used to load it.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws IgniteCheckedException {
@@ -708,9 +695,8 @@ public class IgnitionEx {
      *
      * @param springCfgPath Spring XML configuration file path. This cannot be {@code null}.
      * @return First found configuration and Spring context used to load it.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws IgniteCheckedException {
@@ -732,15 +718,13 @@ public class IgnitionEx {
      * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
      * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
-     * @param ldr Optional class loader that will be used by default.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @param ldr Optional class loader that will be used by default. Spring bean definitions for bean injection are
+     * taken from this context. If provided, this context can be injected into grid tasks and grid jobs using {@link
+     * SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
@@ -759,11 +743,10 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl) throws IgniteCheckedException {
         return start(springCfgUrl, null, null, null);
@@ -780,11 +763,10 @@ public class IgnitionEx {
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
      * @param ldr Optional class loader that will be used by default.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         return start(springCfgUrl, null, null, ldr);
@@ -802,15 +784,13 @@ public class IgnitionEx {
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
      * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
-     * @param ldr Optional class loader that will be used by default.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @param ldr Optional class loader that will be used by default. Spring bean definitions for bean injection are
+     * taken from this context. If provided, this context can be injected into grid tasks and grid jobs using {@link
+     * SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
@@ -860,11 +840,10 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(InputStream springCfgStream) throws IgniteCheckedException {
         return start(springCfgStream, null, null, null);
@@ -882,15 +861,13 @@ public class IgnitionEx {
      * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
      * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
-     * @param ldr Optional class loader that will be used by default.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
-     * @return Started grid. If Spring configuration contains multiple grid instances,
-     *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
-     *      read. This exception will be thrown also if grid with given name has already
-     *      been started or Spring XML configuration file is invalid.
+     * @param ldr Optional class loader that will be used by default. Spring bean definitions for bean injection are
+     * taken from this context. If provided, this context can be injected into grid tasks and grid jobs using {@link
+     * SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @return Started grid. If Spring configuration contains multiple grid instances, then the 1st found instance is
+     * returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration read. This exception will be thrown
+     * also if grid with given name has already been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(InputStream springCfgStream, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
@@ -997,7 +974,8 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx,
+        boolean failIfStarted) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -1133,10 +1111,9 @@ public class IgnitionEx {
      * <p>
      * This method is identical to {@code G.grid(null)} apply.
      *
-     * @return An instance of default no-name grid. This method never returns
-     *      {@code null}.
-     * @throws IgniteIllegalStateException Thrown if default grid was not properly
-     *      initialized or grid instance was stopped or was not started.
+     * @return An instance of default no-name grid. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly initialized or grid instance was
+     * stopped or was not started.
      */
     public static Ignite grid() throws IgniteIllegalStateException {
         return grid((String)null);
@@ -1195,10 +1172,9 @@ public class IgnitionEx {
      * should not assume that it will return the same instance every time.
      *
      * @param locNodeId ID of local node the requested grid instance is managing.
-     * @return An instance of named grid. This method never returns
-     *      {@code null}.
-     * @throws IgniteIllegalStateException Thrown if grid was not properly
-     *      initialized or grid instance was stopped or was not started.
+     * @return An instance of named grid. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if grid was not properly initialized or grid instance was stopped or
+     * was not started.
      */
     public static Ignite grid(UUID locNodeId) throws IgniteIllegalStateException {
         A.notNull(locNodeId, "locNodeId");
@@ -1258,12 +1234,11 @@ public class IgnitionEx {
      * node) can belong to a different grid. Grid name defines what grid a particular grid
      * instance (and correspondingly its node) belongs to.
      *
-     * @param name Grid name to which requested grid instance belongs to. If {@code null},
-     *      then grid instance belonging to a default no-name grid will be returned.
-     * @return An instance of named grid. This method never returns
-     *      {@code null}.
-     * @throws IgniteIllegalStateException Thrown if default grid was not properly
-     *      initialized or grid instance was stopped or was not started.
+     * @param name Grid name to which requested grid instance belongs to. If {@code null}, then grid instance belonging
+     * to a default no-name grid will be returned.
+     * @return An instance of named grid. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly initialized or grid instance was
+     * stopped or was not started.
      */
     public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
@@ -1318,8 +1293,7 @@ public class IgnitionEx {
      * is light-weight and properly handles (catches) any runtime exceptions, if any
      * are expected.
      *
-     * @param lsnr Listener for grid life cycle events. If this listener was already added
-     *      this method is no-op.
+     * @param lsnr Listener for grid life cycle events. If this listener was already added this method is no-op.
      */
     public static void addListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
@@ -1618,7 +1592,7 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
-            // Set configuration URL, if any, into system property.
+            // Set odbcCfg URL, if any, into system property.
             if (startCtx.configUrl() != null)
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
@@ -1635,109 +1609,7 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
-            execSvc = new IgniteThreadPoolExecutor(
-                "pub",
-                cfg.getGridName(),
-                cfg.getPublicThreadPoolSize(),
-                cfg.getPublicThreadPoolSize(),
-                DFLT_PUBLIC_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
-
-            if (!myCfg.isClientMode())
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
-
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
-            sysExecSvc = new IgniteThreadPoolExecutor(
-                "sys",
-                cfg.getGridName(),
-                cfg.getSystemThreadPoolSize(),
-                cfg.getSystemThreadPoolSize(),
-                DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
-
-            // Pre-start all threads as they are guaranteed to be needed.
-            ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
-
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
-            // Note, that we do not pre-start threads here as management pool may
-            // not be needed.
-            mgmtExecSvc = new IgniteThreadPoolExecutor(
-                "mgmt",
-                cfg.getGridName(),
-                cfg.getManagementThreadPoolSize(),
-                cfg.getManagementThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
-
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
-            // Note, that we do not pre-start threads here as class loading pool may
-            // not be needed.
-            p2pExecSvc = new IgniteThreadPoolExecutor(
-                "p2p",
-                cfg.getGridName(),
-                cfg.getPeerClassLoadingThreadPoolSize(),
-                cfg.getPeerClassLoadingThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
-
-            // Note that we do not pre-start threads here as igfs pool may not be needed.
-            igfsExecSvc = new IgniteThreadPoolExecutor(
-                "igfs",
-                cfg.getGridName(),
-                cfg.getIgfsThreadPoolSize(),
-                cfg.getIgfsThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
-
-            // Pre-start all threads to avoid HadoopClassLoader leaks.
-            ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
-
-            if (cfg.getOdbcConfiguration() != null) {
-                odbcExecSvc = new IgniteThreadPoolExecutor(
-                    "odbc",
-                    cfg.getGridName(),
-                    cfg.getOdbcConfiguration().getThreadPoolSize(),
-                    cfg.getOdbcConfiguration().getThreadPoolSize(),
-                    0,
-                    new LinkedBlockingQueue<Runnable>());
-            }
-
-            // Note that we do not pre-start threads here as this pool may not be needed.
-            callbackExecSvc = new IgniteStripedThreadPoolExecutor(
-                cfg.getAsyncCallbackPoolSize(),
-                cfg.getGridName(),
-                "callback");
-
-            if (myCfg.getConnectorConfiguration() != null) {
-                restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest",
-                    myCfg.getGridName(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
-                );
-            }
-
-            utilityCacheExecSvc = new IgniteThreadPoolExecutor(
-                "utility",
-                cfg.getGridName(),
-                myCfg.getUtilityCacheThreadPoolSize(),
-                myCfg.getUtilityCacheThreadPoolSize(),
-                myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
-
-            marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache",
-                cfg.getGridName(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+            initializeThreadPools(myCfg);
 
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
@@ -1811,6 +1683,136 @@ public class IgnitionEx {
                     log.debug("Shutdown hook has not been installed because environment " +
                         "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
             }
+        }
+
+        /**
+         * Initialize thread pools
+         * @param cfg ignite configuration
+         * @throws IgniteCheckedException if fails
+         */
+        private void initializeThreadPools(IgniteConfiguration cfg) throws IgniteCheckedException {
+            assertParam(cfg.getPublicThreadPoolSize() > 0, "publicThreadPooSize");
+
+            execSvc = new IgniteThreadPoolExecutor(
+                "pub",
+                cfg.getGridName(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
+                DFLT_PUBLIC_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
+
+            if (!cfg.isClientMode())
+                // Pre-start all threads as they are guaranteed to be needed.
+                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
+
+            assertParam(cfg.getSystemThreadPoolSize() > 0, "systemThreadPoolSize");
+
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            sysExecSvc = new IgniteThreadPoolExecutor(
+                "sys",
+                cfg.getGridName(),
+                cfg.getSystemThreadPoolSize(),
+                cfg.getSystemThreadPoolSize(),
+                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
+            // Pre-start all threads as they are guaranteed to be needed.
+            ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
+
+            assertParam(cfg.getManagementThreadPoolSize() > 0, "managementThreadPoolSize");
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            // Note, that we do not pre-start threads here as management pool may
+            // not be needed.
+            mgmtExecSvc = new IgniteThreadPoolExecutor(
+                "mgmt",
+                cfg.getGridName(),
+                cfg.getManagementThreadPoolSize(),
+                cfg.getManagementThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
+
+            assertParam(cfg.getPeerClassLoadingThreadPoolSize() > 0, "peerClassLoadingThreadPoolSize");
+
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            // Note, that we do not pre-start threads here as class loading pool may
+            // not be needed.
+            p2pExecSvc = new IgniteThreadPoolExecutor(
+                "p2p",
+                cfg.getGridName(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
+
+            assertParam(cfg.getIgfsThreadPoolSize() > 0, "igfsThreadPoolSize");
+
+            // Note that we do not pre-start threads here as igfs pool may not be needed.
+            igfsExecSvc = new IgniteThreadPoolExecutor(
+                "igfs",
+                cfg.getGridName(),
+                cfg.getIgfsThreadPoolSize(),
+                cfg.getIgfsThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
+
+            // Pre-start all threads to avoid HadoopClassLoader leaks.
+            ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
+
+            OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
+            if (odbcCfg != null) {
+                assertParam(odbcCfg.getThreadPoolSize() > 0, "odbcConfiguration.threadPoolSize");
+
+                odbcExecSvc = new IgniteThreadPoolExecutor(
+                    "odbc",
+                    cfg.getGridName(),
+                    odbcCfg.getThreadPoolSize(),
+                    odbcCfg.getThreadPoolSize(),
+                    0,
+                    new LinkedBlockingQueue<Runnable>());
+            }
+
+            // Note that we do not pre-start threads here as this pool may not be needed.
+            callbackExecSvc = new IgniteStripedThreadPoolExecutor(
+                cfg.getAsyncCallbackPoolSize(),
+                cfg.getGridName(),
+                "callback");
+
+            ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
+            if (connCfg != null) {
+                assertParam(connCfg.getThreadPoolSize() > 0, "connectorConfiguration.threadPoolSize");
+
+                restExecSvc = new IgniteThreadPoolExecutor(
+                    "rest",
+                    cfg.getGridName(),
+                    connCfg.getThreadPoolSize(),
+                    connCfg.getThreadPoolSize(),
+                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
+                );
+            }
+
+            assertParam(cfg.getIgfsThreadPoolSize() > 0, "utilityCacheThreadPoolSize");
+
+            utilityCacheExecSvc = new IgniteThreadPoolExecutor(
+                "utility",
+                cfg.getGridName(),
+                cfg.getUtilityCacheThreadPoolSize(),
+                cfg.getUtilityCacheThreadPoolSize(),
+                cfg.getUtilityCacheKeepAliveTime(),
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
+            assertParam(cfg.getIgfsThreadPoolSize() > 0, "marshallerCacheThreadPoolSize");
+
+            marshCacheExecSvc = new IgniteThreadPoolExecutor(
+                "marshaller-cache",
+                cfg.getGridName(),
+                cfg.getMarshallerCacheThreadPoolSize(),
+                cfg.getMarshallerCacheThreadPoolSize(),
+                cfg.getMarshallerCacheKeepAliveTime(),
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
         }
 
         /**
@@ -1931,10 +1933,10 @@ public class IgnitionEx {
             if (marsh == null) {
                 if (!BinaryMarshaller.available()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                        "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
+                            "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
+                            "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
+                            "Switching to standard JDK marshalling - " +
+                            "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
                     marsh = new JdkMarshaller();
@@ -2161,6 +2163,17 @@ public class IgnitionEx {
         }
 
         /**
+         * Assertion method
+         * @param condition
+         * @param paramName
+         * @throws IgniteCheckedException if condition equals false
+         */
+        private static void assertParam(boolean condition, String paramName) throws IgniteCheckedException {
+            if(!condition)
+                new IgniteCheckedException("Illegal parameter value: " + paramName);
+        }
+
+        /**
          * Creates marshaller system cache configuration.
          *
          * @return Marshaller system cache configuration.
@@ -2232,8 +2245,7 @@ public class IgnitionEx {
         /**
          * Stops grid.
          *
-         * @param cancel Flag indicating whether all currently running jobs
-         *      should be cancelled.
+         * @param cancel Flag indicating whether all currently running jobs should be cancelled.
          */
         void stop(boolean cancel) {
             // Stop cannot be called prior to start from public API,
@@ -2244,8 +2256,7 @@ public class IgnitionEx {
         }
 
         /**
-         * @param cancel Flag indicating whether all currently running jobs
-         *      should be cancelled.
+         * @param cancel Flag indicating whether all currently running jobs should be cancelled.
          */
         private synchronized void stop0(boolean cancel) {
             IgniteKernal grid0 = grid;
