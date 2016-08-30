@@ -347,7 +347,7 @@ namespace Apache.Ignite.AspNet
 
             var cache = _expiryCacheHolder.GetCacheWithExpiry((long) timeout * 60);
 
-            var data = new BinarizableSessionStateStoreData();
+            var data = new BinarizableSessionStateStoreData {Timeout =  timeout};
 
             cache[GetKey(id)] = data;
         }

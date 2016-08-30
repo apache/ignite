@@ -97,7 +97,7 @@ namespace Apache.Ignite.AspNet.Impl
         private static HttpStaticObjectsCollection DeserializeStaticObjects(byte[] bytes)
         {
             if (bytes == null)
-                return null;
+                return new HttpStaticObjectsCollection();
 
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BinaryReader(stream))
@@ -111,7 +111,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// </summary>
         private byte[] SerializeStaticObjects()
         {
-            if (StaticObjects == null)
+            if (StaticObjects == null || StaticObjects.Count == 0)
                 return null;
 
             using (var stream = new MemoryStream())
