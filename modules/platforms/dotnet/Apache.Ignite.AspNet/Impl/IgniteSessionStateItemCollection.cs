@@ -33,7 +33,7 @@ namespace Apache.Ignite.AspNet.Impl
 
         public IgniteSessionStateItemCollection(KeyValueDirtyTrackedCollection collection)
         {
-            Debug.Assert(_collection != null);
+            Debug.Assert(collection != null);
 
             _collection = collection;
         }
