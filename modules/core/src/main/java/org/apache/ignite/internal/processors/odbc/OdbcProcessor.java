@@ -92,6 +92,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     );
                 }
 
+                assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize should be > 0");
+
                 InetAddress host;
 
                 try {
