@@ -203,8 +203,7 @@ namespace Apache.Ignite.AspNet
 
             var key = GetKey(id);
 
-            var lockResult = Cache.Invoke(key, new LockEntryProcessor(),
-                new[] {Cache.Ignite.GetCluster().GetLocalNode().Id, lockId, DateTime.UtcNow});
+            var lockResult = Cache.Invoke(key, new LockEntryProcessor(), GetLockInfo(lockId));
 
             if (lockResult == null)
             {
@@ -247,7 +246,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("ReleaseItemExclusive", id, context);
 
-            // TODO: Entry processor that releases the lock.
+            Cache.Invoke(GetKey(id), new ReleaseLockEntryProcessor(), GetLockInfo(lockId));
         }
 
         /// <summary>
@@ -379,6 +378,14 @@ namespace Apache.Ignite.AspNet
         }
 
         /// <summary>
+        /// Gets the lock info.
+        /// </summary>
+        private object[] GetLockInfo(object lockId)
+        {
+            return new[] { Cache.Ignite.GetCluster().GetLocalNode().Id, lockId, DateTime.UtcNow };
+        }
+
+        /// <summary>
         /// Logs the specified message to the trace log, if enabled.
         /// </summary>
         private void Log(string msg, params object[] args)
@@ -443,6 +450,34 @@ namespace Apache.Ignite.AspNet
                 entry.Value = data;
 
                 return data;
+            }
+        }
+
+        [Serializable]
+        private class ReleaseLockEntryProcessor :
+            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
+        {
+            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
+            {
+                var val = entry.Value;
+
+                if (val != null)
+                {
+                    var lockNodeId = (Guid)arg[0];
+                    var lockId = (int)arg[1];
+
+                    if (val.LockNodeId != lockNodeId)
+                        throw new InvalidOperationException("Invalid lock node id TODO");
+
+                    if (val.LockId != lockId)
+                        throw new InvalidOperationException("Invalid lock id TODO");
+
+                    val.LockNodeId = null;
+
+                    entry.Value = val;
+                }
+
+                return null;
             }
         }
 
