@@ -15,33 +15,16 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
+package org.apache.ignite.yardstick.cache;
 
-#include <boost/test/unit_test.hpp>
+import org.apache.ignite.IgniteCache;
 
-#include "sql_test_suite_fixture.h"
-
-using namespace ignite;
-
-using namespace boost::unit_test;
-
-BOOST_FIXTURE_TEST_SUITE(SqlSystemFunctionTestSuite, ignite::SqlTestSuiteFixture)
-
-BOOST_AUTO_TEST_CASE(TestSystemFunctionDatabase)
-{
-    CheckSingleResult<std::string>("SELECT {fn DATABASE()}");
+/**
+ * Ignite benchmark that performs invoke operations.
+ */
+public class IgniteInvokeWithInjectionTxBenchmark extends IgniteInvokeWithInjectionBenchmark {
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("tx");
+    }
 }
-
-BOOST_AUTO_TEST_CASE(TestSystemFunctionUser)
-{
-    CheckSingleResult<std::string>("SELECT {fn USER()}");
-}
-
-BOOST_AUTO_TEST_CASE(TestSystemFunctionIfnull)
-{
-    CheckSingleResult<int32_t>("SELECT {fn IFNULL(NULL, 42)}", 42);
-}
-
-BOOST_AUTO_TEST_SUITE_END()

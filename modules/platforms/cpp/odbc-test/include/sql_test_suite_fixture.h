@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE
-#define _IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE
+#ifndef _IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE
+#define _IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE
 
 #ifdef _WIN32
 #   include <windows.h>
@@ -43,17 +43,17 @@ namespace ignite
     /**
      * Test setup fixture.
      */
-    struct SqlFunctionTestSuiteFixture
+    struct SqlTestSuiteFixture
     {
         /**
          * Constructor.
          */
-        SqlFunctionTestSuiteFixture();
+        SqlTestSuiteFixture();
 
         /**
          * Destructor.
          */
-        ~SqlFunctionTestSuiteFixture();
+        ~SqlTestSuiteFixture();
 
         /**
          * Run query returning single result and stores it to buffer.
@@ -140,49 +140,52 @@ namespace ignite
     };
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<double>(const char* request, const double& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<bool>(const char* request, const bool& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<std::string>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<ignite::Guid>(const char* request, const ignite::Guid& expected);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int64_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int32_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int16_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<int8_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<float>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request);
 
     template<>
-    void SqlFunctionTestSuiteFixture::CheckSingleResult<double>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<double>(const char* request);
 }
 
-#endif //_IGNITE_ODBC_TEST_SQL_FUNCTION_TEST_FIXTURE
+#endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE

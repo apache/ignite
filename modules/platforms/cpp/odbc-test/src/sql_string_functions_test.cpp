@@ -37,7 +37,7 @@
 
 #include "test_type.h"
 #include "test_utils.h"
-#include "sql_function_test_suite_fixture.h"
+#include "sql_test_suite_fixture.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -48,7 +48,7 @@ using namespace boost::unit_test;
 
 using ignite::impl::binary::BinaryUtils;
 
-BOOST_FIXTURE_TEST_SUITE(SqlStringFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SqlStringFunctionTestSuite, ignite::SqlTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionAscii)
 {
