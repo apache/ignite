@@ -185,8 +185,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             PER_SEGMENT_Q);
 
     /** Pending one phase commit ack requests. */
-    private ConcurrentMap<UUID, DeferredOnePhaseCommitAckRequestBuffer> pendingOnePhaseCommitAckRequests =
-        new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, DeferredOnePhaseCommitAckRequestBuffer> pendingOnePhaseCommitAckRequests;
 
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
@@ -265,6 +264,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
 
         txHnd = new IgniteTxHandler(cctx);
+
+        if (!cctx.gridConfig().isClientMode())
+            pendingOnePhaseCommitAckRequests = new ConcurrentHashMap8<>();
     }
 
     /** {@inheritDoc} */
