@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
@@ -24,6 +25,7 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.local.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -164,6 +166,44 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
         createSymlinks();
 
         checkFileContent(igfs, new IgfsPath("/file"), chunk);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testUsedSpaceSize() throws Exception {
+        final int DIRS_COUNT = 5;
+        final int DIRS_MAX_DEEP = 3;
+        final int FILES_COUNT = 10;
+        final AtomicLong totalSize = new AtomicLong();
+
+        IgniteBiInClosure<Integer, IgfsPath> createHierarchy = new IgniteBiInClosure<Integer, IgfsPath>() {
+            @Override public void apply(Integer level, IgfsPath levelDir) {
+                try {
+                    for (int i = 0; i < FILES_COUNT; ++i) {
+                        IgfsPath filePath = new IgfsPath(levelDir, "file" + Integer.toString(i));
+                        createFile(igfs, filePath, true, chunk);
+                        totalSize.getAndAdd(chunk.length);
+                    }
+
+                    if (level < DIRS_MAX_DEEP) {
+                        for (int dir = 0; dir < DIRS_COUNT; dir++) {
+                            IgfsPath dirPath = new IgfsPath(levelDir, "dir" + Integer.toString(dir));
+                            igfs.mkdirs(dirPath);
+
+                            apply(level + 1, dirPath);
+                        }
+                    }
+                } catch (Exception e) {
+                    fail(e.getMessage());
+                }
+            }
+        };
+
+        createHierarchy.apply(1, new IgfsPath("/dir"));
+
+        assertEquals(totalSize.get(), igfs.metrics().secondarySpaceSize());
     }
 
     /**
