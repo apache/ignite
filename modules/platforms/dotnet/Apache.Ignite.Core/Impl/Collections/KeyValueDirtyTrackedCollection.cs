@@ -49,12 +49,14 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             for (var i = 0; i < count; i++)
             {
+                var key = binaryReader.ReadObject<object>();
+
                 var entry = new Entry
                 {
                     Value = binaryReader.ReadObject<object>()
                 };
 
-                _dict[binaryReader.ReadObject<object>()] = entry;
+                _dict[key] = entry;
 
                 _list.Add(entry);
             }
