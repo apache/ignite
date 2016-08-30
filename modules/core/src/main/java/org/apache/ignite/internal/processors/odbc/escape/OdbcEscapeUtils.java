@@ -26,10 +26,17 @@ import java.util.regex.Pattern;
  * ODBC escape sequence parse.
  */
 public class OdbcEscapeUtils {
+    /** Odbc date regexp pattern: '2016-08-23' */
+    private static final Pattern DATE_PATTERN = Pattern.compile("^'\\d{4}-\\d{2}-\\d{2}'$");
 
-    /**
-     * GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc'
-     */
+    /** Odbc time regexp pattern: '14:33:44' */
+    private static final Pattern TIME_PATTERN = Pattern.compile("^'\\d{2}:\\d{2}:\\d{2}'$");
+
+    /** Odbc timestamp regexp pattern: '2016-08-23 14:33:44.12345' */
+    private static final Pattern TIMESTAMP_PATTERN =
+        Pattern.compile("^'\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(\\.\\d+)?'$");
+
+    /** GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc' */
     private static final Pattern GUID_PATTERN =
         Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
 
@@ -62,60 +69,70 @@ public class OdbcEscapeUtils {
         int plainPos = startPos;
         int openPos = -1;
 
+        boolean insideLiteral = false;
+
         LinkedList<OdbcEscapeParseResult> nested = null;
 
         while (curPos < text.length()) {
             char curChar = text.charAt(curPos);
 
-            if (curChar == '{') {
-                if (openPos == -1) {
-                    // Top-level opening brace. Append previous portion and remember current position.
-                    res.append(text, plainPos, curPos);
-
-                    openPos = curPos;
-                }
-                else {
-                    // Nested opening brace -> perform recursion.
-                    OdbcEscapeParseResult nestedRes = parse0(text, curPos, true);
-
-                    if (nested == null)
-                        nested = new LinkedList<>();
-
-                    nested.add(nestedRes);
-
-                    curPos += nestedRes.originalLength() - 1;
-
-                    plainPos = curPos + 1;
-                }
+            if (curChar == '\'') {
+                if (!insideLiteral)
+                    insideLiteral = true;
+                else if (text.charAt(curPos - 1) != '\\')
+                    insideLiteral = false;
             }
-            else if (curChar == '}') {
-                if (openPos == -1)
-                    // Close without open -> exception.
-                    throw new IgniteException("Malformed escape sequence " +
-                        "(closing curly brace without opening curly brace): " + text);
-                else {
-                    String parseRes;
+            else if (!insideLiteral) {
+                if (curChar == '{') {
+                    if (openPos == -1) {
+                        // Top-level opening brace. Append previous portion and remember current position.
+                        res.append(text, plainPos, curPos);
 
-                    if (nested == null)
-                        // Found sequence without nesting, process it.
-                        parseRes = parseExpression(text, openPos, curPos + 1 - openPos);
-                    else {
-                        // Special case to process nesting.
-                        String res0 = appendNested(text, openPos, curPos + 1, nested);
-
-                        nested = null;
-
-                        parseRes = parseExpression(res0, 0, res0.length());
+                        openPos = curPos;
                     }
+                    else {
+                        // Nested opening brace -> perform recursion.
+                        OdbcEscapeParseResult nestedRes = parse0(text, curPos, true);
 
-                    if (earlyExit)
-                        return new OdbcEscapeParseResult(startPos, curPos + 1 - startPos, parseRes);
-                    else
-                        res.append(parseRes);
+                        if (nested == null)
+                            nested = new LinkedList<>();
 
-                    openPos = -1;
+                        nested.add(nestedRes);
 
-                    plainPos = curPos + 1;
+                        curPos += nestedRes.originalLength() - 1;
+
+                        plainPos = curPos + 1;
+                    }
+                }
+                else if (curChar == '}') {
+                    if (openPos == -1)
+                        // Close without open -> exception.
+                        throw new IgniteException("Malformed escape sequence " +
+                            "(closing curly brace without opening curly brace): " + text);
+                    else {
+                        String parseRes;
+
+                        if (nested == null)
+                            // Found sequence without nesting, process it.
+                            parseRes = parseEscapeSequence(text, openPos, curPos + 1 - openPos);
+                        else {
+                            // Special case to process nesting.
+                            String res0 = appendNested(text, openPos, curPos + 1, nested);
+
+                            nested = null;
+
+                            parseRes = parseEscapeSequence(res0, 0, res0.length());
+                        }
+
+                        if (earlyExit)
+                            return new OdbcEscapeParseResult(startPos, curPos + 1 - startPos, parseRes);
+                        else
+                            res.append(parseRes);
+
+                        openPos = -1;
+
+                        plainPos = curPos + 1;
+                    }
                 }
             }
 
@@ -125,6 +142,9 @@ public class OdbcEscapeUtils {
         if (openPos != -1)
             throw new IgniteException("Malformed escape sequence (closing curly brace missing): " + text);
 
+        if (insideLiteral)
+            throw new IgniteException("Malformed literal expression (closing quote missing): " + text);
+
         if (curPos > plainPos)
             res.append(text, plainPos, curPos);
 
@@ -132,14 +152,14 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse concrete expression.
+     * Parse escape sequence: {escape_sequence}.
      *
      * @param text Text.
      * @param startPos Start position within text.
      * @param len Length.
      * @return Result.
      */
-    private static String parseExpression(String text, int startPos, int len) {
+    private static String parseEscapeSequence(String text, int startPos, int len) {
         assert validSubstring(text, startPos, len);
 
         char firstChar = text.charAt(startPos);
@@ -221,7 +241,7 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse standard token.
+     * Parse standard expression: {TOKEN expression}
      *
      * @param text Text.
      * @param startPos Start position.
@@ -238,10 +258,25 @@ public class OdbcEscapeUtils {
 
         switch (token.type()) {
             case SCALAR_FUNCTION:
-                return parseScalarExpression(text, startPos0, len0);
+                return parseExpression(text, startPos0, len0);
 
-            case GUID:
-                return parseGuidExpression(text, startPos0, len0);
+            case GUID: {
+                String res = parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+
+                return "CAST(" + res + " AS UUID)";
+            }
+
+            case DATE:
+                return parseExpression(text, startPos0, len0, token.type(), DATE_PATTERN);
+
+            case TIME:
+                return parseExpression(text, startPos0, len0, token.type(), TIME_PATTERN);
+
+            case TIMESTAMP:
+                return parseExpression(text, startPos0, len0, token.type(), TIMESTAMP_PATTERN);
+
+            case OUTER_JOIN:
+                return parseExpression(text, startPos0, len0);
 
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
@@ -250,30 +285,30 @@ public class OdbcEscapeUtils {
     }
 
     /**
-     * Parse scalar function expression.
+     * Parse simple expression.
      *
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseScalarExpression(String text, int startPos, int len) {
+    private static String parseExpression(String text, int startPos, int len) {
         return substring(text, startPos, len).trim();
     }
 
     /**
-     * Parse concrete expression.
+     * Parse expression and validate against ODBC specification with regex pattern.
      *
      * @param text Text.
      * @param startPos Start position.
      * @param len Length.
      * @return Parsed expression.
      */
-    private static String parseGuidExpression(String text, int startPos, int len) {
-        String val = substring(text, startPos, len).trim();
+    private static String parseExpression(String text, int startPos, int len, OdbcEscapeType type, Pattern pattern) {
+        String val = parseExpression(text, startPos, len);
 
-        if (!GUID_PATTERN.matcher(val).matches())
-            throw new IgniteException("Invalid GUID escape sequence: " + substring(text, startPos, len));
+        if (!pattern.matcher(val).matches())
+            throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
         return val;
     }
