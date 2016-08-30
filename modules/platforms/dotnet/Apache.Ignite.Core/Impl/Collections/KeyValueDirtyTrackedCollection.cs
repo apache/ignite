@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
     /// </summary>
-    public class KeyValueDirtyTrackedCollection : IBinaryWriteAware  // TODO: Generic?
+    public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
     {
         // TODO: Keep deserialized while not needed.
         // TODO: Dedicated unit test
