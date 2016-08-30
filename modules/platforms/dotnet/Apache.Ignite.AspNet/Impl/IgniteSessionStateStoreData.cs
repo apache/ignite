@@ -32,23 +32,32 @@ namespace Apache.Ignite.AspNet.Impl
         private readonly IgniteSessionStateItemCollection _items;
 
         public IgniteSessionStateStoreData(BinarizableSessionStateStoreData data) 
-            : base(null, DeserializeStaticObjects(data.StaticObjects), data.Timeout)
+            : base(null, DeserializeStaticObjects(data.StaticObjects), 0)
         {
             _data = data;
             _items = new IgniteSessionStateItemCollection(_data.Items);
         }
 
         public IgniteSessionStateStoreData(HttpStaticObjectsCollection staticObjects, int timeout) 
-            : base(null, staticObjects, timeout)
+            : base(null, staticObjects, 0)
         {
             // TODO: Copy statics
-            _data = new BinarizableSessionStateStoreData();
+            _data = new BinarizableSessionStateStoreData
+            {
+                Timeout = timeout
+            };
             _items = new IgniteSessionStateItemCollection(_data.Items);
         }
 
         public override ISessionStateItemCollection Items
         {
             get { return _items; }
+        }
+
+        public override int Timeout
+        {
+            get { return _data.Timeout; }
+            set { _data.Timeout = value; }
         }
 
         public BinarizableSessionStateStoreData Data
