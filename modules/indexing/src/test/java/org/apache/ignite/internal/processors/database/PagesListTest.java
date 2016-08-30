@@ -242,7 +242,7 @@ public class PagesListTest extends GridCommonAbstractTest {
             do {
                 int bucket = 0;
 
-                long pageId = takePage(bucket);
+                long pageId = takeEmptyPage(bucket, null);
 
                 boolean newPage = pageId == 0;
 

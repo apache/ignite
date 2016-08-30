@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -61,6 +62,9 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     /** */
     private final int minSizeForBucket;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -91,6 +95,8 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         }
 
         this.shift = shift;
+
+        log = cctx.logger(getClass());
     }
 
     /**
@@ -132,14 +138,30 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
             int bucket = bucket(freeSpace);
 
-            long pageId = takePage(bucket);
+            long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+
+            if (pageId == 0) {
+                for (int i = 0; i < BUCKETS - 1; i++) {
+                    if (i == bucket)
+                        continue;
+
+                    pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
+
+                    if (pageId != 0L) {
+                        //log.info("Found page 1 " + pageId + ", bucket=" + i + ", rowSize=" + rowSize + ", space=" + freeSpace);
+
+                        break;
+                    }
+                }
+            }
+            else {
+                //log.info("Found page 2 " + pageId + ", bucket=" + bucket + ", rowSize=" + rowSize + ", space=" + freeSpace);
+            }
 
             boolean newPage = pageId == 0;
 
-//            if (newPage)
-//                System.out.println("Allocate new page");
-//            else
-//                System.out.println("Found page " + pageId + ", bucket=" + bucket);
+            // if (newPage)
+                //log.info("Allocate new page, bucket=" + bucket + ", rowSize=" + rowSize + " space=" + freeSpace);
 
             try (Page page = newPage ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -203,7 +225,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        return takeEmptyPage(REUSE_BUCKET);
+        return takeEmptyPage(REUSE_BUCKET, null);
     }
 
     /** {@inheritDoc} */
@@ -246,14 +268,14 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     // Reread free space after update.
                     int newFreeSpace = io.getFreeSpace(buf);
 
-                    // System.out.println("Write page=" + pageId + ", old free " + oldFreeSpace + ", newFree " + newFreeSpace + " written " + (oldFreeSpace - newFreeSpace));
+                    //log.info("Write page=" + pageId + ", old free " + oldFreeSpace + ", newFree " + newFreeSpace + " written " + (oldFreeSpace - newFreeSpace));
 
                     if (newFreeSpace > 0) {
                         int bucket = bucket(newFreeSpace);
 
                         put(null, buf, bucket);
 
-                        //System.out.println("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
+                        //log.info("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
                     }
 
                     // Avoid boxing with garbage generation for usual case.
@@ -345,6 +367,8 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
             int newFreeSpace = io.getFreeSpace(buf);
 
+            //log.info("Remove end " + DataPageIO.getPageId(buf) + " oldFreeSpace=" + oldFreeSpace + ", newFreeSpace=" + newFreeSpace);
+
             if (newFreeSpace > 0) {
                 int newBucket = bucket(newFreeSpace);
 
@@ -352,7 +376,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     int oldBucket = bucket(oldFreeSpace);
 
                     if (oldBucket != newBucket) {
-                        //System.out.println("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
+                        //log.info("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
 
                         removeDataPage(buf, oldBucket);
 
@@ -360,7 +384,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     }
                 }
                 else {
-                    //System.out.println("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
+                    //log.info("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
 
                     put(null, buf, newBucket);
                 }

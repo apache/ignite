@@ -131,7 +131,7 @@ public class PagesListNodeIO extends PageIO {
         return getAt(buf, cnt);
     }
 
-    public void removePage(ByteBuffer buf, long dataPageId) {
+    public boolean removePage(ByteBuffer buf, long dataPageId) {
         assert dataPageId != 0;
 
         int cnt = getCount(buf);
@@ -143,11 +143,11 @@ public class PagesListNodeIO extends PageIO {
 
                 setCount(buf, cnt - 1);
 
-                return;
+                return true;
             }
         }
 
-        throw new IllegalStateException("Data page not found: " + U.hexLong(dataPageId));
+        return false;
     }
 
     public boolean isEmpty(ByteBuffer buf) {

@@ -63,7 +63,7 @@ public final class ReuseListNew extends PagesList implements ReuseList {
 //        if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
 //            throw new IllegalStateException();
 
-        return takeEmptyPage(0);
+        return takeEmptyPage(0, null);
     }
 
     /** {@inheritDoc} */
