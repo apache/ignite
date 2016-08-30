@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.AspNet;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -187,7 +186,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
-            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock) lockId).Enter());
 
             // Add item.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
@@ -204,7 +202,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
-            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
 
             // Lock item.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
@@ -247,7 +244,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
-            Assert.Throws<ObjectDisposedException>(() => ((ICacheLock)lockId).Enter());
         }
 
         /// <summary>
