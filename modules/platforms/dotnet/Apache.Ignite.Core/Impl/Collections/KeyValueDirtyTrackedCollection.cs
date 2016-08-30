@@ -127,6 +127,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var entry = _dict[key];
 
+                // TODO: Check for immutable type
                 entry.IsDirty = true;
 
                 return entry.Value;
