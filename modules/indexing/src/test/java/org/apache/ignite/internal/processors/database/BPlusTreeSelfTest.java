@@ -508,7 +508,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMassiveRemove_true() throws Exception {
-        fail("This test hangs");
+        fail("https://ggsystems.atlassian.net/browse/GG-11442");
 
         doTestMassiveRemove(true);
     }
