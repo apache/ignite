@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Collections
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -28,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
     /// </summary>
-    public class KeyValueDirtyTrackedCollection : ICollection, IBinaryWriteAware  // TODO: Generic?
+    public class KeyValueDirtyTrackedCollection : IBinaryWriteAware  // TODO: Generic?
     {
         // TODO: Keep deserialized while not needed.
         // TODO: Dedicated unit test
@@ -86,44 +85,11 @@ namespace Apache.Ignite.Core.Impl.Collections
         }
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> 
-        /// to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
-        /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of 
-        /// the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> 
-        /// must have zero-based indexing.</param>
-        /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
-        /// <exception cref="System.NotSupportedException"></exception>
-        public void CopyTo(Array array, int index)
-        {
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
         /// Gets the number of elements contained in the <see cref="T:System.Collections.ICollection" />.
         /// </summary>
         public int Count
         {
             get { return _dict.Count; }
-        }
-
-        /// <summary>
-        /// Gets an object that can be used to synchronize access 
-        /// to the <see cref="T:System.Collections.ICollection" />.
-        /// </summary>
-        /// <exception cref="System.NotSupportedException"></exception>
-        public object SyncRoot
-        {
-            get { throw new NotSupportedException(); }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection" /> 
-        /// is synchronized (thread safe).
-        /// </summary>
-        public bool IsSynchronized
-        {
-            get { return false; }
         }
 
         /// <summary>
@@ -190,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         public bool IsDirty
         {
             get { return _dirtyAll || _dict.Values.Any(x => x.IsDirty); }
-            set { _dirtyAll = true; }
+            set { _dirtyAll = value; }
         }
 
         /// <summary>
