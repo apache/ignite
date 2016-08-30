@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides initialized GridCacheReturn.
@@ -45,9 +46,9 @@ public class GridCacheReturnCompletableWrapper {
     }
 
     /**
-     *
+     * @return ID of node initiated tx or {@code null} if this node is local.
      */
-    public UUID getNodeId() {
+    @Nullable public UUID nodeId() {
         return nodeId;
     }
 

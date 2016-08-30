@@ -450,21 +450,24 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
+                GridCacheReturnCompletableWrapper wrapper = null;
+
                 if (!F.isEmpty(writeMap)) {
                     GridCacheReturn ret = null;
 
-                    if (!near() && !local() && onePhaseCommit())
+                    if (!near() && !local() && onePhaseCommit()) {
                         if (needReturnValue()) {
                             ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
 
                             UUID origNodeId = otherNodeId(); // Originating node.
 
                             cctx.tm().addCommittedTxReturn(this,
-                                new GridCacheReturnCompletableWrapper(
+                                wrapper = new GridCacheReturnCompletableWrapper(
                                     !cctx.localNodeId().equals(origNodeId) ? origNodeId : null));
                         }
                         else
                             cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
+                    }
 
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
@@ -701,12 +704,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     }
                     finally {
-                        if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                            GridCacheReturnCompletableWrapper wrapper =
-                                cctx.tm().getCommittedTxReturn(this.nearXidVersion());
-
+                        if (wrapper != null)
                             wrapper.initialize(ret);
-                        }
                     }
                 }
 

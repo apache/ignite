@@ -44,6 +44,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
      * Default constructor.
      */
     public GridDhtTxOnePhaseCommitAckRequest() {
+        // No-op.
     }
 
     /**

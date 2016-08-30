@@ -1479,6 +1479,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param txEntry Entry to process.
      * @param metrics {@code True} if metrics should be updated.
+     * @param ret Optional return value to initialize.
      * @return Tuple containing transformation results.
      * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
@@ -1486,7 +1487,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
         boolean metrics,
-        GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1495,11 +1496,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors())) {
-            if (!near() && !local() && onePhaseCommit() && needReturnValue()) {
-                assert ret != null;
-
+            if (ret != null)
                 ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
-            }
 
             return F.t(txEntry.op(), txEntry.value());
         }
@@ -1568,14 +1566,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     err = e;
                 }
 
-                if (!near() && !local() && onePhaseCommit() & needReturnValue()) {
-                    assert ret != null;
-
+                if (ret != null) {
                     if (err != null || procRes != null)
                         ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, procRes, err, keepBinary);
                     else
                         ret.invokeResult(true);
-
                 }
 
                 modified |= invokeEntry.modified();

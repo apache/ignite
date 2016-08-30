@@ -234,7 +234,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         Object obj = entry.getValue();
 
                         if (obj instanceof GridCacheReturnCompletableWrapper &&
-                            nodeId.equals(((GridCacheReturnCompletableWrapper)obj).getNodeId()))
+                            nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
                             removeTxReturn(entry.getKey());
                     }
                 }
@@ -933,7 +933,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Committed transaction.
      */
     public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturnCompletableWrapper ret) {
-        addCommittedTxReturn(tx, tx.nearXidVersion(), null, ret);
+        addCommittedTxReturn(tx.nearXidVersion(), null, ret);
     }
 
     /**
@@ -972,13 +972,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param tx Tx.
      * @param xidVer Completed transaction version.
      * @param nearXidVer Optional near transaction ID.
      * @param retVal Invoke result.
      */
     private void addCommittedTxReturn(
-        IgniteInternalTx tx,
         GridCacheVersion xidVer,
         @Nullable GridCacheVersion nearXidVer,
         GridCacheReturnCompletableWrapper retVal
@@ -1026,7 +1024,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (!Boolean.TRUE.equals(retVal)) {
             assert !Boolean.FALSE.equals(retVal); // Method should be used only after 'committed' checked.
 
-            return (GridCacheReturnCompletableWrapper)retVal;
+            GridCacheReturnCompletableWrapper res = (GridCacheReturnCompletableWrapper)retVal;
+
+            removeTxReturn(xidVer);
+
+            return res;
         }
         else
             return null;
@@ -2679,7 +2681,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.kernalContext().gateway().readLock();
 
             try {
-                cctx.io().send(nodeId, ackReq, GridIoPolicy.PUBLIC_POOL);
+                cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 log.error("Failed to send one phase commit ack to backup node [backup=" +

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -435,8 +436,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             onDone(e);
         }
         finally {
-            if (tx.onePhaseCommit() &&
-                !tx.writeMap().isEmpty()) // Readonly operations required no ack.
+            if (tx.onePhaseCommit() && !tx.writeMap().isEmpty()) // Readonly operations require no ack.
                 ackBackup();
         }
     }
@@ -459,7 +459,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
             if (!F.isEmpty(backups)) {
-                assert backups.size() == 1;
+                assert backups.size() == 1 : backups;
 
                 UUID backupId = F.first(backups);
 
@@ -472,7 +472,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 else if (backup.isLocal())
                     cctx.tm().removeTxReturn(tx.xidVersion());
                 else {
-                    if (ACK_DHT_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0 && !cctx.kernalContext().isStopping())
+                    if (ACK_DHT_ONE_PHASE_SINCE.compareToIgnoreTimestamp(backup.version()) <= 0)
                         cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
                 }
             }
@@ -522,13 +522,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         if (committed) {
                             try {
                                 if (tx.needReturnValue() && tx.implicit()) {
-                                    GridCacheReturn retVal = cctx.tm().getCommittedTxReturn(tx.xidVersion()).fut().get();
+                                    GridCacheReturnCompletableWrapper wrapper =
+                                        cctx.tm().getCommittedTxReturn(tx.xidVersion());
+
+                                    assert wrapper != null : tx.xidVersion();
+
+                                    GridCacheReturn retVal = wrapper.fut().get();
 
                                     assert retVal != null;
 
                                     tx.implicitSingleResult(retVal);
-
-                                    cctx.tm().removeTxReturn(tx.xidVersion());
                                 }
 
                                 if (tx.syncMode() == FULL_SYNC) {

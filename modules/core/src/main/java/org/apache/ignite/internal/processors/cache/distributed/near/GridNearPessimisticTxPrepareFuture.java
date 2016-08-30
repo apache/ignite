@@ -193,7 +193,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             GridCacheContext cacheCtx = txEntry.context();
 
-            List<ClusterNode> nodes = txEntry.cached().isLocal() ?
+            List<ClusterNode> nodes = cacheCtx.isLocal() ?
                 cacheCtx.affinity().nodes(txEntry.key(), topVer) :
                 cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 

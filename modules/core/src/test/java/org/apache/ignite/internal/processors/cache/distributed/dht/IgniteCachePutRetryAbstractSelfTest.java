@@ -252,7 +252,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Random rdm = new Random();
+                Random rnd = new Random();
 
                 while (!finished.get()) {
                     stopGrid(3);
@@ -261,7 +261,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
                     startGrid(3);
 
-                    if (rdm.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
+                    if (rnd.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
                         awaitPartitionMapExchange();
                 }
 
@@ -481,10 +481,11 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             Map completedVersHashMap = U.field(tm, "completedVersHashMap");
 
-            for (Object o : completedVersHashMap.values())
+            for (Object o : completedVersHashMap.values()) {
                 assertTrue("completedVersHashMap contains" + o.getClass() + " instead of boolean. " +
                     "These values should be replaced by boolean after onePhaseCommit finished. " +
                     "[node=" + i + "]", o instanceof Boolean);
+            }
         }
     }
 

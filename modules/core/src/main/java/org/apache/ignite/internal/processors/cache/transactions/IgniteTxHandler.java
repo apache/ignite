@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
@@ -979,12 +980,12 @@ public class IgniteTxHandler {
 
             if (completeFut != null) {
                 final GridDhtTxPrepareResponse res0 = res;
-                final GridDhtTxRemote DhtTx0 = dhtTx;
-                final GridNearTxRemote NearTx0 = nearTx;
+                final GridDhtTxRemote dhtTx0 = dhtTx;
+                final GridNearTxRemote nearTx0 = nearTx;
 
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFut) {
-                        sendReply(nodeId, req, res0, DhtTx0, NearTx0);
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                        sendReply(nodeId, req, res0, dhtTx0, nearTx0);
                     }
                 });
             }
@@ -1265,10 +1266,12 @@ public class IgniteTxHandler {
                 if (committed) {
                     if (req.needReturnValue() && !req.waitRemoteTransactions()) {
                         try {
-                            res.returnValue(ctx.tm().getCommittedTxReturn(req.version()).fut().get());
+                            GridCacheReturnCompletableWrapper wrapper = ctx.tm().getCommittedTxReturn(req.version());
 
-                            if (res.returnValue() != null)
-                                ctx.tm().removeTxReturn(req.version());
+                            if (wrapper != null)
+                                res.returnValue(wrapper.fut().get());
+                            else
+                                assert !ctx.discovery().alive(nodeId) : nodeId;
                         }
                         catch (IgniteCheckedException e) {
                             if (txFinishMsgLog.isDebugEnabled()) {

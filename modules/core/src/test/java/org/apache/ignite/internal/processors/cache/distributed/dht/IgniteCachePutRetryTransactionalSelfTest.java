@@ -219,16 +219,16 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Random rdm = new Random();
+                Random rnd = new Random();
 
                 while (!finished.get()) {
-                    stopGrid(3);
+                    stopGrid(0);
 
                     U.sleep(300);
 
-                    startGrid(3);
+                    startGrid(0);
 
-                    if (rdm.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
+                    if (rnd.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
                         awaitPartitionMapExchange();
                 }
 
