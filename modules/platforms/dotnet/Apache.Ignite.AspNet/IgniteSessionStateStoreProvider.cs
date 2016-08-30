@@ -26,6 +26,7 @@ namespace Apache.Ignite.AspNet
     using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.AspNet;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -230,7 +231,7 @@ namespace Apache.Ignite.AspNet
                     // Item found, return it.
                     Log("GetItemExclusive session store data found", id, context);
 
-                    return SessionStateStoreDataSerializer.Deserialize((byte[]) existingData);
+                    return new IgniteSessionStateStoreData((BinarizableSessionStateStoreData) existingData);
                 }
 
                 // Item not found - return null.
@@ -327,8 +328,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("CreateNewStoreData", "", context, timeout);
 
-            return new SessionStateStoreData(new SessionStateItemCollection(),
-                SessionStateUtility.GetSessionStaticObjects(context), timeout);
+            return new IgniteSessionStateStoreData(SessionStateUtility.GetSessionStaticObjects(context), timeout);
         }
 
         /// <summary>
@@ -428,7 +428,7 @@ namespace Apache.Ignite.AspNet
 
             var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
 
-            cache[GetKey(id)] = SessionStateStoreDataSerializer.Serialize(item);
+            cache[GetKey(id)] = ((IgniteSessionStateStoreData) item).Data;
         }
 
         /// <summary>

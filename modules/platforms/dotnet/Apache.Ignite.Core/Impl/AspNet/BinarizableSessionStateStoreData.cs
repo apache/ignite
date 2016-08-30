@@ -66,6 +66,11 @@ namespace Apache.Ignite.Core.Impl.AspNet
         }
 
         /// <summary>
+        /// Gets or sets the timeout.
+        /// </summary>
+        public int Timeout { get; set; }
+
+        /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>

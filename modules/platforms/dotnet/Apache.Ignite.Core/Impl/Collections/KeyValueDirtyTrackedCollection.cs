@@ -33,6 +33,8 @@ namespace Apache.Ignite.Core.Impl.Collections
         // TODO: Keep deserialized while not needed.
         private readonly Dictionary<object, Entry> _dict = new Dictionary<object, Entry>();
 
+        private bool _dirtyAll;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
         /// </summary>
@@ -130,6 +132,15 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 entry.Value = key;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is dirty.
+        /// </summary>
+        public bool IsDirty
+        {
+            get { return _dirtyAll || _dict.Values.Any(x => x.IsDirty); }
+            set { _dirtyAll = true; }
         }
 
         /// <summary>
