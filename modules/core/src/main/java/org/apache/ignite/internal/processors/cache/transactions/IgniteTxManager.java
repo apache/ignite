@@ -263,33 +263,32 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         txHnd = new IgniteTxHandler(cctx);
 
-        if (!cctx.gridConfig().isClientMode())
-            deferredAckMessageSender = new GridDeferredAckMessageSender(cctx.time(), cctx.kernalContext().closure()) {
-                @Override public int getTimeout() {
-                    return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
+        deferredAckMessageSender = new GridDeferredAckMessageSender(cctx.time(), cctx.kernalContext().closure()) {
+            @Override public int getTimeout() {
+                return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
+            }
+
+            @Override public int getBufferSize() {
+                return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE;
+            }
+
+            @Override public void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers) {
+                GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(vers);
+
+                cctx.kernalContext().gateway().readLock();
+
+                try {
+                    cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
                 }
-
-                @Override public int getBufferSize() {
-                    return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE;
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to send one phase commit ack to backup node [backup=" +
+                        nodeId + ']', e);
                 }
-
-                @Override public void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers) {
-                    GridDhtTxOnePhaseCommitAckRequest ackReq = new GridDhtTxOnePhaseCommitAckRequest(vers);
-
-                    cctx.kernalContext().gateway().readLock();
-
-                    try {
-                        cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Failed to send one phase commit ack to backup node [backup=" +
-                            nodeId + ']', e);
-                    }
-                    finally {
-                        cctx.kernalContext().gateway().readUnlock();
-                    }
+                finally {
+                    cctx.kernalContext().gateway().readUnlock();
                 }
-            };
+            }
+        };
     }
 
     /** {@inheritDoc} */
