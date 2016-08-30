@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.message.DbException;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
@@ -144,13 +145,6 @@ public class GridH2ValueCacheObject extends Value {
             Comparable<Object> c1 = (Comparable<Object>)o1;
 
             return c1.compareTo(o2);
-        }
-
-        if (o1 instanceof BinaryEnumObjectImpl && o2 instanceof Enum) {
-            final BinaryEnumObjectImpl bo1 = (BinaryEnumObjectImpl)o1;
-
-            if (bo1.isTypeEquals(o2.getClass()))
-                return Integer.compare(bo1.enumOrdinal(), ((Enum)o2).ordinal());
         }
 
         // Group by types.
