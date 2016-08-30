@@ -94,7 +94,12 @@ namespace Apache.Ignite.AspNet.Impl
 
         public NameObjectCollectionBase.KeysCollection Keys
         {
-            get { return _collection.Keys; }
+            get
+            {
+                // TODO: Convert somehow? 
+                //return _collection.Keys;
+                return null;
+            }
         }
 
         public bool Dirty
