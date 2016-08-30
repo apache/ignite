@@ -38,7 +38,7 @@ namespace ignite
     template<> inline const char* UnitTitle<boost::chrono::hours>() { return "hours"; };
 
     template<typename T, typename D>
-    D Benchmark(unsigned repeats)
+    D Benchmark(T& test, unsigned repeats)
     {
         using namespace boost::chrono;
 
@@ -46,13 +46,15 @@ namespace ignite
 
         for (unsigned i = 0; i < repeats; ++i)
         {
-            T test;
+            test.Prepare();
 
             time_point<steady_clock> begin = steady_clock::now();
 
             test.Run();
 
             time_point<steady_clock> end = steady_clock::now();
+
+            test.Cleanup();
 
             res += duration_cast<D>(end - begin);
         }
@@ -63,21 +65,36 @@ namespace ignite
     template<typename T, typename D>
     void RunBenchmark(const std::string& name, unsigned repeats, unsigned warmupRepeats = 5)
     {
-        std::cout << "Running benchmark " << name << "..." << std::endl;
-        std::cout << "Repeats count: " << repeats << '.' << std::endl;
-
-        std::cout << "Warming up..." << std::endl;
-        std::cout << "Warm up repeats count: " << warmupRepeats << '.' << std::endl;
+        std::cout << std::endl;
+        std::cout << ">>> Running benchmark " << name << "..." << std::endl;
+        std::cout << std::endl;
 
         try
         {
-            Benchmark<T, D>(warmupRepeats);
+            std::cout << ">>> Setting up..." << std::endl;
+            std::cout << std::endl;
 
-            std::cout << "Warm up finished." << std::endl;
+            T test;
+            std::cout << ">>> Ready." << std::endl;
+            std::cout << std::endl;
 
-            D res = Benchmark<T, D>(repeats);
+            std::cout << ">>> Warming up..." << std::endl;
+            std::cout << ">>> Warm up repeats count: " << warmupRepeats << '.' << std::endl;
+            std::cout << std::endl;
 
-            std::cout << "Finished. Execution took " << res.count() << " " << UnitTitle<D>() << '.' << std::endl;
+            Benchmark<T, D>(test, warmupRepeats);
+
+            std::cout << ">>> Warm up finished." << std::endl;
+            std::cout << std::endl;
+
+            std::cout << ">>> Benchmarking..." << std::endl;
+            std::cout << ">>> Repeats count: " << repeats << '.' << std::endl;
+            std::cout << std::endl;
+
+            D res = Benchmark<T, D>(test, repeats);
+
+            std::cout << ">>> Finished. Execution took " << res.count() << " " << UnitTitle<D>() << '.' << std::endl;
+            std::cout << std::endl;
         }
         catch(const IgniteError& e)
         {

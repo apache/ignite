@@ -211,15 +211,21 @@ struct OdbcFetchBenchmark
         IgniteSetup();
 
         IgniteFill();
-
-        OdbcConnect("driver={Apache Ignite};server=127.0.0.1;port=11111;cache=cache");
     }
 
     ~OdbcFetchBenchmark()
     {
-        OdbcCleanup();
-
         IgniteCleanUp();
+    }
+
+    void Prepare()
+    {
+        OdbcConnect("driver={Apache Ignite};server=127.0.0.1;port=11111;cache=cache");
+    }
+
+    void Cleanup()
+    {
+        OdbcCleanup();
     }
 
     void Run()
