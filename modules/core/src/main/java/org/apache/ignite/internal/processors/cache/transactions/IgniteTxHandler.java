@@ -1264,7 +1264,7 @@ public class IgniteTxHandler {
                 res.checkCommitted(true);
 
                 if (committed) {
-                    if (req.needReturnValue() && !req.waitRemoteTransactions()) {
+                    if (req.needReturnValue()) {
                         try {
                             GridCacheReturnCompletableWrapper wrapper = ctx.tm().getCommittedTxReturn(req.version());
 

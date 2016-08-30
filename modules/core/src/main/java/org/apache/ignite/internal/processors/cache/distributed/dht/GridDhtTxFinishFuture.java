@@ -351,6 +351,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
+                false,
                 false);
 
             try {
@@ -450,6 +451,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 updCntrs,
+                false,
                 false);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
@@ -519,6 +521,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.subjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
+                    false,
                     false);
 
                 req.writeVersion(tx.writeVersion());

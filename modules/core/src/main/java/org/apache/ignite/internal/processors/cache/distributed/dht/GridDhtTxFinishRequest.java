@@ -46,6 +46,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     public static final int WAIT_REMOTE_TX_FLAG_MASK = 0x01;
 
+    /** */
+    public static final int NEED_RETURN_VALUE_FLAG_MASK = 0x02;
+
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -85,9 +88,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** */
     private byte flags;
-
-    /** Need return value flag. */
-    private boolean retVal;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -145,7 +145,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         @Nullable UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
-        boolean retVal
+        boolean retVal,
+        boolean waitRemoteTxs
     ) {
         super(
             xidVer,
@@ -176,7 +177,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.sysInvalidate = sysInvalidate;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.retVal = retVal;
+
+        needReturnValue(retVal);
+        waitRemoteTransactions(waitRemoteTxs);
     }
 
     /**
@@ -230,11 +233,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int taskNameHash,
         boolean addDepInfo,
         Collection<Long> updateIdxs,
-        boolean retVal
+        boolean retVal,
+        boolean waitRemoteTxs
     ) {
         this(nearNodeId, futId, miniId, topVer, xidVer, commitVer, threadId, isolation, commit, invalidate, sys, plc,
             sysInvalidate, syncCommit, syncRollback, baseVer, committedVers, rolledbackVers, pendingVers, txSize,
-            subjId, taskNameHash, addDepInfo, retVal);
+            subjId, taskNameHash, addDepInfo, retVal, waitRemoteTxs);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -329,13 +333,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
-     * @return Flag indicating whether transaction needs return value.
-     */
-    public boolean needReturnValue(){
-        return retVal;
-    }
-
-    /**
      * @return {@code True}
      */
     public boolean waitRemoteTransactions() {
@@ -350,6 +347,23 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             flags = (byte)(flags | WAIT_REMOTE_TX_FLAG_MASK);
         else
             flags &= ~WAIT_REMOTE_TX_FLAG_MASK;
+    }
+
+    /**
+     * @return Flag indicating whether transaction needs return value.
+     */
+    public boolean needReturnValue() {
+        return (flags & NEED_RETURN_VALUE_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param retVal Need return value.
+     */
+    public void needReturnValue(boolean retVal) {
+        if (retVal)
+            flags = (byte)(flags | NEED_RETURN_VALUE_FLAG_MASK);
+        else
+            flags &= ~NEED_RETURN_VALUE_FLAG_MASK;
     }
 
     /** {@inheritDoc} */
@@ -415,36 +429,30 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeBoolean("retVal", retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeBoolean("sysInvalidate", sysInvalidate))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -527,14 +535,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 25:
-                retVal = reader.readBoolean("retVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -542,7 +542,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 sysInvalidate = reader.readBoolean("sysInvalidate");
 
                 if (!reader.isLastRead())
@@ -550,7 +550,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -558,7 +558,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -566,7 +566,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -586,6 +586,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 30;
     }
 }
