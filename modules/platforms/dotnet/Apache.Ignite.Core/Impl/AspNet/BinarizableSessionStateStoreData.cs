@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
     /// </summary>
     public class BinarizableSessionStateStoreData : IBinaryWriteAware
     {
+        // TODO: Dedicated unit test
         private readonly KeyValueDirtyTrackedCollection _items;
 
         /// <summary>
