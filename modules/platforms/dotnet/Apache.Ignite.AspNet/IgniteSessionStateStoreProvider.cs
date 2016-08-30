@@ -276,6 +276,7 @@ namespace Apache.Ignite.AspNet
             Log("SetAndReleaseItemExclusive", id, context);
 
             // This will put unlocked item, no need to release separately.
+            // TODO: Send only delta!
             PutSessionStateStoreData(id, item);
         }
 
