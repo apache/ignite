@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -88,6 +89,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** State. */
     @GridToStringExclude
     private final AtomicLong state = new AtomicLong((long)MOVING.ordinal() << 32);
+
+    /** Evict guard. Must be CASed to -1 only when partition state is EVICTED. */
+    @GridToStringExclude
+    private final AtomicInteger evictGuard = new AtomicInteger();
 
     /** Rent future. */
     @GridToStringExclude
@@ -595,25 +600,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         int ord = (int)(reservations >> 32);
 
         if (isEmpty() &&
-            ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 &&
+            ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 && !groupReserved() &&
             casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            clearPageStore();
-
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(id);
-
-            cctx.dataStructures().onPartitionEvicted(id);
-
-            destroyCacheDataStore();
-
-            rent.onDone();
-
-            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
-
-            clearDeferredDeletes();
+            if (markForDestroy())
+                finishDestroy(updateSeq);
         }
         else
             cctx.preloader().evictPartitionAsync(this);
@@ -646,6 +639,85 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return {@code True} if evicting thread was added.
+     */
+    private boolean addEvicting() {
+        while (true) {
+            int cnt = evictGuard.get();
+
+            if (cnt < 0)
+                return false;
+
+            if (evictGuard.compareAndSet(cnt, cnt + 1))
+                return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private void clearEvicting() {
+       boolean free = false;
+
+        while (true) {
+            int cnt = evictGuard.get();
+
+            assert cnt > 0;
+
+            if (evictGuard.compareAndSet(cnt, cnt - 1)) {
+                free = cnt == 1;
+
+                break;
+            }
+        }
+
+        if (free && state() == EVICTED) {
+            if (markForDestroy())
+                finishDestroy(true);
+        }
+    }
+
+    /**
+     * @return {@code True} if partition is safe to destroy
+     */
+    private boolean markForDestroy() {
+        while (true) {
+            int cnt = evictGuard.get();
+
+            if (cnt != 0)
+                return false;
+
+            if (evictGuard.compareAndSet(0, -1))
+                return true;
+        }
+    }
+
+    /**
+     * @param updateSeq Update sequence request.
+     */
+    private void finishDestroy(boolean updateSeq) {
+        assert state() == EVICTED : this;
+        assert evictGuard.get() == -1;
+
+        clearPageStore();
+
+        if (cctx.isDrEnabled())
+            cctx.dr().partitionEvicted(id);
+
+        cctx.continuousQueries().onPartitionEvicted(id);
+
+        cctx.dataStructures().onPartitionEvicted(id);
+
+        destroyCacheDataStore();
+
+        rent.onDone();
+
+        ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
+
+        clearDeferredDeletes();
+    }
+
+    /**
      *
      */
     public void tryEvict() {
@@ -656,27 +728,20 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
             return;
 
-        // Attempt to evict partition entries from cache.
-        clearAll();
+        if (addEvicting()) {
+            try {
+                // Attempt to evict partition entries from cache.
+                clearAll();
 
-        if (isEmpty() && casState(reservations, EVICTED)) {
-            if (log.isDebugEnabled())
-                log.debug("Evicted partition: " + this);
-
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(id);
-
-            cctx.continuousQueries().onPartitionEvicted(id);
-
-            cctx.dataStructures().onPartitionEvicted(id);
-
-            destroyCacheDataStore();
-
-            rent.onDone();
-
-            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
-
-            clearDeferredDeletes();
+                if (isEmpty() && casState(reservations, EVICTED)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Evicted partition: " + this);
+                    // finishDestroy() will be initiated by clearEvicting().
+                }
+            }
+            finally {
+                clearEvicting();
+            }
         }
     }
 

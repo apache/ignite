@@ -1496,6 +1496,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     GridCacheEntryEx entry1 = txEntry1.cached();
 
+                    assert entry1 != null : txEntry1;
                     assert !entry1.detached() : "Expected non-detached entry for near transaction " +
                         "[locNodeId=" + cctx.localNodeId() + ", entry=" + entry1 + ']';
 
