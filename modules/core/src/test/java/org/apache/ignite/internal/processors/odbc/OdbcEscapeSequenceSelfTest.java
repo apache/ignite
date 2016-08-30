@@ -486,6 +486,61 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test non-escape sequences.
+     */
+    public void testNonEscapeSequence() throws Exception {
+        check("'{fn test()}'", "'{fn test()}'");
+
+        check("select '{fn test()}'", "select '{fn test()}'");
+
+        check(
+            "select '{fn test()}' from table;",
+            "select '{fn test()}' from table;"
+        );
+
+        check(
+            "select test('arg')  from table;",
+            "select {fn test('arg')}  from table;"
+        );
+
+        check(
+            "select test('{fn func()}')  from table;",
+            "select {fn test('{fn func()}')}  from table;"
+        );
+
+        check(
+            "'{\\'some literal\\'}'",
+            "'{\\'some literal\\'}'"
+        );
+
+        check(
+            "select '{\\'some literal\\'}'",
+            "select '{\\'some literal\\'}'"
+        );
+
+        check(
+            "select '{\\'some literal\\'}' from table;",
+            "select '{\\'some literal\\'}' from table;"
+        );
+
+        check(
+            "select '{' + func() + '}' from table;",
+            "select '{' + {fn func()} + '}' from table;"
+        );
+
+        check(
+            "select '{\\'{fn test()}\\'}' from table;",
+            "select '{\\'{fn test()}\\'}' from table;"
+        );
+
+        checkFail("'{fn test()}");
+
+        checkFail("{fn func('arg)}");
+
+        checkFail("{fn func(arg')}");
+    }
+
+    /**
      * Check parsing logic.
      *
      * @param exp Expected result.
