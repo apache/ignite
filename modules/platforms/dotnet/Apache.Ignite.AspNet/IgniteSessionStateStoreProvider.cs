@@ -251,8 +251,6 @@ namespace Apache.Ignite.AspNet
             Log("SetAndReleaseItemExclusive", id, context);
 
             PutSessionStateStoreData(id, item);
-
-            ReleaseItemExclusive(context, id, lockId);
         }
 
         /// <summary>
@@ -359,7 +357,12 @@ namespace Apache.Ignite.AspNet
 
             var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
 
-            cache[GetKey(id)] = ((IgniteSessionStateStoreData) item).Data;
+            var data = ((IgniteSessionStateStoreData) item).Data;
+
+            // Always put unlocked item. Only GetItemExclusive can lock an existing item.
+            data.LockNodeId = null;
+
+            cache[GetKey(id)] = data;
         }
 
         /// <summary>
