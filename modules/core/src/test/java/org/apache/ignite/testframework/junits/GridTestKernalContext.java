@@ -17,6 +17,9 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,10 +31,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Test context.
@@ -89,7 +88,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     public void stop(boolean cancel) throws IgniteCheckedException {
         List<GridComponent> comps = components();
 
-        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
+        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
             GridComponent comp = it.previous();
 
             comp.stop(cancel);

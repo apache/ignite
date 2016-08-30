@@ -17,6 +17,33 @@
 
 package org.apache.ignite.internal;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Handler;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -73,34 +100,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Handler;
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
@@ -1378,7 +1377,7 @@ public class IgnitionEx {
          * @param springCtx Optional Spring application context.
          */
         GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
-            assert (cfg != null);
+            assert cfg != null;
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
@@ -1697,16 +1696,12 @@ public class IgnitionEx {
             // Pre-start all threads to avoid HadoopClassLoader leaks.
             ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
 
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
-            // Note, that we do not pre-start threads here as management pool may
-            // not be needed.
             if (cfg.getOdbcConfiguration() != null) {
                 odbcExecSvc = new IgniteThreadPoolExecutor(
                     "odbc",
                     cfg.getGridName(),
-                    cfg.getOdbcConfiguration().getOdbcThreadPoolSize(),
-                    cfg.getOdbcConfiguration().getOdbcThreadPoolSize(),
+                    cfg.getOdbcConfiguration().getThreadPoolSize(),
+                    cfg.getOdbcConfiguration().getThreadPoolSize(),
                     0,
                     new LinkedBlockingQueue<Runnable>());
             }
@@ -1936,10 +1931,10 @@ public class IgnitionEx {
             if (marsh == null) {
                 if (!BinaryMarshaller.available()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                            "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                            "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                            "Switching to standard JDK marshalling - " +
-                            "object serialization performance will be significantly slower.",
+                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
+                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
+                        "Switching to standard JDK marshalling - " +
+                        "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
                     marsh = new JdkMarshaller();
@@ -2349,10 +2344,11 @@ public class IgnitionEx {
 
             igfsExecSvc = null;
 
-            if (restExecSvc != null)
+            if (restExecSvc != null) {
                 U.shutdownNow(getClass(), restExecSvc, log);
 
-            restExecSvc = null;
+                restExecSvc = null;
+            }
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
@@ -2362,10 +2358,11 @@ public class IgnitionEx {
 
             marshCacheExecSvc = null;
 
-            if (odbcExecSvc != null)
+            if (odbcExecSvc != null) {
                 U.shutdownNow(getClass(), odbcExecSvc, log);
 
-            odbcExecSvc = null;
+                odbcExecSvc = null;
+            }
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
@@ -2417,8 +2414,6 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Failed to register MBean.", e);
                     }
                 }
-
-                assert data != null;
 
                 data.addGrid(name);
                 data.setCounter(data.getCounter() + 1);

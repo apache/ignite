@@ -105,13 +105,12 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
-                        GridNioFilter[] filters =
-                            (ctx.getOdbcExecutorService() != null) ?
-                                new GridNioFilter[] {
-                                    new GridNioAsyncNotifyFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
-                                    new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
-                                }
-                                : new GridNioFilter[] {new GridNioCodecFilter(new OdbcBufferedParser(), log, false)};
+                        assert ctx.getOdbcExecutorService() != null;
+
+                        GridNioFilter[] filters = new GridNioFilter[] {
+                            new GridNioAsyncNotifyFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
+                            new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
+                        };
 
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
