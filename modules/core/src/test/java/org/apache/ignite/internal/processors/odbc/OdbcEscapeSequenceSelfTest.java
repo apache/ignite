@@ -393,10 +393,8 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      */
     public void testNonEscapeSequence() throws Exception {
         check("'{fn test()}'", "'{fn test()}'");
-        check("\"{fn test()}\"", "\"{fn test()}\"");
 
         check("select '{fn test()}'", "select '{fn test()}'");
-        check("select \"{fn test()}\"", "select \"{fn test()}\"");
 
         check(
             "select '{fn test()}' from table;",
@@ -404,23 +402,13 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         );
 
         check(
-            "select \"{fn test()}\"  from table;",
-            "select \"{fn test()}\"  from table;"
+            "select test('arg')  from table;",
+            "select {fn test('arg')}  from table;"
         );
 
         check(
-            "select test(\"arg\")  from table;",
-            "select {fn test(\"arg\")}  from table;"
-        );
-
-        check(
-            "select test(\"{fn func('arg')}\")  from table;",
-            "select {fn test(\"{fn func('arg')}\")}  from table;"
-        );
-
-        check(
-            "select test(\"{fn func('arg')\")  from table;",
-            "select {fn test(\"{fn func('arg')\")}  from table;"
+            "select test('{fn func()}')  from table;",
+            "select {fn test('{fn func()}')}  from table;"
         );
 
         check(
@@ -429,18 +417,8 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         );
 
         check(
-            "\"{\\\"some literal\\\"}\"",
-            "\"{\\\"some literal\\\"}\""
-        );
-
-        check(
             "select '{\\'some literal\\'}'",
             "select '{\\'some literal\\'}'"
-        );
-
-        check(
-            "select \"{\\\"some literal\\\"}\"",
-            "select \"{\\\"some literal\\\"}\""
         );
 
         check(
@@ -449,18 +427,8 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         );
 
         check(
-            "select \"{\\\"some literal\\\"}\" from table;",
-            "select \"{\\\"some literal\\\"}\" from table;"
-        );
-
-        check(
             "select '{' + func() + '}' from table;",
             "select '{' + {fn func()} + '}' from table;"
-        );
-
-        check(
-            "select \"{\" + func() + \"}\" from table;",
-            "select \"{\" + {fn func()} + \"}\" from table;"
         );
 
         check(
@@ -468,25 +436,11 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select '{\\'{fn test()}\\'}' from table;"
         );
 
-        check(
-            "select \"{\\\"{fn test()}\\\"}\" from table;",
-            "select \"{\\\"{fn test()}\\\"}\" from table;"
-        );
-
-        check(
-            "select '{\"{fn test()}\"}' from table;",
-            "select '{\"{fn test()}\"}' from table;"
-        );
-
         checkFail("'{fn test()}");
 
-        checkFail("\"{fn test()}");
-
-        checkFail("{fn func(\"arg)}");
         checkFail("{fn func('arg)}");
 
-        checkFail("{fn func(arg')");
-        checkFail("{fn func(arg\")");
+        checkFail("{fn func(arg')}");
     }
 
     /**

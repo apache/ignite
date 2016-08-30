@@ -69,20 +69,20 @@ public class OdbcEscapeUtils {
         int plainPos = startPos;
         int openPos = -1;
 
-        char literalDelim = 0;
+        boolean insideLiteral = false;
 
         LinkedList<OdbcEscapeParseResult> nested = null;
 
         while (curPos < text.length()) {
             char curChar = text.charAt(curPos);
 
-            if (curChar == '\'' || curChar == '"') {
-                if (literalDelim == 0)
-                    literalDelim = curChar;
-                else if (curChar == literalDelim && text.charAt(curPos - 1) != '\\')
-                    literalDelim = 0;
+            if (curChar == '\'') {
+                if (!insideLiteral)
+                    insideLiteral = true;
+                else if (insideLiteral && text.charAt(curPos - 1) != '\\')
+                    insideLiteral = false;
             }
-            else if (literalDelim == 0) {
+            else if (!insideLiteral) {
                 if (curChar == '{') {
                     if (openPos == -1) {
                         // Top-level opening brace. Append previous portion and remember current position.
@@ -142,8 +142,8 @@ public class OdbcEscapeUtils {
         if (openPos != -1)
             throw new IgniteException("Malformed escape sequence (closing curly brace missing): " + text);
 
-        if(literalDelim!=0)
-            throw new IgniteException("Literal expression (closing "+(literalDelim=='"'?"double-":"")+"quote missing): " + text);
+        if (insideLiteral)
+            throw new IgniteException("Literal expression (closing quote missing): " + text);
 
         if (curPos > plainPos)
             res.append(text, plainPos, curPos);
@@ -261,7 +261,7 @@ public class OdbcEscapeUtils {
                 return parseScalarExpression(text, startPos0, len0);
 
             case GUID:
-                return parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+                return parseGuidExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
 
             case DATE:
                 return parseExpression(text, startPos0, len0, token.type(), DATE_PATTERN);
@@ -291,6 +291,21 @@ public class OdbcEscapeUtils {
     }
 
     /**
+     * Parse GUID expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseGuidExpression(String text, int startPos, int len, OdbcEscapeType type,
+        Pattern pattern) {
+        String val = parseExpression(text, startPos, len, type, pattern);
+
+        return "CAST(" + val + " AS UUID)";
+    }
+
+    /**
      * Parse concrete expression.
      *
      * @param text Text.
@@ -304,7 +319,7 @@ public class OdbcEscapeUtils {
         if (!pattern.matcher(val).matches())
             throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
-        return "CAST(" + val + " AS UUID)";
+        return val;
     }
 
     /**
