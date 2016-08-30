@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -60,6 +61,8 @@ public class DataEntry {
     public static DataEntry fromTxEntry(IgniteTxEntry txEntry, IgniteInternalTx tx) {
         DataEntry de = new DataEntry();
 
+        assert txEntry.key().partition() >= 0 : txEntry.key();
+
         de.cacheId = txEntry.cacheId();
         de.key = txEntry.key();
         de.val = txEntry.value();
@@ -68,6 +71,10 @@ public class DataEntry {
         de.writeVer = tx.writeVersion();
         de.partId = txEntry.key().partition();
         de.partCnt = txEntry.updateCounter();
+
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert de.op() == GridCacheOperation.CREATE || de.op() == GridCacheOperation.UPDATE ||
+            de.op() == GridCacheOperation.DELETE : de.op();
 
         return de;
     }
@@ -104,6 +111,9 @@ public class DataEntry {
         this.writeVer = writeVer;
         this.partId = partId;
         this.partCnt = partCnt;
+
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**
@@ -160,5 +170,10 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataEntry.class, this);
     }
 }

@@ -69,6 +69,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private boolean offheap;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11141");
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

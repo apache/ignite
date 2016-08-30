@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,11 +30,6 @@ import javax.cache.Cache;
  * Test cache plugin configuration for cache deployment tests.
  */
 public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePluginConfiguration<K, V> {
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createProvider(CachePluginContext ctx) {
-        return new CacheDeploymentCachePluginProvider();
-    }
-
     private static class CacheDeploymentCachePluginProvider implements CachePluginProvider {
         /** {@inheritDoc} */
         @Nullable @Override public Object createComponent(Class cls) {
@@ -73,8 +67,8 @@ public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePlugi
         }
 
         /** {@inheritDoc} */
-        @Override public void validateRemote(CacheConfiguration locCfg, CachePluginConfiguration locPluginCcfg,
-            CacheConfiguration rmtCfg, ClusterNode rmtNode) throws IgniteCheckedException {
+        @Override public void validateRemote(CacheConfiguration locCfg, CacheConfiguration rmtCfg,
+            ClusterNode rmtNode) throws IgniteCheckedException {
 
         }
     }

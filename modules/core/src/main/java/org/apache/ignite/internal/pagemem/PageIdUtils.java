@@ -49,16 +49,16 @@ public final class PageIdUtils {
     public static final long PAGE_IDX_MASK = ~(-1L << PAGE_IDX_SIZE);
 
     /** */
-    public static final long FILE_ID_MASK = ~(-1 << FILE_ID_SIZE);
+    public static final long FILE_ID_MASK = ~(-1L << FILE_ID_SIZE);
 
     /** */
-    public static final long OFFSET_MASK = ~(-1 << OFFSET_SIZE);
+    public static final long OFFSET_MASK = ~(-1L << OFFSET_SIZE);
 
     /** */
-    public static final long PART_ID_MASK = ~(-1 << PART_ID_SIZE);
+    public static final long PART_ID_MASK = ~(-1L << PART_ID_SIZE);
 
     /** */
-    public static final long FLAG_MASK = ~(-1 << FLAG_SIZE);
+    public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
     private static final long EFFECTIVE_NON_DATA_PAGE_ID_MASK =
@@ -84,32 +84,17 @@ public final class PageIdUtils {
     }
 
     /**
-     * Constructs a page link by the given page ID and bytes offset within the page. Bytes offset must be
-     * aligned on a 8-byte border.
-     *
-     * @param pageId Page ID.
-     * @param bytesOffset Bytes offset in the page aligned by a 8-byte boundary.
-     * @return Page link.
-     */
-    public static long linkFromBytesOffset(long pageId, int bytesOffset) {
-        assert (bytesOffset & 0x7) == 0;
-        assert (pageId >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) == 0;
-
-        // (bytesOffset >> 3) << PAGE_IDX_SIZE
-        return pageId | (((long)bytesOffset) << (FILE_ID_SIZE + RESERVED_SIZE + PAGE_IDX_SIZE - 3));
-    }
-
-    /**
      * Constructs a page link by the given page ID and 8-byte words within the page.
      *
      * @param pageId Page ID.
-     * @param dwordOffset Offset in 8-byte words.
+     * @param itemId Item ID.
      * @return Page link.
      */
-    public static long linkFromDwordOffset(long pageId, int dwordOffset) {
+    public static long link(long pageId, int itemId) {
+        assert itemId >= 0 && itemId < 255: itemId;
         assert (pageId >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) == 0 : U.hexLong(pageId);
 
-        return pageId | (((long)dwordOffset) << (PAGE_IDX_SIZE + FILE_ID_SIZE + RESERVED_SIZE));
+        return pageId | (((long)itemId) << (PAGE_IDX_SIZE + FILE_ID_SIZE + RESERVED_SIZE));
     }
 
     /**
@@ -137,7 +122,7 @@ public final class PageIdUtils {
      * @return Page ID.
      */
     public static int pageIndex(long pageId) {
-        return (int)(pageId & PAGE_IDX_MASK); // 30 bytes
+        return (int)(pageId & PAGE_IDX_MASK); // 4 bytes
     }
 
     /**
@@ -179,12 +164,12 @@ public final class PageIdUtils {
     }
 
     /**
-     * Extracts offset in 8-byte words from the given page link.
+     * Index of the item inside of data page.
      *
      * @param link Page link.
      * @return Offset in 8-byte words.
      */
-    public static int dwordsOffset(long link) {
+    public static int itemId(long link) {
         return (int)((link >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) & OFFSET_MASK);
     }
 

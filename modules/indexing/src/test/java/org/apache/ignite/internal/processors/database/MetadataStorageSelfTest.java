@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.database;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -56,13 +55,13 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMetaIndexAllocation() throws Exception {
-        checkMetaAllocation();
+        metaAllocation();
     }
 
     /**
      * @throws Exception
      */
-    private void checkMetaAllocation() throws Exception {
+    private void metaAllocation() throws Exception {
         PageMemory mem = memory(true);
 
         int[] cacheIds = new int[]{1, "partitioned".hashCode(), "replicated".hashCode()};
@@ -72,7 +71,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            MetaStore metaStore = new MetadataStorage(mem, null);
+            final Map<Integer, MetadataStorage> storeMap = new HashMap<>();
 
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
@@ -91,7 +90,16 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     idxName = randomName();
                 } while (idxMap.containsKey(idxName));
 
-                final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
+                MetadataStorage metaStore = storeMap.get(cacheId);
+
+                if (metaStore == null) {
+                    metaStore = new MetadataStorage(mem, null, cacheId, null,
+                        mem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX), true);
+
+                    storeMap.put(cacheId, metaStore);
+                }
+
+                final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
 
                 assertTrue(rootPage.isAllocated());
 
@@ -105,7 +113,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     String idxName = entry.getKey();
                     FullPageId rootPageId = entry.getValue().pageId();
 
-                    final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
+                    final RootPage rootPage = storeMap.get(cacheId).getOrAllocateForTree(idxName);
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
                         rootPageId, rootPage.pageId());

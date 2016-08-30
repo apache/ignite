@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -53,6 +55,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -61,6 +64,9 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -69,11 +75,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -145,6 +154,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** */
     private int parallelOps = DFLT_MAX_PARALLEL_OPS;
+
+    /** */
+    private long timeout = DFLT_UNLIMIT_TIMEOUT;
 
     /** */
     private long autoFlushFreq;
@@ -453,6 +465,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
+    @Override public void timeout(long timeout) {
+        if (timeout < -1 || timeout == 0)
+            throw new IllegalArgumentException();
+
+        this.timeout = timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long timeout() {
+        return this.timeout;
+    }
+
+    /** {@inheritDoc} */
     @Override public long autoFlushFrequency() {
         return autoFlushFreq;
     }
@@ -501,12 +526,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
                 for (Map.Entry<K, V> entry : entries)
-                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey(), true));
+                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, null, entry.getKey(), true));
             }
 
             Collection<? extends DataStreamerEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, DataStreamerEntry>() {
                 @Override public DataStreamerEntry apply(Entry<K, V> e) {
-                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), true);
+                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, e.getKey(), true);
                     CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), true);
 
                     return new DataStreamerEntry(key, val);
@@ -516,6 +541,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             load0(entries0, resFut, keys, 0);
 
             return new IgniteCacheFutureImpl<>(resFut);
+        }
+        catch (IgniteDataStreamerTimeoutException e) {
+            throw e;
         }
         catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
@@ -572,7 +600,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         catch (Throwable e) {
             resFut.onDone(e);
 
-            if (e instanceof Error)
+            if (e instanceof Error || e instanceof IgniteDataStreamerTimeoutException)
                 throw e;
 
             return new IgniteFinishedFutureImpl<>(e);
@@ -598,7 +626,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         else
             checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, true);
+        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
         return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
@@ -854,15 +882,32 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 boolean err = false;
 
+                long startTimeMillis = U.currentTimeMillis();
+
                 for (IgniteInternalFuture fut = q.poll(); fut != null; fut = q.poll()) {
                     try {
-                        fut.get();
+                        if (timeout == DFLT_UNLIMIT_TIMEOUT)
+                            fut.get();
+                        else {
+                            long timeRemain = timeout - U.currentTimeMillis() + startTimeMillis;
+
+                            if (timeRemain <= 0)
+                                throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout on flush.");
+
+                            fut.get(timeRemain);
+                        }
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to flush buffer: " + e);
 
                         throw CU.convertToCacheException(e);
+                    }
+                    catch (IgniteFutureTimeoutCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to flush buffer: " + e);
+
+                        throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout on flush.", e);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -976,8 +1021,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log.isDebugEnabled())
             log.debug("Closing data streamer [ldr=" + this + ", cancel=" + cancel + ']');
 
-        IgniteCheckedException e = null;
-
         try {
             // Assuming that no methods are called on this loader after this method is called.
             if (cancel) {
@@ -993,14 +1036,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ctx.io().removeMessageListener(topic);
         }
-        catch (IgniteCheckedException e0) {
-            e = e0;
+        catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
+            fut.onDone(e);
+            throw e;
         }
 
-        fut.onDone(null, e != null ? e : err);
-
-        if (e != null)
-            throw e;
+        fut.onDone(err);
     }
 
     /**
@@ -1074,7 +1115,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
     private void checkSecurityPermission(SecurityPermission perm)
-        throws org.apache.ignite.plugin.security.SecurityException{
+        throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 
@@ -1242,7 +1283,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
-            U.acquire(sem);
+            if (timeout == DFLT_UNLIMIT_TIMEOUT)
+                U.acquire(sem);
+            else if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to add parallel operation.");
+
+                throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
+            }
         }
 
         /**
@@ -1268,7 +1316,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             assert !entries.isEmpty();
             assert curFut != null;
 
-            incrementActiveTasks();
+            try {
+                incrementActiveTasks();
+            }
+            catch (IgniteDataStreamerTimeoutException e) {
+                curFut.onDone(e);
+                throw e;
+            }
 
             IgniteInternalFuture<Object> fut;
 
@@ -1532,7 +1586,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (depCls != null)
                     cls0 = depCls;
                 else {
-                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext();) {
+                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext(); ) {
                         Object o = it.next();
 
                         if (o != null)
@@ -1598,44 +1652,120 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ExpiryPolicy plc = cctx.expiry();
 
-            for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                try {
-                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+            boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
+            WALPointer ptr = null;
 
-                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+            Collection<Integer> reservedParts = new HashSet<>();
+            Collection<Integer> ignoredParts = new HashSet<>();
 
-                    if (plc != null) {
-                        ttl = CU.toTtl(plc.getExpiryForCreation());
+            try {
+                for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    cctx.shared().database().checkpointReadLock();
 
-                        if (ttl == CU.TTL_ZERO)
-                            continue;
-                        else if (ttl == CU.TTL_NOT_CHANGED)
-                            ttl = 0;
+                    try {
+                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        expiryTime = CU.toExpireTime(ttl);
+                        if (!cctx.isLocal()) {
+                            int p = cctx.affinity().partition(e.getKey());
+
+                            if (ignoredParts.contains(p))
+                                continue;
+
+                            if (!reservedParts.contains(p)) {
+                                GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
+
+                                if (!part.reserve()) {
+                                    ignoredParts.add(p);
+
+                                    continue;
+                                }
+                                else {
+                                    // We must not allow to read from RENTING partitions.
+                                    if (part.state() == GridDhtPartitionState.RENTING) {
+                                        part.release();
+
+                                        ignoredParts.add(p);
+
+                                        continue;
+                                    }
+
+                                    reservedParts.add(p);
+                                }
+                            }
+                        }
+
+                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
+
+                        if (walEnabled) {
+                            ptr = cctx.shared().wal().log(new DataRecord(new DataEntry(
+                                cctx.cacheId(),
+                                e.getKey(),
+                                e.getValue(),
+                                GridCacheOperation.CREATE,
+                                null,
+                                ver,
+                                entry.partition(),
+                                0
+                            )));
+                        }
+
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            ttl,
+                            expiryTime,
+                            false,
+                            topVer,
+                            GridDrType.DR_LOAD,
+                            false);
+
+                        cctx.evicts().touch(entry, topVer);
+
+                        CU.unwindEvicts(cctx);
+
+                        entry.onUnlock();
                     }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        ignoredParts.add(cctx.affinity().partition(e.getKey()));
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
+                    catch (IgniteCheckedException ex) {
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
 
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        ttl,
-                        expiryTime,
-                        false,
-                        topVer,
-                        GridDrType.DR_LOAD);
-
-                    cctx.evicts().touch(entry, topVer);
-
-                    CU.unwindEvicts(cctx);
-
-                    entry.onUnlock();
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
                 }
-                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException ex) {
-                    IgniteLogger log = cache.unwrap(Ignite.class).log();
+            }
+            finally {
+                for (Integer part : reservedParts) {
+                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, topVer, false);
 
-                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    assert locPart != null : "Evicted reserved partition: " + locPart;
+
+                    locPart.release();
+                }
+
+                try {
+                    if (walEnabled && ptr != null)
+                        cctx.shared().wal().fsync(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
                 }
             }
         }

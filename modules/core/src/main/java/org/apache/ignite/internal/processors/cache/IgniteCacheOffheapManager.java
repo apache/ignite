@@ -21,6 +21,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  *
@@ -62,11 +62,16 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public FreeList freeList();
 
     /**
+     * @return Meta store.
+     */
+    public MetaStore meta();
+
+    /**
      * @param entry Cache entry.
      * @return Value tuple, if available.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -75,6 +80,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
+
+    /**
+     * @param p Partition ID.
+     * @param store Data store.
+     */
+    public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.
@@ -194,6 +205,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     interface CacheDataStore {
         /**
+         * @return Store name.
+         */
+        String name();
+
+        /**
          * @param key Key.
          * @param part Partition.
          * @param val Value.
@@ -221,13 +237,20 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Value/version tuple.
          * @throws IgniteCheckedException If failed.
          */
-        public IgniteBiTuple<CacheObject, GridCacheVersion> find(KeyCacheObject key) throws IgniteCheckedException;
+        public CacheDataRow find(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
+
+        /**
+         * Destroys the tree associated with the store.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        public void destroy() throws IgniteCheckedException;
 
         /**
          * Data store listener.

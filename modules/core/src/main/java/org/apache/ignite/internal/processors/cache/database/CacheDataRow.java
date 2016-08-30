@@ -22,18 +22,36 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- *
+ * Cache data row.
  */
 public interface CacheDataRow {
+    /**
+     * @return Cache key.
+     */
     public KeyCacheObject key();
 
+    /**
+     * @return Cache value.
+     */
     public CacheObject value();
 
+    /**
+     * @return Cache entry version.
+     */
     public GridCacheVersion version();
 
+    /**
+     * @return Partition for this key.
+     */
     public int partition();
 
+    /**
+     * @return Link for this row.
+     */
     public long link();
 
+    /**
+     * @param link Link for this row.
+     */
     public void link(long link);
 }

@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -39,33 +37,46 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Metadata storage.
  */
 public class MetadataStorage implements MetaStore {
-    /** Max index name length (symbols num) */
+    /** Max index name length (bytes num) */
     public static final int MAX_IDX_NAME_LEN = 64;
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
 
-    /** Bytes in int. */
-    private static final int INT_LEN = 4;
-
     /** Page memory. */
     private final PageMemory pageMem;
 
     /** Index tree. */
-    private volatile MetaTree metaTree;
+    private final MetaTree metaTree;
+
+    /** Meta page reuse tree. */
+    private final ReuseList reuseList;
+
+    /** Cache ID. */
+    private final int cacheId;
+
+    /** Allocation space. */
+    private static final byte ALLOC_SPACE = PageIdAllocator.FLAG_IDX;
 
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      */
-    public MetadataStorage(PageMemory pageMem, IgniteWriteAheadLogManager wal) {
+    public MetadataStorage(
+        final PageMemory pageMem,
+        final IgniteWriteAheadLogManager wal,
+        final int cacheId,
+        final ReuseList reuseList,
+        final long rootPageId,
+        final boolean initNew
+    ) {
         try {
             this.pageMem = pageMem;
+            this.cacheId = cacheId;
+            this.reuseList = reuseList;
 
-            final RootPage rootPage = metaPageTree();
-
-            metaTree = new MetaTree(0, pageMem, wal, rootPage.pageId(), null, MetaStoreInnerIO.VERSIONS,
-                MetaStoreLeafIO.VERSIONS, rootPage.isAllocated());
+            metaTree = new MetaTree(cacheId, pageMem, wal, rootPageId,
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -73,8 +84,7 @@ public class MetadataStorage implements MetaStore {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName) throws IgniteCheckedException {
-        // TODO drop cacheId from signature - must be one metastore per cache and it is bad idea to store more data than needed
+    @Override public RootPage getOrAllocateForTree(final String idxName) throws IgniteCheckedException {
         final MetaTree tree = metaTree;
 
         synchronized (this) {
@@ -84,12 +94,17 @@ public class MetadataStorage implements MetaStore {
                 throw new IllegalArgumentException("Too long encoded indexName [maxAllowed=" + MAX_IDX_NAME_LEN +
                     ", currentLength=" + idxNameBytes.length + ", name=" + idxName + "]");
 
-            final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId));
+            final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0));
 
             if (row == null) {
-                final long pageId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
+                long pageId = 0;
 
-                tree.put(new IndexItem(idxNameBytes, pageId, cacheId));
+                if (reuseList != null)
+                    pageId = reuseList.take(null, null);
+
+                pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
+
+                tree.put(new IndexItem(idxNameBytes, pageId));
 
                 return new RootPage(new FullPageId(pageId, cacheId), true);
             }
@@ -102,58 +117,23 @@ public class MetadataStorage implements MetaStore {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropRootPage(final int cacheId, final String idxName)
+    @Override public RootPage dropRootPage(final String idxName)
         throws IgniteCheckedException {
-        final MetaTree tree = metaTree;
-
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-        final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId));
+        final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
 
-        if (row != null) // TODO Have a reuse tree for deallocated pages.
-            pageMem.freePage(cacheId, row.pageId);
+        if (row != null) {
+            if (reuseList == null)
+                pageMem.freePage(cacheId, row.pageId);
+        }
 
-        return row != null ? new RootPage(new FullPageId(row.pageId, row.cacheId), false) : null;
+        return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
-    /**
-     * @return Meta page.
-     */
-    private RootPage metaPageTree() throws IgniteCheckedException {
-        // TODO this complex stuff must go away after metastore will be made one per cache
-        // TODO and we must make pageMem.metaPage to be a MetaTree root.
-        Page meta = pageMem.metaPage();
-
-        try {
-            boolean written = false;
-
-            ByteBuffer buf = meta.getForWrite();
-
-            try {
-                long pageId = buf.getLong();
-
-                if (pageId != 0)
-                    return new RootPage(new FullPageId(pageId, 0), false);
-                else {
-                    long newPageId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
-
-                    assert newPageId != meta.fullId().pageId() : "Duplicate page allocated " +
-                        "[metaId=" + meta.fullId() + ", allocated=" + U.hexLong(newPageId) + ']';
-
-                    buf.putLong(0, newPageId);
-
-                    written = true;
-
-                    return new RootPage(new FullPageId(newPageId, 0), true);
-                }
-            }
-            finally {
-                meta.releaseWrite(written);
-            }
-        }
-        finally {
-            pageMem.releasePage(meta);
-        }
+    /** {@inheritDoc} */
+    @Override public void destroy() throws IgniteCheckedException {
+        metaTree.destroy();
     }
 
     /**
@@ -166,46 +146,30 @@ public class MetadataStorage implements MetaStore {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
             final int cacheId,
             final PageMemory pageMem,
             final IgniteWriteAheadLogManager wal,
-            final FullPageId metaPageId,
+            final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew
         ) throws IgniteCheckedException {
-            super(treeName("meta", cacheId, "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();
         }
 
         /** {@inheritDoc} */
-        @Override protected long allocatePage0() throws IgniteCheckedException {
-            return pageMem.allocatePage(getCacheId(), 0, PageIdAllocator.FLAG_META);
-        }
-
-        /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final ByteBuffer buf, final int idx,
             final IndexItem row) throws IgniteCheckedException {
-
-            // Compare cache IDs
             final int off = ((IndexIO)io).getOffset(idx);
 
-            final int cacheId = buf.getInt(off);
-
-            final int cacheIdCmp = Integer.compare(cacheId, row.cacheId);
-
-            if (cacheIdCmp != 0)
-                return cacheIdCmp;
-
             int shift = 0;
-
-            shift += INT_LEN;
 
             // Compare index names.
             final byte len = buf.get(off + shift);
@@ -237,19 +201,20 @@ public class MetadataStorage implements MetaStore {
         private byte[] idxName;
 
         /** */
-        private int cacheId;
-
-        /** */
         private long pageId;
 
         /**
          * @param idxName Index name.
          * @param pageId Page ID.
          */
-        private IndexItem(final byte[] idxName, final long pageId, final int cacheId) {
+        private IndexItem(final byte[] idxName, final long pageId) {
             this.idxName = idxName;
             this.pageId = pageId;
-            this.cacheId = cacheId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "I [idxName=" + new String(idxName) + ", pageId=" + U.hexLong(pageId) + ']';
         }
     }
 
@@ -269,9 +234,6 @@ public class MetadataStorage implements MetaStore {
 
         try {
             buf.position(off);
-
-            // Cache ID.
-            buf.putInt(row.cacheId);
 
             // Index name length.
             buf.put((byte)row.idxName.length);
@@ -308,11 +270,10 @@ public class MetadataStorage implements MetaStore {
             src.position(srcOff);
             dst.position(dstOff);
 
-            // Cache ID.
-            dst.putInt(src.getInt());
-
             // Index name length.
             final byte len = src.get();
+
+            dst.put(len);
 
             int lim = src.limit();
 
@@ -320,8 +281,6 @@ public class MetadataStorage implements MetaStore {
 
             // Index name.
             dst.put(src);
-
-            dst.put(len);
 
             src.limit(lim);
 
@@ -347,9 +306,6 @@ public class MetadataStorage implements MetaStore {
         try {
             buf.position(off);
 
-            // Cache ID.
-            final int cacheId = buf.getInt();
-
             // Index name length.
             final int len = buf.get() & 0xFF;
 
@@ -361,7 +317,7 @@ public class MetadataStorage implements MetaStore {
             // Page ID.
             final long pageId = buf.getLong();
 
-            return new IndexItem(idxName, pageId, cacheId);
+            return new IndexItem(idxName, pageId);
         }
         finally {
             buf.position(origOff);
@@ -392,8 +348,8 @@ public class MetadataStorage implements MetaStore {
          * @param ver Version.
          */
         private MetaStoreInnerIO(final int ver) {
-            // 4 byte cache ID, name bytes and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_INNER, ver, false, 4 + MAX_IDX_NAME_LEN + 1 + 8);
+            // name bytes and 1 byte for length, 8 bytes pageId
+            super(T_METASTORE_INNER, ver, false, MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
@@ -434,7 +390,7 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaStoreLeafIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
-            super(T_METASTORE_LEAF, ver, 4 + MAX_IDX_NAME_LEN + 1 + 8);
+            super(T_METASTORE_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */

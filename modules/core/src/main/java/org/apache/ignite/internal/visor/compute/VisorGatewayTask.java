@@ -175,7 +175,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                             assert values.length >= 1;
 
                             res.put(toSimpleObject(keyCls, values[0]),
-                                    values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
+                                values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
                         }
                     }
                 }
@@ -355,7 +355,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            return ignite.compute().execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
+            return ignite.compute(ignite.cluster().forNodeIds(nids))
+                .execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
         }
     }
 }

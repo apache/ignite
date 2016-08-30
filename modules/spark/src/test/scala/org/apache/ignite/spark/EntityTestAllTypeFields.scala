@@ -35,7 +35,9 @@ class EntityTestAllTypeFields(
     @ScalarCacheQuerySqlField(index = true) val dateVal: Date,
     @ScalarCacheQuerySqlField(index = true) val timestampVal: Timestamp,
     @ScalarCacheQuerySqlField(index = true) val byteArrVal: Array[Byte],
-    @ScalarCacheQuerySqlField(index = true) val bigDecVal: java.math.BigDecimal
+    @ScalarCacheQuerySqlField(index = true) val bigDecVal: java.math.BigDecimal,
+    @ScalarCacheQuerySqlField(index = true) val javaSqlDate: java.sql.Date
+
 ) extends Serializable {
     def this(
         i: Int
@@ -52,6 +54,7 @@ class EntityTestAllTypeFields(
             new Date(i),
             new Timestamp(i),
             Array(i.toByte, i.toByte),
-            new java.math.BigDecimal(i.toString))
+            new java.math.BigDecimal(i.toString),
+            new java.sql.Date(i))
     }
 }

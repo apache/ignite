@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -33,6 +35,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
@@ -122,12 +125,17 @@ namespace Apache.Ignite.Core.Impl
         /// Load JVM DLL if needed.
         /// </summary>
         /// <param name="configJvmDllPath">JVM DLL path from config.</param>
-        public static void LoadDlls(string configJvmDllPath)
+        /// <param name="log">Log.</param>
+        public static void LoadDlls(string configJvmDllPath, ILogger log)
         {
-            if (_loaded) return;
+            if (_loaded)
+            {
+                log.Debug("JNI dll is already loaded.");
+                return;
+            }
 
             // 1. Load JNI dll.
-            LoadJvmDll(configJvmDllPath);
+            LoadJvmDll(configJvmDllPath, log);
 
             // 2. Load GG JNI dll.
             UnmanagedUtils.Initialize();
@@ -139,8 +147,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create new instance of specified class.
         /// </summary>
         /// <param name="typeName">Class name</param>
+        /// <param name="props">Properties to set.</param>
         /// <returns>New Instance.</returns>
-        public static T CreateInstance<T>(string typeName)
+        public static T CreateInstance<T>(string typeName, IEnumerable<KeyValuePair<string, object>> props = null)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -149,7 +158,12 @@ namespace Apache.Ignite.Core.Impl
             if (type == null)
                 throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return (T) Activator.CreateInstance(type);
+            var res =  (T) Activator.CreateInstance(type);
+
+            if (props != null)
+                SetProperties(res, props);
+
+            return res;
         }
 
         /// <summary>
@@ -157,7 +171,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target object.</param>
         /// <param name="props">Properties.</param>
-        public static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
+        private static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
         {
             if (props == null)
                 return;
@@ -182,17 +196,25 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Loads the JVM DLL.
         /// </summary>
-        private static void LoadJvmDll(string configJvmDllPath)
+        private static void LoadJvmDll(string configJvmDllPath, ILogger log)
         {
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
+                log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
+
                 var errCode = LoadDll(dllPath.Value, FileJvmDll);
                 if (errCode == 0)
+                {
+                    log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
+                }
 
-                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, errorCode={2}]", 
-                    dllPath.Key, dllPath.Value, errCode));
+                var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
+                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                messages.Add(message);
+
+                log.Debug("Failed to load jvm.dll: " + message);
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options
@@ -211,6 +233,23 @@ namespace Apache.Ignite.Core.Impl
 
             throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0}:\n{1}", 
                 FileJvmDll, combinedMessage));
+        }
+
+        /// <summary>
+        /// Formats the Win32 error.
+        /// </summary>
+        private static string FormatWin32Error(int errorCode)
+        {
+            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
+            {
+                var mode = Environment.Is64BitProcess ? "x64" : "x86";
+
+                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
+                                     "This is often caused by x64/x86 mismatch. " +
+                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
+
+            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
         }
 
         /// <summary>
@@ -453,6 +492,26 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Writes the node collection to a stream.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="nodes">The nodes.</param>
+        public static void WriteNodes(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
+        {
+            Debug.Assert(writer != null);
+
+            if (nodes != null)
+            {
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                    writer.WriteGuid(node.Id);
+            }
+            else
+                writer.WriteInt(-1);
         }
     }
 }

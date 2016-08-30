@@ -51,7 +51,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        resetStore();
+        storeStgy.resetStore();
     }
 
     /**

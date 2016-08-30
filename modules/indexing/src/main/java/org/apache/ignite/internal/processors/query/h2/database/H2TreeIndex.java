@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -40,6 +41,7 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * H2 Index over {@link BPlusTree}.
@@ -50,48 +52,41 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cctx Cache context.
-     * @param keyCol Key column.
-     * @param valCol Value column.
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
-     * @param cols Index columns.
+     * @param colsList Index columns.
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(
         GridCacheContext<?,?> cctx,
-        int keyCol,
-        int valCol,
         GridH2Table tbl,
         String name,
         boolean pk,
-        IndexColumn[] cols
+        List<IndexColumn> colsList
     ) throws IgniteCheckedException {
-        super(keyCol, valCol);
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
-        if (!pk) {
-            // For other indexes we add primary key at the end to avoid conflicts.
-            cols = Arrays.copyOf(cols, cols.length + 1);
-
-            cols[cols.length - 1] = tbl.indexColumn(keyCol, SortOrder.ASCENDING);
-        }
+        IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = BPlusTree.treeName(name, cctx.cacheId(), "H2Tree");
+        name = BPlusTree.treeName(name, "H2Tree");
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        RootPage page = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), name);
+        RootPage page = cctx.offheap().meta().getOrAllocateForTree(name);
 
         tree = new H2Tree(name, cctx.offheap().reuseList(), cctx.cacheId(),
-            dbMgr.pageMemory(), cctx.shared().wal(), tbl.rowFactory(), page.pageId(), page.isAllocated()) {
+            dbMgr.pageMemory(), cctx.shared().wal(), tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
             @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                 throws IgniteCheckedException {
                 return compareRows(getRow(io, buf, idx), row);
             }
         };
+
+        initDistributedJoinMessaging(tbl);
     }
 
     /**
@@ -104,11 +99,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = filters.get();
+            IndexingQueryFilter f = threadLocalFilter();
             IgniteBiPredicate<Object,Object> p = null;
 
             if (f != null) {
-                String spaceName = ((GridH2Table)getTable()).spaceName();
+                String spaceName = getTable().spaceName();
 
                 p = f.forSpace(spaceName);
             }
@@ -152,8 +147,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        long rowCnt = getRowCountApproximation();
+
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false);
+
+        int mul = getDistributedMultiplier(ses, filters, filter);
+
+        return mul * baseCost;
+
     }
 
     /** {@inheritDoc} */
@@ -184,8 +186,20 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void close(Session ses) {
-        // No-op.
+    @Override public void destroy() {
+        try {
+            tree.destroy();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected Object doTakeSnapshot() {
+        assert false;
+
+        return this;
     }
 
     /**

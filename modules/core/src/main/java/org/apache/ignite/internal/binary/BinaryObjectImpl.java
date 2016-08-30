@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -98,6 +99,17 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject copy(int part) {
+        if (this.part == part)
+            return this;
+
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+        cp.part = part;
+
+        return cp;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }
@@ -149,16 +161,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        int len = length();
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    }
 
-        if (buf.remaining() < len + 5)
-            return false;
-
-        buf.putInt(len);
-        buf.put(cacheObjectType());
-        buf.put(arr, start, len);
-
-        return true;
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
     }
 
     /** {@inheritDoc} */
@@ -276,10 +285,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
+        return BinaryUtils.typeProxy(ctx, this);
+    }
 
-        return ctx.metadata(typeId());
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */
@@ -752,5 +763,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        if (arr == null || ctx == null)
+            return "BinaryObjectImpl [arr= " + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";
+
+        return super.toString();
     }
 }

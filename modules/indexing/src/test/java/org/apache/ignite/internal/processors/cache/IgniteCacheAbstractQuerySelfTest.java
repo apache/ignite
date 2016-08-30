@@ -69,7 +69,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -977,24 +976,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testEmptyObject() throws Exception {
-        IgniteCache<?, ?> cache = jcache(ignite(), cacheConfiguration(), "testEmptyObjectCache");
-
-        IgniteCache<EmptyObject, EmptyObject> typedCache = (IgniteCache<EmptyObject, EmptyObject>)cache;
-
-        typedCache.put(new EmptyObject(1), new EmptyObject(2));
-
-        for (int i = 0; i < gridCount(); i++) {
-            GridCacheQueryManager<Object, Object> qryMgr =
-                ((IgniteKernal)grid(i)).internalCache(cache.getName()).context().queries();
-
-            assert !hasIndexTable(EmptyObject.class, qryMgr);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPrimitiveType() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
         cache.put(1, 1);
@@ -1553,17 +1534,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             for (int i = 0; i < gridCount(); i++)
                 grid(i).events().stopLocalListen(qryExecLsnrs[i]);
         }
-    }
-
-    /**
-     * @param cls Class to check index table for.
-     * @param qryMgr Query manager.
-     * @return {@code true} if index has a table for given class.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr)
-        throws IgniteCheckedException {
-        return qryMgr.size(cls) != -1;
     }
 
     /**

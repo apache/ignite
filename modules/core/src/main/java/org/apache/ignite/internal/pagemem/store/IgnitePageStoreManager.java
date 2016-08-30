@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -77,6 +76,17 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
+     * Reads a header of apage store.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param flag Allocation flags.
+     * @param buf Buffer to write to.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readHeader(int cacheId, int partId, byte flag, ByteBuffer buf) throws IgniteCheckedException;
+
+    /**
      * Writes the page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
      * @param cacheId Cache ID.
@@ -85,6 +95,16 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @throws IgniteCheckedException If failed to write page.
      */
     public void write(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+
+    /**
+     * Gets page offset within the page store file.
+     *
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @return Page offset.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long pageOffset(int cacheId, long pageId) throws IgniteCheckedException;
 
     /**
      * Makes sure that all previous writes to the store has been written to disk.
@@ -99,7 +119,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     /**
      * Allocates a page for the given page space.
      *
-     * @param cacheId Cache ID. Ignored if {@code flags} is equal to {@link PageMemory#FLAG_META}.
+     * @param cacheId Cache ID.
      * @param partId Partition ID. Used only if {@code flags} is equal to {@link PageMemory#FLAG_DATA}.
      * @param flags Page allocation flags.
      * @return Allocated page ID.
@@ -108,7 +128,21 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
-     * @return Page ID of a root metadata page.
+     * Gets total number of allocated pages for the given space.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param flags Flags.
+     * @return Number of allocated pages.
+     * @throws IgniteCheckedException If failed.
      */
-    public long metaRoot();
+    public int pages(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+
+    /**
+     * Gets meta page ID for specified cache.
+     *
+     * @param cacheId Cache ID.
+     * @return Meta page ID.
+     */
+    public long metaPageId(int cacheId);
 }

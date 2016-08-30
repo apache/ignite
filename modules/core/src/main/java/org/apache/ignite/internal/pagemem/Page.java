@@ -63,6 +63,18 @@ public interface Page extends AutoCloseable {
     public boolean isDirty();
 
     /**
+     * @param plc {@code true} If page should be always recorded to WAL on {@link #releaseWrite(boolean)},
+     *            {@code false} if the page must never be recorded and {@code null} for the default behavior.
+     */
+    public void fullPageWalRecordPolicy(Boolean plc);
+
+    /**
+     * @return Policy for the page.
+     * @see #fullPageWalRecordPolicy(Boolean)
+     */
+    public Boolean fullPageWalRecordPolicy();
+
+    /**
      * Release page.
      */
     @Override public void close();

@@ -165,9 +165,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     @Override public boolean onNodeLeft(UUID nodeId) {
         GridNearAtomicUpdateResponse res = null;
 
-        synchronized (mux) {
-            GridNearAtomicUpdateRequest req;
+        GridNearAtomicUpdateRequest req;
 
+        synchronized (mux) {
             if (singleReq != null)
                 req = singleReq.nodeId().equals(nodeId) ? singleReq : null;
             else
@@ -188,8 +188,15 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
         }
 
-        if (res != null)
+        if (res != null) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near update fut, node left [futId=" + req.futureVersion() +
+                    ", writeVer=" + req.updateVersion() +
+                    ", node=" + nodeId + ']');
+            }
+
             onResult(nodeId, res, true);
+        }
 
         return false;
     }
@@ -564,15 +571,25 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
         else {
             try {
-                if (log.isDebugEnabled())
-                    log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, sent request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() + ']');
+                }
 
                 if (syncMode == FULL_ASYNC)
                     onDone(new GridCacheReturn(cctx, true, true, null, true));
             }
             catch (IgniteCheckedException e) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() +
+                        ", err=" + e + ']');
+                }
+
                 onSendError(req, e);
             }
         }
@@ -598,12 +615,22 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
             else {
                 try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, sent request [futId=" + req.futureVersion() +
+                            ", writeVer=" + req.updateVersion() +
+                            ", node=" + req.nodeId() + ']');
+                    }
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, failed to send request [futId=" + req.futureVersion() +
+                            ", writeVer=" + req.updateVersion() +
+                            ", node=" + req.nodeId() +
+                            ", err=" + e + ']');
+                    }
+
                     onSendError(req, e);
                 }
             }
@@ -859,7 +886,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (val == null && op != GridCacheOperation.DELETE)
                 continue;
 
-            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
+            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
             if (remapKeys != null && !remapKeys.contains(cacheKey))
                 continue;
@@ -977,7 +1004,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (val == null && op != GridCacheOperation.DELETE)
             throw new NullPointerException("Null value.");
 
-        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
+        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
         if (op != TRANSFORM)
             val = cctx.toCacheObject(val);

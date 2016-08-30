@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -540,11 +541,20 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     * Starts backup process. Allows in time only one backup process.
+     *
+     * @param cacheNames Cache names. {@code Null} to save all caches.
+     * @return Backup future.
+     * @throws IgniteException If failed to start backup process.
+     */
+    @Nullable public BackupFuture makeBackupAsync(Collection<String> cacheNames) throws IgniteException;
 }

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -80,6 +81,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
         return noOpBinary;
     }
@@ -105,18 +111,21 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        return toCacheKeyObject(ctx, obj, userObj, -1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj, int partition) {
+    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj) {
         if (obj instanceof KeyCacheObject) {
-            ((KeyCacheObject)obj).partition(partition);
+            KeyCacheObject key = (KeyCacheObject)obj;
+
+            if (key.partition() == -1)
+                // Assume all KeyCacheObjects except BinaryObject can not be reused for another cache.
+                key.partition(partition(ctx, cctx, key));
+
             return (KeyCacheObject)obj;
         }
 
-        return toCacheKeyObject0(obj, userObj, partition);
+        return toCacheKeyObject0(ctx, cctx, obj, userObj);
     }
 
     /**
@@ -126,11 +135,16 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * @return Key cache object.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    protected KeyCacheObject toCacheKeyObject0(Object obj, boolean userObj, int partititon) {
-        if (!userObj)
-            return new KeyCacheObjectImpl(obj, null, partititon);
+    protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj) {
+        int part = partition(ctx, cctx, obj);
 
-        return new UserKeyCacheObjectImpl(obj, partititon);
+        if (!userObj)
+            return new KeyCacheObjectImpl(obj, null, part);
+
+        return new UserKeyCacheObjectImpl(obj, part);
     }
 
     /** {@inheritDoc} */
@@ -191,6 +205,46 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toKeyCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx,
         @Nullable Object obj,
         boolean userObj) {
@@ -223,6 +277,25 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return new UserCacheObjectImpl(obj, null);
     }
 
+    /**
+     * @param ctx Cache objects context.
+     * @param cctx Cache context.
+     * @param obj Object.
+     * @return Object partition.
+     */
+    protected final int partition(CacheObjectContext ctx, @Nullable GridCacheContext cctx, Object obj) {
+        try {
+            return cctx != null ?
+                cctx.affinity().partition(obj, false) :
+                ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get partition");
+
+            return  -1;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
@@ -232,6 +305,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             !ccfg.isCopyOnRead();
 
         CacheObjectContext res = new CacheObjectContext(ctx,
+            ccfg.getName(),
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead(),
             storeVal,
@@ -247,6 +321,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         assert obj != null;
 
         return IMMUTABLE_CLS.contains(obj.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -313,8 +392,23 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /**
          * @param key Key.
          */
-        UserKeyCacheObjectImpl(Object key, int partition) {
-            super(key, null, partition);
+        UserKeyCacheObjectImpl(Object key, int part) {
+            super(key, null, part);
+        }
+
+        /**
+         * @param key Key.
+         */
+        UserKeyCacheObjectImpl(Object key, byte[] valBytes, int part) {
+            super(key, valBytes, part);
+        }
+
+        /** {@inheritDoc} */
+        @Override public KeyCacheObject copy(int part) {
+            if (this.partition() == part)
+                return this;
+
+            return new UserKeyCacheObjectImpl(val, valBytes, part);
         }
 
         /** {@inheritDoc} */
@@ -329,10 +423,18 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                     Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
-                    return new KeyCacheObjectImpl(val, valBytes);
+                    KeyCacheObjectImpl key = new KeyCacheObjectImpl(val, valBytes);
+
+                    key.partition(partition());
+
+                    return key;
                 }
 
-                return new KeyCacheObjectImpl(val, valBytes);
+                KeyCacheObjectImpl key = new KeyCacheObjectImpl(val, valBytes);
+
+                key.partition(partition());
+
+                return key;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);

@@ -284,6 +284,24 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataResultSetClose() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL);
+             ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
+            int colCnt = tbls.getMetaData().getColumnCount();
+
+            while (tbls.next()) {
+                for (int i = 0; i < colCnt; i++)
+                    tbls.getObject(i + 1);
+            }
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")

@@ -52,6 +52,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /** Logger. */
     protected static IgniteLogger log;
 
+    /** Logger. */
+    protected static IgniteLogger msgLog;
+
     /** Cache context. */
     protected final GridCacheContext cctx;
 
@@ -171,8 +174,10 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         int remapCnt,
         boolean waitTopFut
     ) {
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.shared().atomicMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
+        }
 
         this.cctx = cctx;
         this.cache = cache;

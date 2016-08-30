@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './transactions.jade!';
+import templateUrl from './transactions.jade';
 
 export default ['igniteConfigurationClustersTransactions', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

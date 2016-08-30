@@ -18,27 +18,34 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
 
 /**
  */
@@ -79,6 +86,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private ReuseList reuseList;
 
+    /** */
+    private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
+
+
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
 //        return 25 * 60 * 1000;
@@ -88,40 +99,36 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
 
-        X.println("Test seed: " + seed + "L");
+        X.println("Test seed: " + seed + "L; // ");
 
-        TestTree.rnd = new Random(seed);
+        rnd = new Random(seed);
 
         pageMem = createPageMemory();
 
-        reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName)
-                throws IgniteCheckedException {
-                return new RootPage(allocateMetaPage(), true);
-            }
+        final long[] rootIds = new long[2];
 
-            @Override public RootPage dropRootPage(final int cacheId, final String idxName) {
-                throw new UnsupportedOperationException();
-            }
-        });
+        for (int i = 0; i < rootIds.length; i++)
+            rootIds[i] = allocateMetaPage().pageId();
+
+        reuseList = createReuseList(CACHE_ID, pageMem, rootIds, true);
     }
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param segments Segments.
-     * @param metaStore Store.
+     * @param rootIds Root page IDs.
+     * @param initNew Init new flag.
      * @return Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore)
+    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
         throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestTree.rnd = null;
+        rnd = null;
 
         if (reuseList != null) {
             long size = reuseList.size();
@@ -498,6 +505,105 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove_true() throws Exception {
+        fail("This test hangs");
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove_false() throws Exception {
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void doTestMassiveRemove(boolean canGetRow) throws Exception {
+        MAX_PER_PAGE = 2;
+
+        final TestTree tree = createTestTree(canGetRow);
+
+        for (long i = 0; i < 200_000; i++)
+            tree.put(i);
+
+        final AtomicInteger id = new AtomicInteger(0);
+
+        info("Remove...");
+
+        try {
+            final int threads = 16;
+
+            // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int id0 = id.getAndIncrement();
+
+                    int base = id0 * 1000;
+
+                    for (long i = base; i < base + 1000; i++) {
+                        tree.remove(i);
+
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    base = (threads + id0) * 1000;
+
+                    for (long i = base; i < base + 1000; i += 2) {
+                        tree.remove(i);
+
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    return null;
+                }
+            }, threads, "remove");
+        }
+        finally {
+            rmvdIds.clear();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRemoveSimple() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        final TestTree tree = createTestTree(false);
+
+        for (long i = 0; i < 10; i++)
+            tree.put(i);
+
+        info("Tree before remove: \n" + tree.printTree());
+
+        try {
+            int base = 2;
+
+            for (long i = base; i < 10; i++) {
+                tree.remove(i);
+
+                rmvdIds.add(i);
+
+                info("Done remove: " + i + "\n" + tree.printTree());
+            }
+        }
+        finally {
+            rmvdIds.clear();
+        }
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
@@ -546,12 +652,109 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testEmptyCursors() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        assertFalse(tree.find(null, null).next());
+        assertFalse(tree.find(0L, 1L).next());
+
+        tree.put(1L);
+        tree.put(2L);
+        tree.put(3L);
+
+        assertEquals(3, size(tree.find(null, null)));
+
+        assertFalse(tree.find(4L, null).next());
+        assertFalse(tree.find(null, 0L).next());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testCursorConcurrentMerge() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+//        X.println(" " + pageMem.pageSize());
+
+        TestTree tree = createTestTree(true);
+
+        TreeMap<Long,Long> map = new TreeMap<>();
+
+        for (int i = 0; i < 20_000 + rnd.nextInt(2 * MAX_PER_PAGE); i++) {
+            Long row = (long)rnd.nextInt(40_000);
+
+//            X.println(" <-- " + row);
+
+            assertEquals(map.put(row, row), tree.put(row));
+            assertEquals(row, tree.findOne(row));
+        }
+
+        final int off = rnd.nextInt(5 * MAX_PER_PAGE);
+
+        Long upperBound = 30_000L + rnd.nextInt(2 * MAX_PER_PAGE);
+
+        GridCursor<Long> c = tree.find(null, upperBound);
+        Iterator<Long> i = map.headMap(upperBound, true).keySet().iterator();
+
+        Long last = null;
+
+        for (int j = 0; j < off; j++) {
+            assertTrue(c.next());
+
+//            X.println(" <-> " + c.get());
+
+            assertEquals(i.next(), c.get());
+
+            last = c.get();
+        }
+
+        if (last != null) {
+//            X.println(" >-< " + last + " " + upperBound);
+
+            c = tree.find(last, upperBound);
+
+            assertTrue(c.next());
+            assertEquals(last, c.get());
+        }
+
+        while (c.next()) {
+//            X.println(" --> " + c.get());
+
+            assertNotNull(c.get());
+            assertEquals(i.next(), c.get());
+            assertEquals(c.get(), tree.remove(c.get()));
+
+            i.remove();
+        }
+
+        assertEquals(map.size(), size(tree.find(null, null)));
+    }
+
+    /**
+     * @param c Cursor.
+     * @return Number of elements.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static int size(GridCursor<?> c) throws IgniteCheckedException {
+        int cnt = 0;
+
+        while(c.next())
+            cnt++;
+
+        return cnt;
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @return Test tree instance.
      * @throws IgniteCheckedException If failed.
      */
     protected TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage());
+        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage().pageId());
 
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
@@ -564,7 +767,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private FullPageId allocateMetaPage() throws IgniteCheckedException {
-        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META), CACHE_ID);
+        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_IDX), CACHE_ID);
     }
 
     /**
@@ -579,7 +782,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @param metaPageId Meta page ID.
          * @throws IgniteCheckedException If failed.
          */
-        public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
+        public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, metaPageId, reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
@@ -625,11 +828,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx), null);
+            Long row = srcIo.getLookupRow(null, src, srcIdx);
+
+            assertFalse(rmvdIds.contains(row));
+
+            store(dst, dstIdx, row, null);
         }
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            assertFalse(rmvdIds.toString(), rmvdIds.contains(row));
+
             buf.putLong(off, row);
         }
 
@@ -647,7 +856,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         long[] sizes = new long[CPUS];
 
         for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 64 * MB / CPUS;
+            sizes[i] = 1024 * MB / CPUS;
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE);
 

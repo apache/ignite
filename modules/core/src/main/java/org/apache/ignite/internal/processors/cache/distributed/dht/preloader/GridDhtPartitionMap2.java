@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -193,7 +194,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
-        this.top = topVer;
+
+        top = topVer;
 
         return old;
     }
@@ -227,10 +229,11 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
             int ordinal = entry.getValue().ordinal();
 
-            assert entry.getKey() <= 0xFFFF;
+            assert ordinal == (ordinal & 0xFF);
+            assert entry.getKey() >= 0 && entry.getKey() <= CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
 
-            out.writeShort(entry.getKey());
             out.write(ordinal);
+            out.writeShort((short)(int)entry.getKey());
 
             i++;
         }
@@ -258,8 +261,9 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         map = U.newHashMap(size);
 
         for (int i = 0; i < size; i++) {
-            int part = in.readShort() & 0xFFFF;
             int ordinal = in.readByte() & 0xFF;
+
+            int part = in.readShort() & 0xFFFF;
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }

@@ -136,6 +136,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
+        final CacheObjectContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
 
@@ -156,10 +162,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
+        return BinaryUtils.typeProxy(ctx, this);
+    }
 
-        return ctx.metadata(typeId());
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */

@@ -20,15 +20,14 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
         if (_.isUndefined(attrs.javaKeywords) || !attrs.javaKeywords)
             return;
 
+        const packageOnly = attrs.javaPackageName === 'package-only';
+
         ngModel.$validators.javaKeywords = (value) => {
             if (value) {
-                if (!JavaTypes.validIdentifier(value) || !JavaTypes.packageSpecified(value))
+                if (!JavaTypes.validIdentifier(value) || (!packageOnly && !JavaTypes.packageSpecified(value)))
                     return true;
 
-                for (const item of value.split('.')) {
-                    if (JavaTypes.isKeywords(item))
-                        return false;
-                }
+                return _.findIndex(value.split('.'), JavaTypes.isKeywords) < 0;
             }
 
             return true;

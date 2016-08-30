@@ -91,10 +91,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        IgniteConfiguration igniteCfg = ctx.config();
+
+        if (igniteCfg.isDaemon())
             return;
 
-        FileSystemConfiguration[] cfgs = ctx.config().getFileSystemConfiguration();
+        FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
@@ -104,10 +106,27 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (FileSystemConfiguration cfg : cfgs) {
             FileSystemConfiguration cfg0 = new FileSystemConfiguration(cfg);
 
+            boolean metaClient = true;
+
+            CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
+
+            if (cacheCfgs != null) {
+                for (CacheConfiguration cacheCfg : cacheCfgs) {
+                    if (F.eq(cacheCfg.getName(), cfg.getMetaCacheName())) {
+                        metaClient = false;
+
+                        break;
+                    }
+                }
+            }
+
+            if (igniteCfg.isClientMode() != null && igniteCfg.isClientMode())
+                metaClient = true;
+
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
                 cfg0,
-                new IgfsMetaManager(cfg0.isRelaxedConsistency()),
+                new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
                 new IgfsFragmentizerManager());
@@ -122,28 +141,26 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
 
-        IgniteConfiguration gridCfg = ctx.config();
-
         // Node doesn't have IGFS if it:
         // is daemon;
         // doesn't have configured IGFS;
         // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getFileSystemConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
+        if (igniteCfg.isDaemon() || F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
+            F.isEmpty(igniteCfg.getCacheConfiguration()))
             return;
 
         final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        assert gridCfg.getCacheConfiguration() != null;
+        assert igniteCfg.getCacheConfiguration() != null;
 
-        for (CacheConfiguration ccfg : gridCfg.getCacheConfiguration())
+        for (CacheConfiguration ccfg : igniteCfg.getCacheConfiguration())
             cacheCfgs.put(ccfg.getName(), ccfg);
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
-        assert gridCfg.getFileSystemConfiguration() != null;
+        assert igniteCfg.getFileSystemConfiguration() != null;
 
-        for (FileSystemConfiguration igfsCfg : gridCfg.getFileSystemConfiguration()) {
+        for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
             CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
@@ -324,24 +341,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 if (ipcCfg.getThreadCount() <= 0)
                     throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
                         ipcCfg.getThreadCount());
-            }
-
-            long maxSpaceSize = cfg.getMaxSpaceSize();
-
-            if (maxSpaceSize > 0) {
-                // Max space validation.
-                long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
-
-                if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
-                    // Offheap is disabled.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-                else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
-                    // Offheap is enabled, but limited.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
-                        "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
             }
 
             boolean secondary = cfg.getDefaultMode() == PROXY;

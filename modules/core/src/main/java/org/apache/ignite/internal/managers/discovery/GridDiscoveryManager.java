@@ -914,7 +914,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
                 nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
                 nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
-                nm.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());
+                nonHeapMemoryUsed(nm);
                 nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
                 nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
                 nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
@@ -940,6 +940,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setOutboundMessagesQueueSize(io.getOutboundMessagesQueueSize());
 
                 return nm;
+            }
+
+            /**
+             * @param nm Initializing metrics snapshot.
+             */
+            private void nonHeapMemoryUsed(ClusterMetricsSnapshot nm) {
+                long nonHeapUsed = metrics.getNonHeapMemoryUsed();
+
+                Map<Integer, CacheMetrics> nodeCacheMetrics = cacheMetrics();
+
+                if (nodeCacheMetrics != null) {
+                    for (Map.Entry<Integer, CacheMetrics> entry : nodeCacheMetrics.entrySet()) {
+                        CacheMetrics e = entry.getValue();
+
+                        if (e != null)
+                            nonHeapUsed += e.getOffHeapAllocatedSize();
+                    }
+                }
+
+                nm.setNonHeapMemoryUsed(nonHeapUsed);
             }
 
             /** {@inheritDoc} */
@@ -2276,7 +2296,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (log.isInfoEnabled())
                         log.info("Client node reconnected to topology: " + node);
 
-                    ackTopology(topVer.topologyVersion(), true);
+                    if (!isLocDaemon)
+                        ackTopology(topVer.topologyVersion(), true);
 
                     break;
                 }

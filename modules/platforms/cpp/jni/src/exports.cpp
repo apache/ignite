@@ -93,11 +93,11 @@ extern "C" {
     void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable) {
         return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepPortable);
     }
-    
+
     void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj) {
         return ctx->ProcessorTransactions(static_cast<jobject>(obj));
     }
-        
+
     void* IGNITE_CALL IgniteProcessorCompute(gcj::JniContext* ctx, void* obj, void* prj) {
         return ctx->ProcessorCompute(static_cast<jobject>(obj), static_cast<jobject>(prj));
     }
@@ -136,6 +136,14 @@ extern "C" {
 
 	void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr) {
         return ctx->ProcessorGetCacheNames(static_cast<jobject>(obj), memPtr);
+    }
+
+    bool IGNITE_CALL IgniteProcessorLoggerIsLevelEnabled(gcj::JniContext* ctx, void* obj, int level) {        
+        return ctx->ProcessorLoggerIsLevelEnabled(static_cast<jobject>(obj), level);
+    }
+
+    void IGNITE_CALL IgniteProcessorLoggerLog(gcj::JniContext* ctx, void* obj, int level, char* message, char* category, char* errorInfo) {
+        ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
     }
 
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
@@ -341,6 +349,10 @@ extern "C" {
 
     void* IGNITE_CALL IgniteProjectionForYoungest(gcj::JniContext* ctx, void* obj) {
         return ctx->ProjectionForYoungest(static_cast<jobject>(obj));
+    }
+
+    void* IGNITE_CALL IgniteProjectionForServers(gcj::JniContext* ctx, void* obj) {
+        return ctx->ProjectionForServers(static_cast<jobject>(obj));
     }
 
     void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj) {
@@ -553,5 +565,13 @@ extern "C" {
 
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
         return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
+    }
+
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::SetConsoleHandler(consoleHandler);
+    }
+
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::RemoveConsoleHandler(consoleHandler);
     }
 }

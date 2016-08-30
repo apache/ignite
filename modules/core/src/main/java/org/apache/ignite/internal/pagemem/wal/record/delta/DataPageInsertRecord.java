@@ -22,15 +22,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
+public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRow {
     /** */
-    private CacheObject key;
+    private KeyCacheObject key;
 
     /** */
     private CacheObject val;
@@ -39,10 +41,7 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     private GridCacheVersion ver;
 
     /** */
-    private int itemId;
-
-    /** */
-    private int entrySize;
+    private int rowSize;
 
     /**
      * @param cacheId Cache ID.
@@ -50,60 +49,50 @@ public class DataPageInsertRecord extends PageDeltaRecord {
      * @param key Key.
      * @param val value.
      * @param ver version.
-     * @param itemId Item ID.
-     * @param entrySize Entry size.
+     * @param rowSize Row size.
      */
     public DataPageInsertRecord(
         int cacheId,
         long pageId,
-        CacheObject key,
+        KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
-        int itemId,
-        int entrySize
+        int rowSize
     ) {
         super(cacheId, pageId);
 
         this.key = key;
         this.val = val;
         this.ver = ver;
-        this.itemId = itemId;
-        this.entrySize = entrySize;
+        this.rowSize = rowSize;
     }
 
     /**
      * @return Key.
      */
-    public CacheObject key() {
+    @Override public KeyCacheObject key() {
         return key;
     }
 
     /**
      * @return Value.
      */
-    public CacheObject value() {
+    @Override public CacheObject value() {
         return val;
     }
 
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 
     /**
-     * @return Item ID.
+     * @return Row size in bytes.
      */
-    public int itemId() {
-        return itemId;
-    }
-
-    /**
-     * @return Entry size.
-     */
-    public int entrySize() {
-        return entrySize;
+    public int rowSize() {
+        return rowSize;
     }
 
     /** {@inheritDoc} */
@@ -113,14 +102,26 @@ public class DataPageInsertRecord extends PageDeltaRecord {
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        int itemId = io.addRow(coctx, buf, key, val, ver, entrySize);
-
-        if (itemId != this.itemId)
-            throw new DeltaApplicationException("Unexpected itemId: " + itemId);
+        io.addRow(coctx, buf, this, rowSize);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(final long link) {
+        // No-op.
     }
 }

@@ -55,6 +55,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean initializeDefaultPathModes() {
+        // Enable default modes in order to test various modes.
+        return true;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -68,6 +74,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         for (IgfsPath p : paths)
             assert igfs.exists(p);
 
+        assert igfs.modeResolver().resolveMode(gg) == mode;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "sync")) == IgfsMode.DUAL_SYNC;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "async")) == IgfsMode.DUAL_ASYNC;
+        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
+        assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
+
+        // All the child paths of "/ignite/" must be visible in listings:
         assert igfs.listFiles(gg).size() == 3;
         assert igfs.listPaths(gg).size() == 3;
     }
@@ -1681,5 +1694,39 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assertEquals(timesSubDir0, timesSubDir1);
         assertEquals(timesFile0, timesFile1);
         assertEquals(timesFile20, timesFile21);
+    }
+
+    /**
+     * Test setTimes method when path is partially missing.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetTimesMissingPartially() throws Exception {
+        create(igfs, paths(DIR), null);
+
+        createFile(igfsSecondary, FILE, chunk);
+
+        igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
+
+        IgfsFile info = igfs.info(FILE);
+
+        assert info != null;
+
+        assertEquals(Long.MAX_VALUE - 1, info.accessTime());
+        assertEquals(Long.MAX_VALUE, info.modificationTime());
+
+        T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
+
+        assertEquals(info.accessTime(), (long)secondaryTimes.get1());
+        assertEquals(info.modificationTime(), (long)secondaryTimes.get2());
+
+        try {
+            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+
+            fail("Exception is not thrown for missing file.");
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
     }
 }
