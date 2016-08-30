@@ -66,8 +66,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-
 /**
  *
  */
@@ -665,7 +663,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage.pageId().pageId(),
             rootPage.isAllocated());
 
-        CacheDataStoreImpl dataStore = new CacheDataStoreImpl(idxName, rowStore, dataTree, lsnr);
+        CacheDataStore dataStore = new CacheDataStoreImpl(idxName, rowStore, dataTree, lsnr);
 
         partDataStores.put(p, dataStore);
 
@@ -896,7 +894,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /**
          * @return Key.
          */
-        public KeyCacheObject key() {
+        @Override public KeyCacheObject key() {
             initData(true);
 
             return key;
@@ -908,7 +906,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      */
     private class DataRow extends KeySearchRow {
         /** */
-        int part = -1;
+        protected int part = -1;
 
         /**
          * @param hash Hash code.
@@ -1172,9 +1170,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, KeySearchRow row) {
-            DataRow row0 = (DataRow)row;
-
-            assert row0.link() != 0;
+            assert row.link() != 0;
 
             store0(buf, off, row.link(), row.hash);
         }
@@ -1257,7 +1253,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    static class PendingRow {
+    private static class PendingRow {
         /** Expire time. */
         private long expireTime;
 
@@ -1307,7 +1303,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
+    private static class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         /** */
         private final GridCacheContext cctx;
 

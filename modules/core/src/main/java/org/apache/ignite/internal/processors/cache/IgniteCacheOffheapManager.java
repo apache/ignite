@@ -100,6 +100,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException;
 
+    /**
+     * Gets the number of entries pending expire.
+     *
+     * @return Number of pending entries.
+     * @throws IgniteCheckedException If failed to get number of pending entries.
+     */
     public long expiredSize() throws IgniteCheckedException;
 
     /**
@@ -128,8 +134,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public void remove(
         KeyCacheObject key,
-        CacheObject prevVal,
-        GridCacheVersion prevVer,
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException;
