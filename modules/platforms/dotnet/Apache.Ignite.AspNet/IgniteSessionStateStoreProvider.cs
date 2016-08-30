@@ -147,28 +147,12 @@ namespace Apache.Ignite.AspNet
         {
             Log("GetItem(id={0})", id);
 
+            // TODO: Get without locking!
             var res = GetItemExclusive(context, id, out locked, out lockAge, out lockId, out actions);
 
-            var cacheLock = (ICacheLock) lockId;
+            Log("GetItem(id={0})={1}", id, res == null ? "null" : res.ToString());
 
-            try
-            {
-
-                // There is no way to check if lock is obtained without entering it.
-                // So we enter in GetItemExclusive and exit immediately here.
-                if (!locked && cacheLock != null)
-                    cacheLock.Exit();
-
-                Log("GetItem(id={0})={1}", id, res == null ? "null" : res.ToString());
-
-                return res;
-            }
-            finally
-            {
-                // Lock is not needed in read-only session mode.
-                if (cacheLock != null)
-                    cacheLock.Dispose();
-            }
+            return res;
         }
 
         /// <summary>
