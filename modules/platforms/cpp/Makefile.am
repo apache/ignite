@@ -23,6 +23,10 @@ if COND_ODBC
 if COND_TESTS
     MAYBE_ODBC_TESTS = odbc-test
 endif
+
+if COND_BENCHMARKS
+    MAYBE_ODBC_BENCHMARKS = odbc-benchmark
+endif
 endif
 
 if COND_CORE
@@ -48,7 +52,8 @@ SUBDIRS = \
     $(MAYBE_CORE) \
     $(MAYBE_NODE) \
     $(MAYBE_ODBC_TESTS) \
-    $(MAYBE_CORE_TESTS)
+    $(MAYBE_CORE_TESTS) \
+    $(MAYBE_ODBC_BENCHMARKS)
 
 DIST_SUBDIRS = \
     common \
@@ -58,4 +63,5 @@ DIST_SUBDIRS = \
     core \
     ignite \
     core-test \
-    odbc-test
+    odbc-test \
+    odbc-benchmark

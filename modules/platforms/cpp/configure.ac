@@ -79,10 +79,21 @@ AC_ARG_ENABLE([tests],
     [tests=true]
 )
 
+AC_ARG_ENABLE([benchmarks],
+    [AS_HELP_STRING([--enable-benchmarks],[build benchmarks for enabled components [default=yes]])],
+    [ case "${enableval}" in
+        yes) tests=true ;;
+        no) tests=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-tests) ;;
+        esac],
+    [tests=true]
+)
+
 AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
 AM_CONDITIONAL([COND_CORE], [test "x$core" = "xtrue"])
 AM_CONDITIONAL([COND_NODE], [test "x$node" = "xtrue"])
 AM_CONDITIONAL([COND_TESTS], [test "x$tests" = "xtrue"])
+AM_CONDITIONAL([COND_BENCHMARKS], [test "x$benchmarks" = "xtrue"])
 
 AC_CONFIG_FILES([ \
     Makefile \
@@ -97,6 +108,7 @@ AC_CONFIG_FILES([ \
     odbc/Makefile \
     odbc-test/include/Makefile \
     odbc-test/Makefile \
+    odbc-benchmark/Makefile \
     core/include/Makefile \
     core/Makefile \
     core/ignite.pc \
