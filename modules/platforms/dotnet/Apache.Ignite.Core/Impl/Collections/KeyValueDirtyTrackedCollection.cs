@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 entry.IsDirty = true;
 
-                entry.Value = key;
+                entry.Value = value;
             }
         }
 

@@ -367,7 +367,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(8, data.Timeout);
 
             Assert.AreEqual(1, data.Items["name1"]);
+            Assert.AreEqual(1, data.Items[0]);
+
             Assert.AreEqual("2", data.Items["name2"]);
+            Assert.AreEqual("2", data.Items[1]);
 
             Assert.AreEqual(0, data.StaticObjects["int"]);
         }
