@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
             var raw = (IBinaryRawWriter) writer;
 
             raw.WriteInt(Timeout);
-            raw.WriteObject(Items);
+            Items.WriteBinary(writer);
             raw.WriteByteArray(StaticObjects);
         }
     }
