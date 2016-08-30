@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,16 +39,25 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,19 +65,18 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.util.typedef.X.cause;
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Tests deadlock detection for pessimistic transactions.
+ *
  */
-public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -95,6 +104,10 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             cfg.setDiscoverySpi(discoSpi);
         }
+
+        TcpCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        cfg.setCommunicationSpi(commSpi);
 
         cfg.setClientMode(client);
 
@@ -153,28 +166,6 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testDeadlocksLocal() throws Exception {
-        for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            IgniteCache cache = null;
-
-            try {
-                cache = createCache(LOCAL, syncMode, false);
-
-                awaitPartitionMapExchange();
-
-                doTestDeadlock(2, true, true, false, NO_OP_TRANSFORMER);
-                doTestDeadlock(2, true, true, false, WRAPPING_TRANSFORMER);
-            }
-            finally {
-                if (cache != null)
-                    cache.destroy();
-            }
-        }
-    }
-
-    /**
      * @param cacheMode Cache mode.
      * @param syncMode Write sync mode.
      * @param near Near.
@@ -206,15 +197,13 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     * @param transformer Transformer closure.
      * @throws Exception If failed.
      */
     private void doTestDeadlocks(IgniteCache cache, IgniteClosure<Integer, Object> transformer) throws Exception {
         try {
             awaitPartitionMapExchange();
-
-            doTestDeadlock(2, false, true, true, transformer);
-            doTestDeadlock(2, false, false, false, transformer);
-            doTestDeadlock(2, false, false, true, transformer);
 
             doTestDeadlock(3, false, true, true, transformer);
             doTestDeadlock(3, false, false, false, transformer);
@@ -224,7 +213,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             doTestDeadlock(4, false, false, false, transformer);
             doTestDeadlock(4, false, false, true, transformer);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
 
             fail();
@@ -247,6 +236,8 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     ) throws Exception {
         log.info(">>> Test deadlock [txCnt=" + txCnt + ", loc=" + loc + ", lockPrimaryFirst=" + lockPrimaryFirst +
             ", clientTx=" + clientTx + ", transformer=" + transformer.getClass().getName() + ']');
+
+        TestCommunicationSpi.init(txCnt);
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -272,8 +263,10 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 int txTimeout = 500 + txCnt * 100;
 
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
-                    involvedTxs.add(((TransactionProxyImpl)tx).tx());
+                try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                    IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
+
+                    involvedTxs.add(tx0);
 
                     Integer key = keys.get(0);
 
@@ -324,6 +317,8 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (Throwable e) {
+                    U.error(log, "Expected exception: ", e);
+
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
@@ -436,8 +431,14 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             for (int i = 0; i < nodesCnt; i++) {
                 List<Integer> keys = new ArrayList<>(2);
 
-                keys.add(primaryKey(ignite(i).cache(CACHE_NAME)));
-                keys.add(primaryKey(ignite(i == nodesCnt - 1 ? 0 : i + 1).cache(CACHE_NAME)));
+                int n1 = i + 1;
+                int n2 = n1 + 1;
+
+                int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
+                int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
+
+                keys.add(primaryKey(ignite(i1).cache(CACHE_NAME)));
+                keys.add(primaryKey(ignite(i2).cache(CACHE_NAME)));
 
                 if (reverse)
                     Collections.reverse(keys);
@@ -512,6 +513,62 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return id;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
+        /** Tx count. */
+        private static volatile int TX_CNT;
+
+        /** Tx ids. */
+        private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
+
+        /**
+         * @param txCnt Tx count.
+         */
+        private static void init(int txCnt) {
+            TX_CNT = txCnt;
+            TX_IDS.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(
+            final ClusterNode node,
+            final Message msg,
+            final IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            if (msg instanceof GridIoMessage) {
+                Message msg0 = ((GridIoMessage)msg).message();
+
+                if (msg0 instanceof GridNearTxPrepareRequest) {
+                    final GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg0;
+
+                    GridCacheVersion txId = req.version();
+
+                    if (TX_IDS.contains(txId)) {
+                        while (TX_IDS.size() < TX_CNT) {
+                            try {
+                                U.sleep(50);
+                            }
+                            catch (IgniteInterruptedCheckedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+                else if (msg0 instanceof GridNearTxPrepareResponse) {
+                    GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg0;
+
+                    GridCacheVersion txId = res.version();
+
+                    TX_IDS.add(txId);
+                }
+            }
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }

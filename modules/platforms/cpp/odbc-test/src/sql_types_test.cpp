@@ -27,21 +27,34 @@ using namespace ignite;
 
 using namespace boost::unit_test;
 
-BOOST_FIXTURE_TEST_SUITE(SqlSystemFunctionTestSuite, ignite::SqlTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SqlTypesTestSuite, ignite::SqlTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestSystemFunctionDatabase)
+BOOST_AUTO_TEST_CASE(TestGuidTrivial)
 {
-    CheckSingleResult<std::string>("SELECT {fn DATABASE()}");
+    CheckSingleResult<std::string>("SELECT {guid '04CC382A-0B82-F520-08D0-07A0620C0004'}",
+        "04cc382a-0b82-f520-08d0-07a0620c0004");
+
+    CheckSingleResult<std::string>("SELECT {guid '63802467-9f4a-4f71-8fc8-cf2d99a28ddf'}",
+        "63802467-9f4a-4f71-8fc8-cf2d99a28ddf");
 }
 
-BOOST_AUTO_TEST_CASE(TestSystemFunctionUser)
+BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
 {
-    CheckSingleResult<std::string>("SELECT {fn USER()}");
+    TestType in1;
+    TestType in2;
+
+    in1.guidField = Guid(0x638024679f4a4f71, 0x8fc8cf2d99a28ddf);
+    in2.guidField = Guid(0x04cc382a0b82f520, 0x08d007a0620c0004);
+
+    in1.i32Field = 1;
+    in2.i32Field = 2;
+
+    testCache.Put(1, in1);
+    testCache.Put(2, in2);
+
+    CheckSingleResult<int32_t>(
+        "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
-BOOST_AUTO_TEST_CASE(TestSystemFunctionIfnull)
-{
-    CheckSingleResult<int32_t>("SELECT {fn IFNULL(NULL, 42)}", 42);
-}
 
 BOOST_AUTO_TEST_SUITE_END()
