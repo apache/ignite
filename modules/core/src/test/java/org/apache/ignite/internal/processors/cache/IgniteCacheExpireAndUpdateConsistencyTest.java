@@ -186,7 +186,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
                             }
 
                             synchronized (keyEvts) {
-                                keyEvts.add(new T2<>(e.getValue(), e.getOldValue()));
+                                keyEvts.add(new T2<TestValue, TestValue>(e.getValue(), e.getOldValue()));
                             }
                         }
                     }

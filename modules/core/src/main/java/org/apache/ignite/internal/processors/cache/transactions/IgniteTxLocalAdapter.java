@@ -723,6 +723,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                             if (expiry != null) {
+                                                txEntry.cached().unswap(false);
+
                                                 Duration duration = cached.hasValue() ?
                                                     expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
@@ -809,6 +811,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             op,
                                             nearXidVersion(),
                                             writeVersion(),
+                                            0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter())));
 
