@@ -261,7 +261,7 @@ public class OdbcEscapeUtils {
                 return parseScalarExpression(text, startPos0, len0);
 
             case GUID:
-                return parseGuidExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
+                return parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
 
             case DATE:
                 return parseExpression(text, startPos0, len0, token.type(), DATE_PATTERN);
@@ -299,23 +299,6 @@ public class OdbcEscapeUtils {
      * @return Parsed expression.
      */
     private static String parseExpression(String text, int startPos, int len, OdbcEscapeType type, Pattern pattern) {
-        String val = substring(text, startPos, len).trim();
-
-        if (!pattern.matcher(val).matches())
-            throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
-
-        return val;
-    }
-
-    /**
-     * Parse GUID expression.
-     *
-     * @param text Text.
-     * @param startPos Start position.
-     * @param len Length.
-     * @return Parsed expression.
-     */
-    private static String parseGuidExpression(String text, int startPos, int len, OdbcEscapeType type, Pattern pattern) {
         String val = substring(text, startPos, len).trim();
 
         if (!pattern.matcher(val).matches())
