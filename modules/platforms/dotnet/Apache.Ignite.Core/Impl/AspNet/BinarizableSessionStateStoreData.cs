@@ -29,8 +29,6 @@ namespace Apache.Ignite.Core.Impl.AspNet
     {
         private readonly KeyValueDirtyTrackedCollection _items;
 
-        private readonly byte[] _staticObjects;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
         /// </summary>
@@ -39,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         {
             Timeout = reader.ReadInt();
             _items = new KeyValueDirtyTrackedCollection(reader);
-            _staticObjects = reader.ReadByteArray();
+            StaticObjects = reader.ReadByteArray();
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         public BinarizableSessionStateStoreData()
         {
             _items = new KeyValueDirtyTrackedCollection();
-            _staticObjects = null;
+            StaticObjects = null;
         }
 
         /// <summary>
@@ -62,10 +60,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <summary>
         /// Gets the static objects.
         /// </summary>
-        public byte[] StaticObjects
-        {
-            get { return _staticObjects; }
-        }
+        public byte[] StaticObjects { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout.

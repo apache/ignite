@@ -62,7 +62,12 @@ namespace Apache.Ignite.AspNet.Impl
 
         public BinarizableSessionStateStoreData Data
         {
-            get { return _data; }
+            get
+            {
+                _data.StaticObjects = SerializeStaticObjects();
+
+                return _data;
+            }
         }
 
         private static HttpStaticObjectsCollection DeserializeStaticObjects(byte[] bytes)
@@ -75,6 +80,21 @@ namespace Apache.Ignite.AspNet.Impl
             {
                 return reader.ReadBoolean() ? HttpStaticObjectsCollection.Deserialize(reader) : null;
             }
+        }
+
+        private byte[] SerializeStaticObjects()
+        {
+            if (StaticObjects == null)
+                return null;
+
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                StaticObjects.Serialize(writer);
+
+                return stream.ToArray();
+            }
+
         }
 
         //public static byte[] Serialize(SessionStateStoreData data)
