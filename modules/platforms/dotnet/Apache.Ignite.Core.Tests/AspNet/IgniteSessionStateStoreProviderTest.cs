@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            provider.SetAndReleaseItemExclusive(HttpContext, Id, CreateStoreData(), lockId, true);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, CreateStoreData(provider), lockId, true);
 
             // Not locked, item present.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
@@ -339,20 +339,18 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /// <summary>
         /// Creates the store data.
         /// </summary>
-        private static SessionStateStoreData CreateStoreData()
+        private static SessionStateStoreData CreateStoreData(SessionStateStoreProviderBase provider)
         {
-            var items = new SessionStateItemCollection();
+            var data = provider.CreateNewStoreData(HttpContext, 8);
 
-            items["name1"] = 1;
-            items["name2"] = "2";
+            data.Items["name1"] = 1;
+            data.Items["name2"] = "2";
 
-            var statics = new HttpStaticObjectsCollection();
+            var statics = data.StaticObjects;
 
             // Modification method is internal.
             statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(statics, new object[] {"int", typeof(int), false});
-
-            var data = new SessionStateStoreData(items, statics, 8);
 
             CheckStoreData(data);
 
