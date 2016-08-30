@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
@@ -1367,10 +1369,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                             tx.commit();
                         }
 
-                        fail();
+                        if (!isKeyLocal(ignite0, cache, key))
+                            fail();
+
+                        log.info("Read only optimistic commit.");
                     }
                     catch (TransactionOptimisticException e) {
                         log.info("Expected exception: " + e);
+
+                        if (isKeyLocal(ignite0, cache, key))
+                            fail();
                     }
 
                     checkValue(key, 3, cache.getName());
@@ -1380,6 +1388,18 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 destroyCache(ccfg.getName());
             }
         }
+    }
+
+    /**
+     * Checks, whether the key is stored locally.
+     * @param ignite0 Ignite 0.
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private boolean isKeyLocal(Ignite ignite0, IgniteCache<Integer, Integer> cache, Integer key) {
+        return ((TcpDiscoveryNode)((ArrayList)ignite0.affinity(cache.getName())
+            .mapKeyToPrimaryAndBackups(ignite0.affinity(cache.getName()).affinityKey(key)))
+            .get(0)).id().equals(((IgniteKernal)ignite0).getLocalNodeId());
     }
 
     /**
@@ -2636,10 +2656,11 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
 
-                fail();
+                log.info("Read only optimistic commit.");
             }
             catch (TransactionOptimisticException e) {
                 log.info("Expected exception: " + e);
+                fail();
             }
 
             checkValue(key1, -1, cacheName);
@@ -2903,10 +2924,11 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         tx.commit();
                     }
 
-                    fail();
+                    log.info("Read only optimistic commit.");
                 }
                 catch (TransactionOptimisticException e) {
                     log.info("Expected exception: " + e);
+                    fail();
                 }
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
