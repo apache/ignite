@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -38,7 +39,15 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// <param name="binaryReader">The binary reader.</param>
         internal KeyValueDirtyTrackedCollection(IBinaryRawReader binaryReader)
         {
-            throw new NotImplementedException();
+            Debug.Assert(binaryReader != null);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
+        /// </summary>
+        public KeyValueDirtyTrackedCollection()
+        {
+            // No-op.
         }
 
         /// <summary>

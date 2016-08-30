@@ -30,10 +30,23 @@ namespace Apache.Ignite.Core.Impl.AspNet
         private readonly KeyValueDirtyTrackedCollection _items;
         private readonly KeyValueDirtyTrackedCollection _staticObjects;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
         internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
         {
             _items = new KeyValueDirtyTrackedCollection(reader);
             _staticObjects = new KeyValueDirtyTrackedCollection(reader);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
+        /// </summary>
+        public BinarizableSessionStateStoreData()
+        {
+            _items = new KeyValueDirtyTrackedCollection();
+            _staticObjects = new KeyValueDirtyTrackedCollection();
         }
 
         /// <summary>
