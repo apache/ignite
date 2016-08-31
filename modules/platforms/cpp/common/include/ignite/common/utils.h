@@ -60,6 +60,13 @@ namespace ignite
         }
 
         /**
+         * Strips leading and trailing whitespaces from string.
+         *
+         * @param str String to be transformed.
+         */
+        IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
          * Get string representation of long in decimal form.
          *
          * @param val Long value to be converted to string.
@@ -178,6 +185,24 @@ namespace ignite
             LexicalCast<T1, T2>(val, res);
 
             return res;
+        }
+
+        /**
+         * Check if the predicate returns true for all the elements of the
+         * sequence.
+         *
+         * @return True if the predicate returns true for all the elements
+         *     of the sequence and false otherwise.
+         */
+        template<typename Iter, typename Pred>
+        bool AllOf(Iter begin, Iter end, Pred pred)
+        {
+            Iter i = begin;
+
+            while (i != end && pred(*i))
+                ++i;
+
+            return i == end;
         }
     }
 }
