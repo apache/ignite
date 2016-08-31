@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -214,6 +215,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         /** */
         final IgniteBiPredicate<Object,Object> filter;
 
+        /** */
+        final long time = U.currentTimeMillis();
+
         /**
          * @param cursor Cursor.
          * @param filter Filter.
@@ -244,10 +248,13 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Override public boolean next() {
             try {
                 while (cursor.next()) {
+                    GridH2Row row = cursor.get();
+
+                    if (row.expireTime() > 0 && row.expireTime() <= time)
+                        continue;
+
                     if (filter == null)
                         return true;
-
-                    GridH2Row row = cursor.get();
 
                     Object key = row.getValue(0).getObject();
                     Object val = row.getValue(1).getObject();
