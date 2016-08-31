@@ -916,6 +916,7 @@ public class DataPageIO extends PageIO {
         final int valSize = row.value().valueBytesLength(coctx);
 
         int written = writeFragment(row, buf, coctx, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
+        written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
         written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
         written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
 
@@ -954,15 +955,21 @@ public class DataPageIO extends PageIO {
 
                 break;
 
-            case VALUE:
+            case EXPIRE_TIME:
                 prevLen = keySize;
-                curLen = keySize + valSize;
+                curLen = keySize + 8;
+
+                break;
+
+            case VALUE:
+                prevLen = keySize + 8;
+                curLen = keySize + valSize + 8;
 
                 break;
 
             case VERSION:
-                prevLen = keySize + valSize;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false);
+                prevLen = keySize + valSize + 8;
+                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8;
 
                 break;
 
@@ -975,7 +982,9 @@ public class DataPageIO extends PageIO {
 
         final int len = Math.min(curLen - rowOff, payloadSize);
 
-        if (type != EntryPart.VERSION) {
+        if (type == EntryPart.EXPIRE_TIME)
+            writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
+        else if (type != EntryPart.VERSION) {
             // Write key or value.
             final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
 
@@ -1016,6 +1025,31 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * @param buf Byte buffer.
+     * @param expireTime Expire time.
+     * @param rowOff Row offset.
+     * @param len Length.
+     * @param prevLen previous length.
+     */
+    private void writeExpireTimeFragment(ByteBuffer buf, long expireTime, int rowOff, int len, int prevLen) {
+        int verSize = 8;
+
+        assert len <= verSize: len;
+
+        if (verSize == len)
+            buf.putLong(expireTime);
+        else {
+            ByteBuffer timeBuf = ByteBuffer.allocate(verSize);
+
+            timeBuf.order(buf.order());
+
+            timeBuf.putLong(expireTime);
+
+            buf.put(timeBuf.array(), rowOff - prevLen, len);
+        }
+    }
+
+    /**
      *
      */
     private enum EntryPart {
@@ -1026,7 +1060,10 @@ public class DataPageIO extends PageIO {
         VALUE,
 
         /** */
-        VERSION
+        VERSION,
+
+        /** */
+        EXPIRE_TIME
     }
 
     /**
@@ -1156,6 +1193,7 @@ public class DataPageIO extends PageIO {
      * @param buf Buffer.
      * @param dataOff Data offset.
      * @param payloadSize Payload size.
+     * @param row Data row.
      * @throws IgniteCheckedException If failed.
      */
     private void writeRowData(
@@ -1179,6 +1217,8 @@ public class DataPageIO extends PageIO {
             assert ok;
 
             CacheVersionIO.write(buf, row.version(), false);
+
+            buf.putLong(row.expireTime());
         }
         finally {
             buf.position(0);

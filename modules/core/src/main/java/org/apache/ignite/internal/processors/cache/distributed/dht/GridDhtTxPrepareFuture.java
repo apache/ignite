@@ -342,6 +342,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
+                        cached.unswap(true);
+
                         Duration duration = cached.hasValue() ?
                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 

@@ -74,12 +74,12 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr) throws IgniteCheckedException {
+    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeValue(CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    @Override protected void removeValue() throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 
