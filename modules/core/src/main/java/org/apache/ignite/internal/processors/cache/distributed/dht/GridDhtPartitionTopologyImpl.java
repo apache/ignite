@@ -1149,7 +1149,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     GridDhtPartitionState state = e.getValue();
 
                     if (state == OWNING) {
-                        GridDhtLocalPartition locPart = locParts[p];
+                        GridDhtLocalPartition locPart = locParts.get(p);
 
                         assert locPart != null;
 
@@ -1169,7 +1169,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         }
                     }
                     else if (state == MOVING) {
-                        GridDhtLocalPartition locPart = locParts[p];
+                        GridDhtLocalPartition locPart = locParts.get(p);
 
                         assert locPart != null;
 
@@ -1181,7 +1181,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                 throw new IgniteException(ex);
                             }
 
-                            locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+                            locParts.set(p, locPart = new GridDhtLocalPartition(cctx, p, entryFactory));
 
                             changed = true;
                         }
@@ -1407,7 +1407,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             for (UUID nodeId : nodeIds) {
                                 GridDhtPartitionMap2 nodeMap = node2part.get(nodeId);
 
-                                nodeMap.put(part, LOST);
+                                if (nodeMap.get(part) != EVICTED)
+                                    nodeMap.put(part, LOST);
                             }
                         }
                     }
@@ -1460,7 +1461,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         for (UUID nodeId : nodeIds) {
                             GridDhtPartitionMap2 nodeMap = node2part.get(nodeId);
 
-                            nodeMap.put(part, OWNING);
+                            if (nodeMap.get(part) == LOST)
+                                nodeMap.put(part, OWNING);
                         }
                     }
                 }
@@ -1513,7 +1515,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
-            GridDhtLocalPartition locPart = locParts[p];
+            GridDhtLocalPartition locPart = locParts.get(p);
 
             if (locPart != null) {
                 if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
@@ -1524,7 +1526,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         throw new IgniteException(ex);
                     }
 
-                    locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+                    locParts.set(p, new GridDhtLocalPartition(cctx, p, entryFactory));
                 }
             }
 

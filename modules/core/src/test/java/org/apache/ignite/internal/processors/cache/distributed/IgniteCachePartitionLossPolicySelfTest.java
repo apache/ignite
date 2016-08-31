@@ -210,10 +210,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         // Check read.
         for (int i = 0; i < parts; i++) {
             try {
-                assertEquals((Integer)i, cache.get(i));
+                Integer actual = cache.get(i);
 
-                if (cache.lostPartitions().contains(i) && safe)
-                    fail("Reading from a lost partition should have failed: " + i);
+                if (cache.lostPartitions().contains(i)) {
+                    if (safe)
+                        fail("Reading from a lost partition should have failed: " + i);
+                    // else we could have read anything.
+                }
+                else
+                    assertEquals((Integer)i, actual);
             }
             catch (CacheException e) {
                 assertTrue("Read exception should only be triggered in safe mode: " + e, safe);

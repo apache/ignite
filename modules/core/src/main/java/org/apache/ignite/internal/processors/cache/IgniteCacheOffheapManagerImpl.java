@@ -455,7 +455,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         while (iterator.hasNext()) {
             CacheDataRow row = iterator.next();
 
-            remove(row.key(), row.value(), row.version(), part.id(), part);
+            remove(row.key(), part.id(), part);
         }
     }
 

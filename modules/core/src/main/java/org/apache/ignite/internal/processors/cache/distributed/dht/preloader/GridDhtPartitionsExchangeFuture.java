@@ -1210,21 +1210,62 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (key != null) {
                 int p = cctx.affinity().partition(key);
 
-                if (validation.lostParts.contains(p))
-                    return new CacheInvalidStateException("Failed to execute cache operation " +
-                        "(all partition owners have left the grid, partition data has been lost) [" +
-                        "cacheName=" + cctx.name() + ", part=" + p + ", key=" + key + ']');
+                CacheInvalidStateException ex = validatePartitionOperation(cctx.name(), read, key, p,
+                    validation.lostParts, partLossPolicy);
+
+                if (ex != null)
+                    return ex;
             }
 
             if (keys != null) {
                 for (Object k : keys) {
                     int p = cctx.affinity().partition(k);
 
-                    if (validation.lostParts.contains(p))
-                        return new CacheInvalidStateException("Failed to execute cache operation " +
-                            "(all partition owners have left the grid, partition data has been lost) [" +
-                            "cacheName=" + cctx.name() + ", part=" + p + ", key=" + key + ']');
+                    CacheInvalidStateException ex = validatePartitionOperation(cctx.name(), read, k, p,
+                        validation.lostParts, partLossPolicy);
+
+                    if (ex != null)
+                        return ex;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param read Read flag.
+     * @param key Key to check.
+     * @param part Partition this key belongs to.
+     * @param lostParts Collection of lost partitions.
+     * @param plc Partition loss policy.
+     * @return Invalid state exception if this operation is disallowed.
+     */
+    private CacheInvalidStateException validatePartitionOperation(
+        String cacheName,
+        boolean read,
+        Object key,
+        int part,
+        Collection<Integer> lostParts,
+        PartitionLossPolicy plc
+    ) {
+        if (lostParts.contains(part)) {
+            if (!read) {
+                assert plc == READ_WRITE_ALL || plc == READ_WRITE_SAFE;
+
+                if (plc == READ_WRITE_SAFE) {
+                    return new CacheInvalidStateException("Failed to execute cache operation " +
+                        "(all partition owners have left the grid, partition data has been lost) [" +
+                        "cacheName=" + cacheName + ", part=" + part + ", key=" + key + ']');
+                }
+            }
+            else {
+                // Read.
+                if (plc == READ_ONLY_SAFE || plc == READ_WRITE_SAFE)
+                    return new CacheInvalidStateException("Failed to execute cache operation " +
+                        "(all partition owners have left the grid, partition data has been lost) [" +
+                        "cacheName=" + cacheName + ", part=" + part + ", key=" + key + ']');
             }
         }
 
@@ -1440,8 +1481,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)((DiscoveryCustomEvent)discoEvt)
                         .customMessage();
 
+                    boolean activate = false;
+
                     for (DynamicCacheChangeRequest req : batch.requests()) {
                         if (req.activation()) {
+                            activate = true;
+
                             int cacheId = CU.cacheId(req.cacheName());
 
                             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
@@ -1452,6 +1497,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             cacheCtx.topology().resetLostPartitions();
 
                             cacheCtx.state(req.state());
+                        }
+                    }
+
+                    // Must activate all system caches as well.
+                    if (activate) {
+                        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                            if (!cacheCtx.userCache()) {
+                                if (cctx.database().persistenceEnabled())
+                                    assignRolesByCounters(cacheCtx.topology());
+
+                                cacheCtx.topology().resetLostPartitions();
+
+                                cacheCtx.state(CacheState.ACTIVE);
+                            }
                         }
                     }
                 }
