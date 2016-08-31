@@ -30,9 +30,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+
+import org.apache.ignite.*;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -285,7 +284,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     private ConcurrentMap<UUID,
         Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>
-        distributedQueryManagerQueryItersMap(Ignite g) {
+    distributedQueryManagerQueryItersMap(Ignite g) {
         GridCacheContext ctx = ((IgniteKernal)g).internalCache().context();
 
         Field qryItersField = ReflectionUtils.findField(ctx.queries().getClass(), "qryIters");
@@ -355,8 +354,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If failed.
      */
     public void testNodeLeft() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-613");
-
         Ignite g = startGrid("client");
 
         try {
@@ -375,10 +372,12 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             assertEquals(0, (int)q.iterator().next().getKey());
 
-            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
-                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+            //need to check all node, where was query execution
+            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> mapNode1 = qryResultMap(0);
+            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> mapNode2 = qryResultMap(1);
+            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> mapNode3 = qryResultMap(2);
 
-            assertEquals(1, map.size());
+            assertEquals(1, mapNode1.size() + mapNode2.size() + mapNode3.size());
 
             final UUID nodeId = g.cluster().localNode().id();
 
@@ -397,11 +396,17 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             latch.await();
 
-            assertEquals(0, map.size());
+            assertEquals(0, mapNode1.size());
+            assertEquals(0, mapNode2.size());
+            assertEquals(0, mapNode3.size());
         }
         finally {
             stopGrid("client");
         }
+    }
+
+    private ConcurrentMap<UUID, ConcurrentMap<Long, ?>> qryResultMap(int node) {
+        return U.field(((IgniteH2Indexing)U.field((Object)U.field(grid(node).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
     }
 
     /**
