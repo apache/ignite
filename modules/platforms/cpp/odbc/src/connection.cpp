@@ -117,7 +117,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetPort());
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort());
 
             if (!connected)
             {

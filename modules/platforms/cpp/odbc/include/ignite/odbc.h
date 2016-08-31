@@ -251,7 +251,6 @@ namespace ignite
                                 SQLSMALLINT tableNameLen,
                                 SQLSMALLINT scope,
                                 SQLSMALLINT nullable);
-
 } // namespace ignite
 
 #endif //_IGNITE_ODBC
