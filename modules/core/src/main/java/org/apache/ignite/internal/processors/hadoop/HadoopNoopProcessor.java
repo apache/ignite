@@ -82,4 +82,9 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
         return new IllegalStateException("Hadoop module is not loaded (please ensure that ignite-hadoop.jar is in " +
             "classpath and IgniteConfiguration.peerClassLoadingEnabled is set to false).");
     }
+
+    /** {@inheritDoc} */
+    @Override public void validateEnvironment() throws IgniteCheckedException {
+        // No-oop.
+    }
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.java8.examples.CacheExamplesMultiNodeSelfTest;
 import org.apache.ignite.java8.examples.CacheExamplesSelfTest;
 import org.apache.ignite.java8.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.java8.examples.EventsExamplesSelfTest;
+import org.apache.ignite.java8.examples.IndexingBridgeMethodTest;
 import org.apache.ignite.java8.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -45,6 +46,7 @@ public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
+        suite.addTest(new TestSuite(IndexingBridgeMethodTest.class));
         suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
 //        suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.indexing;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
