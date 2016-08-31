@@ -51,6 +51,9 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private static final int REUSE_BUCKET = BUCKETS - 1; // TODO or 0?
 
     /** */
+    private static final Integer COMPLETE = Integer.MAX_VALUE;
+
+    /** */
     private final int shift;
 
     /** */
@@ -109,7 +112,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         int bucket = freeSpace >>> shift;
 
         if (bucket == REUSE_BUCKET)
-            bucket = 0;
+            bucket--;
 
         assert bucket >= 0 && bucket < BUCKETS && !isReuseBucket(bucket) : bucket;
 
@@ -138,30 +141,18 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
             int bucket = bucket(freeSpace);
 
-            long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+            long pageId = 0;
+            boolean newPage = true;
 
-            if (pageId == 0) {
-                for (int i = 0; i < BUCKETS - 1; i++) {
-                    if (i == bucket)
-                        continue;
+            for (int i = bucket; i < BUCKETS - 1; i++) {
+                pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
 
-                    pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
+                if (pageId != 0L) {
+                    newPage = false;
 
-                    if (pageId != 0L) {
-                        //log.info("Found page 1 " + pageId + ", bucket=" + i + ", rowSize=" + rowSize + ", space=" + freeSpace);
-
-                        break;
-                    }
+                    break;
                 }
             }
-            else {
-                //log.info("Found page 2 " + pageId + ", bucket=" + bucket + ", rowSize=" + rowSize + ", space=" + freeSpace);
-            }
-
-            boolean newPage = pageId == 0;
-
-            // if (newPage)
-                //log.info("Allocate new page, bucket=" + bucket + ", rowSize=" + rowSize + " space=" + freeSpace);
 
             try (Page page = newPage ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -172,9 +163,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         }
         while (written != COMPLETE);
     }
-
-    /** */
-    private static final Integer COMPLETE = Integer.MAX_VALUE;
 
     /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
@@ -241,116 +229,111 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
      * @return Entry size on page.
      * @throws IgniteCheckedException If failed.
      */
-    private static int getRowSize(CacheObjectContext coctx, CacheDataRow row)
-            throws IgniteCheckedException {
+    private static int getRowSize(CacheObjectContext coctx, CacheDataRow row) throws IgniteCheckedException {
         int keyLen = row.key().valueBytesLength(coctx);
         int valLen = row.value().valueBytesLength(coctx);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false);
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
     }
 
     /** */
     private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
-            new PageHandler<CacheDataRow, DataPageIO, Integer>() {
-                @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
-                    throws IgniteCheckedException {
-                    CacheObjectContext coctx = cctx.cacheObjectContext();
+        new PageHandler<CacheDataRow, DataPageIO, Integer>() {
+            @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
+                throws IgniteCheckedException {
+                CacheObjectContext coctx = cctx.cacheObjectContext();
 
-                    int rowSize = getRowSize(coctx, row);
-                    int oldFreeSpace = io.getFreeSpace(buf);
+                int rowSize = getRowSize(coctx, row);
+                int oldFreeSpace = io.getFreeSpace(buf);
 
-                    assert oldFreeSpace > 0 : oldFreeSpace;
+                assert oldFreeSpace > 0 : oldFreeSpace;
 
-                    // If the full row does not fit into this page write only a fragment.
-                    written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(coctx, page, buf, io, row, rowSize):
-                        addRowFragment(coctx, page, buf, io, row, written, rowSize);
+                // If the full row does not fit into this page write only a fragment.
+                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(coctx, page, buf, io, row, rowSize):
+                    addRowFragment(coctx, page, buf, io, row, written, rowSize);
 
-                    // Reread free space after update.
-                    int newFreeSpace = io.getFreeSpace(buf);
+                // Reread free space after update.
+                int newFreeSpace = io.getFreeSpace(buf);
 
-                    //log.info("Write page=" + pageId + ", old free " + oldFreeSpace + ", newFree " + newFreeSpace + " written " + (oldFreeSpace - newFreeSpace));
+                if (newFreeSpace > 0) {
+                    int bucket = bucket(newFreeSpace);
 
-                    if (newFreeSpace > 0) {
-                        int bucket = bucket(newFreeSpace);
-
-                        put(null, buf, bucket);
-
-                        //log.info("Put page in bucket " + DataPageIO.getPageId(buf) + ", bucket=" + bucket);
-                    }
-
-                    // Avoid boxing with garbage generation for usual case.
-                    return written == rowSize ? COMPLETE : written;
+                    put(null, buf, bucket);
                 }
 
-                /**
-                 * @param coctx Cache object context.
-                 * @param page Page.
-                 * @param buf Buffer.
-                 * @param io IO.
-                 * @param row Row.
-                 * @param rowSize Row size.
-                 * @return Written size which is always equal to row size here.
-                 * @throws IgniteCheckedException If failed.
-                 */
-                private int addRow(
-                        CacheObjectContext coctx,
-                        Page page,
-                        ByteBuffer buf,
-                        DataPageIO io,
-                        CacheDataRow row,
-                        int rowSize
-                ) throws IgniteCheckedException {
-                    io.addRow(coctx, buf, row, rowSize);
+                // Avoid boxing with garbage generation for usual case.
+                return written == rowSize ? COMPLETE : written;
+            }
 
+            /**
+             * @param coctx Cache object context.
+             * @param page Page.
+             * @param buf Buffer.
+             * @param io IO.
+             * @param row Row.
+             * @param rowSize Row size.
+             * @return Written size which is always equal to row size here.
+             * @throws IgniteCheckedException If failed.
+             */
+            private int addRow(
+                    CacheObjectContext coctx,
+                    Page page,
+                    ByteBuffer buf,
+                    DataPageIO io,
+                    CacheDataRow row,
+                    int rowSize
+            ) throws IgniteCheckedException {
+                io.addRow(coctx, buf, row, rowSize);
+
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
+                            row.key(), row.value(), row.version(), row.expireTime(), rowSize));
+
+                return rowSize;
+            }
+
+            /**
+             * @param coctx Cache object context.
+             * @param page Page.
+             * @param buf Buffer.
+             * @param io IO.
+             * @param row Row.
+             * @param written Written size.
+             * @param rowSize Row size.
+             * @return Updated written size.
+             * @throws IgniteCheckedException If failed.
+             */
+            private int addRowFragment(
+                    CacheObjectContext coctx,
+                    Page page,
+                    ByteBuffer buf,
+                    DataPageIO io,
+                    CacheDataRow row,
+                    int written,
+                    int rowSize
+            ) throws IgniteCheckedException {
+                // Read last link before the fragment write, because it will be updated there.
+                long lastLink = row.link();
+
+                int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
+
+                assert payloadSize > 0: payloadSize;
+
+                if (isWalDeltaRecordNeeded(wal, page)) {
                     // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                    if (isWalDeltaRecordNeeded(wal, page))
-                        wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
-                                row.key(), row.value(), row.version(), row.expireTime(), rowSize));
+                    byte[] payload = new byte[payloadSize];
 
-                    return rowSize;
+                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+                    buf.get(payload);
+                    buf.position(0);
+
+                    wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
                 }
 
-                /**
-                 * @param coctx Cache object context.
-                 * @param page Page.
-                 * @param buf Buffer.
-                 * @param io IO.
-                 * @param row Row.
-                 * @param written Written size.
-                 * @param rowSize Row size.
-                 * @return Updated written size.
-                 * @throws IgniteCheckedException If failed.
-                 */
-                private int addRowFragment(
-                        CacheObjectContext coctx,
-                        Page page,
-                        ByteBuffer buf,
-                        DataPageIO io,
-                        CacheDataRow row,
-                        int written,
-                        int rowSize
-                ) throws IgniteCheckedException {
-                    // Read last link before the fragment write, because it will be updated there.
-                    long lastLink = row.link();
-
-                    int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
-
-                    assert payloadSize > 0: payloadSize;
-
-                    if (isWalDeltaRecordNeeded(wal, page)) {
-                        // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                        byte[] payload = new byte[payloadSize];
-
-                        io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
-                        buf.get(payload);
-                        buf.position(0);
-
-                        wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
-                    }
-
-                    return written + payloadSize;
-                }
-            };
+                return written + payloadSize;
+            }
+        };
 
     /** */
     private final PageHandler<Void, DataPageIO, Long> rmvRow = new PageHandler<Void, DataPageIO, Long>() {
@@ -367,8 +350,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
             int newFreeSpace = io.getFreeSpace(buf);
 
-            //log.info("Remove end " + DataPageIO.getPageId(buf) + " oldFreeSpace=" + oldFreeSpace + ", newFreeSpace=" + newFreeSpace);
-
             if (newFreeSpace > 0) {
                 int newBucket = bucket(newFreeSpace);
 
@@ -376,22 +357,21 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     int oldBucket = bucket(oldFreeSpace);
 
                     if (oldBucket != newBucket) {
-                        //log.info("Change page bucket " + DataPageIO.getPageId(buf) + ", old=" + oldBucket + ", new=" + newBucket);
-
-                        removeDataPage(buf, oldBucket);
-
-                        put(null, buf, newBucket);
+                        if (removeDataPage(buf, oldBucket))
+                            put(null, buf, newBucket);
                     }
                 }
-                else {
-                    //log.info("Put page in bucket(rmv) " + DataPageIO.getPageId(buf) + " " + newBucket);
-
+                else
                     put(null, buf, newBucket);
-                }
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
     };
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "FreeListNew []";
+    }
 }

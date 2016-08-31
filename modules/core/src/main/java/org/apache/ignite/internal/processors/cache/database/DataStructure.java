@@ -84,6 +84,7 @@ public abstract class DataStructure {
     /**
      * @param bag Reuse bag.
      * @return Allocated page.
+     * @throws IgniteCheckedException If failed.
      */
     protected final long allocatePage(ReuseBag bag) throws IgniteCheckedException {
         long pageId = bag != null ? bag.pollFreePage() : 0;
