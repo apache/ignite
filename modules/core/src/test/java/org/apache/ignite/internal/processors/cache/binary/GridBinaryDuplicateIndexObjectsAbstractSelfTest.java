@@ -54,6 +54,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         cfg.setBinaryConfiguration(bCfg);
 
         cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setClientMode(false);
 
         return cfg;
     }

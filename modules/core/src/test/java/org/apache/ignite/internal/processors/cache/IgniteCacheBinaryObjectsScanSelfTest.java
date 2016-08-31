@@ -77,6 +77,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
+        cfg.setClientMode(false);
 
         if ("client".equals(gridName)) {
             cfg.setClientMode(true);
