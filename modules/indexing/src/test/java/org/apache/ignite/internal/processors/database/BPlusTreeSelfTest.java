@@ -844,7 +844,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            assertFalse(rmvdIds.contains(row));
+            assertFalse(String.valueOf(row), rmvdIds.contains(row));
 
             buf.putLong(off, row);
         }
