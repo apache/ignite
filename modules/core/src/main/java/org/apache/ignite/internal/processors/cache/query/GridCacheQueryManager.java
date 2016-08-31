@@ -364,25 +364,36 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Writes key-value pair to index.
      *
      * @param key Key.
+     * @param partId Partition.
+     * @param prevVal Previous value.
+     * @param prevVer Previous version.
      * @param val Value.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
+     * @param link Link.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime, long link)
+    public void store(KeyCacheObject key,
+        int partId,
+        @Nullable CacheObject prevVal,
+        @Nullable GridCacheVersion prevVer,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        long link)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
         assert enabled();
 
         if (key instanceof GridCacheInternal)
-            return false; // No-op.
+            return; // No-op.
 
         if (!enterBusy())
-            return false; // Ignore index update when node is stopping.
+            return; // Ignore index update when node is stopping.
 
         try {
-            return qryProc.store(space, key, partId, val, ver, expirationTime, link);
+            qryProc.store(space, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
         }
         finally {
             invalidateResultCache();
@@ -392,42 +403,24 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * @param key Key to read.
-     * @return Value tuple, if available.
-     */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if (!enterBusy())
-            return null;
-
-        try {
-            return qryProc.read(space, key, partId);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    public BPlusTree<?, ? extends CacheDataRow> pkIndex() {
-        return qryProc.pkIndex(space);
-    }
-
-    /**
      * @param key Key.
+     * @param partId Partition.
      * @param val Value.
+     * @param ver Version.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public boolean remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
-            return false; // No-op.
+            return; // No-op.
 
         if (!enterBusy())
-            return false; // Ignore index update when node is stopping.
+            return; // Ignore index update when node is stopping.
 
         try {
-            return qryProc.remove(space, key, partId, val, ver);
+            qryProc.remove(space, key, partId, val, ver);
         }
         finally {
             invalidateResultCache();
