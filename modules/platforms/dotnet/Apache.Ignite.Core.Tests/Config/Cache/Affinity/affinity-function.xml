@@ -64,7 +64,7 @@
                             </property>
                         </bean>
                     </property>
-                </bean>                
+                </bean>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache2"/>
 

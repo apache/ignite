@@ -37,9 +37,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
@@ -122,8 +124,16 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @param p The path.
      * @return The owner.
      */
-    private static String getOwner(IgfsEx i, IgfsPath p) {
-        return i.info(p).property(IgfsUtils.PROP_USER_NAME);
+    private static String getOwner(final IgfsEx i, final IgfsPath p) {
+        return IgfsUserContext.doAs(USER, new IgniteOutClosure<String>() {
+            @Override public String apply() {
+                IgfsFile f = i.info(p);
+
+                assert f != null;
+
+                return f.property(IgfsUtils.PROP_USER_NAME);
+            }
+        });
     }
 
     /**
@@ -389,7 +399,21 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
+        HadoopConfiguration hadoopCfg = createHadoopConfiguration();
+
+        if (hadoopCfg != null)
+            cfg.setHadoopConfiguration(hadoopCfg);
+
         return G.start(cfg);
+    }
+
+    /**
+     * Creates custom Hadoop configuration.
+     *
+     * @return The Hadoop configuration.
+     */
+    protected HadoopConfiguration createHadoopConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

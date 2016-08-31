@@ -42,7 +42,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
                                 tbody
                                     tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
                                         td
-                                            a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
+                                            a(ng-class='{active: row._id == selectedItem._id}' ignite-on-click-focus=focusId ng-click=click) #{rowTemplate}
                         label.placeholder(ng-show='displayedRows.length == 0') No #{title} found
 
 //- Mixin with save, remove, clone and undo buttons.
@@ -359,8 +359,8 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
         data-placeholder=placeholder
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
-        on-enter=onEnter
-        on-escape=onEscape
+        ignite-on-enter=onEnter
+        ignite-on-escape=onEscape
         ng-blur=onBlur
     )
         block
@@ -389,8 +389,8 @@ mixin table-java-class-field(lbl, field, items, valid, save, newItem)
 
         data-placeholder='Enter fully qualified class name'
 
-        on-enter=onEnter
-        on-escape=onEscape
+        ignite-on-enter=onEnter
+        ignite-on-escape=onEscape
         ng-blur=onBlur
     )
         +error-feedback('form[ngModelName].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
@@ -419,8 +419,8 @@ mixin table-java-package-field(field, items, valid, save, newItem)
         data-java-package-name='true'
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
-        on-enter=onEnter
-        on-escape=onEscape
+        ignite-on-enter=onEnter
+        ignite-on-escape=onEscape
         ng-blur=onBlur
     )
         block
@@ -445,8 +445,8 @@ mixin table-address-field(field, items, valid, save, newItem, portRange)
         data-ipaddress-with-port-range=portRange ? 'true' : null
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
-        on-enter=onEnter
-        on-escape=onEscape
+        ignite-on-enter=onEnter
+        ignite-on-escape=onEscape
         ng-blur=onBlur
     )
         block
@@ -571,9 +571,9 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
         .fieldSep !{divider}
         .input-tip
             if keyJavaBuiltInTypes
-                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-escape='tableReset()')
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-escape='tableReset()')
             else
-                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder on-escape='tableReset()')
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset()')
     .col-xs-6.col-sm-6.col-md-6
         -var arg = keyModel + ', ' + valModel
         -var btnVisible = 'tablePairSaveVisible(' + tbl + ', ' + index + ')'
@@ -583,6 +583,6 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
         +btn-save(btnVisible, btnSave)
         .input-tip
             if valueJavaBuiltInTypes
-                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
             else
-                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder on-enter=btnVisibleAndSave on-escape='tableReset()')
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')

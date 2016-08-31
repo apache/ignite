@@ -1398,22 +1398,25 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::common::FixedSizeArray<char> arr(realLen + 1);
+                    std::string res;
 
-                    for (int32_t i = 0; i < realLen; i++)
-                        arr[i] = static_cast<char>(stream->ReadInt8());
+                    if (realLen > 0)
+                    {
+                        res.resize(realLen, 0);
 
-                    arr[realLen] = 0;
+                        stream->ReadInt8Array(reinterpret_cast<int8_t*>(&res[0]), realLen);
+                    }
 
-                    return std::string(arr.GetData());
+                    return res;
                 }
-
                 else if (typeId == IGNITE_HDR_NULL)
                     return std::string();
-                else {
+                else
+                {
                     int32_t pos = stream->Position() - 1;
 
-                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_STRING, "actual", (int)typeId)
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos,
+                        "expected", static_cast<int>(IGNITE_TYPE_STRING), "actual", static_cast<int>(typeId))
                 }
             }
         }

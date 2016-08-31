@@ -25,7 +25,11 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!-- Cassandra connection settings -->
-    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.TokenAwarePolicy">
+        <constructor-arg type="com.datastax.driver.core.policies.LoadBalancingPolicy">
+            <bean class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+        </constructor-arg>
+    </bean>
 
     <util:list id="contactPoints" value-type="java.lang.String">
         ${CASSANDRA_SEEDS}
@@ -108,15 +112,14 @@
 
         <property name="cacheConfiguration">
             <list>
-                <!-- Partitioned cache example configuration (Atomic mode). -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="backups" value="1"/>
-                </bean>
-
                 <!-- Configuring persistence for "cache1" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
+                    <property name="startSize" value="1000000"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="backups" value="0"/>
+                    <property name="offHeapMaxMemory" value="0"/>
+                    <property name="swapEnabled" value="false"/>
                     <property name="readThrough" value="true"/>
                     <property name="writeThrough" value="true"/>
                     <property name="writeBehindEnabled" value="true"/>
@@ -131,6 +134,11 @@
                 <!-- Configuring persistence for "cache2" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache2"/>
+                    <property name="startSize" value="1000000"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="backups" value="0"/>
+                    <property name="offHeapMaxMemory" value="0"/>
+                    <property name="swapEnabled" value="false"/>
                     <property name="readThrough" value="true"/>
                     <property name="writeThrough" value="true"/>
                     <property name="writeBehindEnabled" value="true"/>
@@ -145,6 +153,11 @@
                 <!-- Configuring persistence for "cache3" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache3"/>
+                    <property name="startSize" value="1000000"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="backups" value="0"/>
+                    <property name="offHeapMaxMemory" value="0"/>
+                    <property name="swapEnabled" value="false"/>
                     <property name="readThrough" value="true"/>
                     <property name="writeThrough" value="true"/>
                     <property name="writeBehindEnabled" value="true"/>

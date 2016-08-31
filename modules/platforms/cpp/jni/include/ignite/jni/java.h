@@ -92,7 +92,7 @@ namespace ignite
 
             typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
-            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
@@ -105,8 +105,11 @@ namespace ignite
             typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
-            
+
             typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
+
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
+            typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
 
             /**
              * JNI handlers holder.
@@ -185,12 +188,15 @@ namespace ignite
 
                 OnClientDisconnectedHandler onClientDisconnected;
                 OnClientReconnectedHandler onClientReconnected;
-                
+
                 AffinityFunctionInitHandler affinityFunctionInit;
                 AffinityFunctionPartitionHandler affinityFunctionPartition;
                 AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
                 AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
                 AffinityFunctionDestroyHandler affinityFunctionDestroy;
+
+                LoggerLogHandler loggerLog;
+                LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
             };
 
             /**
@@ -203,6 +209,9 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
+				
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -217,7 +226,8 @@ namespace ignite
                 /**
                  * Write error information.
                  */
-                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen);
+                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen, 
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -331,6 +341,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getCacheNames;
                 jmethodID m_PlatformProcessor_atomicSequence;
                 jmethodID m_PlatformProcessor_atomicReference;
+                jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
+                jmethodID m_PlatformProcessor_loggerLog;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -550,7 +562,9 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-                
+				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
+				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -761,8 +775,11 @@ namespace ignite
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
-            
+
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
+
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
         }
     }
 }

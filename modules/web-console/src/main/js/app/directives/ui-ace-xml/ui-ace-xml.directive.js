@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-xml.jade!';
+import templateUrl from './ui-ace-xml.jade';
 import controller from './ui-ace-xml.controller';
 
 export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
@@ -125,7 +125,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             data: '=?ngModel'
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'ctrl',
         require: ['igniteUiAceXml', '?^igniteUiAceTabs', '?^form', '?ngModel']

@@ -24,6 +24,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueBytes;
 
+import static org.h2.util.StringUtils.convertBytesToHex;
+
 /**
  * H2 Bytes.
  */
@@ -99,7 +101,7 @@ public class GridH2Bytes extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Bytes.class);
     }
 
     /** {@inheritDoc} */
@@ -110,5 +112,10 @@ public class GridH2Bytes extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "b_" + convertBytesToHex(b);
     }
 }

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './misc.jade!';
+import templateUrl from './misc.jade';
 
 export default ['igniteConfigurationIgfsMisc', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
