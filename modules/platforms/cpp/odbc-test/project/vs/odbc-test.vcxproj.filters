@@ -125,5 +125,8 @@
     <None Include="..\..\config\queries-test.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\queries-test-noodbc.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>
