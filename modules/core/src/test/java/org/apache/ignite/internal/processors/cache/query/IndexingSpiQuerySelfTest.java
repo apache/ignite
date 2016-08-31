@@ -102,7 +102,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             for (Map.Entry<Object, Object> entry : map.entrySet())
                 res.add(new CacheEntryImpl<>(entry.getKey(), entry.getValue()));
 
-            return res.iterator();
+            return (Iterator) map.entrySet().iterator();//res.iterator();
         }
 
         /** {@inheritDoc} */

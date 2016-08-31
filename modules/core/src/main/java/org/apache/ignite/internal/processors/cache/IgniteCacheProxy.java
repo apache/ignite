@@ -40,6 +40,7 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -504,7 +505,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -576,21 +577,38 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K, V> cur;
+            private Cache.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K, V> e = cur;
+                Cache.Entry<K, V> e = cur;
 
                 cur = null;
 
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                return e;
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return cur != null || (cur = fut.next()) != null;
+                if (cur != null)
+                    return true;
+
+                Object next = fut.next();
+
+                //Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
+                // instead of Iterator<Map.Entry> due to IndexingSpi interface
+                if (next == null)
+                    return false;
+
+                if (next instanceof Cache.Entry)
+                    cur = (Cache.Entry)next;
+                else {
+                    Map.Entry e = (Map.Entry)next;
+                    cur = new CacheEntryImpl(e.getKey(), e.getValue());
+                }
+
+                return true;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
