@@ -17,15 +17,16 @@
 
 package org.apache.ignite.spi.indexing.noop;
 
-import java.util.Collection;
-import java.util.Iterator;
-import javax.cache.Cache;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+import java.util.Iterator;
+import javax.cache.Cache;
 
 /**
  * Default implementation of {@link IndexingSpi} which does not index cache.

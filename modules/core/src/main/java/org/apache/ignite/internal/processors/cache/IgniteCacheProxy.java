@@ -532,11 +532,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K, V>> qry;
+        final CacheQuery<Cache.Entry<K, V>> qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        final CacheQueryFuture<Map.Entry<K, V>> fut;
+        final CacheQueryFuture<Cache.Entry<K, V>> fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -547,8 +547,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute();
                     }
                 }, false);
@@ -560,8 +560,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -576,13 +576,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K, V> cur;
+            private Cache.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K, V> e = cur;
+                Cache.Entry<K, V> e = cur;
 
                 cur = null;
 

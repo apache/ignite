@@ -693,13 +693,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null) {
+      /*  if (qry.clause() == null) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
                 "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
-        }
+        }*/
 
         if (qry.type() == SQL_FIELDS) {
             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -3307,7 +3307,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
-    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+    public CacheQuery<Cache.Entry<K, V>> createFullTextQuery(String clsName,
         String search, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);

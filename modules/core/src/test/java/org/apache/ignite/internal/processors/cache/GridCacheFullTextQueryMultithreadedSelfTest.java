@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import javax.cache.Cache;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -91,7 +93,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
             }, 1);
 
         // Create query.
-        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
+        final CacheQuery<Cache.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
             H2TextValue.class.getName(), txt, false);
 
         qry.enableDedup(false);
@@ -105,7 +107,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
                     int cnt = 0;
 
                     while (!stop.get()) {
-                        Collection<Map.Entry<Integer, H2TextValue>> res = qry.execute().get();
+                        Collection<Cache.Entry<Integer, H2TextValue>> res = qry.execute().get();
 
                         cnt++;
 
