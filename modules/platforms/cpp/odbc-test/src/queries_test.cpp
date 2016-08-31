@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
@@ -53,9 +54,65 @@ using ignite::impl::binary::BinaryUtils;
 struct QueriesTestSuiteFixture 
 {
     /**
-     * Constructor.
+     * Establish connection to node.
+     *
+     * @param connectStr Connection string.
      */
-    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    void Connect(const std::string& connectStr)
+    {
+        // Allocate an environment handle
+        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+
+        BOOST_REQUIRE(env != NULL);
+
+        // We want ODBC 3 support
+        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
+
+        // Allocate a connection handle
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+        BOOST_REQUIRE(dbc != NULL);
+
+        // Connect string
+        std::vector<SQLCHAR> connectStr0;
+
+        connectStr0.reserve(connectStr.size() + 1);
+        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+
+        SQLCHAR outstr[ODBC_BUFFER_SIZE];
+        SQLSMALLINT outstrlen;
+
+        // Connecting to ODBC server.
+        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+        if (!SQL_SUCCEEDED(ret))
+        {
+            Ignition::Stop(grid.GetName(), true);
+
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+        }
+
+        // Allocate a statement handle
+        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+        BOOST_REQUIRE(stmt != NULL);
+    }
+
+    void Disconnect()
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Disconneting from the server.
+        SQLDisconnect(dbc);
+
+        // Releasing allocated handles.
+        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
+
+    static Ignite StartNode(const char* name, const char* config)
     {
         IgniteConfiguration cfg;
 
@@ -77,51 +134,26 @@ struct QueriesTestSuiteFixture
 
         BOOST_REQUIRE(cfgPath != 0);
 
-        cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
+        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
 
         IgniteError err;
 
-        grid = Ignition::Start(cfg, &err);
+        return Ignition::Start(cfg, name);
+    }
 
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_FAIL(err.GetText());
+    static Ignite StartAdditionalNode(const char* name)
+    {
+        return StartNode(name, "queries-test-noodbc.xml");
+    }
+
+    /**
+     * Constructor.
+     */
+    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    {
+        grid = StartNode("NodeMain", "queries-test.xml");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
-
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-
-        // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=cache";
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, connectStr, static_cast<SQLSMALLINT>(sizeof(connectStr)),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        if (!SQL_SUCCEEDED(ret))
-        {
-            Ignition::Stop(grid.GetName(), true);
-
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
-        }
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
     }
 
     /**
@@ -129,22 +161,16 @@ struct QueriesTestSuiteFixture
      */
     ~QueriesTestSuiteFixture()
     {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+        Disconnect();
 
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-
-        Ignition::Stop(grid.GetName(), true);
+        Ignition::StopAll(true);
     }
 
     template<typename T>
     void CheckTwoRowsInt(SQLSMALLINT type)
     {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
         SQLRETURN ret;
 
         TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -252,6 +278,16 @@ struct QueriesTestSuiteFixture
 
 BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
+BOOST_AUTO_TEST_CASE(TestLegacyConnection)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
+}
+
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
     CheckTwoRowsInt<int8_t>(SQL_C_STINYINT);
@@ -294,6 +330,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint64)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -387,6 +425,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -448,6 +488,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
