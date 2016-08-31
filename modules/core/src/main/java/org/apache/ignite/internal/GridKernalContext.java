@@ -525,15 +525,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getRestExecutorService();
 
     /**
-     * Should return an instance of fully configured thread pool to be used for
-     * processing of ODBC requests.
-     *
-     * @return Thread pool implementation to be used for processing of client
-     *      messages.
-     */
-    public ExecutorService getOdbcExecutorService();
-
-    /**
      * Gets exception registry.
      *
      * @return Exception registry.

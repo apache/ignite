@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -29,11 +30,15 @@ import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import java.net.InetAddress;
 import java.nio.ByteOrder;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * ODBC processor.
@@ -54,8 +59,11 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
-    /** OBCD TCP Server. */
+    /** ODBC TCP Server. */
     private GridNioServer<byte[]> srv;
+
+    /** ODBC executor service. */
+    private ExecutorService odbcExecSvc;
 
     /**
      * @param ctx Kernal context.
@@ -66,11 +74,13 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
+        IgniteConfiguration cfg = ctx.config();
+
+        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
 
         if (odbcCfg != null) {
             try {
-                Marshaller marsh = ctx.config().getMarshaller();
+                Marshaller marsh = cfg.getMarshaller();
 
                 if (marsh != null && !(marsh instanceof BinaryMarshaller))
                     throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
@@ -94,6 +104,14 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize should be > 0");
 
+                odbcExecSvc = new IgniteThreadPoolExecutor(
+                    "odbc",
+                    cfg.getGridName(),
+                    odbcCfg.getThreadPoolSize(),
+                    odbcCfg.getThreadPoolSize(),
+                    0,
+                    new LinkedBlockingQueue<Runnable>());
+
                 InetAddress host;
 
                 try {
@@ -107,10 +125,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
-                        assert ctx.getOdbcExecutorService() != null;
-
                         GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.gridName(), ctx.getOdbcExecutorService(), log),
+                            new GridNioAsyncNotifyFilter(ctx.gridName(), odbcExecSvc, log),
                             new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
                         };
 
@@ -166,6 +182,12 @@ public class OdbcProcessor extends GridProcessorAdapter {
             busyLock.block();
 
             srv.stop();
+
+            if (odbcExecSvc != null) {
+                U.shutdownNow(getClass(), odbcExecSvc, log);
+
+                odbcExecSvc = null;
+            }
 
             ctx.ports().deregisterPorts(getClass());
 

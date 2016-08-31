@@ -306,10 +306,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    protected ExecutorService odbcExecSvc;
-
-    /** */
-    @GridToStringExclude
     protected IgniteStripedThreadPoolExecutor callbackExecSvc;
 
     /** */
@@ -371,7 +367,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
-     * @param odbcExecSvc ODBC executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -389,7 +384,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
-        ExecutorService odbcExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
@@ -407,7 +401,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
-        this.odbcExecSvc = odbcExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
         marshCtx = new MarshallerContextImpl(plugins);
@@ -932,11 +925,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getOdbcExecutorService() {
-        return odbcExecSvc;
     }
 
     /** {@inheritDoc} */
