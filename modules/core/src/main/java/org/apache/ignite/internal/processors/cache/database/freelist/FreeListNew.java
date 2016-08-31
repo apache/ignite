@@ -305,7 +305,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     // TODO This record must contain only a reference to a logical WAL record with the actual data.
                     if (isWalDeltaRecordNeeded(wal, page))
                         wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
-                                row.key(), row.value(), row.version(), rowSize));
+                                row.key(), row.value(), row.version(), row.expireTime(), rowSize));
 
                     return rowSize;
                 }
