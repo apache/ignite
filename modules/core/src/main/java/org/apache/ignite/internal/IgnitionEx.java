@@ -1475,9 +1475,6 @@ public class IgnitionEx {
         /** Marshaller cache executor service. */
         private ExecutorService marshCacheExecSvc;
 
-        /** Management executor service. */
-        private ExecutorService odbcExecSvc;
-
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
@@ -1695,16 +1692,6 @@ public class IgnitionEx {
 
             // Pre-start all threads to avoid HadoopClassLoader leaks.
             ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
-
-            if (cfg.getOdbcConfiguration() != null) {
-                odbcExecSvc = new IgniteThreadPoolExecutor(
-                    "odbc",
-                    cfg.getGridName(),
-                    cfg.getOdbcConfiguration().getThreadPoolSize(),
-                    cfg.getOdbcConfiguration().getThreadPoolSize(),
-                    0,
-                    new LinkedBlockingQueue<Runnable>());
-            }
 
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
@@ -2344,11 +2331,10 @@ public class IgnitionEx {
 
             igfsExecSvc = null;
 
-            if (restExecSvc != null) {
+            if (restExecSvc != null)
                 U.shutdownNow(getClass(), restExecSvc, log);
 
                 restExecSvc = null;
-            }
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
@@ -2357,12 +2343,6 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), marshCacheExecSvc, log);
 
             marshCacheExecSvc = null;
-
-            if (odbcExecSvc != null) {
-                U.shutdownNow(getClass(), odbcExecSvc, log);
-
-                odbcExecSvc = null;
-            }
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
@@ -2414,6 +2394,8 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Failed to register MBean.", e);
                     }
                 }
+
+                assert data != null;
 
                 data.addGrid(name);
                 data.setCounter(data.getCounter() + 1);

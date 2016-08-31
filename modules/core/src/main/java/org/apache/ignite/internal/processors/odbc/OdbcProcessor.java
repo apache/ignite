@@ -102,7 +102,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     );
                 }
 
-                assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize should be > 0");
+                assertParameter(odbcCfg.getThreadPoolSize() > 0, "OdbcConfiguration: threadPoolSize");
 
                 odbcExecSvc = new IgniteThreadPoolExecutor(
                     "odbc",

@@ -120,8 +120,8 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testThreadPoolSize() throws Exception {
-        check(new OdbcConfiguration().setThreadPoolSize(0), IllegalArgumentException.class);
-        check(new OdbcConfiguration().setThreadPoolSize(-1), IllegalArgumentException.class);
+        check(new OdbcConfiguration().setThreadPoolSize(0), false);
+        check(new OdbcConfiguration().setThreadPoolSize(-1), false);
 
         check(new OdbcConfiguration().setThreadPoolSize(4), true);
     }
@@ -130,36 +130,10 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
      * Perform check.
      *
      * @param odbcCfg ODBC configuration.
-     * @param success Success flag.
-     * @throws Exception If failed.
+     * @param success Success flag. * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
-        check(odbcCfg, success, IgniteException.class);
-    }
-
-    /**
-     * Perform check.
-     *
-     * @param odbcCfg ODBC configuration.
-     * @param cls Expected exception.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void check(OdbcConfiguration odbcCfg, Class<? extends Throwable> cls) throws Exception {
-        check(odbcCfg, false, cls);
-    }
-
-    /**
-     * Perform check.
-     *
-     * @param odbcCfg ODBC configuration.
-     * @param success Success flag.
-     * @param cls Expected exception.
-     * * @throws Exception If failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void check(OdbcConfiguration odbcCfg, boolean success, Class<? extends Throwable> cls) throws Exception {
         final IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(OdbcProcessorValidationSelfTest.class.getName() + "-" + NODE_IDX_GEN.incrementAndGet());
@@ -175,7 +149,7 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, cls, null);
+            }, IgniteException.class, null);
         }
     }
 
