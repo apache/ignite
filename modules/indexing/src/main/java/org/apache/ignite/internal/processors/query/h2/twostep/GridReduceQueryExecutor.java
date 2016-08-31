@@ -677,25 +677,7 @@ public class GridReduceQueryExecutor {
                             if (qry.explain())
                                 return explainPlan(r.conn, space, qry);
 
-                            GridCacheSqlQuery rdc = qry.reduceQuery();
-
-                            // MERGE and INSERT on reduce perform themselves,
-                            // while UPDATE and DELETE perform SELECT on reduce
-                            if (!(qry.initialStatement() instanceof GridSqlMerge) &&
-                                !(qry.initialStatement() instanceof GridSqlInsert)) {
-                                ResultSet res = h2.executeSqlQueryWithTimer(space,
-                                    r.conn,
-                                    rdc.query(),
-                                    F.asList(rdc.parameters()),
-                                    false);
-
-                                resIter = new Iter(res);
-                            }
-                            else {
-                                int res = h2.executeSqlUpdateQuery(cctx, qry);
-
-                                return new IgniteSingletonIterator(Collections.singletonList(res));
-                            }
+                            return h2.doReduce(space, qry, r.conn);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -1324,7 +1306,7 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private static class Iter extends GridH2ResultSetIterator<List<?>> {
+    public static class Iter extends GridH2ResultSetIterator<List<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1332,7 +1314,7 @@ public class GridReduceQueryExecutor {
          * @param data Data array.
          * @throws IgniteCheckedException If failed.
          */
-        protected Iter(ResultSet data) throws IgniteCheckedException {
+        public Iter(ResultSet data) throws IgniteCheckedException {
             super(data, true, false);
         }
 

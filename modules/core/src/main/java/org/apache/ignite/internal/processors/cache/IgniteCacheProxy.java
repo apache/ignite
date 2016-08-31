@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
@@ -720,15 +722,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
-                boolean isQry = ctx.kernalContext().query().isQuery(ctx, p);
-
-                Boolean isJdbcQry = p instanceof JdbcSqlFieldsQuery ? ((JdbcSqlFieldsQuery) p).isQuery() : null;
-
-                if (isJdbcQry != null && (isJdbcQry != isQry))
-                    throw new CacheException("Query type mismatch - expected " + (isQry ? "non query" : "query"));
-
-                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal() && isQry)
-                    return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p, isQry);
+                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                    return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }

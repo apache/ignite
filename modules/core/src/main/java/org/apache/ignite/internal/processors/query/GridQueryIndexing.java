@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
@@ -88,22 +89,9 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
-
-    /**
-     * Performs SQL DML operation (generally used by JDBC drivers).
-     *
-     * @param cctx Space name.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param filter Space name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridQueryFieldsResult updateLocalSqlFields(GridCacheContext cctx, String qry,
-        Object[] params, IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
+    public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder)
+        throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -235,12 +223,4 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
-
-    /**
-     * Check if given {@link SqlFieldsQuery} corresponds to query or update operation.
-     * @param qry query to check.
-     * @return {@code true} if {@code qry} is a query, false if it's an update operation.
-     * @throws IgniteCheckedException if failed.
-     */
-    public boolean isQuery(SqlFieldsQuery qry, String spaceName) throws IgniteCheckedException;
 }

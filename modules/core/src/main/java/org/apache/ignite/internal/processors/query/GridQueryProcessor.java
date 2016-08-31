@@ -78,6 +78,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -886,11 +887,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      * @param qry Query.
-     * @param isQry
      * @return Iterator.
      */
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry,
-                                                 final boolean isQry) {
+    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -903,11 +902,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String sql = qry.getSql();
                     Object[] args = qry.getArgs();
 
-                    final GridQueryFieldsResult res = isQry ?
-                        idx.queryLocalSqlFields(space, sql, F.asList(args), idx.backupFilter(requestTopVer.get(), null),
-                            qry.isEnforceJoinOrder()) :
-                        idx.updateLocalSqlFields(cctx, sql, args, idx.backupFilter(requestTopVer.get(), null),
-                            qry.isEnforceJoinOrder());
+                    final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
+                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder());
 
                     sendQueryExecutedEvent(sql, args);
 
@@ -1693,16 +1689,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (complete && err == null)
                 onCompleted(cctx, res, null, startTime, U.currentTimeMillis() - startTime, log);
         }
-    }
-
-    /**
-     * Check if given {@link SqlFieldsQuery} corresponds to query or update operation.
-     * @param qry query to check.
-     * @return {@code true} if {@code qry} is a query, false if it's an update operation.
-     * @throws IgniteCheckedException if failed.
-     */
-    public boolean isQuery(GridCacheContext ctx, SqlFieldsQuery qry) throws IgniteCheckedException {
-        return idx.isQuery(qry, ctx.name());
     }
 
     /**
