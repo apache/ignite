@@ -526,19 +526,28 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     private void doTestMassiveRemove(boolean canGetRow) throws Exception {
         MAX_PER_PAGE = 2;
+        final int threads = 16;
+        final int keys = 20_000 * threads;
 
         final TestTree tree = createTestTree(canGetRow);
 
-        for (long i = 0; i < 200_000; i++)
+        for (long i = 0; i < keys; i++)
             tree.put(i);
+
+        long cnt = 0;
+
+        GridCursor<Long> cursor = tree.find(0L, (long)keys);
+
+        while (cursor.next())
+            assertEquals(cnt++ , cursor.get().longValue());
+
+        assertEquals(keys, cnt);
 
         final AtomicInteger id = new AtomicInteger(0);
 
         info("Remove...");
 
         try {
-            final int threads = 16;
-
             // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -833,14 +842,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             Long row = srcIo.getLookupRow(null, src, srcIdx);
 
-            assertFalse(rmvdIds.contains(row));
-
             store(dst, dstIdx, row, null);
         }
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            assertFalse(rmvdIds.toString(), rmvdIds.contains(row));
+            assertFalse(String.valueOf(row), rmvdIds.contains(row));
 
             buf.putLong(off, row);
         }

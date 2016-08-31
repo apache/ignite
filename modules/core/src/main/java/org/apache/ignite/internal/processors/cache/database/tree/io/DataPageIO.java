@@ -1008,7 +1008,7 @@ public class DataPageIO extends PageIO {
 
         assert len <= verSize: len;
 
-        if (verSize == len) {
+        if (verSize == len) { // Here we check for equality but not <= because version is the last.
             // Here we can write version directly.
             CacheVersionIO.write(buf, ver, false);
         }
@@ -1032,14 +1032,12 @@ public class DataPageIO extends PageIO {
      * @param prevLen previous length.
      */
     private void writeExpireTimeFragment(ByteBuffer buf, long expireTime, int rowOff, int len, int prevLen) {
-        int verSize = 8;
+        int size = 8;
 
-        assert len <= verSize: len;
-
-        if (verSize == len)
+        if (size <= len)
             buf.putLong(expireTime);
         else {
-            ByteBuffer timeBuf = ByteBuffer.allocate(verSize);
+            ByteBuffer timeBuf = ByteBuffer.allocate(size);
 
             timeBuf.order(buf.order());
 

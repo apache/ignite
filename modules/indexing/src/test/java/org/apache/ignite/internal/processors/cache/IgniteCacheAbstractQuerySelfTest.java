@@ -376,13 +376,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
-    public void _testExpiration() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11133");
+    public void testExpiration() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
-        ignite().cache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(7, 1);
-
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        cache.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(7, 1);
 
         List<Cache.Entry<Integer, Integer>> qry =
             cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
