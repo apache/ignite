@@ -693,7 +693,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null) {
+        //TODO: IGNITE-2881: workaround for SPI queries
+        if (qry.clause() == null && qry.type() != SPI) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
