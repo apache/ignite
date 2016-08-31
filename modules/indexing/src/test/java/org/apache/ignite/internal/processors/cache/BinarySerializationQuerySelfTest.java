@@ -128,6 +128,8 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
+        cfg.setClientMode(false);
+
         ignite = Ignition.start(cfg);
 
         cache = ignite.cache(null);
