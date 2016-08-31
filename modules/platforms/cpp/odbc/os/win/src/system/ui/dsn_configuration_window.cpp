@@ -30,7 +30,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(160),
+                    height(200),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -38,6 +38,8 @@ namespace ignite
                     addressEdit(),
                     cacheLabel(),
                     cacheEdit(),
+                    fetchPageSizeLabel(),
+                    fetchPageSizeEdit(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -110,6 +112,16 @@ namespace ignite
                     val = config.GetCache().c_str();
                     cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ID_CACHE_LABEL);
                     cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_CACHE_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    std::string tmp = common::LexicalCast<std::string>(config.GetFetchPageSize());
+                    val = tmp.c_str();
+                    fetchPageSizeLabel = CreateLabel(labelPosX, rowPos, labelSizeX,
+                        rowSize, "Fetch page size:", ID_FETCH_PAGE_SIZE_LABEL);
+
+                    fetchPageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
+                        rowSize, val, ID_FETCH_PAGE_SIZE_EDIT, ES_NUMBER);
 
                     rowPos += interval * 2 + rowSize;
 
@@ -186,10 +198,17 @@ namespace ignite
                     std::string dsn;
                     std::string address;
                     std::string cache;
+                    std::string fetchPageSizeStr;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
+                    fetchPageSizeEdit->GetText(fetchPageSizeStr);
+
+                    int32_t fetchPageSize = common::LexicalCast<int32_t>(fetchPageSizeStr);
+
+                    if (fetchPageSize <= 0)
+                        fetchPageSize = config.GetFetchPageSize();
 
                     common::StripSurroundingWhitespaces(address);
                     common::StripSurroundingWhitespaces(dsn);
@@ -198,6 +217,7 @@ namespace ignite
                     LOG_MSG("DSN:                %s\n", dsn.c_str());
                     LOG_MSG("Address:            %s\n", address.c_str());
                     LOG_MSG("Cache:              %s\n", cache.c_str());
+                    LOG_MSG("Fetch page size:    %d\n", fetchPageSize);
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -205,6 +225,7 @@ namespace ignite
                     cfg.SetDsn(dsn);
                     cfg.SetAddress(address);
                     cfg.SetCache(cache);
+                    cfg.SetFetchPageSize(fetchPageSize);
                 }
             }
         }
