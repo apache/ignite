@@ -603,6 +603,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.oldVal.value(op(), oldVal, hasOldVal, hasOldVal);
     }
 
+    /**
+     * @return {@code True} if old value present.
+     */
     public boolean hasOldValue() {
         return oldVal != null && oldVal.hasValue();
     }

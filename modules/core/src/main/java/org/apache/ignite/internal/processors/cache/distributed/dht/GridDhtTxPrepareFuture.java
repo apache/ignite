@@ -487,8 +487,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             /*keepBinary*/true);
                     }
 
-                    if (oldVal != null)
+                    if (oldVal != null) {
+                        oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
+
                         txEntry.oldValue(oldVal, true);
+                    }
                 }
             }
             catch (IgniteCheckedException e) {
