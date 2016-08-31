@@ -92,6 +92,8 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setMarshaller(null);
 
+        cfg.setClientMode(false);
+
         return cfg;
     }
 

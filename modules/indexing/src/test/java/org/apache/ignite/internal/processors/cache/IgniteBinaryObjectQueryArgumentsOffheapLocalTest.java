@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cache;
  *
  */
 public class IgniteBinaryObjectQueryArgumentsOffheapLocalTest extends IgniteBinaryObjectQueryArgumentsOffheapTest {
+    /** {@inheritDoc} */
     @Override protected boolean isLocal() {
         return true;
     }

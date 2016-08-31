@@ -19,7 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheMemoryMode;
 
+/**
+ *
+ */
 public class IgniteBinaryObjectQueryArgumentsOffheapTest extends IgniteBinaryObjectQueryArgumentsTest {
+    /** {@inheritDoc} */
     @Override protected CacheMemoryMode memoryMode() {
         return CacheMemoryMode.OFFHEAP_TIERED;
     }
