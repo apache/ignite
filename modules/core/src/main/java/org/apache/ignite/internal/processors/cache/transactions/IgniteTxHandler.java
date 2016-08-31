@@ -112,8 +112,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
-        final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
@@ -368,7 +367,7 @@ public class IgniteTxHandler {
                         req.deployInfo() != null);
 
                     try {
-                        ctx.io().send(nearNode, res, req.policy());
+                        ctx.io().send(nearNodeId, res, req.policy());
 
                         if (txPrepareMsgLog.isDebugEnabled()) {
                             txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
@@ -679,7 +678,7 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
-        assert req.txState() != null || fut.error() != null ||
+        assert req.txState() != null || (fut != null && fut.error() != null) ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
 
         return fut;
@@ -698,6 +697,10 @@ public class IgniteTxHandler {
 
         if (locTx != null)
             req.txState(locTx.txState());
+
+        // 'baseVersion' message field is re-used for version to be added in completed versions.
+        if (!req.commit() && req.baseVersion() != null)
+            ctx.tm().addRolledbackTx(null, req.baseVersion());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
