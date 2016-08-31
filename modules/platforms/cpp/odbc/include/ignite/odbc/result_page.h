@@ -38,7 +38,7 @@ namespace ignite
 
         public:
             // Default result page size.
-            enum { DEFAULT_SIZE = 32 };
+            enum { DEFAULT_SIZE = 1024 };
 
             /**
              * Constructor.

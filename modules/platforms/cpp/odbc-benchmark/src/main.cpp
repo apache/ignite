@@ -340,7 +340,7 @@ private:
 
 int main()
 {
-    enum { rows = 10000 };
+    enum { rows = 100000 };
 
     boost::chrono::milliseconds res = IGNITE_RUN_BENCHMARK(OdbcFetchBenchmark<rows>, 10, 10);
 
