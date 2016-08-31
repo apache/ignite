@@ -90,7 +90,13 @@ struct OdbcFetchBenchmark
         cfg.jvmMaxMem = 4096;
 #endif
 
-        cfg.springCfgPath.assign(getenv("IGNITE_NATIVE_BENCHMARK_ODBC_CONFIG_PATH")).append("/default.xml");
+        char* cfgPath = getenv("IGNITE_NATIVE_BENCHMARK_ODBC_CONFIG_PATH");
+
+        if (!cfgPath)
+            throw ignite::IgniteError(ignite::IgniteError::IGNITE_ERR_GENERIC, 
+                "IGNITE_NATIVE_BENCHMARK_ODBC_CONFIG_PATH environment variable is not set");
+
+        cfg.springCfgPath.assign(cfgPath).append("/default.xml");
 
         node = Ignition::Start(cfg);
 
@@ -120,7 +126,7 @@ struct OdbcFetchBenchmark
 
             tmp << i64Dist(rng) << i64Dist(rng) << i64Dist(rng);
 
-            std::swap(val.strField, tmp.str());
+            val.strField = tmp.str();
 
             val.i8Field = i8Dist(rng);
             val.i16Field = i16Dist(rng);

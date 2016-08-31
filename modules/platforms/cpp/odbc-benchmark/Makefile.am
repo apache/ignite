@@ -19,11 +19,7 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_PROGRAMS = ignite-odbc-benchmark
 
-SUBDIRS = \
-    include
-
 AM_CPPFLAGS = \
-    -I$(srcdir)/include \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
@@ -44,14 +40,17 @@ ignite_odbc_benchmark_LDADD = \
     @top_srcdir@/core/libignite.la \
     -ldl \
     -lodbc \
-    -lpthread
+    -lpthread \
+    -lboost_chrono \
+    -lboost_system \
+    -lboost_random
 
 ignite_odbc_benchmark_LDFLAGS = \
     -static-libtool-libs
 	
 noinst_HEADERS = \
     src/benchmark_utils.h \
-	test_type.h
+	src/test_type.h
 
 ignite_odbc_benchmark_SOURCES = \
     src/main.cpp

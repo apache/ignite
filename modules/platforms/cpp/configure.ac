@@ -82,11 +82,11 @@ AC_ARG_ENABLE([tests],
 AC_ARG_ENABLE([benchmarks],
     [AS_HELP_STRING([--enable-benchmarks],[build benchmarks for enabled components [default=yes]])],
     [ case "${enableval}" in
-        yes) tests=true ;;
-        no) tests=false ;;
-        *) AC_MSG_ERROR(bad value ${enableval} for --enable-tests) ;;
+        yes) benchmarks=true ;;
+        no) benchmarks=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-benchmarks) ;;
         esac],
-    [tests=true]
+    [benchmarks=true]
 )
 
 AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
