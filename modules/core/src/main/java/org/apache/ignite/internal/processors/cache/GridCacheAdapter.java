@@ -2004,6 +2004,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             try {
                                                 GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
 
+                                                if(expiry != null) {
+                                                    long ttl = expiry.forCreate();
+                                                    if(ttl != CU.TTL_NOT_CHANGED)
+                                                        entry.updateTtl(verSet, ttl);
+                                                }
+
                                                 boolean set = verSet != null;
 
                                                 if (log.isDebugEnabled())

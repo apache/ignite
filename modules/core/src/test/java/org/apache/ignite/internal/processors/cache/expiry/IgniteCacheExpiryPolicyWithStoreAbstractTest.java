@@ -142,9 +142,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
-        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
-            fail("https://issues.apache.org/jira/browse/IGNITE-821");
-
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
@@ -152,11 +149,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         storeMap.put(key, 100);
 
         try {
-            Integer res = cache.invoke(key, new EntryProcessor<Integer, Integer, Integer>() {
-                @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
-                    return e.getValue();
-                }
-            });
+            Integer res = cache.get(key);
 
             assertEquals((Integer)100, res);
 
