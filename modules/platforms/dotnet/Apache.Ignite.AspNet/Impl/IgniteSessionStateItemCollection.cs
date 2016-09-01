@@ -31,8 +31,14 @@ namespace Apache.Ignite.AspNet.Impl
     {
         // TODO: Dedicated test!
 
+            
+        /** Wrapped collection */
         private readonly KeyValueDirtyTrackedCollection _collection;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteSessionStateItemCollection"/> class.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
         public IgniteSessionStateItemCollection(KeyValueDirtyTrackedCollection collection)
         {
             Debug.Assert(collection != null);
@@ -40,68 +46,79 @@ namespace Apache.Ignite.AspNet.Impl
             _collection = collection;
         }
 
+        /** <inheritdoc /> */
         public IEnumerator GetEnumerator()
         {
             return _collection.GetEnumerator();
         }
 
+        /** <inheritdoc /> */
         public void CopyTo(Array array, int index)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public int Count
         {
             get { return _collection.Count; }
         }
 
+        /** <inheritdoc /> */
         public object SyncRoot
         {
             get { return _collection; }
         }
 
+        /** <inheritdoc /> */
         public bool IsSynchronized
         {
             get { return false; }
         }
 
+        /** <inheritdoc /> */
         public void Remove(string name)
         {
             _collection.Remove(name);
         }
 
+        /** <inheritdoc /> */
         public void RemoveAt(int index)
         {
             _collection.RemoveAt(index);
         }
 
+        /** <inheritdoc /> */
         public void Clear()
         {
             _collection.Clear();
         }
 
+        /** <inheritdoc /> */
         object ISessionStateItemCollection.this[string name]
         {
             get { return _collection[name]; }
             set { _collection[name] = value; }
         }
 
+        /** <inheritdoc /> */
         object ISessionStateItemCollection.this[int index]
         {
             get { return _collection[index]; }
             set { _collection[index] = value; }
         }
 
+        /** <inheritdoc /> */
         public NameObjectCollectionBase.KeysCollection Keys
         {
             get
             {
-                // TODO: Convert somehow? 
-                //return _collection.Keys;
-                return null;
+                // KeysCollection ctor is internal, not possible to return it.
+                throw new NotSupportedException("Use GetEnumerator instead to get all entries.");
             }
         }
 
+        /** <inheritdoc /> */
         public bool Dirty
         {
             get { return _collection.IsDirty; }
