@@ -30,8 +30,9 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// </summary>
     public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
     {
-        // TODO: Keep deserialized while not needed.
-        // TODO: Dedicated unit test
+        // TODO: Keep serialized while not needed.
+        // TODO: Get dirty items.
+        // TODO: Dedicated unit test.
         private readonly Dictionary<string, int> _dict = new Dictionary<string, int>();
         private readonly List<Entry> _list = new List<Entry>();
 
