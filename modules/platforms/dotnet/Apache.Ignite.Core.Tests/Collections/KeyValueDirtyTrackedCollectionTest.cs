@@ -199,6 +199,7 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(44, col["4"]);
 
             // Remove all.
+            col0 = getCol();
             col0.Clear();
 
             col = getCol();
@@ -216,6 +217,9 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(2, col.Count);
             Assert.AreEqual(-1, col0[-1]);
             Assert.AreEqual(-2, col0[-2]);
+
+            // Remove initial key, then add it back, then remove again.
+            // TODO
         }
     }
 }
