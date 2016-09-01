@@ -192,6 +192,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             foreach (var entry in _list)
             {
+                // TODO: WriteString. Why does not this fail in tests??
                 raw.WriteObject(entry.Key);
                 raw.WriteObject(entry.Value);
             }
