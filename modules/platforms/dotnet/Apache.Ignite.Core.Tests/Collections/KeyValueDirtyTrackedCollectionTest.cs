@@ -97,20 +97,31 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(col.GetKeys().Select(x => col[x]), col0.GetKeys().Select(x => col0[x]));
 
             // Remove.
+            col["2"] = 2;
+            col["3"] = 3;
+
             col.Remove("invalid");
-            Assert.AreEqual(2, col.Count);
+            Assert.AreEqual(4, col.Count);
 
             col.Remove("1");
-            Assert.AreEqual(new[] {"key"}, col.GetKeys());
+
+            Assert.AreEqual(new[] { "key", "2", "3" }, col.GetKeys());
+            Assert.AreEqual(null, col["1"]);
+
+            Assert.AreEqual("val2", col["key"]);
+            Assert.AreEqual("val2", col[0]);
+
+            Assert.AreEqual(2, col["2"]);
+            Assert.AreEqual(2, col[1]);
+
+            Assert.AreEqual(3, col["3"]);
+            Assert.AreEqual(3, col[2]);
 
             // RemoveAt.
             col0.RemoveAt(0);
             Assert.AreEqual(new[] { "1" }, col0.GetKeys());
 
             // Clear.
-            col["2"] = 2;
-            col["3"] = 3;
-
             Assert.AreEqual(3, col.Count);
 
             col.Clear();
