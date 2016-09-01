@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
     /// </summary>
-    public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
+    public class KeyValueDirtyTrackedCollection : IBinaryWriteAware, IEnumerable
     {
         // TODO: Keep serialized while not needed.
         // TODO: Get dirty items.
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public KeyValueDirtyTrackedCollection()
         {
-            _dirtyAll = true;
+            // No-op.
         }
 
         /// <summary>
