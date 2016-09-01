@@ -103,6 +103,15 @@ namespace Apache.Ignite.Core.Tests.Collections
             // RemoveAt.
             col0.RemoveAt(0);
             Assert.AreEqual(new[] { "1" }, col0.GetKeys());
+
+            // Clear.
+            col["2"] = 2;
+            col["3"] = 3;
+
+            Assert.AreEqual(3, col.Count);
+
+            col.Clear();
+            Assert.AreEqual(0, col.Count);
         }
     }
 }
