@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             if (_isDiff)
             {
-                // Read removed keys/
+                // Read removed keys.
                 count = reader.ReadInt();
 
                 if (count > 0)
