@@ -284,8 +284,8 @@ namespace Apache.Ignite.AspNet
             var data = ((IgniteSessionStateStoreData) item).Data;
 
             data.LockNodeId = null;  // Unlock
+            data.Items.WriteChangesOnly = true;  // Write diff.
 
-            // TODO: Send only delta!
             cache[GetKey(id)] = data;
         }
 
