@@ -281,6 +281,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             Debug.Assert(key == entry.Key);
 
             _list.RemoveAt(index);
+            _dict.Remove(key);
 
             // Update all indexes.
             for (var i = 0; i < _list.Count; i++)
