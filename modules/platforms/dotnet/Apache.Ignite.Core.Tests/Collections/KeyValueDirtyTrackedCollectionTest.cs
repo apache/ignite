@@ -175,8 +175,9 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(44, col["4"]);
 
             // Apply serialized changes with WriteChangesOnly.
-            col = getCol();
             col0.WriteChangesOnly = true;
+
+            col = getCol();
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
             Assert.AreEqual(3, col.Count);
@@ -186,17 +187,35 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(44, col["4"]);
 
             // Remove key then add back.
-            col = getCol();
-
             col0.Remove("2");
             col0.Remove("3");
             col0["2"] = 222;
 
+            col = getCol();
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
             Assert.AreEqual(2, col.Count);
             Assert.AreEqual(222, col["2"]);
             Assert.AreEqual(44, col["4"]);
+
+            // Remove all.
+            col0.Clear();
+
+            col = getCol();
+            col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
+
+            Assert.AreEqual(0, col.Count);
+
+            // Add to empty.
+            col0["-1"] = -1;
+            col0["-2"] = -2;
+
+            col = getCol();
+            col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
+
+            Assert.AreEqual(2, col.Count);
+            Assert.AreEqual(-1, col0[-1]);
+            Assert.AreEqual(-2, col0[-2]);
         }
     }
 }
