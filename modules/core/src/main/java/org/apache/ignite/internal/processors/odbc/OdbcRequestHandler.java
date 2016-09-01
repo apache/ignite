@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -189,6 +190,8 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             qryCursors.remove(qryId);
 
+            U.error(log, "Failed to execute SQL query: " + reqId, e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -217,6 +220,8 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             qryCursors.remove(req.queryId());
 
+            U.error(log, "Failed to close SQL query: " + req.queryId(), e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -244,6 +249,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to fetch SQL query: " + req.queryId(), e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -298,6 +305,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to get columns metadata.", e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -340,6 +349,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to get tables metadata.", e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
