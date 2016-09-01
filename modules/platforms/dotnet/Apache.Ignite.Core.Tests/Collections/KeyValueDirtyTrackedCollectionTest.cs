@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Collections
 {
+    using System;
     using Apache.Ignite.Core.Impl.Collections;
     using NUnit.Framework;
 
@@ -26,19 +27,32 @@ namespace Apache.Ignite.Core.Tests.Collections
     public class KeyValueDirtyTrackedCollectionTest
     {
         [Test]
-        public void Test()
+        public void TestEmpty()
         {
-            var col = new KeyValueDirtyTrackedCollection();
-            Assert.AreEqual(0, col.Count);
-            Assert.IsFalse(col.IsDirty);
-            Assert.IsEmpty(col);
+            var col1 = new KeyValueDirtyTrackedCollection();
+            var col2 = TestUtils.SerializeDeserialize(col1);
+
+            foreach (var col in new[] {col1, col2})
+            {
+                Assert.AreEqual(0, col.Count);
+                Assert.IsFalse(col.IsDirty);
+                Assert.IsEmpty(col);
+
+                Assert.IsNull(col["key"]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => Assert.AreEqual(0, col[1]));
+                Assert.Throws<ArgumentOutOfRangeException>(() => col.RemoveAt(0));
+
+                col.Clear();
+                col.Remove("test");
+
+                Assert.AreEqual(0, col.Count);
+            }
+
         }
 
         [Test]
         public void TestSerialization()
         {
         }
-
-
     }
 }
