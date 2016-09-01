@@ -216,8 +216,8 @@ namespace Apache.Ignite.Core.Tests.Collections
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
             Assert.AreEqual(2, col.Count);
-            Assert.AreEqual(-1, col0[-1]);
-            Assert.AreEqual(-2, col0[-2]);
+            Assert.AreEqual(-1, col0["-1"]);
+            Assert.AreEqual(-2, col0["-2"]);
 
             // Remove initial key, then add it back, then remove again.
             // TODO
