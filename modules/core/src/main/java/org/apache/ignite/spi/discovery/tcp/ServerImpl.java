@@ -200,6 +200,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Not fully read message in GridNioSession. */
     private static final int INCOMPLETE_MESSAGE_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Not fully read message length. */
+    private static final int MESSAGE_LEN_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
      *  <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
      */
@@ -5723,6 +5726,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             return pinger;
         }
+
+        /**
+         * @return Current worker state.
+         */
+        public WorkerState state() {
+            return state;
+        }
     }
 
     /**
@@ -6067,7 +6077,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msgBuf == null) {
                 // first packet
-                final int msgLen = getMessageLength(buf);
+                final int msgLen = getMessageLength(buf, ses);
+
+                if (msgLen == -1)
+                    return;
 
                 msgBuf = ByteBuffer.allocate(msgLen);
             }
@@ -6095,16 +6108,39 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param buf Input buffer.
-         * @return Message length.
+         * @return Message length or -1 if not all bytes of length were read.
          */
-        private int getMessageLength(final ByteBuffer buf) {
-            final ByteOrder curOrder = buf.order();
+        private int getMessageLength(final ByteBuffer buf, final GridNioSession ses) {
+            ByteBuffer lenBuf = ses.meta(MESSAGE_LEN_META);
 
-            buf.order(ByteOrder.BIG_ENDIAN);
+            int len = -1;
 
-            final int len = buf.getInt();
+            if (lenBuf != null || buf.remaining() < 4) {
+                if (lenBuf == null) {
+                    lenBuf = ByteBuffer.allocate(4);
 
-            buf.order(curOrder);
+                    ses.addMeta(MESSAGE_LEN_META, lenBuf);
+                }
+
+                buf.get(lenBuf.array(), lenBuf.position(), Math.min(buf.remaining(), lenBuf.remaining()));
+
+                if (lenBuf.remaining() == 0) {
+                    lenBuf.order(ByteOrder.BIG_ENDIAN);
+
+                    len = lenBuf.getInt();
+
+                    ses.removeMeta(MESSAGE_LEN_META);
+                }
+            }
+            else {
+                final ByteOrder curOrder = buf.order();
+
+                buf.order(ByteOrder.BIG_ENDIAN);
+
+                len = buf.getInt();
+
+                buf.order(curOrder);
+            }
 
             return len;
         }
@@ -6318,11 +6354,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 return;
                             }
                             else if (old instanceof ClientNioMessageWorker) {
-                                final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker) old;
+                                final ClientNioMessageWorker nioOldWrk = (ClientNioMessageWorker) old;
 
-                                nioWrk.nonblockingStop();
+                                if (nioOldWrk.state() == WorkerState.STOPPED)
+                                    clientMsgWorkers.remove(nodeId, nioOldWrk);
+                                else {
+                                    // check if old worker is stopping
+                                    for (int i = 0; i < 5; i++) {
+                                        U.sleep(100);
 
-                                clientMsgWorkers.remove(nodeId);
+                                        if (nioOldWrk.state() == WorkerState.STOPPED)
+                                            break;
+                                    }
+
+                                    old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
+
+                                    if (old == null)
+                                        break;
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Already have client message worker, closing connection " +
+                                            "[locNodeId=" + locNodeId +
+                                            ", rmtNodeId=" + nodeId +
+                                            ", workerSock=" + nioOldWrk.sock +
+                                            ", sock=" + sock + ']');
+
+                                    return;
+                                }
                             }
                         }
 
