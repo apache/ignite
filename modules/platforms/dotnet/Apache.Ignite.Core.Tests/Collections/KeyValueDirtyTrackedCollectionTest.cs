@@ -220,7 +220,19 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(-2, col0["-2"]);
 
             // Remove initial key, then add it back, then remove again.
-            // TODO
+            col0 = TestUtils.SerializeDeserialize(getCol());
+            col0.WriteChangesOnly = true;
+
+            col0.Remove("1");
+            col0.Remove("2");
+            col0["1"] = "111";
+            col0.Remove("1");
+
+            col = getCol();
+            col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
+
+            Assert.AreEqual(1, col.Count);
+            Assert.AreEqual("3", col[3]);
         }
     }
 }
