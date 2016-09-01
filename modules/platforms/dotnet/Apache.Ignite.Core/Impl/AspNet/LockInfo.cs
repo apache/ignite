@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
     /// <summary>
     /// Lock info.
     /// </summary>
-    public struct LockInfo : IBinaryWriteAware
+    public struct LockInfo : IBinaryWriteAware, IEquatable<LockInfo>
     {
         /** */
         private readonly DateTime _lockTime;
@@ -101,6 +101,66 @@ namespace Apache.Ignite.Core.Impl.AspNet
             raw.WriteLong(_lockId);
             raw.WriteGuid(_lockNodeId);
             raw.WriteTimestamp(_lockTime);
+        }
+
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns>
+        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// </returns>
+        public bool Equals(LockInfo other)
+        {
+            return _lockTime.Equals(other._lockTime) && _lockId == other._lockId 
+                && _lockNodeId.Equals(other._lockNodeId);
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        /// <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is LockInfo && Equals((LockInfo) obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms 
+        /// and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = _lockTime.GetHashCode();
+                hashCode = (hashCode*397) ^ _lockId.GetHashCode();
+                hashCode = (hashCode*397) ^ _lockNodeId.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        /// <summary>
+        /// Implements the operator ==.
+        /// </summary>
+        public static bool operator ==(LockInfo left, LockInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <summary>
+        /// Implements the operator !=.
+        /// </summary>
+        public static bool operator !=(LockInfo left, LockInfo right)
+        {
+            return !left.Equals(right);
         }
     }
 }
