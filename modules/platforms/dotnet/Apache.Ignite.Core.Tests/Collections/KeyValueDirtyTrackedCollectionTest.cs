@@ -26,6 +26,9 @@ namespace Apache.Ignite.Core.Tests.Collections
     /// </summary>
     public class KeyValueDirtyTrackedCollectionTest
     {
+        /// <summary>
+        /// Tests the empty collection.
+        /// </summary>
         [Test]
         public void TestEmpty()
         {
@@ -39,7 +42,8 @@ namespace Apache.Ignite.Core.Tests.Collections
                 Assert.IsEmpty(col);
 
                 Assert.IsNull(col["key"]);
-                Assert.Throws<ArgumentOutOfRangeException>(() => Assert.AreEqual(0, col[1]));
+                Assert.Throws<ArgumentOutOfRangeException>(() => col[0] = "x");
+                Assert.Throws<ArgumentOutOfRangeException>(() => Assert.AreEqual(0, col[0]));
                 Assert.Throws<ArgumentOutOfRangeException>(() => col.RemoveAt(0));
 
                 col.Clear();
@@ -47,12 +51,18 @@ namespace Apache.Ignite.Core.Tests.Collections
 
                 Assert.AreEqual(0, col.Count);
             }
-
         }
 
+        /// <summary>
+        /// Tests the modification.
+        /// </summary>
         [Test]
-        public void TestSerialization()
+        public void TestModification()
         {
+            var col = new KeyValueDirtyTrackedCollection();
+
+            col["key"] = "val";
+            col["1"] = "1";
         }
     }
 }

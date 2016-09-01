@@ -72,18 +72,11 @@ namespace Apache.Ignite.Core.Impl.Collections
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through a collection.
+        /// Gets the keys.
         /// </summary>
-        /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through 
-        /// the collection.
-        /// </returns>
-        public IEnumerator GetEnumerator()
+        public IEnumerable<string> GetKeys()
         {
-            foreach (var entry in _list)
-                SetDirtyOnRead(entry);
-
-            return _dict.Select(x => new DictionaryEntry(x.Key, _list[x.Value])).GetEnumerator();
+            return _list.Select(x => x.Key);
         }
 
         /// <summary>

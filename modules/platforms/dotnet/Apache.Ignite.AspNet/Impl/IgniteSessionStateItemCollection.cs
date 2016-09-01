@@ -49,7 +49,8 @@ namespace Apache.Ignite.AspNet.Impl
         /** <inheritdoc /> */
         public IEnumerator GetEnumerator()
         {
-            return _collection.GetEnumerator();
+            // This should return only keys.
+            return _collection.GetKeys().GetEnumerator();
         }
 
         /** <inheritdoc /> */
