@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Impl.Collections
     public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
     {
         /** */
-        private readonly Dictionary<string, int> _dict = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> _dict;
 
         /** */
-        private readonly List<Entry> _list = new List<Entry>();
+        private readonly List<Entry> _list;
 
         /** Indicates where this is a new collection, not a deserialized old one. */
         private readonly bool _isNew;
@@ -54,7 +54,12 @@ namespace Apache.Ignite.Core.Impl.Collections
         {
             Debug.Assert(binaryReader != null);
 
+            var isFullMode = binaryReader.ReadBoolean();
+
             var count = binaryReader.ReadInt();
+
+            _dict = new Dictionary<string, int>(count);
+            _list = new List<Entry>(count);
 
             for (var i = 0; i < count; i++)
             {
@@ -70,6 +75,17 @@ namespace Apache.Ignite.Core.Impl.Collections
                 _list.Add(entry);
             }
 
+            if (!isFullMode)
+            {
+                // Read removed keys
+                count = binaryReader.ReadInt();
+
+                if (count > 0)
+                {
+                    _removedKeys = new List<string>(count);
+                }
+            }
+
             _isNew = false;
         }
 
@@ -78,6 +94,8 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public KeyValueDirtyTrackedCollection()
         {
+            _dict = new Dictionary<string, int>();
+            _list = new List<Entry>();
             _isNew = true;
         }
 
