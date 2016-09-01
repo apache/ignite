@@ -256,9 +256,15 @@ namespace Apache.Ignite.Core.Impl.Collections
                 // Write removed keys.
                 if (_removedKeys != null)
                 {
-                    wr.WriteInt(_removedKeys.Count);
+                    // Filter out existing keys.
+                    var removed = new HashSet<string>(_removedKeys);
 
-                    foreach (var removedKey in _removedKeys)
+                    foreach (var entry in _list)
+                        removed.Remove(entry.Key);
+
+                    wr.WriteInt(removed.Count);
+
+                    foreach (var removedKey in removed)
                         wr.WriteString(removedKey);
                 }
                 else
