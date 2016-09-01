@@ -89,4 +89,9 @@ public interface GridQueryTypeDescriptor {
      * @return Affinity key.
      */
     public String affinityKey();
+
+    /**
+     * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
+     */
+    public int typeId();
 }

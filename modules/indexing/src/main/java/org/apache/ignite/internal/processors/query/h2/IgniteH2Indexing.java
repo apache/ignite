@@ -75,8 +75,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -511,37 +509,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Removes entry with specified key from any tables (if exist).
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param tblToUpdate Table to update.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void removeKey(@Nullable String spaceName, KeyCacheObject key, int partId, GridCacheVersion ver, TableDescriptor tblToUpdate)
-        throws IgniteCheckedException {
-        try {
-            Collection<TableDescriptor> tbls = tables(schema(spaceName));
-
-            Class<?> keyCls = getClass(objectContext(spaceName), key);
-
-            for (TableDescriptor tbl : tbls) {
-                if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, partId, null, ver, 0, true, 0)) {
-                        if (tbl.luceneIdx != null)
-                            tbl.luceneIdx.remove(key);
-
-                        return;
-                    }
-                }
-            }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to remove key: " + key, e);
-        }
-    }
-
-    /**
      * Binds object to prepared statement.
      *
      * @param stmt SQL statement.
@@ -579,7 +546,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean store(@Nullable String spaceName,
+    @Override public void store(@Nullable String spaceName,
         GridQueryTypeDescriptor type,
         KeyCacheObject k,
         int partId,
@@ -589,10 +556,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long link) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
-        removeKey(spaceName, k, partId, ver, tbl);
-
         if (tbl == null)
-            return false; // Type was rejected.
+            return; // Type was rejected.
 
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
@@ -601,8 +566,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
-
-        return true;
     }
 
     /**
@@ -650,80 +613,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val,
+    @Override public void remove(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
         GridCacheVersion ver) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
-        CacheObjectContext coctx = objectContext(spaceName);
+        TableDescriptor tbl = tableDescriptor(spaceName, type);
 
-        Class<?> keyCls = getClass(coctx, key);
-        Class<?> valCls = val == null ? null : getClass(coctx, val);
+        if (tbl == null)
+            return;
 
-        boolean foundTbl = false;
-
-        for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)
-                && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
-                foundTbl = true;
-
-                if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
-                    if (tbl.luceneIdx != null)
-                        tbl.luceneIdx.remove(key);
-
-                    return true;
-                }
-            }
+        if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
+            if (tbl.luceneIdx != null)
+                tbl.luceneIdx.remove(key);
         }
-
-        return foundTbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteBiTuple<CacheObject, GridCacheVersion> read(String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Reading stored value from cache query index [locId=" + nodeId + ", key=" + key + ']');
-
-        GridCacheContext cctx = cacheContext(spaceName);
-
-        CacheObjectContext coctx = objectContext(spaceName);
-
-        Class<?> keyCls = getClass(coctx, key);
-
-        IgniteBiTuple<CacheObject, GridCacheVersion> res = null;
-
-        boolean foundTbl = false;
-
-        for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                foundTbl = true;
-
-                res = tbl.tbl.read(cctx, key, partId);
-
-                if (res != null)
-                    break;
-            }
-        }
-
-        if (foundTbl && res == null)
-            return F.t(null, null);
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public BPlusTree<?, ? extends CacheDataRow> pkIndex(String spaceName) {
-        Schema schema = schemas.get(schema(spaceName));
-
-        if (schema == null)
-            return null;
-
-        for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.pkTreeIdx != null)
-                return tbl.pkTreeIdx.tree();
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -2392,9 +2299,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private GridLuceneIndex luceneIdx;
 
-        /** */
-        private H2TreeIndex pkTreeIdx;
-
         /**
          * @param schema Schema.
          * @param type Type descriptor.
@@ -2535,6 +2439,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
+         * @param cacheId Cache ID.
          * @param name Index name,
          * @param tbl Table.
          * @param pk Primary key flag.
@@ -2580,20 +2485,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (log.isInfoEnabled())
                 log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
-            H2TreeIndex idx = new H2TreeIndex(
+            return new H2TreeIndex(
                 cctx,
                 tbl,
                 name,
                 pk,
                 cols);
-
-            if (pk) {
-                assert pkTreeIdx == null : pkTreeIdx;
-
-                pkTreeIdx = idx;
-            }
-
-            return idx;
         }
 
         /**
