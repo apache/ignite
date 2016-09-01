@@ -209,11 +209,13 @@ namespace Apache.Ignite.AspNet
 
             actions = SessionStateActions.None;  // Our items never need initialization.
             lockAge = TimeSpan.Zero;
-            lockId = Interlocked.Increment(ref _lockId);
+
+            var lockId0 = Interlocked.Increment(ref _lockId);
+            lockId = lockId0;
 
             var key = GetKey(id);
 
-            var lockResult = Cache.Invoke(key, new LockEntryProcessor(), GetLockInfo(lockId));
+            var lockResult = Cache.Invoke(key, new LockEntryProcessor(), GetLockInfo(lockId0));
 
             if (lockResult == null)
             {
@@ -256,7 +258,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("ReleaseItemExclusive", id, context);
 
-            Cache.Invoke(GetKey(id), new ReleaseLockEntryProcessor(), GetLockInfo(lockId));
+            Cache.Invoke(GetKey(id), new ReleaseLockEntryProcessor(), GetLockInfo((long) lockId));
         }
 
         /// <summary>
@@ -388,9 +390,9 @@ namespace Apache.Ignite.AspNet
         /// <summary>
         /// Gets the lock info.
         /// </summary>
-        private object[] GetLockInfo(object lockId)
+        private LockInfo GetLockInfo(long lockId)
         {
-            return new[] { Cache.Ignite.GetCluster().GetLocalNode().Id, lockId, DateTime.UtcNow };
+            return new LockInfo(lockId, Cache.Ignite.GetCluster().GetLocalNode().Id, DateTime.UtcNow);
         }
 
         /// <summary>
@@ -422,10 +424,10 @@ namespace Apache.Ignite.AspNet
         // TODO: Implement this in Java.
         [Serializable]
         private class LockEntryProcessor :
-            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
+            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, LockInfo, object>
         {
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
+            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, LockInfo arg)
             {
                 // Arg contains lock info: node id + thread id
                 // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
@@ -433,11 +435,6 @@ namespace Apache.Ignite.AspNet
 
                 if (!entry.Exists)
                     return null;
-
-                // TODO: Dedicated type. 
-                var lockNodeId = (Guid) arg[0];
-                var lockId = (long) arg[1];
-                var lockTime = (DateTime) arg[2];  // pas time from client to avoid doing this in Java.
 
                 var data = entry.Value;
 
@@ -452,9 +449,9 @@ namespace Apache.Ignite.AspNet
                 }
 
                 // Not locked: lock and return result
-                data.LockNodeId = lockNodeId;
-                data.LockId = lockId;
-                data.LockTime = lockTime;
+                data.LockNodeId = arg.LockNodeId;
+                data.LockId = arg.LockId;
+                data.LockTime = arg.LockTime;
 
                 entry.Value = data;
 
@@ -464,27 +461,24 @@ namespace Apache.Ignite.AspNet
 
         [Serializable]
         private class ReleaseLockEntryProcessor :
-            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, object[], object>
+            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, LockInfo, object>
         {
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, object[] arg)
+            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, LockInfo arg)
             {
                 var val = entry.Value;
 
                 if (val != null)
                 {
-                    var lockNodeId = (Guid) arg[0];
-                    var lockId = (long) arg[1];
-
                     if (val.LockNodeId == null)
                         throw new InvalidOperationException("LockNodeId is null.");
 
-                    if (val.LockNodeId.Value != lockNodeId)
+                    if (val.LockNodeId.Value != arg.LockNodeId)
                         throw new InvalidOperationException("Invalid lock node id TODO");
 
-                    if (val.LockId != lockId)
+                    if (val.LockId != arg.LockId)
                         throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, 
-                            "Invalid lock id: expected {0} but was {1}", lockId, val.LockId));
+                            "Invalid lock id: expected {0} but was {1}", arg.LockId, val.LockId));
 
                     val.LockNodeId = null;
 
