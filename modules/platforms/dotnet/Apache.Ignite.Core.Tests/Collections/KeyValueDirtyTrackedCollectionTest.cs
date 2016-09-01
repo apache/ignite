@@ -168,8 +168,8 @@ namespace Apache.Ignite.Core.Tests.Collections
             col = getCol();
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
-            Assert.AreEqual(4, col.Count);
-            Assert.AreEqual(1, col["1"]);
+            Assert.AreEqual(3, col.Count);
+            Assert.AreEqual(null, col["1"]);
             Assert.AreEqual(22, col["2"]);
             Assert.AreEqual(3, col["3"]);
             Assert.AreEqual(44, col["4"]);
@@ -199,7 +199,8 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(44, col["4"]);
 
             // Remove all.
-            col0 = getCol();
+            col0 = TestUtils.SerializeDeserialize(getCol());
+            col0.WriteChangesOnly = true;
             col0.Clear();
 
             col = getCol();

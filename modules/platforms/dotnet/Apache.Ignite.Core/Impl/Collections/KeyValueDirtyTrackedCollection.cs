@@ -337,6 +337,11 @@ namespace Apache.Ignite.Core.Impl.Collections
                 foreach (var key in removed)
                     Remove(key);
             }
+            else if (!changes._isDiff)
+            {
+                // Not a diff: replace all.
+                Clear();
+            }
 
             foreach (var entry in changes._list)
                 this[entry.Key] = entry.Value;
