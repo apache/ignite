@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +34,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -47,10 +47,13 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
@@ -64,7 +67,9 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -80,10 +85,16 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
@@ -127,6 +138,9 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
+
+    /** Service name. */
+    private static final String SERVICE_NAME1 = "testService1";
 
     /** */
     public static final CacheEntryProcessor<String, Integer, String> ERR_PROCESSOR =
@@ -206,6 +220,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
+        int[] evtTypes = cfg.getIncludeEventTypes();
+
+        if (evtTypes == null || evtTypes.length == 0)
+            cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_READ);
+        else {
+            for (int evtType : evtTypes) {
+                if (evtType == EventType.EVT_CACHE_OBJECT_READ)
+                    return cfg;
+            }
+
+            int[] updatedEvtTypes = Arrays.copyOf(evtTypes, evtTypes.length + 1);
+
+            updatedEvtTypes[updatedEvtTypes.length - 1] = EventType.EVT_CACHE_OBJECT_READ;
+        }
+
         return cfg;
     }
 
@@ -263,6 +292,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
 
             cacheCfgMap = null;
+        }
+
+        // We won't deploy service unless non-client node is configured.
+        for (int i = 0; i < gridCount(); i++) {
+            Boolean clientMode = grid(i).configuration().isClientMode();
+
+            if (clientMode)
+                continue;
+
+            grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+
+            break;
         }
 
         for (int i = 0; i < gridCount(); i++)
@@ -623,9 +664,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key1", 1);
         cache.put("key2", 2);
 
-        CacheEntry<String, Integer> key1e =  cache.getEntry("key1");
-        CacheEntry<String, Integer> key2e =  cache.getEntry("key2");
-        CacheEntry<String, Integer> wrongKeye =  cache.getEntry("wrongKey");
+        CacheEntry<String, Integer> key1e = cache.getEntry("key1");
+        CacheEntry<String, Integer> key2e = cache.getEntry("key2");
+        CacheEntry<String, Integer> wrongKeye = cache.getEntry("wrongKey");
 
         assert key1e.getValue() == 1;
         assert key1e.getKey().equals("key1");
@@ -785,7 +826,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         boolean b1 = false;
         boolean b2 = false;
 
-        for (CacheEntry<String, Integer> e: c1){
+        for (CacheEntry<String, Integer> e : c1) {
             if (e.getKey().equals("key1") && e.getValue().equals(1))
                 b1 = true;
 
@@ -804,7 +845,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         b1 = false;
         b2 = false;
 
-        for (CacheEntry<String, Integer> e: c2){
+        for (CacheEntry<String, Integer> e : c2) {
             if (e.getKey().equals("key1") && e.getValue().equals(1))
                 b1 = true;
 
@@ -1485,8 +1526,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkTransformReturnValue(boolean put,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation)
-        throws Exception
-    {
+        throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         if (!put)
@@ -1794,7 +1834,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put(key, 1);
 
-            assertEquals(1, (int) cache.get(key));
+            assertEquals(1, (int)cache.get(key));
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1812,7 +1852,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             }, NullPointerException.class, null);
 
-            assertEquals(1, (int) cache.get(key));
+            assertEquals(1, (int)cache.get(key));
 
             cache.put(key, 2);
 
@@ -1843,7 +1883,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(cache.get("k1"));
             assertNull(cache.get("k2"));
 
-            assertEquals(2, (int) cache.get(key));
+            assertEquals(2, (int)cache.get(key));
 
             cache.put(key, 3);
 
@@ -1894,7 +1934,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.putAll(m);
 
-            assertEquals(3, (int) cache.get("key3"));
+            assertEquals(3, (int)cache.get("key3"));
             assertEquals(4, (int)cache.get("key4"));
         }
 
@@ -2219,7 +2259,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @param  inTx In tx flag.
+     * @param inTx In tx flag.
      * @throws Exception If failed.
      */
     private void checkPutxIfAbsentAsync(boolean inTx) throws Exception {
@@ -2861,7 +2901,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @return Count of entries to be removed in removeAll() test.
      */
-    protected long hugeRemoveAllEntryCount(){
+    protected long hugeRemoveAllEntryCount() {
         return 1000L;
     }
 
@@ -3631,7 +3671,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -3660,7 +3700,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -3689,7 +3729,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -3901,7 +3941,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.localPromote(Collections.singleton(k2));
 
-            assertEquals((Integer) 2, cache.localPeek(k2, ONHEAP_PEEK_MODES));
+            assertEquals((Integer)2, cache.localPeek(k2, ONHEAP_PEEK_MODES));
 
             cnt++;
         }
@@ -5071,7 +5111,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param keys Keys list.
      * @param txConcurrency Concurrency mode.
      * @param txIsolation Isolation mode.
-     *
      * @throws Exception If failed.
      */
     private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
@@ -5080,8 +5119,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         List<String> keys,
         TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation)
-        throws  Exception
-    {
+        throws Exception {
         info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
 
         cache.removeAll(data.keySet());
@@ -5093,10 +5131,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         // Several put check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            for (String key: keys)
+            for (String key : keys)
                 cacheSkipStore.put(key, val);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertEquals(val, cacheSkipStore.get(key));
                 assertEquals(val, cache.get(key));
                 assertFalse(storeStgy.isInStore(key));
@@ -5105,7 +5143,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
             assertFalse(storeStgy.isInStore(key));
@@ -5120,7 +5158,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             val = data.get(key);
 
             assertEquals(val, cacheSkipStore.get(key));
@@ -5136,7 +5174,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
             assertTrue(storeStgy.isInStore(key));
@@ -5150,7 +5188,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             cache.putAll(data);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
                 assertFalse(storeStgy.isInStore(key));
@@ -5158,7 +5196,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.removeAll(data.keySet());
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));
                 assertNull(cache.get(key));
                 assertFalse(storeStgy.isInStore(key));
@@ -5185,7 +5223,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.putAll(subMap);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
                 assertFalse(storeStgy.isInStore(key));
@@ -5212,7 +5250,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.removeAll(data.keySet());
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
             assertFalse(storeStgy.isInStore(key));
@@ -5307,7 +5345,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param cache Cache instance.
      * @param cacheSkipStore Cache skip store projection.
-     *
      * @throws Exception If failed.
      */
     private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
@@ -5476,6 +5513,155 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testTransformResourceInjection() throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+        Ignite ignite = ignite(0);
+
+        doTransformResourceInjection(ignite, cache);
+        doTransformResourceInjection(ignite, cache.withAsync());
+
+        if (txEnabled()) {
+            doTransformResourceInjectionInTx(ignite, cache);
+            doTransformResourceInjectionInTx(ignite, cache.withAsync());
+        }
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                IgniteTransactions txs = ignite.transactions();
+
+                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                    doTransformResourceInjection(ignite, cache);
+
+                    tx.commit();
+                }
+            }
+        }
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+        final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
+            ResourceType.CACHE_NAME,
+            ResourceType.LOGGER,
+            ResourceType.SERVICE);
+
+        final CacheEventListener lsnr = new CacheEventListener();
+
+        IgniteEvents evts = ignite.events(ignite.cluster());
+
+        UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
+
+        try {
+            checkResourceInjectionOnInvoke(cache, required);
+
+            checkResourceInjectionOnInvokeAll(cache, required);
+
+            checkResourceInjectionOnInvokeAllMap(cache, required);
+        }
+        finally {
+            evts.stopRemoteListen(opId);
+        }
+    }
+
+    /**
+     * Tests invokeAll method for map of pairs (key, entryProcessor).
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
+     */
+    private void checkResourceInjectionOnInvokeAllMap(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+        Map<String, EntryProcessorResult<Integer>> results;
+
+        Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
+
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+        map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
+
+        results = cache.invokeAll(map);
+
+        if (cache.isAsync())
+            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+
+        assertEquals(map.size(), results.size());
+
+        for (EntryProcessorResult<Integer> res : results.values()) {
+            Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+
+            if (!notInjected.isEmpty())
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
+        }
+    }
+
+    /**
+     * Tests invokeAll method for set of keys.
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
+     */
+    private void checkResourceInjectionOnInvokeAll(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+        Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()));
+
+        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys,
+            new ResourceInjectionEntryProcessor());
+
+        if (cache.isAsync())
+            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+
+        assertEquals(keys.size(), results.size());
+
+        for (EntryProcessorResult<Integer> res : results.values()) {
+            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+
+            if (!notInjected1.isEmpty())
+                fail("Can't inject resource(s): " + Arrays.toString(notInjected1.toArray()));
+        }
+    }
+
+    /**
+     * Tests invoke for single key.
+     *
+     * @param cache Cache.
+     * @param required Expected injected resources.
+     */
+    private void checkResourceInjectionOnInvoke(IgniteCache<String, Integer> cache,
+        Collection<ResourceType> required) {
+
+        String key = UUID.randomUUID().toString();
+
+        Integer flags = cache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+
+        if (cache.isAsync())
+            flags = cache.<Integer>future().get();
+
+        assertTrue("Processor result is null", flags != null);
+
+        Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
+
+        if (!notInjected.isEmpty())
+            fail("Can't inject resource(s): " + Arrays.toString(notInjected.toArray()));
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
@@ -5490,7 +5676,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Integer process(MutableEntry<String, Integer> entry,
+            Object... arguments) throws EntryProcessorException {
             Integer val = entry.getValue();
 
             entry.setValue(newVal);
@@ -5542,6 +5729,86 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             e.setValue(old == null ? 1 : old + 1);
 
             return String.valueOf(old);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class ResourceInjectionEntryProcessor extends ResourceInjectionEntryProcessorBase<String, Integer> {
+        /** */
+        protected transient Ignite ignite;
+
+        /** */
+        protected transient String cacheName;
+
+        /** */
+        protected transient IgniteLogger log;
+
+        /** */
+        protected transient DummyService svc;
+
+        /**
+         * @param ignite Ignite.
+         */
+        @IgniteInstanceResource
+        public void setIgnite(Ignite ignite) {
+            assert ignite != null;
+
+            checkSet();
+
+            infoSet.set(ResourceType.IGNITE_INSTANCE, true);
+
+            this.ignite = ignite;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        @CacheNameResource
+        public void setCacheName(String cacheName) {
+            checkSet();
+
+            infoSet.set(ResourceType.CACHE_NAME, true);
+
+            this.cacheName = cacheName;
+        }
+
+        /**
+         * @param log Logger.
+         */
+        @LoggerResource
+        public void setLoggerResource(IgniteLogger log) {
+            assert log != null;
+
+            checkSet();
+
+            infoSet.set(ResourceType.LOGGER, true);
+
+            this.log = log;
+        }
+
+        /**
+         * @param svc Service.
+         */
+        @ServiceResource(serviceName = SERVICE_NAME1)
+        public void setDummyService(DummyService svc) {
+            assert svc != null;
+
+            checkSet();
+
+            infoSet.set(ResourceType.SERVICE, true);
+
+            this.svc = svc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+            Integer oldVal = e.getValue();
+
+            e.setValue(ThreadLocalRandom.current().nextInt() + (oldVal == null ? 0 : oldVal));
+
+            return super.process(e, args);
         }
     }
 
@@ -5905,6 +6172,66 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /**
+     * Dummy Service.
+     */
+    public interface DummyService {
+        /**
+         *
+         */
+        public void noop();
+    }
+
+    /**
+     * No-op test service.
+     */
+    public static class DummyServiceImpl implements DummyService, Service {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void noop() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            System.out.println("Cancelling service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            System.out.println("Initializing service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) {
+            System.out.println("Executing service: " + ctx.name());
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener implements IgniteBiPredicate<UUID, CacheEvent>, IgnitePredicate<CacheEvent> {
+        /** */
+        public final LinkedBlockingQueue<CacheEvent> evts = new LinkedBlockingQueue<>();
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(UUID uuid, CacheEvent evt) {
+            evts.add(evt);
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheEvent evt) {
+            evts.add(evt);
+
+            return true;
         }
     }
 }
