@@ -1599,4 +1599,16 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             // No-op.
         }
     }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testSecondarySize() throws Exception {
+        igfs.mkdirs(SUBDIR);
+
+        createFile(igfsSecondary, FILE, chunk);
+
+        assertEquals(chunk.length, igfs.size(FILE));
+    }
 }

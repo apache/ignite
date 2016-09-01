@@ -1256,6 +1256,11 @@ public final class IgfsImpl implements IgfsEx {
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
+                IgfsMode mode = resolveMode(path);
+
+                if (IgfsUtils.isDualMode(mode))
+                    return secondaryFs.info(path).length();
+
                 IgniteUuid nextId = meta.fileId(path);
 
                 if (nextId == null)
