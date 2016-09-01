@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Impl.Collections
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Binarizable key-value collection with dirty item tracking.
@@ -171,14 +173,65 @@ namespace Apache.Ignite.Core.Impl.Collections
         {
             var wr = (BinaryWriter) writer;
 
-            wr.WriteInt(_dict.Count);
-
-            foreach (var entry in _list)
+            if (_isNew || _dirtyAll || _list.Count == 0 || _list.All(x => x.IsDirty))
             {
-                wr.WriteString(entry.Key);
+                // Write in full mode.
+                wr.WriteBoolean(true);
+                wr.WriteInt(_list.Count);
 
-                // ReSharper disable once AccessToForEachVariableInClosure
-                wr.WithDetach(w => w.WriteObject(entry.Value));
+                foreach (var entry in _list)
+                {
+                    wr.WriteString(entry.Key);
+
+                    // ReSharper disable once AccessToForEachVariableInClosure
+                    wr.WithDetach(w => w.WriteObject(entry.Value));
+                }
+            }
+            else
+            {
+                // Write in diff mode.
+                wr.WriteBoolean(false);
+
+                var stream = wr.Stream;
+
+                var countPos = stream.Position;
+                var count = 0;
+
+                wr.WriteInt(count);  // reserve count
+
+                // Write dirty items.
+                foreach (var entry in _list)
+                {
+                    if (!entry.IsDirty)
+                        continue;
+
+                    wr.WriteString(entry.Key);
+
+                    // ReSharper disable once AccessToForEachVariableInClosure
+                    wr.WithDetach(w => w.WriteObject(entry.Value));
+
+                    count++;
+                }
+
+                // Write dirty item count.
+                var pos = stream.Position;
+
+                stream.Seek(countPos, SeekOrigin.Begin);
+                stream.WriteInt(count);
+                stream.Seek(pos, SeekOrigin.Begin);
+
+                // Write removed keys.
+                if (_removedKeys != null)
+                {
+                    wr.WriteInt(_removedKeys.Count);
+
+                    foreach (var removedKey in _removedKeys)
+                        wr.WriteString(removedKey);
+                }
+                else
+                {
+                    wr.WriteInt(0);
+                }
             }
         }
 
