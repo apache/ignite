@@ -20,16 +20,24 @@ package org.apache.ignite.internal.processors.cache.query;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -38,6 +46,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import javax.cache.Cache;
 
 /**
@@ -66,6 +75,49 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         for (Cache.Entry<Integer, Integer> entry : cursor)
             System.out.println(entry);
+    }
+
+    /** */
+    public void testIndexingSpiFailure() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIndexingSpi(new MyBrokenIndexingSpi());
+
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setIndexedTypes(Integer.class, Integer.class);
+
+        final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
+
+        int i = 0;
+
+        IgniteTransactions txs = ignite.transactions();
+
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                System.out.println("Run in transaction: " + concurrency + " " + isolation);
+
+                final int val = ++i;
+
+                GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        Transaction tx = null;
+
+                        try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
+                            cache.put(val, val);
+
+                            tx0.commit();
+                        }
+
+                        assertEquals(TransactionState.ROLLED_BACK, tx.state());
+                        return null;
+                    }
+                }, IgniteTxHeuristicCheckedException.class);
+            }
+        }
     }
 
     /**
@@ -102,7 +154,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             for (Map.Entry<Object, Object> entry : map.entrySet())
                 res.add(new CacheEntryImpl<>(entry.getKey(), entry.getValue()));
 
-            return (Iterator) map.entrySet().iterator();//res.iterator();
+            return (Iterator)map.entrySet().iterator();//res.iterator();
         }
 
         /** {@inheritDoc} */
@@ -124,6 +176,17 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
             // No-op.
+        }
+    }
+
+    /**
+     * Broken Indexing Spi implementation for test
+     */
+    private class MyBrokenIndexingSpi extends MyIndexingSpi{
+        /** {@inheritDoc} */
+        @Override public void store(@Nullable String spaceName, Object key, Object val,
+            long expirationTime) throws IgniteSpiException {
+            throw new IgniteSpiException("Test exception");
         }
     }
 }
