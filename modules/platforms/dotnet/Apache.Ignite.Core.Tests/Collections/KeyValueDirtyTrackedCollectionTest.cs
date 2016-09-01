@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Collections
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.Core.Impl.Collections;
     using NUnit.Framework;
 
@@ -61,8 +62,47 @@ namespace Apache.Ignite.Core.Tests.Collections
         {
             var col = new KeyValueDirtyTrackedCollection();
 
+            // Populate and check.
             col["key"] = "val";
-            col["1"] = "1";
+            col["1"] = 1;
+
+            Assert.AreEqual("val", col["key"]);
+            Assert.AreEqual(1, col["1"]);
+
+            Assert.AreEqual(2, col.Count);
+            Assert.IsTrue(col.IsDirty);
+            Assert.AreEqual(new[] {"key", "1"}, col.GetKeys().ToArray());
+
+            // Modify using index.
+            col[0] = "val1";
+            col[1] = 2;
+
+            Assert.AreEqual("val1", col["key"]);
+            Assert.AreEqual(2, col["1"]);
+
+            // Modify using key.
+            col["1"] = 3;
+            col["key"] = "val2";
+
+            Assert.AreEqual("val2", col["key"]);
+            Assert.AreEqual(3, col["1"]);
+
+            // Serialize.
+            var col0 = TestUtils.SerializeDeserialize(col);
+
+            Assert.AreEqual(col.GetKeys(), col0.GetKeys());
+            Assert.AreEqual(col.GetKeys().Select(x => col[x]), col0.GetKeys().Select(x => col0[x]));
+
+            // Remove.
+            col.Remove("invalid");
+            Assert.AreEqual(2, col.Count);
+
+            col.Remove("1");
+            Assert.AreEqual(new[] {"key"}, col.GetKeys());
+
+            // RemoveAt.
+            col0.RemoveAt(0);
+            Assert.AreEqual(new[] { "1" }, col0.GetKeys());
         }
     }
 }
