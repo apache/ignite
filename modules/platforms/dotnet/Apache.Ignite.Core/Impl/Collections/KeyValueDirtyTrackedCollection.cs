@@ -44,10 +44,10 @@ namespace Apache.Ignite.Core.Impl.Collections
         /** Indicates that this instance is a diff. */
         private readonly bool _isDiff;
 
-        /** Removed keys. */
-        private List<string> _removedKeys;
+        /** Removed keys. Hash set because keys can be removed multiple times. */
+        private HashSet<string> _removedKeys;
 
-        /** */
+        /** Indicates that entire collection is dirty and can't be written as a diff. */
         private bool _dirtyAll;
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 if (count > 0)
                 {
-                    _removedKeys = new List<string>(count);
+                    _removedKeys = new HashSet<string>();
 
                     for (var i = 0; i < count; i++)
                         _removedKeys.Add(reader.ReadString());
@@ -140,8 +140,6 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                     _dict[key] = _list.Count;
                     _list.Add(entry);
-
-                    RemoveRemovedKey(key);
                 }
 
                 entry.IsDirty = true;
@@ -355,20 +353,9 @@ namespace Apache.Ignite.Core.Impl.Collections
             Debug.Assert(!_isNew);
 
             if (_removedKeys == null)
-                _removedKeys = new List<string>();
+                _removedKeys = new HashSet<string>();
 
             _removedKeys.Add(key);
-        }
-
-        /// <summary>
-        /// Removes the removed key.
-        /// </summary>
-        private void RemoveRemovedKey(string key)
-        {
-            if (_removedKeys == null)
-                return;
-
-            _removedKeys.Remove(key);
         }
 
         /// <summary>

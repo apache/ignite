@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests.Collections
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
             Assert.AreEqual(1, col.Count);
-            Assert.AreEqual("3", col[3]);
+            Assert.AreEqual(3, col["3"]);
         }
     }
 }
