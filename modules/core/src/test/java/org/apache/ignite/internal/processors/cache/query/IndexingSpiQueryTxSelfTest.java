@@ -81,14 +81,12 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
 
-                final int val = ++i;
-
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         Transaction tx = null;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
-                            cache.put(val, val);
+                            cache.put(1, 1);
 
                             tx0.commit();
                         }
@@ -105,7 +103,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
      * Indexing Spi implementation for test
      */
     private static class MyBrokenIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
-        private final SortedMap<Object, Object> index = new TreeMap<>();
 
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
@@ -120,13 +117,13 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
-            throw new IgniteSpiException("Test exception");
+           return null;
         }
 
         /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
-            index.put(key, val);
+            throw new IgniteSpiException("Test exception");
         }
 
         /** {@inheritDoc} */

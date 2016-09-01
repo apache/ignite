@@ -75,6 +75,8 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         for (Cache.Entry<Integer, Integer> entry : cursor)
             System.out.println(entry);
+
+        Ignition.stopAll(true);
     }
 
     /** */
@@ -118,6 +120,8 @@ public class IndexingSpiQuerySelfTest extends TestCase {
                 }, IgniteTxHeuristicCheckedException.class);
             }
         }
+
+        Ignition.stopAll(true);
     }
 
     /**
