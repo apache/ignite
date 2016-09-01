@@ -257,6 +257,7 @@ public abstract class PageIO {
         setType(buf, getType());
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
+        setCrc(buf, 0);
 
         buf.putLong(RESERVED_1_OFF, 0L);
         buf.putLong(RESERVED_2_OFF, 0L);

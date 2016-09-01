@@ -96,7 +96,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
             ignite.destroyCache(ccfg.getName());
 
             awaitPartitionMapExchange();
-
         }
     }
 
@@ -104,6 +103,8 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMultipleDynamicCaches() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11478");
+
         int caches = 10;
 
         int iterations = 50;
