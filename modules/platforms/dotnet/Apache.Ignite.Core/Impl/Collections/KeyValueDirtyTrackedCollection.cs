@@ -35,6 +35,12 @@ namespace Apache.Ignite.Core.Impl.Collections
         /** */
         private readonly List<Entry> _list = new List<Entry>();
 
+        /** Indicates where this is a new collection, not a deserialized old one. */
+        private readonly bool _isNew;
+
+        /** Removed keys. */
+        private List<string> _removedKeys;
+
         /** */
         private bool _dirtyAll;
 
@@ -52,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var key = binaryReader.ReadString();
 
-                var entry = new Entry(key)
+                var entry = new Entry(key, true)
                 {
                     Value = binaryReader.ReadObject<object>()
                 };
@@ -61,6 +67,8 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 _list.Add(entry);
             }
+
+            _isNew = false;
         }
 
         /// <summary>
@@ -68,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public KeyValueDirtyTrackedCollection()
         {
-            // No-op.
+            _isNew = true;
         }
 
         /// <summary>
@@ -109,9 +117,12 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 if (entry == null)
                 {
-                    entry = new Entry(key);
+                    entry = new Entry(key, false);
+
                     _dict[key] = _list.Count;
                     _list.Add(entry);
+
+                    RemoveRemovedKey(key);
                 }
 
                 entry.IsDirty = true;
@@ -181,8 +192,13 @@ namespace Apache.Ignite.Core.Impl.Collections
             if (index < 0)
                 return;
 
+            var entry = _list[index];
+
             _dict.Remove(key);
             _list.RemoveAt(index);
+
+            if (entry.IsInitial)
+                AddRemovedKey(key);
         }
 
         /// <summary>
@@ -194,6 +210,9 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             _list.RemoveAt(index);
             _dict.Remove(entry.Key);
+
+            if (entry.IsInitial)
+                AddRemovedKey(entry.Key);
         }
 
         /// <summary>
@@ -201,10 +220,42 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         public void Clear()
         {
+            foreach (var entry in _list)
+            {
+                if (entry.IsInitial)
+                    AddRemovedKey(entry.Key);
+            }
+
             _list.Clear();
             _dict.Clear();
 
             _dirtyAll = true;
+        }
+
+        /// <summary>
+        /// Adds the removed key.
+        /// </summary>
+        private void AddRemovedKey(string key)
+        {
+            Debug.Assert(!_isNew);
+
+            if (_removedKeys == null)
+                _removedKeys = new List<string>();
+
+            _removedKeys.Add(key);
+        }
+
+        /// <summary>
+        /// Removes the removed key.
+        /// </summary>
+        private void RemoveRemovedKey(string key)
+        {
+            Debug.Assert(!_isNew);
+
+            if (_removedKeys == null)
+                return;
+
+            _removedKeys.Remove(key);
         }
 
         /// <summary>
@@ -268,14 +319,18 @@ namespace Apache.Ignite.Core.Impl.Collections
             public bool IsDirty;
             
             /** */
+            public readonly bool IsInitial;
+            
+            /** */
             public readonly string Key;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> class.
             /// </summary>
-            public Entry(string key)
+            public Entry(string key, bool isInitial)
             {
                 Key = key;
+                IsInitial = isInitial;
             }
         }
     }
