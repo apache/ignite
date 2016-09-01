@@ -190,10 +190,10 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             raw.WriteInt(_dict.Count);
 
-            foreach (var entry in _dict)
+            foreach (var entry in _list)
             {
                 raw.WriteObject(entry.Key);
-                raw.WriteObject(_list[entry.Value]);
+                raw.WriteObject(entry.Value);
             }
         }
 
