@@ -53,25 +53,25 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
         /// </summary>
-        /// <param name="binaryReader">The binary reader.</param>
-        internal KeyValueDirtyTrackedCollection(IBinaryRawReader binaryReader)
+        /// <param name="reader">The binary reader.</param>
+        internal KeyValueDirtyTrackedCollection(IBinaryRawReader reader)
         {
-            Debug.Assert(binaryReader != null);
+            Debug.Assert(reader != null);
 
-            _isDiff = !binaryReader.ReadBoolean();
+            _isDiff = !reader.ReadBoolean();
 
-            var count = binaryReader.ReadInt();
+            var count = reader.ReadInt();
 
             _dict = new Dictionary<string, int>(count);
             _list = new List<Entry>(count);
 
             for (var i = 0; i < count; i++)
             {
-                var key = binaryReader.ReadString();
+                var key = reader.ReadString();
 
                 var entry = new Entry(key, true)
                 {
-                    Value = binaryReader.ReadObject<object>()
+                    Value = reader.ReadObject<object>()
                 };
 
                 _dict[key] = _list.Count;
@@ -82,11 +82,14 @@ namespace Apache.Ignite.Core.Impl.Collections
             if (_isDiff)
             {
                 // Read removed keys/
-                count = binaryReader.ReadInt();
+                count = reader.ReadInt();
 
                 if (count > 0)
                 {
                     _removedKeys = new List<string>(count);
+
+                    for (var i = 0; i < count; i++)
+                        _removedKeys.Add(reader.ReadString());
                 }
             }
 
