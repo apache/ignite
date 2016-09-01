@@ -140,7 +140,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
     /**
      * @return GridBinaryMarshaller instance.
      */
-    public GridBinaryMarshaller gridBinaryMarshaller() {
+    public GridBinaryMarshaller binaryMarshaller() {
         return impl;
     }
 }

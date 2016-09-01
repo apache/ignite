@@ -158,7 +158,7 @@ public class GridCacheSqlQuery implements Message {
 
         if (m instanceof BinaryMarshaller)
             // To avoid deserializing of enum types.
-            params = ((BinaryMarshaller) m).gridBinaryMarshaller().unmarshal(paramsBytes, ldr);
+            params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
         else
             params = m.unmarshal(paramsBytes, ldr);
     }

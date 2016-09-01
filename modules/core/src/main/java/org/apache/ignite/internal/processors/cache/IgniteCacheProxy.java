@@ -689,7 +689,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
-            binarizeArgs(qry);
+            convertToBinary(qry);
 
             final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
@@ -771,32 +771,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      *
      * @param qry Query.
      */
-    private void binarizeArgs(final Query qry) {
+    private void convertToBinary(final Query qry) {
         if (ctx.binaryMarshaller()) {
             if (qry instanceof SqlQuery) {
                 final SqlQuery sqlQry = (SqlQuery) qry;
 
-                binarizeArgs(sqlQry.getArgs());
-
+                convertToBinary(sqlQry.getArgs());
             } else if (qry instanceof SpiQuery) {
                 final SpiQuery spiQry = (SpiQuery) qry;
 
-                binarizeArgs(spiQry.getArgs());
-
+                convertToBinary(spiQry.getArgs());
             } else if (qry instanceof SqlFieldsQuery) {
                 final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
 
-                binarizeArgs(fieldsQry.getArgs());
+                convertToBinary(fieldsQry.getArgs());
             }
         }
     }
 
     /**
-     * Convert query arguments to BinaryObjects if binary marshaller used.
+     * Converts query arguments to BinaryObjects if binary marshaller used.
      *
      * @param args Arguments.
      */
-    private void binarizeArgs(final Object[] args) {
+    private void convertToBinary(final Object[] args) {
         if (args == null)
             return;
 
