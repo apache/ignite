@@ -173,29 +173,21 @@ namespace Apache.Ignite.Core.Impl.Collections
         }
 
         /// <summary>
-        /// Gets the keys.
-        /// </summary>
-        public IEnumerable<string> Keys
-        {
-            get { return _dict.Keys; }
-        }
-
-        /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
-            var raw = writer.GetRawWriter();
+            var wr = (BinaryWriter) writer;
 
-            raw.WriteInt(_dict.Count);
+            wr.WriteInt(_dict.Count);
 
             foreach (var entry in _list)
             {
-                // TODO: WriteString. Why does not this fail in tests??
-                //raw.WriteString(entry.Key);
-                raw.WriteObject(entry.Key);
-                raw.WriteObject(entry.Value);
+                wr.WriteString(entry.Key);
+
+                // ReSharper disable once AccessToForEachVariableInClosure
+                wr.WithDetach(w => w.WriteObject(entry.Value));
             }
         }
 
