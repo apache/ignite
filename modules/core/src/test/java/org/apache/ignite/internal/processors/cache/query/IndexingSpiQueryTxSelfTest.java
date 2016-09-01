@@ -73,12 +73,10 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
 
         IgniteCache<Integer, Integer> cache = ignite.cache("test-cache");
 
-        int i = 0;
+        final IgniteTransactions txs = ignite.transactions();
 
-        IgniteTransactions txs = ignite.transactions();
-
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+        for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
 
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {

@@ -94,22 +94,18 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
-        int i = 0;
+        final IgniteTransactions txs = ignite.transactions();
 
-        IgniteTransactions txs = ignite.transactions();
-
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+        for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (final TransactionIsolation isolation : TransactionIsolation.values()) {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
-
-                final int val = ++i;
 
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         Transaction tx = null;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
-                            cache.put(val, val);
+                            cache.put(1, 1);
 
                             tx0.commit();
                         }
