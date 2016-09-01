@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQ
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -121,6 +122,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         //TODO: IGNITE-2881: check if this is suitable place for IndexingSpiQuerySelfTest
         suite.addTestSuite(IndexingSpiQuerySelfTest.class);
+        suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
 
         return suite;
     }
