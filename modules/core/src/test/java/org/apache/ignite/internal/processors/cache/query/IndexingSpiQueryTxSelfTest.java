@@ -86,7 +86,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     public void testIndexingSpiWithTx() throws Exception {
         IgniteEx ignite = grid(0);
 
-        IgniteCache<Integer, Integer> cache = ignite.cache("test-cache");
+        final IgniteCache<Integer, Integer> cache = ignite.cache("test-cache");
 
         final IgniteTransactions txs = ignite.transactions();
 
