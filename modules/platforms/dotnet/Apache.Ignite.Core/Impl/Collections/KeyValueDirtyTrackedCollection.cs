@@ -278,8 +278,11 @@ namespace Apache.Ignite.Core.Impl.Collections
                 return;
 
             var entry = _list[index];
+            Debug.Assert(key == entry.Key);
 
-            _dict.Remove(key);
+            var removed = _dict.Remove(key);
+            Debug.Assert(removed);
+
             _list.RemoveAt(index);
 
             if (entry.IsInitial)
