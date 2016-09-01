@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Collections
             {
                 Assert.AreEqual(0, col.Count);
                 Assert.IsFalse(col.IsDirty);
-                Assert.IsEmpty(col);
+                Assert.IsEmpty(col.GetKeys());
 
                 Assert.IsNull(col["key"]);
                 Assert.Throws<ArgumentOutOfRangeException>(() => col[0] = "x");
