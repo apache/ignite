@@ -321,8 +321,6 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         private void RemoveRemovedKey(string key)
         {
-            Debug.Assert(!_isNew);
-
             if (_removedKeys == null)
                 return;
 
