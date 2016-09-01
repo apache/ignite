@@ -164,8 +164,19 @@ namespace Apache.Ignite.Core.Tests.Collections
             Assert.AreEqual(3, col["3"]);
             Assert.AreEqual(44, col["4"]);
 
-            // Apply serialized changes.
+            // Apply serialized changes without WriteChangesOnly.
             col = getCol();
+            col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
+
+            Assert.AreEqual(4, col.Count);
+            Assert.AreEqual(1, col["1"]);
+            Assert.AreEqual(22, col["2"]);
+            Assert.AreEqual(3, col["3"]);
+            Assert.AreEqual(44, col["4"]);
+
+            // Apply serialized changes without WriteChangesOnly.
+            col = getCol();
+            col0.WriteChangesOnly = true;
             col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
 
             Assert.AreEqual(3, col.Count);
