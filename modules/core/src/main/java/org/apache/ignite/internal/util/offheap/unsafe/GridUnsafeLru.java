@@ -24,12 +24,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Striped LRU queue.
  */
-@SuppressWarnings("ForLoopReplaceableByForEach")
-class GridUnsafeLru {
+@SuppressWarnings("ForLoopReplaceableByForEach") class GridUnsafeLru {
     /** Number of stripes. */
     private final short cnt;
 
@@ -156,7 +156,7 @@ class GridUnsafeLru {
      * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
-        return lrus[addIdx.getAndIncrement() % cnt].offer(part, addr, hash);
+        return lrus[U.safeAbs(addIdx.getAndIncrement()) % cnt].offer(part, addr, hash);
     }
 
     /**
@@ -180,6 +180,7 @@ class GridUnsafeLru {
 
     /**
      * Removes polling node from the queue.
+     *
      * @param qAddr Queue node address.
      */
     void poll(long qAddr) {
