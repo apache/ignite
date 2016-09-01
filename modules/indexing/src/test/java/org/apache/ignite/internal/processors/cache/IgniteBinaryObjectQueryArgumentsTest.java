@@ -92,7 +92,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setMarshaller(null);
 
-        cfg.setClientMode(false);
+        assert !cfg.isClientMode() : "Node must be started in server mode";
 
         return cfg;
     }
