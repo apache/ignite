@@ -51,6 +51,9 @@ namespace Apache.Ignite.Core.Tests.Collections
                 col.Remove("test");
 
                 Assert.AreEqual(0, col.Count);
+
+                col.IsDirty = true;
+                Assert.IsTrue(col.IsDirty);
             }
         }
 
@@ -112,6 +115,14 @@ namespace Apache.Ignite.Core.Tests.Collections
 
             col.Clear();
             Assert.AreEqual(0, col.Count);
+        }
+
+        /// <summary>
+        /// Tests the dirty delta.
+        /// </summary>
+        public void TestDirtyDelta()
+        {
+            var col = new KeyValueDirtyTrackedCollection();
         }
     }
 }

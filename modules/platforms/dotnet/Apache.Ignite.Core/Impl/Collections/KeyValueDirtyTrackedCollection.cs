@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Collections
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -30,12 +29,13 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// </summary>
     public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
     {
-        // TODO: Keep serialized while not needed.
-        // TODO: Get dirty items.
-        // TODO: Dedicated unit test.
+        /** */
         private readonly Dictionary<string, int> _dict = new Dictionary<string, int>();
+
+        /** */
         private readonly List<Entry> _list = new List<Entry>();
 
+        /** */
         private bool _dirtyAll;
 
         /// <summary>
@@ -120,20 +120,6 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
         }
 
-        private Entry GetEntry(string key)
-        {
-            int index;
-
-            return !_dict.TryGetValue(key, out index) ? null : _list[index];
-        }
-
-        private int GetIndex(string key)
-        {
-            int index;
-
-            return !_dict.TryGetValue(key, out index) ? -1 : index;
-        }
-
         /// <summary>
         /// Gets or sets the value at the specified index.
         /// </summary>
@@ -185,29 +171,6 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
         }
 
-        private static void SetDirtyOnRead(Entry entry)
-        {
-            var type = entry.Value.GetType();
-
-            if (IsImmutable(type))
-                return;
-
-            entry.IsDirty = true;
-        }
-
-        private static bool IsImmutable(Type type)
-        {
-            type = Nullable.GetUnderlyingType(type) ?? type;  // Unwrap nullable.
-
-            if (type.IsPrimitive)
-                return true;
-
-            if (type == typeof(string) || type == typeof(DateTime) || type == typeof(Guid) || type == typeof(decimal))
-                return true;
-
-            return false;
-        }
-
         /// <summary>
         /// Removes the specified key.
         /// </summary>
@@ -244,12 +207,72 @@ namespace Apache.Ignite.Core.Impl.Collections
             _dirtyAll = true;
         }
 
+        /// <summary>
+        /// Gets the entry.
+        /// </summary>
+        private Entry GetEntry(string key)
+        {
+            int index;
+
+            return !_dict.TryGetValue(key, out index) ? null : _list[index];
+        }
+
+        /// <summary>
+        /// Gets the index.
+        /// </summary>
+        private int GetIndex(string key)
+        {
+            int index;
+
+            return !_dict.TryGetValue(key, out index) ? -1 : index;
+        }
+
+        /// <summary>
+        /// Sets the dirty on read.
+        /// </summary>
+        private static void SetDirtyOnRead(Entry entry)
+        {
+            var type = entry.Value.GetType();
+
+            if (IsImmutable(type))
+                return;
+
+            entry.IsDirty = true;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type is immutable.
+        /// </summary>
+        private static bool IsImmutable(Type type)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;  // Unwrap nullable.
+
+            if (type.IsPrimitive)
+                return true;
+
+            if (type == typeof(string) || type == typeof(DateTime) || type == typeof(Guid) || type == typeof(decimal))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Inner entry.
+        /// </summary>
         private class Entry
         {
+            /** */
             public object Value;
+            
+            /** */
             public bool IsDirty;
+            
+            /** */
             public readonly string Key;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Entry"/> class.
+            /// </summary>
             public Entry(string key)
             {
                 Key = key;
