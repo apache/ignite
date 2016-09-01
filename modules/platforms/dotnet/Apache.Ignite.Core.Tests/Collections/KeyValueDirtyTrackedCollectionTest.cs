@@ -118,11 +118,50 @@ namespace Apache.Ignite.Core.Tests.Collections
         }
 
         /// <summary>
-        /// Tests the dirty delta.
+        /// Tests dirty tracking.
         /// </summary>
-        public void TestDirtyDelta()
+        [Test]
+        public void TestApplyChanges()
         {
-            var col = new KeyValueDirtyTrackedCollection();
+            Func<KeyValueDirtyTrackedCollection> getCol = () =>
+            {
+                var res = new KeyValueDirtyTrackedCollection();
+
+                res["1"] = 1;
+                res["2"] = 2;
+                res["3"] = 3;
+
+                return res;
+            };
+
+            var col = getCol();
+
+            var col0 = TestUtils.SerializeDeserialize(col);
+
+            Assert.AreEqual(3, col0.Count);
+
+            col0.Remove("1");
+            col0["2"] = 22;
+            col0["4"] = 44;
+
+            // Apply non-serialized changes.
+            col.ApplyChanges(col0);
+
+            Assert.AreEqual(3, col.Count);
+            Assert.AreEqual(null, col["1"]);
+            Assert.AreEqual(22, col["2"]);
+            Assert.AreEqual(3, col["3"]);
+            Assert.AreEqual(44, col["4"]);
+
+            // Apply serialized changes.
+            col = getCol();
+            col.ApplyChanges(TestUtils.SerializeDeserialize(col0));
+
+            Assert.AreEqual(3, col.Count);
+            Assert.AreEqual(null, col["1"]);
+            Assert.AreEqual(22, col["2"]);
+            Assert.AreEqual(3, col["3"]);
+            Assert.AreEqual(44, col["4"]);
         }
     }
 }
