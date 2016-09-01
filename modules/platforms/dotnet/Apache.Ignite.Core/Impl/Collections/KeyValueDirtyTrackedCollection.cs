@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -40,6 +41,9 @@ namespace Apache.Ignite.Core.Impl.Collections
         /** Indicates where this is a new collection, not a deserialized old one. */
         private readonly bool _isNew;
 
+        /** Indicates that this instance is a diff. */
+        private readonly bool _isDiff;
+
         /** Removed keys. */
         private List<string> _removedKeys;
 
@@ -54,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         {
             Debug.Assert(binaryReader != null);
 
-            var isFullMode = binaryReader.ReadBoolean();
+            _isDiff = !binaryReader.ReadBoolean();
 
             var count = binaryReader.ReadInt();
 
@@ -75,9 +79,9 @@ namespace Apache.Ignite.Core.Impl.Collections
                 _list.Add(entry);
             }
 
-            if (!isFullMode)
+            if (_isDiff)
             {
-                // Read removed keys
+                // Read removed keys/
                 count = binaryReader.ReadInt();
 
                 if (count > 0)
@@ -97,14 +101,6 @@ namespace Apache.Ignite.Core.Impl.Collections
             _dict = new Dictionary<string, int>();
             _list = new List<Entry>();
             _isNew = true;
-        }
-
-        /// <summary>
-        /// Gets the keys.
-        /// </summary>
-        public IEnumerable<string> GetKeys()
-        {
-            return _list.Select(x => x.Key);
         }
 
         /// <summary>
@@ -184,14 +180,32 @@ namespace Apache.Ignite.Core.Impl.Collections
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether only dirty changed things should be serialized.
+        /// </summary>
+        public bool WriteChangesOnly { get; set; }
+
+        /// <summary>
+        /// Gets the keys.
+        /// </summary>
+        public IEnumerable<string> GetKeys()
+        {
+            return _list.Select(x => x.Key);
+        }
+
+        /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+
+            if (_isDiff)
+                throw new InvalidOperationException(string.Format("Cannot serialize incomplete {0}.", GetType()));
+
             var wr = (BinaryWriter) writer;
 
-            if (_isNew || _dirtyAll || _list.Count == 0 || _list.All(x => x.IsDirty))
+            if (_isNew || _dirtyAll || !WriteChangesOnly || (_removedKeys == null && _list.All(x => x.IsDirty)))
             {
                 // Write in full mode.
                 wr.WriteBoolean(true);
@@ -304,6 +318,23 @@ namespace Apache.Ignite.Core.Impl.Collections
         }
 
         /// <summary>
+        /// Applies the changes.
+        /// </summary>
+        public void ApplyChanges(KeyValueDirtyTrackedCollection changes)
+        {
+            var removed = changes._removedKeys;
+
+            if (removed != null)
+            {
+                foreach (var key in removed)
+                    Remove(key);
+            }
+
+            foreach (var entry in changes._list)
+                this[entry.Key] = entry.Value;
+        }
+
+        /// <summary>
         /// Adds the removed key.
         /// </summary>
         private void AddRemovedKey(string key)
@@ -332,6 +363,8 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// </summary>
         private Entry GetEntry(string key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             int index;
 
             return !_dict.TryGetValue(key, out index) ? null : _list[index];
