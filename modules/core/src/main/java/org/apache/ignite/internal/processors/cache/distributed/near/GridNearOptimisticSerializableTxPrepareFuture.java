@@ -184,7 +184,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
 
-        if (e instanceof IgniteTxOptimisticCheckedException) {
+        if (e instanceof IgniteTxOptimisticCheckedException || e instanceof IgniteTxTimeoutCheckedException) {
             if (m != null)
                 tx.removeMapping(m.node().id());
         }
@@ -424,10 +424,21 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         final ClusterNode n = m.node();
 
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1) {
+            IgniteCheckedException err = tx.timeoutException();
+
+            fut.onResult(err);
+
+            return err;
+        }
+
         GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
             futId,
             tx.topologyVersion(),
             tx,
+            timeout,
             m.reads(),
             m.writes(),
             m.near(),

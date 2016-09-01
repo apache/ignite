@@ -1115,7 +1115,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send message: " + msg, e);
+                    if (spi.getSpiContext().isStopping()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send message, node is stopping [msg=" + msg + ", err=" + e + ']');
+                    }
+                    else
+                        U.error(log, "Failed to send message: " + msg, e);
 
                     msg = null;
                 }

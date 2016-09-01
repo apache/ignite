@@ -102,7 +102,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     @GridToStringInclude
     private GridNearTxLocal tx;
 
-    /** Commit flag. */
+    /** Commit flag. This flag used only for one-phase commit transaction. */
     private boolean commit;
 
     /** Node mappings. */
@@ -321,6 +321,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 }
             }
 
+            if (commit && tx.commitError() != null)
+                err = tx.commitError();
+
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
                     assert tx.onePhaseCommit();
@@ -394,9 +397,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /**
      * Initializes future.
+     *
+     * @param commit Commit flag.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void finish() {
+    void finish(boolean commit) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -411,15 +416,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
-                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null)) {
+                if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
                         if (mapping != null)
-                            finish(mapping);
+                            finish(mapping, commit);
                     }
                     else
-                        finish(mappings.mappings());
+                        finish(mappings.mappings(), commit);
                 }
 
                 markInitialized();
@@ -618,13 +623,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /**
+     * @param commit Commit flag.
      * @return {@code True} if need to send finish request for one phase commit transaction.
      */
-    private boolean needFinishOnePhase() {
+    private boolean needFinishOnePhase(boolean commit) {
         if (tx.mappings().empty())
             return false;
 
-        boolean finish = tx.txState().hasNearCache(cctx);
+        boolean finish = tx.txState().hasNearCache(cctx) || !commit;
 
         if (finish) {
             GridDistributedTxMapping mapping = tx.mappings().singleMapping();
@@ -680,17 +686,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /**
      * @param mappings Mappings.
+     * @param commit Commit flag.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(m);
+            finish(m, commit);
     }
 
     /**
      * @param m Mapping.
+     * @param commit Commit flag.
      */
-    private void finish(GridDistributedTxMapping m) {
+    private void finish(GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.node();
 
         assert !m.empty();
@@ -699,6 +707,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         if (m.explicitLock())
             syncMode = FULL_SYNC;
+
+        // Version to be added in completed versions on primary node.
+        GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
 
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
@@ -712,7 +723,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            null,
+            completedVer, // Reuse 'baseVersion'  to do not add new fields in message.
             null,
             null,
             tx.size(),

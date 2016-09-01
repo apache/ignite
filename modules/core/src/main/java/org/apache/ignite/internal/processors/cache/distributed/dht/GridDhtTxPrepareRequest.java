@@ -118,6 +118,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param miniId Mini future ID.
      * @param topVer Topology version.
      * @param tx Transaction.
+     * @param timeout Transaction timeout.
      * @param dhtWrites DHT writes.
      * @param nearWrites Near writes.
      * @param txNodes Transaction nodes mapping.
@@ -131,6 +132,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         IgniteUuid miniId,
         AffinityTopologyVersion topVer,
         GridDhtTxLocalAdapter tx,
+        long timeout,
         Collection<IgniteTxEntry> dhtWrites,
         Collection<IgniteTxEntry> nearWrites,
         Map<UUID, Collection<UUID>> txNodes,
@@ -141,7 +143,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean addDepInfo,
         boolean retVal) {
-        super(tx, null, dhtWrites, txNodes, onePhaseCommit, addDepInfo);
+        super(tx, timeout, null, dhtWrites, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
