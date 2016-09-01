@@ -240,7 +240,6 @@ namespace Apache.Ignite.AspNet
                 return null;
             }
 
-
             Log("GetItemExclusive session store data found", id, context);
 
             locked = false;
