@@ -91,7 +91,7 @@ public class OdbcRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake(reqId, (OdbcHandshakeRequest)req);
+                    return performHandshake((OdbcHandshakeRequest)req);
 
                 case EXECUTE_SQL_QUERY:
                     return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
@@ -119,22 +119,23 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcHandshakeRequest} command handler.
      *
-     * @param reqId Request ID.
      * @param req Handshake request.
      * @return Response.
      */
-    private OdbcResponse performHandshake(long reqId, OdbcHandshakeRequest req) {
-        OdbcHandshakeResult res;
+    private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
+        OdbcProtocolVersion version = req.version();
 
-        if (req.version() == OdbcMessageParser.PROTO_VER)
-            res = new OdbcHandshakeResult(true, null, null);
-        else {
+        if (version.isUnknown()) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+
+            return new OdbcResponse(res);
         }
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
 
         return new OdbcResponse(res);
     }
