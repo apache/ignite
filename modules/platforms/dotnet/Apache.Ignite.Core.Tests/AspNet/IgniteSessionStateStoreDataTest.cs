@@ -40,15 +40,19 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             var data = new IgniteSessionStateStoreData(statics, 44);
 
+            data.Items["key"] = "val";
+
             Assert.AreEqual(44, data.Timeout);
             Assert.AreEqual(1, data.StaticObjects.Count);
             Assert.AreEqual(0, data.StaticObjects["int"]);
+            Assert.AreEqual("val", data.Items["key"]);
 
             // Clone.
             var data1 = new IgniteSessionStateStoreData(data.Data);
             Assert.AreEqual(44, data1.Timeout);
             Assert.AreEqual(1, data1.StaticObjects.Count);
             Assert.AreEqual(0, data1.StaticObjects["int"]);
+            Assert.AreEqual("val", data1.Items["key"]);
         }
     }
 }
