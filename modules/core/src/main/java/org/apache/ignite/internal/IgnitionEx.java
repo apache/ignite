@@ -235,6 +235,9 @@ public class IgnitionEx {
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.clientMode.set(clientMode);
+
+        if (clientMode)
+            U.dumpStack("== Client mode set thread local");
     }
 
     /**
