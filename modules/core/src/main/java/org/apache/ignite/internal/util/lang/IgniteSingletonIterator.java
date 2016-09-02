@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
  */
 public class IgniteSingletonIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final T val;
 
     /** */
