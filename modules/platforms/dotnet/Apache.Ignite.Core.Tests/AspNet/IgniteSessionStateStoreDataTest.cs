@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.AspNet
 {
+    using System.Reflection;
     using System.Web;
     using Apache.Ignite.AspNet.Impl;
     using NUnit.Framework;
@@ -26,13 +27,28 @@ namespace Apache.Ignite.Core.Tests.AspNet
     /// </summary>
     public class IgniteSessionStateStoreDataTest
     {
+        /// <summary>
+        /// Tests the data.
+        /// </summary>
         [Test]
-        public void Test()
+        public void TestData()
         {
-            var data = new IgniteSessionStateStoreData(new HttpStaticObjectsCollection(), 44);
-            Assert.AreEqual(44, data.Timeout);
+            // Modification method is internal.
+            var statics = new HttpStaticObjectsCollection();
+            statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(statics, new object[] { "int", typeof(int), false });
 
-            // TODO
+            var data = new IgniteSessionStateStoreData(statics, 44);
+
+            Assert.AreEqual(44, data.Timeout);
+            Assert.AreEqual(1, data.StaticObjects.Count);
+            Assert.AreEqual(0, data.StaticObjects["int"]);
+
+            // Clone.
+            var data1 = new IgniteSessionStateStoreData(data.Data);
+            Assert.AreEqual(44, data1.Timeout);
+            Assert.AreEqual(1, data1.StaticObjects.Count);
+            Assert.AreEqual(0, data1.StaticObjects["int"]);
         }
     }
 }
