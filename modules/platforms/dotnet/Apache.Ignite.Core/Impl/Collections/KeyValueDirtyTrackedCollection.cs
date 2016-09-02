@@ -421,8 +421,8 @@ namespace Apache.Ignite.Core.Impl.Collections
         private class Entry
         {
             /** */
-            public object Value;
-            
+            public object Value;  // TODO: Keep in serialized mode as a byte array! Or do this in IgniteSessionStateItemCollection?
+
             /** */
             public bool IsDirty;
             
