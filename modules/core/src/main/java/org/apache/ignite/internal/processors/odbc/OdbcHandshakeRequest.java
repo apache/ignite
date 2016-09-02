@@ -24,21 +24,21 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OdbcHandshakeRequest extends OdbcRequest {
     /** Protocol version. */
-    private final long ver;
+    private final OdbcProtocolVersion ver;
 
     /**
-     * @param ver Protocol version.
+     * @param ver Long value for protocol version.
      */
     public OdbcHandshakeRequest(long ver) {
         super(HANDSHAKE);
 
-        this.ver = ver;
+        this.ver = OdbcProtocolVersion.fromLong(ver);
     }
 
     /**
      * @return Protocol version.
      */
-    public long version() {
+    public OdbcProtocolVersion version() {
         return ver;
     }
 

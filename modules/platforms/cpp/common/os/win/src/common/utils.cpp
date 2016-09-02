@@ -40,6 +40,26 @@ namespace ignite
             return false;
         }
 
+        void StripSurroundingWhitespaces(std::string& str)
+        {
+            std::string::size_type newBegin = 0;
+            while (newBegin < str.size() && ::isspace(str[newBegin]))
+                ++newBegin;
+
+            if (newBegin == str.size())
+            {
+                str.clear();
+
+                return;
+            }
+
+            std::string::size_type newEnd = str.size() - 1;
+            while (::isspace(str[newEnd]))
+                --newEnd;
+
+            str.assign(str, newBegin, (newEnd - newBegin) + 1);
+        }
+
         time_t IgniteTimeGm(const tm& time)
         {
             tm tmc = time;
