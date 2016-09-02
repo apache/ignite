@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.AspNet
 {
+    using System;
     using Apache.Ignite.Core.Impl.AspNet;
     using NUnit.Framework;
 
@@ -39,6 +40,34 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsNull(data.LockNodeId);
             Assert.IsNull(data.LockTime);
             Assert.IsNull(data.StaticObjects);
+        }
+
+        /// <summary>
+        /// Tests the serialization.
+        /// </summary>
+        [Test]
+        public void TestSerialization()
+        {
+            var data = new BinarizableSessionStateStoreData
+            {
+                Timeout = 97,
+                LockId = 11,
+                LockNodeId = Guid.NewGuid(),
+                LockTime = DateTime.UtcNow.AddHours(-1),
+                StaticObjects = new byte[] {1, 2, 3}
+            };
+
+            data.Items["key1"] = 1;
+            data.Items["key2"] = 2;
+
+            var data0 = TestUtils.SerializeDeserialize(data);
+
+            Assert.AreEqual(data.Timeout, data0.Timeout);
+            Assert.AreEqual(data.LockId, data0.LockId);
+            Assert.AreEqual(data.LockNodeId, data0.LockNodeId);
+            Assert.AreEqual(data.LockTime, data0.LockTime);
+            Assert.AreEqual(data.StaticObjects, data0.StaticObjects);
+            Assert.AreEqual(data.Items.GetKeys(), data0.Items.GetKeys());
         }
     }
 }

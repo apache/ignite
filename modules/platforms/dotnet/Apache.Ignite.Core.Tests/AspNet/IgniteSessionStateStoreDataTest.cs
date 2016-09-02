@@ -31,6 +31,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
         {
             var data = new IgniteSessionStateStoreData(new HttpStaticObjectsCollection(), 44);
             Assert.AreEqual(44, data.Timeout);
+
+            // TODO
         }
     }
 }
