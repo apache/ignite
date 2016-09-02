@@ -28,13 +28,13 @@ namespace Apache.Ignite.Core.Impl.AspNet
     public struct LockInfo : IBinaryWriteAware, IEquatable<LockInfo>
     {
         /** */
-        private readonly DateTime _lockTime;
-
-        /** */
         private readonly long _lockId;
         
         /** */
         private readonly Guid _lockNodeId;
+
+        /** */
+        private readonly DateTime _lockTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LockInfo"/> struct.

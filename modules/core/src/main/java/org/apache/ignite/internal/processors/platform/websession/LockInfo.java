@@ -17,9 +17,44 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+
+import java.sql.Timestamp;
+import java.util.UUID;
+
 /**
  * Web session lock info.
  */
-public class LockInfo {
-    // TODO
+public class LockInfo implements Binarylizable {
+    /** */
+    private long lockId;
+
+    /** */
+    private UUID lockNodeId;
+
+    /** */
+    private Timestamp lockTime;
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter raw = writer.rawWriter();
+
+        raw.writeLong(lockId);
+        raw.writeUuid(lockNodeId);
+        raw.writeTimestamp(lockTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader raw = reader.rawReader();
+
+        lockId = raw.readLong();
+        lockNodeId = raw.readUuid();
+        lockTime = raw.readTimestamp();
+    }
 }
