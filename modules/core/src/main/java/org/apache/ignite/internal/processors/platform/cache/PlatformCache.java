@@ -193,6 +193,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_LOAD_ALL = 40;
 
+    /** */
+    public static final int OP_INVOKE_INTERNAL = 41;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -445,6 +448,12 @@ public class PlatformCache extends PlatformAbstractTarget {
                             writeInvokeAllResult(writer, val);
                         }
                     });
+                }
+
+                case OP_INVOKE_INTERNAL: {
+                    // TODO: Switch over internal processor codes.
+
+                    return 0;
                 }
 
                 case OP_LOCK:
