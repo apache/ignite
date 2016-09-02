@@ -734,7 +734,6 @@ object VisorCacheCommand {
             "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -stop -c=<cache-name>",
             "cache -reset -c=<cache-name>"
-
   ),
         args = Seq(
             "-id8=<node-id>" -> Seq(
