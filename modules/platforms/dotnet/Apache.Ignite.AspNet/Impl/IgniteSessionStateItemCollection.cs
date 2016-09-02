@@ -106,14 +106,14 @@ namespace Apache.Ignite.AspNet.Impl
         }
 
         /** <inheritdoc /> */
-        object ISessionStateItemCollection.this[string name]
+        public object this[string name]
         {
             get { return _collection[name]; }
             set { _collection[name] = value; }
         }
 
         /** <inheritdoc /> */
-        object ISessionStateItemCollection.this[int index]
+        public object this[int index]
         {
             get { return _collection[index]; }
             set { _collection[index] = value; }

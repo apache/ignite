@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core.Impl.Collections;
     using NUnit.Framework;
@@ -43,7 +44,14 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.Throws<NotSupportedException>(() => Assert.IsNull(col.Keys));
             Assert.IsNotNull(col.SyncRoot);
             Assert.IsEmpty(col);
+            Assert.IsEmpty(col.OfType<string>().ToArray());
+
             col.Clear();
+            col.Remove("key");
+            Assert.Throws<ArgumentOutOfRangeException>(() => col.RemoveAt(0));
+
+            Assert.IsNull(col["key"]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Assert.IsNull(col[0]));
 
             var keys = new[] {"1"};
             col.CopyTo(keys, 0);
