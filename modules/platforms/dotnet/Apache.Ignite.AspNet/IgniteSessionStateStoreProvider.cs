@@ -286,6 +286,7 @@ namespace Apache.Ignite.AspNet
             data.LockNodeId = null;  // Unlock
             data.Items.WriteChangesOnly = true;  // Write diff.
 
+            // TODO: This is wrong! Use entry processor instead!
             cache[GetKey(id)] = data;
         }
 
