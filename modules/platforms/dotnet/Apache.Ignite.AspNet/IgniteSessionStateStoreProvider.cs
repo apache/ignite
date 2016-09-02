@@ -421,6 +421,7 @@ namespace Apache.Ignite.AspNet
         }
 
         // TODO: Implement this in Java.
+        // TODO: Use JavaObject approach?
         [Serializable]
         private class LockEntryProcessor :
             ICacheEntryProcessor<string, SessionStateData, LockInfo, object>

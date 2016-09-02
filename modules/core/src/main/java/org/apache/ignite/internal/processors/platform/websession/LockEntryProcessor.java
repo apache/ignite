@@ -21,5 +21,5 @@ package org.apache.ignite.internal.processors.platform.websession;
  * Entry processor that locks web session data.
  */
 public class LockEntryProcessor {
-    // TODO
+    // TODO: Use JavaObject approach so that there is a clean API?
 }
