@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -466,6 +467,64 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @param scanQry ScanQry.
+     * @param transformer Transformer
+     * @param grp Optional cluster group.
+     * @return Cursor.
+     */
+    @SuppressWarnings("unchecked")
+    private <T, R> QueryCursor<R> query(
+        final ScanQuery scanQry,
+        @Nullable final IgniteClosure<T, R> transformer,
+        @Nullable ClusterGroup grp)
+        throws IgniteCheckedException {
+
+        final CacheQuery<R> qry;
+
+        boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
+
+        IgniteBiPredicate<K, V> p = scanQry.getFilter();
+
+        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+
+        if (grp != null)
+            qry.projection(grp);
+
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(ctx,
+            new IgniteOutClosureX<GridCloseableIterator<R>>() {
+                @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
+                    final GridCloseableIterator iter0 = qry.executeScanQuery();
+
+                    final boolean needToConvert = transformer == null;
+
+                    return new GridCloseableIteratorAdapter<R>() {
+                        @Override protected R onNext() throws IgniteCheckedException {
+                            Object next = iter0.nextX();
+
+                            if (needToConvert) {
+                                Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
+
+                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                            }
+
+                            return (R)next;
+                        }
+
+                        @Override protected boolean onHasNext() throws IgniteCheckedException {
+                            return iter0.hasNextX();
+                        }
+
+                        @Override protected void onClose() throws IgniteCheckedException {
+                            iter0.close();
+                        }
+                    };
+                }
+            }, false);
+
+        return new QueryCursorImpl<>(iter);
+    }
+
+    /**
      * @param filter Filter.
      * @param grp Optional cluster group.
      * @return Cursor.
@@ -476,40 +535,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K, V>> qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
-
-        if (filter instanceof ScanQuery) {
-            IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
-
-            qry = ctx.queries().createScanQuery(p, ((ScanQuery)filter).getPartition(), isKeepBinary);
-
-            if (grp != null)
-                qry.projection(grp);
-
-            final GridCloseableIterator<Entry<K, V>> iter = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<GridCloseableIterator<Entry<K, V>>>() {
-                    @Override public GridCloseableIterator<Entry<K, V>> applyx() throws IgniteCheckedException {
-                        final GridCloseableIterator<Map.Entry> iter0 = qry.executeScanQuery();
-
-                        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
-                            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
-                                Map.Entry<K, V> next = iter0.nextX();
-
-                                return new CacheEntryImpl<>(next.getKey(), next.getValue());
-                            }
-
-                            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                                return iter0.hasNextX();
-                            }
-
-                            @Override protected void onClose() throws IgniteCheckedException {
-                                iter0.close();
-                            }
-                        };
-                    }
-                }, false);
-
-            return new QueryCursorImpl<>(iter);
-        }
 
         final CacheQueryFuture<Map.Entry<K, V>> fut;
 
@@ -700,7 +725,40 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
 
+            if (qry instanceof ScanQuery)
+                return query((ScanQuery)qry, null, projection(qry.isLocal()));
+
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw (CacheException)e;
+
+            throw new CacheException(e);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
+        A.notNull(qry, "qry");
+        A.notNull(transformer, "transformer");
+
+        if (!(qry instanceof ScanQuery))
+            throw new UnsupportedOperationException("Transformers are supported only for SCAN queries.");
+
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+            validate(qry);
+
+            return query((ScanQuery<K, V>)qry, transformer, projection(qry.isLocal()));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
