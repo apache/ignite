@@ -17,13 +17,20 @@
 
 namespace Apache.Ignite.Core.Tests.AspNet
 {
+    using System.Web;
     using Apache.Ignite.AspNet.Impl;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IgniteSessionStateStoreData"/>.
     /// </summary>
     public class IgniteSessionStateStoreDataTest
     {
-        // TODO
+        [Test]
+        public void Test()
+        {
+            var data = new IgniteSessionStateStoreData(new HttpStaticObjectsCollection(), 44);
+            Assert.AreEqual(44, data.Timeout);
+        }
     }
 }
