@@ -121,6 +121,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             col.Clear();
             Assert.AreEqual(0, col.Count);
+
+            // Set dirty.
+            var col1 = new IgniteSessionStateItemCollection(innerCol) {Dirty = true};
+            Assert.IsTrue(col1.Dirty);
         }
     }
 }
