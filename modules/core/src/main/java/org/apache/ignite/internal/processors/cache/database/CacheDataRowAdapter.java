@@ -55,6 +55,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected CacheObject val;
 
     /** */
+    protected long expireTime = -1;
+
+    /** */
     @GridToStringInclude
     protected GridCacheVersion ver;
 
@@ -74,9 +77,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
-        assert cctx != null: "cctx";
-        assert link != 0: "link";
-        assert key == null: "key";
+        assert cctx != null : "cctx";
+        assert link != 0 : "link";
+        assert key == null : "key";
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
 
@@ -142,6 +145,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = null;
         }
 
+        if (expireTime == -1) {
+            incomplete = readIncompleteExpireTime(buf, incomplete);
+
+            if (expireTime == -1)
+                return incomplete;
+
+            incomplete = null;
+        }
+
         // Read value.
         if (val == null) {
             incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
@@ -176,6 +188,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         val = coctx.processor().toCacheObject(coctx, buf);
         ver = CacheVersionIO.read(buf, false);
+        expireTime = buf.getLong();
 
         assert isReady(): "ready";
     }
@@ -226,6 +239,49 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
         else
             assert !buf.hasRemaining();
+
+        return incomplete;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param incomplete Incomplete object.
+     * @return Incomplete object.
+     */
+    private IncompleteObject<?> readIncompleteExpireTime(
+        ByteBuffer buf,
+        IncompleteObject<?> incomplete
+    ) throws IgniteCheckedException {
+        if (incomplete == null) {
+            int remaining = buf.remaining();
+
+            if (remaining == 0)
+                return null;
+
+            int size = 8;
+
+            if (remaining >= size) {
+                expireTime = buf.getLong();
+
+                assert expireTime >= 0 : expireTime;
+
+                return null;
+            }
+
+            incomplete = new IncompleteObject<>(new byte[size]);
+        }
+
+        incomplete.readData(buf);
+
+        if (incomplete.isReady()) {
+            final ByteBuffer timeBuf = ByteBuffer.wrap(incomplete.data());
+
+            timeBuf.order(buf.order());
+
+            expireTime = timeBuf.getLong();
+
+            assert expireTime >= 0;
+        }
 
         return incomplete;
     }
@@ -304,6 +360,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert ver != null : "Version is not ready: " + this;
 
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return expireTime;
     }
 
     /** {@inheritDoc} */

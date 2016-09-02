@@ -48,11 +48,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -321,6 +318,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     if (altTypeId != null)
                         types.put(altTypeId, desc);
+
+                    desc.typeId(typeId.valType != null ? typeId.valType.getName().hashCode() : typeId.valTypeId);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
@@ -654,9 +653,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public boolean store(final String space,
+    public void store(final String space,
         final KeyCacheObject key,
         int partId,
+        @Nullable CacheObject prevVal,
+        @Nullable GridCacheVersion prevVer,
         final CacheObject val,
         GridCacheVersion ver,
         long expirationTime,
@@ -676,37 +677,70 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (idx == null)
-            return false;
+            return;
 
         if (!busyLock.enterBusy())
-            return false;
+            return;
 
         try {
             if (coctx == null)
                 coctx = cacheObjectContext(space);
 
-            Class<?> valCls = null;
+            TypeDescriptor desc = typeByValue(coctx, key, val, true);
 
-            TypeId id;
+            if (prevVal != null) {
+                TypeDescriptor prevValDesc = typeByValue(coctx, key, prevVal, false);
 
-            boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
-
-            if (binaryVal) {
-                int typeId = ctx.cacheObjects().typeId(val);
-
-                id = new TypeId(space, typeId);
-            }
-            else {
-                valCls = val.value(coctx, false).getClass();
-
-                id = new TypeId(space, valCls);
+                if (prevValDesc != null && prevValDesc != desc)
+                    idx.remove(space, prevValDesc, key, partId, prevVal, prevVer);
             }
 
-            TypeDescriptor desc = types.get(id);
+            if (desc == null)
+                return;
 
-            if (desc == null || !desc.registered())
-                return false;
+            idx.store(space, desc, key, partId, val, ver, expirationTime, link);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
 
+    /**
+     * @param coctx Cache context.
+     * @param key Key.
+     * @param val Value.
+     * @param checkType If {@code true} checks that key and value type correspond to found TypeDescriptor.
+     * @return Type descriptor if found.
+     * @throws IgniteCheckedException If type check failed.
+     */
+    @Nullable private TypeDescriptor typeByValue(CacheObjectContext coctx,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean checkType)
+        throws IgniteCheckedException {
+        Class<?> valCls = null;
+
+        TypeId id;
+
+        boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
+
+        if (binaryVal) {
+            int typeId = ctx.cacheObjects().typeId(val);
+
+            id = new TypeId(coctx.cacheName(), typeId);
+        }
+        else {
+            valCls = val.value(coctx, false).getClass();
+
+            id = new TypeId(coctx.cacheName(), valCls);
+        }
+
+        TypeDescriptor desc = types.get(id);
+
+        if (desc == null || !desc.registered())
+            return null;
+
+        if (checkType) {
             if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
@@ -719,49 +753,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
-
-            return idx.store(space, desc, key, partId, val, ver, expirationTime, link);
         }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
 
-    /**
-     * @param space Space name.
-     * @param key Key to read.
-     * @return Read versioned value.
-     * @throws IgniteCheckedException
-     */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(final String space, final KeyCacheObject key, int partId)
-        throws IgniteCheckedException {
-        if (idx == null)
-            return null;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to write to index (grid is stopping).");
-
-        try {
-            return idx.read(space, key, partId);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    public BPlusTree<?, ? extends CacheDataRow> pkIndex(String space) {
-        if (idx == null)
-            return null;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to write to index (grid is stopping).");
-
-        try {
-            return idx.pkIndex(space);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return desc;
     }
 
     /**
@@ -986,26 +980,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public boolean remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
+        assert val != null;
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
 
+        CacheObjectContext coctx = null;
+
         if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(space);
+            coctx = cacheObjectContext(space);
 
             ctx.indexing().remove(space, key.value(coctx, false));
         }
 
         if (idx == null)
-            return false;
+            return;
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            return idx.remove(space, key, partId, val, ver);
+            if (coctx == null)
+                coctx = cacheObjectContext(space);
+
+            TypeDescriptor desc = typeByValue(coctx, key, val, false);
+
+            if (desc == null)
+                return;
+
+            idx.remove(space, desc, key, partId, val, ver);
         }
         finally {
             busyLock.leaveBusy();
@@ -1066,14 +1071,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int packageEnd = clsName.lastIndexOf('.');
+        int pkgEnd = clsName.lastIndexOf('.');
 
-        if (packageEnd >= 0 && packageEnd < clsName.length() - 1)
-            clsName = clsName.substring(packageEnd + 1);
+        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
+            clsName = clsName.substring(pkgEnd + 1);
 
-        if (clsName.endsWith("[]")) {
+        if (clsName.endsWith("[]"))
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-        }
 
         int parentEnd = clsName.lastIndexOf('$');
 
@@ -2088,6 +2092,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** SPI can decide not to register this type. */
         private boolean registered;
 
+        /** */
+        private int typeId;
+
         /**
          * @return {@code True} if type registration in SPI was finished and type was not rejected.
          */
@@ -2263,6 +2270,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void affinityKey(String affKey) {
             this.affKey = affKey;
+        }
+
+        /**
+          * @param typeId Type ID.
+         */
+        void typeId(int typeId) {
+            this.typeId = typeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int typeId() {
+            return this.typeId;
         }
 
         /** {@inheritDoc} */
