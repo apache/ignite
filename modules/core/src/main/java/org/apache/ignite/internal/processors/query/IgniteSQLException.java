@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * errors in JDBC driver.
  */
 public class IgniteSQLException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** State to return as {@link SQLException#SQLState} */
     private final String sqlState;
 
