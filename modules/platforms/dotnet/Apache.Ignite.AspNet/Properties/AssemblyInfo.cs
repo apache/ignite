@@ -17,6 +17,7 @@
 
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.AspNet")]
@@ -37,3 +38,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyInformationalVersion("1.8.0")]
 
 [assembly: CLSCompliant(true)]
+
+[assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100a5bf8e0062a26bde53ccf0f8c42ef5b122a22052f99aecacb7028adcc163050324ee3c75ff40eb0cbe2d0426fa20eca03726cad90d7eb882ff47f5361567a82b676a27565f88b2479d7b9354ae0a1e526ee781b6e11de943d8f4a49efb53765f8c954022bede0fca86c133fab038af8dc88b67d6b6e5b9796d6ca490e699efab")]

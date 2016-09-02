@@ -17,6 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.AspNet
 {
+    using Apache.Ignite.AspNet.Impl;
+
+    /// <summary>
+    /// Tests for <see cref="IgniteSessionStateItemCollection"/>.
+    /// </summary>
     public class IgniteSessionStateItemCollectionTest
     {
         // TODO
