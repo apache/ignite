@@ -474,6 +474,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public long platformInvoke(int opCode, long memPtr) {
+        // TODO: Move this to PlatformCache instead? In order to avoid cache name lookup.
         return PlatformInvoker.invoke(platformCtx, opCode, memPtr);
     }
 
