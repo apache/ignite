@@ -25,10 +25,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
     /// </summary>
     public class BinarizableSessionStateStoreDataTest
     {
+        /// <summary>
+        /// Tests the empty data.
+        /// </summary>
         [Test]
-        public void Test()
+        public void TestEmpty()
         {
-            
+            var data = new BinarizableSessionStateStoreData();
+
+            Assert.AreEqual(0, data.LockId);
         }
     }
 }
