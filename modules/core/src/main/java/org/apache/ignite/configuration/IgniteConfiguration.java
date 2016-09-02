@@ -2044,9 +2044,6 @@ public class IgniteConfiguration {
     public IgniteConfiguration setClientMode(boolean clientMode) {
         this.clientMode = clientMode;
 
-        if (clientMode)
-            U.dumpStack("== Client mode set");
-
         return this;
     }
 
