@@ -23,6 +23,7 @@ namespace Apache.Ignite.AspNet.Impl
     using System.Diagnostics;
     using System.Web.SessionState;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Wrapper for <see cref="KeyValueDirtyTrackedCollection" />.
@@ -54,9 +55,18 @@ namespace Apache.Ignite.AspNet.Impl
         }
 
         /** <inheritdoc /> */
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", 
+            "CA1062:Validate arguments of public methods", MessageId = "0", Justification = "Validated.")]
         public void CopyTo(Array array, int index)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(array, "array");
+            IgniteArgumentCheck.Ensure(Count + index < array.Length, "array",
+                "The number of elements in the source collection is greater than the available space " +
+                "from specified index to the end of the array.");
+
+            var i = 0;
+            foreach (var key in _collection.GetKeys())
+                array.SetValue(key, i++);
         }
 
         /** <inheritdoc /> */

@@ -17,13 +17,37 @@
 
 namespace Apache.Ignite.Core.Tests.AspNet
 {
+    using System;
     using Apache.Ignite.AspNet.Impl;
+    using Apache.Ignite.Core.Impl.Collections;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IgniteSessionStateItemCollection"/>.
     /// </summary>
     public class IgniteSessionStateItemCollectionTest
     {
-        // TODO
+        /// <summary>
+        /// Tests the collection.
+        /// </summary>
+        [Test]
+        public void TestCollection()
+        {
+            var innerCol = new KeyValueDirtyTrackedCollection();
+            var col = new IgniteSessionStateItemCollection(innerCol);
+
+            // Check empty.
+            Assert.IsFalse(col.Dirty);
+            Assert.IsFalse(col.IsSynchronized);
+            Assert.AreEqual(0, col.Count);
+            Assert.Throws<NotSupportedException>(() => Assert.IsNull(col.Keys));
+            Assert.IsNotNull(col.SyncRoot);
+            Assert.IsEmpty(col);
+            col.Clear();
+
+            var keys = new[] {"1"};
+            col.CopyTo(keys, 0);
+            Assert.AreEqual(new[] {"1"}, keys);
+        }
     }
 }
