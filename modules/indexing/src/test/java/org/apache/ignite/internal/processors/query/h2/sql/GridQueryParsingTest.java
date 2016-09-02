@@ -314,7 +314,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static String normalizeSql(String sql) {
         return sql.toLowerCase()
             .replaceAll("/\\*(?:.|\r|\n)*?\\*/", " ")
-            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " on true ")
+            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " ")
             .replaceAll("\\s+", " ")
             .replaceAll("\\( +", "(")
             .replaceAll(" +\\)", ")")
