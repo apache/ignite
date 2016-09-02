@@ -121,6 +121,9 @@ namespace Apache.Ignite.AspNet.Impl
         {
             get
             {
+                // TODO: Inherit NameObjectCollectionBase in  this class!
+                // We should do everything possible to be pluggable.
+
                 // KeysCollection ctor is internal, not possible to return it.
                 throw new NotSupportedException("Use GetEnumerator instead to get all entries.");
             }
