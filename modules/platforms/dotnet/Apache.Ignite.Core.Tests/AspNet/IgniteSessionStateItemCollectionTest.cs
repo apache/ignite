@@ -29,13 +29,12 @@ namespace Apache.Ignite.Core.Tests.AspNet
     public class IgniteSessionStateItemCollectionTest
     {
         /// <summary>
-        /// Tests the collection.
+        /// Tests the empty collection.
         /// </summary>
         [Test]
-        public void TestCollection()
+        public void TestEmpty()
         {
-            var innerCol = new KeyValueDirtyTrackedCollection();
-            var col = new IgniteSessionStateItemCollection(innerCol);
+            var col = new IgniteSessionStateItemCollection(new KeyValueDirtyTrackedCollection());
 
             // Check empty.
             Assert.IsFalse(col.Dirty);
@@ -56,6 +55,72 @@ namespace Apache.Ignite.Core.Tests.AspNet
             var keys = new[] {"1"};
             col.CopyTo(keys, 0);
             Assert.AreEqual(new[] {"1"}, keys);
+        }
+
+        /// <summary>
+        /// Tests the modification.
+        /// </summary>
+        [Test]
+        public void TestModification()
+        {
+            var innerCol = new KeyValueDirtyTrackedCollection();
+            var col = new IgniteSessionStateItemCollection(innerCol);
+
+            // Populate and check.
+            col["key"] = "val";
+            col["1"] = 1;
+
+            Assert.AreEqual("val", col["key"]);
+            Assert.AreEqual(1, col["1"]);
+
+            Assert.AreEqual(2, col.Count);
+            Assert.IsTrue(col.Dirty);
+            Assert.AreEqual(new[] {"key", "1"}, col.OfType<string>().ToArray());
+
+            // Modify using index.
+            col[0] = "val1";
+            col[1] = 2;
+
+            Assert.AreEqual("val1", col["key"]);
+            Assert.AreEqual(2, col["1"]);
+
+            // Modify using key.
+            col["1"] = 3;
+            col["key"] = "val2";
+
+            Assert.AreEqual("val2", col["key"]);
+            Assert.AreEqual(3, col["1"]);
+
+            // Remove.
+            col["2"] = 2;
+            col["3"] = 3;
+
+            col.Remove("invalid");
+            Assert.AreEqual(4, col.Count);
+
+            col.Remove("1");
+
+            Assert.AreEqual(new[] { "key", "2", "3" }, col.OfType<string>());
+            Assert.AreEqual(null, col["1"]);
+
+            Assert.AreEqual("val2", col["key"]);
+            Assert.AreEqual("val2", col[0]);
+
+            Assert.AreEqual(2, col["2"]);
+            Assert.AreEqual(2, col[1]);
+
+            Assert.AreEqual(3, col["3"]);
+            Assert.AreEqual(3, col[2]);
+
+            // RemoveAt.
+            col.RemoveAt(0);
+            Assert.AreEqual(new[] { "2", "3" }, col.OfType<string>());
+
+            // Clear.
+            Assert.AreEqual(2, col.Count);
+
+            col.Clear();
+            Assert.AreEqual(0, col.Count);
         }
     }
 }
