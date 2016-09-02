@@ -70,6 +70,8 @@ namespace Apache.Ignite.AspNet.Impl
             if (utcExpiry == DateTime.MaxValue)
                 return _cache;
 
+            Debug.Assert(utcExpiry.Kind == DateTimeKind.Utc);
+
             // Round up to seconds ([OutputCache] duration is in seconds).
             var expirySeconds = (long)Math.Round((utcExpiry - DateTime.UtcNow).TotalSeconds);
 

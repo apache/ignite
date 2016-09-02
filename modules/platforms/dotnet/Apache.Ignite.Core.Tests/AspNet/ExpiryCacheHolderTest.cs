@@ -47,9 +47,20 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             var holder = new ExpiryCacheHolder<int, int>(cache);
 
+            // Check same cache for same expiry.
             var cache1 = (CacheEx) holder.GetCacheWithExpiry(15);
 
             CheckExpiry(TimeSpan.FromSeconds(15), cache1);
+            Assert.AreNotSame(cache, cache1);
+            Assert.AreSame(cache1, (CacheEx) holder.GetCacheWithExpiry(15));
+
+            // Check rounding.
+            var cache2 = (CacheEx) holder.GetCacheWithExpiry(DateTime.UtcNow.AddSeconds(15.1));
+            Assert.AreSame(cache1, cache2);
+
+            // Check no expiration.
+            var cache3 = (CacheEx) holder.GetCacheWithExpiry(DateTime.MaxValue);
+            Assert.AreSame(cache, cache3);
         }
 
         /// <summary>
