@@ -275,12 +275,4 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
-
-    /**
-     * Invokes an operation with specified code.
-     *
-     * @param opCode Operation code.
-     * @param memPtr Pointer to a stream with data.
-     */
-    public long platformInvoke(int opCode, long memPtr);
 }
