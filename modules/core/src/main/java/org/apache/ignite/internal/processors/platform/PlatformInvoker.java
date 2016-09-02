@@ -25,6 +25,12 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
  * Invokes platform operations.
  */
 public class PlatformInvoker {
+    /** */
+    public static final int OP_SESSION_STATE_LOCK = 1;
+
+    /** */
+    public static final int OP_SESSION_STATE_RELEASE = 2;
+
     /**
      * Invokes an operation with specified code.
      *
@@ -33,11 +39,19 @@ public class PlatformInvoker {
      * @param memPtr Pointer to a stream with data.
      */
     public static long invoke(PlatformContext platformCtx, int opCode, long memPtr) {
-        final PlatformMemory mem = platformCtx.memory().get(memPtr);
-        final BinaryRawReaderEx reader = platformCtx.reader(mem);
-
         switch (opCode)
         {
+            case OP_SESSION_STATE_LOCK: {
+                final PlatformMemory mem = platformCtx.memory().get(memPtr);
+                final BinaryRawReaderEx reader = platformCtx.reader(mem);
+
+                return 0;
+            }
+
+            case OP_SESSION_STATE_RELEASE: {
+                return 0;
+            }
+
             default:
                 throw new IgniteException("Unexpected opcode in platformInvoke: " + opCode);
         }
