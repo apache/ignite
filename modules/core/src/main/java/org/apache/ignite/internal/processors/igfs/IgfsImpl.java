@@ -75,8 +75,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -789,40 +792,22 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory: " + path);
 
-                IgfsMode mode = resolveMode(path);
-
-                Collection<String> files = new HashSet<>();
-
-                if (IgfsUtils.isDualMode(mode)) {
-                    assert secondaryFs != null;
-
-                    try {
-                        Collection<IgfsPath> children = secondaryFs.listPaths(path);
-
-                        for (IgfsPath child : children)
-                            files.add(child.name());
-                    }
-                    catch (Exception e) {
-                        U.error(log, "List paths in DUAL mode failed [path=" + path + ']', e);
-
-                        throw e;
-                    }
-                }
-
-                if (!IgfsUtils.isDualMode(mode) || modeRslvr.hasPrimaryChild(path)) {
-                    IgniteUuid fileId = meta.fileId(path);
-
-                    if (fileId != null)
-                        files.addAll(meta.directoryListing(fileId).keySet());
-                    else if (mode == PRIMARY)
-                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
-                }
-
-                return F.viewReadOnly(files, new C1<String, IgfsPath>() {
-                    @Override public IgfsPath apply(String e) {
-                        return new IgfsPath(path, e);
-                    }
-                });
+                return listChildEntries(path,
+                    new IgniteOutClosure<Collection<IgfsPath>>() {
+                        @Override public Collection<IgfsPath> apply() {
+                            return secondaryFs.listPaths(path);
+                        }
+                    },
+                    new IgniteClosure<IgfsEntryInfo, Collection<IgfsPath>>() {
+                        @Override public Collection<IgfsPath> apply(IgfsEntryInfo info) {
+                            return Collections.emptySet();
+                        }
+                    },
+                    new IgniteBiClosure<IgfsPath, IgfsEntryInfo, IgfsPath>() {
+                        @Override public IgfsPath apply(IgfsPath path, IgfsEntryInfo info) {
+                            return path;
+                        }
+                    });
             }
         });
     }
@@ -839,62 +824,91 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
-                IgfsMode mode = resolveMode(path);
-
-                Set<IgfsFile> files = new HashSet<>();
-
-                if (IgfsUtils.isDualMode(mode)) {
-                    assert secondaryFs != null;
-
-                    try {
-                        Collection<IgfsFile> children = secondaryFs.listFiles(path);
-
-                        for (IgfsFile child : children) {
-                            IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
-
-                            files.add(impl);
+                return listChildEntries(path,
+                    new IgniteOutClosure<Collection<IgfsFile>>() {
+                        @Override public Collection<IgfsFile> apply() {
+                            Collection<IgfsFile> files = secondaryFs.listFiles(path);
+                            return F.viewReadOnly(files, new C1<IgfsFile, IgfsFile>() {
+                                @Override public IgfsFile apply(IgfsFile e) {
+                                    return new IgfsFileImpl(e, data.groupBlockSize());
+                                }
+                            });
                         }
-
-                        if (!modeRslvr.hasPrimaryChild(path))
-                            return files;
-                    }
-                    catch (Exception e) {
-                        U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
-
-                        throw e;
-                    }
-                }
-
-                IgniteUuid fileId = meta.fileId(path);
-
-                if (fileId != null) {
-                    IgfsEntryInfo info = meta.info(fileId);
-
-                    // Handle concurrent deletion.
-                    if (info != null) {
-                        if (info.isFile())
-                            // If this is a file, return its description.
-                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
-                                data.groupBlockSize()));
-
-                        // Perform the listing.
-                        for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgfsEntryInfo childInfo = meta.info(e.getValue().fileId());
-
-                            if (childInfo != null) {
-                                IgfsPath childPath = new IgfsPath(path, e.getKey());
-
-                                files.add(new IgfsFileImpl(childPath, childInfo, data.groupBlockSize()));
-                            }
+                    },
+                    new IgniteClosure<IgfsEntryInfo, Collection<IgfsFile>>() {
+                        @Override public Collection<IgfsFile> apply(IgfsEntryInfo info) {
+                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info, data.groupBlockSize()));
                         }
-                    }
-                }
-                else if (mode == PRIMARY)
-                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
-
-                return files;
+                    },
+                    new IgniteBiClosure<IgfsPath, IgfsEntryInfo, IgfsFile>() {
+                        @Override public IgfsFile apply(IgfsPath childPath, IgfsEntryInfo childInfo) {
+                            return new IgfsFileImpl(childPath, childInfo, data.groupBlockSize());
+                        }
+                    });
             }
         });
+    }
+
+    /**
+     * @param path IGFS Path.
+     * @param secondaryChildrenGetter Return children of the path from secondary file system.
+     * @param singleFileClosure Return children when the path is file.
+     * @param primaryConverter Converts IgfsEntryInfo to output entry's type.
+     * @param <EntryT> Type of entry.
+     * @return Collection of children entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    private <EntryT> Collection<EntryT> listChildEntries(IgfsPath path,
+        IgniteOutClosure<Collection<EntryT>> secondaryChildrenGetter,
+        IgniteClosure<IgfsEntryInfo, Collection<EntryT>> singleFileClosure,
+        IgniteBiClosure<IgfsPath, IgfsEntryInfo, EntryT> primaryConverter)
+        throws IgniteCheckedException {
+        Set<EntryT> entries = new HashSet<>();
+
+        IgfsMode mode = resolveMode(path);
+
+        if (IgfsUtils.isDualMode(mode)) {
+            assert secondaryFs != null;
+
+            try {
+                entries.addAll(secondaryChildrenGetter.apply());
+
+                if (!modeRslvr.hasPrimaryChild(path))
+                    return entries;
+            }
+            catch (Exception e) {
+                U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
+
+                throw e;
+            }
+        }
+
+        IgniteUuid fileId = meta.fileId(path);
+
+        if (fileId != null) {
+            IgfsEntryInfo info = meta.info(fileId);
+
+            // Handle concurrent deletion.
+            if (info != null) {
+                if (info.isFile())
+                    return singleFileClosure.apply(info);
+
+                // Perform the listing.
+                for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
+                    IgfsEntryInfo childInfo = meta.info(e.getValue().fileId());
+
+                    if (childInfo != null) {
+                        IgfsPath childPath = new IgfsPath(path, e.getKey());
+
+                        entries.add(primaryConverter.apply(childPath, childInfo));
+                    }
+                }
+            }
+        }
+        else if (mode == PRIMARY)
+            throw new IgfsPathNotFoundException("Failed to list entries (path not found): " + path);
+
+        return entries;
     }
 
     /** {@inheritDoc} */
