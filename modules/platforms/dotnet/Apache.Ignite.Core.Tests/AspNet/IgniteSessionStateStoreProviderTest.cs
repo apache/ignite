@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** Session id. */
         private const string Id = "1";
 
-        /** Test context */
+        /** Test context. */
         private static readonly HttpContext HttpContext = 
             new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
 
