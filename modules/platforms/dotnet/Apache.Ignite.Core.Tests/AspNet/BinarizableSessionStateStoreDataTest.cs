@@ -34,6 +34,11 @@ namespace Apache.Ignite.Core.Tests.AspNet
             var data = new BinarizableSessionStateStoreData();
 
             Assert.AreEqual(0, data.LockId);
+            Assert.AreEqual(0, data.Items.Count);
+            Assert.AreEqual(0, data.Timeout);
+            Assert.IsNull(data.LockNodeId);
+            Assert.IsNull(data.LockTime);
+            Assert.IsNull(data.StaticObjects);
         }
     }
 }

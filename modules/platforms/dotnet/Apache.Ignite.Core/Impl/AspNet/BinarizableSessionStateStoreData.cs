@@ -51,8 +51,6 @@ namespace Apache.Ignite.Core.Impl.AspNet
         public BinarizableSessionStateStoreData()
         {
             _items = new KeyValueDirtyTrackedCollection();
-            StaticObjects = null;
-            LockTime = DateTime.UtcNow;
         }
 
         /// <summary>
