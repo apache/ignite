@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="BinarizableSessionStateStoreData"/>.
+    /// Tests for <see cref="SessionStateData"/>.
     /// </summary>
     public class BinarizableSessionStateStoreDataTest
     {
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestEmpty()
         {
-            var data = new BinarizableSessionStateStoreData();
+            var data = new SessionStateData();
 
             Assert.AreEqual(0, data.LockId);
             Assert.AreEqual(0, data.Items.Count);
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestSerialization()
         {
-            var data = new BinarizableSessionStateStoreData
+            var data = new SessionStateData
             {
                 Timeout = 97,
                 LockId = 11,

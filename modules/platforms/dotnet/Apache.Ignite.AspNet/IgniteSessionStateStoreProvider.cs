@@ -53,7 +53,7 @@ namespace Apache.Ignite.AspNet
         private volatile string _applicationId;
 
         /** */
-        private volatile ExpiryCacheHolder<string, BinarizableSessionStateStoreData> _expiryCacheHolder;
+        private volatile ExpiryCacheHolder<string, SessionStateData> _expiryCacheHolder;
 
         /** */
         private volatile ILogger _log;
@@ -72,9 +72,9 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var cache = ConfigUtil.InitializeCache<string, BinarizableSessionStateStoreData>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, SessionStateData>(config, GetType());
 
-            _expiryCacheHolder = new ExpiryCacheHolder<string, BinarizableSessionStateStoreData>(cache);
+            _expiryCacheHolder = new ExpiryCacheHolder<string, SessionStateData>(cache);
 
             _applicationId = config[ApplicationId];
 
@@ -154,7 +154,7 @@ namespace Apache.Ignite.AspNet
             locked = false;
 
             var key = GetKey(id);
-            BinarizableSessionStateStoreData data;
+            SessionStateData data;
 
             if (Cache.TryGet(key, out data))
             {
@@ -226,7 +226,7 @@ namespace Apache.Ignite.AspNet
                 return null;
             }
 
-            var data = lockResult as BinarizableSessionStateStoreData;
+            var data = lockResult as SessionStateData;
 
             if (data == null)
             {
@@ -348,7 +348,7 @@ namespace Apache.Ignite.AspNet
 
             var cache = _expiryCacheHolder.GetCacheWithExpiry((long) timeout * 60);
 
-            var data = new BinarizableSessionStateStoreData {Timeout =  timeout};
+            var data = new SessionStateData {Timeout =  timeout};
 
             cache[GetKey(id)] = data;
         }
@@ -365,7 +365,7 @@ namespace Apache.Ignite.AspNet
         /// <summary>
         /// Gets the cache.
         /// </summary>
-        private ICache<string, BinarizableSessionStateStoreData> Cache
+        private ICache<string, SessionStateData> Cache
         {
             get
             {
@@ -423,10 +423,10 @@ namespace Apache.Ignite.AspNet
         // TODO: Implement this in Java.
         [Serializable]
         private class LockEntryProcessor :
-            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, LockInfo, object>
+            ICacheEntryProcessor<string, SessionStateData, LockInfo, object>
         {
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, LockInfo arg)
+            public object Process(IMutableCacheEntry<string, SessionStateData> entry, LockInfo arg)
             {
                 // Arg contains lock info: node id + thread id
                 // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
@@ -460,10 +460,10 @@ namespace Apache.Ignite.AspNet
 
         [Serializable]
         private class ReleaseLockEntryProcessor :
-            ICacheEntryProcessor<string, BinarizableSessionStateStoreData, LockInfo, object>
+            ICacheEntryProcessor<string, SessionStateData, LockInfo, object>
         {
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-            public object Process(IMutableCacheEntry<string, BinarizableSessionStateStoreData> entry, LockInfo arg)
+            public object Process(IMutableCacheEntry<string, SessionStateData> entry, LockInfo arg)
             {
                 var val = entry.Value;
 

@@ -597,7 +597,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
             AddSystemType(0, r => new KeyValueDirtyTrackedCollection(r));
-            AddSystemType(0, r => new BinarizableSessionStateStoreData(r));
+            AddSystemType(0, r => new SessionStateData(r));
             AddSystemType(0, r => new LockInfo(r));
         }
     }

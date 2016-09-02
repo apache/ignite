@@ -90,7 +90,7 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
-    <Compile Include="Impl\AspNet\BinarizableSessionStateStoreData.cs" />
+    <Compile Include="Impl\AspNet\SessionStateData.cs" />
     <Compile Include="Impl\AspNet\LockInfo.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />

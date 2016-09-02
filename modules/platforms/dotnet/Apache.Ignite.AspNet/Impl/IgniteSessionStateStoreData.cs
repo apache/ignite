@@ -23,12 +23,12 @@ namespace Apache.Ignite.AspNet.Impl
     using Apache.Ignite.Core.Impl.AspNet;
 
     /// <summary>
-    /// Wrapper for <see cref="BinarizableSessionStateStoreData"/>.
+    /// Wrapper for <see cref="SessionStateData"/>.
     /// </summary>
     internal class IgniteSessionStateStoreData : SessionStateStoreData
     {
         /** */
-        private readonly BinarizableSessionStateStoreData _data;
+        private readonly SessionStateData _data;
 
         /** */
         private readonly IgniteSessionStateItemCollection _items;
@@ -37,7 +37,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// Initializes a new instance of the <see cref="IgniteSessionStateStoreData"/> class.
         /// </summary>
         /// <param name="data">The data.</param>
-        public IgniteSessionStateStoreData(BinarizableSessionStateStoreData data) 
+        public IgniteSessionStateStoreData(SessionStateData data) 
             : base(null, DeserializeStaticObjects(data.StaticObjects), 0)
         {
             _data = data;
@@ -52,7 +52,7 @@ namespace Apache.Ignite.AspNet.Impl
         public IgniteSessionStateStoreData(HttpStaticObjectsCollection staticObjects, int timeout) 
             : base(null, staticObjects, 0)
         {
-            _data = new BinarizableSessionStateStoreData
+            _data = new SessionStateData
             {
                 Timeout = timeout
             };
@@ -81,7 +81,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Gets the data.
         /// </summary>
-        public BinarizableSessionStateStoreData Data
+        public SessionStateData Data
         {
             get
             {

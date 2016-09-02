@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
     /// Binarizable SessionStateStoreData. 
     /// Does not override System.Web.SessionState.SessionStateStoreData to avoid dependency on System.Web.
     /// </summary>
-    public class BinarizableSessionStateStoreData : IBinaryWriteAware
+    public class SessionStateData : IBinaryWriteAware
     {
         /** Items. */
         private readonly KeyValueDirtyTrackedCollection _items;
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal BinarizableSessionStateStoreData(IBinaryRawReader reader)
+        internal SessionStateData(IBinaryRawReader reader)
         {
             Timeout = reader.ReadInt();
             LockNodeId = reader.ReadGuid();
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarizableSessionStateStoreData"/> class.
         /// </summary>
-        public BinarizableSessionStateStoreData()
+        public SessionStateData()
         {
             _items = new KeyValueDirtyTrackedCollection();
         }
