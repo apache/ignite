@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * Marker that we start memory recovering
  */
 public class MemoryRecoveryRecord extends WALRecord {
     /**
