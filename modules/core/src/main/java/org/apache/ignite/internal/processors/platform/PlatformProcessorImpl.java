@@ -472,6 +472,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public long platformInvoke(int opCode, long memPtr) {
+        return PlatformInvoker.invoke(platformCtx, opCode, memPtr);
+    }
+
     /**
      * Gets the near cache config.
      *
