@@ -15,35 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * ODBC handshake request.
+ *
  */
-public class OdbcHandshakeRequest extends OdbcRequest {
-    /** Protocol version. */
-    private final OdbcProtocolVersion ver;
-
-    /**
-     * @param ver Long value for protocol version.
-     */
-    public OdbcHandshakeRequest(long ver) {
-        super(HANDSHAKE);
-
-        this.ver = OdbcProtocolVersion.fromLong(ver);
-    }
-
-    /**
-     * @return Protocol version.
-     */
-    public OdbcProtocolVersion version() {
-        return ver;
-    }
-
+public class IgniteBinaryObjectQueryArgumentsOffheapLocalTest extends IgniteBinaryObjectQueryArgumentsOffheapTest {
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(OdbcHandshakeRequest.class, this);
+    @Override protected boolean isLocal() {
+        return true;
     }
 }
