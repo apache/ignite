@@ -27,4 +27,9 @@ public class GridCacheInterceptorTransactionalOffheapRebalanceTest extends GridC
     @Override protected CacheMemoryMode memoryMode() {
         return CacheMemoryMode.OFFHEAP_TIERED;
     }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
+    }
 }
