@@ -61,7 +61,9 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
 
 
-    /** Constructor.
+    /**
+     * Constructor.
+     *
      * @param mode IGFS mode.
      */
     public IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
@@ -166,6 +168,22 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
         createSymlinks();
 
         checkFileContent(igfs, new IgfsPath("/file"), chunk);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testMkdirsInsideSymlink() throws Exception {
+        if (U.isWindows())
+            return;
+
+        createSymlinks();
+
+        igfs.mkdirs(SUBSUBDIR);
+
+        assertTrue(Files.isDirectory(dirLinkDest.toPath().resolve("subdir/subsubdir")));
+        assertTrue(Files.isDirectory(dirLinkSrc.toPath().resolve("subdir/subsubdir")));
     }
 
     /**
