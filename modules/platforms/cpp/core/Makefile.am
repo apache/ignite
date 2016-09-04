@@ -59,6 +59,7 @@ libignite_la_SOURCES = \
     src/impl/handle_registry.cpp \
     src/impl/cache/query/query_impl.cpp \
     src/impl/cache/cache_impl.cpp \
+    src/impl/cache/query/query_batch.cpp \
     src/impl/interop/interop_external_memory.cpp \
     src/impl/interop/interop_target.cpp \
     src/impl/transactions/transaction_impl.cpp \
