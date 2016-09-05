@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Impl
 {
     using System;
@@ -348,7 +347,13 @@ namespace Apache.Ignite.Core.Impl
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
+        }
 
+        /// <summary>
+        /// Called after node has stopped.
+        /// </summary>
+        internal void AfterNodeStop()
+        {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
         }

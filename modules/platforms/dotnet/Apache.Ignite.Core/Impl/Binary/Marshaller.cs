@@ -50,8 +50,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc =
-            new Dictionary<long, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc =
+            new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
         private volatile IDictionary<int, BinaryTypeHolder> _metas =
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode, BinaryObjectBuilder builder)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReader(this, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -252,8 +252,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
-            return new BinaryReader(this, _idToDesc, stream,
-                keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return new BinaryReader(this, stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -264,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Reader.</returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, null);
+            return new BinaryReader(this, stream, mode, null);
         }
         
         /// <summary>
@@ -387,17 +386,36 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// 
+        /// Gets descriptor for a type id.
         /// </summary>
-        /// <param name="userType"></param>
-        /// <param name="typeId"></param>
-        /// <returns></returns>
+        /// <param name="userType">User type flag.</param>
+        /// <param name="typeId">Type id.</param>
+        /// <returns>Descriptor.</returns>
         public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId)
         {
             IBinaryTypeDescriptor desc;
 
-            return _idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new BinarySurrogateTypeDescriptor(_cfg, typeId) : null;
+            var typeKey = BinaryUtils.TypeKey(userType, typeId);
+
+            if (_idToDesc.TryGetValue(typeKey, out desc))
+                return desc;
+
+            if (!userType)
+                return null;
+
+            var meta = GetBinaryType(typeId);
+
+            if (meta != BinaryType.Empty)
+            {
+                desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false, 
+                    meta.AffinityKeyFieldName, meta.IsEnum);
+
+                _idToDesc.GetOrAdd(typeKey, _ => desc);
+
+                return desc;
+            }
+
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId);
         }
 
         /// <summary>
@@ -534,7 +552,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType)
                 _typeNameToDesc[typeName] = descriptor;
 
-            _idToDesc[typeKey] = descriptor;            
+            _idToDesc.GetOrAdd(typeKey, _ => descriptor);
         }
 
         /// <summary>
@@ -576,6 +594,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
             AddSystemType(0, w => new AffinityKey(w), "affKey");
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(0, w => new ObjectInfoHolder(w));
         }
     }
 }

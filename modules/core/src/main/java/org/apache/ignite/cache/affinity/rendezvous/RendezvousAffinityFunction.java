@@ -104,19 +104,31 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
         }
     };
+
     /** Number of partitions. */
     private int parts;
+
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
+
     /** Exclude neighbors warning. */
     private transient boolean exclNeighborsWarn;
+
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
+
+    /** Optional affinity backups filter. The first node is a node being tested,
+     *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
+     *  is primary). */
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
+
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
+
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
+
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -246,14 +258,20 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Total number of partitions.
      */
     public void setPartitions(int parts) {
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+
         this.parts = parts;
     }
 
     /**
-     * Gets hash ID resolver for nodes. This resolver is used to provide alternate hash ID, other than node ID. <p> Node
-     * IDs constantly change when nodes get restarted, which causes them to be placed on different locations in the hash
-     * ring, and hence causing repartitioning. Providing an alternate hash ID, which survives node restarts, puts node
-     * on the same location on the hash ring, hence minimizing required repartitioning.
+     * Gets hash ID resolver for nodes. This resolver is used to provide
+     * alternate hash ID, other than node ID.
+     * <p>
+     * Node IDs constantly change when nodes get restarted, which causes them to
+     * be placed on different locations in the hash ring, and hence causing
+     * repartitioning. Providing an alternate hash ID, which survives node restarts,
+     * puts node on the same location on the hash ring, hence minimizing required
+     * repartitioning.
      *
      * @return Hash ID resolver.
      */
@@ -263,12 +281,17 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets hash ID resolver for nodes. This resolver is used to provide alternate hash ID, other than node ID. <p> Node
-     * IDs constantly change when nodes get restarted, which causes them to be placed on different locations in the hash
-     * ring, and hence causing repartitioning. Providing an alternate hash ID, which survives node restarts, puts node
-     * on the same location on the hash ring, hence minimizing required repartitioning.
+     * Sets hash ID resolver for nodes. This resolver is used to provide
+     * alternate hash ID, other than node ID.
+     * <p>
+     * Node IDs constantly change when nodes get restarted, which causes them to
+     * be placed on different locations in the hash ring, and hence causing
+     * repartitioning. Providing an alternate hash ID, which survives node restarts,
+     * puts node on the same location on the hash ring, hence minimizing required
+     * repartitioning.
      *
      * @param hashIdRslvr Hash ID resolver.
+     *
      * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
      */
     @Deprecated
@@ -277,9 +300,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Gets optional backup filter. If not {@code null}, backups will be selected from all nodes that pass this filter.
-     * First node passed to this filter is primary node, and second node is a node being tested. <p> Note that {@code
-     * backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @return Optional backup filter.
      */
@@ -288,9 +313,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.
-     * First node being passed to this filter is primary node, and second node is a node being tested. <p> Note that
-     * {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
      */
@@ -299,8 +326,35 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}). <p> Note
-     * that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        return affinityBackupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is a node being tested,
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param affinityBackupFilter Optional backup filter.
+     */
+    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        this.affinityBackupFilter = affinityBackupFilter;
+    }
+
+    /**
+     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @return {@code True} if nodes residing on the same host may not act as backups of each other.
      */
@@ -309,8 +363,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}). <p> Note
-     * that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
      */
@@ -417,7 +472,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     if (!allNeighbors.contains(node))
                         res.add(node);
                 }
-                else if (backupFilter == null || backupFilter.apply(primary, node))
+                else if (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    res.add(next.get2());
+                else if (backupFilter != null && backupFilter.apply(primary, node))
+                    res.add(next.get2());
+                else if (affinityBackupFilter == null && backupFilter == null)
                     res.add(next.get2());
             }
         }
@@ -458,7 +517,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return U.safeAbs(key.hashCode()) % parts;
+        return U.safeAbs(key.hashCode() % parts);
     }
 
     /** {@inheritDoc} */

@@ -87,6 +87,15 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
         return backups;
     }
 
+    /**
+     * Gets the previous assignment.
+     *
+     * @return Previous assignment.
+     */
+    public List<List<ClusterNode>> prevAssignment() {
+        return prevAssignment;
+    }
+
     /** {@inheritDoc} */
     public IgniteProductVersion oldestNodeVersion() {
         return oldestNodeVersion;

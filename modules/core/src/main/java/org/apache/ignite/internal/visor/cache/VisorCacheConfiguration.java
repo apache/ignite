@@ -24,8 +24,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -35,7 +37,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 /**
  * Data transfer object for cache configuration properties.
  */
-public class VisorCacheConfiguration implements Serializable {
+public class VisorCacheConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -158,7 +160,7 @@ public class VisorCacheConfiguration implements Serializable {
 
         boolean compatibility = false;
 
-        for (org.apache.ignite.cluster.ClusterNode node : ignite.cluster().nodes()) {
+        for (ClusterNode node : ignite.cluster().nodes()) {
             if (node.version().compareToIgnoreTimestamp(VER_1_4_1) <= 0) {
                 compatibility = true;
 
@@ -167,7 +169,7 @@ public class VisorCacheConfiguration implements Serializable {
         }
 
         storeCfg = (compatibility ? new VisorCacheStoreConfiguration() : new VisorCacheStoreConfigurationV2())
-                .from(ignite, ccfg);
+            .from(ignite, ccfg);
 
         qryCfg = (compatibility ? new VisorCacheQueryConfiguration() : new VisorCacheQueryConfigurationV2()).from(ccfg);
 

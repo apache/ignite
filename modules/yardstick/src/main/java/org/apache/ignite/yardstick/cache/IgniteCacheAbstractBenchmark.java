@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -51,6 +52,10 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         super.setUp(cfg);
 
         cache = cache();
+
+        BenchmarkUtils.println(cfg, "Benchmark setUp [name=" + getClass().getSimpleName() +
+            ", cacheName="+ cache.getName() +
+            ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
 
         if (args.printPartitionStatistics()) {
             Map<ClusterNode, T2<List<Integer>, List<Integer>>> parts = new HashMap<>();

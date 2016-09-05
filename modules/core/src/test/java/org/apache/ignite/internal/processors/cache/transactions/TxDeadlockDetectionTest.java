@@ -21,8 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collection;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +48,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -96,7 +96,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(NODES_CNT);
+        startGridsMultiThreaded(NODES_CNT);
     }
 
     /** {@inheritDoc} */
@@ -151,8 +151,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
-                            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 700, 0)) {
+                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                             for (int i = 0; i < 50; i++) {
                                 int key = rnd.nextInt(50);
@@ -198,7 +198,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
-        final int timeout = 500;
+        final long timeout = 500;
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -217,7 +217,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     cache.put(key, 0);
 
-                    barrier.await(timeout + 100, TimeUnit.MILLISECONDS);
+                    barrier.await(timeout + 1000, TimeUnit.MILLISECONDS);
 
                     tx.commit();
                 }
@@ -257,7 +257,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
             final CyclicBarrier barrier = new CyclicBarrier(threads);
 
-            final int timeout = 500;
+            final long timeout = 500;
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -281,7 +281,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                             log.info(">>> Performs sleep. [node=" + ((IgniteKernal)ignite).localNode() +
                                 ", tx=" + tx + ']');
 
-                            U.sleep(timeout * 2);
+                            U.sleep(timeout * 3);
                         }
                         else {
                             int key2 = threadNum + 1;
@@ -336,7 +336,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
         try {
             final int txCnt = 2;
 
-            final CyclicBarrier barrier = new CyclicBarrier(2);
+            final CyclicBarrier barrier = new CyclicBarrier(txCnt);
 
             final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -381,7 +381,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                         deadlock.compareAndSet(false, hasCause(e, TransactionDeadlockException.class));
                     }
                 }
-            }, 2, "tx-thread");
+            }, txCnt, "tx-thread");
 
             fut.get();
 
@@ -406,8 +406,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
             IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
 
-            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
-                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
 
             assertTrue(futs.isEmpty());
         }

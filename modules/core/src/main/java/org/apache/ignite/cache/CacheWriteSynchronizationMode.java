@@ -22,9 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Mode indicating how Ignite should wait for write replies from other nodes. Default
- * value is {@link #FULL_ASYNC}}, which means that Ignite will not wait for responses from
- * participating nodes. This means that by default remote nodes may get their state updated slightly after
- * any of the cache write methods complete, or after {@link Transaction#commit()} method completes.
+ * value is {@link #PRIMARY_SYNC}}, which means that Ignite will wait for write or commit to complete on
+ * {@code primary} node, but will not wait for backups to be updated.
  * <p>
  * Note that regardless of write synchronization mode, cache data will always remain fully
  * consistent across all participating nodes.
