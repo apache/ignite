@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -111,6 +112,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -593,14 +595,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @SuppressWarnings({"CatchGenericClass"})
     public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             TransactionState state = state();
 
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
+            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" +
+                state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -675,7 +678,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         TransactionState state = state();
 
         if (state != COMMITTING) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             setRollbackOnly();
@@ -3695,8 +3698,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
+        if (local() && !dht() && remainingTime() == -1)
+            state(MARKED_ROLLBACK, true);
+
         if (isRollbackOnly()) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
 
             TransactionState state = state();
@@ -3711,10 +3717,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
-
-        if (remainingTime() == -1 && setRollbackOnly())
-            throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
-                "(was rolled back automatically): " + this);
     }
 
     /** {@inheritDoc} */
@@ -3761,7 +3763,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         TransactionState state = state();
 
-        assert state == TransactionState.ACTIVE || timedOut() :
+        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 
@@ -3822,7 +3824,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 this,
                 op,
                 val,
-                entryProcessor,
+                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProcessor),
                 invokeArgs,
                 hasDrTtl ? drTtl : -1L,
                 entry,

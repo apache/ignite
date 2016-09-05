@@ -176,7 +176,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         BinaryType meta;
 
         try {
-            meta = type();
+            meta = rawType();
         }
         catch (BinaryObjectException ignore) {
             meta = null;
@@ -222,7 +222,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
                         Integer idHash0 = handles.get(val);
 
                         if (idHash0 != null) {  // Circular reference.
-                            BinaryType meta0 = po.type();
+                            BinaryType meta0 = po.rawType();
 
                             assert meta0 != null;
 

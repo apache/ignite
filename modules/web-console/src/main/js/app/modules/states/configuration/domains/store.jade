@@ -43,15 +43,15 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            input.form-control(id=databaseNameId enter-focus-next=databaseTypeId type='text' ng-model=databaseNameModel placeholder='DB name' on-enter='#{javaNameModel} = #{javaNameModel} ? #{javaNameModel} : #{databaseNameModel}' on-escape='tableReset()')
+            input.form-control(id=databaseNameId ignite-on-enter-focus-move=databaseTypeId type='text' ng-model=databaseNameModel placeholder='DB name' ignite-on-enter='#{javaNameModel} = #{javaNameModel} ? #{javaNameModel} : #{databaseNameModel}' ignite-on-escape='tableReset()')
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            button.select-toggle.form-control(id=databaseTypeId enter-focus-next=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=databaseTypeId ignite-on-enter-focus-move=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' ignite-on-escape='tableReset()' tabindex='0')
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            input.form-control(id=javaNameId enter-focus-next=javaTypeId type='text' ng-model=javaNameModel placeholder='Java name' on-escape='tableReset()')
+            input.form-control(id=javaNameId ignite-on-enter-focus-move=javaTypeId type='text' ng-model=javaNameModel placeholder='Java name' ignite-on-escape='tableReset()')
     .col-xs-3.col-sm-3.col-md-3
         -var btnVisible = 'tableDbFieldSaveVisible(' + tbl + ', ' + index +')'
         -var btnSave = 'tableDbFieldSave(' + tbl + ', ' + index +')'
@@ -59,7 +59,7 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
 
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()' tabindex='0')
 
 form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')

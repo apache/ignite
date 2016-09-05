@@ -481,56 +481,57 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
             const jarFilter = (file) => path.extname(file) === '.jar';
 
-            for (const archive of agentArchives) {
-                const filePath = path.join(settings.agent.dists, archive);
+            const agentsPromises = _.map(agentArchives, (fileName) => {
+                const filePath = path.join(settings.agent.dists, fileName);
 
-                const zip = new JSZip(fs.readFileSync(filePath));
+                return JSZip.loadAsync(fs.readFileSync(filePath))
+                    .then((zip) => {
+                        const jarPath = _.find(_.keys(zip.files), jarFilter);
 
-                const jarPath = _.find(_.keys(zip.files), jarFilter);
+                        return JSZip.loadAsync(zip.files[jarPath].async('nodebuffer'))
+                            .then((jar) => jar.files['META-INF/MANIFEST.MF'].async('string'))
+                            .then((lines) => lines.trim()
+                                .split(/\s*\n+\s*/)
+                                .map((line, r) => {
+                                    r = line.split(/\s*:\s*/);
 
-                const jar = new JSZip(zip.files[jarPath].asNodeBuffer());
+                                    this[r[0]] = r[1];
 
-                const manifest = jar.files['META-INF/MANIFEST.MF']
-                    .asText()
-                    .trim()
-                    .split(/\s*\n+\s*/)
-                    .map((line, r) => {
-                        r = line.split(/\s*:\s*/);
+                                    return this;
+                                }, {})[0])
+                            .then((manifest) => {
+                                const ver = manifest['Implementation-Version'];
+                                const buildTime = manifest['Build-Time'];
 
-                        this[r[0]] = r[1];
+                                if (ver && buildTime)
+                                    return { fileName, filePath, ver, buildTime };
+                            });
+                    });
+            });
 
-                        return this;
-                    }, {})[0];
+            Promise.all(agentsPromises)
+                .then((agents) => {
+                    this.supportedAgents = _.keyBy(_.remove(agents, null), 'ver');
 
-                const ver = manifest['Implementation-Version'];
+                    const latest = _.head(Object.keys(this.supportedAgents).sort((a, b) => {
+                        const aParts = a.split('.');
+                        const bParts = b.split('.');
 
-                if (ver) {
-                    this.supportedAgents[ver] = {
-                        fileName: archive,
-                        filePath,
-                        buildTime: manifest['Build-Time']
-                    };
-                }
-            }
+                        for (let i = 0; i < aParts.length; ++i) {
+                            if (bParts.length === i)
+                                return 1;
 
-            const latest = _.head(Object.keys(this.supportedAgents).sort((a, b) => {
-                const aParts = a.split('.');
-                const bParts = b.split('.');
+                            if (aParts[i] === aParts[i])
+                                continue;
 
-                for (let i = 0; i < aParts.length; ++i) {
-                    if (bParts.length === i)
-                        return 1;
+                            return aParts[i] > bParts[i] ? 1 : -1;
+                        }
+                    }));
 
-                    if (aParts[i] === aParts[i])
-                        continue;
-
-                    return aParts[i] > bParts[i] ? 1 : -1;
-                }
-            }));
-
-            // Latest version of agent distribution.
-            if (latest)
-                this.supportedAgents.latest = this.supportedAgents[latest];
+                    // Latest version of agent distribution.
+                    if (latest)
+                        this.supportedAgents.latest = this.supportedAgents[latest];
+                });
         }
 
         attachLegacy(server) {
