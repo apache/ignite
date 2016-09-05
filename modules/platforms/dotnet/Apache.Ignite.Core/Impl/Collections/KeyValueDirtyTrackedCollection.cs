@@ -337,7 +337,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
             foreach (var changedEntry in changes._list)
             {
-                var entry = GetOrCreateDirtyEntry(changedEntry.Key, changedEntry.Marshaller);
+                var entry = GetOrCreateDirtyEntry(changedEntry.Key);
 
                 changedEntry.CopyTo(entry);
             }
@@ -359,13 +359,13 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// <summary>
         /// Gets or creates an entry.
         /// </summary>
-        private Entry GetOrCreateDirtyEntry(string key, Marshaller marsh = null)
+        private Entry GetOrCreateDirtyEntry(string key)
         {
             var entry = GetEntry(key);
 
             if (entry == null)
             {
-                entry = new Entry(key, false, marsh, null);
+                entry = new Entry(key, false, null, null);
 
                 _dict[key] = _list.Count;
                 _list.Add(entry);
@@ -439,16 +439,16 @@ namespace Apache.Ignite.Core.Impl.Collections
             public readonly string Key;
 
             /** */
-            public readonly Marshaller Marshaller;
+            public bool IsDirty;
+
+            /** */
+            private Marshaller _marsh;
 
             /** */
             private object _value;
 
             /** */
-            public bool IsDirty;
-            
-            /** */
-            public bool IsDeserialized;
+            private bool _isDeserialized;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> class.
@@ -460,8 +460,8 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 Key = key;
                 IsInitial = isInitial;
-                IsDeserialized = !isInitial;
-                Marshaller = marsh;
+                _isDeserialized = !isInitial;
+                _marsh = marsh;
                 _value = value;
             }
 
@@ -472,10 +472,10 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 get
                 {
-                    if (!IsDeserialized)
+                    if (!_isDeserialized)
                     {
-                        _value = Marshaller.Unmarshal<object>((byte[]) _value);
-                        IsDeserialized = true;
+                        _value = _marsh.Unmarshal<object>((byte[]) _value);
+                        _isDeserialized = true;
                     }
 
                     return _value;
@@ -483,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 set
                 {
                     _value = value;
-                    IsDeserialized = true;
+                    _isDeserialized = true;
                 }
             }
 
@@ -494,8 +494,9 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 Debug.Assert(entry != null);
 
-                entry.IsDeserialized = IsDeserialized;
-                entry.Value = _value;
+                entry._isDeserialized = _isDeserialized;
+                entry._value = _value;
+                entry._marsh = _marsh;
             }
 
             /// <summary>
@@ -503,7 +504,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             /// </summary>
             public byte[] GetBytes(Marshaller marsh)
             {
-                if (!IsDeserialized)
+                if (!_isDeserialized)
                     return (byte[]) _value;
 
                 return marsh.Marshal(_value);
