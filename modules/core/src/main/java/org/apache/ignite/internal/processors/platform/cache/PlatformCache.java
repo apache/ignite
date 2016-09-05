@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.platform.websession.LockEntryProcessor;
 import org.apache.ignite.internal.processors.platform.websession.LockInfo;
+import org.apache.ignite.internal.processors.platform.websession.UnlockEntryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -468,15 +469,21 @@ public class PlatformCache extends PlatformAbstractTarget {
                     Object key = args[0];
 
                     switch (opCode) {
-                        case OP_INVOKE_INTERNAL_SESSION_LOCK:
+                        case OP_INVOKE_INTERNAL_SESSION_LOCK: {
                             LockInfo lockInfo = (LockInfo)args[1];
 
                             Object res = cache.invoke(key, new LockEntryProcessor(), lockInfo);
 
                             return writeResult(mem, res);
+                        }
 
-                        case OP_INVOKE_INTERNAL_SESSION_UNLOCK:
-                            break;
+                        case OP_INVOKE_INTERNAL_SESSION_UNLOCK: {
+                            LockInfo lockInfo = (LockInfo)args[1];
+
+                            cache.invoke(key, new UnlockEntryProcessor(), lockInfo);
+
+                            return FALSE;
+                        }
 
                         case OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK:
                             break;
