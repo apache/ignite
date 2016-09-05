@@ -42,8 +42,11 @@ public enum OdbcEscapeType {
     /** GUID. */
     GUID("guid", true, false),
 
-    /** LIKE clause. */
-    LIKE("\'", false, true);
+    /** LIKE escape character clause. */
+    ESCAPE_WO_TOKEN("\'", false, false),
+
+    /** LIKE escape character clause. */
+    ESCAPE("escape", true, false);
 
     /** Values in convenient order. */
     private static final OdbcEscapeType[] VALS = new OdbcEscapeType[] {
@@ -51,7 +54,7 @@ public enum OdbcEscapeType {
         DATE, TIMESTAMP, // Date and timestamp are relatively frequent as well; also TS must go before T.
         OUTER_JOIN,      // Joins are less frequent,
         CALL,            // Procedure calls are less frequent than joins.
-        LIKE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
+        ESCAPE_WO_TOKEN, ESCAPE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
     };
 
     /**

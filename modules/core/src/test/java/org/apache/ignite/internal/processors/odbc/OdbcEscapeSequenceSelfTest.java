@@ -528,9 +528,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select '{' + {fn func()} + '}' from table;"
         );
 
+        // quoted two single quotes should be interpret as apostrophe
         check(
-            "select '{\\'{fn test()}\\'}' from table;",
-            "select '{\\'{fn test()}\\'}' from table;"
+            "select '{''{fn test()}''}' from table;",
+            "select '{''{fn test()}''}' from table;"
         );
 
         checkFail("'{fn test()}");
@@ -663,6 +664,86 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         check("CALL func1()", "{ \n call\nfunc1()}");
 
         checkFail("{ \n func1()}");
+    }
+
+    /**
+     * Test escape sequence series.
+     */
+    public void testLikeEscapeSequence() throws Exception {
+        check(
+            "ESCAPE '\\'",
+            "{'\\'}"
+        );
+
+        check(
+            "ESCAPE '\\'",
+            "{escape '\\'}"
+        );
+
+        check(
+            "ESCAPE ''",
+            "{''}"
+        );
+
+        check(
+            "ESCAPE ''",
+            "{escape ''}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA%' {'\\'}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA%' {escape '\\'}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\' ORDER BY id;",
+            "select * from t where value LIKE '\\%AAA%' {'\\'} ORDER BY id;"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\' ORDER BY id;",
+            "select * from t where value LIKE '\\%AAA%' {escape '\\'} ORDER BY id;"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA''s%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA''s%' {escape '\\'}"
+        );
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testLikeEscapeSequenceWithWhitespaces() throws Exception {
+        check("ESCAPE '\\'", "{ '\\' }");
+        check("ESCAPE '\\'", "{ escape '\\'}");
+
+        check("ESCAPE '\\'", "{   '\\' }");
+        check("ESCAPE '\\'", "{   escape   '\\' }");
+
+        check("ESCAPE '\\'", "{ \n '\\' }");
+        check("ESCAPE '\\'", "{ \n escape\n'\\' }");
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testLikeOnInvalidLikeEscapeSequence() {
+        checkFail("LIKE 'AAA's'");
+        checkFail("LIKE 'AAA\'s'");
+
+        checkFail("LIKE '\\%AAA%' {escape'\\' }");
+
+        checkFail("LIKE '\\%AAA%' {'\\' ORDER BY id");
+        checkFail("LIKE '\\%AAA%' {escape '\\' ORDER BY id;");
+
+        checkFail("LIKE '\\%AAA%' '\\'} ORDER BY id");
+        checkFail("LIKE '\\%AAA%' escape '\\'} ORDER BY id;");
     }
 
     /**
