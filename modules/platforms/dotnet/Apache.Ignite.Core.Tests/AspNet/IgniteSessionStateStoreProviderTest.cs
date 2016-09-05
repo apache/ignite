@@ -325,9 +325,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 Assert.AreEqual("Apache.Ignite.AspNet.IgniteSessionStateStoreProvider initialized: " +
                                 "gridName=, cacheName=, applicationId=", logs[1]);
 
-                Assert.AreEqual("GetItemExclusive session store data not found: id=1, url=/, timeout=0", logs[3]);
-
-                Assert.AreEqual("SetAndReleaseItemExclusive: id=1, url=/, timeout=0", logs[5]);
+                Assert.AreEqual("GetItem session store data found: id=1, url=/, timeout=0", logs[4]);
             }
         }
 
