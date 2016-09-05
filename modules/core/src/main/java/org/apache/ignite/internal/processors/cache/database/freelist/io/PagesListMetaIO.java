@@ -18,13 +18,30 @@
 package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public class PagesListMetaIO extends PageIO {
+    /** */
+    private static final int CNT_OFF = COMMON_HEADER_END;
+
+    /** */
+    private static final int NEXT_META_PAGE_OFF = CNT_OFF + 2;
+
+    /** */
+    private static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
+
+    /** */
+    private static final int ITEM_SIZE = 18;
+
     /** */
     public static final IOVersions<PagesListMetaIO> VERSIONS = new IOVersions<>(
         new PagesListMetaIO(1)
@@ -33,7 +50,7 @@ public class PagesListMetaIO extends PageIO {
     /**
      * @param ver  Page format version.
      */
-    protected PagesListMetaIO(int ver) {
+    private PagesListMetaIO(int ver) {
         super(T_PAGE_LIST_META, ver);
     }
 
@@ -45,23 +62,115 @@ public class PagesListMetaIO extends PageIO {
         setNextMetaPageId(buf, 0L);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Stored items count.
+     */
     private int getCount(ByteBuffer buf) {
-        return 0;
+        return buf.getShort(CNT_OFF);
     }
 
+    /**
+     * @param buf Buffer,
+     * @param cnt Stored items count.
+     */
     private void setCount(ByteBuffer buf, int cnt) {
+        assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
 
+        buf.putShort(CNT_OFF, (short)cnt);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Next meta page ID.
+     */
     public long getNextMetaPageId(ByteBuffer buf) {
-        return 0L;
+        return buf.getLong(NEXT_META_PAGE_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param metaPageId Next meta page ID.
+     */
     public void setNextMetaPageId(ByteBuffer buf, long metaPageId) {
-
+        buf.putLong(NEXT_META_PAGE_OFF, metaPageId);
     }
 
-    public boolean addListHead(int bucket, long headId, long tailId) {
-        return false;
+    /**
+     * @param buf Buffer.
+     * @param bucket Bucket number.
+     * @param headId Head page ID.
+     * @param tailId Tail page ID.
+     * @return {@code True} if bucket information was stored.
+     */
+    public boolean addListHead(ByteBuffer buf, int bucket, long headId, long tailId) {
+        assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
+
+        int cnt = getCount(buf);
+
+        if (cnt == getCapacity(buf))
+            return false;
+
+        int off = offset(cnt);
+
+        buf.putShort(off, (short)bucket);
+        buf.putLong(off + 2, tailId);
+        buf.putLong(off + 10, headId);
+
+        setCount(buf, cnt + 1);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param res Results map.
+     */
+    public void getBucketsData(ByteBuffer buf, Map<Integer, GridLongList> res) {
+        int cnt = getCount(buf);
+
+        assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
+
+        if (cnt == 0)
+            return;
+
+        int off = offset(0);
+
+        for (int i = 0; i < cnt; i++) {
+            Integer bucket = (int)buf.getShort(off);
+            assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
+
+            long tailId = buf.getLong(off + 2);
+            assert tailId != 0;
+
+            long headId = buf.getLong(off + 2);
+            assert headId != 0;
+
+            GridLongList list = res.get(bucket);
+
+            if (list == null)
+                res.put(bucket, list = new GridLongList());
+
+            list.add(headId);
+            list.add(tailId);
+
+            off += ITEM_SIZE;
+        }
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return Maximum number of items which can be stored in buffer.
+     */
+    private int getCapacity(ByteBuffer buf) {
+        return (buf.capacity() - NEXT_META_PAGE_OFF) / ITEM_SIZE;
+    }
+
+    /**
+     * @param idx Item index.
+     * @return Item offset.
+     */
+    private int offset(int idx) {
+        return ITEMS_OFF + ITEM_SIZE * idx;
     }
 }

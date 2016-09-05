@@ -115,11 +115,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.shared().database().checkpointReadLock();
 
             try {
-                //reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
+                reuseList = new ReuseListOld(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
+                freeList = new FreeListOld(cctx, reuseList);
 
-                //freeList = new FreeListOld(cctx, reuseList);
                 FreeListNew freeList0 = new FreeListNew(cacheId, pageMem, reuseList, cctx);
-
                 reuseList = freeList0;
                 freeList = freeList0;
 

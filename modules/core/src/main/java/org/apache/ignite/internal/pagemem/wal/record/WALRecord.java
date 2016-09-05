@@ -102,6 +102,23 @@ public abstract class WALRecord {
         /** */
         BTREE_PAGE_MERGE,
 
+        /** */
+        PAGES_LIST_SET_NEXT,
+
+        /** */
+        PAGES_LIST_SET_PREVIOUS,
+
+        /** */
+        PAGES_LIST_INIT_NEW_PAGE,
+
+        /** */
+        PAGES_LIST_ADD_PAGE,
+
+        /** */
+        PAGES_LIST_REMOVE_PAGE,
+
+        /** */
+        PAGES_LIST_REMOVE_LAST_PAGE
         ;
 
         /** */

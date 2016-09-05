@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -73,12 +74,14 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
      * @param pageMem Page memory.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
      */
     public FreeListNew(int cacheId,
         PageMemory pageMem,
         ReuseList reuseList,
-        GridCacheContext<?, ?> cctx) {
-        super(cacheId, pageMem, cctx.shared().wal());
+        GridCacheContext<?, ?> cctx,
+        long metaPageId) throws IgniteCheckedException {
+        super(cacheId, pageMem, cctx.shared().wal(), metaPageId);
         this.reuseList = reuseList == null ? this : reuseList;
         this.cctx = cctx;
 
@@ -100,6 +103,16 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         this.shift = shift;
 
         log = cctx.logger(getClass());
+
+//        try {
+//            for (int b = 0; b < BUCKETS; b++) {
+//                for (int i = 0; i < 8; i++)
+//                    addStripe(b);
+//            }
+//        }
+//        catch (Exception e) {
+//            throw new IgniteException(e);
+//        }
     }
 
     /**

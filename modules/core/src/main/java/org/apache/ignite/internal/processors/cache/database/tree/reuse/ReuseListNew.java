@@ -39,9 +39,13 @@ public final class ReuseListNew extends PagesList implements ReuseList {
      * @param cacheId   Cache ID.
      * @param pageMem   Page memory.
      * @param wal       Write ahead log manager.
+     * @throws IgniteCheckedException If failed.
      */
-    public ReuseListNew(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) {
-        super(cacheId, pageMem, wal);
+    public ReuseListNew(int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        long metaPageId) throws IgniteCheckedException {
+        super(cacheId, pageMem, wal, metaPageId);
 
         reuseList = this;
     }

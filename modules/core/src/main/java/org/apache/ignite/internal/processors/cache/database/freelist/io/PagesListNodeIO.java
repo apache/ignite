@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.copyMemory;
 
@@ -62,22 +61,41 @@ public class PagesListNodeIO extends PageIO {
         setNextId(buf, 0L);
     }
 
+    /**
+     * @param buf Buffer.
+     */
     private void setEmpty(ByteBuffer buf) {
         setCount(buf, 0);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Next page ID.
+     */
     public long getNextId(ByteBuffer buf) {
         return buf.getLong(NEXT_PAGE_ID_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param nextId Next page ID.
+     */
     public void setNextId(ByteBuffer buf, long nextId) {
         buf.putLong(NEXT_PAGE_ID_OFF, nextId);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Previous page ID.
+     */
     public long getPreviousId(ByteBuffer buf) {
         return buf.getLong(PREV_PAGE_ID_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param prevId Previous  page ID.
+     */
     public void setPreviousId(ByteBuffer buf, long prevId) {
         buf.putLong(PREV_PAGE_ID_OFF, prevId);
     }
@@ -87,7 +105,7 @@ public class PagesListNodeIO extends PageIO {
     }
 
     private void setCount(ByteBuffer buf, int cnt) {
-        assert cnt >= 0 && cnt <= Short.MAX_VALUE: cnt;
+        assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
 
         buf.putShort(CNT_OFF, (short)cnt);
     }

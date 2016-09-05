@@ -20,13 +20,25 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemoveLastPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
@@ -34,18 +46,24 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridArrays;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.database.tree.io.PageIO.getPageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.initPage;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
  * Striped doubly-linked list of page IDs optionally organized in buckets.
  */
 public abstract class PagesList extends DataStructure {
+    /** */
+    private AtomicIntegerArray cnts = new AtomicIntegerArray(256);
+
     /** */
     private final CheckingPageHandler<Void> cutTail = new CheckingPageHandler<Void>() {
         @Override protected boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io,
@@ -55,6 +73,9 @@ public abstract class PagesList extends DataStructure {
             assert tailId != 0;
 
             io.setNextId(buf, 0L);
+
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new PagesListSetNextRecord(cacheId, pageId, 0L));
 
             updateTail(bucket, tailId, pageId);
 
@@ -75,17 +96,24 @@ public abstract class PagesList extends DataStructure {
             int idx = io.addPage(buf, dataPageId);
 
             if (idx == -1)
-                handlePageFull(pageId, io, buf, dataPageId, dataIO, dataPageBuf, bucket);
-            else
+                handlePageFull(pageId, page, buf, io, dataPageId, dataIO, dataPageBuf, bucket);
+            else {
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
+
                 dataIO.setFreeListPageId(dataPageBuf, pageId);
+
+                cnts.incrementAndGet(bucket);
+            }
 
             return true;
         }
 
         /**
          * @param pageId Page ID.
-         * @param io IO.
+         * @param page Page.
          * @param buf Buffer.
+         * @param io IO.
          * @param dataPageId Data page ID.
          * @param dataIO Data page IO.
          * @param dataPageBuf Data page buffer.
@@ -94,8 +122,9 @@ public abstract class PagesList extends DataStructure {
          */
         private void handlePageFull(
             long pageId,
-            PagesListNodeIO io,
+            Page page,
             ByteBuffer buf,
+            PagesListNodeIO io,
             long dataPageId,
             DataPageIO dataIO,
             ByteBuffer dataPageBuf,
@@ -122,13 +151,21 @@ public abstract class PagesList extends DataStructure {
                     try {
                         setupNextPage(io, pageId, buf, nextId, nextBuf);
 
+                        if (isWalDeltaRecordNeeded(wal, page))
+                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+
                         int idx = io.addPage(nextBuf, dataPageId);
+
+                        if (isWalDeltaRecordNeeded(wal, next))
+                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, dataPageId));
 
                         assert idx != -1;
 
                         dataIO.setFreeListPageId(dataPageBuf, nextId);
 
                         updateTail(bucket, pageId, nextId);
+
+                        cnts.incrementAndGet(bucket);
                     }
                     finally {
                         next.releaseWrite(true);
@@ -168,10 +205,24 @@ public abstract class PagesList extends DataStructure {
 
                         setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
 
+                        if (isWalDeltaRecordNeeded(wal, page))
+                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+
+                        if (isWalDeltaRecordNeeded(wal, next))
+                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
+
                         // Switch to this new page, which is now a part of our list
                         // to add the rest of the bag to the new page.
                         prevBuf = nextBuf;
                         prevId = nextId;
+                        page = next;
+                    }
+                    else {
+                        // TODO: use single WAL record for bag?
+                        if (isWalDeltaRecordNeeded(wal, page))
+                            wal.log(new PagesListAddPageRecord(cacheId, pageId, nextId));
+
+                        cnts.incrementAndGet(bucket);
                     }
                 }
             }
@@ -190,13 +241,53 @@ public abstract class PagesList extends DataStructure {
         }
     };
 
+    /** */
+    private long metaPageId;
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @throws IgniteCheckedException If failed.
      */
-    public PagesList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) {
+    public PagesList(int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        long metaPageId)
+        throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
+        Map<Integer, GridLongList> buckets = new HashMap<>();
+
+        long nextPageId = metaPageId;
+
+        while (nextPageId != 0) {
+            try (Page page = page(metaPageId)) {
+                ByteBuffer buf = page.getForRead();
+
+                try {
+                    PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+
+                    io.getBucketsData(buf, buckets);
+
+                    nextPageId = io.getNextMetaPageId(buf);
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+        }
+
+        for (Map.Entry<Integer, GridLongList> e : buckets.entrySet()) {
+            long[] old = getBucket(e.getKey());
+            assert old == null;
+
+            long[] upd = e.getValue().array();
+
+            boolean ok = casBucket(e.getKey(), null, upd);
+            assert ok;
+        }
+
+        this.metaPageId = nextPageId;
     }
 
     /**
@@ -241,7 +332,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket.
      * @throws IgniteCheckedException If failed.
      */
-    private long addStripe(int bucket) throws IgniteCheckedException {
+    protected final long addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
         initPage(pageId, page(pageId), PagesListNodeIO.VERSIONS.latest(), wal);
@@ -292,8 +383,7 @@ public abstract class PagesList extends DataStructure {
 
                 if (tails.length != 2) {
                     // Remove tail and head.
-                    newTails = GridArrays.remove(tails, idx + 1); // TODO optimize - do in a single operation.
-                    newTails = GridArrays.remove(newTails, idx);
+                    newTails = GridArrays.remove2(tails, idx);
                 }
                 else
                     newTails = null; // Drop the bucket completely.
@@ -435,11 +525,15 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @param bucket Bucket index.
+     * @param initIoVers Optional IO to initialize page.
      * @return Removed page ID.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long takeEmptyPage(int bucket, @Nullable IOVersions pageIo) throws IgniteCheckedException {
+    protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
         for (;;) {
+            if (cnts.get(bucket) == 0)
+                return 0L;
+
             long tailId = getPageForTake(bucket);
 
             if (tailId == 0L)
@@ -462,6 +556,9 @@ public abstract class PagesList extends DataStructure {
                     if (pageId != 0L)
                         return pageId;
 
+                    if (isWalDeltaRecordNeeded(wal, tail))
+                        wal.log(new PagesListRemoveLastPageRecord(cacheId, tailId));
+
                     // The tail page is empty, we can unlink and return it if we have a previous page.
                     long prevId = io.getPreviousId(tailBuf);
 
@@ -476,10 +573,20 @@ public abstract class PagesList extends DataStructure {
                         // Rotate page so that successors will see this update.
                         tailId = PageIdUtils.rotatePageId(tailId);
 
-                        PageIO.setPageId(tailBuf, tailId);
+                        if (initIoVers != null) {
+                            PageIO initIo = initIoVers.latest();
 
-                        if (pageIo != null)
-                            pageIo.latest().initNewPage(tailBuf, tailId);
+                            initIo.initNewPage(tailBuf, tailId);
+
+                            if (isWalDeltaRecordNeeded(wal, tail))
+                                wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(), initIo.getVersion(), tailId));
+                        }
+                        else {
+                            PageIO.setPageId(tailBuf, tailId);
+
+                            if (isWalDeltaRecordNeeded(wal, tail))
+                                wal.log(new RecycleRecord(cacheId, tail.id(), tailId));
+                        }
 
                         return tailId;
                     }
@@ -534,6 +641,11 @@ public abstract class PagesList extends DataStructure {
                 if (!rmvd)
                     return false;
 
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataPageId));
+
+                cnts.decrementAndGet(bucket);
+
                 // Reset free list page ID.
                 dataIO.setFreeListPageId(dataPageBuf, 0L);
 
@@ -547,7 +659,7 @@ public abstract class PagesList extends DataStructure {
                 // If there are no next page, then we can try to merge without releasing current write lock,
                 // because if we will need to lock previous page, the locking order will be already correct.
                 if (nextId == 0L)
-                    recycleId = mergeNoNext(buf, pageId, prevId, bucket);
+                    recycleId = mergeNoNext(pageId, page, buf, prevId, bucket);
             }
             finally {
                 page.releaseWrite(rmvd);
@@ -555,7 +667,7 @@ public abstract class PagesList extends DataStructure {
 
             // Perform a fair merge after lock release (to have a correct locking order).
             if (nextId != 0L)
-                recycleId = merge(pageId, page, nextId, bucket);
+                recycleId = merge(page, pageId, nextId, bucket);
 
             if (recycleId != 0L)
                 reuseList.addForRecycle(new SingletonReuseBag(recycleId));
@@ -565,14 +677,15 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * @param buf Byte buffer.
+     * @param page Page.
      * @param pageId Page ID.
+     * @param buf Page byte buffer.
      * @param prevId Previous page ID.
      * @param bucket Bucket index.
      * @return Page ID to recycle.
      * @throws IgniteCheckedException If failed.
      */
-    private long mergeNoNext(ByteBuffer buf, long pageId, long prevId, int bucket)
+    private long mergeNoNext(long pageId, Page page, ByteBuffer buf, long prevId, int bucket)
         throws IgniteCheckedException {
         // If we do not have a next page (we are tail) and we are on reuse bucket,
         // then we can leave as is as well, because it is normal to have an empty tail page here.
@@ -589,7 +702,7 @@ public abstract class PagesList extends DataStructure {
         else // If we don't have a previous, then we are tail page of free list, just drop the stripe.
             updateTail(bucket, pageId, 0L);
 
-        return recyclePage(pageId, buf);
+        return recyclePage(pageId, page, buf);
     }
 
     /**
@@ -600,7 +713,7 @@ public abstract class PagesList extends DataStructure {
      * @return Page ID to recycle.
      * @throws IgniteCheckedException If failed.
      */
-    private long merge(long pageId, Page page, long nextId, int bucket)
+    private long merge(Page page, long pageId, long nextId, int bucket)
         throws IgniteCheckedException {
         assert nextId != 0; // We should do mergeNoNext then.
 
@@ -623,7 +736,7 @@ public abstract class PagesList extends DataStructure {
 
                     // Check if we see a consistent state of the world.
                     if (io.getNextId(buf) == nextId) {
-                        long recycleId = doMerge(pageId, io, buf, nextId, nextBuf, bucket);
+                        long recycleId = doMerge(pageId, page, buf, io, next, nextId, nextBuf, bucket);
 
                         write = true;
 
@@ -644,21 +757,31 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * @param page Page.
      * @param pageId Page ID.
      * @param io IO.
      * @param buf Byte buffer.
+     * @param next Next page.
      * @param nextId Next page ID.
      * @param nextBuf Next buffer.
      * @param bucket Bucket index.
      * @return Page to recycle.
      * @throws IgniteCheckedException If failed.
      */
-    private long doMerge(long pageId, PagesListNodeIO io, ByteBuffer buf, long nextId, ByteBuffer nextBuf, int bucket)
+    private long doMerge(
+        long pageId,
+        Page page,
+        ByteBuffer buf,
+        PagesListNodeIO io,
+        Page next,
+        long nextId,
+        ByteBuffer nextBuf,
+        int bucket)
         throws IgniteCheckedException {
         long prevId = io.getPreviousId(buf);
 
         if (nextId == 0L)
-            return mergeNoNext(buf, pageId, prevId, bucket);
+            return mergeNoNext(pageId, page, buf, prevId, bucket);
         else {
             // No one must be able to merge it while we keep a reference.
             assert getPageId(nextBuf) == nextId;
@@ -668,17 +791,19 @@ public abstract class PagesList extends DataStructure {
                 assert PagesListNodeIO.VERSIONS.forPage(nextBuf).getPreviousId(nextBuf) == pageId;
 
                 PagesListNodeIO nextIO = PagesListNodeIO.VERSIONS.forPage(nextBuf);
-
                 nextIO.setPreviousId(nextBuf, 0);
+
+                if (isWalDeltaRecordNeeded(wal, next))
+                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, 0L));
 
                 // Drop the page from meta: replace current head with next page.
                 // It is a bit hacky, but method updateTail should work here.
                 updateTail(bucket, pageId, nextId);
             }
             else // Do a fair merge: link previous and next to each other.
-                fairMerge(prevId, pageId, nextId, nextBuf);
+                fairMerge(prevId, pageId, nextId, next, nextBuf);
 
-            return recyclePage(pageId, buf);
+            return recyclePage(pageId, page, buf);
         }
     }
 
@@ -687,11 +812,17 @@ public abstract class PagesList extends DataStructure {
      *
      * @param prevId Previous Previous page ID.
      * @param pageId Page ID.
-     * @param nextBuf Next buffer.
+     * @param next Next page.
      * @param nextId Next page ID.
+     * @param nextBuf Next buffer.
      * @throws IgniteCheckedException If failed.
      */
-    private void fairMerge(long prevId, long pageId, long nextId, ByteBuffer nextBuf) throws IgniteCheckedException {
+    private void fairMerge(long prevId,
+        long pageId,
+        long nextId,
+        Page next,
+        ByteBuffer nextBuf)
+        throws IgniteCheckedException {
         try (Page prev = page(prevId)) {
             ByteBuffer prevBuf = prev.getForWrite();
 
@@ -706,7 +837,14 @@ public abstract class PagesList extends DataStructure {
                 assert nextIO.getPreviousId(nextBuf) == pageId;
 
                 prevIO.setNextId(prevBuf, nextId);
+
+                if (isWalDeltaRecordNeeded(wal, prev))
+                    wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
+
                 nextIO.setPreviousId(nextBuf, prevId);
+
+                if (isWalDeltaRecordNeeded(wal, next))
+                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, prevId));
             }
             finally {
                 prev.releaseWrite(true);
@@ -715,15 +853,19 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * @param page Page.
      * @param pageId Page ID.
      * @param buf Byte buffer.
      * @return Rotated page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private long recyclePage(long pageId, ByteBuffer buf) throws IgniteCheckedException {
+    private long recyclePage(long pageId, Page page, ByteBuffer buf) throws IgniteCheckedException {
         pageId = PageIdUtils.rotatePageId(pageId);
 
         PageIO.setPageId(buf, pageId);
+
+        if (isWalDeltaRecordNeeded(wal, page))
+            wal.log(new RecycleRecord(cacheId, page.id(), pageId));
 
         return pageId;
     }
@@ -752,6 +894,7 @@ public abstract class PagesList extends DataStructure {
          * @param arg Argument.
          * @param intArg Integer argument.
          * @throws IgniteCheckedException If failed.
+         * @return Result.
          */
         protected abstract boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io, X arg, int intArg)
             throws IgniteCheckedException;
@@ -767,7 +910,7 @@ public abstract class PagesList extends DataStructure {
         /**
          * @param pageId Page ID.
          */
-        public SingletonReuseBag(long pageId) {
+        SingletonReuseBag(long pageId) {
             this.pageId = pageId;
         }
 
@@ -783,6 +926,11 @@ public abstract class PagesList extends DataStructure {
             pageId = 0L;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SingletonReuseBag.class, this);
         }
     }
 }
