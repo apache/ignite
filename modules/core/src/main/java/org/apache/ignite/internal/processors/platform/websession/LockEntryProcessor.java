@@ -36,7 +36,8 @@ public class LockEntryProcessor implements CacheEntryProcessor<String, SessionSt
         // Arg contains lock info: node id + thread id
         // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
 
-        assert entry.exists();
+        if (!entry.exists())
+            return null;
 
         SessionStateData data = entry.getValue();
 
