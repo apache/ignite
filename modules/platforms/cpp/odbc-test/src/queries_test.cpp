@@ -121,6 +121,7 @@ struct QueriesTestSuiteFixture
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
         cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
