@@ -397,23 +397,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
             SessionStateActions actions;
 
             provider.InitializeRequest(HttpContext);
-
-            var data = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge,
-                out lockId, out actions);
-            Assert.IsNull(data);
-            Assert.IsFalse(locked);
-            Assert.AreEqual(TimeSpan.Zero, lockAge);
-            Assert.IsNotNull(lockId);
-            Assert.AreEqual(SessionStateActions.None, actions);
-
             provider.CreateUninitializedItem(HttpContext, Id, 42);
 
-            data = provider.CreateNewStoreData(HttpContext, 42);
-            Assert.IsNotNull(data);
-
-            provider.SetAndReleaseItemExclusive(HttpContext, Id, data, lockId, false);
-
-            data = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            var data = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(data);
             Assert.AreEqual(42, data.Timeout);
             Assert.IsFalse(locked);
