@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         }
 
         /// <summary>
-        /// Gets the static objects.
+        /// Gets or sets the static objects.
         /// </summary>
         public byte[] StaticObjects { get; set; }
 

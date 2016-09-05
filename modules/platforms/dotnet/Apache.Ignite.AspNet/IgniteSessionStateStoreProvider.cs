@@ -286,8 +286,7 @@ namespace Apache.Ignite.AspNet
             data.LockNodeId = null;  // Unlock
             data.Items.WriteChangesOnly = true;  // Write diff.
 
-            // TODO: This is wrong! Use entry processor instead!
-            cache[GetKey(id)] = data;
+            cache.Invoke(GetKey(id), new SetAndReleaseLockEntryProcessor(), data);
         }
 
         /// <summary>
@@ -422,7 +421,6 @@ namespace Apache.Ignite.AspNet
         }
 
         // TODO: Implement this in Java.
-        // TODO: Use JavaObject approach?
         [Serializable]
         private class LockEntryProcessor :
             ICacheEntryProcessor<string, SessionStateData, LockInfo, object>
@@ -461,8 +459,7 @@ namespace Apache.Ignite.AspNet
         }
 
         [Serializable]
-        private class ReleaseLockEntryProcessor :
-            ICacheEntryProcessor<string, SessionStateData, LockInfo, object>
+        private class ReleaseLockEntryProcessor : ICacheEntryProcessor<string, SessionStateData, LockInfo, object>
         {
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             public object Process(IMutableCacheEntry<string, SessionStateData> entry, LockInfo arg)
@@ -478,13 +475,55 @@ namespace Apache.Ignite.AspNet
                         throw new InvalidOperationException("Invalid lock node id TODO");
 
                     if (val.LockId != arg.LockId)
-                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, 
+                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
                             "Invalid lock id: expected {0} but was {1}", arg.LockId, val.LockId));
 
                     val.LockNodeId = null;
 
                     entry.Value = val;
                 }
+                else
+                {
+                    Debug.Fail("");
+                }
+
+                return null;
+            }
+        }
+
+        [Serializable]
+        private class SetAndReleaseLockEntryProcessor : 
+            ICacheEntryProcessor<string, SessionStateData, SessionStateData, object>
+        {
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+            public object Process(IMutableCacheEntry<string, SessionStateData> entry, SessionStateData arg)
+            {
+                var val = entry.Value;
+
+                if (val != null)
+                {
+                    if (val.LockNodeId == null)
+                        throw new InvalidOperationException("LockNodeId is null.");
+
+                    if (val.LockNodeId.Value != arg.LockNodeId)
+                        throw new InvalidOperationException("Invalid lock node id TODO");
+
+                    if (val.LockId != arg.LockId)
+                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
+                            "Invalid lock id: expected {0} but was {1}", arg.LockId, val.LockId));
+
+                    // Release lock.
+                    val.LockNodeId = null;
+
+                    // Update values.
+                    val.Items.ApplyChanges(arg.Items);
+                    val.StaticObjects = arg.StaticObjects;
+
+                    // Apply.
+                    entry.Value = val;
+                }
+                else
+                    Debug.Fail("");
 
                 return null;
             }

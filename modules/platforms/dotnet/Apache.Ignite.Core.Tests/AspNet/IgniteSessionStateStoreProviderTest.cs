@@ -169,14 +169,31 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            // Add item.
+            // Exclusive: not locked, no item.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
-            provider.SetAndReleaseItemExclusive(HttpContext, Id, CreateStoreData(provider), lockId, true);
+            // Add item.
+            provider.CreateUninitializedItem(HttpContext, Id, 7);
+            
+            // Check added item.
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+            Assert.AreEqual(7, res.Timeout);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+
+            // Lock and update.
+            res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, UpdateStoreData(res), lockId, true);
 
             // Not locked, item present.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
@@ -315,11 +332,11 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
-        /// Creates the store data.
+        /// Updates the store data.
         /// </summary>
-        private static SessionStateStoreData CreateStoreData(SessionStateStoreProviderBase provider)
+        private static SessionStateStoreData UpdateStoreData(SessionStateStoreData data)
         {
-            var data = provider.CreateNewStoreData(HttpContext, 8);
+            data.Timeout = 8;
 
             data.Items["name1"] = 1;
             data.Items["name2"] = "2";
@@ -336,7 +353,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
-        /// Checks that store data is the same as <see cref="CreateStoreData"/> returns.
+        /// Checks that store data is the same as <see cref="UpdateStoreData"/> returns.
         /// </summary>
         private static void CheckStoreData(SessionStateStoreData data)
         {
