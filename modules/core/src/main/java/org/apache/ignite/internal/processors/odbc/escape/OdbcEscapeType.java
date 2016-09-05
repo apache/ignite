@@ -27,6 +27,9 @@ public enum OdbcEscapeType {
     /** Outer join. */
     OUTER_JOIN("oj", true, false),
 
+    /** Stored procedure call */
+    CALL("call", true, false),
+
     /** Date. */
     DATE("d", true, false),
 
@@ -47,6 +50,7 @@ public enum OdbcEscapeType {
         SCALAR_FUNCTION, // Assume that scalar functions are very frequent.
         DATE, TIMESTAMP, // Date and timestamp are relatively frequent as well; also TS must go before T.
         OUTER_JOIN,      // Joins are less frequent,
+        CALL,            // Procedure calls are less frequent than joins.
         LIKE, TIME, GUID // LIKE, TIME and GUID are even less frequent.
     };
 

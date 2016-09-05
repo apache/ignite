@@ -278,6 +278,11 @@ public class OdbcEscapeUtils {
             case OUTER_JOIN:
                 return parseExpression(text, startPos0, len0);
 
+            case CALL: {
+                String val = parseExpression(text, startPos0, len0);
+
+                return "CALL " + val;
+            }
             default:
                 throw new IgniteException("Unsupported escape sequence token [text=" +
                     substring(text, startPos, len) + ", token=" + token.type().body() + ']');
