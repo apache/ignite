@@ -583,22 +583,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     IgniteRunnable c;
-
-                    if (msgQueueLimit > 0) {
-                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
-
-                        if (tracker == null) {
-                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                                new GridNioMessageTracker(ses, msgQueueLimit));
-
-                            assert old == null;
-                        }
-
-                        tracker.onMessageReceived();
-
-                        c = tracker;
-                    }
-                    else
+//
+//                    if (msgQueueLimit > 0) {
+//                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
+//
+//                        if (tracker == null) {
+//                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
+//                                new GridNioMessageTracker(ses, msgQueueLimit));
+//
+//                            assert old == null;
+//                        }
+//
+//                        tracker.onMessageReceived();
+//
+//                        c = tracker;
+//                    }
+//                    else
                         c = NOOP;
 
                     notifyListener(sndId, msg, c);
