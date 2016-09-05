@@ -693,7 +693,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        //TODO: IGNITE-2881: workaround for SPI queries
         if (qry.clause() == null && qry.type() != SPI) {
             assert !loc;
 
