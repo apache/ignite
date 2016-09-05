@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// </summary>
     public class KeyValueDirtyTrackedCollection : IBinaryWriteAware
     {
-        // TODO: SortedDictionary??
         /** */
         private readonly Dictionary<string, int> _dict;
 
