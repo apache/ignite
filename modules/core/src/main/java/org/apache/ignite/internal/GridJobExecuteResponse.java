@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -75,6 +76,9 @@ public class GridJobExecuteResponse implements Message {
     @GridDirectTransient
     private IgniteException fakeEx;
 
+    /** */
+    private AffinityTopologyVersion retry;
+
     /**
      * No-op constructor to support {@link Externalizable} interface. This
      * constructor is not meant to be used for other purposes.
@@ -94,6 +98,7 @@ public class GridJobExecuteResponse implements Message {
      * @param jobAttrsBytes Serialized job attributes.
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
+     * @param retry Topology version for that partitions haven't been reserved on the affinity node.
      */
     public GridJobExecuteResponse(UUID nodeId,
         IgniteUuid sesId,
@@ -104,7 +109,8 @@ public class GridJobExecuteResponse implements Message {
         Object res,
         byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs,
-        boolean isCancelled)
+        boolean isCancelled,
+        AffinityTopologyVersion retry)
     {
         assert nodeId != null;
         assert sesId != null;
@@ -120,6 +126,7 @@ public class GridJobExecuteResponse implements Message {
         this.jobAttrsBytes = jobAttrsBytes;
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
+        this.retry = retry;
     }
 
     /**
@@ -206,6 +213,21 @@ public class GridJobExecuteResponse implements Message {
         this.fakeEx = fakeEx;
     }
 
+    /**
+     * @return {@code True} if need retry job.
+     */
+    public boolean retry() {
+        return retry != null;
+    }
+
+    /**
+     * @return Topology version for that specified partitions haven't been reserved
+     *          on the affinity node.
+     */
+    public AffinityTopologyVersion getRetryTopologyVersion() {
+        return retry != null ? retry : AffinityTopologyVersion.NONE;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -260,6 +282,12 @@ public class GridJobExecuteResponse implements Message {
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeMessage("retry", retry))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
@@ -327,6 +355,14 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 6:
+                retry = reader.readMessage("retry");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 sesId = reader.readIgniteUuid("sesId");
 
                 if (!reader.isLastRead())
@@ -346,7 +382,7 @@ public class GridJobExecuteResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,26 @@ namespace ignite
             return false;
         }
 
+        void StripSurroundingWhitespaces(std::string& str)
+        {
+            std::string::size_type newBegin = 0;
+            while (newBegin < str.size() && ::isspace(str[newBegin]))
+                ++newBegin;
+
+            if (newBegin == str.size())
+            {
+                str.clear();
+
+                return;
+            }
+
+            std::string::size_type newEnd = str.size() - 1;
+            while (::isspace(str[newEnd]))
+                --newEnd;
+
+            str.assign(str, newBegin, (newEnd - newBegin) + 1);
+        }
+
         time_t IgniteTimeGm(const tm& time)
         {
             tm tmc = time;
@@ -62,27 +82,6 @@ namespace ignite
         bool IgniteLocalTime(time_t in, tm& out)
         {
             return localtime_s(&out, &in) == 0;
-        }
-
-        int LeadingZeroesForOctet(int8_t octet) {
-            if (octet == 0)
-                return 8;
-
-            int zeroes = 1;
-
-            if (octet >> 4 == 0) {
-                zeroes += 4;
-                octet <<= 4;
-            }
-
-            if (octet >> 6 == 0) {
-                zeroes += 2;
-                octet <<= 2;
-            }
-
-            zeroes -= octet >> 7;
-
-            return zeroes;
         }
 
         char* CopyChars(const char* val)
