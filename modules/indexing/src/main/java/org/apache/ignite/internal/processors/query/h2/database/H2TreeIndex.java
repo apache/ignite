@@ -196,8 +196,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-
-        super.destroy();
+        finally {
+            super.destroy();
+        }
     }
 
     /** {@inheritDoc} */
