@@ -38,7 +38,7 @@ public class SetAndUnlockEntryProcessor implements CacheEntryProcessor<String, S
 
         SessionStateData newData = (SessionStateData)objects[0];
 
-        assert data.getLockNodeId() == newData.getLockNodeId();
+        assert data.getLockNodeId().equals(newData.getLockNodeId());
         assert data.getLockId() == newData.getLockId();
 
         // Unlock.
