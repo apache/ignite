@@ -100,6 +100,15 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x08FFFFFFFFFFFFFFL));
         assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0xFFFFFFFFFFFFFFFFL));
 
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.pageId(0x0002FFFFFFFFFFFFL));
+        assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.pageId(0x1002FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.pageId(0x0102FFFFFFFFFFFFL));
+        assertEquals(0x1102FFFFFFFFFFFFL, PageIdUtils.pageId(0x1102FFFFFFFFFFFFL));
+        assertEquals(0x8002FFFFFFFFFFFFL, PageIdUtils.pageId(0x8002FFFFFFFFFFFFL));
+        assertEquals(0x8802FFFFFFFFFFFFL, PageIdUtils.pageId(0x8802FFFFFFFFFFFFL));
+        assertEquals(0x0802FFFFFFFFFFFFL, PageIdUtils.pageId(0x0802FFFFFFFFFFFFL));
+        assertEquals(0xFF02FFFFFFFFFFFFL, PageIdUtils.pageId(0xFF02FFFFFFFFFFFFL));
+
         assertEquals(0L, PageIdUtils.pageId(0x0000000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x1000000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x0100000000000000L));
