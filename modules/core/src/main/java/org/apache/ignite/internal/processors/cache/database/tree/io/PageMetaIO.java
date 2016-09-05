@@ -24,22 +24,19 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class PageMetaIO extends PageIO {
-    /** */
-    public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
-        new PageMetaIO(1)
-    );
-
     /** Page number offset. */
     private static final int PAGE_NUM_OFF = PageIO.COMMON_HEADER_END;
+
     /** Metastore root offset. */
     private static final int METASTORE_ROOT_OFF = PAGE_NUM_OFF + 4;
+
     /** Root ids start offset. */
     private static final int ROOT_IDS_START_OFF = METASTORE_ROOT_OFF + 8;
 
     /**
      * @param ver Page format version.
      */
-    protected PageMetaIO(int ver) {
+    public PageMetaIO(int ver) {
         super(PageIO.T_META, ver);
     }
 

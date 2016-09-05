@@ -33,11 +33,6 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
-    @Override public void testCursorConcurrentMerge() throws IgniteCheckedException {
-        fail("https://ggsystems.atlassian.net/browse/GG-11442");
-    }
-
-    /** {@inheritDoc} */
     @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
         throws IgniteCheckedException {
         return new ReuseList(cacheId, pageMem, null, rootIds, initNew);

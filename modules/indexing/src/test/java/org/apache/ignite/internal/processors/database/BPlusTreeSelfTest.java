@@ -133,7 +133,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         if (reuseList != null) {
             long size = reuseList.size();
 
-            assertTrue("Reuse size: " + size, size < 2000);
+            assertTrue("Reuse size: " + size, size < 6000);
         }
 
         for (int i = 0; i < 10; i++) {
