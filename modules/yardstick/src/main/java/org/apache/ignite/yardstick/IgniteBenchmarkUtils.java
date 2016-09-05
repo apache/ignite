@@ -91,11 +91,11 @@ public class IgniteBenchmarkUtils {
 
         final Class<? extends BenchmarkDriver> benchmark = IgnitePutBenchmark.class;
 
-        final int threads = 5;
+        final int threads = 1;
 
         final boolean clientDriverNode = true;
 
-        final int extraNodes = 2;
+        final int extraNodes = 1;
 
         final int warmUp = 60;
         final int duration = 120;
@@ -122,6 +122,7 @@ public class IgniteBenchmarkUtils {
         addArg(args0, "-dn", benchmark.getSimpleName());
         addArg(args0, "-sn", "IgniteNode");
         addArg(args0, "-cfg", cfg);
+        addArg(args0, "-wom", "PRIMARY");
 
         if (throughputLatencyProbe)
             addArg(args0, "-pr", "ThroughputLatencyProbe");

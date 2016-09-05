@@ -48,8 +48,8 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Sent bytes counter. */
     private volatile long bytesSent;
 
-    private final long[] writesStat = new long[10];
-    private final long[] readsStat = new long[10];
+    private final long[] writesStat = new long[25];
+    private final long[] readsStat = new long[25];
 
     /** Received bytes counter. */
     private volatile long bytesRcvd;

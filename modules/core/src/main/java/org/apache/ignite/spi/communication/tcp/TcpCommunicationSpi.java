@@ -283,7 +283,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Default count of selectors for TCP server equals to
      * {@code "Math.min(4, Runtime.getRuntime().availableProcessors())"}.
      */
-    public static final int DFLT_SELECTORS_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
+    public static final int DFLT_SELECTORS_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Node ID meta for session. */
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
@@ -427,105 +427,105 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     return;
                 }
 
-                ClusterNode locNode = getSpiContext().localNode();
-
-                if (ses.remoteAddress() == null)
-                    return;
-
-                GridCommunicationClient oldClient = clients.get(sndId);
-
+//                ClusterNode locNode = getSpiContext().localNode();
+//
+//                if (ses.remoteAddress() == null)
+//                    return;
+//
+//                GridCommunicationClient oldClient = clients.get(sndId);
+//
                 boolean hasShmemClient = false;
-
-                if (oldClient != null) {
-                    if (oldClient instanceof GridTcpNioCommunicationClient) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
-
-                        ses.send(new RecoveryLastReceivedMessage(-1));
-
-                        return;
-                    }
-                    else {
-                        assert oldClient instanceof GridShmemCommunicationClient;
-
-                        hasShmemClient = true;
-                    }
-                }
-
+//
+//                if (oldClient != null) {
+//                    if (oldClient instanceof GridTcpNioCommunicationClient) {
+//                        if (log.isDebugEnabled())
+//                            log.debug("Received incoming connection when already connected " +
+//                                    "to this node, rejecting [locNode=" + locNode.id() +
+//                                    ", rmtNode=" + sndId + ']');
+//
+//                        ses.send(new RecoveryLastReceivedMessage(-1));
+//
+//                        return;
+//                    }
+//                    else {
+//                        assert oldClient instanceof GridShmemCommunicationClient;
+//
+//                        hasShmemClient = true;
+//                    }
+//                }
+//
                 GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
-
-                GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
-
+//
+//                GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
+//
                 assert msg instanceof HandshakeMessage : msg;
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
-
+//
                 final GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(rmtNode);
-
-                if (oldFut == null) {
-                    oldClient = clients.get(sndId);
-
-                    if (oldClient != null) {
-                        if (oldClient instanceof GridTcpNioCommunicationClient) {
-                            if (log.isDebugEnabled())
-                                log.debug("Received incoming connection when already connected " +
-                                        "to this node, rejecting [locNode=" + locNode.id() +
-                                        ", rmtNode=" + sndId + ']');
-
-                            ses.send(new RecoveryLastReceivedMessage(-1));
-
-                            fut.onDone(oldClient);
-
-                            return;
-                        }
-                        else {
-                            assert oldClient instanceof GridShmemCommunicationClient;
-
-                            hasShmemClient = true;
-                        }
-                    }
-
-                    boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
-                            new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
-
-                    if (log.isDebugEnabled())
-                        log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
-
-                    if (reserved) {
-                        try {
-                            GridTcpNioCommunicationClient client =
-                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
-
-                            fut.onDone(client);
-                        }
-                        finally {
-                            clientFuts.remove(rmtNode.id(), fut);
-                        }
-                    }
-                }
-                else {
-                    if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Received incoming connection from remote node while " +
-                                    "connecting to this node, rejecting [locNode=" + locNode.id() +
-                                    ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
-                                    ", rmtNodeOrder=" + rmtNode.order() + ']');
-                        }
-
-                        ses.send(new RecoveryLastReceivedMessage(-1));
-                    }
-                    else {
+//
+//                if (oldFut == null) {
+//                    oldClient = clients.get(sndId);
+//
+//                    if (oldClient != null) {
+//                        if (oldClient instanceof GridTcpNioCommunicationClient) {
+//                            if (log.isDebugEnabled())
+//                                log.debug("Received incoming connection when already connected " +
+//                                        "to this node, rejecting [locNode=" + locNode.id() +
+//                                        ", rmtNode=" + sndId + ']');
+//
+//                            ses.send(new RecoveryLastReceivedMessage(-1));
+//
+//                            fut.onDone(oldClient);
+//
+//                            return;
+//                        }
+//                        else {
+//                            assert oldClient instanceof GridShmemCommunicationClient;
+//
+//                            hasShmemClient = true;
+//                        }
+//                    }
+//
+//                    boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
+//                            new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
+//
+//                    if (log.isDebugEnabled())
+//                        log.debug("Received incoming connection from remote node " +
+//                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
+//
+//                    if (reserved) {
+//                        try {
+//                            GridTcpNioCommunicationClient client =
+//                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+//
+//                            fut.onDone(client);
+//                        }
+//                        finally {
+//                            clientFuts.remove(rmtNode.id(), fut);
+//                        }
+//                    }
+//                }
+//                else {
+//                    if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
+//                        if (log.isDebugEnabled()) {
+//                            log.debug("Received incoming connection from remote node while " +
+//                                    "connecting to this node, rejecting [locNode=" + locNode.id() +
+//                                    ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
+//                                    ", rmtNodeOrder=" + rmtNode.order() + ']');
+//                        }
+//
+//                        ses.send(new RecoveryLastReceivedMessage(-1));
+//                    }
+//                    else {
                         // The code below causes a race condition between shmem and TCP (see IGNITE-1294)
                         boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
                         if (reserved)
-                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
-                    }
-                }
+                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, false);
+//                    }
+//                }
             }
 
             @Override public void onMessage(GridNioSession ses, Message msg) {
@@ -2682,6 +2682,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         else
                             ch.write(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType));
                     }
+
                     if (recovery != null) {
                         if (log.isDebugEnabled())
                             log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
@@ -2814,19 +2815,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(id);
 
-        if (recovery == null) {
-            int maxSize = Math.max(msgQueueLimit, ackSndThreshold);
+//        if (recovery == null) {
+//            int maxSize = Math.max(msgQueueLimit, ackSndThreshold);
+//
+//            int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
+//
+//            GridNioRecoveryDescriptor old =
+//                recoveryDescs.putIfAbsent(id, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
+//
+//            if (old != null)
+//                recovery = old;
+//        }
 
-            int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
+        int maxSize = Math.max(
+            msgQueueLimit,
+            ackSndThreshold);
 
-            GridNioRecoveryDescriptor old =
-                recoveryDescs.putIfAbsent(id, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
+        int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
 
-            if (old != null)
-                recovery = old;
-        }
-
-        return recovery;
+        return new GridNioRecoveryDescriptor(queueLimit, node, log);
     }
 
     /**
