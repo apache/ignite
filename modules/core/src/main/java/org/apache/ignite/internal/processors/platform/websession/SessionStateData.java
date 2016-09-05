@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.websession;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
@@ -50,6 +51,14 @@ public class SessionStateData implements Binarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter raw = writer.rawWriter();
+
+        raw.writeInt(timeout);
+        raw.writeUuid(lockNodeId);
+        raw.writeLong(lockId);
+        raw.writeTimestamp(lockTime);
+        raw.writeObject(items);
+        raw.writeByteArray(staticObjects);
     }
 
     /** {@inheritDoc} */
@@ -57,5 +66,10 @@ public class SessionStateData implements Binarylizable {
         BinaryRawReader raw = reader.rawReader();
 
         timeout = raw.readInt();
+        lockNodeId = raw.readUuid();
+        lockId = raw.readLong();
+        lockTime = raw.readTimestamp();
+        items = raw.readObject();
+        staticObjects = raw.readByteArray();
     }
 }
