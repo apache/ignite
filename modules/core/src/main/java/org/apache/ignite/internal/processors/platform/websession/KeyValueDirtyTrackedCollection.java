@@ -28,13 +28,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Web session lock info.
  */
 public class KeyValueDirtyTrackedCollection implements Binarylizable {
     /** */
-    private HashMap<String, byte[]> entries;
+    private Map<String, byte[]> entries;  // TODO: Map breaks order.
 
     /** */
     private List<String> removedKeys;
@@ -63,7 +64,7 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
 
         int count = raw.readInt();
 
-        entries = new HashMap<>(count);
+        entries = new TreeMap<>();  // TreeMap maintains order.
 
         for (int i = 0; i < count; i++)
             entries.put(raw.readString(), raw.readByteArray());
