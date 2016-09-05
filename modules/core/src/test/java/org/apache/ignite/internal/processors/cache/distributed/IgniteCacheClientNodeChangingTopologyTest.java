@@ -1639,33 +1639,41 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                 if (affNode && cache0.isNear())
                                     cache0 = ((GridNearCacheAdapter)cache0).dht();
 
-                                GridCacheEntryEx entry = cache0.peekEx(key);
+                                GridCacheEntryEx entry = cache0.entryEx(key);
 
-                                assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
+                                try {
+                                    entry.unswap(true);
 
-                                GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
-                                    ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
+                                    assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
 
-                                assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+                                    GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
+                                        ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
 
-                                if (ver == null) {
-                                    ver = ver0;
-                                    val = val0;
+                                    assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+
+                                    if (ver == null) {
+                                        ver = ver0;
+                                        val = val0;
+                                    }
+                                    else {
+                                        assertEquals("Version check failed [node=" + node.name() +
+                                            ", key=" + key +
+                                            ", affNode=" + affNode +
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
+                                            ver0,
+                                            ver);
+
+                                        assertEquals("Value check failed [node=" + node.name() +
+                                            ", key=" + key +
+                                            ", affNode=" + affNode +
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
+                                            val0,
+                                            val);
+                                    }
                                 }
-                                else {
-                                    assertEquals("Version check failed [node=" + node.name() +
-                                        ", key=" + key +
-                                        ", affNode=" + affNode +
-                                        ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                        ver0,
-                                        ver);
-
-                                    assertEquals("Value check failed [node=" + node.name() +
-                                        ", key=" + key +
-                                        ", affNode=" + affNode +
-                                        ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                        val0,
-                                        val);
+                                finally {
+                                    cache0.context().evicts().touch(entry,
+                                        cache0.context().affinity().affinityTopologyVersion());
                                 }
                             }
                             else
