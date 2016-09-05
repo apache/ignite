@@ -215,9 +215,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                     wr.WriteString(entry.Key);
 
                     // Write as byte array to enable partial deserialization.
-                    // TODO: Avoid deserialization!
-                    var bytes = wr.Marshaller.Marshal(entry.Value);
-                    wr.WriteByteArray(bytes);
+                    wr.WriteByteArray(entry.GetBytes(wr.Marshaller));
                 }
             }
             else
@@ -241,9 +239,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                     wr.WriteString(entry.Key);
 
                     // Write as byte array to enable partial deserialization.
-                    // TODO: Avoid deserialization!
-                    var bytes = wr.Marshaller.Marshal(entry.Value);
-                    wr.WriteByteArray(bytes);
+                    wr.WriteByteArray(entry.GetBytes(wr.Marshaller));
 
                     count++;
                 }
@@ -476,6 +472,17 @@ namespace Apache.Ignite.Core.Impl.Collections
                     _value = value;
                     IsDeserialized = true;
                 }
+            }
+
+            /// <summary>
+            /// Gets the bytes.
+            /// </summary>
+            public byte[] GetBytes(Marshaller marsh)
+            {
+                if (!IsDeserialized)
+                    return (byte[]) _value;
+
+                return marsh.Marshal(_value);
             }
         }
     }
