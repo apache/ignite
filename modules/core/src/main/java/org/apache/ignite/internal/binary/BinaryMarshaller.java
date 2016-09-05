@@ -136,4 +136,11 @@ public class BinaryMarshaller extends AbstractMarshaller {
     @Override public void onUndeploy(ClassLoader ldr) {
         impl.context().onUndeploy(ldr);
     }
+
+    /**
+     * @return GridBinaryMarshaller instance.
+     */
+    public GridBinaryMarshaller binaryMarshaller() {
+        return impl;
+    }
 }
