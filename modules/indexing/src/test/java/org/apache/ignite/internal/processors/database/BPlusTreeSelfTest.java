@@ -133,7 +133,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         if (reuseList != null) {
             long size = reuseList.size();
 
-            assertTrue("Reuse size: " + size, size < 2000);
+            assertTrue("Reuse size: " + size, size < 6000);
         }
 
         for (int i = 0; i < 10; i++) {
@@ -508,7 +508,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMassiveRemove_true() throws Exception {
-        fail("This test hangs");
+        fail("https://ggsystems.atlassian.net/browse/GG-11442");
 
         doTestMassiveRemove(true);
     }
