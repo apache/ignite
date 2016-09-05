@@ -290,13 +290,11 @@ namespace Apache.Ignite.AspNet
 
             Debug.Assert(item != null);
 
-            var cache = _expiryCacheHolder.GetCacheWithExpiry(item.Timeout * 60);
-
             var data = ((IgniteSessionStateStoreData) item).Data;
 
-            data.Items.WriteChangesOnly = true;  // Write diff.
+            var key = GetKey(id);
 
-            cache.Invoke(GetKey(id), new SetAndReleaseLockEntryProcessor(), data);
+            SetAndUnlockItem(key, data);
         }
 
         /// <summary>
@@ -444,6 +442,18 @@ namespace Apache.Ignite.AspNet
         private void UnlockItem(string key, long lockId)
         {
             ((ICacheInternal) Cache).Invoke<object>((int) Op.Unlock, key, GetLockInfo(lockId));
+        }
+
+        /// <summary>
+        /// Sets and unlocks the item.
+        /// </summary>
+        private void SetAndUnlockItem(string key, SessionStateData data)
+        {
+            data.Items.WriteChangesOnly = true;  // Write diff.
+
+            var cache = _expiryCacheHolder.GetCacheWithExpiry(data.Timeout * 60);
+
+            cache.Invoke(key, new SetAndReleaseLockEntryProcessor(), data);
         }
 
 
