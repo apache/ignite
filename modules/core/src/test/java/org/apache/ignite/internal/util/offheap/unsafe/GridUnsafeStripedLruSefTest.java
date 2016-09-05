@@ -98,6 +98,24 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPrepollIdxOverflow() throws Exception {
+        stripes = 2;
+
+        init();
+
+        Field idxField = lru.getClass().getDeclaredField("rmvIdx");
+
+        idxField.setAccessible(true);
+
+        idxField.set(lru, new AtomicInteger(Integer.MAX_VALUE));
+
+        for (int i = 0; i < 100; i++)
+            lru.prePoll();
+    }
+
+    /**
      * @param cnt Count.
      */
     private void checkOffer(int cnt) {

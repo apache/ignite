@@ -165,7 +165,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
      * @return Queue node address.
      */
     long prePoll() {
-        int idx = rmvIdx.getAndIncrement();
+        int idx = U.safeAbs(rmvIdx.getAndIncrement());
 
         // Must try to poll from each LRU.
         for (int i = 0; i < lrus.length; i++) {
