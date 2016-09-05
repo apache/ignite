@@ -281,8 +281,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** Entry expire time. */
         private final long expireTime;
 
-        //TODO: IGNITE-2883 Review this class
+        /** Cache Object Context */
         private final GridCacheContext ctx;
+
+        /** Cache Object Key */
         private final CacheObject key;
 
         /**
