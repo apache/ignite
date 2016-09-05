@@ -129,7 +129,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteBinaryObjectQueryArgumentsOffheapLocalTest.class);
         suite.addTestSuite(IgniteBinaryObjectLocalQueryArgumentsTest.class);
 
-        //TODO: IGNITE-2881: check if this is suitable place for IndexingSpiQuerySelfTest
         suite.addTestSuite(IndexingSpiQuerySelfTest.class);
         suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
 
