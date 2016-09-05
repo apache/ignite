@@ -45,9 +45,10 @@ public interface PageStore {
      *
      * @param pageId Page ID.
      * @param pageBuf Page buffer to read into.
+     * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public void read(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.
@@ -62,9 +63,10 @@ public interface PageStore {
      *
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
+     * @param keepCrc before writing on disk CRC will be calculated, if you want to keep it in pageBuf, set keepCrc
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.

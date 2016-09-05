@@ -118,7 +118,10 @@ public abstract class WALRecord {
         PAGES_LIST_REMOVE_PAGE,
 
         /** */
-        PAGES_LIST_REMOVE_LAST_PAGE
+        PAGES_LIST_REMOVE_LAST_PAGE,
+
+        /** */
+        MEMORY_RECOVERY
         ;
 
         /** */

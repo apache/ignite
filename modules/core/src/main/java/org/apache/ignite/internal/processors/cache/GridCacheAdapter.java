@@ -1907,12 +1907,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         if (tx == null || tx.implicit()) {
-            try {
-                final AffinityTopologyVersion topVer = tx == null ?
-                    (canRemap ?
-                        ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
-                    tx.topologyVersion();
+            Map<KeyCacheObject, GridCacheVersion> misses = null;
 
+            final AffinityTopologyVersion topVer = tx == null ?
+                (canRemap ?
+                    ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+                tx.topologyVersion();
+
+            try {
                 int keysSize = keys.size();
 
                 final Map<K1, V1> map = keysSize == 1 ?
@@ -1920,8 +1922,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     U.<K1, V1>newHashMap(keysSize);
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
-
-                Map<KeyCacheObject, GridCacheVersion> misses = null;
 
                 for (KeyCacheObject key : keys) {
                     while (true) {
@@ -2114,6 +2114,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     assert misses == null;
 
                 return new GridFinishedFuture<>(map);
+            }
+            catch (RuntimeException | AssertionError e) {
+                if (misses != null) {
+                    for (KeyCacheObject key0 : misses.keySet())
+                        ctx.evicts().touch(peekEx(key0), topVer);
+                }
+
+                throw e;
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);

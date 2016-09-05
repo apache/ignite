@@ -155,6 +155,8 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
             ok = true;
         }
         finally {
+            assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
             if (h.releaseAfterWrite(pageId, page, arg, intArg))
                 page.releaseWrite(ok);
         }
@@ -177,6 +179,8 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
         PageIO init,
         IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
+        assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
         init.initNewPage(buf, pageId);
 
         // Here we should never write full page, because it is known to be new.

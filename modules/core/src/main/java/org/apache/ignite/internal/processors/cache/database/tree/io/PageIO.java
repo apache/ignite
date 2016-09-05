@@ -146,10 +146,13 @@ public abstract class PageIO {
     public static final short T_PENDING_REF_LEAF = 14;
 
     /** */
-    public static final short T_PAGE_LIST_META = 15;
+    public static final short T_META = 15;
 
     /** */
-    public static final short T_PAGE_LIST_NODE = 16;
+    public static final short T_PAGE_LIST_META = 16;
+
+    /** */
+    public static final short T_PAGE_LIST_NODE = 17;
 
     /** */
     private final int ver;
@@ -285,6 +288,7 @@ public abstract class PageIO {
         setType(buf, getType());
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
+        setCrc(buf, 0);
 
         buf.putLong(RESERVED_1_OFF, 0L);
         buf.putLong(RESERVED_2_OFF, 0L);
@@ -328,6 +332,9 @@ public abstract class PageIO {
 
             case T_PAGE_LIST_META:
                 return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
+
+            case T_META:
+                throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
 
             default:
                 return (Q)getBPlusIO(type, ver);
