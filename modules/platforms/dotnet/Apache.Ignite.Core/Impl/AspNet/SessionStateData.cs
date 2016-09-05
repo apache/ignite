@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.AspNet
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
-            var raw = (IBinaryRawWriter) writer;
+            var raw = writer.GetRawWriter();
 
             raw.WriteInt(Timeout);
             raw.WriteGuid(LockNodeId);

@@ -192,33 +192,34 @@ namespace Apache.Ignite.Core.Impl.Collections
             if (_isDiff)
                 throw new InvalidOperationException(string.Format("Cannot serialize incomplete {0}.", GetType()));
 
-            var wr = (BinaryWriter) writer;
+            var raw = writer.GetRawWriter();
+            var wr = (BinaryWriter) raw;
 
             if (_isNew || _dirtyAll || !WriteChangesOnly || (_removedKeys == null && _list.All(x => x.IsDirty)))
             {
                 // Write in full mode.
-                wr.WriteBoolean(true);
-                wr.WriteInt(_list.Count);
+                raw.WriteBoolean(true);
+                raw.WriteInt(_list.Count);
 
                 foreach (var entry in _list)
                 {
-                    wr.WriteString(entry.Key);
+                    raw.WriteString(entry.Key);
 
                     // Write as byte array to enable partial deserialization.
-                    wr.WriteByteArray(entry.GetBytes(wr.Marshaller));
+                    raw.WriteByteArray(entry.GetBytes(wr.Marshaller));
                 }
             }
             else
             {
                 // Write in diff mode.
-                wr.WriteBoolean(false);
+                raw.WriteBoolean(false);
 
                 var stream = wr.Stream;
 
                 var countPos = stream.Position;
                 var count = 0;
 
-                wr.WriteInt(count);  // reserve count
+                raw.WriteInt(count);  // reserve count
 
                 // Write dirty items.
                 foreach (var entry in _list)
@@ -226,10 +227,10 @@ namespace Apache.Ignite.Core.Impl.Collections
                     if (!entry.IsDirty)
                         continue;
 
-                    wr.WriteString(entry.Key);
+                    raw.WriteString(entry.Key);
 
                     // Write as byte array to enable partial deserialization.
-                    wr.WriteByteArray(entry.GetBytes(wr.Marshaller));
+                    raw.WriteByteArray(entry.GetBytes(wr.Marshaller));
 
                     count++;
                 }
@@ -250,14 +251,14 @@ namespace Apache.Ignite.Core.Impl.Collections
                     foreach (var entry in _list)
                         removed.Remove(entry.Key);
 
-                    wr.WriteInt(removed.Count);
+                    raw.WriteInt(removed.Count);
 
                     foreach (var removedKey in removed)
-                        wr.WriteString(removedKey);
+                        raw.WriteString(removedKey);
                 }
                 else
                 {
-                    wr.WriteInt(0);
+                    raw.WriteInt(0);
                 }
             }
         }
