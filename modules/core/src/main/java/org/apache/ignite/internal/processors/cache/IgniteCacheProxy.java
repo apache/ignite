@@ -533,7 +533,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K, V>> qry;
+        final CacheQuery qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
@@ -561,8 +561,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
