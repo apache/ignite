@@ -76,11 +76,20 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
         }
     }
 
+    /** Entry. */
     private static class Entry {
-        public String key;
+        /** */
+        private String key;
 
-        public byte[] value;
+        /** */
+        private byte[] value;
 
+        /**
+         * Ctor.
+         *
+         * @param key Key
+         * @param value Value.
+         */
         private Entry(String key, byte[] value) {
             this.key = key;
             this.value = value;

@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
+import org.apache.ignite.internal.processors.platform.websession.KeyValueDirtyTrackedCollection;
 import org.apache.ignite.internal.processors.platform.websession.LockInfo;
 import org.apache.ignite.internal.processors.platform.websession.SessionStateData;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -322,6 +323,7 @@ public class BinaryContext {
 
         registerPredefinedType(SessionStateData.class, 0);
         registerPredefinedType(LockInfo.class, 0);
+        registerPredefinedType(KeyValueDirtyTrackedCollection.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }

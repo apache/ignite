@@ -17,9 +17,45 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+
+import java.sql.Timestamp;
+import java.util.UUID;
+
 /**
  * Web session state data.
  */
-public class SessionStateData {
-    // TODO
+public class SessionStateData implements Binarylizable {
+    /** */
+    private int timeout;
+
+    /** */
+    private UUID lockNodeId;
+
+    /** */
+    private long lockId;
+
+    /** */
+    private Timestamp lockTime;
+
+    /** */
+    private KeyValueDirtyTrackedCollection items;
+
+    /** */
+    private byte[] staticObjects;
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader raw = reader.rawReader();
+
+        timeout = raw.readInt();
+    }
 }
