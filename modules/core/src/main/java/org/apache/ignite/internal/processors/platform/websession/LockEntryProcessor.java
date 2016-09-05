@@ -29,37 +29,35 @@ import java.sql.Timestamp;
 /**
  * Entry processor that locks web session data.
  */
-public class LockEntryProcessor implements CacheEntryProcessor<String, BinaryObject, Object> {
-    @Override public Object process(MutableEntry<String, BinaryObject> entry,
+public class LockEntryProcessor implements CacheEntryProcessor<String, SessionStateData, Object> {
+    /** {@inheritDoc} */
+    @Override public Object process(MutableEntry<String, SessionStateData> entry,
         Object... objects) throws EntryProcessorException {
         // Arg contains lock info: node id + thread id
         // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
-        // or null (when not exists)
 
-        if (!entry.exists())
-            return null;
+        assert entry.exists();
 
-        BinaryObject data = entry.getValue();
+        SessionStateData data = entry.getValue();
 
         assert data != null;
 
-        if (data.field("LockNodeId") != null) {
-            Timestamp lockTime = data.field("LockTime");
+        if (data.getLockNodeId() != null) {
+            // Already locked: return lock time.
+            assert data.getLockTime() != null;
 
-            assert lockTime != null;
-
-            return lockTime;
+            return data.getLockTime();
         }
-
-        // TODO: Don't use binary mode. Use byte arrays for items.
-        final BinaryObjectBuilder builder = data.toBuilder();
-
-        //builder.setField("");
 
         LockInfo lockInfo = (LockInfo)objects[0];
 
+        // Not locked: lock and return result
+        data.setLockNodeId(lockInfo.getLockNodeId());
+        data.setLockId(lockInfo.getLockId());
+        data.setLockTime(lockInfo.getLockTime());
 
-        return null;
+        entry.setValue(data);
+
+        return data;
     }
-    // TODO: Use JavaObject approach so that there is a clean API?
 }

@@ -40,6 +40,27 @@ public class LockInfo implements Binarylizable {
     /** */
     private Timestamp lockTime;
 
+    /**
+     * Gets the lock id.
+     */
+    public long getLockId() {
+        return lockId;
+    }
+
+    /**
+     * Gets the lock node id.
+     */
+    public UUID getLockNodeId() {
+        return lockNodeId;
+    }
+
+    /**
+     * Gets the lock time.
+     */
+    public Timestamp getLockTime() {
+        return lockTime;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter raw = writer.rawWriter();

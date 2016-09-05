@@ -49,6 +49,33 @@ public class SessionStateData implements Binarylizable {
     /** */
     private byte[] staticObjects;
 
+    /**
+     * Gets the lock node id.
+     */
+    public UUID getLockNodeId() {
+        return lockNodeId;
+    }
+
+    public void setLockNodeId(UUID lockNodeId) {
+        this.lockNodeId = lockNodeId;
+    }
+
+    public long getLockId() {
+        return lockId;
+    }
+
+    public void setLockId(long lockId) {
+        this.lockId = lockId;
+    }
+
+    public Timestamp getLockTime() {
+        return lockTime;
+    }
+
+    public void setLockTime(Timestamp lockTime) {
+        this.lockTime = lockTime;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter raw = writer.rawWriter();
