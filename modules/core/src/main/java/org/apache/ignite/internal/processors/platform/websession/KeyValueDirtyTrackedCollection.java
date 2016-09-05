@@ -25,17 +25,17 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
  * Web session lock info.
  */
 public class KeyValueDirtyTrackedCollection implements Binarylizable {
-    /** */
-    private Map<String, byte[]> entries;  // TODO: Map breaks order.
+    /** Entry order is important. */
+    private SortedMap<String, byte[]> entries;
 
     /** */
     private List<String> removedKeys;
@@ -64,7 +64,7 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
 
         int count = raw.readInt();
 
-        entries = new TreeMap<>();  // TreeMap maintains order.
+        entries = new TreeMap<>();
 
         for (int i = 0; i < count; i++)
             entries.put(raw.readString(), raw.readByteArray());
