@@ -709,10 +709,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (meta != null) {
                 String name = meta.affinityKeyFieldName();
 
-                affKeyFields.putIfAbsent(meta.typeId(), new T1<>(meta.field(name)));
+                if (name != null) {
+                    BinaryField field = meta.field(name);
 
-                if (name != null)
-                    return po.field(name);
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
+
+                    return field.value(po);
+                }
+                else
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
             }
             else if (po instanceof BinaryObjectEx) {
                 int typeId = ((BinaryObjectEx)po).typeId();
