@@ -27,6 +27,7 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
@@ -301,7 +303,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        throw new UnsupportedOperationException("usedSpaceSize operation is not yet supported.");
+        Path p = fileForPath(new IgfsPath("/")).toPath();
+
+        try {
+            LocalFileSystemSizeVisitor visitor = new LocalFileSystemSizeVisitor();
+
+            Files.walkFileTree(p, visitor);
+
+            return visitor.size();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed to calculate used space size.", e);
+        }
     }
 
     /** {@inheritDoc} */
