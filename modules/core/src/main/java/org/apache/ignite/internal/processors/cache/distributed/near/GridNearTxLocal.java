@@ -743,13 +743,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         // Commit to DB first. This way if there is a failure, transaction
         // won't be committed.
         try {
-            if (commit && !isRollbackOnly()) {
-                long start = System.currentTimeMillis();
+            if (commit && !isRollbackOnly())
                 userCommit();
-                long end = System.currentTimeMillis();
-
-                cctx.onUserCommit(end - start);
-            }
             else
                 userRollback();
         }

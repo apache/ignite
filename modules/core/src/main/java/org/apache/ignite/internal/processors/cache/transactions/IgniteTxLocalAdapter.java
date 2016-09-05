@@ -1003,13 +1003,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (ptr != null) {
-                    long start = System.currentTimeMillis();
+                if (ptr != null)
                     cctx.wal().fsync(ptr);
-                    long end = System.currentTimeMillis();
-
-                    cctx.onWalFsync(end - start);
-                }
             }
             catch (StorageException e) {
                 throw new IgniteCheckedException("Failed to log transaction record " +

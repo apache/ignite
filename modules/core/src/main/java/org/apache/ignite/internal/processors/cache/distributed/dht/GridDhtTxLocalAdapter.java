@@ -592,7 +592,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                             break;
                         }
-                        catch (GridCacheEntryRemovedException e) {
+                        catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
                                 log.debug("Get removed entry: " + key);
                         }
@@ -767,13 +767,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         // Commit to DB first. This way if there is a failure, transaction
         // won't be committed.
         try {
-            if (commit && !isRollbackOnly()) {
-                long start = System.currentTimeMillis();
+            if (commit && !isRollbackOnly())
                 userCommit();
-                long end = System.currentTimeMillis();
-
-                cctx.onUserCommit(end - start);
-            }
             else
                 userRollback();
         }

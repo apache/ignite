@@ -23,15 +23,10 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 
 /**
- * Noop stub for WAL manager.
+ * No-op stub for WAL manager.
  */
 public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapter
     implements IgniteWriteAheadLogManager {
-    /** {@inheritDoc} */
-    @Override public void beginUpdate() {
-
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isAlwaysWriteFullPages() {
         return true;

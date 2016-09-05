@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
@@ -227,55 +225,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteLogger txRecoveryMessageLogger() {
         return txRecoveryMsgLog;
-    }
-
-    public AtomicLong fsyncStats = new AtomicLong();
-
-    public AtomicLong fsyncWaitStats = new AtomicLong();
-
-    public AtomicLong realFsyncStats = new AtomicLong();
-
-    public AtomicLong userCommitStats = new AtomicLong();
-
-    public void onWalFsync(long duration) {
-        updateDuration(duration, fsyncStats);
-    }
-
-    public void onFsyncWait(long duration) {
-        updateDuration(duration, fsyncWaitStats);
-    }
-
-    public void onFileFsync(long duration) {
-        updateDuration(duration, realFsyncStats);
-    }
-
-    public void onUserCommit(long duration) {
-        updateDuration(duration, userCommitStats);
-    }
-
-    private void updateDuration(long duration, AtomicLong counter) {
-        while (true) {
-            long val = counter.get();
-
-            int oldDur = (int)val;
-            long oldCnt = (int)(val >> 32);
-
-            oldCnt += 1;
-            oldDur += duration;
-
-            if (counter.compareAndSet(val, (oldCnt << 32) | oldDur))
-                break;
-        }
-    }
-
-    public void dumpStats(IgniteLogger log, String prefix, AtomicLong counter) {
-        long val = counter.getAndSet(0);
-
-        int oldDur = (int)val;
-        long oldCnt = (int)(val >> 32);
-
-        if (oldCnt != 0)
-            U.debug(log, prefix + " duration: " + oldDur / oldCnt);
     }
 
     /**
