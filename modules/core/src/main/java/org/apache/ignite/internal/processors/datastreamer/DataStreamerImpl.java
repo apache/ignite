@@ -512,7 +512,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             activeFuts.add(resFut);
 
-            Collection<KeyCacheObject> keys =
+            Collection<KeyCacheObjectWrapper> keys =
                 new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
             Collection<DataStreamerEntry> entries0 = new ArrayList<>(entries.size());
@@ -521,7 +521,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, entry.getKey(), true);
                 CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, entry.getValue(), true);
 
-                keys.add(key);
+                keys.add(new KeyCacheObjectWrapper(key));
 
                 entries0.add(new DataStreamerEntry(key, val));
             }
@@ -572,13 +572,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             activeFuts.add(resFut);
 
-            Collection<KeyCacheObject> keys = null;
+            Collection<KeyCacheObjectWrapper> keys = null;
 
             if (entries.size() > 1) {
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
                 for (DataStreamerEntry entry : entries)
-                    keys.add(entry.getKey());
+                    keys.add(new KeyCacheObjectWrapper(entry.getKey()));
             }
 
             load0(entries, resFut, keys, 0);
@@ -641,7 +641,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private void load0(
         Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
-        @Nullable final Collection<KeyCacheObject> activeKeys,
+        @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
         final int remaps
     ) {
         assert entries != null;
@@ -729,7 +729,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         if (activeKeys != null) {
                             for (DataStreamerEntry e : entriesForNode)
-                                activeKeys.remove(e.getKey());
+                                activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
 
                             if (activeKeys.isEmpty())
                                 resFut.onDone();
@@ -1694,6 +1694,36 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** {@inheritDoc} */
         @Override public Byte apply(ClusterNode gridNode) {
             return PUBLIC_POOL;
+        }
+    }
+
+    /**
+     * Key object wrapper.
+     * Using identity equals prevents slow down Set operations with hashcode collisions.
+     */
+    private class KeyCacheObjectWrapper {
+        /** key object */
+        private final KeyCacheObject key;
+
+        /**
+         * Constructor
+         * @param key key object
+         */
+        KeyCacheObjectWrapper(KeyCacheObject key) {
+            assert key != null;
+
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return key.hashCode();
         }
     }
 }
