@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -114,6 +115,23 @@ public interface IgniteSpiContext {
      * @throws IgniteSpiException If failed to send a message to remote node.
      */
     public void send(ClusterNode node, Serializable msg, String topic) throws IgniteSpiException;
+
+    /**
+     * Register an user message listener to receive messages sent by remote nodes. The underlying
+     * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
+     *
+     * @param topic Topic to subscribe to.
+     * @param p Message predicate.
+     */
+    public void addUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p);
+
+    /**
+     * Removes a previously registered user message listener.
+     *
+     * @param topic Topic to unsubscribe from.
+     * @param p Message predicate.
+     */
+    public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying
