@@ -241,7 +241,7 @@ namespace ignite
             {
                 std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
-                QueryFetchRequest req(cursor->GetQueryId(), connection.GetConfiguration().GetFetchPageSize());
+                QueryFetchRequest req(cursor->GetQueryId(), connection.GetConfiguration().GetPageSize());
                 QueryFetchResponse rsp(*resultPage);
 
                 try

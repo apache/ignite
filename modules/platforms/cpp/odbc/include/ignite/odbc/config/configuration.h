@@ -66,7 +66,7 @@ namespace ignite
                     static const std::string protocolVersion;
 
                     /** Connection attribute keyword for fetch results page size attribute. */
-                    static const std::string fetchPageSize;
+                    static const std::string pageSize;
                 };
 
                 /** Default values for configuration. */
@@ -94,7 +94,7 @@ namespace ignite
                     static const uint16_t port;
 
                     /** Default value for fetch results page size attribute. */
-                    static const int32_t fetchPageSize;
+                    static const int32_t pageSize;
                 };
 
                 /**
@@ -284,9 +284,9 @@ namespace ignite
                  *
                  * @return Fetch results page size.
                  */
-                int32_t GetFetchPageSize() const
+                int32_t GetPageSize() const
                 {
-                    return static_cast<int32_t>(GetIntValue(Key::fetchPageSize, DefaultValue::fetchPageSize));
+                    return static_cast<int32_t>(GetIntValue(Key::pageSize, DefaultValue::pageSize));
                 }
 
                 /**
@@ -294,9 +294,9 @@ namespace ignite
                  *
                  * @param size Fetch results page size.
                  */
-                void SetFetchPageSize(int32_t size)
+                void SetPageSize(int32_t size)
                 {
-                    arguments[Key::fetchPageSize] = common::LexicalCast<std::string>(size);
+                    arguments[Key::pageSize] = common::LexicalCast<std::string>(size);
                 }
 
                 /**

@@ -39,7 +39,7 @@ namespace ignite
             const std::string Configuration::Key::server            = "server";
             const std::string Configuration::Key::port              = "port";
             const std::string Configuration::Key::protocolVersion   = "protocol_version";
-            const std::string Configuration::Key::fetchPageSize     = "fetch_page_size";
+            const std::string Configuration::Key::pageSize          = "page_size";
 
             const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
@@ -47,8 +47,8 @@ namespace ignite
             const std::string Configuration::DefaultValue::address  = "";
             const std::string Configuration::DefaultValue::server   = "";
 
-            const uint16_t Configuration::DefaultValue::port         = 10800;
-            const int32_t Configuration::DefaultValue::fetchPageSize = 1024;
+            const uint16_t Configuration::DefaultValue::port    = 10800;
+            const int32_t Configuration::DefaultValue::pageSize = 1024;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 

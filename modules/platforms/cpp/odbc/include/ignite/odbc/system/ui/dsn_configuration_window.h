@@ -46,8 +46,8 @@ namespace ignite
                         ID_ADDRESS_LABEL,
                         ID_CACHE_EDIT,
                         ID_CACHE_LABEL,
-                        ID_FETCH_PAGE_SIZE_EDIT,
-                        ID_FETCH_PAGE_SIZE_LABEL,
+                        ID_PAGE_SIZE_EDIT,
+                        ID_PAGE_SIZE_LABEL,
                         ID_OK_BUTTON,
                         ID_CANCEL_BUTTON
                     };
@@ -119,10 +119,10 @@ namespace ignite
                     std::auto_ptr<Window> cacheEdit;
 
                     /** DSN fetch page size edit field label. */
-                    std::auto_ptr<Window> fetchPageSizeLabel;
+                    std::auto_ptr<Window> pageSizeLabel;
 
                     /** DSN fetch page size edit field. */
-                    std::auto_ptr<Window> fetchPageSizeEdit;
+                    std::auto_ptr<Window> pageSizeEdit;
 
                     /** Ok button. */
                     std::auto_ptr<Window> okButton;

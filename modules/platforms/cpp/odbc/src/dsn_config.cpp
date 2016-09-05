@@ -101,17 +101,17 @@ namespace ignite
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
-            int32_t fetchPageSize = ReadDsnInt(dsn, Configuration::Key::fetchPageSize, config.GetFetchPageSize());
+            int32_t pageSize = ReadDsnInt(dsn, Configuration::Key::pageSize, config.GetPageSize());
 
-            if (fetchPageSize <= 0)
-                fetchPageSize = config.GetFetchPageSize();
+            if (pageSize <= 0)
+                pageSize = config.GetPageSize();
 
             config.SetAddress(address);
             config.SetHost(server);
             config.SetTcpPort(port);
             config.SetCache(cache);
             config.SetProtocolVersion(version);
-            config.SetFetchPageSize(fetchPageSize);
+            config.SetPageSize(pageSize);
         }
     }
 }
