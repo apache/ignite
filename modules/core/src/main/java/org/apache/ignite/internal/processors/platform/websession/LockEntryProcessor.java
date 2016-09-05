@@ -29,9 +29,9 @@ import java.sql.Timestamp;
 /**
  * Entry processor that locks web session data.
  */
-public class LockEntryProcessor implements CacheEntryProcessor<String, SessionStateData, Object> {
+public class LockEntryProcessor implements CacheEntryProcessor<String, BinaryObject, Object> {
     /** {@inheritDoc} */
-    @Override public Object process(MutableEntry<String, SessionStateData> entry, Object... objects)
+    @Override public Object process(MutableEntry<String, BinaryObject> entry, Object... objects)
         throws EntryProcessorException {
         // Arg contains lock info: node id + thread id
         // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
@@ -39,25 +39,29 @@ public class LockEntryProcessor implements CacheEntryProcessor<String, SessionSt
         if (!entry.exists())
             return null;
 
-        SessionStateData data = entry.getValue();
+        BinaryObject data = entry.getValue();
 
         assert data != null;
 
-        if (data.getLockNodeId() != null) {
+        if (data.field("LockNodeId") != null) {
             // Already locked: return lock time.
-            assert data.getLockTime() != null;
+            Object lockTime = data.field("LockTime");
 
-            return data.getLockTime();
+            assert lockTime != null;
+
+            return lockTime;
         }
 
         LockInfo lockInfo = (LockInfo)objects[0];
 
         // Not locked: lock and return result
-        data.setLockNodeId(lockInfo.getLockNodeId());
-        data.setLockId(lockInfo.getLockId());
-        data.setLockTime(lockInfo.getLockTime());
+        final BinaryObjectBuilder builder = data.toBuilder();
 
-        entry.setValue(data);
+        builder.setField("LockNodeId", lockInfo.getLockNodeId());
+        builder.setField("LockId", lockInfo.getLockId());
+        builder.setField("LockTime", lockInfo.getLockTime());
+
+        entry.setValue(builder.build());
 
         return data;
     }
