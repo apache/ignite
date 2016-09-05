@@ -99,7 +99,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     );
                 }
 
-                assertParameter(odbcCfg.getThreadPoolSize() > 0, "OdbcConfiguration: threadPoolSize");
+                assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
 
                 odbcExecSvc = new IgniteThreadPoolExecutor(
                     "odbc",
@@ -179,13 +179,13 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
             srv.stop();
 
+            ctx.ports().deregisterPorts(getClass());
+
             if (odbcExecSvc != null) {
                 U.shutdownNow(getClass(), odbcExecSvc, log);
 
                 odbcExecSvc = null;
             }
-
-            ctx.ports().deregisterPorts(getClass());
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
