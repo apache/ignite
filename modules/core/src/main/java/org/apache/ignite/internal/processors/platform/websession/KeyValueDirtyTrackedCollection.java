@@ -76,6 +76,15 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
         }
     }
 
+    /**
+     * Apply changes from another instance.
+     *
+     * @param items Items.
+     */
+    public void applyChanges(KeyValueDirtyTrackedCollection items) {
+
+    }
+
     /** Entry. */
     private static class Entry {
         /** */

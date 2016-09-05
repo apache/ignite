@@ -99,4 +99,15 @@ public class SessionStateData implements Binarylizable {
         items = raw.readObject();
         staticObjects = raw.readByteArray();
     }
+
+    /**
+     * Apply changes from another instance.
+     *
+     * @param data Data.
+     */
+    public void applyChanges(SessionStateData data) {
+        timeout = data.timeout;
+        staticObjects = data.staticObjects;
+        items.applyChanges(data.items);
+    }
 }
