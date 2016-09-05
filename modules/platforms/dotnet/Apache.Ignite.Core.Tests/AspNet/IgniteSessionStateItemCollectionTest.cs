@@ -93,6 +93,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual("val2", col["key"]);
             Assert.AreEqual(3, col["1"]);
 
+            // TODO: CopyTo, syncroot
+
             // Remove.
             col["2"] = 2;
             col["3"] = 3;
