@@ -181,11 +181,6 @@ public class OdbcConfiguration {
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(OdbcConfiguration.class, this);
-    }
-
     /**
      * Size of thread pool that is in charge of processing ODBC tasks.
      * <p>

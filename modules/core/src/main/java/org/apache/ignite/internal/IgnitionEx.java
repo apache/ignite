@@ -1370,14 +1370,13 @@ public class IgnitionEx {
         private boolean single;
 
         /**
-         * Constructor
          *
          * @param cfg User-defined configuration.
          * @param cfgUrl Optional configuration path.
          * @param springCtx Optional Spring application context.
          */
         GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
-            assert cfg != null;
+            assert(cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
@@ -2334,7 +2333,7 @@ public class IgnitionEx {
             if (restExecSvc != null)
                 U.shutdownNow(getClass(), restExecSvc, log);
 
-                restExecSvc = null;
+            restExecSvc = null;
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
