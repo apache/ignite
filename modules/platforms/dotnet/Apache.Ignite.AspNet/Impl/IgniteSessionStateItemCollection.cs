@@ -119,14 +119,7 @@ namespace Apache.Ignite.AspNet.Impl
         /** <inheritdoc /> */
         public NameObjectCollectionBase.KeysCollection Keys
         {
-            get
-            {
-                // TODO: Inherit NameObjectCollectionBase in  this class!
-                // We should do everything possible to be pluggable.
-
-                // KeysCollection ctor is internal, not possible to return it.
-                throw new NotSupportedException("Use GetEnumerator instead to get all entries.");
-            }
+            get { return new NameObjectCollection(this).Keys; }
         }
 
         /** <inheritdoc /> */
@@ -134,6 +127,20 @@ namespace Apache.Ignite.AspNet.Impl
         {
             get { return _collection.IsDirty; }
             set { _collection.IsDirty = value; }
+        }
+
+        /// <summary>
+        /// NameObjectCollectionBase.KeysCollection has internal constructor.
+        /// The only way to implement ISessionStateItemCollection.Keys property 
+        /// is to have a NameObjectCollectionBase in hand.
+        /// </summary>
+        private class NameObjectCollection : NameObjectCollectionBase
+        {
+            public NameObjectCollection(IgniteSessionStateItemCollection col)
+            {
+                foreach (string key in col)
+                    BaseAdd(key, null);
+            }
         }
     }
 }
