@@ -283,7 +283,6 @@ namespace Apache.Ignite.AspNet
 
             var data = ((IgniteSessionStateStoreData) item).Data;
 
-            data.LockNodeId = null;  // Unlock
             data.Items.WriteChangesOnly = true;  // Write diff.
 
             cache.Invoke(GetKey(id), new SetAndReleaseLockEntryProcessor(), data);
@@ -471,7 +470,7 @@ namespace Apache.Ignite.AspNet
                     if (val.LockNodeId == null)
                         throw new InvalidOperationException("LockNodeId is null.");
 
-                    if (val.LockNodeId.Value != arg.LockNodeId)
+                    if (val.LockNodeId != arg.LockNodeId)
                         throw new InvalidOperationException("Invalid lock node id TODO");
 
                     if (val.LockId != arg.LockId)
@@ -505,7 +504,7 @@ namespace Apache.Ignite.AspNet
                     if (val.LockNodeId == null)
                         throw new InvalidOperationException("LockNodeId is null.");
 
-                    if (val.LockNodeId.Value != arg.LockNodeId)
+                    if (val.LockNodeId != arg.LockNodeId)
                         throw new InvalidOperationException("Invalid lock node id TODO");
 
                     if (val.LockId != arg.LockId)
@@ -518,6 +517,7 @@ namespace Apache.Ignite.AspNet
                     // Update values.
                     val.Items.ApplyChanges(arg.Items);
                     val.StaticObjects = arg.StaticObjects;
+                    val.Timeout = arg.Timeout;
 
                     // Apply.
                     entry.Value = val;
