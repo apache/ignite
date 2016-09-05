@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -211,8 +210,11 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK = 3;
 
-    /** Underlying JCache. */
+    /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
+
+    /** Initial JCache (not in binary mode). */
+    private final IgniteCache cacheRaw;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepBinary;
@@ -242,7 +244,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
 
-        this.cache = (IgniteCacheProxy)cache;
+        cacheRaw = cache;
+
+        this.cache = (IgniteCacheProxy)cache.withKeepBinary();
         this.keepBinary = keepBinary;
     }
 
@@ -255,7 +259,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
+        return new PlatformCache(platformCtx, cacheRaw.withSkipStore(), keepBinary);
     }
 
     /**
@@ -267,7 +271,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (keepBinary)
             return this;
 
-        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
+        return new PlatformCache(platformCtx, cacheRaw.withKeepBinary(), true);
     }
 
     /**
@@ -279,7 +283,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @return Cache.
      */
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
-        IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+        IgniteCache cache0 = cacheRaw.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
         return new PlatformCache(platformCtx, cache0, keepBinary);
     }
@@ -293,7 +297,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
+        return new PlatformCache(platformCtx, (IgniteCache)cacheRaw.withAsync(), keepBinary);
     }
 
     /**
@@ -307,7 +311,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+        return new PlatformCache(platformCtx, cacheRaw.withNoRetries(), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -475,7 +479,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                         case OP_INVOKE_INTERNAL_SESSION_LOCK: {
                             LockInfo lockInfo = (LockInfo)args[1];
 
-                            Object res = cache.invoke(key, new LockEntryProcessor(), lockInfo);
+                            Object res = cacheRaw.invoke(key, new LockEntryProcessor(), lockInfo);
 
                             return writeResult(mem, res);
                         }
@@ -483,17 +487,15 @@ public class PlatformCache extends PlatformAbstractTarget {
                         case OP_INVOKE_INTERNAL_SESSION_UNLOCK: {
                             LockInfo lockInfo = (LockInfo)args[1];
 
-                            cache.invoke(key, new UnlockEntryProcessor(), lockInfo);
+                            cacheRaw.invoke(key, new UnlockEntryProcessor(), lockInfo);
 
                             return FALSE;
                         }
 
                         case OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK:
-                            BinaryObject binData = (BinaryObject)args[1];  // Cache is in binary mode.
+                            SessionStateData data = (SessionStateData)args[1];
 
-                            SessionStateData data = binData.deserialize();
-
-                            cache.invoke(key, new SetAndUnlockEntryProcessor(), data);
+                            cacheRaw.invoke(key, new SetAndUnlockEntryProcessor(), data);
 
                             return FALSE;
                     }

@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -29,9 +26,9 @@ import java.sql.Timestamp;
 /**
  * Entry processor that locks web session data.
  */
-public class LockEntryProcessor implements CacheEntryProcessor<String, BinaryObject, Object> {
+public class LockEntryProcessor implements CacheEntryProcessor<String, SessionStateData, Object> {
     /** {@inheritDoc} */
-    @Override public Object process(MutableEntry<String, BinaryObject> entry, Object... objects)
+    @Override public Object process(MutableEntry<String, SessionStateData> entry, Object... objects)
         throws EntryProcessorException {
         // Arg contains lock info: node id + thread id
         // Return result is either BinarizableSessionStateStoreData (when not locked) or lockAge (when locked)
@@ -39,13 +36,13 @@ public class LockEntryProcessor implements CacheEntryProcessor<String, BinaryObj
         if (!entry.exists())
             return null;
 
-        BinaryObject data = entry.getValue();
+        SessionStateData data = entry.getValue();
 
         assert data != null;
 
-        if (data.field("LockNodeId") != null) {
+        if (data.getLockNodeId() != null) {
             // Already locked: return lock time.
-            Object lockTime = data.field("LockTime");
+            Timestamp lockTime = data.getLockTime();
 
             assert lockTime != null;
 
@@ -55,13 +52,12 @@ public class LockEntryProcessor implements CacheEntryProcessor<String, BinaryObj
         LockInfo lockInfo = (LockInfo)objects[0];
 
         // Not locked: lock and return result
-        final BinaryObjectBuilder builder = data.toBuilder();
+        data.setLockNodeId(lockInfo.getLockNodeId());
+        data.setLockId(lockInfo.getLockId());
+        data.setLockTime(lockInfo.getLockTime());
 
-        builder.setField("LockNodeId", lockInfo.getLockNodeId());
-        builder.setField("LockId", lockInfo.getLockId());
-        builder.setField("LockTime", lockInfo.getLockTime());
-
-        entry.setValue(builder.build());
+        // Apply.
+        entry.setValue(data);
 
         return data;
     }
