@@ -130,17 +130,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
             set
             {
-                var entry = GetEntry(key);
-
-                if (entry == null)
-                {
-                    entry = new Entry(key, false, null, null);
-
-                    _dict[key] = _list.Count;
-                    _list.Add(entry);
-                }
-
-                entry.IsDirty = true;
+                var entry = GetOrCreateDirtyEntry(key);
 
                 entry.Value = value;
             }
@@ -345,9 +335,12 @@ namespace Apache.Ignite.Core.Impl.Collections
                 Clear();
             }
 
-            // TODO: Avoid deserialization!
-            foreach (var entry in changes._list)
-                this[entry.Key] = entry.Value;
+            foreach (var changedEntry in changes._list)
+            {
+                var entry = GetOrCreateDirtyEntry(changedEntry.Key, changedEntry.Marshaller);
+
+                changedEntry.CopyTo(entry);
+            }
         }
 
         /// <summary>
@@ -361,6 +354,26 @@ namespace Apache.Ignite.Core.Impl.Collections
                 _removedKeys = new HashSet<string>();
 
             _removedKeys.Add(key);
+        }
+
+        /// <summary>
+        /// Gets or creates an entry.
+        /// </summary>
+        private Entry GetOrCreateDirtyEntry(string key, Marshaller marsh = null)
+        {
+            var entry = GetEntry(key);
+
+            if (entry == null)
+            {
+                entry = new Entry(key, false, marsh, null);
+
+                _dict[key] = _list.Count;
+                _list.Add(entry);
+            }
+
+            entry.IsDirty = true;
+
+            return entry;
         }
 
         /// <summary>
@@ -426,7 +439,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             public readonly string Key;
 
             /** */
-            private readonly Marshaller _marsh;
+            public readonly Marshaller Marshaller;
 
             /** */
             private object _value;
@@ -448,7 +461,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 Key = key;
                 IsInitial = isInitial;
                 IsDeserialized = !isInitial;
-                _marsh = marsh;
+                Marshaller = marsh;
                 _value = value;
             }
 
@@ -461,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 {
                     if (!IsDeserialized)
                     {
-                        _value = _marsh.Unmarshal<object>((byte[]) _value);
+                        _value = Marshaller.Unmarshal<object>((byte[]) _value);
                         IsDeserialized = true;
                     }
 
@@ -472,6 +485,17 @@ namespace Apache.Ignite.Core.Impl.Collections
                     _value = value;
                     IsDeserialized = true;
                 }
+            }
+
+            /// <summary>
+            /// Copies contents to another entry.
+            /// </summary>
+            public void CopyTo(Entry entry)
+            {
+                Debug.Assert(entry != null);
+
+                entry.IsDeserialized = IsDeserialized;
+                entry.Value = _value;
             }
 
             /// <summary>
