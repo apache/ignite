@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -488,7 +489,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                         }
 
                         case OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK:
-                            SessionStateData data = (SessionStateData)args[1];
+                            BinaryObject binData = (BinaryObject)args[1];  // Cache is in binary mode.
+
+                            SessionStateData data = binData.deserialize();
 
                             cache.invoke(key, new SetAndUnlockEntryProcessor(), data);
 
