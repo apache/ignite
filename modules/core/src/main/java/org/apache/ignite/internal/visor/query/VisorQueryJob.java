@@ -131,9 +131,9 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 if (scanWithFilter) {
                     boolean caseSensitive = qryTxt.startsWith(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE);
 
-                    String ptrn = caseSensitive
-                        ? qryTxt.substring(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE.length())
-                        : qryTxt.substring(SCAN_CACHE_WITH_FILTER.length());
+                    String ptrn = qryTxt.substring(caseSensitive
+                        ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE.length()
+                        : SCAN_CACHE_WITH_FILTER.length());
 
                     filter = new VisorQueryScanSubstringFilter(caseSensitive, ptrn);
                 }
@@ -161,7 +161,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
                 qry.setPageSize(arg.pageSize());
                 qry.setLocal(arg.local());
-                qry.setDistributedJoins(arg instanceof VisorQueryArgV2 && ((VisorQueryArgV2)arg).distributedJoins());
+                qry.setDistributedJoins(arg.distributedJoins());
 
                 long start = U.currentTimeMillis();
 

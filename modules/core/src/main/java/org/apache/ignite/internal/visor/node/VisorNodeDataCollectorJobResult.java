@@ -185,9 +185,9 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     }
 
     /**
-     * @param errorCount Errors count.
+     * @param errCnt Errors count.
      */
-    public void errorCount(long errorCount) {
-        errCnt = errorCount;
+    public void errorCount(long errCnt) {
+        this.errCnt = errCnt;
     }
 }

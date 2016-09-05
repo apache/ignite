@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,13 +26,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -91,17 +89,14 @@ public class VisorCache implements Serializable, LessNamingBean {
     /** Number of partitions. */
     private int partitions;
 
-    /** @deprecated Needed only for backward compatibility. */
-    private Collection<IgnitePair<Integer>> primaryPartitions;
-
-    /** @deprecated Needed only for backward compatibility. */
-    private Collection<IgnitePair<Integer>> backupPartitions;
-
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
     private GridDhtPartitionMap partitionsMap;
+
+    /** Flag indicating that cache has near cache. */
+    private boolean near;
 
     /**
      * @param ignite Grid.
@@ -119,17 +114,16 @@ public class VisorCache implements Serializable, LessNamingBean {
         if (ca == null || !ca.context().started())
             return null;
 
-        name = cacheName;
+        GridCacheContext cctx = ca.context();
 
-        primaryPartitions = Collections.emptyList();
-        backupPartitions = Collections.emptyList();
+        name = cacheName;
 
         CacheConfiguration cfg = ca.configuration();
 
         mode = cfg.getCacheMode();
 
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && ca.context().affinityNode();
+            && cctx.affinityNode();
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;
@@ -152,13 +146,14 @@ public class VisorCache implements Serializable, LessNamingBean {
 
         size = ca.size();
         nearSize = ca.nearSize();
-        dynamicDeploymentId = ca.context().dynamicDeploymentId();
+        dynamicDeploymentId = cctx.dynamicDeploymentId();
         dhtSize = size - nearSize;
         primarySize = ca.primarySize();
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
         metrics = new VisorCacheMetrics().from(ignite, cacheName);
+        near = cctx.isNear();
 
         estimateMemorySize(ignite, ca, sample);
 
@@ -201,39 +196,28 @@ public class VisorCache implements Serializable, LessNamingBean {
     }
 
     /**
-     * Fill values that should be stored in history;
-     *
-     * @param c Source cache.
-     * @return Cache.
-     */
-    protected VisorCache initHistory(VisorCache c) {
-        if (c != null) {
-            c.name = name;
-            c.mode = mode;
-            c.memorySize = memorySize;
-            c.indexesSize = indexesSize;
-            c.size = size;
-            c.nearSize = nearSize;
-            c.dhtSize = dhtSize;
-            c.primarySize = primarySize;
-            c.offHeapAllocatedSize = offHeapAllocatedSize;
-            c.offHeapEntriesCnt = offHeapEntriesCnt;
-            c.swapSize = swapSize;
-            c.swapKeys = swapKeys;
-            c.partitions = partitions;
-            c.primaryPartitions = Collections.emptyList();
-            c.backupPartitions = Collections.emptyList();
-            c.metrics = metrics;
-        }
-
-        return c;
-    }
-
-    /**
      * @return New instance suitable to store in history.
      */
     public VisorCache history() {
-        return initHistory(new VisorCache());
+        VisorCache c = new VisorCache();
+
+        c.name = name;
+        c.mode = mode;
+        c.memorySize = memorySize;
+        c.indexesSize = indexesSize;
+        c.size = size;
+        c.nearSize = nearSize;
+        c.dhtSize = dhtSize;
+        c.primarySize = primarySize;
+        c.offHeapAllocatedSize = offHeapAllocatedSize;
+        c.offHeapEntriesCnt = offHeapEntriesCnt;
+        c.swapSize = swapSize;
+        c.swapKeys = swapKeys;
+        c.partitions = partitions;
+        c.metrics = metrics;
+        c.near = near;
+
+        return c;
     }
 
     /**
@@ -344,20 +328,6 @@ public class VisorCache implements Serializable, LessNamingBean {
     }
 
     /**
-     * @deprecated Needed only for backward compatibility.
-     */
-    public Collection<IgnitePair<Integer>> primaryPartitions() {
-        return primaryPartitions;
-    }
-
-    /**
-     * @deprecated Needed only for backward compatibility.
-     */
-    public Collection<IgnitePair<Integer>> backupPartitions() {
-        return backupPartitions;
-    }
-
-    /**
      * @return Cache metrics.
      */
     public VisorCacheMetrics metrics() {
@@ -369,6 +339,13 @@ public class VisorCache implements Serializable, LessNamingBean {
      */
     @Nullable public GridDhtPartitionMap partitionMap() {
         return partitionsMap;
+    }
+
+    /**
+     * @return {@code true} if cache has near cache.
+     */
+    public boolean near() {
+        return near;
     }
 
     /** {@inheritDoc} */

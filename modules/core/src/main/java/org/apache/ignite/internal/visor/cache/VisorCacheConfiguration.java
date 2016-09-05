@@ -21,16 +21,13 @@ import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
@@ -40,9 +37,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 public class VisorCacheConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
 
     /** Cache name. */
     private String name;
@@ -61,9 +55,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
 
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode;
-
-    /** Swap enabled flag. */
-    private boolean swapEnabled;
 
     /** Invalidate. */
     private boolean invalidate;
@@ -153,20 +144,9 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
         nearCfg = VisorCacheNearConfiguration.from(ccfg);
         dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
 
-        boolean compatibility = false;
+        storeCfg = new VisorCacheStoreConfiguration().from(ignite, ccfg);
 
-        for (ClusterNode node : ignite.cluster().nodes()) {
-            if (node.version().compareToIgnoreTimestamp(VER_1_4_1) <= 0) {
-                compatibility = true;
-
-                break;
-            }
-        }
-
-        storeCfg = (compatibility ? new VisorCacheStoreConfiguration() : new VisorCacheStoreConfigurationV2())
-            .from(ignite, ccfg);
-
-        qryCfg = (compatibility ? new VisorCacheQueryConfiguration() : new VisorCacheQueryConfigurationV2()).from(ccfg);
+        qryCfg = new VisorCacheQueryConfiguration().from(ccfg);
 
         return this;
     }
@@ -214,13 +194,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
     }
 
     /**
-     * @return Swap enabled flag.
-     */
-    public boolean swapEnabled() {
-        return swapEnabled;
-    }
-
-    /**
      * @return Invalidate.
      */
     public boolean invalidate() {
@@ -246,13 +219,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
      */
     public int maxConcurrentAsyncOperations() {
         return maxConcurrentAsyncOps;
-    }
-
-    /**
-     * @return Memory mode.
-     */
-    public CacheMemoryMode memoryMode() {
-        return null;
     }
 
     /**

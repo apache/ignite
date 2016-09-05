@@ -853,7 +853,6 @@ object VisorCacheCommand {
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
 
         cacheT += ("Write Synchronization Mode", safe(cfg.writeSynchronizationMode))
-        cacheT += ("Swap Enabled", bool2Str(cfg.swapEnabled()))
         cacheT += ("Invalidate", bool2Str(cfg.invalidate()))
         cacheT += ("Start Size", cfg.startSize())
 
@@ -892,10 +891,7 @@ object VisorCacheCommand {
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
         cacheT += ("Store Class", safe(storeCfg.store()))
         cacheT += ("Store Factory Class", storeCfg.storeFactory())
-        cacheT += ("Store Keep Binary", storeCfg match {
-            case cfg: VisorCacheStoreConfigurationV2 => cfg.storeKeepBinary()
-            case _ => false
-        })
+        cacheT += ("Store Keep Binary", storeCfg.storeKeepBinary())
         cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
         cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 
@@ -906,7 +902,6 @@ object VisorCacheCommand {
         cacheT += ("Write-Behind Batch Size", storeCfg.batchSize())
 
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
-        cacheT += ("Memory Mode", cfg.memoryMode())
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory() match {
             case 0 => "UNLIMITED"
             case size if size < 0 => NA
@@ -918,10 +913,7 @@ object VisorCacheCommand {
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
 
         cacheT +=("Query Execution Time Threshold", queryCfg.longQueryWarningTimeout())
-        cacheT +=("Query Schema Name", queryCfg match {
-            case cfg: VisorCacheQueryConfigurationV2 => cfg.sqlSchema()
-            case _ => null
-        })
+        cacheT +=("Query Schema Name", queryCfg.sqlSchema())
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
         cacheT +=("Query Onheap Cache Size", queryCfg.sqlOnheapRowCacheSize())
 
