@@ -49,19 +49,19 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
         super(new GridLoggerProxy(log, null, null, null),
-            new IgniteKernal(null),
-            cfg,
-            new GridKernalGatewayImpl(null),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            U.allPluginProviders());
+                new IgniteKernal(null),
+                cfg,
+                new GridKernalGatewayImpl(null),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                U.allPluginProviders());
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 
@@ -108,12 +108,13 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
+
     /**
      * Sets executor service.
      *
      * @param execSvc Executor service
      */
-    public void setExecutorService(ExecutorService execSvc) {
+    public void setExecutorService(ExecutorService execSvc){
         this.execSvc = execSvc;
     }
 }

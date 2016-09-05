@@ -197,7 +197,7 @@ public class OdbcConfiguration {
      * information.
      *
      * @param threadPoolSize Thread pool that is in charge of processing ODBC tasks.
-     * @return {@code this} for chaining.
+     * @return This instance for chaining.
      */
     public OdbcConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
