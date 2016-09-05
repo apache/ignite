@@ -246,6 +246,25 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests the create new store data.
+        /// </summary>
+        [Test]
+        public void TestCreateNewStoreData()
+        {
+            var provider = GetProvider();
+
+            var data = provider.CreateNewStoreData(HttpContext, 56);
+
+            Assert.AreEqual(56, data.Timeout);
+            Assert.IsEmpty(data.Items);
+            Assert.IsEmpty(data.StaticObjects);
+
+            // Check that caches are empty.
+            var ignite = Ignition.GetIgnite(GridName);
+            Assert.IsFalse(ignite.GetCacheNames().SelectMany(x => ignite.GetCache<int, int>(x)).Any());
+        }
+
+        /// <summary>
         /// Tests the expiry.
         /// </summary>
         [Test]
