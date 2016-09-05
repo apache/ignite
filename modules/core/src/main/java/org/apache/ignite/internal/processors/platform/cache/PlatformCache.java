@@ -196,6 +196,15 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_INVOKE_INTERNAL = 41;
 
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_LOCK = 1;
+
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_UNLOCK = 2;
+
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_SET_UNLOCK = 3;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -451,9 +460,19 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
 
                 case OP_INVOKE_INTERNAL: {
-                    // TODO: Switch over internal processor codes.
+                    int opCode = reader.readInt();
+                    Object[] args = reader.readObjectArray();
 
-                    return 0;
+                    switch (opCode) {
+                        case OP_INVOKE_INTERNAL_SESSION_LOCK:
+                            break;
+                        case OP_INVOKE_INTERNAL_SESSION_UNLOCK:
+                            break;
+                        case OP_INVOKE_INTERNAL_SESSION_SET_UNLOCK:
+                            break;
+                    }
+
+                    return writeResult(mem, null);
                 }
 
                 case OP_LOCK:
