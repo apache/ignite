@@ -40,10 +40,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsFalse(col.Dirty);
             Assert.IsFalse(col.IsSynchronized);
             Assert.AreEqual(0, col.Count);
-            Assert.Throws<NotSupportedException>(() => Assert.IsNull(col.Keys));
             Assert.IsNotNull(col.SyncRoot);
             Assert.IsEmpty(col);
             Assert.IsEmpty(col.OfType<string>().ToArray());
+            Assert.IsEmpty(col.Keys);
 
             col.Clear();
             col.Remove("key");
@@ -75,7 +75,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             Assert.AreEqual(2, col.Count);
             Assert.IsTrue(col.Dirty);
-            Assert.AreEqual(new[] {"key", "1"}, col.OfType<string>().ToArray());
+
+            CollectionAssert.AreEquivalent(new[] {"key", "1"}, col);
+            CollectionAssert.AreEquivalent(new[] {"key", "1"}, col.Keys);
 
             // Modify using index.
             col[0] = "val1";
