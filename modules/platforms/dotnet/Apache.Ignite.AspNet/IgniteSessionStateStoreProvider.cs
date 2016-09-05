@@ -21,7 +21,6 @@ namespace Apache.Ignite.AspNet
     using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Threading;
     using System.Web;
     using System.Web.SessionState;
@@ -456,7 +455,7 @@ namespace Apache.Ignite.AspNet
             ((ICacheInternal) cache).Invoke<object>((int) Op.SetAndUnlock, key, data);
         }
 
-
+        /*
         // TODO: Implement this in Java.
         [Serializable]
         private class LockEntryProcessor :
@@ -565,7 +564,7 @@ namespace Apache.Ignite.AspNet
 
                 return null;
             }
-        }
+        }*/
 
     }
 }
