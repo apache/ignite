@@ -136,9 +136,12 @@ namespace Apache.Ignite.AspNet.Impl
         /// </summary>
         private class NameObjectCollection : NameObjectCollectionBase
         {
-            public NameObjectCollection(IgniteSessionStateItemCollection col)
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NameObjectCollection"/> class.
+            /// </summary>
+            public NameObjectCollection(IEnumerable keys)
             {
-                foreach (string key in col)
+                foreach (string key in keys)
                     BaseAdd(key, null);
             }
         }
