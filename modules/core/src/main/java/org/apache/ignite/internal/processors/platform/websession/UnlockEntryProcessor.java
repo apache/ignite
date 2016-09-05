@@ -26,6 +26,9 @@ import javax.cache.processor.MutableEntry;
  * Entry processor that unlocks web session data.
  */
 public class UnlockEntryProcessor implements CacheEntryProcessor<String, SessionStateData, Object> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public Object process(MutableEntry<String, SessionStateData> entry, Object... objects)
         throws EntryProcessorException {

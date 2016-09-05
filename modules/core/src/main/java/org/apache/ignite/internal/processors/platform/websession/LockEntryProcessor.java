@@ -27,6 +27,9 @@ import java.sql.Timestamp;
  * Entry processor that locks web session data.
  */
 public class LockEntryProcessor implements CacheEntryProcessor<String, SessionStateData, Object> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public Object process(MutableEntry<String, SessionStateData> entry, Object... objects)
         throws EntryProcessorException {
