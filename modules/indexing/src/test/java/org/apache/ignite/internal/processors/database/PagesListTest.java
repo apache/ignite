@@ -93,7 +93,7 @@ public class PagesListTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testReuseList(boolean singleBag) throws Exception {
-        ReuseListNew list = new ReuseListNew(0, pageMem, null);
+        ReuseListNew list = new ReuseListNew(0, pageMem, null, 0L);
 
         final int PAGES = 1000;
 
@@ -214,8 +214,8 @@ public class PagesListTest extends GridCommonAbstractTest {
         /** */
         private volatile long[] bucket;
 
-        public TestFreeList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) {
-            super(cacheId, pageMem, wal);
+        public TestFreeList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal) throws IgniteCheckedException {
+            super(cacheId, pageMem, wal, 0L);
 
             this.reuseList = new ReuseList() {
                 @Override

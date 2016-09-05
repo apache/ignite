@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -64,7 +63,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final int minSizeForBucket;
+    private final int MIN_SIZE_FOR_BUCKET;
 
     /** */
     private final IgniteLogger log;
@@ -87,11 +86,11 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
         int pageSize = pageMem.pageSize();
 
-        minSizeForBucket = pageSize - 1;
-
         assert U.isPow2(pageSize) : pageSize;
         assert U.isPow2(BUCKETS);
         assert BUCKETS <= pageSize : pageSize;
+
+        MIN_SIZE_FOR_BUCKET = pageSize - 1;
 
         int shift = 0;
 
@@ -124,10 +123,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
         int bucket = freeSpace >>> shift;
 
-        if (bucket == REUSE_BUCKET)
-            bucket--;
-
-        assert bucket >= 0 && bucket < BUCKETS && !isReuseBucket(bucket) : bucket;
+        assert bucket >= 0 && bucket < BUCKETS : bucket;
 
         return bucket;
     }
@@ -150,14 +146,14 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         int written = 0;
 
         do {
-            int freeSpace = Math.min(minSizeForBucket, rowSize - written);
+            int freeSpace = Math.min(MIN_SIZE_FOR_BUCKET, rowSize - written);
 
             int bucket = bucket(freeSpace);
 
             long pageId = 0;
             boolean newPage = true;
 
-            for (int i = bucket; i < BUCKETS - 1; i++) {
+            for (int i = bucket; i < BUCKETS; i++) {
                 pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
 
                 if (pageId != 0L) {

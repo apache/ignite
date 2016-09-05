@@ -139,6 +139,13 @@ public abstract class PagesList extends DataStructure {
                 dataPageId = PageIdUtils.changeType(dataPageId, FLAG_IDX);
 
                 setupNextPage(io, pageId, buf, dataPageId, dataPageBuf);
+
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new PagesListSetNextRecord(cacheId, pageId, dataPageId));
+
+//                if (isWalDeltaRecordNeeded(wal, page))
+//                    wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
+
                 updateTail(bucket, pageId, dataPageId);
             }
             else {
@@ -155,6 +162,9 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
 
                         int idx = io.addPage(nextBuf, dataPageId);
+
+                        // Here we should never write full page, because it is known to be new.
+                        next.fullPageWalRecordPolicy(Boolean.FALSE);
 
                         if (isWalDeltaRecordNeeded(wal, next))
                             wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, dataPageId));
@@ -207,6 +217,9 @@ public abstract class PagesList extends DataStructure {
 
                         if (isWalDeltaRecordNeeded(wal, page))
                             wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+
+                        // Here we should never write full page, because it is known to be new.
+                        next.fullPageWalRecordPolicy(Boolean.FALSE);
 
                         if (isWalDeltaRecordNeeded(wal, next))
                             wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
