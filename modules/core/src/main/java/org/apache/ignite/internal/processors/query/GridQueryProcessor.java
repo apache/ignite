@@ -78,7 +78,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.sql.PreparedStatement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -1587,12 +1586,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            Member mem = findMember(prop, cls);
+            PropertyAccessor accessor = findProperty(prop, cls);
 
-            if (mem == null)
+            if (accessor == null)
                 return null;
 
-            ClassProperty tmp = new ClassProperty(mem, key, alias, coCtx);
+            ClassProperty tmp = new ClassProperty(accessor, key, alias, coCtx);
 
             tmp.parent(res);
 
@@ -1711,42 +1710,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param member Member.
-     * @return Type of field or return type of method.
-     */
-    private static Class<?> memberType(Member member) {
-        return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
-    }
-
-    /**
      * Find a member (either a getter method or a field) with given name of given class.
      * @param prop Property name.
      * @param cls Class to search for a member in.
      * @return Member for given name.
      */
-    @Nullable private static Member findMember(String prop, Class<?> cls) {
-        StringBuilder bld = new StringBuilder("get");
+    @Nullable private static PropertyAccessor findProperty(String prop, Class<?> cls) {
+        StringBuilder getBldr = new StringBuilder("get");
+        getBldr.append(prop);
+        getBldr.setCharAt(3, Character.toUpperCase(getBldr.charAt(3)));
 
-        bld.append(prop);
-
-        bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+        StringBuilder setBldr = new StringBuilder("set");
+        setBldr.append(prop);
+        setBldr.setCharAt(3, Character.toUpperCase(setBldr.charAt(3)));
 
         try {
-            return cls.getMethod(bld.toString());
+            Method getter = cls.getMethod(getBldr.toString());
+            Method setter = cls.getMethod(setBldr.toString());
+
+            return new MethodsAccessor(getter, setter);
         }
         catch (NoSuchMethodException ignore) {
             // No-op.
         }
 
         try {
-            return cls.getDeclaredField(prop);
+            return new FieldAccessor(cls.getDeclaredField(prop));
         }
         catch (NoSuchFieldException ignored) {
             // No-op.
         }
 
         try {
-            return cls.getMethod(prop);
+            Method getter = cls.getMethod(prop);
+
+            // For this case, setter has to have the same name and single param of the same type
+            // as the return type of the getter.
+            Method setter = cls.getMethod(prop, getter.getReturnType());
+
+            return new MethodsAccessor(getter, setter);
         }
         catch (NoSuchMethodException ignored) {
             // No-op.
@@ -1775,7 +1777,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private static class ClassProperty extends GridQueryProperty {
         /** */
-        private final Member member;
+        private final PropertyAccessor accessor;
 
         /** */
         private final boolean key;
@@ -1787,27 +1789,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private final String name;
 
         /** */
-        private final boolean field;
-
-        /** */
         private final CacheObjectContext coCtx;
 
         /**
          * Constructor.
          *
-         * @param member Element.
+         * @param accessor Way of accessing the property.
          */
-        ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
-            this.member = member;
+        ClassProperty(PropertyAccessor accessor, boolean key, String name, @Nullable CacheObjectContext coCtx) {
+            this.accessor = accessor;
+
             this.key = key;
 
-            this.name = !F.isEmpty(name) ? name :
-                member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
-
-            ((AccessibleObject) member).setAccessible(true);
-
-            field = member instanceof Field;
+            this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
 
             this.coCtx = coCtx;
         }
@@ -1822,21 +1816,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (x == null)
                 return null;
 
-            try {
-                if (field) {
-                    Field field = (Field)member;
-
-                    return field.get(x);
-                }
-                else {
-                    Method mtd = (Method)member;
-
-                    return mtd.invoke(x);
-                }
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
+            return accessor.getValue(x);
         }
 
         /** {@inheritDoc} */
@@ -1849,18 +1829,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (x == null)
                 return;
 
-            try {
-                if (field) {
-                    Field field = (Field)member;
-
-                    field.set(x, propVal);
-                }
-                else
-                    throw new UnsupportedOperationException("Value setter methods are not yet supported");
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
+            accessor.setValue(x, propVal);
         }
 
         /** {@inheritDoc} */
@@ -1885,7 +1854,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Class<?> type() {
-            return memberType(member);
+            return accessor.getType();
         }
 
         /**
@@ -1898,14 +1867,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ClassProperty.class, this);
-        }
-
-        /**
-         * @param cls Class.
-         * @return {@code true} If this property or some parent relates to member of the given class.
-         */
-        public boolean knowsClass(Class<?> cls) {
-            return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
         }
     }
 
@@ -2572,5 +2533,132 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private enum IndexType {
         ASC, DESC, TEXT
+    }
+
+    /** Way of accessing a property - either via field or getter and setter methods. */
+    private interface PropertyAccessor {
+        /**
+         * Get property value from given object.
+         *
+         * @param obj Object to retrieve property value from.
+         * @return Property value.
+         * @throws IgniteCheckedException if failed.
+         */
+        public Object getValue(Object obj) throws IgniteCheckedException;
+
+        /**
+         * Set property value on given object.
+         *
+         * @param obj Object to set property value on.
+         * @param newVal Property value.
+         * @throws IgniteCheckedException if failed.
+         */
+        public void setValue(Object obj, Object newVal)throws IgniteCheckedException;
+
+        /**
+         * @return Name of this property.
+         */
+        public String getPropertyName();
+
+        /**
+         * @return Type of the value of this property.
+         */
+        public Class<?> getType();
+    }
+
+    /** Accessor that deals with fields. */
+    private final static class FieldAccessor implements PropertyAccessor {
+        /** Field to access. */
+        private final Field fld;
+
+        /** */
+        private FieldAccessor(Field fld) {
+            fld.setAccessible(true);
+
+            this.fld = fld;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return fld.get(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to get field value", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            try {
+                fld.set(obj, newVal);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to set field value", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            return fld.getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return fld.getType();
+        }
+    }
+
+    /** Getter and setter methods based accessor. */
+    private final static class MethodsAccessor implements PropertyAccessor {
+        /** */
+        private final Method getter;
+
+        /** */
+        private final Method setter;
+
+        /**
+         * @param getter Getter method.
+         * @param setter Setter method.
+         */
+        private MethodsAccessor(Method getter, Method setter) {
+            getter.setAccessible(true);
+            setter.setAccessible(true);
+
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return getter.invoke(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke getter method", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            try {
+                setter.invoke(obj, newVal);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke setter method", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            String getterName = getter.getName();
+
+            return getterName.startsWith("get") && getterName.length() > 3 ? getterName.substring(3) : getterName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return getter.getReturnType();
+        }
     }
 }
