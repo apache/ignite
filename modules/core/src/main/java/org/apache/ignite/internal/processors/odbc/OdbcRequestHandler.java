@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -45,6 +47,9 @@ public class OdbcRequestHandler {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -65,15 +70,18 @@ public class OdbcRequestHandler {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
+        log = ctx.log(OdbcRequestHandler.class);
     }
 
     /**
      * Handle request.
      *
+     * @param reqId Request ID.
      * @param req Request.
      * @return Response.
      */
-    public OdbcResponse handle(OdbcRequest req) {
+    public OdbcResponse handle(long reqId, OdbcRequest req) {
         assert req != null;
 
         if (!busyLock.enterBusy())
@@ -83,22 +91,22 @@ public class OdbcRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake((OdbcHandshakeRequest) req);
+                    return performHandshake((OdbcHandshakeRequest)req);
 
                 case EXECUTE_SQL_QUERY:
-                    return executeQuery((OdbcQueryExecuteRequest) req);
+                    return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
 
                 case FETCH_SQL_QUERY:
-                    return fetchQuery((OdbcQueryFetchRequest) req);
+                    return fetchQuery((OdbcQueryFetchRequest)req);
 
                 case CLOSE_SQL_QUERY:
-                    return closeQuery((OdbcQueryCloseRequest) req);
+                    return closeQuery((OdbcQueryCloseRequest)req);
 
                 case GET_COLUMNS_META:
-                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest)req);
 
                 case GET_TABLES_META:
-                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+                    return getTablesMeta((OdbcQueryGetTablesMetaRequest)req);
             }
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
@@ -115,17 +123,19 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        OdbcHandshakeResult res;
+        OdbcProtocolVersion version = req.version();
 
-        if (req.version() == OdbcMessageParser.PROTO_VER)
-            res = new OdbcHandshakeResult(true, null, null);
-        else {
+        if (version.isUnknown()) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+
+            return new OdbcResponse(res);
         }
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
 
         return new OdbcResponse(res);
     }
@@ -133,10 +143,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryExecuteRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
+    private OdbcResponse executeQuery(long reqId, OdbcQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
@@ -147,7 +158,13 @@ public class OdbcRequestHandler {
         long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
-            SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
+            String sql = OdbcEscapeUtils.parse(req.sqlQuery());
+
+            if (log.isDebugEnabled())
+                log.debug("ODBC query parsed [reqId=" + reqId + ", original=" + req.sqlQuery() +
+                    ", parsed=" + sql + ']');
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
             qry.setArgs(req.arguments());
 

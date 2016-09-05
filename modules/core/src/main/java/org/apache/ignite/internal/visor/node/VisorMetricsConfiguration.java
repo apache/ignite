@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.node;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for node metrics configuration properties.
  */
-public class VisorMetricsConfiguration implements Serializable {
+public class VisorMetricsConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -377,6 +377,12 @@ public final class IgniteSystemProperties {
     /** Number of times pending cache objects will be dumped to the log in case of partition exchange timeout. */
     public static final String IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD = "IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD";
 
+    /** If this property is set to {@code true} then Ignite will log thread dump in case of partition exchange timeout. */
+    public static final String IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT = "IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT";
+
+    /** Cache operations that take more time than value of this property will be output to log. Set to {@code 0} to disable. */
+    public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT";
+
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
@@ -430,6 +436,30 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
         "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
 
+    /**
+     * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
+     * of this property.
+     * <p>
+     * If property is {@code false} then node is not required to have service implementation class if service is not
+     * deployed on this node.
+     * <p>
+     * If the property is {@code true} then service implementation class is required on node even if service
+     * is not deployed on this node.
+     * <p>
+     * If the property is not set ({@code null}) then Ignite will automatically detect which compatibility mode
+     * should be used.
+     */
+    public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
+
+    /**
+     * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
+     * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
+     * interface on {@code BinaryObject}.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    @Deprecated
+    public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
      * Enforces singleton.
