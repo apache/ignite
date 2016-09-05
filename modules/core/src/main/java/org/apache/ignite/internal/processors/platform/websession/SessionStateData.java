@@ -103,11 +103,14 @@ public class SessionStateData implements Binarylizable {
     /**
      * Apply changes from another instance.
      *
-     * @param data Data.
+     * @param other Data.
      */
-    public void applyChanges(SessionStateData data) {
-        timeout = data.timeout;
-        staticObjects = data.staticObjects;
-        items.applyChanges(data.items);
+    public void applyChanges(SessionStateData other) {
+        assert other != null;
+        assert items != null;
+
+        timeout = other.timeout;
+        staticObjects = other.staticObjects;
+        items.applyChanges(other.items);
     }
 }

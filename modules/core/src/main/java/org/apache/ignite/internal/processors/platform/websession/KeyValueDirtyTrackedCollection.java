@@ -25,14 +25,16 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Web session lock info.
  */
 public class KeyValueDirtyTrackedCollection implements Binarylizable {
     /** */
-    private List<Entry> list;
+    private HashMap<String, byte[]> entries;
 
     /** */
     private List<String> removedKeys;
@@ -45,11 +47,11 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
 
         raw.writeBoolean(true);  // Always full mode.
 
-        raw.writeInt(list.size());
+        raw.writeInt(entries.size());
 
-        for (Entry e : list) {
-            raw.writeString(e.key);
-            raw.writeByteArray(e.value);
+        for (Map.Entry<String, byte[]> e : entries.entrySet()) {
+            raw.writeString(e.getKey());
+            raw.writeByteArray(e.getValue());
         }
     }
 
@@ -61,10 +63,10 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
 
         int count = raw.readInt();
 
-        list = new ArrayList<>(count);
+        entries = new HashMap<>(count);
 
         for (int i = 0; i < count; i++)
-            list.add(new Entry(raw.readString(), raw.readByteArray()));
+            entries.put(raw.readString(), raw.readByteArray());
 
         if (isDiff) {
             count = raw.readInt();
@@ -79,29 +81,21 @@ public class KeyValueDirtyTrackedCollection implements Binarylizable {
     /**
      * Apply changes from another instance.
      *
-     * @param items Items.
+     * @param other Items.
      */
-    public void applyChanges(KeyValueDirtyTrackedCollection items) {
+    public void applyChanges(KeyValueDirtyTrackedCollection other) {
+        assert other != null;
 
-    }
-
-    /** Entry. */
-    private static class Entry {
-        /** */
-        private String key;
-
-        /** */
-        private byte[] value;
-
-        /**
-         * Ctor.
-         *
-         * @param key Key
-         * @param value Value.
-         */
-        private Entry(String key, byte[] value) {
-            this.key = key;
-            this.value = value;
+        if (other.removedKeys != null) {
+            for (String key : other.removedKeys)
+                entries.remove(key);
         }
+        else {
+            // Not a diff: remove all
+            entries.clear();
+        }
+
+        for (Map.Entry<String, byte[]> e : other.entries.entrySet())
+            entries.put(e.getKey(), e.getValue());
     }
 }
