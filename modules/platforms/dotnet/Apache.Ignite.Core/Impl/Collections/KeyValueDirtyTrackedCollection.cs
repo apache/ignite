@@ -70,10 +70,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var key = reader.ReadString();
 
-                var entry = new Entry(key, true, reader.Marshaller)
-                {
-                    Value = reader.ReadByteArray()
-                };
+                var entry = new Entry(key, true, reader.Marshaller, reader.ReadByteArray());
 
                 _dict[key] = _list.Count;
 
@@ -137,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 if (entry == null)
                 {
-                    entry = new Entry(key, false, null);
+                    entry = new Entry(key, false, null, null);
 
                     _dict[key] = _list.Count;
                     _list.Add(entry);
@@ -218,6 +215,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                     wr.WriteString(entry.Key);
 
                     // Write as byte array to enable partial deserialization.
+                    // TODO: Avoid deserialization!
                     var bytes = wr.Marshaller.Marshal(entry.Value);
                     wr.WriteByteArray(bytes);
                 }
@@ -242,8 +240,10 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                     wr.WriteString(entry.Key);
 
-                    // ReSharper disable once AccessToForEachVariableInClosure
-                    wr.WithDetach(w => w.WriteObject(entry.Value));
+                    // Write as byte array to enable partial deserialization.
+                    // TODO: Avoid deserialization!
+                    var bytes = wr.Marshaller.Marshal(entry.Value);
+                    wr.WriteByteArray(bytes);
 
                     count++;
                 }
@@ -349,6 +349,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 Clear();
             }
 
+            // TODO: Avoid deserialization!
             foreach (var entry in changes._list)
                 this[entry.Key] = entry.Value;
         }
@@ -443,7 +444,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> class.
             /// </summary>
-            public Entry(string key, bool isInitial, Marshaller marsh)
+            public Entry(string key, bool isInitial, Marshaller marsh, object value)
             {
                 Debug.Assert(key != null);
                 Debug.Assert(!isInitial || marsh != null);
@@ -452,6 +453,7 @@ namespace Apache.Ignite.Core.Impl.Collections
                 IsInitial = isInitial;
                 IsDeserialized = !isInitial;
                 _marsh = marsh;
+                _value = value;
             }
 
             /// <summary>
