@@ -215,7 +215,19 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 object lockId1;   // do not overwrite lockId
                 res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId1, out actions);
                 Assert.IsNull(res);
-                Assert.IsNull(lockId1);
+                Assert.IsNotNull(lockId1);
+                Assert.IsTrue(locked);
+                Assert.Greater(lockAge, TimeSpan.Zero);
+                Assert.AreEqual(SessionStateActions.None, actions);
+            }).Wait();
+
+            // Try to get it in a different thread.
+            Task.Factory.StartNew(() =>
+            {
+                object lockId1;   // do not overwrite lockId
+                res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId1, out actions);
+                Assert.IsNull(res);
+                Assert.IsNotNull(lockId1);
                 Assert.IsTrue(locked);
                 Assert.Greater(lockAge, TimeSpan.Zero);
                 Assert.AreEqual(SessionStateActions.None, actions);

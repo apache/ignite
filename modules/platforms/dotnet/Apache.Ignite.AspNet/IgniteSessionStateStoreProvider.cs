@@ -183,6 +183,8 @@ namespace Apache.Ignite.AspNet
 
                 lockAge = DateTime.UtcNow - data.LockTime.Value;
 
+                lockId = data.LockId;
+
                 return null;
             }
 
