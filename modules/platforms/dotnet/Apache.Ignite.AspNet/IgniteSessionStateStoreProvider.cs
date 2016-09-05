@@ -29,6 +29,7 @@ namespace Apache.Ignite.AspNet
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.AspNet;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -46,6 +47,16 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
+        /// <summary>
+        /// Op codes.
+        /// </summary>
+        private enum Op
+        {
+            Lock = 1,
+            Unlock = 2,
+            SetAndUnlock = 3
+        }
+
         /** Application id config parameter. */
         private const string ApplicationId = "applicationId";
 
@@ -215,7 +226,7 @@ namespace Apache.Ignite.AspNet
 
             var key = GetKey(id);
 
-            var lockResult = Cache.Invoke(key, new LockEntryProcessor(), GetLockInfo(lockId0));
+            var lockResult = LockItem(key, lockId0);
 
             if (lockResult == null)
             {
@@ -257,7 +268,7 @@ namespace Apache.Ignite.AspNet
         {
             Log("ReleaseItemExclusive", id, context);
 
-            Cache.Invoke(GetKey(id), new ReleaseLockEntryProcessor(), GetLockInfo((long) lockId));
+            UnlockItem(GetKey(id), (long) lockId);
         }
 
         /// <summary>
@@ -418,6 +429,23 @@ namespace Apache.Ignite.AspNet
 
             log.Trace("{0}: id={1}, url={2}, timeout={3}", method, id, ctx.Request.Path, timeout);
         }
+
+        /// <summary>
+        /// Locks the item.
+        /// </summary>
+        private object LockItem(string key, long lockId)
+        {
+            return ((ICacheInternal) Cache).Invoke<object>((int) Op.Lock, key, GetLockInfo(lockId));
+        }
+
+        /// <summary>
+        /// Unlocks the item.
+        /// </summary>
+        private void UnlockItem(string key, long lockId)
+        {
+            ((ICacheInternal) Cache).Invoke<object>((int) Op.Unlock, key, GetLockInfo(lockId));
+        }
+
 
         // TODO: Implement this in Java.
         [Serializable]

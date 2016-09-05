@@ -203,7 +203,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_INVOKE_INTERNAL_SESSION_UNLOCK = 2;
 
     /** */
-    public static final int OP_INVOKE_INTERNAL_SESSION_SET_UNLOCK = 3;
+    public static final int OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK = 3;
 
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
@@ -468,7 +468,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                             break;
                         case OP_INVOKE_INTERNAL_SESSION_UNLOCK:
                             break;
-                        case OP_INVOKE_INTERNAL_SESSION_SET_UNLOCK:
+                        case OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK:
                             break;
                     }
 
