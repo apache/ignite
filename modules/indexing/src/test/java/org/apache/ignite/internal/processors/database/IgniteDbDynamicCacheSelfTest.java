@@ -96,7 +96,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
             ignite.destroyCache(ccfg.getName());
 
             awaitPartitionMapExchange();
-
         }
     }
 

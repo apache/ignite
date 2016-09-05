@@ -65,7 +65,7 @@ public class H2RowFactory {
 
         try {
             row = rowDesc.createRow(rowBuilder.key(),
-                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), 0);
+                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), rowBuilder.expireTime());
 
             row.link = link;
         }

@@ -183,6 +183,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // put key 2 came from node1.
         assertTrue(e2.readers().contains(n1.id()));
 
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+
         // Node1 should not have node2 in readers map yet.
         assertFalse(e1.readers().contains(n2.id()));
 
@@ -191,6 +193,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         // Check that key1 is in near cache of cache2.
         assertNotNull(nearPeek(cache2, 1));
+
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
 
         // Now node1 should have node2 in readers map.
         assertTrue(e1.readers().contains(n2.id()));
@@ -301,6 +305,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // Since DHT cache2 has the value, Near cache2 should not have it.
         assertNull(near(cache2).peekEx(1));
 
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+
         // Since v1 was retrieved locally from cache2, cache1 should not know about it.
         assertFalse(e1.readers().contains(n2.id()));
 
@@ -312,6 +318,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertEquals("v1", dhtPeek(cache2, 1));
 
         assertEquals("v1", cache1.getAndPut(1, "z1"));
+
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
 
         // Node 1 should not have node2 in readers map.
         assertFalse(e1.readers().contains(n2.id()));
@@ -432,18 +440,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).peekEx(1);
         GridDhtCacheEntry e2 = (GridDhtCacheEntry)dht(cache2).peekEx(1);
 
-        assert e1 != null;
-        assert e2 != null;
-
-        // Check entry on primary node.
-        assertTrue(grid(primary.id()).affinity(null).isPrimary(primary, e1.key()));
-        assertNotNull(e1.readers());
-        assertTrue(e1.readers().isEmpty());
-
-        // Check entry on backup node.
-        assertFalse(grid(backup.id()).affinity(null).isPrimary(backup, e2.key()));
-        assertNotNull(e2.readers());
-        assertTrue(e2.readers().isEmpty());
+        assertNull(e1);
+        assertNull(e2);
     }
 
     /** @throws Exception If failed. */

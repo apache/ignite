@@ -132,6 +132,15 @@ public abstract class PageIO {
     public static final short T_METASTORE_LEAF = 12;
 
     /** */
+    public static final short T_PENDING_REF_INNER = 13;
+
+    /** */
+    public static final short T_PENDING_REF_LEAF = 14;
+
+    /** */
+    public static final short T_META = 15;
+
+    /** */
     private final int ver;
 
     /** */
@@ -254,6 +263,7 @@ public abstract class PageIO {
         setType(buf, getType());
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
+        setCrc(buf, 0);
 
         buf.putLong(RESERVED_1_OFF, 0L);
         buf.putLong(RESERVED_2_OFF, 0L);
@@ -279,6 +289,9 @@ public abstract class PageIO {
 
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            case T_META:
+                throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
 
             default:
                 return (Q)getBPlusIO(type, ver);

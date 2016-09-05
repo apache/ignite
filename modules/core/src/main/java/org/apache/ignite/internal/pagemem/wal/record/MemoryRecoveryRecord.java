@@ -15,48 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database;
-
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * Marker that we start memory recovering
  */
-public class RootPage {
-    /** */
-    @GridToStringInclude
-    private FullPageId pageId;
-
-    /** */
-    private boolean allocated;
-
+public class MemoryRecoveryRecord extends WALRecord {
     /**
-     * @param pageId Page ID.
-     * @param allocated {@code True} if was allocated new page.
+     *
      */
-    public RootPage(final FullPageId pageId, final boolean allocated) {
-        this.pageId = pageId;
-        this.allocated = allocated;
+    private static class Holder {
+        /** Instance. */
+        private static final MemoryRecoveryRecord INSTANCE = new MemoryRecoveryRecord();
     }
 
     /**
-     * @return Page ID.
+     *
      */
-    public FullPageId pageId() {
-        return pageId;
+    public static MemoryRecoveryRecord instance() {
+        return Holder.INSTANCE;
     }
 
     /**
-     * @return {@code True} if was allocated.
+     * Default constructor.
      */
-    public boolean isAllocated() {
-        return allocated;
+    private MemoryRecoveryRecord() {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(RootPage.class, this);
+    @Override public RecordType type() {
+        return RecordType.MEMORY_RECOVERY;
     }
 }

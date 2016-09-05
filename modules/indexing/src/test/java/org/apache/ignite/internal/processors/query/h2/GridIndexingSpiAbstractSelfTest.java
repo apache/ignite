@@ -248,8 +248,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
-        spi.remove("A", key(1), 0, aa(1, "", 10), null);
-        spi.remove("B", key(1), 0, ba(1, "", 10, true), null);
+        spi.remove("A", typeAA, key(1), 0, aa(1, "", 10), null);
+        spi.remove("B", typeBA, key(1), 0, ba(1, "", 10, true), null);
 
         spi.store(typeAA.space(), typeAA, key(1), 0, aa(1, "Vasya", 10), new GridCacheVersion(), 0, 0);
 
@@ -372,13 +372,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(fieldsRes.iterator().hasNext());
 
         // Remove
-        spi.remove(typeAA.space(), key(2), 0, aa(2, "Valera", 19), null);
+        spi.remove(typeAA.space(), typeAA, key(2), 0, aa(2, "Valera", 19), null);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA));
         assertEquals(2, spi.size(typeAB.space(), typeAB));
         assertEquals(1, spi.size(typeBA.space(), typeBA));
 
-        spi.remove(typeBA.space(), key(1), 0, ba(2, "Kolya", 25, true), null);
+        spi.remove(typeBA.space(), typeBA, key(1), 0, ba(2, "Kolya", 25, true), null);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA));
         assertEquals(2, spi.size(typeAB.space(), typeAB));
@@ -601,6 +601,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public boolean valueTextIndex() {
             return textIdx == null;
+        }
+
+        /** */
+        @Override public int typeId() {
+            return 0;
         }
     }
 

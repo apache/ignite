@@ -133,6 +133,8 @@ public abstract class PageHandler<X, R> {
 
         try {
             if (init != null) { // It is a new page and we have to initialize it.
+                assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
                 init.initNewPage(buf, pageId);
 
                 // Here we should never write full page, because it is known to be new.
@@ -148,6 +150,8 @@ public abstract class PageHandler<X, R> {
             ok = true;
         }
         finally {
+            assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
             if (h.releaseAfterWrite(pageId, page, arg, intArg))
                 page.releaseWrite(ok);
         }

@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -35,9 +38,11 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
@@ -80,6 +85,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** */
     private ReuseList reuseList;
+
+    /** */
+    private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
+
 
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
@@ -124,7 +133,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         if (reuseList != null) {
             long size = reuseList.size();
 
-            assertTrue("Reuse size: " + size, size < 2000);
+            assertTrue("Reuse size: " + size, size < 6000);
         }
 
         for (int i = 0; i < 10; i++) {
@@ -496,6 +505,114 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove_true() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11442");
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMassiveRemove_false() throws Exception {
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void doTestMassiveRemove(boolean canGetRow) throws Exception {
+        MAX_PER_PAGE = 2;
+        final int threads = 16;
+        final int keys = 20_000 * threads;
+
+        final TestTree tree = createTestTree(canGetRow);
+
+        for (long i = 0; i < keys; i++)
+            tree.put(i);
+
+        long cnt = 0;
+
+        GridCursor<Long> cursor = tree.find(0L, (long)keys);
+
+        while (cursor.next())
+            assertEquals(cnt++ , cursor.get().longValue());
+
+        assertEquals(keys, cnt);
+
+        final AtomicInteger id = new AtomicInteger(0);
+
+        info("Remove...");
+
+        try {
+            // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int id0 = id.getAndIncrement();
+
+                    int base = id0 * 1000;
+
+                    for (long i = base; i < base + 1000; i++) {
+                        tree.remove(i);
+
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    base = (threads + id0) * 1000;
+
+                    for (long i = base; i < base + 1000; i += 2) {
+                        tree.remove(i);
+
+                        rmvdIds.add(i);
+
+                        if (i >= 0 && i % 100 == 0)
+                            info("Done: " + (i - base));
+                    }
+
+                    return null;
+                }
+            }, threads, "remove");
+        }
+        finally {
+            rmvdIds.clear();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRemoveSimple() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        final TestTree tree = createTestTree(false);
+
+        for (long i = 0; i < 10; i++)
+            tree.put(i);
+
+        info("Tree before remove: \n" + tree.printTree());
+
+        try {
+            int base = 2;
+
+            for (long i = base; i < 10; i++) {
+                tree.remove(i);
+
+                rmvdIds.add(i);
+
+                info("Done remove: " + i + "\n" + tree.printTree());
+            }
+        }
+        finally {
+            rmvdIds.clear();
+        }
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
@@ -720,11 +837,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            store(dst, dstIdx, srcIo.getLookupRow(null, src, srcIdx), null);
+            Long row = srcIo.getLookupRow(null, src, srcIdx);
+
+            store(dst, dstIdx, row, null);
         }
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
+            assertFalse(String.valueOf(row), rmvdIds.contains(row));
+
             buf.putLong(off, row);
         }
 
@@ -742,7 +863,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         long[] sizes = new long[CPUS];
 
         for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 64 * MB / CPUS;
+            sizes[i] = 1024 * MB / CPUS;
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE);
 

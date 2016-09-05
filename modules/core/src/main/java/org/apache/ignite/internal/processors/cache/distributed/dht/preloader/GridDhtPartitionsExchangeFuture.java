@@ -46,7 +46,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
-import org.apache.ignite.internal.pagemem.backup.BackupMessage;
+import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -445,20 +445,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Collection<DynamicCacheDescriptor> receivedCaches;
 
-            BackupMessage backupMsg = null;
+            StartFullBackupAckDiscoveryMessage backupMsg = null;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMsg instanceof BackupMessage) {
+                else if (customMsg instanceof StartFullBackupAckDiscoveryMessage) {
                     if (CU.clientNode(discoEvt.eventNode()))
                         exchange = onClientNodeEvent(crdNode);
                     else
                         exchange = onServerNodeEvent(crdNode);
 
-                    backupMsg = (BackupMessage)customMsg;
+                    backupMsg = (StartFullBackupAckDiscoveryMessage)customMsg;
                 }
                 else {
                     assert affChangeMsg != null : this;
@@ -503,7 +503,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             IgniteInternalFuture backupInitFut = null;
 
             if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                backupInitFut = cctx.database().startBackup(backupMsg, discoEvt.eventNode());
+                ClusterNode node = cctx.discovery().node(backupMsg.initiatorNodeId());
+
+                assert node != null;
+
+                backupInitFut = cctx.database().startBackup(backupMsg, node);
             }
 
             try {

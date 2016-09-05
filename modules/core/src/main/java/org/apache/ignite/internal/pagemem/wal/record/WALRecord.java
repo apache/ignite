@@ -102,6 +102,8 @@ public abstract class WALRecord {
         /** */
         BTREE_PAGE_MERGE,
 
+        /** */
+        MEMORY_RECOVERY
         ;
 
         /** */

@@ -225,25 +225,30 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributedJoins() throws Exception {
-        CacheConfiguration ccfg = cacheConfig("persOrg", true,
-            Integer.class, Person2.class, Integer.class, Organization.class);
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class);
 
-        IgniteCache<Integer, Object> c = ignite(0).getOrCreateCache(ccfg);
+        CacheConfiguration ccfg2 = cacheConfig("org", true,
+            Integer.class, Organization.class);
+
+        IgniteCache<Integer, Person2> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Integer, Organization> c2 = ignite(0).getOrCreateCache(ccfg2);
 
         try {
             awaitPartitionMapExchange();
 
-            doTestDistributedJoins(c, 30, 100, 1000, false);
-            doTestDistributedJoins(c, 30, 100, 1000, true);
+            doTestDistributedJoins(c1, c2, 30, 100, 1000, false);
+            doTestDistributedJoins(c1, c2, 30, 100, 1000, true);
 
-            doTestDistributedJoins(c, 3, 10, 3, false);
-            doTestDistributedJoins(c, 3, 10, 3, true);
+            doTestDistributedJoins(c1, c2, 3, 10, 3, false);
+            doTestDistributedJoins(c1, c2, 3, 10, 3, true);
 
-            doTestDistributedJoins(c, 300, 2000, 5, false);
-            doTestDistributedJoins(c, 300, 2000, 5, true);
+            doTestDistributedJoins(c1, c2, 300, 2000, 5, false);
+            doTestDistributedJoins(c1, c2, 300, 2000, 5, true);
         }
         finally {
-            c.destroy();
+            c1.destroy();
+            c2.destroy();
         }
     }
 
@@ -251,22 +256,23 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDistributedJoinsUnion() throws Exception {
-        CacheConfiguration ccfg = cacheConfig("persOrg", true,
-            Integer.class, Person2.class, Integer.class, Organization.class);
+        CacheConfiguration ccfg1 = cacheConfig("pers", true, Integer.class, Person2.class);
+        CacheConfiguration ccfg2 = cacheConfig("org", true, Integer.class, Organization.class);
 
-        IgniteCache<Integer, Object> c = ignite(0).getOrCreateCache(ccfg);
+        IgniteCache<Integer, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Integer, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
 
         try {
-            c.put(1, new Organization("o1"));
-            c.put(2, new Organization("o2"));
-            c.put(3, new Person2(1, "p1"));
-            c.put(4, new Person2(2, "p2"));
-            c.put(5, new Person2(3, "p3"));
+            c2.put(1, new Organization("o1"));
+            c2.put(2, new Organization("o2"));
+            c1.put(3, new Person2(1, "p1"));
+            c1.put(4, new Person2(2, "p2"));
+            c1.put(5, new Person2(3, "p3"));
 
             String select = "select o.name n1, p.name n2 from Person2 p, Organization o where p.orgId = o._key and o._key=1" +
                 " union select o.name n1, p.name n2 from Person2 p, Organization o where p.orgId = o._key and o._key=2";
 
-            String plan = (String)c.query(new SqlFieldsQuery("explain " + select)
+            String plan = (String)c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
                 .getAll().get(0).get(0);
 
@@ -275,12 +281,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
 
             select = "select * from (" + select + ")";
 
-            plan = (String)c.query(new SqlFieldsQuery("explain " + select)
+            plan = (String)c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
                 .getAll().get(0).get(0);
 
@@ -289,11 +295,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
             assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
         }
         finally {
-            c.destroy();
+            c1.destroy();
+            c2.destroy();
         }
     }
 
@@ -919,15 +926,23 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param c Cache.
+     * @param c1 Persons cache.
+     * @param c2 Organizations cache.
      * @param orgs Number of organizations.
      * @param persons Number of persons.
      * @param pageSize Page size.
      * @param enforceJoinOrder Enforce join order.
      */
-    private void doTestDistributedJoins(IgniteCache<Integer, Object> c, int orgs, int persons, int pageSize,
-        boolean enforceJoinOrder) {
-        assertEquals(0, c.size(CachePeekMode.ALL));
+    private void doTestDistributedJoins(
+        IgniteCache<Integer, Person2> c1,
+        IgniteCache<Integer, Organization> c2,
+        int orgs,
+        int persons,
+        int pageSize,
+        boolean enforceJoinOrder
+    ) {
+        assertEquals(0, c1.size(CachePeekMode.ALL));
+        assertEquals(0, c2.size(CachePeekMode.ALL));
 
         int key = 0;
 
@@ -936,7 +951,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             o.name = "Org" + i;
 
-            c.put(key++, o);
+            c2.put(key++, o);
         }
 
         Random rnd = new GridRandom();
@@ -947,12 +962,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             p.name = "Person" + i;
             p.orgId = rnd.nextInt(orgs);
 
-            c.put(key++, p);
+            c1.put(key++, p);
         }
 
-        String select = "select count(*) from Organization o, Person2 p where p.orgId = o._key";
+        String select = "select count(*) from Organization o, \"pers\".Person2 p where p.orgId = o._key";
 
-        String plan = (String)c.query(new SqlFieldsQuery("explain " + select)
+        String plan = (String)c2.query(new SqlFieldsQuery("explain " + select)
             .setDistributedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
             .getAll().get(0).get(0);
 
@@ -963,13 +978,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         else
             assertTrue(plan, plan.contains("batched:unicast"));
 
-        assertEquals(Long.valueOf(persons), c.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals(Long.valueOf(persons), c2.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
 
-        c.clear();
+        c1.clear();
+        c2.clear();
 
-        assertEquals(0, c.size(CachePeekMode.ALL));
-        assertEquals(0L, c.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals(0, c1.size(CachePeekMode.ALL));
+        assertEquals(0L, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
     }
 

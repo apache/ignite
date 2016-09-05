@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message indicating that a backup has been started.
  */
-public class BackupMessage implements DiscoveryCustomMessage {
+public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,15 +38,32 @@ public class BackupMessage implements DiscoveryCustomMessage {
     private long backupId;
 
     /** */
+    private Exception err;
+
+    /** */
     private Collection<String> cacheNames;
+
+    /** */
+    private UUID initiatorNodeId;
 
     /**
      * @param backupId Backup ID.
+     * @param err Error.
      * @param cacheNames Cache names.
      */
-    public BackupMessage(long backupId, Collection<String> cacheNames) {
+    public StartFullBackupAckDiscoveryMessage(long backupId, Collection<String> cacheNames, Exception err,
+        UUID initiatorNodeId) {
         this.backupId = backupId;
+        this.err = err;
         this.cacheNames = cacheNames;
+        this.initiatorNodeId = initiatorNodeId;
+    }
+
+    /**
+     * @return Cache names.
+     */
+    public Collection<String> cacheNames() {
+        return cacheNames;
     }
 
     /** {@inheritDoc} */
@@ -54,17 +72,31 @@ public class BackupMessage implements DiscoveryCustomMessage {
     }
 
     /**
+     * @return Initiator node id.
+     */
+    public UUID initiatorNodeId() {
+        return initiatorNodeId;
+    }
+
+    /**
+     * @return Error if start this process is not successfully.
+     */
+    public Exception error() {
+        return err;
+    }
+
+    /**
+     * @return {@code True} if message has error otherwise {@code false}.
+     */
+    public boolean hasError() {
+        return err != null;
+    }
+
+    /**
      * @return Backup ID.
      */
     public long backupId() {
         return backupId;
-    }
-
-    /**
-     * @return Cache names.
-     */
-    public Collection<String> cacheNames() {
-        return cacheNames;
     }
 
     /** {@inheritDoc} */

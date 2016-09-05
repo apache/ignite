@@ -48,6 +48,9 @@ public class DataEntry {
     protected GridCacheVersion writeVer;
 
     /** */
+    protected long expireTime;
+
+    /** */
     protected int partId;
 
     /** */
@@ -69,8 +72,13 @@ public class DataEntry {
         de.op = txEntry.op();
         de.nearXidVer = tx.nearXidVersion();
         de.writeVer = tx.writeVersion();
+        de.expireTime = 0;
         de.partId = txEntry.key().partition();
         de.partCnt = txEntry.updateCounter();
+
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert de.op() == GridCacheOperation.CREATE || de.op() == GridCacheOperation.UPDATE ||
+            de.op() == GridCacheOperation.DELETE : de.op();
 
         return de;
     }
@@ -86,6 +94,7 @@ public class DataEntry {
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
+     * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      */
@@ -96,6 +105,7 @@ public class DataEntry {
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        long expireTime,
         int partId,
         long partCnt
     ) {
@@ -105,8 +115,12 @@ public class DataEntry {
         this.op = op;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
+        this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
+
+        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**
@@ -163,6 +177,13 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /**
+     * @return Expire time.
+     */
+    public long expireTime() {
+        return expireTime;
     }
 
     /** {@inheritDoc} */

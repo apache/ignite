@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -30,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -387,7 +389,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         // If another thread is doing prepare or rollback.
         if (!state(PREPARING)) {
             // In optimistic mode prepare may be called multiple times.
-            if(state() != PREPARING || !optimistic()) {
+            if (state() != PREPARING || !optimistic()) {
                 if (log.isDebugEnabled())
                     log.debug("Invalid transaction state for prepare: " + this);
 
@@ -463,15 +465,14 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        if (!near() && cctx.wal() != null) {
-                            cctx.wal().beginUpdate();
-                            ptr = cctx.wal().log(DataRecord.fromTransaction(this));
-                        }
+                        Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
+
+                        List<DataEntry> dataEntries = null;
 
                         batchStoreCommit(writeMap().values());
 
-                        // Node that for near transactions we grab all entries.
-                        for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
+                        // Note that for near transactions we grab all entries.
+                        for (IgniteTxEntry txEntry : entries) {
                             GridCacheContext cacheCtx = txEntry.context();
 
                             boolean replicate = cacheCtx.isDrEnabled();
@@ -544,6 +545,25 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             explicitVer = null;
 
                                         GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
+
+                                        if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
+                                            if (dataEntries == null)
+                                                dataEntries = new ArrayList<>(entries.size());
+
+                                            dataEntries.add(
+                                                new DataEntry(
+                                                    cacheCtx.cacheId(),
+                                                    txEntry.key(),
+                                                    val,
+                                                    op,
+                                                    nearXidVersion(),
+                                                    writeVersion(),
+                                                    0,
+                                                    txEntry.key().partition(),
+                                                    txEntry.updateCounter()
+                                                )
+                                            );
+                                        }
 
                                         if (op == CREATE || op == UPDATE) {
                                             // Invalidate only for near nodes (backups cannot be invalidated).
@@ -695,6 +715,9 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     throw (Error)ex;
                             }
                         }
+
+                        if (!near() && cctx.wal() != null)
+                            cctx.wal().log(new DataRecord(dataEntries));
 
                         if (ptr != null)
                             cctx.wal().fsync(ptr);

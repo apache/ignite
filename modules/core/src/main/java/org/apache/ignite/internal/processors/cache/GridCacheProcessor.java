@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -73,7 +74,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.backup.BackupFuture;
-import org.apache.ignite.internal.pagemem.backup.BackupMessage;
+import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.backup.StartFullBackupDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogNoopManager;
@@ -1071,6 +1073,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
         GridCacheContext ctx = cache.context();
 
+        if (!cache.isNear() && ctx.shared().wal() != null) {
+            try {
+                ctx.shared().wal().fsync(null);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to flush write-ahead log on cache stop " +
+                    "[cache=" + ctx.name() + "]", e);
+            }
+        }
+
         sharedCtx.removeCacheContext(ctx);
 
         cache.stop();
@@ -1109,6 +1121,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
+
+        ctx.kernalContext().cache().context().database().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
@@ -2537,7 +2551,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof BackupMessage)
+        if (msg instanceof StartFullBackupAckDiscoveryMessage &&
+            ((StartFullBackupAckDiscoveryMessage)msg).error() == null)
             return true;
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
@@ -3585,7 +3600,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.cache().context().database().submitBackupFuture(backupFut);
 
-        BackupMessage msg = new BackupMessage(backupId, actualCacheNames);
+        StartFullBackupDiscoveryMessage msg = new StartFullBackupDiscoveryMessage(backupId, actualCacheNames,
+            ctx.localNodeId());
 
         ctx.discovery().sendCustomEvent(msg);
 
