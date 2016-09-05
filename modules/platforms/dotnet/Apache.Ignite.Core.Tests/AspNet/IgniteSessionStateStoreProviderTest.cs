@@ -406,6 +406,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsNotNull(lockId);
             Assert.AreEqual(SessionStateActions.None, actions);
 
+            provider.CreateUninitializedItem(HttpContext, Id, 42);
+
             data = provider.CreateNewStoreData(HttpContext, 42);
             Assert.IsNotNull(data);
 
