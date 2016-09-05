@@ -486,6 +486,186 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test non-escape sequences.
+     */
+    public void testNonEscapeSequence() throws Exception {
+        check("'{fn test()}'", "'{fn test()}'");
+
+        check("select '{fn test()}'", "select '{fn test()}'");
+
+        check(
+            "select '{fn test()}' from table;",
+            "select '{fn test()}' from table;"
+        );
+
+        check(
+            "select test('arg')  from table;",
+            "select {fn test('arg')}  from table;"
+        );
+
+        check(
+            "select test('{fn func()}')  from table;",
+            "select {fn test('{fn func()}')}  from table;"
+        );
+
+        check(
+            "'{\\'some literal\\'}'",
+            "'{\\'some literal\\'}'"
+        );
+
+        check(
+            "select '{\\'some literal\\'}'",
+            "select '{\\'some literal\\'}'"
+        );
+
+        check(
+            "select '{\\'some literal\\'}' from table;",
+            "select '{\\'some literal\\'}' from table;"
+        );
+
+        check(
+            "select '{' + func() + '}' from table;",
+            "select '{' + {fn func()} + '}' from table;"
+        );
+
+        check(
+            "select '{\\'{fn test()}\\'}' from table;",
+            "select '{\\'{fn test()}\\'}' from table;"
+        );
+
+        checkFail("'{fn test()}");
+
+        checkFail("{fn func('arg)}");
+
+        checkFail("{fn func(arg')}");
+    }
+
+
+    /**
+     * Test escape sequence series.
+     */
+    public void testSimpleCallProc() throws Exception {
+        check(
+            "CALL test()",
+            "{call test()}"
+        );
+
+        check(
+            "select CALL test()",
+            "select {call test()}"
+        );
+
+        check(
+            "select CALL test() from table;",
+            "select {call test()} from table;"
+        );
+
+        check(
+            "CALL func(field1) CALL func(field2)",
+            "{call func(field1)} {call func(field2)}"
+        );
+
+        check(
+            "select CALL func(field1), CALL func(field2)",
+            "select {call func(field1)}, {call func(field2)}"
+        );
+
+        check(
+            "select CALL func(field1), CALL func(field2) from table;",
+            "select {call func(field1)}, {call func(field2)} from table;"
+        );
+    }
+
+    /**
+     * Test simple nested escape sequences. Depth = 2.
+     */
+    public void testNestedCallProc() throws Exception {
+        check(
+            "CALL func1(field1, CALL func2(field2))",
+            "{call func1(field1, {call func2(field2)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(field2))",
+            "select {call func1(field1, {call func2(field2)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(field2), field3) from SomeTable;",
+            "select {call func1(field1, {call func2(field2)}, field3)} from SomeTable;"
+        );
+    }
+
+    /**
+     * Test nested escape sequences. Depth > 2.
+     */
+    public void testDeepNestedCallProc() {
+        check(
+            "CALL func1(CALL func2(CALL func3(field1)))",
+            "{call func1({call func2({call func3(field1)})})}"
+        );
+
+        check(
+            "CALL func1(CALL func2(CALL func3(CALL func4(field1))))",
+            "{call func1({call func2({call func3({call func4(field1)})})})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(CALL func3(field2), field3))",
+            "select {call func1(field1, {call func2({call func3(field2)}, field3)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(CALL func3(field2), field3)) from SomeTable;",
+            "select {call func1(field1, {call func2({call func3(field2)}, field3)})} from SomeTable;"
+        );
+    }
+
+    /**
+     * Test series of nested escape sequences.
+     */
+    public void testNestedCallProcMixed() {
+        check(
+            "CALL func1(CALL func2(field1), CALL func3(field2))",
+            "{call func1({call func2(field1)}, {call func3(field2)})}"
+        );
+
+        check(
+            "select CALL func1(CALL func2(field1), CALL func3(field2)) from table;",
+            "select {call func1({call func2(field1)}, {call func3(field2)})} from table;"
+        );
+
+        check(
+            "CALL func1(CALL func2(CALL func3(field1))) CALL func1(CALL func2(field2))",
+            "{call func1({call func2({call func3(field1)})})} {call func1({call func2(field2)})}"
+        );
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidCallProcSequence() {
+        checkFail("{callfunc1()}");
+
+        checkFail("select {call func1(field1, {call func2(field2), field3)} from SomeTable;");
+
+        checkFail("select {call func1(field1, call func2(field2)}, field3)} from SomeTable;");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testCallProcEscapeSequenceWithWhitespaces() throws Exception {
+        check("CALL func1()", "{ call func1()}");
+
+        check("CALL func1()", "{    call  func1()}");
+
+        check("CALL func1()", "{ \n call\nfunc1()}");
+
+        checkFail("{ \n func1()}");
+    }
+
+    /**
      * Check parsing logic.
      *
      * @param exp Expected result.

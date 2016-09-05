@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
@@ -53,41 +54,12 @@ using ignite::impl::binary::BinaryUtils;
 struct QueriesTestSuiteFixture 
 {
     /**
-     * Constructor.
+     * Establish connection to node.
+     *
+     * @param connectStr Connection string.
      */
-    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    void Connect(const std::string& connectStr)
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
-
-        IgniteError err;
-
-        grid = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_FAIL(err.GetText());
-
-        testCache = grid.GetCache<int64_t, TestType>("cache");
-
         // Allocate an environment handle
         SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
 
@@ -102,13 +74,16 @@ struct QueriesTestSuiteFixture
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=cache";
+        std::vector<SQLCHAR> connectStr0;
+
+        connectStr0.reserve(connectStr.size() + 1);
+        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
 
         // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, connectStr, static_cast<SQLSMALLINT>(sizeof(connectStr)),
+        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
             outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
         if (!SQL_SUCCEEDED(ret))
@@ -124,10 +99,7 @@ struct QueriesTestSuiteFixture
         BOOST_REQUIRE(stmt != NULL);
     }
 
-    /**
-     * Destructor.
-     */
-    ~QueriesTestSuiteFixture()
+    void Disconnect()
     {
         // Releasing statement handle.
         SQLFreeHandle(SQL_HANDLE_STMT, stmt);
@@ -138,13 +110,68 @@ struct QueriesTestSuiteFixture
         // Releasing allocated handles.
         SQLFreeHandle(SQL_HANDLE_DBC, dbc);
         SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
 
-        Ignition::Stop(grid.GetName(), true);
+    static Ignite StartNode(const char* name, const char* config)
+    {
+        IgniteConfiguration cfg;
+
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
+
+#ifdef IGNITE_TESTS_32
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
+#else
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
+#endif
+
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
+
+        BOOST_REQUIRE(cfgPath != 0);
+
+        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
+
+        IgniteError err;
+
+        return Ignition::Start(cfg, name);
+    }
+
+    static Ignite StartAdditionalNode(const char* name)
+    {
+        return StartNode(name, "queries-test-noodbc.xml");
+    }
+
+    /**
+     * Constructor.
+     */
+    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    {
+        grid = StartNode("NodeMain", "queries-test.xml");
+
+        testCache = grid.GetCache<int64_t, TestType>("cache");
+    }
+
+    /**
+     * Destructor.
+     */
+    ~QueriesTestSuiteFixture()
+    {
+        Disconnect();
+
+        Ignition::StopAll(true);
     }
 
     template<typename T>
     void CheckTwoRowsInt(SQLSMALLINT type)
     {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
         SQLRETURN ret;
 
         TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -252,6 +279,16 @@ struct QueriesTestSuiteFixture
 
 BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
+BOOST_AUTO_TEST_CASE(TestLegacyConnection)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
+}
+
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
     CheckTwoRowsInt<int8_t>(SQL_C_STINYINT);
@@ -294,6 +331,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint64)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -387,6 +426,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
@@ -448,6 +489,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
     SQLRETURN ret;
 
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));

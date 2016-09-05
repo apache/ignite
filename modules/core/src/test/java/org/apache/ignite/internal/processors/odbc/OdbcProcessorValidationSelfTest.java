@@ -94,7 +94,7 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test start with invalid address format.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testAddressInvalidFormat() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:"), false);
@@ -112,6 +112,25 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
 
         check(new OdbcConfiguration().setEndpointAddress(":9999"), false);
         check(new OdbcConfiguration().setEndpointAddress(":9999..10000"), false);
+    }
+
+    /**
+     * Test connection parameters: sendBufferSize, receiveBufferSize, connectionTimeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConnectionParams() throws Exception {
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketSendBufferSize(4 * 1024), true);
+
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketReceiveBufferSize(4 * 1024), true);
+
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketSendBufferSize(-64 * 1024), false);
+
+        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
+            .setSocketReceiveBufferSize(-64 * 1024), false);
     }
 
     /**

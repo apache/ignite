@@ -53,9 +53,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = false;
 
-    /** Default socket send and receive buffer size. */
-    private static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
-
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -140,11 +137,10 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())
-                            .socketSendBufferSize(DFLT_SOCK_BUF_SIZE)
-                            .socketReceiveBufferSize(DFLT_SOCK_BUF_SIZE)
+                            .socketSendBufferSize(odbcCfg.getSocketSendBufferSize())
+                            .socketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
-                            .idleTimeout(Long.MAX_VALUE)
                             .build();
 
                         srv0.start();
