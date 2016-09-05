@@ -30,7 +30,7 @@ import java.util.UUID;
 /**
  * Web session state data.
  */
-public class SessionStateData implements Binarylizable {
+@SuppressWarnings({"ReturnOfDateField", "AssignmentToDateFieldFromParameter"}) public class SessionStateData implements Binarylizable {
     /** */
     private int timeout;
 
@@ -56,22 +56,39 @@ public class SessionStateData implements Binarylizable {
         return lockNodeId;
     }
 
+    /**
+     * Sets the lock node id.
+     *
+     */
     public void setLockNodeId(UUID lockNodeId) {
         this.lockNodeId = lockNodeId;
     }
 
+    /**
+     * Gets the lock id.
+     *
+     */
     public long getLockId() {
         return lockId;
     }
 
+    /**
+     * Sets the lock id.
+     */
     public void setLockId(long lockId) {
         this.lockId = lockId;
     }
 
+    /**
+     * Gets the lock time.
+     */
     public Timestamp getLockTime() {
         return lockTime;
     }
 
+    /**
+     * Sets the lock time.
+     */
     public void setLockTime(Timestamp lockTime) {
         this.lockTime = lockTime;
     }
