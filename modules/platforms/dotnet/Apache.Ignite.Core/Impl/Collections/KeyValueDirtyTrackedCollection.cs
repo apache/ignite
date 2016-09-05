@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /// Initializes a new instance of the <see cref="KeyValueDirtyTrackedCollection"/> class.
         /// </summary>
         /// <param name="reader">The binary reader.</param>
-        internal KeyValueDirtyTrackedCollection(IBinaryRawReader reader)
+        internal KeyValueDirtyTrackedCollection(BinaryReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -69,9 +70,9 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var key = reader.ReadString();
 
-                var entry = new Entry(key, true)
+                var entry = new Entry(key, true, reader.Marshaller)
                 {
-                    Value = reader.ReadObject<object>()
+                    Value = reader.ReadByteArray()
                 };
 
                 _dict[key] = _list.Count;
@@ -136,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Collections
 
                 if (entry == null)
                 {
-                    entry = new Entry(key, false);
+                    entry = new Entry(key, false, null);
 
                     _dict[key] = _list.Count;
                     _list.Add(entry);
@@ -216,8 +217,9 @@ namespace Apache.Ignite.Core.Impl.Collections
                 {
                     wr.WriteString(entry.Key);
 
-                    // ReSharper disable once AccessToForEachVariableInClosure
-                    wr.WithDetach(w => w.WriteObject(entry.Value));
+                    // Write as byte array to enable partial deserialization.
+                    var bytes = wr.Marshaller.Marshal(entry.Value);
+                    wr.WriteByteArray(bytes);
                 }
             }
             else
@@ -421,24 +423,57 @@ namespace Apache.Ignite.Core.Impl.Collections
         private class Entry
         {
             /** */
-            public object Value;  // TODO: Keep in serialized mode as a byte array! Or do this in IgniteSessionStateItemCollection?
+            public readonly bool IsInitial;
+
+            /** */
+            public readonly string Key;
+
+            /** */
+            private readonly Marshaller _marsh;
+
+            /** */
+            private object _value;
 
             /** */
             public bool IsDirty;
             
             /** */
-            public readonly bool IsInitial;
-            
-            /** */
-            public readonly string Key;
+            public bool IsDeserialized;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> class.
             /// </summary>
-            public Entry(string key, bool isInitial)
+            public Entry(string key, bool isInitial, Marshaller marsh)
             {
+                Debug.Assert(key != null);
+                Debug.Assert(!isInitial || marsh != null);
+
                 Key = key;
                 IsInitial = isInitial;
+                IsDeserialized = !isInitial;
+                _marsh = marsh;
+            }
+
+            /// <summary>
+            /// Gets or sets the value.
+            /// </summary>
+            public object Value
+            {
+                get
+                {
+                    if (!IsDeserialized)
+                    {
+                        _value = _marsh.Unmarshal<object>((byte[]) _value);
+                        IsDeserialized = true;
+                    }
+
+                    return _value;
+                }
+                set
+                {
+                    _value = value;
+                    IsDeserialized = true;
+                }
             }
         }
     }
