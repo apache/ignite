@@ -453,7 +453,7 @@ namespace Apache.Ignite.AspNet
 
             var cache = _expiryCacheHolder.GetCacheWithExpiry(data.Timeout * 60);
 
-            cache.Invoke(key, new SetAndReleaseLockEntryProcessor(), data);
+            ((ICacheInternal) cache).Invoke<object>((int) Op.SetAndUnlock, key, data);
         }
 
 
