@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -319,8 +321,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (workDir != null)
-            workDir = new File(workDir).getAbsolutePath();
+        try {
+            if (workDir != null) {
+                URI uri = new URI(workDir);
+                if (uri.isAbsolute())
+                    workDir = new File(uri).getAbsolutePath();
+                else
+                    workDir = new File(workDir).getAbsolutePath();
+            }
+        }
+        catch (URISyntaxException e) {
+            throw new IgfsException("Failed work dir URI. [workDir=" + workDir + ']', e);
+        }
     }
 
     /** {@inheritDoc} */
