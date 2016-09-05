@@ -28,8 +28,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "..\..\common\proj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jni", "..\..\jni\project\vs\jni.vcxproj", "{4F7E4917-4612-4B96-9838-025711ADE391}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-benchmark", "..\..\odbc-benchmark\project\vs\odbc-benchmark.vcxproj", "{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -102,14 +100,6 @@ Global
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|Win32.Build.0 = Release|Win32
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.ActiveCfg = Release|x64
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.Build.0 = Release|x64
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Debug|Win32.ActiveCfg = Debug|Win32
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Debug|Win32.Build.0 = Debug|Win32
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Debug|x64.ActiveCfg = Debug|x64
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Debug|x64.Build.0 = Debug|x64
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Release|Win32.ActiveCfg = Release|Win32
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Release|Win32.Build.0 = Release|Win32
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Release|x64.ActiveCfg = Release|x64
-		{B1F10F80-D1AA-45A6-A3D7-FFAFCEFE3878}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
