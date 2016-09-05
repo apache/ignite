@@ -64,7 +64,6 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -538,7 +537,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        final CacheQueryFuture<Map.Entry<K, V>> fut;
+        final CacheQueryFuture fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -707,8 +706,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
-            convertToBinary(qry);
-
             final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
             if (qry instanceof ContinuousQuery)
@@ -781,44 +778,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         finally {
             onLeave(gate, prev);
-        }
-    }
-
-    /**
-     * Convert query arguments to BinaryObjects if binary marshaller used.
-     *
-     * @param qry Query.
-     */
-    private void convertToBinary(final Query qry) {
-        if (ctx.binaryMarshaller()) {
-            if (qry instanceof SqlQuery) {
-                final SqlQuery sqlQry = (SqlQuery) qry;
-
-                convertToBinary(sqlQry.getArgs());
-            } else if (qry instanceof SpiQuery) {
-                final SpiQuery spiQry = (SpiQuery) qry;
-
-                convertToBinary(spiQry.getArgs());
-            } else if (qry instanceof SqlFieldsQuery) {
-                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
-
-                convertToBinary(fieldsQry.getArgs());
-            }
-        }
-    }
-
-    /**
-     * Converts query arguments to BinaryObjects if binary marshaller used.
-     *
-     * @param args Arguments.
-     */
-    private void convertToBinary(final Object[] args) {
-        if (args == null)
-            return;
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] != null && !BinaryUtils.isBinaryType(args[i].getClass()))
-                args[i] = ctx.toCacheObject(args[i]);
         }
     }
 
