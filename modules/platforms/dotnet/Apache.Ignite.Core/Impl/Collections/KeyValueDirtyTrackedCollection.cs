@@ -339,6 +339,7 @@ namespace Apache.Ignite.Core.Impl.Collections
             {
                 var entry = GetOrCreateDirtyEntry(changedEntry.Key);
 
+                // Copy without deserialization.
                 changedEntry.CopyTo(entry);
             }
         }
