@@ -29,12 +29,12 @@
 #include <boost/test/unit_test.hpp>
 
 #include "test_type.h"
-#include "sql_function_test_suite_fixture.h"
+#include "sql_test_suite_fixture.h"
 #include <ignite/common/decimal.h>
 
 using namespace ignite;
 
-BOOST_FIXTURE_TEST_SUITE(SqlOperatorTestSuite, ignite::SqlFunctionTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SqlOperatorTestSuite, ignite::SqlTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestOperatorAddInt)
 {
