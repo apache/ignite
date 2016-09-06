@@ -30,4 +30,8 @@ public class GridCacheReplicatedSequenceApiSelfTest extends GridCacheSequenceApi
     @Override protected CacheMode atomicsCacheMode() {
         return REPLICATED;
     }
+
+    @Override protected int gridCount() {
+        return 3;
+    }
 }

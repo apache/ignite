@@ -36,6 +36,9 @@ public class AtomicConfiguration {
     /** Default atomic sequence reservation size. */
     public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
 
+    /** Default atomic sequence reservation size. */
+    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE = 80;
+
     /** Default batch size for all cache's sequences. */
     private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 
@@ -44,6 +47,9 @@ public class AtomicConfiguration {
 
     /** Number of backups. */
     private int backups = DFLT_BACKUPS;
+
+    /** Atomic sequence reservation percentage. */
+    private int atomicSeqReservePercentage = DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE;
 
     /**
      * @return Number of backup nodes.
@@ -96,6 +102,25 @@ public class AtomicConfiguration {
      */
     public void setAtomicSequenceReserveSize(int seqReserveSize) {
         this.seqReserveSize = seqReserveSize;
+    }
+
+    /**
+     * Gets reserve percentage for configuration. When a reserve percentage of a batch size
+     * is reached when sequence starts a new reservation in background.
+     *
+     * @return Atomic sequence reservation percentage.
+     */
+    public int getAtomicSequenceReservePercentage() {
+        return atomicSeqReservePercentage;
+    }
+
+    /**
+     * Sets reserve percentage for configuration.
+     * *
+     * @param atomicSeqReservePercentage Atomic sequence reservation percentage.
+     */
+    public void setAtomicSequenceReservePercentage(int atomicSeqReservePercentage) {
+        this.atomicSeqReservePercentage = atomicSeqReservePercentage;
     }
 
     /** {@inheritDoc} */

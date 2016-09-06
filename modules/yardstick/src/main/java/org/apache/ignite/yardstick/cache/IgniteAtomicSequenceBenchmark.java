@@ -15,19 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheAtomicSequenceMultiThreadedAbstractTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import java.util.Map;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Cache partitioned multi-threaded tests.
+ * Ignite atomic sequence benchmark.
  */
-public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCacheAtomicSequenceMultiThreadedAbstractTest {
+public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
+    /** Cache. */
+    private IgniteAtomicSequence seq;
+
     /** {@inheritDoc} */
-    @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        seq = ignite().atomicSequence("benchSequence", 0, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        seq.incrementAndGet();
+
+        return true;
     }
 }

@@ -36,6 +36,7 @@ import javax.cache.event.EventType;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -357,9 +358,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (seqVal == null && !create)
                         return null;
 
-                    // We should use offset because we already reserved left side of range.
+        /*            // We should use offset because we already reserved left side of range.
                     long off = atomicCfg.getAtomicSequenceReserveSize() > 1 ?
-                        atomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
+                        atomicCfg.getAtomicSequenceReserveSize() - 1 : 1;*/
 
                     long upBound;
                     long locCntr;
@@ -367,18 +368,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (seqVal == null) {
                         locCntr = initVal;
 
-                        upBound = locCntr + off;
+                        upBound = locCntr + atomicCfg.getAtomicSequenceReserveSize();
 
-                        // Global counter must be more than reserved region.
-                        seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
+                        seqVal = new GridCacheAtomicSequenceValue(upBound);
                     }
                     else {
                         locCntr = seqVal.get();
 
-                        upBound = locCntr + off;
+                        upBound = locCntr + atomicCfg.getAtomicSequenceReserveSize();
 
-                        // Global counter must be more than reserved region.
-                        seqVal.set(upBound + 1);
+                        seqVal.set(upBound);
                     }
 
                     // Update global counter.
@@ -390,6 +389,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         seqView,
                         dsCacheCtx,
                         atomicCfg.getAtomicSequenceReserveSize(),
+                        atomicCfg.getAtomicSequenceReservePercentage(),
                         locCntr,
                         upBound);
 
@@ -448,8 +448,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * Gets an atomic long from cache or creates one if it's not cached.
      *
      * @param name Name of atomic long.
-     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
-     *        will be ignored.
+     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal} will be ignored.
      * @param create If {@code true} atomic long will be created in case it is not in cache.
      * @return Atomic long.
      * @throws IgniteCheckedException If loading failed.
@@ -526,8 +525,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         final DataStructureInfo dsInfo,
         final boolean create,
         Class<? extends T> cls)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
 
         if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
@@ -607,8 +605,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         String name,
         DataStructureType type,
         @Nullable final IgniteInClosureX<T> afterRmv)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
 
         if (dsMap == null || !dsMap.containsKey(name))
@@ -656,8 +653,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * Gets an atomic reference from cache or creates one if it's not cached.
      *
      * @param name Name of atomic reference.
-     * @param initVal Initial value for atomic reference. If atomic reference already cached, {@code initVal}
-     *        will be ignored.
+     * @param initVal Initial value for atomic reference. If atomic reference already cached, {@code initVal} will be
+     * ignored.
      * @param create If {@code true} atomic reference will be created in case it is not in cache.
      * @return Atomic reference.
      * @throws IgniteCheckedException If loading failed.
@@ -666,8 +663,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     public final <T> IgniteAtomicReference<T> atomicReference(final String name,
         final T initVal,
         final boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         A.notNull(name, "name");
 
         awaitInitialization();
@@ -761,10 +757,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * Gets an atomic stamped from cache or creates one if it's not cached.
      *
      * @param name Name of atomic stamped.
-     * @param initVal Initial value for atomic stamped. If atomic stamped already cached, {@code initVal}
-     *        will be ignored.
-     * @param initStamp Initial stamp for atomic stamped. If atomic stamped already cached, {@code initStamp}
-     *        will be ignored.
+     * @param initVal Initial value for atomic stamped. If atomic stamped already cached, {@code initVal} will be
+     * ignored.
+     * @param initStamp Initial stamp for atomic stamped. If atomic stamped already cached, {@code initStamp} will be
+     * ignored.
      * @param create If {@code true} atomic stamped will be created in case it is not in cache.
      * @return Atomic stamped.
      * @throws IgniteCheckedException If loading failed.
@@ -1005,8 +1001,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     @Nullable private <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
         final DataStructureInfo dsInfo,
         boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         awaitInitialization();
 
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
@@ -1083,8 +1078,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     @Nullable private static IgniteCheckedException validateDataStructure(
         @Nullable Map<String, DataStructureInfo> dsMap,
         DataStructureInfo info,
-        boolean create)
-    {
+        boolean create) {
         if (dsMap == null)
             return null;
 
@@ -1102,20 +1096,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      * @param name Name of the latch.
      * @param cnt Initial count.
-     * @param autoDel {@code True} to automatically delete latch from cache when
-     *      its count reaches zero.
-     * @param create If {@code true} latch will be created in case it is not in cache,
-     *      if it is {@code false} all parameters except {@code name} are ignored.
-     * @return Count down latch for the given name or {@code null} if it is not found and
-     *      {@code create} is false.
+     * @param autoDel {@code True} to automatically delete latch from cache when its count reaches zero.
+     * @param create If {@code true} latch will be created in case it is not in cache, if it is {@code false} all
+     * parameters except {@code name} are ignored.
+     * @return Count down latch for the given name or {@code null} if it is not found and {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
     public IgniteCountDownLatch countDownLatch(final String name,
         final int cnt,
         final boolean autoDel,
         final boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         A.notNull(name, "name");
 
         awaitInitialization();
@@ -1201,12 +1192,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                     // Check correctness type of removable object.
                     GridCacheCountDownLatchValue val =
-                            cast(dsView.get(key), GridCacheCountDownLatchValue.class);
+                        cast(dsView.get(key), GridCacheCountDownLatchValue.class);
 
                     if (val != null) {
                         if (val.get() > 0) {
                             throw new IgniteCheckedException("Failed to remove count down latch " +
-                                    "with non-zero count: " + val.get());
+                                "with non-zero count: " + val.get());
                         }
 
                         dsView.remove(key);
@@ -1232,10 +1223,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param name Name of the semaphore.
      * @param cnt Initial count.
      * @param failoverSafe {@code True} FailoverSafe parameter.
-     * @param create If {@code true} semaphore will be created in case it is not in cache,
-     *      if it is {@code false} all parameters except {@code name} are ignored.
-     * @return Semaphore for the given name or {@code null} if it is not found and
-     *      {@code create} is false.
+     * @param create If {@code true} semaphore will be created in case it is not in cache, if it is {@code false} all
+     * parameters except {@code name} are ignored.
+     * @return Semaphore for the given name or {@code null} if it is not found and {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
     public IgniteSemaphore semaphore(final String name, final int cnt, final boolean failoverSafe, final boolean create)
@@ -1351,11 +1341,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param failoverSafe Flag indicating behaviour in case of failure.
      * @param fair Flag indicating fairness policy of this lock.
      * @param create If {@code true} reentrant lock will be created in case it is not in cache.
-     * @return ReentrantLock for the given name or {@code null} if it is not found and
-     *      {@code create} is false.
+     * @return ReentrantLock for the given name or {@code null} if it is not found and {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteLock reentrantLock(final String name, final boolean failoverSafe, final boolean fair, final boolean create)
+    public IgniteLock reentrantLock(final String name, final boolean failoverSafe, final boolean fair,
+        final boolean create)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1532,8 +1522,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void onUpdated(
             Iterable<CacheEntryEvent<? extends GridCacheInternalKey, ? extends GridCacheInternal>> evts)
-            throws CacheEntryListenerException
-        {
+            throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends GridCacheInternalKey, ? extends GridCacheInternal> evt : evts) {
                 if (evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED) {
                     GridCacheInternal val0 = evt.getValue();
@@ -1603,8 +1592,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         }
                         else if (sem != null) {
                             U.error(log, "Failed to cast object " +
-                                    "[expected=" + IgniteSemaphore.class.getSimpleName() +
-                                    ", actual=" + sem.getClass() + ", value=" + sem + ']');
+                                "[expected=" + IgniteSemaphore.class.getSimpleName() +
+                                ", actual=" + sem.getClass() + ", value=" + sem + ']');
                         }
                     }
                     else if (val0 instanceof GridCacheLockState) {
@@ -1761,6 +1750,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (atomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
+
+        if (atomicCfg.getAtomicSequenceReserveSize() <= 0)
+            throw new IgniteException(
+                "Atomic sequence can not be created, " +
+                    "reserve size must be more than 0, but atomicSequenceReserveSize: " + atomicCfg.getAtomicSequenceReserveSize()
+            );
+
+        if (atomicCfg.getAtomicSequenceReservePercentage() > 100)
+            throw new IgniteException(
+                "Atomic sequence can not be created, reserve percentage must have value " +
+                    "between 0 and 100, but atomicSequenceReservePercentage: " + atomicCfg.getAtomicSequenceReservePercentage()
+            );
     }
 
     /**
@@ -1779,7 +1780,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 col.cfg.getBackups() == cfg.getBackups() &&
                 col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
                 ((col.cfg.getNodeFilter() == null && cfg.getNodeFilter() == null) ||
-                (col.cfg.getNodeFilter() != null && col.cfg.getNodeFilter().equals(cfg.getNodeFilter()))))
+                    (col.cfg.getNodeFilter() != null && col.cfg.getNodeFilter().equals(cfg.getNodeFilter()))))
                 return col.cacheName;
         }
 
@@ -1788,8 +1789,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /**
      * @param c Closure to run.
-     * @throws IgniteCheckedException If failed.
      * @return Closure return value.
+     * @throws IgniteCheckedException If failed.
      */
     private static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
@@ -2144,8 +2145,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         @Override public IgniteCheckedException process(
             MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
             Object... args)
-            throws EntryProcessorException
-        {
+            throws EntryProcessorException {
             Map<String, DataStructureInfo> map = entry.getValue();
 
             if (map == null) {
@@ -2223,8 +2223,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public T2<String, IgniteCheckedException> process(
             MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-        {
+            Object... args) {
             Map<String, DataStructureInfo> map = entry.getValue();
 
             CollectionInfo colInfo = (CollectionInfo)info.info;
@@ -2303,8 +2302,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String process(
             MutableEntry<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> entry,
-            Object... args)
-        {
+            Object... args) {
             List<CacheCollectionInfo> list = entry.getValue();
 
             if (list == null) {
@@ -2380,8 +2378,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public T2<Boolean, IgniteCheckedException> process(
             MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-        {
+            Object... args) {
             Map<String, DataStructureInfo> map = entry.getValue();
 
             if (map == null)
