@@ -97,6 +97,9 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
         Path p = path(path);
         PosixFileAttributeView attrView = Files.getFileAttributeView(p, PosixFileAttributeView.class);
 
+        if (attrView == null)
+            throw new UnsupportedOperationException("Posix file attributes not available");
+
         int perm = 0;
         for(PosixFilePermission pfp : attrView.readAttributes().permissions())
             perm |= (1 << 8 - pfp.ordinal());

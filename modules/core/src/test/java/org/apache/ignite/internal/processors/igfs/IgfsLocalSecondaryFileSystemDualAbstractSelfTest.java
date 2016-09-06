@@ -113,7 +113,12 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
 
     /** {@inheritDoc} */
     @Override protected boolean propertiesSupported() {
-        return PROPERTIES_SUPPORT;
+        return !U.isWindows() && PROPERTIES_SUPPORT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean permissionsSupported() {
+        return !U.isWindows();
     }
 
     /** {@inheritDoc} */

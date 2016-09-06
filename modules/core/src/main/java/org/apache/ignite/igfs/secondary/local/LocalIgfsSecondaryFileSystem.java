@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -35,6 +36,8 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsContext;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
@@ -93,15 +96,15 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        if (props == null || props.isEmpty())
-            return info(path);
-
         File f = fileForPath(path);
-
         if (!f.exists())
             return null;
 
-        return info(path, f, update0(path, props));
+        PosixFileAttributes attrs = update0(path, props);
+        if (attrs == null)
+            return info(path);
+
+        return info(path, f, attrs);
     }
 
     /** {@inheritDoc} */
@@ -181,7 +184,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
-        update0(path, props);
+        updateSafe(path, props);
     }
 
     /**
@@ -284,7 +287,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         OutputStream os = create0(path, overwrite, bufSize);
-        update0(path, props);
+        updateSafe(path, props);
         return os;
     }
 
@@ -298,7 +301,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             if (exists) {
                 OutputStream os = new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
-                update0(path, props);
+                updateSafe(path, props);
                 return os;
             }
             else {
@@ -320,13 +323,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (!f.exists())
             return null;
 
-        PosixFileAttributes attrs = null;
+        PosixFileAttributes readAttrs = null;
         try {
-            attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class).readAttributes();
-        } catch (IOException e) {
-            // Swallow.
+            PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
+
+            if (attrs != null)
+                readAttrs = attrs.readAttributes();
         }
-        return info(path, f, attrs);
+        catch (IOException e) {
+            throw new IgfsException("Info failed", e);
+        }
+
+        return info(path, f, readAttrs);
     }
 
     /**
@@ -462,8 +470,27 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
     }
 
-    /** {@inheritDoc} */
-    @Nullable public PosixFileAttributes update0(IgfsPath path, Map<String, String> props) {
+    /**
+     * Swallow all exceptions of update.
+     *
+     * @param path IGFS path
+     * @param props Properties map.
+     */
+    @Nullable private void updateSafe(IgfsPath path, Map<String, String> props) {
+        try {
+            update0(path, props);
+        }
+        catch (Exception e) {
+            // TODO: Logger must be available at the local FS
+        }
+    }
+
+    /**
+     * @param path IGFS path
+     * @param props Properties map.
+     * @return Posix attributes is available. {@code null} otherwise.
+     */
+    @Nullable private PosixFileAttributes update0(IgfsPath path, Map<String, String> props) {
         if (props == null || props.isEmpty())
             return null;
 
@@ -510,14 +537,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             }
         }
 
-        PosixFileAttributes readAttrs = null;
         try {
-            readAttrs = attrs.readAttributes();
-        } catch (IOException e) {
-            // Swallow.
+            return attrs.readAttributes();
         }
-
-        return readAttrs;
+        catch (IOException e) {
+            throw new IgfsException("Update failed", e);
+        }
     }
 
 
