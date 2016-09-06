@@ -158,7 +158,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
 
-                GridCacheEntryEx entry = unwrapEntry(e);
+                GridCacheEntryEx entry = e.unwrapEntry();
 
                 boolean touch = false;
 
@@ -180,22 +180,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     entry.context().evicts().touch(entry, null);
             }
         }
-    }
-
-    /**
-     * @param e wrapped entry
-     * @return GridCacheEntry
-     */
-    private GridCacheEntryEx unwrapEntry(EntryWrapper e) {
-        KeyCacheObject key;
-        try {
-            key = e.ctx.toCacheKeyObject(e.keyBytes);
-        }
-        catch (IgniteCheckedException ex) {
-            throw new IgniteException(ex);
-        }
-
-        return e.ctx.cache().entryEx(key);
     }
 
     /**
@@ -302,6 +286,21 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /**
+         * @return GridCacheEntry
+         */
+        public GridCacheEntryEx unwrapEntry() {
+            KeyCacheObject key;
+            try {
+                key = ctx.toCacheKeyObject(keyBytes);
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+
+            return ctx.cache().entryEx(key);
         }
 
         /**
