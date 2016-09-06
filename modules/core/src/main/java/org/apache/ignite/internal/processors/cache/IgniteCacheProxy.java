@@ -812,11 +812,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 final SqlQuery sqlQry = (SqlQuery) qry;
 
                 convertToBinary(sqlQry.getArgs());
-            } else if (qry instanceof SpiQuery) {
+            }
+            else if (qry instanceof SpiQuery) {
                 final SpiQuery spiQry = (SpiQuery) qry;
 
                 convertToBinary(spiQry.getArgs());
-            } else if (qry instanceof SqlFieldsQuery) {
+            }
+            else if (qry instanceof SqlFieldsQuery) {
                 final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
 
                 convertToBinary(fieldsQry.getArgs());
@@ -833,10 +835,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (args == null)
             return;
 
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] != null && !BinaryUtils.isBinaryType(args[i].getClass()))
-                args[i] = ctx.toCacheObject(args[i]);
-        }
+        for (int i = 0; i < args.length; i++)
+            args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
     }
 
     /**
