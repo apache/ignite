@@ -44,7 +44,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     @GridToStringInclude
     private Object[] args;
 
-    /** Timeout in seconds. */
+    /** Timeout in millis. */
     private int timeout;
 
     /**

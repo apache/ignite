@@ -142,7 +142,11 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
         A.ensure(timeout > 0, "timeout value should be positive.");
 
-        this.timeout = (int)TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        A.ensure(timeout <= Integer.MAX_VALUE, "timeout value is too large.");
+
+        this.timeout = (int) tmp;
     }
 
     /**
