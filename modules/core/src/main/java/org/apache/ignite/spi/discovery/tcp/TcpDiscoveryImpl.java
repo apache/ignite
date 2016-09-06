@@ -339,7 +339,7 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteCheckedException If failed.
      */
     protected byte[] marshal(Object obj) throws IgniteCheckedException {
-        return MarshallerUtils.marshal(spi.ignite().name(), spi.marsh, obj);
+        return MarshallerUtils.withNodeName(spi.marsh, spi.ignite().name()).marshal(obj);
     }
 
     /**

@@ -600,6 +600,6 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     public void setIgnite(Ignite ignite) {
         this.ignite = ignite;
 
-        marsh.nodeName(ignite.name());
+        MarshallerUtils.withNodeName(marsh, ignite.name());
     }
 }

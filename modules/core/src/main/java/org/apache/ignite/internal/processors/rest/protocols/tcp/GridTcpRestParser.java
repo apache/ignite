@@ -805,9 +805,7 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            jdkMarshaller.nodeName(gridName);
-
-            jdkMarshaller.marshal(obj, out);
+            MarshallerUtils.withNodeName(jdkMarshaller, gridName).marshal(obj, out);
 
             flags |= SERIALIZED_FLAG;
         }

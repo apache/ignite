@@ -701,7 +701,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         private AddressResponse(Collection<InetSocketAddress> addrs, final String gridName) throws IgniteCheckedException {
             this.addrs = addrs;
 
-            byte[] addrsData = MarshallerUtils.marshal(gridName, marsh, addrs);
+            byte[] addrsData = MarshallerUtils.withNodeName(marsh, gridName).marshal(addrs);
 
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 

@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -241,7 +242,9 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
-        optmMarsh = new OptimizedMarshaller(false).nodeName(igniteCfg.getGridName());
+        optmMarsh = new OptimizedMarshaller(false);
+
+        MarshallerUtils.withNodeName(optmMarsh, igniteCfg.getGridName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;

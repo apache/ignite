@@ -40,17 +40,14 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      * Set node name.
      *
      * @param nodeName Node name.
-     * @return This instance for chaining.
      */
     @SuppressWarnings("unchecked")
-    public <T> T nodeName(@Nullable String nodeName) {
+    public void nodeName(@Nullable String nodeName) {
         if (!nodeNameSet) {
             this.nodeName = nodeName;
 
             nodeNameSet = true;
         }
-
-        return (T)this;
     }
 
     /** {@inheritDoc} */

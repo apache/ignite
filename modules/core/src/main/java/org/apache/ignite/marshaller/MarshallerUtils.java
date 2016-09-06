@@ -30,6 +30,20 @@ import java.io.OutputStream;
  */
 public class MarshallerUtils {
     /**
+     * Set node name to marshaller context if possible.
+     *
+     * @param marsh Marshaller instance.
+     * @param nodeName Node name.
+     * @return Marshaller instance.
+     */
+    public static Marshaller withNodeName(Marshaller marsh, @Nullable String nodeName) {
+        if (marsh instanceof AbstractNodeNameAwareMarshaller)
+            ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
+
+        return marsh;
+    }
+
+    /**
      * Marshal object with node name taken from provided kernal context.
      *
      * @param ctx Kernal context.
