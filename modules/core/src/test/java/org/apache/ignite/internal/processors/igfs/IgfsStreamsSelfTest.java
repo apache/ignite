@@ -198,7 +198,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         long max = 100L * CFG_BLOCK_SIZE / WRITING_THREADS_CNT;
 
         for (long size = 0; size <= max; size = size * 15 / 10 + 1) {
-            assertEquals(Collections.<IgfsPath>emptyList(), fs.listPaths(root));
+            assertTrue(F.isEmpty(fs.listPaths(root)));
 
             testCreateFile(path, size, new Random().nextInt());
         }
