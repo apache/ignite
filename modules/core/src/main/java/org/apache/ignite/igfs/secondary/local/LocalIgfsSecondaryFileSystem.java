@@ -475,7 +475,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
 
         if (attrs == null)
-            throw new IgfsException("Operation not supported");
+            throw new UnsupportedOperationException("Posix file attributes not available");
 
         String groupName = props.get(IgfsUtils.PROP_GROUP_NAME);
 
