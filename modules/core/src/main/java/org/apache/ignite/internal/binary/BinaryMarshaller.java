@@ -81,12 +81,12 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
         return impl.marshal(obj);
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         byte[] arr = marshal(obj);
 
         try {
@@ -98,12 +98,12 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal0(byte[] bytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(byte[] bytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         return impl.deserialize(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         // we have to fully read the InputStream because GridBinaryMarshaller requires support of a method that

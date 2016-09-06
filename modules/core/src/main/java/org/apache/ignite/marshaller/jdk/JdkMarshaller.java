@@ -67,7 +67,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     /** {@inheritDoc} */
-    @Override public void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         ObjectOutputStream objOut = null;
@@ -89,7 +89,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
         GridByteArrayOutputStream out = null;
 
         try {
@@ -106,7 +106,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -133,7 +133,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         GridByteArrayInputStream in = null;
 
         try {

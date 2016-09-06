@@ -38,7 +38,6 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -70,7 +69,7 @@ public class GridTcpRestParser implements GridNioParser {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
+    private final JdkMarshaller jdkMarshaller = new JdkMarshaller();
 
     /** Router client flag. */
     private final boolean routerClient;
@@ -806,7 +805,9 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            MarshallerUtils.marshal(gridName, jdkMarshaller, obj, out);
+            jdkMarshaller.nodeName(gridName);
+
+            jdkMarshaller.marshal(obj, out);
 
             flags |= SERIALIZED_FLAG;
         }

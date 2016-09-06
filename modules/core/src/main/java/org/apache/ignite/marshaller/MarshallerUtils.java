@@ -30,27 +30,6 @@ import java.io.OutputStream;
  */
 public class MarshallerUtils {
     /**
-     * Marshal object to stream and set grid name thread local.
-     *
-     * @param name Grid name.
-     * @param marshaller Marshaller.
-     * @param obj Object to marshal.
-     * @param out Output stream.
-     * @throws IgniteCheckedException If fail.
-     */
-    public static void marshal(String name, Marshaller marshaller, @Nullable Object obj, OutputStream out)
-        throws IgniteCheckedException {
-        String oldName = IgniteUtils.setCurrentIgniteName(name);
-
-        try {
-            marshaller.marshal(obj, out);
-        }
-        finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
-        }
-    }
-
-    /**
      * Marshal object with node name taken from provided kernal context.
      *
      * @param ctx Kernal context.

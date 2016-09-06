@@ -30,6 +30,9 @@ import java.io.OutputStream;
  * Marshaller allowing for {@link Ignition#localIgnite()} calls.
  */
 public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller {
+    /** Whether node name is set. */
+    private volatile boolean nodeNameSet;
+
     /** Node name. */
     private volatile String nodeName = U.LOC_IGNITE_NAME_EMPTY;
 
@@ -41,7 +44,11 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      */
     @SuppressWarnings("unchecked")
     public <T> T nodeName(@Nullable String nodeName) {
-        this.nodeName = nodeName;
+        if (!nodeNameSet) {
+            this.nodeName = nodeName;
+
+            nodeNameSet = true;
+        }
 
         return (T)this;
     }
