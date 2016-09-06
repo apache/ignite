@@ -35,7 +35,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
      */
-    public void resumeLogging() throws IgniteCheckedException;
+    public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
 
     /**
      * Appends the given log entry to the write-ahead log.
