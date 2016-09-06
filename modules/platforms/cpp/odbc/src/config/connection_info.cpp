@@ -298,9 +298,7 @@ namespace ignite
 #ifdef SQL_OJ_CAPABILITIES
                 // Bitmask enumerating the types of outer joins supported by the 
                 // driver and data source.
-                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT |
-                    SQL_OJ_FULL | SQL_OJ_NESTED | SQL_OJ_INNER |
-                    SQL_OJ_ALL_COMPARISON_OPS;
+                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_NOT_ORDERED | SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
 
 #ifdef SQL_POS_OPERATIONS
@@ -315,8 +313,8 @@ namespace ignite
 
 #ifdef SQL_SQL92_STRING_FUNCTIONS
                 // Bitmask enumerating the string scalar functions.
-                intParams[SQL_SQL92_STRING_FUNCTIONS] = SQL_SSF_CONVERT | SQL_SSF_LOWER | SQL_SSF_UPPER |
-                    SQL_SSF_SUBSTRING | SQL_SSF_TRANSLATE;
+                intParams[SQL_SQL92_STRING_FUNCTIONS] = SQL_SSF_LOWER | SQL_SSF_UPPER | SQL_SSF_SUBSTRING |
+                    SQL_SSF_TRIM_BOTH | SQL_SSF_TRIM_LEADING | SQL_SSF_TRIM_TRAILING;
 #endif // SQL_SQL92_STRING_FUNCTIONS
 
 #ifdef SQL_SQL92_DATETIME_FUNCTIONS
