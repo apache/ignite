@@ -158,10 +158,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
 
+                GridCacheEntryEx entry = unwrapEntry(e);
 
                 boolean touch = false;
-
-                GridCacheEntryEx entry = e.ctx.cache().entryEx(e.key);
 
                 while (true) {
                     try {
@@ -170,7 +169,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                         break;
                     }
-                    catch (GridCacheEntryRemovedException e0) {
+                    catch (GridCacheEntryRemovedException ignore) {
                         entry = entry.context().cache().entryEx(entry.key());
 
                         touch = true;
@@ -181,6 +180,22 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     entry.context().evicts().touch(entry, null);
             }
         }
+    }
+
+    /**
+     * @param e wrapped entry
+     * @return GridCacheEntry
+     */
+    private GridCacheEntryEx unwrapEntry(EntryWrapper e) {
+        KeyCacheObject key;
+        try {
+            key = e.ctx.toCacheKeyObject(e.keyBytes);
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
+
+        return e.ctx.cache().entryEx(key);
     }
 
     /**
@@ -231,72 +246,74 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param cctx1 First cache context.
-     * @param key1 Left key to compare.
-     * @param cctx2 Second cache context.
-     * @param key2 Right key to compare.
+     * @param arr1 first array
+     * @param arr2 second array
      * @return Comparison result.
      */
-    private static int compareKeys(GridCacheContext cctx1, CacheObject key1, GridCacheContext cctx2, CacheObject key2) {
-        int key1Hash = key1.hashCode();
-        int key2Hash = key2.hashCode();
-
-        int res = Integer.compare(key1Hash, key2Hash);
+    private static int compareArrays(byte[] arr1, byte[] arr2) {
+        // Must not do fair array comparison.
+        int res = Integer.compare(arr1.length, arr2.length);
 
         if (res == 0) {
-            key1 = (CacheObject)cctx1.unwrapTemporary(key1);
-            key2 = (CacheObject)cctx2.unwrapTemporary(key2);
+            for (int i = 0; i < arr1.length; i++) {
+                res = Byte.compare(arr1[i], arr2[i]);
 
-            try {
-                byte[] key1ValBytes = key1.valueBytes(cctx1.cacheObjectContext());
-                byte[] key2ValBytes = key2.valueBytes(cctx2.cacheObjectContext());
-
-                // Must not do fair array comparison.
-                res = Integer.compare(key1ValBytes.length, key2ValBytes.length);
-
-                if (res == 0) {
-                    for (int i = 0; i < key1ValBytes.length; i++) {
-                        res = Byte.compare(key1ValBytes[i], key2ValBytes[i]);
-
-                        if (res != 0)
-                            break;
-                    }
-                }
-
-                if (res == 0)
-                    res = Boolean.compare(cctx1.isNear(), cctx2.isNear());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                if (res != 0)
+                    break;
             }
         }
-
         return res;
     }
 
     /**
      * Entry wrapper.
      */
-    private static class EntryWrapper implements Comparable<EntryWrapper> {
+    private static final class EntryWrapper implements Comparable<EntryWrapper> {
         /** Entry expire time. */
         private final long expireTime;
 
         /** Cache Object Context */
         private final GridCacheContext ctx;
 
-        /** Cache Object Key */
-        private final CacheObject key;
+        /** Cache Object Serialized Key */
+        private final byte[] keyBytes;
+
+        /** Cached hash code */
+        private final int hashCode;
 
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheMapEntry entry) {
+        private EntryWrapper(GridCacheEntryEx entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;
 
             this.ctx = entry.context();
-            this.key = entry.key();
+
+            CacheObject key = entry.key();
+
+            this.hashCode = hashCode0(key.hashCode());
+
+            key = (CacheObject)ctx.unwrapTemporary(key);
+            try {
+                keyBytes = key.valueBytes(ctx.cacheObjectContext());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /**
+         * Pre-compute hashcode
+         * @param keyHashCode key hashcode
+         * @return entry hashcode
+         */
+        private int hashCode0(int keyHashCode) {
+            int res = (int)(expireTime ^ (expireTime >>> 32));
+
+            res = 31 * res + keyHashCode;
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -304,7 +321,13 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             int res = Long.compare(expireTime, o.expireTime);
 
             if (res == 0)
-                res = compareKeys(ctx, key, o.ctx, o.key);
+                res = Integer.compare(hashCode, o.hashCode);
+
+            if (res == 0)
+                res = compareArrays(keyBytes, o.keyBytes);
+
+            if (res == 0)
+                res = Boolean.compare(ctx.isNear(), o.ctx.isNear());
 
             return res;
         }
@@ -319,17 +342,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime &&
-                compareKeys(ctx, key, that.ctx, that.key) == 0;
+            return compareTo(that) == 0;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = (int)(expireTime ^ (expireTime >>> 32));
-
-            res = 31 * res + key.hashCode();
-
-            return res;
+            return hashCode;
         }
 
         /** {@inheritDoc} */
