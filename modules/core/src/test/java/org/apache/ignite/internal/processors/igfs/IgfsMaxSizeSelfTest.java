@@ -29,7 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 /**
  * Check max size limit.
  */
-public class IgfsTestMaxSizeTest extends IgfsCommonAbstractTest {
+public class IgfsMaxSizeSelfTest extends IgfsCommonAbstractTest {
     /** Work directory. */
     private static long maxSize;
 

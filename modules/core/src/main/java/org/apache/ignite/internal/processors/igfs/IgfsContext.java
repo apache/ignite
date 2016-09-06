@@ -179,6 +179,13 @@ public class IgfsContext {
     }
 
     /**
+     * @return Maximum size limit. Returns {@code 0} if IGFS space is unlimited.
+     */
+    public long maxSpaceSize() {
+        return (cfg.getMaxSpaceSize() <= 0) ? 0 : dataMgr.maxSpaceSize();
+    }
+
+    /**
      * Adds manager to managers list.
      *
      * @param mgr Manager.

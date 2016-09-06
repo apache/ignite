@@ -1224,7 +1224,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return new IgfsMetricsAdapter(
                     igfsCtx.data().spaceSize(),
-                    (igfsCtx.configuration().getMaxSpaceSize() <= 0) ? 0 : igfsCtx.data().maxSpaceSize(),
+                    igfsCtx.maxSpaceSize(),
                     secondarySpaceSize,
                     sum.directoriesCount(),
                     sum.filesCount(),
