@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -193,8 +194,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         ByteBuffer bytes = page.getForWrite();
 
         try {
-            for (int i = 0; i < PAGE_SIZE; i++)
-                bytes.put((byte)val);
+            for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
+                bytes.put(i, (byte)val);
         }
         finally {
             page.releaseWrite(true);
@@ -211,8 +212,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         ByteBuffer bytes = page.getForRead();
 
         try {
-            for (int i = 0; i < PAGE_SIZE; i++) {
-                int val = bytes.get() & 0xFF;
+            for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {
+                int val = bytes.get(i) & 0xFF;
 
                 assertEquals("Unexpected value at position: " + i, expVal, val);
             }

@@ -24,8 +24,10 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
  * Insert into data page.
@@ -45,6 +47,9 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
 
     /** */
     private int rowSize;
+
+    /** */
+    private byte[] remainder;
 
     /**
      * @param cacheId Cache ID.
@@ -71,6 +76,21 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
         this.ver = ver;
         this.expireTime = expireTime;
         this.rowSize = rowSize;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param remainder Remainder of the record.
+     */
+    public DataPageInsertRecord(
+        int cacheId,
+        long pageId,
+        byte[] remainder
+    ) {
+        super(cacheId, pageId);
+
+        this.remainder = remainder;
     }
 
     /**
@@ -109,9 +129,19 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
     /** {@inheritDoc} */
     @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf)
         throws IgniteCheckedException {
-        DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
+        IgniteCacheObjectProcessor co = cctx.cacheObjects();
         CacheObjectContext coctx = cctx.cacheObjectContext();
+
+        assert remainder != null;
+
+        ByteBuffer in = ByteBuffer.wrap(remainder);
+
+        key = co.toKeyCacheObject(coctx, in);
+        val = co.toCacheObject(coctx, in);
+        ver = CacheVersionIO.read(in, false);
+        expireTime = in.getLong();
+
+        DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
         io.addRow(coctx, buf, this, rowSize);
     }

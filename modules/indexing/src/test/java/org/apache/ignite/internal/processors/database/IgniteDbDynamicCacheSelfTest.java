@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -37,11 +37,11 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+        MemoryConfiguration dbCfg = new MemoryConfiguration();
 
         dbCfg.setPageCacheSize(200 * 1024 * 1024);
 
-        cfg.setDatabaseConfiguration(dbCfg);
+        cfg.setMemoryConfiguration(dbCfg);
 
         if (gridName.equals("client"))
             cfg.setClientMode(true);
@@ -96,7 +96,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
             ignite.destroyCache(ccfg.getName());
 
             awaitPartitionMapExchange();
-
         }
     }
 

@@ -15,14 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * Marker that we start memory recovering
  */
-public interface WALPointer {
+public class MemoryRecoveryRecord extends WALRecord {
     /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     *
      */
-    public WALPointer next();
+    private static class Holder {
+        /** Instance. */
+        private static final MemoryRecoveryRecord INSTANCE = new MemoryRecoveryRecord();
+    }
+
+    /**
+     *
+     */
+    public static MemoryRecoveryRecord instance() {
+        return Holder.INSTANCE;
+    }
+
+    /**
+     * Default constructor.
+     */
+    private MemoryRecoveryRecord() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.MEMORY_RECOVERY;
+    }
 }
