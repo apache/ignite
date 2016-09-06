@@ -91,8 +91,13 @@ public abstract class PagesList extends DataStructure {
 
     /** */
     private final CheckingPageHandler<Page, ByteBuffer> putDataPage = new CheckingPageHandler<Page, ByteBuffer>() {
-        @Override protected boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io,
-            Page dataPage, ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
+        @Override protected boolean run0(long pageId,
+            Page page,
+            ByteBuffer buf,
+            PagesListNodeIO io,
+            Page dataPage,
+            ByteBuffer dataPageBuf,
+            int bucket) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
@@ -201,8 +206,13 @@ public abstract class PagesList extends DataStructure {
     /** */
     private final CheckingPageHandler<ReuseBag, Void> putReuseBag = new CheckingPageHandler<ReuseBag, Void>() {
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override protected boolean run0(final long pageId, Page page, final ByteBuffer buf, PagesListNodeIO io,
-            ReuseBag bag, Void ignore, int bucket) throws IgniteCheckedException {
+        @Override protected boolean run0(final long pageId,
+            Page page,
+            final ByteBuffer buf,
+            PagesListNodeIO io,
+            ReuseBag bag,
+            Void ignore,
+            int bucket) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
@@ -315,6 +325,87 @@ public abstract class PagesList extends DataStructure {
 
         this.metaPageId = nextPageId;
     }
+
+    private void storeMeta() throws IgniteCheckedException {
+        final int buckets = buckets();
+
+        Page curPage = null;
+        ByteBuffer curBuf = null;
+        PagesListMetaIO curIo = null;
+
+        long nextPageId = metaPageId;
+
+        try {
+            for (int bucket = 0; bucket < buckets; bucket++) {
+                long[] tails = getBucket(bucket);
+
+                if (tails != null) {
+                    int tailIdx = 0;
+
+                    while (tailIdx < tails.length) {
+                        if (curPage == null || !curIo.addListHead(curBuf, bucket, tails[tailIdx], tails[tailIdx + 1])) {
+                            if (nextPageId == 0L) {
+                                nextPageId = allocatePageNoReuse();
+
+                                if (curPage != null) {
+                                    curIo.setNextMetaPageId(curBuf, nextPageId);
+
+                                    curPage.releaseWrite(true);
+                                }
+
+                                curPage = page(nextPageId);
+                                curBuf = curPage.getForWrite();
+
+                                curIo = PagesListMetaIO.VERSIONS.latest();
+
+                                curIo.initNewPage(curBuf, nextPageId);
+                            }
+                            else {
+                                if (curPage != null)
+                                    curPage.releaseWrite(true);
+
+                                curPage = page(nextPageId);
+                                curBuf = curPage.getForWrite();
+
+                                curIo = PagesListMetaIO.VERSIONS.forPage(curBuf);
+
+                                curIo.resetCount(curBuf);
+                            }
+
+                            nextPageId = curIo.getNextMetaPageId(curBuf);
+                        }
+                        else
+                            tailIdx += 2;
+                    }
+                }
+            }
+        }
+        finally {
+            if (curPage != null)
+                curPage.releaseWrite(false);
+        }
+
+        while (nextPageId != 0L) {
+            Page page = page(nextPageId);
+
+            try {
+                ByteBuffer buf = page.getForWrite();
+                PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+
+                io.resetCount(buf);
+
+                nextPageId = io.getNextMetaPageId(buf);
+            }
+            finally {
+                page.releaseWrite(true);
+            }
+        }
+    }
+
+    /**
+     * @return Buckets number.
+     */
+    protected abstract int buckets();
 
     /**
      * @param bucket Bucket index.

@@ -114,6 +114,11 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 //        }
     }
 
+    /** {@inheritDoc} */
+    @Override protected int buckets() {
+        return BUCKETS;
+    }
+
     /**
      * @param freeSpace Page free space.
      * @return Bucket.

@@ -98,12 +98,19 @@ public class PagesListMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
+     */
+    public void resetCount(ByteBuffer buf) {
+        setCount(buf, 0);
+    }
+
+    /**
+     * @param buf Buffer.
      * @param bucket Bucket number.
-     * @param headId Head page ID.
      * @param tailId Tail page ID.
+     * @param headId Head page ID.
      * @return {@code True} if bucket information was stored.
      */
-    public boolean addListHead(ByteBuffer buf, int bucket, long headId, long tailId) {
+    public boolean addListHead(ByteBuffer buf, int bucket, long tailId, long headId) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
 
         int cnt = getCount(buf);

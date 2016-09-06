@@ -51,6 +51,11 @@ public final class ReuseListNew extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override protected int buckets() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean isReuseBucket(int bucket) {
         assert bucket == 0: bucket;
 
