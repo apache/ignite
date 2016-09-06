@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -101,6 +102,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void waitForCheckpoint() throws IgniteCheckedException {
         // No-op
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param part Partition.
+     * @param partCntr Partition counter.
+     * @return WAL pointer to scan from.
+     */
+    public WALPointer searchPartitionCounter(GridCacheContext cctx, int part, Long partCntr) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
     }
 
     /**

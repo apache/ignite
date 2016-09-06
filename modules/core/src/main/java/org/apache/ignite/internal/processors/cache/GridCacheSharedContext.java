@@ -394,7 +394,7 @@ public class GridCacheSharedContext<K, V> {
      * @return If local node is active on start.
      */
     public boolean localNodeActiveOnStart() {
-        return !dbMgr.persistenceEnabled();
+        return true;
     }
 
     /**

@@ -64,6 +64,11 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
     @GridDirectCollection(int.class)
     private Collection<Integer> missed;
 
+    /** Partitions for which we were able to get historical iterator. */
+    @GridToStringInclude
+    @GridDirectCollection(int.class)
+    private Collection<Integer> clean;
+
     /** Entries. */
     @GridDirectMap(keyType = int.class, valueType = CacheEntryInfoCollection.class)
     private Map<Integer, CacheEntryInfoCollection> infos;
@@ -139,6 +144,17 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
                 infos().put(p, infoCol);
             }
         }
+    }
+
+    /**
+     * @param p Partition with historical iterator.
+     */
+    void clean(int p) {
+        if (clean == null)
+            clean = new HashSet<>();
+
+        if (clean.add(p))
+            msgSize += 4;
     }
 
     /**

@@ -27,15 +27,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfoCollectSwapListener;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -278,10 +275,16 @@ class GridDhtPartitionSupplier {
                         phase = SupplyContextPhase.OFFHEAP;
 
                     if (phase == SupplyContextPhase.OFFHEAP) {
-                        GridIterator<CacheDataRow> iter = (sctx != null && sctx.entryIt != null) ?
-                            (GridIterator<CacheDataRow>)sctx.entryIt : cctx.offheap().iterator(part);
+                        IgniteRebalanceIterator iter;
 
-                        boolean prepared = false;
+                        if (sctx == null || sctx.entryIt == null) {
+                            iter = cctx.offheap().rebalanceIterator(part, d.partitionCounter(part));
+
+                            if (!iter.historical())
+                                s.clean(part);
+                        }
+                        else
+                            iter = (IgniteRebalanceIterator)sctx.entryIt;
 
                         while (iter.hasNext()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
@@ -341,7 +344,7 @@ class GridDhtPartitionSupplier {
                             GridCacheEntryInfo info = new GridCacheEntryInfo();
 
                             info.key(row.key());
-                            info.expireTime(0);
+                            info.expireTime(row.expireTime());
                             info.version(row.version());
                             info.value(row.value());
 

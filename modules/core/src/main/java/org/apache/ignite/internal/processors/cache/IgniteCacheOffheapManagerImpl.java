@@ -655,6 +655,49 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRebalanceIterator rebalanceIterator(int part, Long partCntr) throws IgniteCheckedException {
+        final GridIterator<CacheDataRow> it = iterator(part);
+
+        return new IgniteRebalanceIterator() {
+            @Override public boolean historical() {
+                return false;
+            }
+
+            @Override public boolean hasNextX() throws IgniteCheckedException {
+                return it.hasNextX();
+            }
+
+            @Override public CacheDataRow nextX() throws IgniteCheckedException {
+                return it.nextX();
+            }
+
+            @Override public void removeX() throws IgniteCheckedException {
+                it.removeX();
+            }
+
+            @Override public Iterator<CacheDataRow> iterator() {
+                return it.iterator();
+            }
+
+            @Override public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override public CacheDataRow next() {
+                return it.next();
+            }
+
+            @Override public void close() {
+
+            }
+
+            @Override public boolean isClosed() {
+                return false;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p,
         CacheDataStore.Listener lsnr) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();

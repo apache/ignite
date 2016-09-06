@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -47,6 +50,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** Partition. */
     @GridDirectCollection(int.class)
     private Collection<Integer> parts;
+
+    /** Partition. */
+    @GridDirectMap(keyType = int.class, valueType = long.class)
+    private Map<Integer, Long> partCntrs;
 
     /** Topic. */
     @GridDirectTransient
@@ -79,7 +86,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      * @param cp Message to copy from.
      * @param parts Partitions.
      */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts) {
+    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts, Map<Integer, Long> partCntrs) {
         cacheId = cp.cacheId;
         updateSeq = cp.updateSeq;
         topic = cp.topic;
@@ -89,6 +96,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
         // Create a copy of passed in collection since it can be modified when this message is being sent.
         this.parts = new HashSet<>(parts);
+        this.partCntrs = partCntrs;
     }
 
     /**
@@ -103,7 +111,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      */
     void addPartition(int p) {
         if (parts == null)
-            parts = new HashSet<>();
+            parts = new ArrayList<>();
 
         parts.add(p);
     }
@@ -170,6 +178,14 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      */
     void workerId(int workerId) {
         this.workerId = workerId;
+    }
+
+    /**
+     * @param part Partition to get counter for.
+     * @return Partition counter associated with this partition or {@code null} if this information is unavailable.
+     */
+    Long partitionCounter(int part) {
+        return partCntrs == null ? null : partCntrs.get(part);
     }
 
     /**
