@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Striped LRU queue.
@@ -156,7 +155,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
      * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
-        return lrus[U.safeAbs(addIdx.getAndIncrement()) % cnt].offer(part, addr, hash);
+        return lrus[getAndIncrement(addIdx, Integer.MAX_VALUE) % cnt].offer(part, addr, hash);
     }
 
     /**
@@ -165,7 +164,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
      * @return Queue node address.
      */
     long prePoll() {
-        int idx = U.safeAbs(rmvIdx.getAndIncrement());
+        int idx = getAndIncrement(rmvIdx, Integer.MAX_VALUE - cnt + 1);
 
         // Must try to poll from each LRU.
         for (int i = 0; i < lrus.length; i++) {
@@ -213,6 +212,23 @@ import org.apache.ignite.internal.util.typedef.internal.U;
         if (released.compareAndSet(false, true)) {
             for (int i = 0; i < cnt; i++)
                 lrus[i].destruct();
+        }
+    }
+
+    /**
+     * Atomically increments the given value by one, and re-starts from 0 when reaches the specified maximum.
+     *
+     * @param value Value to increment.
+     * @param max Maximum after reaching which the value is reset to 0.
+     * @return Value to increment.
+     */
+    private int getAndIncrement(AtomicInteger value, int max) {
+        while (true) {
+            int cur = value.get();
+            int next = cur == max ? 0 : cur + 1;
+
+            if (value.compareAndSet(cur, next))
+                return cur;
         }
     }
 

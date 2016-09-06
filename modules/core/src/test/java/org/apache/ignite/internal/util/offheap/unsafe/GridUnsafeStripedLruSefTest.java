@@ -101,7 +101,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrepollIdxOverflow() throws Exception {
-        stripes = 2;
+        stripes = 3;
 
         init();
 
@@ -109,7 +109,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
 
         idxField.setAccessible(true);
 
-        idxField.set(lru, new AtomicInteger(Integer.MAX_VALUE));
+        idxField.set(lru, new AtomicInteger(Integer.MAX_VALUE - stripes + 1));
 
         for (int i = 0; i < 100; i++)
             lru.prePoll();
