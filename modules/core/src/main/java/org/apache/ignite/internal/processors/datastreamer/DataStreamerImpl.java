@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -513,23 +512,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             activeFuts.add(resFut);
 
-            Collection<KeyCacheObject> keys = null;
+            Collection<KeyCacheObject> keys =
+                new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
-            if (entries.size() > 1) {
-                keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+            Collection<DataStreamerEntry> entries0 = new ArrayList<>(entries.size());
 
-                for (Map.Entry<K, V> entry : entries)
-                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, null, entry.getKey(), true));
+            for (Map.Entry<K, V> entry : entries) {
+                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, entry.getKey(), true);
+                CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, entry.getValue(), true);
+
+                keys.add(key);
+
+                entries0.add(new DataStreamerEntry(key, val));
             }
-
-            Collection<? extends DataStreamerEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, DataStreamerEntry>() {
-                @Override public DataStreamerEntry apply(Entry<K, V> e) {
-                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, e.getKey(), true);
-                    CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), true);
-
-                    return new DataStreamerEntry(key, val);
-                }
-            });
 
             load0(entries0, resFut, keys, 0);
 

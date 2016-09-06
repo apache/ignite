@@ -167,10 +167,9 @@ namespace ignite
                  *
                  * @param other Instance to copy.
                  */
-                SharedPointer(const SharedPointer& other)
+                SharedPointer(const SharedPointer& other) :
+                    impl(other.impl)
                 {
-                    impl = other.impl;
-
                     if (impl)
                         impl->Increment();
                 }
