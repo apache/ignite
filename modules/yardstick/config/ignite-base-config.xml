@@ -133,39 +133,58 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
 
-                    <property name="swapEnabled" value="false"/>
-
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Integer"/>
                                 <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
 
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
                                         <entry key="id" value="java.lang.Integer"/>
                                         <entry key="name" value="java.lang.String"/>
                                     </map>
                                 </property>
+
+                                <property name="keyFields">
+                                    <set></set>
+                                </property>
                             </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Integer"/>
                                 <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Person"/>
 
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
                                         <entry key="id" value="java.lang.Integer"/>
                                         <entry key="orgId" value="java.lang.Integer"/>
                                         <entry key="salary" value="java.lang.Double"/>
-                                    </map>
-                                </property>
-
-                                <property name="queryFields">
-                                    <map>
                                         <entry key="firstName" value="java.lang.String"/>
                                         <entry key="lastName" value="java.lang.String"/>
                                     </map>
                                 </property>
+
+                                <property name="keyFields">
+                                    <set></set>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="org.apache.ignite.yardstick.cache.model.SampleValue"/>
+
+                                <property name="fields">
+                                    <map>
+                                        <entry key="id" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+
+                                <property name="keyFields">
+                                    <set></set>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="java.lang.Integer"/>
                             </bean>
                         </list>
                     </property>
