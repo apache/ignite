@@ -595,7 +595,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
-                summary0(fileId, sum);
+                summary0(info(path), sum);
 
                 return sum;
             }
@@ -1207,7 +1207,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
-                summary0(IgfsUtils.ROOT_ID, sum);
+                summary0(info(new IgfsPath()), sum);
 
                 long secondarySpaceSize = 0;
 
@@ -1256,19 +1256,9 @@ public final class IgfsImpl implements IgfsEx {
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                IgfsMode mode = resolveMode(path);
-
-                if (IgfsUtils.isDualMode(mode))
-                    return secondaryFs.info(path).length();
-
-                IgniteUuid nextId = meta.fileId(path);
-
-                if (nextId == null)
-                    return 0L;
-
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
-                summary0(nextId, sum);
+                summary0(info(path), sum);
 
                 return sum.totalLength();
             }
@@ -1278,27 +1268,23 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * Calculates size of directory or file for given ID.
      *
-     * @param fileId File ID.
+     * @param file IGFS File object.
      * @param sum Summary object that will collect information.
      * @throws IgniteCheckedException If failed.
      */
-    private void summary0(IgniteUuid fileId, IgfsPathSummary sum) throws IgniteCheckedException {
+    private void summary0(IgfsFile file, IgfsPathSummary sum) throws IgniteCheckedException {
         assert sum != null;
 
-        IgfsEntryInfo info = meta.info(fileId);
+        if (file.isDirectory()) {
+            if (!file.path().toString().equals("/"));
+                sum.directoriesCount(sum.directoriesCount() + 1);
 
-        if (info != null) {
-            if (info.isDirectory()) {
-                if (!IgfsUtils.ROOT_ID.equals(info.id()))
-                    sum.directoriesCount(sum.directoriesCount() + 1);
-
-                for (IgfsListingEntry entry : info.listing().values())
-                    summary0(entry.fileId(), sum);
-            }
-            else {
-                sum.filesCount(sum.filesCount() + 1);
-                sum.totalLength(sum.totalLength() + info.length());
-            }
+            for (IgfsFile f: listFiles(file.path()))
+                summary0(f, sum);
+        }
+        else {
+            sum.filesCount(sum.filesCount() + 1);
+            sum.totalLength(sum.totalLength() + file.length());
         }
     }
 

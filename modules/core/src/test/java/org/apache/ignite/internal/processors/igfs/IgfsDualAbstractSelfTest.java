@@ -1608,7 +1608,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         igfs.mkdirs(SUBDIR);
 
         createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, new IgfsPath(SUBDIR, "file2"), chunk);
 
         assertEquals(chunk.length, igfs.size(FILE));
+        assertEquals(chunk.length * 2, igfs.size(SUBDIR));
     }
 }
