@@ -30,7 +30,8 @@ import java.util.UUID;
 /**
  * Web session state data.
  */
-@SuppressWarnings({"ReturnOfDateField", "AssignmentToDateFieldFromParameter"}) public class SessionStateData implements Binarylizable {
+@SuppressWarnings({"ReturnOfDateField", "AssignmentToDateFieldFromParameter"})
+public class SessionStateData implements Binarylizable {
     /** */
     private int timeout;
 
