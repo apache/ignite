@@ -59,7 +59,7 @@ public final class ReuseListNew extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        put(bag, null, 0);
+        put(bag, null, null, 0);
     }
 
     /** {@inheritDoc} */

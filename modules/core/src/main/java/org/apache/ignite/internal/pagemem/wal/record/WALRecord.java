@@ -61,6 +61,9 @@ public abstract class WALRecord {
         DATA_PAGE_REMOVE_RECORD,
 
         /** */
+        DATA_PAGE_SET_FREE_LIST_PAGE,
+
+        /** */
         BTREE_META_PAGE_INIT_ROOT,
 
         /** */

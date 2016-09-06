@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPage;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageRecord;
@@ -65,9 +66,14 @@ public abstract class PagesList extends DataStructure {
     private AtomicIntegerArray cnts = new AtomicIntegerArray(256);
 
     /** */
-    private final CheckingPageHandler<Void> cutTail = new CheckingPageHandler<Void>() {
-        @Override protected boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io,
-            Void ignore, int bucket) throws IgniteCheckedException {
+    private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
+        @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
+            throws IgniteCheckedException {
+            if (getPageId(buf) != pageId)
+                return Boolean.FALSE;
+
+            PagesListNodeIO io = (PagesListNodeIO)pageIo;
+
             long tailId = io.getNextId(buf);
 
             assert tailId != 0;
@@ -79,29 +85,32 @@ public abstract class PagesList extends DataStructure {
 
             updateTail(bucket, tailId, pageId);
 
-            return true;
+            return Boolean.TRUE;
         }
     };
 
     /** */
-    private final CheckingPageHandler<ByteBuffer> putDataPage = new CheckingPageHandler<ByteBuffer>() {
+    private final CheckingPageHandler<Page, ByteBuffer> putDataPage = new CheckingPageHandler<Page, ByteBuffer>() {
         @Override protected boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io,
-            ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
+            Page dataPage, ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
-            long dataPageId = getPageId(dataPageBuf);
-            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
+            long dataPageId = dataPage.id();
 
             int idx = io.addPage(buf, dataPageId);
 
             if (idx == -1)
-                handlePageFull(pageId, page, buf, io, dataPageId, dataIO, dataPageBuf, bucket);
+                handlePageFull(pageId, page, buf, io, dataPage, dataPageBuf, bucket);
             else {
                 if (isWalDeltaRecordNeeded(wal, page))
                     wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
 
+                DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
                 dataIO.setFreeListPageId(dataPageBuf, pageId);
+
+                if (isWalDeltaRecordNeeded(wal, dataPage))
+                    wal.log(new DataPageSetFreeListPage(cacheId, dataPage.id(), pageId));
 
                 cnts.incrementAndGet(bucket);
             }
@@ -114,8 +123,7 @@ public abstract class PagesList extends DataStructure {
          * @param page Page.
          * @param buf Buffer.
          * @param io IO.
-         * @param dataPageId Data page ID.
-         * @param dataIO Data page IO.
+         * @param dataPage Data page.
          * @param dataPageBuf Data page buffer.
          * @param bucket Bucket index.
          * @throws IgniteCheckedException If failed.
@@ -125,11 +133,13 @@ public abstract class PagesList extends DataStructure {
             Page page,
             ByteBuffer buf,
             PagesListNodeIO io,
-            long dataPageId,
-            DataPageIO dataIO,
+            Page dataPage,
             ByteBuffer dataPageBuf,
             int bucket
         ) throws IgniteCheckedException {
+            long dataPageId = dataPage.id();
+            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
+
             // Attempt to add page failed: the node page is full.
             if (isReuseBucket(bucket)) {
                 // If we are on the reuse bucket, we can not allocate new page, because it may cause deadlock.
@@ -143,8 +153,8 @@ public abstract class PagesList extends DataStructure {
                 if (isWalDeltaRecordNeeded(wal, page))
                     wal.log(new PagesListSetNextRecord(cacheId, pageId, dataPageId));
 
-//                if (isWalDeltaRecordNeeded(wal, page))
-//                    wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
+                if (isWalDeltaRecordNeeded(wal, dataPage))
+                    wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
 
                 updateTail(bucket, pageId, dataPageId);
             }
@@ -173,6 +183,9 @@ public abstract class PagesList extends DataStructure {
 
                         dataIO.setFreeListPageId(dataPageBuf, nextId);
 
+                        if (isWalDeltaRecordNeeded(wal, dataPage))
+                            wal.log(new DataPageSetFreeListPage(cacheId, dataPageId, nextId));
+
                         updateTail(bucket, pageId, nextId);
 
                         cnts.incrementAndGet(bucket);
@@ -186,10 +199,10 @@ public abstract class PagesList extends DataStructure {
     };
 
     /** */
-    private final CheckingPageHandler<ReuseBag> putReuseBag = new CheckingPageHandler<ReuseBag>() {
+    private final CheckingPageHandler<ReuseBag, Void> putReuseBag = new CheckingPageHandler<ReuseBag, Void>() {
         @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override protected boolean run0(final long pageId, Page page, final ByteBuffer buf, PagesListNodeIO io,
-            ReuseBag bag, int bucket) throws IgniteCheckedException {
+            ReuseBag bag, Void ignore, int bucket) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
@@ -501,7 +514,8 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void put(ReuseBag bag, ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
+    protected final void put(ReuseBag bag, Page dataPage, ByteBuffer dataPageBuf, int bucket)
+        throws IgniteCheckedException {
         assert bag == null ^ dataPageBuf == null;
 
         for (;;) {
@@ -510,17 +524,39 @@ public abstract class PagesList extends DataStructure {
             try (Page tail = page(tailId)) {
                 if (bag != null ?
                     // Here we can always take pages from the bag to build our list.
-                    writePage(tailId, tail, putReuseBag, bag, bucket) :
+                    writePage0(tailId, tail, putReuseBag, bag, null, bucket) :
                     // Here we can use the data page to build list only if it is empty and
                     // it is being put into reuse bucket. Usually this will be true, but there is
                     // a case when there is no reuse bucket in the free list, but then deadlock
                     // on node page allocation from separate reuse list is impossible.
                     // If the data page is not empty it can not be put into reuse bucket and thus
                     // the deadlock is impossible as well.
-                    writePage(tailId, tail, putDataPage, dataPageBuf, bucket))
+                    writePage0(tailId, tail, putDataPage, dataPage, dataPageBuf, bucket))
                     return;
             }
         }
+    }
+
+    private static <X, Y> boolean writePage0(long pageId,
+        Page page,
+        CheckingPageHandler<X, Y> h,
+        X arg1,
+        Y arg2,
+        int bucket) throws IgniteCheckedException {
+        ByteBuffer buf = page.getForWrite();
+
+        boolean ok = false;
+
+        try {
+            PageIO io = PageIO.getPageIO(buf);
+
+            ok = h.run(pageId, page, io, buf, arg1, arg2, bucket);
+        }
+        finally {
+            page.releaseWrite(ok);
+        }
+
+        return ok;
     }
 
     /**
@@ -619,15 +655,16 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * @param dataPage Data page.
      * @param dataPageBuf Data page buffer.
+     * @param dataIO Data page IO.
      * @param bucket Bucket index.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if page was removed.
      */
-    protected final boolean removeDataPage(ByteBuffer dataPageBuf, int bucket) throws IgniteCheckedException {
-        long dataPageId = getPageId(dataPageBuf);
-
-        DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
+    protected final boolean removeDataPage(Page dataPage, ByteBuffer dataPageBuf, DataPageIO dataIO, int bucket)
+        throws IgniteCheckedException {
+        long dataPageId = dataPage.id();
 
         long pageId = dataIO.getFreeListPageId(dataPageBuf);
 
@@ -661,6 +698,9 @@ public abstract class PagesList extends DataStructure {
 
                 // Reset free list page ID.
                 dataIO.setFreeListPageId(dataPageBuf, 0L);
+
+                if (isWalDeltaRecordNeeded(wal, dataPage))
+                    wal.log(new DataPageSetFreeListPage(cacheId, dataPageId, 0L));
 
                 if (!io.isEmpty(buf))
                     return true; // In optimistic case we still have something in the page and can leave it as is.
@@ -886,17 +926,26 @@ public abstract class PagesList extends DataStructure {
     /**
      * Page handler.
      */
-    private static abstract class CheckingPageHandler<X> extends PageHandler<X, PageIO, Boolean> {
-        /** {@inheritDoc} */
-        @Override public final Boolean run(long pageId, Page page, PageIO io, ByteBuffer buf, X arg, int intArg)
+    private static abstract class CheckingPageHandler<X, Y>  {
+        /**
+         * @param pageId Page ID.
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param arg1 Argument 1.
+         * @param arg2 Argument 2.
+         * @param bucket Bucket.
+         * @throws IgniteCheckedException If failed.
+         * @return Result.
+         */
+        public final boolean run(long pageId, Page page, PageIO io, ByteBuffer buf, X arg1, Y arg2, int bucket)
             throws IgniteCheckedException {
-            if (io.getType() != PageIO.T_PAGE_LIST_NODE)
-                return Boolean.FALSE;
-
             if (getPageId(buf) != pageId)
                 return Boolean.FALSE;
 
-            return run0(pageId, page, buf, (PagesListNodeIO)io, arg, intArg);
+            assert io instanceof PagesListNodeIO : io;
+
+            return run0(pageId, page, buf, (PagesListNodeIO)io, arg1, arg2, bucket);
         }
 
         /**
@@ -904,13 +953,19 @@ public abstract class PagesList extends DataStructure {
          * @param page Page.
          * @param buf Buffer.
          * @param io IO.
-         * @param arg Argument.
-         * @param intArg Integer argument.
+         * @param arg1 Argument 1.
+         * @param arg2 Argument 2.
+         * @param bucket Bucket.
          * @throws IgniteCheckedException If failed.
          * @return Result.
          */
-        protected abstract boolean run0(long pageId, Page page, ByteBuffer buf, PagesListNodeIO io, X arg, int intArg)
-            throws IgniteCheckedException;
+        protected abstract boolean run0(long pageId,
+            Page page,
+            ByteBuffer buf,
+            PagesListNodeIO io,
+            X arg1,
+            Y arg2,
+            int bucket) throws IgniteCheckedException;
     }
 
     /**

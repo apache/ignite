@@ -218,7 +218,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        put(bag, null, REUSE_BUCKET);
+        put(bag, null, null, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */
@@ -270,7 +270,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                 if (newFreeSpace > 0) {
                     int bucket = bucket(newFreeSpace);
 
-                    put(null, buf, bucket);
+                    put(null, page, buf, bucket);
                 }
 
                 // Avoid boxing with garbage generation for usual case.
@@ -369,12 +369,12 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                     int oldBucket = bucket(oldFreeSpace);
 
                     if (oldBucket != newBucket) {
-                        if (removeDataPage(buf, oldBucket))
-                            put(null, buf, newBucket);
+                        if (removeDataPage(page, buf, io, oldBucket))
+                            put(null, page, buf, newBucket);
                     }
                 }
                 else
-                    put(null, buf, newBucket);
+                    put(null, page, buf, newBucket);
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
