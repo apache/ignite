@@ -17,6 +17,9 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -301,7 +304,16 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        throw new UnsupportedOperationException("usedSpaceSize operation is not yet supported.");
+        Path p = new File(getWorkDirectory()).toPath();
+
+        try {
+            SizeFileVisitor visitor = new SizeFileVisitor();
+            Files.walkFileTree(p, visitor);
+            return visitor.getSize();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed calculation of used space size.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -401,6 +413,42 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
+        }
+    }
+
+    /**
+     * File visitor to calculate total size of files.
+     */
+    private static class SizeFileVisitor implements  FileVisitor<Path> {
+        /** File size accumulator. */
+        long size;
+
+        /** {@inheritDoc} */
+        @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            size += attrs.size();
+            return FileVisitResult.CONTINUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        /**
+         * @return Total size of visited files.
+         */
+        long getSize() {
+            return size;
         }
     }
 }
