@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             CheckExpiry(TimeSpan.FromSeconds(15), cache1);
             Assert.AreNotSame(cache, cache1);
-            Assert.AreSame(cache1, (CacheEx) holder.GetCacheWithExpiry(15));
+            Assert.AreSame(cache1, holder.GetCacheWithExpiry(15));
 
             // Check rounding.
             var cache2 = (CacheEx) holder.GetCacheWithExpiry(DateTime.UtcNow.AddSeconds(15.1));

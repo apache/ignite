@@ -61,9 +61,8 @@ namespace Apache.Ignite.AspNet.Impl
                 "The number of elements in the source collection is greater than the available space " +
                 "from specified index to the end of the array.");
 
-            var i = 0;
             foreach (var key in _collection.GetKeys())
-                array.SetValue(key, i++);
+                array.SetValue(key, index++);
         }
 
         /** <inheritdoc /> */

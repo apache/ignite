@@ -44,6 +44,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.IsEmpty(col);
             Assert.IsEmpty(col.OfType<string>().ToArray());
             Assert.IsEmpty(col.Keys);
+            Assert.IsNotNull(col.SyncRoot);
 
             col.Clear();
             col.Remove("key");
@@ -93,7 +94,10 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.AreEqual("val2", col["key"]);
             Assert.AreEqual(3, col["1"]);
 
-            // TODO: CopyTo, syncroot
+            // CopyTo.
+            var keys = new string[5];
+            col.CopyTo(keys, 2);
+            Assert.AreEqual(new[] {null, null, "key", "1", null}, keys);
 
             // Remove.
             col["2"] = 2;
