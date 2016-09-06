@@ -25,7 +25,6 @@ import javax.cache.integration.CompletionListenerFuture;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -142,6 +141,38 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        final Integer key = primaryKeys(cache, 1, 100_000).get(0);
+
+        storeMap.put(key, 100);
+
+        try {
+            Integer res = cache.invoke(key, new EntryProcessor<Integer, Integer, Integer>() {
+                @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+                    return e.getValue();
+                }
+            });
+
+            assertEquals((Integer)100, res);
+
+            checkTtl(key, 500, true);
+
+            assertEquals((Integer)100, cache.localPeek(key, CachePeekMode.ONHEAP));
+
+            U.sleep(600);
+
+            checkExpired(key);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
