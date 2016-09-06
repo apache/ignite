@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
@@ -40,14 +37,11 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
@@ -56,7 +50,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -103,8 +96,6 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(getServerNodeCount());
@@ -672,190 +663,6 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testTwoBackupKeepBinary() throws Exception {
-        doTestInvokeKeepBinary(new CacheConfiguration<Integer, Integer>()
-            .setBackups(2)
-            .setName(CACHE_NAME)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAtomicityMode(TRANSACTIONAL)
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTestInvokeKeepBinary(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).createCache(ccfg);
-
-        try {
-            invokeKeepBinary(cache, null, false, false);
-
-            invokeKeepBinary(cache, null, true, false);
-
-            invokeKeepBinary(cache, null, false, true);
-
-            invokeKeepBinary(cache, PESSIMISTIC, false, false);
-
-            invokeKeepBinary(cache, PESSIMISTIC, true, false);
-
-            invokeKeepBinary(cache, PESSIMISTIC, false, true);
-
-            invokeKeepBinary(cache, OPTIMISTIC, false, false);
-
-            invokeKeepBinary(cache, OPTIMISTIC, true, false);
-
-            invokeKeepBinary(cache, OPTIMISTIC, false, true);
-        }
-        catch (Exception e) {
-            log.error("Test failed. ", e);
-
-            fail("Test failed.");
-        }
-        finally {
-            for (int i = 0; i <= NODES; i++) {
-                Transaction tx = grid(i).transactions().tx();
-
-                if (tx != null)
-                    tx.close();
-            }
-
-            grid(0).destroyCache(ccfg.getName());
-        }
-    }
-
-    /**
-     * @param cache0 Cache.
-     * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
-     * @param client Operations will be performed from client node.
-     * @throws Exception If failed.
-     */
-    private void invokeKeepBinary(IgniteCache<Integer, Integer> cache0, @Nullable TransactionConcurrency txMode,
-        boolean client, boolean primary) throws Exception {
-        Set<Integer> keys = new LinkedHashSet<>();
-
-        for (int i = 0; i < NODES; i++) {
-            ClusterNode node = grid(i).cluster().localNode();
-
-            for (int key = 0; key < KEYS_CNT; key++) {
-                if (affinity(cache0).isPrimary(node, key))
-                    keys.add(key);
-            }
-        }
-
-        for (final Integer key : keys) {
-            cntr.set(0);
-
-            log.info("Test invoke [key=" + key + ", txMode=" + txMode + ']');
-
-            Ignite ignite = getAffinityOrClientNode(cache0, client, primary, key);
-
-            IgniteCache<Integer, TestValue2> cache = ignite.<Integer, TestValue2>cache(cache0.getName()).withSendValueToBackup();
-
-            IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
-
-            cache.remove(key);
-
-            KeepBinaryEntryProcessor processor = new KeepBinaryEntryProcessor(null);
-
-            Transaction tx = startTx(ignite, txMode);
-
-            BinaryObject res = (BinaryObject)binaryCache.invoke(key, processor, 1, 2, 3);
-
-            if (tx != null)
-                tx.commit();
-
-            assertNull(res);
-
-            checkValue(key, null);
-
-            assertEquals(1, cntr.get());
-
-            // Put.
-            cache.put(key, new TestValue2(1));
-
-            processor = new KeepBinaryEntryProcessor(1);
-
-            tx = startTx(ignite, txMode);
-
-            res = (BinaryObject)binaryCache.invoke(key, processor, 1, 2, 3);
-
-            if (tx != null)
-                tx.commit();
-
-            assertTrue(res.hasField(TestValue2.VAL));
-            assertEquals(1, res.field(TestValue2.VAL));
-
-            checkValue(key, new TestValue2(2));
-
-            assertEquals(2, cntr.get());
-
-            assertFalse("Entry processor was invoked from backup", fail);
-        }
-
-        // Put all \ invoke all.
-
-        cntr.set(0);
-
-        log.info("Test invoke [key=" + Arrays.toString(keys.toArray()) + ", txMode=" + txMode + ']');
-
-        Ignite ignite = grid(0);
-
-        IgniteCache<Integer, TestValue2> cache = ignite.<Integer, TestValue2>cache(cache0.getName()).withSendValueToBackup();
-
-        IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
-
-        cache.removeAll(keys);
-
-        KeepBinaryEntryProcessor processor = new KeepBinaryEntryProcessor(null);
-
-        Transaction tx = startTx(ignite, txMode);
-
-        Map res = (Map)binaryCache.invokeAll(keys, processor, 1, 2, 3);
-
-        if (tx != null)
-            tx.commit();
-
-        assertTrue(res.isEmpty());
-
-        checkValue(keys, null);
-
-        assertEquals(keys.size(), cntr.get());
-
-        for (Integer key : keys)
-            cache.put(key, new TestValue2(1));
-
-        processor = new KeepBinaryEntryProcessor(1);
-
-        tx = startTx(ignite, txMode);
-
-        res = (Map)binaryCache.invokeAll(keys, processor, 1, 2, 3);
-
-        if (tx != null)
-            tx.commit();
-
-        assertEquals(keys.size() * 2, cntr.get());
-
-        for (Object o : res.entrySet()) {
-            Object bObj = ((EntryProcessorResult)((Map.Entry)o).getValue()).get();
-
-            assertNotNull(bObj);
-            assertTrue(bObj instanceof BinaryObject);
-
-            BinaryObject bObj0 = (BinaryObject)bObj;
-
-            assertTrue(bObj0.hasField(TestValue2.VAL));
-            assertEquals(1, bObj0.field(TestValue2.VAL));
-        }
-
-        for (Integer key : keys)
-            checkValue(key, new TestValue2(2));
-
-        assertFalse("Entry processor was invoked from backup", fail);
-    }
-
-    /**
      * @param cache0 Cache.
      * @param client Need client node.
      * @param primary Need primary node.
@@ -975,7 +782,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
 
             clientNodeId = null;
 
-            log.error("Iteration cnt: " + i);
+            log.info("Iteration cnt: " + i);
         }
 
         cache0.removeAll();
