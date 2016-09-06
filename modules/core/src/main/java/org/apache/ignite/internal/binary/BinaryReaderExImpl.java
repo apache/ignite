@@ -1421,13 +1421,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     @Nullable Object deserialize() throws BinaryObjectException {
-        String oldName = IgniteUtils.setCurrentIgniteName(ctx.configuration().getGridName());
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
             return deserialize0();
         }
         finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
         }
     }
 

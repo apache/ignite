@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
@@ -1933,6 +1934,9 @@ public class IgnitionEx {
                 else
                     marsh = new BinaryMarshaller();
             }
+
+            if (marsh instanceof AbstractNodeNameAwareMarshaller)
+                ((AbstractNodeNameAwareMarshaller)marsh).nodeName(cfg.getGridName());
 
             myCfg.setMarshaller(marsh);
 

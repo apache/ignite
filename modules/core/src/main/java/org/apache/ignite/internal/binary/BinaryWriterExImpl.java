@@ -140,13 +140,14 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
-        String oldName = IgniteUtils.setCurrentIgniteName(ctx.configuration().getGridName());
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
             marshal0(obj, enableReplace);
         }
         finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
         }
     }
 

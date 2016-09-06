@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.AbstractMarshaller;
+import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -65,9 +65,9 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class JdkMarshaller extends AbstractMarshaller {
+public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     /** {@inheritDoc} */
-    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override public void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         ObjectOutputStream objOut = null;
@@ -89,7 +89,7 @@ public class JdkMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
+    @Override public byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
         GridByteArrayOutputStream out = null;
 
         try {
@@ -106,7 +106,7 @@ public class JdkMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -133,7 +133,7 @@ public class JdkMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         GridByteArrayInputStream in = null;
 
         try {
