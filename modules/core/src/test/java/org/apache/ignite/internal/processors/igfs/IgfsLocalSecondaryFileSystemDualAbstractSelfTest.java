@@ -170,6 +170,22 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    public void testMkdirsInsideSymlink() throws Exception {
+        if (U.isWindows())
+            return;
+
+        createSymlinks();
+
+        igfs.mkdirs(SUBSUBDIR);
+
+        assertTrue(Files.isDirectory(dirLinkDest.toPath().resolve("subdir/subsubdir")));
+        assertTrue(Files.isDirectory(dirLinkSrc.toPath().resolve("subdir/subsubdir")));
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
     private void createSymlinks() throws Exception {
         assert dirLinkDest.mkdir();
 
