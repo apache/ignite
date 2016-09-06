@@ -15,29 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.tree.reuse;
+package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Reuse list.
+ *
  */
-public interface ReuseList {
+public interface CheckpointListener {
     /**
-     * @param bag Reuse bag.
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    public void addForRecycle(ReuseBag bag) throws IgniteCheckedException;
-
-    /**
-     * @return Page ID or {@code 0} if none available.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long takeRecycledPage() throws IgniteCheckedException;
-
-    /**
-     * @return Number of recycled pages it contains.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long recycledPagesCount() throws IgniteCheckedException;
+    public void onCheckpointBegin() throws IgniteCheckedException;
 }

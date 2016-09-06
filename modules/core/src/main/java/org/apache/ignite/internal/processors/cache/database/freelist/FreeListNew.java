@@ -17,27 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
@@ -60,30 +59,23 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private final AtomicReferenceArray<long[]> buckets = new AtomicReferenceArray<>(BUCKETS);
 
     /** */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** */
     private final int MIN_SIZE_FOR_BUCKET;
-
-    /** */
-    private final IgniteLogger log;
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
-     * @param cctx Cache context.
+     * @param wal Write ahead log manager.
      * @throws IgniteCheckedException If failed.
      */
     public FreeListNew(int cacheId,
         PageMemory pageMem,
         ReuseList reuseList,
-        GridCacheContext<?, ?> cctx,
-        long metaPageId) throws IgniteCheckedException {
-        super(cacheId, pageMem, cctx.shared().wal(), metaPageId);
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        boolean initNew) throws IgniteCheckedException {
+        super(cacheId, pageMem, BUCKETS, wal, metaPageId, initNew);
         this.reuseList = reuseList == null ? this : reuseList;
-        this.cctx = cctx;
-
         int pageSize = pageMem.pageSize();
 
         assert U.isPow2(pageSize) : pageSize;
@@ -100,23 +92,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         }
 
         this.shift = shift;
-
-        log = cctx.logger(getClass());
-
-//        try {
-//            for (int b = 0; b < BUCKETS; b++) {
-//                for (int i = 0; i < 8; i++)
-//                    addStripe(b);
-//            }
-//        }
-//        catch (Exception e) {
-//            throw new IgniteException(e);
-//        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int buckets() {
-        return BUCKETS;
     }
 
     /**
@@ -149,7 +124,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        int rowSize = getRowSize(cctx.cacheObjectContext(), row);
+        int rowSize = getRowSize(null, row);
 
         int written = 0;
 
@@ -190,7 +165,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
         long nextLink;
 
-        try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
+        try (Page page = pageMem.page(cacheId, pageId)) {
             nextLink = writePage(pageId, page, rmvRow, null, itemId);
         }
 
@@ -198,7 +173,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 
-            try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
+            try (Page page = pageMem.page(cacheId, pageId)) {
                 nextLink = writePage(pageId, page, rmvRow, null, itemId);
             }
         }
@@ -227,7 +202,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     }
 
     /** {@inheritDoc} */
-    @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
+    @Override public long takeRecycledPage() throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
         return takeEmptyPage(REUSE_BUCKET, null);
@@ -258,7 +233,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         new PageHandler<CacheDataRow, DataPageIO, Integer>() {
             @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
                 throws IgniteCheckedException {
-                CacheObjectContext coctx = cctx.cacheObjectContext();
+                CacheObjectContext coctx = null;
 
                 int rowSize = getRowSize(coctx, row);
                 int oldFreeSpace = io.getFreeSpace(buf);
@@ -293,18 +268,18 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
              * @throws IgniteCheckedException If failed.
              */
             private int addRow(
-                    CacheObjectContext coctx,
-                    Page page,
-                    ByteBuffer buf,
-                    DataPageIO io,
-                    CacheDataRow row,
-                    int rowSize
+                CacheObjectContext coctx,
+                Page page,
+                ByteBuffer buf,
+                DataPageIO io,
+                CacheDataRow row,
+                int rowSize
             ) throws IgniteCheckedException {
                 io.addRow(coctx, buf, row, rowSize);
 
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new DataPageInsertRecord(cctx.cacheId(), page.id(),
+                    wal.log(new DataPageInsertRecord(cacheId, page.id(),
                             row.key(), row.value(), row.version(), row.expireTime(), rowSize));
 
                 return rowSize;
@@ -322,13 +297,13 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
              * @throws IgniteCheckedException If failed.
              */
             private int addRowFragment(
-                    CacheObjectContext coctx,
-                    Page page,
-                    ByteBuffer buf,
-                    DataPageIO io,
-                    CacheDataRow row,
-                    int written,
-                    int rowSize
+                CacheObjectContext coctx,
+                Page page,
+                ByteBuffer buf,
+                DataPageIO io,
+                CacheDataRow row,
+                int written,
+                int rowSize
             ) throws IgniteCheckedException {
                 // Read last link before the fragment write, because it will be updated there.
                 long lastLink = row.link();

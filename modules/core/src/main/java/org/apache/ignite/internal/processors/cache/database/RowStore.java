@@ -79,4 +79,11 @@ public class RowStore {
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
         freeList.insertDataRow(row);
     }
+
+    /**
+     * @return Free list.
+     */
+    public FreeList freeList() {
+        return freeList;
+    }
 }

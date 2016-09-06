@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.processors.cache.database.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
@@ -61,10 +62,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 /**
  * Striped doubly-linked list of page IDs optionally organized in buckets.
  */
-public abstract class PagesList extends DataStructure {
-    /** */
-    private AtomicIntegerArray cnts = new AtomicIntegerArray(256);
-
+public abstract class PagesList extends DataStructure implements CheckpointListener {
     /** */
     private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
         @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
@@ -280,6 +278,12 @@ public abstract class PagesList extends DataStructure {
     /** */
     private long metaPageId;
 
+    /** */
+    private final int buckets;
+
+    /** */
+    private final AtomicIntegerArray cnts;
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -288,46 +292,61 @@ public abstract class PagesList extends DataStructure {
      */
     public PagesList(int cacheId,
         PageMemory pageMem,
+        int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId)
-        throws IgniteCheckedException {
+        long metaPageId,
+        boolean initNew) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
-        Map<Integer, GridLongList> buckets = new HashMap<>();
+        this.buckets = buckets;
 
-        long nextPageId = metaPageId;
+        cnts = new AtomicIntegerArray(buckets);
 
-        while (nextPageId != 0) {
-            try (Page page = page(metaPageId)) {
-                ByteBuffer buf = page.getForRead();
+        this.metaPageId = metaPageId;
 
-                try {
-                    PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
-
-                    io.getBucketsData(buf, buckets);
-
-                    nextPageId = io.getNextMetaPageId(buf);
+        if (metaPageId != 0L) {
+            if (initNew) {
+                try (Page page = page(metaPageId)) {
+                    initPage(metaPageId, page, PagesListMetaIO.VERSIONS.latest(), wal);
                 }
-                finally {
-                    page.releaseRead();
+            }
+            else {
+                Map<Integer, GridLongList> bucketsData = new HashMap<>();
+
+                long nextPageId = metaPageId;
+
+                while (nextPageId != 0) {
+                    try (Page page = page(metaPageId)) {
+                        ByteBuffer buf = page.getForRead();
+
+                        try {
+                            PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+
+                            io.getBucketsData(buf, bucketsData);
+
+                            nextPageId = io.getNextMetaPageId(buf);
+                        }
+                        finally {
+                            page.releaseRead();
+                        }
+                    }
+                }
+
+                for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet()) {
+                    long[] old = getBucket(e.getKey());
+                    assert old == null;
+
+                    long[] upd = e.getValue().array();
+
+                    boolean ok = casBucket(e.getKey(), null, upd);
+                    assert ok;
                 }
             }
         }
-
-        for (Map.Entry<Integer, GridLongList> e : buckets.entrySet()) {
-            long[] old = getBucket(e.getKey());
-            assert old == null;
-
-            long[] upd = e.getValue().array();
-
-            boolean ok = casBucket(e.getKey(), null, upd);
-            assert ok;
-        }
-
-        this.metaPageId = nextPageId;
     }
 
-    private void storeMeta() throws IgniteCheckedException {
-        final int buckets = buckets();
+    /** {@inheritDoc} */
+    public void onCheckpointBegin() throws IgniteCheckedException {
+        assert metaPageId != 0;
 
         Page curPage = null;
         ByteBuffer curBuf = null;
@@ -401,11 +420,6 @@ public abstract class PagesList extends DataStructure {
             }
         }
     }
-
-    /**
-     * @return Buckets number.
-     */
-    protected abstract int buckets();
 
     /**
      * @param bucket Bucket index.

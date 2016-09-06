@@ -21,8 +21,8 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
+import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -52,21 +52,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Last updated counter.
      */
     public long lastUpdatedPartitionCounter(int part);
-
-    /**
-     * @return Reuse list.
-     */
-    public ReuseList reuseList();
-
-    /**
-     * @return Free list.
-     */
-    public FreeList freeList();
-
-    /**
-     * @return Meta store.
-     */
-    public MetaStore meta();
 
     /**
      * @param entry Cache entry.
@@ -212,6 +197,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
+    public RootPage indexRootPage(String idxName) throws IgniteCheckedException;
+
+    public ReuseList indexReuseList();
+
     /**
      *
      */
@@ -261,6 +250,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @throws IgniteCheckedException If failed.
          */
         public void destroy() throws IgniteCheckedException;
+
+        /**
+         * @return Row store.
+         */
+        public RowStore rowStore();
 
         /**
          * Data store listener.

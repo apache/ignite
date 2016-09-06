@@ -44,15 +44,11 @@ public final class ReuseListNew extends PagesList implements ReuseList {
     public ReuseListNew(int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        long metaPageId) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal, metaPageId);
+        long metaPageId,
+        boolean initNew) throws IgniteCheckedException {
+        super(cacheId, pageMem, 1, wal, metaPageId, initNew);
 
         reuseList = this;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int buckets() {
-        return 1;
     }
 
     /** {@inheritDoc} */
@@ -68,10 +64,7 @@ public final class ReuseListNew extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public long takeRecycledPage(DataStructure client, ReuseBag bag) throws IgniteCheckedException {
-//        if (bag.pollFreePage() != 0L) // TODO drop client and bag from the signature
-//            throw new IllegalStateException();
-
+    @Override public long takeRecycledPage() throws IgniteCheckedException {
         return takeEmptyPage(0, null);
     }
 

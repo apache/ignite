@@ -79,9 +79,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        RootPage page = cctx.offheap().meta().getOrAllocateForTree(name);
+        RootPage page = cctx.offheap().indexRootPage(name);
 
-        tree = new H2Tree(name, cctx.offheap().reuseList(), cctx.cacheId(),
+        tree = new H2Tree(name, cctx.offheap().indexReuseList(), cctx.cacheId(),
             dbMgr.pageMemory(), cctx.shared().wal(), tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
             @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                 throws IgniteCheckedException {

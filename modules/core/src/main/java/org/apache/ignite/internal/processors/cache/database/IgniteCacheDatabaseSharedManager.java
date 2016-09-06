@@ -34,6 +34,9 @@ import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMess
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeListNew;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,6 +46,9 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
     /** */
     protected PageMemory pageMem;
+
+    /** */
+    private FreeListNew freeList;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -55,7 +61,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             pageMem = initMemory(dbCfg);
 
             pageMem.start();
+
+            initDataStructures();
         }
+    }
+
+    protected void initDataStructures() throws IgniteCheckedException {
+        freeList = new FreeListNew(0, pageMem, null, cctx.wal(), 0L, true);
+    }
+
+    public FreeList globalFreeList() {
+        return freeList;
+    }
+
+    public ReuseList globalReuseList() {
+        return freeList;
     }
 
     /** {@inheritDoc} */
