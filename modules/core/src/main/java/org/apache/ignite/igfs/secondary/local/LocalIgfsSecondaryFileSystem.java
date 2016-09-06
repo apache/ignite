@@ -441,7 +441,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Internal create routine.
      *
      * @param path Path.
-     * @param overwrite Overwirte flag.
+     * @param overwrite Overwrite flag.
      * @param bufSize Buffer size.
      * @return Output stream.
      */
