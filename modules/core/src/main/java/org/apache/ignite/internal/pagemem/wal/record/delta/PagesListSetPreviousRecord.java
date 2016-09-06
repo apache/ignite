@@ -56,6 +56,6 @@ public class PagesListSetPreviousRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.PAGES_LIST_SET_NEXT;
+        return RecordType.PAGES_LIST_SET_PREVIOUS;
     }
 }

@@ -119,9 +119,12 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
      * @return Bucket.
      */
     private int bucket(int freeSpace) {
-        assert freeSpace > 0: freeSpace;
+        assert freeSpace > 0 : freeSpace;
 
         int bucket = freeSpace >>> shift;
+
+        if (bucket == BUCKETS - 1)
+            bucket--;
 
         assert bucket >= 0 && bucket < BUCKETS : bucket;
 
@@ -153,7 +156,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             long pageId = 0;
             boolean newPage = true;
 
-            for (int i = bucket; i < BUCKETS; i++) {
+            for (int i = bucket; i < BUCKETS - 1; i++) {
                 pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
 
                 if (pageId != 0L) {
