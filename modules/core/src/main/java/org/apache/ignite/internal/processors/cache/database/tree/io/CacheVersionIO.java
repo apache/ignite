@@ -118,6 +118,9 @@ public class CacheVersionIO {
     }
 
     /**
+     * Reads GridCacheVersion instance from the given buffer. Moves buffer's position by the number of used
+     * bytes.
+     *
      * @param buf Byte buffer.
      * @param allowNull Is {@code null} version allowed.
      * @return Version.

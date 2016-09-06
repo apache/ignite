@@ -23,7 +23,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 
 /**
- * Noop stub for WAL manager.
+ * No-op stub for WAL manager.
  */
 public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapter
     implements IgniteWriteAheadLogManager {
@@ -33,7 +33,7 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging() throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
 

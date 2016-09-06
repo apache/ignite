@@ -449,7 +449,7 @@ public class IgniteConfiguration {
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
     /** Database configuration. */
-    private DatabaseConfiguration dbCfg;
+    private MemoryConfiguration dbCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -486,7 +486,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         daemon = cfg.isDaemon();
-        dbCfg = cfg.getDatabaseConfiguration();
+        dbCfg = cfg.getMemoryConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -2062,21 +2062,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets database configuration.
+     * Gets memory configuration.
      *
-     * @return Database configuration.
+     * @return Memory configuration.
      */
-    public DatabaseConfiguration getDatabaseConfiguration() {
+    public MemoryConfiguration getMemoryConfiguration() {
         return dbCfg;
     }
 
     /**
-     * Sets database configuration.
+     * Sets memory configuration.
      *
-     * @param dbCfg Database configuration.
+     * @param dbCfg Memory configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setDatabaseConfiguration(DatabaseConfiguration dbCfg) {
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
         this.dbCfg = dbCfg;
 
         return this;

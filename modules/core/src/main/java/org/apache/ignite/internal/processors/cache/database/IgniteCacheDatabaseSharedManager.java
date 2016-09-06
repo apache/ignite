@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -45,11 +45,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
+        MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
         if (!cctx.kernalContext().clientNode()) {
             if (dbCfg == null)
-                dbCfg = new DatabaseConfiguration();
+                dbCfg = new MemoryConfiguration();
 
             pageMem = initMemory(dbCfg);
 
@@ -151,7 +151,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
-    protected PageMemory initMemory(DatabaseConfiguration dbCfg) {
+    protected PageMemory initMemory(MemoryConfiguration dbCfg) {
         String path = dbCfg.getFileCacheAllocationPath();
 
         int concLvl = dbCfg.getConcurrencyLevel();

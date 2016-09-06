@@ -57,7 +57,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1947,12 +1947,12 @@ public class IgnitionEx {
 
             initializeDefaultCacheConfiguration(myCfg);
 
-            if (myCfg.getDatabaseConfiguration() == null) {
-                DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+            if (myCfg.getMemoryConfiguration() == null) {
+                MemoryConfiguration dbCfg = new MemoryConfiguration();
 
                 dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-                myCfg.setDatabaseConfiguration(dbCfg);
+                myCfg.setMemoryConfiguration(dbCfg);
             }
 
             return myCfg;

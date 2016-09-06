@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Database configuration used to configure database.
  */
-public class DatabaseConfiguration implements Serializable {
+public class MemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
