@@ -30,26 +30,6 @@ import java.io.OutputStream;
  */
 public class MarshallerUtils {
     /**
-     * Marshal object with provided node name.
-     *
-     * @param name Grid name.
-     * @param marsh Marshaller.
-     * @param obj Object to marshal.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static byte[] marshal(String name, Marshaller marsh, @Nullable Object obj) throws IgniteCheckedException {
-        String oldName = IgniteUtils.setCurrentIgniteName(name);
-
-        try {
-            return marsh.marshal(obj);
-        }
-        finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
-        }
-    }
-
-    /**
      * Marshal object to stream and set grid name thread local.
      *
      * @param name Grid name.
@@ -79,7 +59,7 @@ public class MarshallerUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static byte[] marshal(GridKernalContext ctx, @Nullable Object obj) throws IgniteCheckedException {
-        return marshal(ctx.gridName(), ctx.config().getMarshaller(), obj);
+        return ctx.config().getMarshaller().marshal(obj);
     }
 
     /**

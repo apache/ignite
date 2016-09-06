@@ -595,7 +595,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         if (keyBytes == null) {
             try {
-                keyBytes = MarshallerUtils.marshal(ignite.name(), ignite.configuration().getMarshaller(), key.key());
+                keyBytes = ignite.configuration().getMarshaller().marshal(key.key());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);

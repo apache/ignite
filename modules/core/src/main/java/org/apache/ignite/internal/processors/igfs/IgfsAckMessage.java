@@ -98,7 +98,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
         super.prepareMarshal(marsh, kernalCtx);
 
         if (err != null)
-            errBytes = MarshallerUtils.marshal(kernalCtx.gridName(), marsh, err);
+            errBytes = marsh.marshal(err);
     }
 
     /** {@inheritDoc} */

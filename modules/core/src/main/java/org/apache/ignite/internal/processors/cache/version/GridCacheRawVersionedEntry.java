@@ -242,13 +242,13 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (keyBytes == null) {
             key.prepareMarshal(ctx);
 
-            keyBytes = MarshallerUtils.marshal(ctx.kernalContext().gridName(), marsh, key);
+            keyBytes = marsh.marshal(key);
         }
 
         if (valBytes == null && val != null) {
             val.prepareMarshal(ctx);
 
-            valBytes = MarshallerUtils.marshal(ctx.kernalContext().gridName(), marsh, val);
+            valBytes = marsh.marshal(val);
         }
     }
 

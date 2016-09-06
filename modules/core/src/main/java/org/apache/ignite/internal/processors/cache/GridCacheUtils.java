@@ -991,7 +991,7 @@ public class GridCacheUtils {
             }
         }
 
-        return MarshallerUtils.marshal(ctx.gridName(), ctx.marshaller(), obj);
+        return ctx.marshaller().marshal(obj);
     }
 
     /**
@@ -1901,6 +1901,6 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static byte[] marshal(GridCacheSharedContext ctx, Object obj) throws IgniteCheckedException {
-        return MarshallerUtils.marshal(ctx.gridName(), ctx.marshaller(), obj);
+        return ctx.marshaller().marshal(obj);
     }
 }

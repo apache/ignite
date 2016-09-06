@@ -128,7 +128,6 @@ public class BinaryContext {
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
     private static final Set<String> BINARYLIZABLE_SYS_CLSS;
 
-    /** Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
 
@@ -225,7 +224,7 @@ public class BinaryContext {
     private IgniteLogger log;
 
     /** */
-    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
+    private final OptimizedMarshaller optmMarsh;
 
     /** Compact footer flag. */
     private boolean compactFooter;
@@ -241,6 +240,8 @@ public class BinaryContext {
     public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
         assert metaHnd != null;
         assert igniteCfg != null;
+
+        optmMarsh = new OptimizedMarshaller(false).nodeName(igniteCfg.getGridName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;

@@ -176,7 +176,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
-                byte[] arr = MarshallerUtils.marshal(ctx.configuration().getGridName(), ctx.optimizedMarsh(), obj);
+                byte[] arr = ctx.optimizedMarsh().marshal(obj);
 
                 writeInt(arr.length);
 

@@ -159,7 +159,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         OptimizedObjectOutputStream objOut = null;
@@ -182,7 +182,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
         OptimizedObjectOutputStream objOut = null;
 
         try {
@@ -204,7 +204,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         OptimizedObjectInputStream objIn = null;
@@ -233,7 +233,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
         OptimizedObjectInputStream objIn = null;

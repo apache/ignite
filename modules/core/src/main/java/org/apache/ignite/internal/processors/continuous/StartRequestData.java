@@ -98,7 +98,7 @@ class StartRequestData implements Externalizable {
     void p2pMarshal(Marshaller marsh, final GridKernalContext kernalCtx) throws IgniteCheckedException {
         assert marsh != null;
 
-        prjPredBytes = MarshallerUtils.marshal(kernalCtx.gridName(), marsh, prjPred);
+        prjPredBytes = marsh.marshal(prjPred);
     }
 
     /**

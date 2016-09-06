@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -110,7 +109,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
 
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final JdkMarshaller marsh = new JdkMarshaller();
 
     /** Connection URL. */
     private String connUrl = DFLT_CONN_URL;
@@ -152,7 +151,6 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private IgniteLogger log;
 
     /** Marshaller. */
-    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Init guard. */
@@ -561,7 +559,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return MarshallerUtils.marshal(ignite.name(), marsh, obj);
+        return marsh.marshal(obj);
     }
 
     /**
@@ -593,5 +591,15 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      */
     protected CacheStoreSession session() {
         return ses;
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     */
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+
+        marsh.nodeName(ignite.name());
     }
 }
