@@ -40,7 +40,6 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -64,6 +63,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -505,7 +505,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -533,11 +533,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery qry;
+        final CacheQuery<Map.Entry<K, V>> qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        final CacheQueryFuture fut;
+        final CacheQueryFuture<Map.Entry<K, V>> fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -561,8 +561,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -577,38 +577,21 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Cache.Entry<K, V> cur;
+            private Map.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Cache.Entry<K, V> e = cur;
+                Map.Entry<K, V> e = cur;
 
                 cur = null;
 
-                return e;
+                return new CacheEntryImpl<>(e.getKey(), e.getValue());
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (cur != null)
-                    return true;
-
-                Object next = fut.next();
-
-                //Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
-                // instead of Iterator<Map.Entry> due to IndexingSpi interface
-                if (next == null)
-                    return false;
-
-                if (next instanceof Cache.Entry)
-                    cur = (Cache.Entry)next;
-                else {
-                    Map.Entry e = (Map.Entry)next;
-                    cur = new CacheEntryImpl(e.getKey(), e.getValue());
-                }
-
-                return true;
+                return cur != null || (cur = fut.next()) != null;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
@@ -706,6 +689,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
+            convertToBinary(qry);
+
             final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
             if (qry instanceof ContinuousQuery)
@@ -779,6 +764,44 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
+    }
+
+    /**
+     * Convert query arguments to BinaryObjects if binary marshaller used.
+     *
+     * @param qry Query.
+     */
+    private void convertToBinary(final Query qry) {
+        if (ctx.binaryMarshaller()) {
+            if (qry instanceof SqlQuery) {
+                final SqlQuery sqlQry = (SqlQuery) qry;
+
+                convertToBinary(sqlQry.getArgs());
+            }
+            else if (qry instanceof SpiQuery) {
+                final SpiQuery spiQry = (SpiQuery) qry;
+
+                convertToBinary(spiQry.getArgs());
+            }
+            else if (qry instanceof SqlFieldsQuery) {
+                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
+
+                convertToBinary(fieldsQry.getArgs());
+            }
+        }
+    }
+
+    /**
+     * Converts query arguments to BinaryObjects if binary marshaller used.
+     *
+     * @param args Arguments.
+     */
+    private void convertToBinary(final Object[] args) {
+        if (args == null)
+            return;
+
+        for (int i = 0; i < args.length; i++)
+            args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
     }
 
     /**
