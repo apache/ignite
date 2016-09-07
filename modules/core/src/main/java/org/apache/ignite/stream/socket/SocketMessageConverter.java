@@ -25,8 +25,7 @@ public interface SocketMessageConverter<T> {
      * Converter message represented by array of bytes to object.
      *
      * @param msg Message.
-     * @param gridName Grid name.
      * @return Converted object.
      */
-    public T convert(byte[] msg, String gridName);
+    public T convert(byte[] msg);
 }

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.stream.StreamAdapter;
@@ -164,7 +165,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             }
 
             @Override public void onMessage(GridNioSession ses, byte[] msg) {
-                addMessage(converter.convert(msg, ses.gridName()));
+                addMessage(converter.convert(msg));
             }
         };
 
@@ -174,7 +175,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             new GridDelimitedParser(delim, directMode);
 
         if (converter == null)
-            converter = new DefaultConverter<>();
+            converter = new DefaultConverter<>(getIgnite().name());
 
         GridNioFilter codec = new GridNioCodecFilter(parser, log, directMode);
 
@@ -216,12 +217,21 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      */
     private static class DefaultConverter<T> implements SocketMessageConverter<T> {
         /** Marshaller. */
-        private static final JdkMarshaller MARSH = new JdkMarshaller();
+        private final Marshaller marsh;
+
+        /**
+         * Constructor.
+         *
+         * @param gridName Grid name.
+         */
+        private DefaultConverter(@Nullable String gridName) {
+            marsh = MarshallerUtils.withNodeName(new JdkMarshaller(), gridName);
+        }
 
         /** {@inheritDoc} */
-        @Override public T convert(byte[] msg, final String gridName) {
+        @Override public T convert(byte[] msg) {
             try {
-                return MarshallerUtils.unmarshal(gridName, MARSH, msg, null);
+                return MarshallerUtils.unmarshal(gridName, marsh, msg, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
