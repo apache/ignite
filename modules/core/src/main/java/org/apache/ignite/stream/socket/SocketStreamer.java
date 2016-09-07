@@ -231,7 +231,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
         /** {@inheritDoc} */
         @Override public T convert(byte[] msg) {
             try {
-                return MarshallerUtils.unmarshal(gridName, marsh, msg, null);
+                return marsh.unmarshal(msg, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
