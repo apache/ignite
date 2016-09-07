@@ -37,12 +37,12 @@ public class PlatformUtilityCache {
     }
 
     /**
-     * Called when marshaller cache has started.
+     * Called when cache has started.
      *
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    public void onCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         // No-op.

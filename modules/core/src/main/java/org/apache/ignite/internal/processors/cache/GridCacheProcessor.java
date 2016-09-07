@@ -819,7 +819,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
         if (ctx.platform() != null && ctx.platform().utilityCache() != null)
-            ctx.platform().utilityCache().onMarshallerCacheStarted(ctx);
+            ctx.platform().utilityCache().onCacheStarted(ctx);
 
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
