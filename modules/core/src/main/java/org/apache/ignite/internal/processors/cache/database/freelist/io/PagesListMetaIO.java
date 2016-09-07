@@ -150,7 +150,7 @@ public class PagesListMetaIO extends PageIO {
             long tailId = buf.getLong(off + 2);
             assert tailId != 0;
 
-            long headId = buf.getLong(off + 2);
+            long headId = buf.getLong(off + 10);
             assert headId != 0;
 
             GridLongList list = res.get(bucket);
@@ -158,8 +158,8 @@ public class PagesListMetaIO extends PageIO {
             if (list == null)
                 res.put(bucket, list = new GridLongList());
 
-            list.add(headId);
             list.add(tailId);
+            list.add(headId);
 
             off += ITEM_SIZE;
         }

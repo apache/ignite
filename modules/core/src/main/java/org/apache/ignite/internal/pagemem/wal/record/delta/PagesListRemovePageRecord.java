@@ -27,31 +27,31 @@ import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesLis
  */
 public class PagesListRemovePageRecord extends PageDeltaRecord {
     /** */
-    private final long dataPageId;
+    private final long rmvdPageId;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param dataPageId Data page ID to remove.
+     * @param rmvdPageId Data page ID to remove.
      */
-    public PagesListRemovePageRecord(int cacheId, long pageId, long dataPageId) {
+    public PagesListRemovePageRecord(int cacheId, long pageId, long rmvdPageId) {
         super(cacheId, pageId);
 
-        this.dataPageId = dataPageId;
+        this.rmvdPageId = rmvdPageId;
     }
 
     /**
-     * @return Data page ID.
+     * @return Removed page ID.
      */
-    public long dataPageId() {
-        return dataPageId;
+    public long removedPageId() {
+        return rmvdPageId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(GridCacheContext<?, ?> cctx, ByteBuffer buf) throws IgniteCheckedException {
         PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
 
-        boolean rmvd = io.removePage(buf, dataPageId);
+        boolean rmvd = io.removePage(buf, rmvdPageId);
 
         assert rmvd;
     }

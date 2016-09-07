@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -55,14 +62,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  *
@@ -109,6 +108,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     protected void initDataStructures() throws IgniteCheckedException {
         if (cctx.ttl().eagerTtlEnabled()) {
             String name = "PendingEntries";
@@ -614,13 +616,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     *
-     */
-    protected void onCacheDataStoreDestroyed(String name) throws IgniteCheckedException {
-        // No-op
     }
 
     /**

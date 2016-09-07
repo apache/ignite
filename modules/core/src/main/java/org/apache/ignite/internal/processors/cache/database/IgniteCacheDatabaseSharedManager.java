@@ -66,15 +66,28 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
     }
 
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     protected void initDataStructures() throws IgniteCheckedException {
-        freeList = new FreeListNew(0, pageMem, null, cctx.wal(), 0L, true);
+        freeList = new FreeListNew(0, cctx.gridName(), pageMem, null, cctx.wal(), 0L, true);
     }
 
+    /**
+     * @return Node-global free list.
+     */
     public FreeList globalFreeList() {
+        assert freeList != null : "Non initialized";
+
         return freeList;
     }
 
+    /**
+     * @return Node-global reuse list.
+     */
     public ReuseList globalReuseList() {
+        assert freeList != null : "Non initialized";
+
         return freeList;
     }
 

@@ -36,7 +36,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
     @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
         throws IgniteCheckedException {
-        return new ReuseListNew(cacheId, pageMem, null, 0, initNew);
+        return new ReuseListNew(cacheId, "test", pageMem, null, 0, initNew);
     }
 
     /**

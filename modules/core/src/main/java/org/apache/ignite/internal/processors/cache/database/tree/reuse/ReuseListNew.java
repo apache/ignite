@@ -42,13 +42,16 @@ public final class ReuseListNew extends PagesList implements ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public ReuseListNew(int cacheId,
+        String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
-        super(cacheId, pageMem, 1, wal, metaPageId, initNew);
+        super(cacheId, name, pageMem, 1, wal, metaPageId);
 
         reuseList = this;
+
+        init(metaPageId, initNew);
     }
 
     /** {@inheritDoc} */
@@ -81,5 +84,10 @@ public final class ReuseListNew extends PagesList implements ReuseList {
     /** {@inheritDoc} */
     @Override protected boolean casBucket(int bucket, long[] exp, long[] upd) {
         return bucketUpdater.compareAndSet(this, exp, upd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "ReuseList [name=" + name + ']';
     }
 }

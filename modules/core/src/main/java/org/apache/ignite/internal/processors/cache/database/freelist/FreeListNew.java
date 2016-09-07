@@ -68,13 +68,15 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
      * @param wal Write ahead log manager.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeListNew(int cacheId,
+    public FreeListNew(
+        int cacheId,
+        String name,
         PageMemory pageMem,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
-        super(cacheId, pageMem, BUCKETS, wal, metaPageId, initNew);
+        super(cacheId, name, pageMem, BUCKETS, wal, metaPageId);
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -92,6 +94,8 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         }
 
         this.shift = shift;
+
+        init(metaPageId, initNew);
     }
 
     /**
@@ -364,6 +368,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "FreeListNew []";
+        return "FreeList [name=" + name + ']';
     }
 }

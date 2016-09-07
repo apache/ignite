@@ -37,6 +37,7 @@ public class PageMetaIO extends PageIO {
         super(PageIO.T_META, ver);
     }
 
+    /** {@inheritDoc} */
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
         super.initNewPage(buf, pageId);
 
@@ -46,6 +47,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
+     * @return Meta store root page.
      */
     public long getMetastoreRoot(ByteBuffer buf) {
         return buf.getLong(METASTORE_ROOT_OFF);
@@ -61,6 +63,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
+     * @return Reuse list root page.
      */
     public long getReuseListRoot(ByteBuffer buf) {
         return buf.getLong(REUSE_LIST_ROOT_OFF);

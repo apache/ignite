@@ -33,7 +33,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPa
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemoveLastPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
@@ -284,25 +283,37 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
     /** */
     private final AtomicIntegerArray cnts;
 
+    /** */
+    protected final String name;
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param buckets Number of buckets.
      * @param wal Write ahead log manager.
+     * @param metaPageId Metadata page ID.
      * @throws IgniteCheckedException If failed.
      */
     public PagesList(int cacheId,
+        String name,
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        long metaPageId) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
+        this.name = name;
         this.buckets = buckets;
-
-        cnts = new AtomicIntegerArray(buckets);
-
         this.metaPageId = metaPageId;
 
+        cnts = new AtomicIntegerArray(buckets);
+    }
+
+    /**
+     * @param metaPageId Metadata page ID.
+     * @param initNew {@code True} if new list if created, {@code false} if should be initialized from metadata.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void init(long metaPageId, boolean initNew) throws IgniteCheckedException {
         if (metaPageId != 0L) {
             if (initNew) {
                 try (Page page = page(metaPageId)) {
@@ -332,12 +343,42 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                 }
 
                 for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet()) {
-                    long[] old = getBucket(e.getKey());
+                    int bucket = e.getKey();
+
+                    long[] old = getBucket(bucket);
                     assert old == null;
 
                     long[] upd = e.getValue().array();
 
-                    boolean ok = casBucket(e.getKey(), null, upd);
+                    boolean ok = casBucket(bucket, null, upd);
+                    assert ok;
+
+                    int cnt = 0;
+
+                    for (int tailIdx = 0; tailIdx < upd.length; tailIdx += 2) {
+                        long tailId = upd[tailIdx];
+
+                        assert tailId != 0L;
+
+                        try (Page page = pageMem.page(cacheId, tailId)) {
+                            ByteBuffer buf = page.getForRead();
+
+                            try {
+                                PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
+
+                                int stripeCnt = io.getCount(buf);
+
+                                assert stripeCnt >= 0;
+
+                                cnt += stripeCnt;
+                            }
+                            finally {
+                                page.releaseRead();
+                            }
+                        }
+                    }
+
+                    ok = cnts.compareAndSet(bucket, 0, cnt);
                     assert ok;
                 }
             }
@@ -401,7 +442,7 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
         }
         finally {
             if (curPage != null)
-                curPage.releaseWrite(false);
+                curPage.releaseWrite(true);
         }
 
         while (nextPageId != 0L) {
@@ -707,11 +748,14 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
 
                     long pageId = io.takeAnyPage(tailBuf);
 
-                    if (pageId != 0L)
-                        return pageId;
+                    if (pageId != 0L) {
+                        if (isWalDeltaRecordNeeded(wal, tail))
+                            wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
 
-                    if (isWalDeltaRecordNeeded(wal, tail))
-                        wal.log(new PagesListRemoveLastPageRecord(cacheId, tailId));
+                        cnts.decrementAndGet(bucket);
+
+                        return pageId;
+                    }
 
                     // The tail page is empty, we can unlink and return it if we have a previous page.
                     long prevId = io.getPreviousId(tailBuf);
