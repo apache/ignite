@@ -367,20 +367,8 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg,
         TcpDiscoveryIpFinder ipFinder) throws Exception {
-        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
-        igfsCfg.setName(igfsName);
-        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
-        igfsCfg.setDefaultMode(mode);
-        igfsCfg.setIpcEndpointConfiguration(restCfg);
-        igfsCfg.setSecondaryFileSystem(secondaryFs);
-        igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
-        igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
-        igfsCfg.setRelaxedConsistency(relaxedConsistency());
-
-        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
+        FileSystemConfiguration igfsCfg = getFileSystemConfiguration(igfsName, mode, secondaryFs, restCfg);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -424,6 +412,33 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         cfg.setConnectorConfiguration(null);
 
         return G.start(cfg);
+    }
+
+    /**
+     * @param igfsName IGFS name
+     * @param mode IGFS mode.
+     * @param secondaryFs Secondary file system (optional).
+     * @param restCfg Rest configuration string (optional).
+     * @return IGFS confuguration.
+     */
+    protected FileSystemConfiguration getFileSystemConfiguration(String igfsName, IgfsMode mode,
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) {
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
+
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setName(igfsName);
+        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
+        igfsCfg.setDefaultMode(mode);
+        igfsCfg.setIpcEndpointConfiguration(restCfg);
+        igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
+        igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setRelaxedConsistency(relaxedConsistency());
+
+        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
+
+        return  igfsCfg;
     }
 
     /**
@@ -1034,7 +1049,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param cacheName Name.
      * @param cache The cache.
      */
-    private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
+    public static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
         Iterable<? extends GridCacheEntryEx> entries = cache.entries();
