@@ -1965,10 +1965,10 @@ public class IgnitionEx {
 
             cacheCfgs.add(marshallerSystemCache());
 
-            if (cfg.getPlatformConfiguration() instanceof PlatformDotNetConfiguration)
-                cacheCfgs.add(marshallerSystemCacheDotNet());
-
             cacheCfgs.add(utilitySystemCache());
+
+            if (cfg.getPlatformConfiguration() instanceof PlatformDotNetConfiguration)
+                cacheCfgs.add(utilitySystemCachePlatform());
 
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
@@ -2162,12 +2162,12 @@ public class IgnitionEx {
         }
 
         /**
-         * Creates marshaller system cache configuration for .NET.
+         * Creates system cache configuration for platforms.
          *
-         * @return Marshaller system cache configuration for .NET.
+         * @return System cache configuration for platforms.
          */
-        private static CacheConfiguration marshallerSystemCacheDotNet() {
-            return marshallerSystemCache().setName(CU.MARSH_CACHE_NAME_PLATFORM);
+        private static CacheConfiguration utilitySystemCachePlatform() {
+            return utilitySystemCache().setName(CU.UTILITY_CACHE_NAME_PLATFORM);
         }
 
         /**

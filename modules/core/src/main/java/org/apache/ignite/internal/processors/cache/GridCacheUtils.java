@@ -116,14 +116,14 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache name for platforms. */
+    public static final String UTILITY_CACHE_NAME_PLATFORM = "ignite-platform-sys-cache";
+
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
-
-    /** Marshaller system cache name for platforms. */
-    public static final String MARSH_CACHE_NAME_PLATFORM = "ignite-marshaller-sys-cache-platform";
 
     /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
@@ -1222,15 +1222,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is marshaller system cache.
      */
     public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName) || MARSH_CACHE_NAME_PLATFORM.equals(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if this is marshaller system cache for .NET.
-     */
-    public static boolean isMarshallerCacheDotNet(String cacheName) {
-        return MARSH_CACHE_NAME_PLATFORM.equals(cacheName);
+        return MARSH_CACHE_NAME.equals(cacheName);
     }
 
     /**
@@ -1238,7 +1230,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
-        return UTILITY_CACHE_NAME.equals(cacheName);
+        return UTILITY_CACHE_NAME.equals(cacheName) || UTILITY_CACHE_NAME_PLATFORM.equals(cacheName);
     }
 
     /**

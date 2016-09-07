@@ -46,7 +46,7 @@ public class PlatformMarshallerContext {
     private final File workDir;
 
     /** */
-    private static final String cacheName = CU.MARSH_CACHE_NAME_PLATFORM;
+    private static final String cacheName = CU.UTILITY_CACHE_NAME_PLATFORM;
 
     /** */
     private final byte keyPrefix;
