@@ -46,6 +46,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
     /** Current round-robin remove stripe index. */
     private final AtomicInteger rmvIdx;
 
+    /** Max stripe index count. */
+    private final int maxIdxCnt;
+
     /** Released flag. */
     private AtomicBoolean released = new AtomicBoolean(false);
 
@@ -67,6 +70,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
         addIdx = new AtomicInteger();
         rmvIdx = new AtomicInteger(cnt / 2);
+
+        maxIdxCnt = cnt - 1;
     }
 
     /**
@@ -155,7 +160,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
      * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
-        return lrus[getAndIncrement(addIdx, Integer.MAX_VALUE) % cnt].offer(part, addr, hash);
+        return lrus[incrementAndGet(addIdx, maxIdxCnt)].offer(part, addr, hash);
     }
 
     /**
@@ -164,7 +169,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
      * @return Queue node address.
      */
     long prePoll() {
-        int idx = getAndIncrement(rmvIdx, Integer.MAX_VALUE - cnt + 1);
+        int idx = incrementAndGet(rmvIdx, maxIdxCnt);
 
         // Must try to poll from each LRU.
         for (int i = 0; i < lrus.length; i++) {
@@ -216,19 +221,19 @@ import org.apache.ignite.internal.util.typedef.internal.S;
     }
 
     /**
-     * Atomically increments the given value by one, and re-starts from 0 when reaches the specified maximum.
+     * Atomically increments the given value by one, re-starting from 0 when the specified maximum is reached.
      *
      * @param value Value to increment.
      * @param max Maximum after reaching which the value is reset to 0.
-     * @return Value to increment.
+     * @return Incremented value.
      */
-    private int getAndIncrement(AtomicInteger value, int max) {
+    private int incrementAndGet(AtomicInteger value, int max) {
         while (true) {
             int cur = value.get();
             int next = cur == max ? 0 : cur + 1;
 
             if (value.compareAndSet(cur, next))
-                return cur;
+                return next;
         }
     }
 
