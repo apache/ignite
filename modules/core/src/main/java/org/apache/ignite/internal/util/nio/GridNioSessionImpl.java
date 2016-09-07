@@ -69,28 +69,22 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
-    /** Grid name. */
-    private String gridName;
-
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
      * @param rmtAddr Remote address.
-     * @param gridName Grid name.
      * @param accepted {@code True} if this session was initiated from remote host.
      */
     public GridNioSessionImpl(
         GridNioFilterChain filterChain,
         @Nullable InetSocketAddress locAddr,
         @Nullable InetSocketAddress rmtAddr,
-        boolean accepted,
-        String gridName
+        boolean accepted
     ) {
         this.filterChain = filterChain;
         this.locAddr = locAddr;
         this.rmtAddr = rmtAddr;
         this.accepted = accepted;
-        this.gridName = gridName;
 
         long now = U.currentTimeMillis();
 
@@ -314,10 +308,5 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNioSessionImpl.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String gridName() {
-        return gridName;
     }
 }

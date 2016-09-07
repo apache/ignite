@@ -91,7 +91,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         @Nullable ByteBuffer readBuf,
         String gridName
     ) {
-        super(filterChain, locAddr, rmtAddr, accepted, gridName);
+        super(filterChain, locAddr, rmtAddr, accepted);
 
         assert selectorIdx >= 0;
         assert sndQueueLimit >= 0;

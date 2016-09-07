@@ -1179,7 +1179,6 @@ public class HadoopExternalCommunication {
                 endpoint,
                 accepted,
                 srvLsnr,
-                gridName,
                 filters());
         }
 

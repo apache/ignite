@@ -165,9 +165,4 @@ public interface GridNioSession {
      * @return Recovery descriptor if recovery is supported, {@code null otherwise.}
      */
     @Nullable public GridNioRecoveryDescriptor recoveryDescriptor();
-
-    /**
-     * @return Grid name.
-     */
-    public String gridName();
 }

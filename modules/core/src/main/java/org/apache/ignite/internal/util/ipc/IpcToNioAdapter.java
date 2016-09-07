@@ -86,7 +86,7 @@ public class IpcToNioAdapter<T> {
         this.writerFactory = writerFactory;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, true, gridName);
+        ses = new GridNioSessionImpl(chain, null, null, true);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
