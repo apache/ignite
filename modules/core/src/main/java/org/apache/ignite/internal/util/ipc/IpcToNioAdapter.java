@@ -73,12 +73,10 @@ public class IpcToNioAdapter<T> {
      * @param endp Endpoint.
      * @param lsnr Listener.
      * @param writerFactory Writer factory.
-     * @param gridName Grid name.
      * @param filters Filters.
      */
     public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
-                           GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory,
-                           String gridName, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory, GridNioFilter... filters) {
         assert metricsLsnr != null;
 
         this.metricsLsnr = metricsLsnr;
