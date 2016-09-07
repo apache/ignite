@@ -102,7 +102,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      *
      * @param ctx Kernal context.
      */
-    public PlatformProcessorImpl(GridKernalContext ctx) throws IgniteCheckedException {
+    public PlatformProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
         log = ctx.log(PlatformProcessorImpl.class);

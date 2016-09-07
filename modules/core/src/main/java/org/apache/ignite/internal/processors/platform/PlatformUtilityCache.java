@@ -19,11 +19,16 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Platform utility cache.
  */
 public class PlatformUtilityCache {
+    /** The cache. */
+    private GridCacheAdapter<Object, Object> cache;
+
     /**
      * Called when continuous processor has started.
      *
@@ -45,7 +50,7 @@ public class PlatformUtilityCache {
     public void onCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        // No-op.
+        cache = ctx.cache().internalCache(CU.UTILITY_CACHE_NAME_PLATFORM);
     }
 
     /**
