@@ -74,7 +74,6 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
-    /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
 
@@ -136,8 +135,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 status = 1;
 
-                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage())
-                );
+                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
             }
 
             byte[] packet = new byte[bytes.length + 1];

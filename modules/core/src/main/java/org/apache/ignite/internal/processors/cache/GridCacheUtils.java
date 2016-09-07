@@ -91,7 +91,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1890,17 +1889,5 @@ public class GridCacheUtils {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
-    }
-
-    /**
-     * Marshal object.
-     *
-     * @param ctx Shared context.
-     * @param obj Object.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static byte[] marshal(GridCacheSharedContext ctx, Object obj) throws IgniteCheckedException {
-        return ctx.marshaller().marshal(obj);
     }
 }
