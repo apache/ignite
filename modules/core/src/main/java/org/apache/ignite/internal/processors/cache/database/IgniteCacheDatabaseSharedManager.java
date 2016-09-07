@@ -34,6 +34,7 @@ import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMess
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -200,40 +201,5 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
-    }
-
-    /**
-     * @param backupInfo Backup info.
-     * @param initFut Initialize future.
-     * @param doneFut Done future.
-     */
-    public void startGlobalBackup(Object backupInfo, IgniteInternalFuture<Void> initFut,
-        IgniteInternalFuture<Void> doneFut) {
-        // No-op. Temp API.
-    }
-
-    /**
-     * Starts restoration from backup on the whole topology.
-     * @param backupId Backup ID.
-     * @param cacheNames Cache names.
-     * @return Future.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalFuture<Void> startGlobalRestoreBackup(final long backupId,
-        final Collection<String> cacheNames) throws IgniteCheckedException {
-        // No-op. Temp API.
-
-        return null;
-    }
-
-    /**
-     * @param backupIds Backup IDs, or {@code null} for all available backups.
-     * @return Collection of GridBackupInfo from the whole topology.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List getGlobalBackupInfos(
-        @Nullable Collection<Long> backupIds) throws IgniteCheckedException {
-        // No-op. Temp API.
-            return null;
     }
 }
