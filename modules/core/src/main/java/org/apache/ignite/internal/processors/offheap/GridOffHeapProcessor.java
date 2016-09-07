@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -109,7 +108,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     private byte[] keyBytes(KeyCacheObject key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
-        return keyBytes != null ? keyBytes : MarshallerUtils.marshal(ctx, key);
+        return keyBytes != null ? keyBytes : marsh.marshal(key);
     }
 
     /**
@@ -213,7 +212,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         if (valBytes == null)
             return null;
 
-        return MarshallerUtils.unmarshal(ctx.gridName(), marsh, valBytes, U.resolveClassLoader(ldr, ctx.config()));
+        return marsh.unmarshal(valBytes, U.resolveClassLoader(ldr, ctx.config()));
     }
 
     /**

@@ -23,13 +23,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -92,10 +90,9 @@ class StartRequestData implements Externalizable {
 
     /**
      * @param marsh Marshaller.
-     * @param kernalCtx Kernal context.
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
-    void p2pMarshal(Marshaller marsh, final GridKernalContext kernalCtx) throws IgniteCheckedException {
+    void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         prjPredBytes = marsh.marshal(prjPred);
@@ -104,17 +101,15 @@ class StartRequestData implements Externalizable {
     /**
      * @param marsh Marshaller.
      * @param ldr Class loader.
-     * @param kernalCtx Kernal context.
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
-    void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr,
-        final GridKernalContext kernalCtx) throws IgniteCheckedException {
+    void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert marsh != null;
 
         assert prjPred == null;
         assert prjPredBytes != null;
 
-        prjPred = MarshallerUtils.unmarshal(kernalCtx.gridName(), marsh, prjPredBytes, ldr);
+        prjPred = marsh.unmarshal(prjPredBytes, ldr);
     }
 
     /**
