@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -69,14 +68,13 @@ public class GridJobSiblingsResponse implements Message {
 
     /**
      * @param marsh Marshaller.
-     * @param ctx kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void unmarshalSiblings(Marshaller marsh, final GridKernalContext ctx) throws IgniteCheckedException {
+    public void unmarshalSiblings(Marshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         if (siblingsBytes != null)
-            siblings = MarshallerUtils.unmarshal(ctx.gridName(), marsh, siblingsBytes, null);
+            siblings = marsh.unmarshal(siblingsBytes, null);
     }
 
     /** {@inheritDoc} */
