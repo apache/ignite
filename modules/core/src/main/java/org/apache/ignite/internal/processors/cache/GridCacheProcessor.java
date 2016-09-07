@@ -186,7 +186,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
 
     /** Must use JDK marshaller since it is used by discovery to fire custom events. */
-    private Marshaller marshaller = new JdkMarshaller();
+    private final Marshaller marshaller;
 
     /** Count down latch for caches. */
     private final CountDownLatch cacheStartedLatch = new CountDownLatch(1);
@@ -207,7 +207,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         jCacheProxies = new ConcurrentHashMap<>();
         stopSeq = new LinkedList<>();
 
-        MarshallerUtils.withNodeName(marshaller, ctx.gridName());
+        marshaller = MarshallerUtils.jdkMarshaller(ctx.gridName());
     }
 
     /**

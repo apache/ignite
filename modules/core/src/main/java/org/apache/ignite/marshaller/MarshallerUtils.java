@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +34,20 @@ public class MarshallerUtils {
     public static Marshaller withNodeName(Marshaller marsh, @Nullable String nodeName) {
         if (marsh instanceof AbstractNodeNameAwareMarshaller)
             ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
+
+        return marsh;
+    }
+
+    /**
+     * Create JDK marshaller with provided node name.
+     *
+     * @param nodeName Node name.
+     * @return JDK marshaller.
+     */
+    public static JdkMarshaller jdkMarshaller(@Nullable String nodeName) {
+        JdkMarshaller marsh = new JdkMarshaller();
+
+        withNodeName(new JdkMarshaller(), nodeName);
 
         return marsh;
     }

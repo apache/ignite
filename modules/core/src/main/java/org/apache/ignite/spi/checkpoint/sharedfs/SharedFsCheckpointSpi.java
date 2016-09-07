@@ -215,10 +215,10 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         this.gridName = gridName;
 
-        marsh = ignite.configuration().getMarshaller() instanceof BinaryMarshaller ? new JdkMarshaller() :
-            ignite.configuration().getMarshaller();
-
-        MarshallerUtils.withNodeName(marsh, ignite.name());
+        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
+            marsh = MarshallerUtils.jdkMarshaller(ignite.name());
+        else
+            marsh = ignite.configuration().getMarshaller();
 
         folder = getNextSharedPath();
 

@@ -225,7 +225,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
          * @param gridName Grid name.
          */
         private DefaultConverter(@Nullable String gridName) {
-            marsh = MarshallerUtils.withNodeName(new JdkMarshaller(), gridName);
+            marsh = MarshallerUtils.jdkMarshaller(gridName);
         }
 
         /** {@inheritDoc} */
