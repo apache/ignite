@@ -2167,7 +2167,7 @@ public class IgnitionEx {
          * @return System cache configuration for platforms.
          */
         private static CacheConfiguration utilitySystemCachePlatform() {
-            return utilitySystemCache().setName(CU.UTILITY_CACHE_NAME_PLATFORM);
+            return marshallerSystemCache().setName(CU.UTILITY_CACHE_NAME_PLATFORM);
         }
 
         /**

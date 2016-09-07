@@ -1222,7 +1222,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is marshaller system cache.
      */
     public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName);
+        return MARSH_CACHE_NAME.equals(cacheName) || UTILITY_CACHE_NAME_PLATFORM.equals(cacheName);
     }
 
     /**
@@ -1230,7 +1230,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
-        return UTILITY_CACHE_NAME.equals(cacheName) || UTILITY_CACHE_NAME_PLATFORM.equals(cacheName);
+        return UTILITY_CACHE_NAME.equals(cacheName);
     }
 
     /**
