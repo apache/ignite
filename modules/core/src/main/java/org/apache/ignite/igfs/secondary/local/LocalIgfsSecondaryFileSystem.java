@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -35,6 +36,8 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsContext;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
@@ -69,6 +72,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** Path that will be added to each passed path. */
     private String workDir;
 
+    /** Posix file permissions. */
     private static final PosixFilePermission[] POSIX_FILE_PERMISSIONS = PosixFilePermission.values();
 
     /**
@@ -92,54 +96,15 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        if (props == null || props.isEmpty())
-            return info(path);
-
         File f = fileForPath(path);
-
         if (!f.exists())
             return null;
 
-        PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
-        String groupName = props.get(IgfsUtils.PROP_GROUP_NAME);
+        PosixFileAttributes attrs = update0(path, props);
+        if (attrs == null)
+            return info(path);
 
-        if (groupName != null) {
-            try {
-                UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
-                GroupPrincipal grp = lookupService.lookupPrincipalByGroupName(groupName);
-                attrs.setGroup(grp);
-            }
-            catch (IOException e) {
-                throw new IgfsException("Update the '" + IgfsUtils.PROP_GROUP_NAME + "' property is failed.", e);
-            }
-        }
-
-        String strPerm = props.get(IgfsUtils.PROP_PERMISSION);
-        if (strPerm != null) {
-            int perm = Integer.parseInt(strPerm, 8);
-            Set<PosixFilePermission> permSet = new HashSet<>(9);
-
-            for (int i = 0; i < POSIX_FILE_PERMISSIONS.length; ++i) {
-                if ((perm & (1 << i)) != 0)
-                    permSet.add(POSIX_FILE_PERMISSIONS[i]);
-            }
-
-            try {
-                attrs.setPermissions(permSet);
-            }
-            catch (IOException e) {
-                throw new IgfsException("Update the '" + IgfsUtils.PROP_PERMISSION + "' property is failed.", e);
-            }
-        }
-
-        PosixFileAttributes readAttrs = null;
-        try {
-            readAttrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class).readAttributes();
-        } catch (IOException e) {
-            // Swallow.
-        }
-
-        return info(path, f, readAttrs);
+        return info(path, f, attrs);
     }
 
     /** {@inheritDoc} */
@@ -219,7 +184,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
-        update(path, props);
+        updateSafe(path, props);
     }
 
     /**
@@ -322,7 +287,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         OutputStream os = create0(path, overwrite, bufSize);
-        update(path, props);
+        updateSafe(path, props);
         return os;
     }
 
@@ -336,7 +301,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             if (exists) {
                 OutputStream os = new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
-                update(path, props);
+                updateSafe(path, props);
                 return os;
             }
             else {
@@ -358,13 +323,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (!f.exists())
             return null;
 
-        PosixFileAttributes attrs = null;
+        PosixFileAttributes readAttrs = null;
         try {
-            attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class).readAttributes();
-        } catch (IOException e) {
-            // Swallow.
+            PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
+
+            if (attrs != null)
+                readAttrs = attrs.readAttributes();
         }
-        return info(path, f, attrs);
+        catch (IOException e) {
+            throw new IgfsException("Info failed", e);
+        }
+
+        return info(path, f, readAttrs);
     }
 
     /**
@@ -471,7 +441,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Internal create routine.
      *
      * @param path Path.
-     * @param overwrite Overwirte flag.
+     * @param overwrite Overwrite flag.
      * @param bufSize Buffer size.
      * @return Output stream.
      */
@@ -499,6 +469,82 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
     }
+
+    /**
+     * Swallow all exceptions of update.
+     *
+     * @param path IGFS path
+     * @param props Properties map.
+     */
+    @Nullable private void updateSafe(IgfsPath path, Map<String, String> props) {
+        try {
+            update0(path, props);
+        }
+        catch (Exception e) {
+            // TODO: Logger must be available at the local FS
+        }
+    }
+
+    /**
+     * @param path IGFS path
+     * @param props Properties map.
+     * @return Posix attributes is available. {@code null} otherwise.
+     */
+    @Nullable private PosixFileAttributes update0(IgfsPath path, Map<String, String> props) {
+        if (props == null || props.isEmpty())
+            return null;
+
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            return null;
+
+        PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
+
+        if (attrs == null)
+            throw new UnsupportedOperationException("Posix file attributes not available");
+
+        String groupName = props.get(IgfsUtils.PROP_GROUP_NAME);
+
+        if (groupName != null) {
+            try {
+                UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+                GroupPrincipal grp = lookupService.lookupPrincipalByGroupName(groupName);
+
+                attrs.setGroup(grp);
+            }
+            catch (IOException e) {
+                throw new IgfsException("Update the '" + IgfsUtils.PROP_GROUP_NAME + "' property is failed.", e);
+            }
+        }
+
+        String strPerm = props.get(IgfsUtils.PROP_PERMISSION);
+
+        if (strPerm != null) {
+            int perm = Integer.parseInt(strPerm, 8);
+            Set<PosixFilePermission> permSet = new HashSet<>(9);
+
+            for (int i = 0; i < POSIX_FILE_PERMISSIONS.length; ++i) {
+                if ((perm & (1 << i)) != 0)
+                    permSet.add(POSIX_FILE_PERMISSIONS[i]);
+            }
+
+            try {
+                attrs.setPermissions(permSet);
+            }
+            catch (IOException e) {
+                throw new IgfsException("Update the '" + IgfsUtils.PROP_PERMISSION + "' property is failed.", e);
+            }
+        }
+
+        try {
+            return attrs.readAttributes();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Update failed", e);
+        }
+    }
+
 
     /**
      * @param attrs Attributes view.
