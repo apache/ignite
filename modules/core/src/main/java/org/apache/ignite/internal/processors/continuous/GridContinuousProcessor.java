@@ -321,7 +321,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.marshallerContext().onContinuousProcessorStarted(ctx);
 
-        // TODO: This does not work because platform processor is not yet started
+        // TODO: Replace with a call to platformUtilityCache
         if (ctx.platform() != null && ctx.platform().platformMarshallerContext() != null)
             ctx.platform().platformMarshallerContext().onContinuousProcessorStarted(ctx);
 
