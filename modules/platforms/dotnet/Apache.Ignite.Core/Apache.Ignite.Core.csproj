@@ -90,6 +90,8 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\AspNet\SessionStateData.cs" />
+    <Compile Include="Impl\AspNet\LockInfo.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
@@ -179,6 +181,7 @@
     <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
+    <Compile Include="Impl\Collections\KeyValueDirtyTrackedCollection.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />

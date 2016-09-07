@@ -872,6 +872,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask(CacheOp.InvokeAll, reader => ReadInvokeAllResults<TRes>(reader.Stream));
         }
 
+        /** <inheritDoc /> */
+        public T Invoke<T>(int opCode, params object[] args)
+        {
+            return DoOutInOpX((int) CacheOp.InvokeInternal, writer =>
+                {
+                    writer.WriteInt(opCode);
+                    writer.WriteArray(args);
+                },
+                (input, res) => res == True ? Marshaller.Unmarshal<T>(input) : default(T), ReadException);
+        }
+
         /** <inheritdoc /> */
         public ICacheLock Lock(TK key)
         {

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -367,5 +368,16 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(proc.WaitForExit(15000));
             Assert.AreEqual(0, proc.ExitCode);
         }
+
+        /// <summary>
+        /// Serializes and deserializes back an instance.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+            var marsh = BinaryUtils.Marshaller;
+
+            return marsh.Unmarshal<T>(marsh.Marshal(obj));
+        }
+
     }
 }

@@ -36,5 +36,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Cursor.
         /// </returns>
         IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc);
+
+        /// <summary>
+        /// Invokes a cache operation by code.
+        /// </summary>
+        /// <typeparam name="T">The type of the result.</typeparam>
+        /// <param name="opCode">The operation code.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns>
+        /// Result of the processing.
+        /// </returns>
+        T Invoke<T>(int opCode, params object[] args);
     }
 }

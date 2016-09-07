@@ -211,7 +211,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (cache == null)
             throw new IllegalArgumentException("Cache doesn't exist: " + name);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -220,7 +220,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +229,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -241,7 +241,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
             : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -254,7 +254,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     PlatformConfigurationUtils.readNearConfiguration(reader))
             : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -408,7 +408,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
@@ -417,7 +417,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */

@@ -59,6 +59,12 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AspNet\BinarizableSessionStateStoreDataTest.cs" />
+    <Compile Include="AspNet\ExpiryCacheHolderTest.cs" />
+    <Compile Include="AspNet\IgniteSessionStateItemCollectionTest.cs" />
+    <Compile Include="AspNet\IgniteSessionStateStoreDataTest.cs" />
+    <Compile Include="AspNet\IgniteSessionStateStoreProviderTest.cs" />
+    <Compile Include="AspNet\LockInfoTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
@@ -67,6 +73,7 @@
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Collections\KeyValueDirtyTrackedCollectionTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />

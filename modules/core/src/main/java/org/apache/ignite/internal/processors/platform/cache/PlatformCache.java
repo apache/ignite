@@ -49,6 +49,11 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
+import org.apache.ignite.internal.processors.platform.websession.LockEntryProcessor;
+import org.apache.ignite.internal.processors.platform.websession.LockInfo;
+import org.apache.ignite.internal.processors.platform.websession.SessionStateData;
+import org.apache.ignite.internal.processors.platform.websession.SetAndUnlockEntryProcessor;
+import org.apache.ignite.internal.processors.platform.websession.UnlockEntryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -193,8 +198,23 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_LOAD_ALL = 40;
 
-    /** Underlying JCache. */
+    /** */
+    public static final int OP_INVOKE_INTERNAL = 41;
+
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_LOCK = 1;
+
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_UNLOCK = 2;
+
+    /** */
+    public static final int OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK = 3;
+
+    /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
+
+    /** Initial JCache (not in binary mode). */
+    private final IgniteCache cacheRaw;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepBinary;
@@ -224,7 +244,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
 
-        this.cache = (IgniteCacheProxy)cache;
+        cacheRaw = cache;
+
+        this.cache = (IgniteCacheProxy)cache.withKeepBinary();
         this.keepBinary = keepBinary;
     }
 
@@ -237,7 +259,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
+        return new PlatformCache(platformCtx, cacheRaw.withSkipStore(), keepBinary);
     }
 
     /**
@@ -249,7 +271,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (keepBinary)
             return this;
 
-        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
+        return new PlatformCache(platformCtx, cacheRaw.withKeepBinary(), true);
     }
 
     /**
@@ -261,7 +283,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @return Cache.
      */
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
-        IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+        IgniteCache cache0 = cacheRaw.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
         return new PlatformCache(platformCtx, cache0, keepBinary);
     }
@@ -275,7 +297,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
+        return new PlatformCache(platformCtx, (IgniteCache)cacheRaw.withAsync(), keepBinary);
     }
 
     /**
@@ -289,7 +311,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+        return new PlatformCache(platformCtx, cacheRaw.withNoRetries(), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -445,6 +467,40 @@ public class PlatformCache extends PlatformAbstractTarget {
                             writeInvokeAllResult(writer, val);
                         }
                     });
+                }
+
+                case OP_INVOKE_INTERNAL: {
+                    int opCode = reader.readInt();
+                    Object[] args = reader.readObjectArray();
+
+                    Object key = args[0];
+
+                    switch (opCode) {
+                        case OP_INVOKE_INTERNAL_SESSION_LOCK: {
+                            LockInfo lockInfo = (LockInfo)args[1];
+
+                            Object res = cacheRaw.invoke(key, new LockEntryProcessor(), lockInfo);
+
+                            return writeResult(mem, res);
+                        }
+
+                        case OP_INVOKE_INTERNAL_SESSION_UNLOCK: {
+                            LockInfo lockInfo = (LockInfo)args[1];
+
+                            cacheRaw.invoke(key, new UnlockEntryProcessor(), lockInfo);
+
+                            return FALSE;
+                        }
+
+                        case OP_INVOKE_INTERNAL_SESSION_SET_AND_UNLOCK:
+                            SessionStateData data = (SessionStateData)args[1];
+
+                            cacheRaw.invoke(key, new SetAndUnlockEntryProcessor(), data);
+
+                            return FALSE;
+                    }
+
+                    return writeResult(mem, null);
                 }
 
                 case OP_LOCK:
