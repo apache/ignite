@@ -44,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -561,7 +560,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return MarshallerUtils.withNodeName(marsh, ignite.name()).marshal(obj);
+        return marsh.marshal(obj);
     }
 
     /**
@@ -576,7 +575,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return MarshallerUtils.withNodeName(marsh, ignite.name()).unmarshal(bytes, getClass().getClassLoader());
+        return marsh.unmarshal(bytes, getClass().getClassLoader());
     }
 
     /**
