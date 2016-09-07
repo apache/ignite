@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +77,7 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to deploy affinity object with class: " + cls.getName());
 
         return new GridAffinityMessage(
-            MarshallerUtils.marshal(ctx, o),
+            ctx.config().getMarshaller().marshal(o),
             cls.getName(),
             dep.classLoaderId(),
             dep.deployMode(),
@@ -111,7 +110,7 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
-        Object src = MarshallerUtils.unmarshal(ctx.gridName(), ctx.config().getMarshaller(), msg.source(),
+        Object src = ctx.config().getMarshaller().unmarshal(msg.source(),
             U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.

@@ -67,7 +67,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -595,7 +594,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 int topicOrd = msg.topicOrdinal();
 
                 msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    MarshallerUtils.unmarshal(ctx.gridName(), marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                    marsh.unmarshal(msg.topicBytes(), U.resolveClassLoader(ctx.config())));
             }
 
             if (!started) {
@@ -1118,7 +1117,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             if (topicOrd < 0)
-                ioMsg.topicBytes(MarshallerUtils.marshal(ctx, topic));
+                ioMsg.topicBytes(marsh.marshal(topic));
 
             try {
                 if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
@@ -1378,10 +1377,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         byte[] serTopic = null;
 
         if (!loc) {
-            serMsg = MarshallerUtils.marshal(ctx, msg);
+            serMsg = marsh.marshal(msg);
 
             if (topic != null)
-                serTopic = MarshallerUtils.marshal(ctx, topic);
+                serTopic = marsh.marshal(topic);
         }
 
         GridDeployment dep = null;
@@ -2038,7 +2037,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Unmarshall message topic if needed.
                     if (msgTopic == null && msgTopicBytes != null) {
-                        msgTopic = MarshallerUtils.unmarshal(ctx.gridName(), marsh, msgTopicBytes,
+                        msgTopic = marsh.unmarshal(msgTopicBytes,
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
@@ -2048,7 +2047,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         return;
 
                     if (msgBody == null) {
-                        msgBody = MarshallerUtils.unmarshal(ctx.gridName(), marsh, ioMsg.bodyBytes(),
+                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(),
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.body(msgBody); // Save body to avoid future unmarshallings.
