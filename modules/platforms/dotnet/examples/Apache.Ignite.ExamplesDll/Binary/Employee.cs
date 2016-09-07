@@ -33,12 +33,14 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <param name="salary">Salary.</param>
         /// <param name="address">Address.</param>
         /// <param name="departments">Departments.</param>
-        public Employee(string name, long salary, Address address, ICollection<string> departments)
+        public Employee(string name, long salary, Address address, ICollection<string> departments, 
+            int organizationId = 0)
         {
             Name = name;
             Salary = salary;
             Address = address;
             Departments = departments;
+            OrganizationId = organizationId;
         }
 
         /// <summary>
@@ -46,6 +48,12 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// </summary>
         [QuerySqlField]
         public string Name { get; set; }
+
+        /// <summary>
+        /// Organization id.
+        /// </summary>
+        [QuerySqlField(IsIndexed = true)]
+        public int OrganizationId { get; set; }
 
         /// <summary>
         /// Salary.

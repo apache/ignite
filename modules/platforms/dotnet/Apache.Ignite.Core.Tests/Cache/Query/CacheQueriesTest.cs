@@ -123,32 +123,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        /// Gets the ignite.
         /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private IIgnite GetIgnite(int idx)
+        private static IIgnite GetIgnite()
         {
-            return Ignition.GetIgnite("grid-" + idx);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private ICache<int, QueryPerson> Cache(int idx)
-        {
-            return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
+            return Ignition.GetIgnite("grid-0");
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        private ICache<int, QueryPerson> Cache()
+        private static ICache<int, QueryPerson> Cache()
         {
-            return Cache(0);
+            return GetIgnite().GetCache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -236,8 +224,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(4, new QueryPerson("Unknown", 60));
 
             // 1. Empty result set.
-            using (
-                IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
+            using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
                     Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
             {
                 IEnumerator<ICacheEntry<int, QueryPerson>> e = cursor.GetEnumerator();
@@ -251,6 +238,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     { ICacheEntry<int, QueryPerson> entry = e.Current; });
 
                 Assert.Throws<NotSupportedException>(() => e.Reset());
+
+                e.Dispose();
             }
 
             SqlQuery qry = new SqlQuery(typeof (QueryPerson), "age < 60");
@@ -446,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestIndexingDisabledError()
         {
-            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
             var queries = new QueryBase[]
             {
@@ -552,14 +541,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestDistributedJoins()
         {
-            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>(
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
                 new CacheConfiguration("replicatedCache")
                 {
                     QueryEntities = new[]
                     {
                         new QueryEntity(typeof(int), typeof(QueryPerson))
                         {
-                            Fields = new[] {new QueryField("age", typeof(int))}
+                            Fields = new[] {new QueryField("age", "int")}
                         }
                     }
                 });
@@ -582,6 +571,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .GetAll().Distinct().Count();
 
             Assert.AreEqual(count, res);
+        }
+
+        /// <summary>
+        /// Tests the get configuration.
+        /// </summary>
+        [Test]
+        public void TestGetConfiguration()
+        {
+            var entity = Cache().GetConfiguration().QueryEntities.Single();
+
+            Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
+            Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
         }
 
         /// <summary>

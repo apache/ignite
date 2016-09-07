@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -83,29 +82,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestNewMode()
         {
-            // Run "TestNewMode" in a separate process
-            var envVar = BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2;
+            // Run "TestOldMode" in a separate process with changed setting.
+            Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, "true");
 
-            Environment.SetEnvironmentVariable(envVar, "true");
-
-            var procStart = new ProcessStartInfo
-            {
-                FileName = GetType().Assembly.Location,
-                Arguments = GetType().FullName + " TestOldMode",
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            var proc = Process.Start(procStart);
-
-            Assert.IsNotNull(proc);
-
-            Console.WriteLine(proc.StandardOutput.ReadToEnd());
-            Console.WriteLine(proc.StandardError.ReadToEnd());
-            Assert.IsTrue(proc.WaitForExit(15000));
-            Assert.AreEqual(0, proc.ExitCode);
+            TestUtils.RunTestInNewProcess(GetType().FullName, "TestOldMode");
         }
 
         /// <summary>

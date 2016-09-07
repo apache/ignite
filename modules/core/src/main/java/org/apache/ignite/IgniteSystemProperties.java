@@ -452,6 +452,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
     /**
+     * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
+     * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
+     * interface on {@code BinaryObject}.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    @Deprecated
+    public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

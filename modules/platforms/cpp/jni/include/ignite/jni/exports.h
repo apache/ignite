@@ -56,6 +56,9 @@ extern "C" {
     bool IGNITE_CALL IgniteProcessorRegisterType(gcj::JniContext* ctx, void* obj, int id, char* name);
     char* IGNITE_CALL IgniteProcessorGetClass(gcj::JniContext* ctx, void* obj, int id, int* resLen);
     void IGNITE_CALL IgniteProcessorGetCacheNames(gcj::JniContext* ctx, void* obj, long long memPtr);
+    bool IGNITE_CALL IgniteProcessorLoggerIsLevelEnabled(gcj::JniContext* ctx, void* obj, int level);
+    void IGNITE_CALL IgniteProcessorLoggerLog(gcj::JniContext* ctx, void* obj, int level, char* message, char* category, char* errorInfo);
+
 
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr);

@@ -17,6 +17,24 @@
 
 package org.apache.ignite.internal;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.Lock;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -150,5 +168,99 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
 
         return clsName;
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Lock instance.
+     */
+    private static Lock fileLock(String fileName) {
+        return fileLock.getLock(fileName.hashCode());
+    }
+
+    /**
+     * @param ch File channel.
+     * @param shared Shared.
+     */
+    private static FileLock fileLock(
+        FileChannel ch,
+        boolean shared
+    ) throws IOException, IgniteInterruptedCheckedException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (true) {
+            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
+
+            if (fileLock == null)
+                U.sleep(rnd.nextLong(50));
+            else
+                return fileLock;
+        }
+    }
+
+    /**
+     */
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private final File workDir;
+
+        /**
+         * @param log Logger.
+         * @param workDir Work directory.
+         */
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
+            this.log = log;
+            this.workDir = workDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
+            throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts) {
+                assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
+                    "Received cache entry update for system marshaller cache: " + evt;
+
+                if (evt.getOldValue() == null) {
+                    String fileName = evt.getKey() + ".classname";
+
+                    Lock lock = fileLock(fileName);
+
+                    lock.lock();
+
+                    try {
+                        File file = new File(workDir, fileName);
+
+                        try (FileOutputStream out = new FileOutputStream(file)) {
+                            FileLock fileLock = fileLock(out.getChannel(), false);
+
+                            assert fileLock != null : fileName;
+
+                            try (Writer writer = new OutputStreamWriter(out)) {
+                                writer.write(evt.getValue());
+
+                                writer.flush();
+                            }
+                        }
+                        catch (IOException e) {
+                            U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
+                                ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch(OverlappingFileLockException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("File already locked (will ignore): " + file.getAbsolutePath());
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
+                        }
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+                }
+            }
+        }
     }
 }

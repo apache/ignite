@@ -376,6 +376,11 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
+        throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteFileSystem withAsync() {
         throwUnsupported();
 

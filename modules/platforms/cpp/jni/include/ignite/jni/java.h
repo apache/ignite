@@ -108,6 +108,9 @@ namespace ignite
 
             typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
 
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
+            typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
+
             /**
              * JNI handlers holder.
              */
@@ -191,6 +194,9 @@ namespace ignite
                 AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
                 AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
                 AffinityFunctionDestroyHandler affinityFunctionDestroy;
+
+                LoggerLogHandler loggerLog;
+                LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
             };
 
             /**
@@ -337,6 +343,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getClass;
                 jmethodID m_PlatformProcessor_atomicSequence;
                 jmethodID m_PlatformProcessor_atomicReference;
+                jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
+                jmethodID m_PlatformProcessor_loggerLog;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -556,6 +564,8 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
+				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
+				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
 				bool ProcessorRegisterType(jobject obj, int id, char* name);
 				char* ProcessorGetClass(jobject obj, int id, int* resLen);
 
@@ -771,6 +781,9 @@ namespace ignite
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
 
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
+
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
         }
     }
 }

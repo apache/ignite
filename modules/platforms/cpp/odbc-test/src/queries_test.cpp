@@ -37,6 +37,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 
 #include "test_type.h"
+#include "test_utils.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -46,30 +47,6 @@ using namespace ignite::common;
 using namespace boost::unit_test;
 
 using ignite::impl::binary::BinaryUtils;
-
-/** Read buffer size. */
-enum { ODBC_BUFFER_SIZE = 1024 };
-
-/**
- * Extract error message.
- *
- * @param handleType Type of the handle.
- * @param handle Handle.
- * @return Error message.
- */
-std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
-{
-    SQLCHAR sqlstate[7] = {};
-    SQLINTEGER nativeCode;
-
-    SQLCHAR message[ODBC_BUFFER_SIZE];
-    SQLSMALLINT reallen = 0;
-
-    SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
-
-    return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
-        std::string(reinterpret_cast<char*>(message), reallen);
-}
 
 /**
  * Test setup fixture.
@@ -122,10 +99,20 @@ struct QueriesTestSuiteFixture
         BOOST_REQUIRE(stmt != NULL);
     }
 
-    /**
-     * Constructor.
-     */
-    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    void Disconnect()
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Disconneting from the server.
+        SQLDisconnect(dbc);
+
+        // Releasing allocated handles.
+        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
+
+    static Ignite StartNode(const char* name, const char* config)
     {
         IgniteConfiguration cfg;
 
@@ -145,14 +132,26 @@ struct QueriesTestSuiteFixture
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("queries-test.xml");
+        BOOST_REQUIRE(cfgPath != 0);
+
+        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
 
         IgniteError err;
 
-        grid = Ignition::Start(cfg, &err);
+        return Ignition::Start(cfg, name);
+    }
 
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_FAIL(err.GetText());
+    static Ignite StartAdditionalNode(const char* name)
+    {
+        return StartNode(name, "queries-test-noodbc.xml");
+    }
+
+    /**
+     * Constructor.
+     */
+    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    {
+        grid = StartNode("NodeMain", "queries-test.xml");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }
@@ -162,17 +161,9 @@ struct QueriesTestSuiteFixture
      */
     ~QueriesTestSuiteFixture()
     {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+        Disconnect();
 
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-
-        Ignition::Stop(grid.GetName(), true);
+        Ignition::StopAll(true);
     }
 
     template<typename T>
@@ -192,7 +183,7 @@ struct QueriesTestSuiteFixture
 
         T columns[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), 0);
@@ -228,7 +219,7 @@ struct QueriesTestSuiteFixture
 
         SQLLEN columnLens[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), &columnLens[i]);
@@ -269,6 +260,28 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
+    int CountRows(SQLHSTMT stmt)
+    {
+        int res = 0;
+
+        SQLRETURN ret = SQL_SUCCESS;
+
+        while (ret == SQL_SUCCESS)
+        {
+            ret = SQLFetch(stmt);
+
+            if (ret == SQL_NO_DATA)
+                break;
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            ++res;
+        }
+
+        return res;
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -290,6 +303,16 @@ BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 BOOST_AUTO_TEST_CASE(TestLegacyConnection)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_8_0)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.8.0");
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
@@ -348,7 +371,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, 0);
@@ -385,7 +408,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -443,7 +466,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -504,7 +527,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, 0, 0, &columnLens[i]);
@@ -537,5 +560,132 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
+
+BOOST_AUTO_TEST_CASE(TestDistributedJoins)
+{
+    // Starting additional node.
+    Ignite node1 = StartAdditionalNode("Node1");
+    Ignite node2 = StartAdditionalNode("Node2");
+
+    const int entriesNum = 1000;
+
+    // Filling cache with data.
+    for (int i = 0; i < entriesNum; ++i)
+    {
+        TestType entry;
+
+        entry.i32Field = i;
+        entry.i64Field = entriesNum - i - 1;
+
+        testCache.Put(i, entry);
+    }
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    SQLRETURN ret;
+
+    const size_t columnsCnt = 2;
+
+    SQLBIGINT columns[columnsCnt] = { 0 };
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR request[] =
+        "SELECT T0.i32Field, T1.i64Field FROM TestType AS T0 "
+        "INNER JOIN TestType AS T1 "
+        "ON (T0.i32Field = T1.i64Field)";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int rowsNum = CountRows(stmt);
+
+    BOOST_CHECK_GT(rowsNum, 0);
+    BOOST_CHECK_LT(rowsNum, entriesNum);
+
+    Disconnect();
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;");
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    rowsNum = CountRows(stmt);
+
+    BOOST_CHECK_EQUAL(rowsNum, entriesNum);
+}
+
+BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
+{
+    // Starting additional node.
+    Ignite node1 = StartAdditionalNode("Node1");
+    Ignite node2 = StartAdditionalNode("Node2");
+
+    const int entriesNum = 1000;
+
+    // Filling cache with data.
+    for (int i = 0; i < entriesNum; ++i)
+    {
+        TestType entry;
+
+        entry.i32Field = i;
+        entry.i64Field = entriesNum - i - 1;
+
+        testCache.Put(i, entry);
+    }
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;PROTOCOL_VERSION=1.6.0");
+
+    SQLRETURN ret;
+
+    const size_t columnsCnt = 2;
+
+    SQLBIGINT columns[columnsCnt] = { 0 };
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR request[] =
+        "SELECT T0.i32Field, T1.i64Field FROM TestType AS T0 "
+        "INNER JOIN TestType AS T1 "
+        "ON (T0.i32Field = T1.i64Field)";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int rowsNum = CountRows(stmt);
+
+    BOOST_CHECK_GT(rowsNum, 0);
+    BOOST_CHECK_LT(rowsNum, entriesNum);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
