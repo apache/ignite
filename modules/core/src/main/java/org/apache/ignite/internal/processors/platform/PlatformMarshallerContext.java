@@ -28,11 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedExceptio
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.Externalizable;
 import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -194,75 +190,6 @@ public class PlatformMarshallerContext {
      * @return Cache key depending on keyPrefix.
      */
     private Object getKey(int id) {
-        return new TypeIdKey(keyPrefix, id);
-    }
-
-    /**
-     * Composite type key.
-     *
-     * Each platform can have a different type name for a given type id.
-     * Composite key allows sharing a single marshaller cache between multiple platforms.
-     */
-    private static class TypeIdKey implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private byte prefix;
-
-        /** */
-        private int id;
-
-        /**
-         * Default ctor for serialization.
-         */
-        public TypeIdKey() {
-            // No-op.
-        }
-
-        /**
-         * Ctor.
-         *
-         * @param prefix Prefix.
-         * @param id Id.
-         */
-        private TypeIdKey(byte prefix, int id) {
-            this.prefix = prefix;
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(prefix);
-            out.writeInt(id);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            prefix = in.readByte();
-            id = in.readInt();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TypeIdKey key = (TypeIdKey)o;
-
-            return prefix == key.prefix && id == key.id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (int)prefix + id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return prefix + "_" + id;
-        }
+        return new PlatformUtilityCacheKey(keyPrefix, id);
     }
 }
