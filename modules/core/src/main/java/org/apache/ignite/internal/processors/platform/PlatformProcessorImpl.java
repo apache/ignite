@@ -88,8 +88,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** Interop configuration. */
     private final PlatformConfigurationEx interopCfg;
 
-    /** Platform marshaller context. */
-    private final PlatformMarshallerContext platformMarshCtx;
+    /** Platform utility cache. */
+    private final PlatformUtilityCache utilityCache;
 
     /** Whether processor is started. */
     private boolean started;
@@ -125,9 +125,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         Byte prefix = interopCfg.marshallerCacheKeyPrefix();
 
-        platformMarshCtx = prefix != null
-            ? new PlatformMarshallerContext(prefix)
-            : null;
+        utilityCache = new PlatformUtilityCache(prefix);
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
@@ -168,7 +166,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        platformMarshCtx.onKernalStop();
+        utilityCache.onKernalStop();
 
         startLatch.countDown();
     }
@@ -497,15 +495,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformMarshallerContext platformMarshallerContext() {
-        return platformMarshCtx;
+    @Override public PlatformUtilityCache utilityCache() {
+        return utilityCache;
     }
 
     /** {@inheritDoc} */
     @Override public boolean registerType(int id, String name) {
         try {
-            return platformMarshCtx.registerTypeName(id, name);
-        } catch (IgniteCheckedException e) {
+            return utilityCache.getMarshallerContext().registerTypeName(id, name);
+        } catch (IgniteCheckedException ignored) {
             return false;
         }
     }
@@ -513,8 +511,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public String getClass(int id) {
         try {
-            return platformMarshCtx.getTypeName(id);
-        } catch (IgniteCheckedException e) {
+            return utilityCache.getMarshallerContext().getTypeName(id);
+        } catch (IgniteCheckedException ignored) {
             return null;
         }
     }

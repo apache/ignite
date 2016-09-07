@@ -24,6 +24,26 @@ import org.apache.ignite.internal.GridKernalContext;
  * Platform utility cache.
  */
 public class PlatformUtilityCache {
+    /** */
+    private final PlatformMarshallerContext marshCtx;
+
+    /**
+     * Ctor.
+     *
+     * @param marshCacheKeyPrefix Marshaller cache key prefix.
+     * @throws IgniteCheckedException On error.
+     */
+    public PlatformUtilityCache(Byte marshCacheKeyPrefix) throws IgniteCheckedException {
+        marshCtx = marshCacheKeyPrefix != null ? new PlatformMarshallerContext(marshCacheKeyPrefix) : null;
+    }
+
+    /**
+     * Gets the platform marshaller context.
+     */
+    public PlatformMarshallerContext getMarshallerContext() {
+        return marshCtx;
+    }
+
     /**
      * Called when continuous processor has started.
      *
@@ -33,7 +53,8 @@ public class PlatformUtilityCache {
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        // TODO
+        if (marshCtx != null)
+            marshCtx.onContinuousProcessorStarted(ctx);
     }
 
     /**
@@ -45,13 +66,15 @@ public class PlatformUtilityCache {
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        // TODO
+        if (marshCtx != null)
+            marshCtx.onMarshallerCacheStarted(ctx);
     }
 
     /**
      * Release marshaller context.
      */
     public void onKernalStop() {
-        // TODO
+        if (marshCtx != null)
+            marshCtx.onKernalStop();
     }
 }

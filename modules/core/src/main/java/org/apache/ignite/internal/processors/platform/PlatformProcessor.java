@@ -277,11 +277,11 @@ public interface PlatformProcessor extends GridProcessor {
     public void loggerLog(int level, String message, String category, String errorInfo);
 
     /**
-     * Gets the platform marshaller context.
+     * Gets the platform utility cache.
      *
-     * @return Platform marshaller context.
+     * @return Platform utility cache.
      */
-    public PlatformMarshallerContext platformMarshallerContext();
+    public PlatformUtilityCache utilityCache();
 
     /**
      * Registers platform type name with provided type ID.

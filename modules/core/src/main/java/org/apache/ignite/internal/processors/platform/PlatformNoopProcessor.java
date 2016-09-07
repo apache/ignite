@@ -152,7 +152,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformMarshallerContext platformMarshallerContext() {
+    @Override public PlatformUtilityCache utilityCache() {
         return null;
     }
 
