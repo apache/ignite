@@ -17,16 +17,6 @@
 
 package org.apache.ignite.stream.storm;
 
-import backtype.storm.Config;
-import backtype.storm.ILocalCluster;
-import backtype.storm.Testing;
-import backtype.storm.generated.StormTopology;
-import backtype.storm.testing.CompleteTopologyParam;
-import backtype.storm.testing.MkClusterParam;
-import backtype.storm.testing.MockedSources;
-import backtype.storm.testing.TestJob;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Values;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -41,6 +31,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.storm.Config;
+import org.apache.storm.ILocalCluster;
+import org.apache.storm.Testing;
+import org.apache.storm.generated.StormTopology;
+import org.apache.storm.testing.CompleteTopologyParam;
+import org.apache.storm.testing.MkClusterParam;
+import org.apache.storm.testing.MockedSources;
+import org.apache.storm.testing.TestJob;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Values;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
