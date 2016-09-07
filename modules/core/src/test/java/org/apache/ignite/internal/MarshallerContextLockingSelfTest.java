@@ -55,7 +55,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
-                    MarshallerContextImpl.ContinuousQueryListener.class.getName()
+                    MarshallerCacheListener.ContinuousQueryListener.class.getName()
                 );
 
                 Thread.currentThread().setContextClassLoader(classLoader);
@@ -92,7 +92,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
             File workDir = U.resolveWorkDirectory("marshaller", false);
 
-            final MarshallerContextImpl.ContinuousQueryListener queryListener = new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
+            final MarshallerCacheListener.ContinuousQueryListener queryListener =
+                new MarshallerCacheListener.ContinuousQueryListener(log, workDir);
 
             final ArrayList evts = new ArrayList<CacheEntryEvent<Integer, String>>();
 

@@ -101,7 +101,7 @@ public class MarshallerCacheListener {
 
     /**
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Object, String> {
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Object, String> {
         /** */
         private final IgniteLogger log;
 
@@ -112,7 +112,7 @@ public class MarshallerCacheListener {
          * @param log Logger.
          * @param workDir Work directory.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
         }

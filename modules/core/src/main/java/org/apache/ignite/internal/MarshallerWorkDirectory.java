@@ -32,6 +32,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 
@@ -114,6 +115,10 @@ public class MarshallerWorkDirectory {
             catch (IOException e) {
                 U.error(log, "Failed to write class name to file [id=" + key +
                     ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
+            }
+            catch(OverlappingFileLockException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("File already locked (will ignore): " + file.getAbsolutePath());
             }
             catch (IgniteInterruptedCheckedException e) {
                 U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
