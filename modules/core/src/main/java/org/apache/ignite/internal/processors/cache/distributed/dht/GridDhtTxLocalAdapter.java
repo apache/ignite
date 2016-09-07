@@ -592,7 +592,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                             break;
                         }
-                        catch (GridCacheEntryRemovedException e) {
+                        catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
                                 log.debug("Get removed entry: " + key);
                         }

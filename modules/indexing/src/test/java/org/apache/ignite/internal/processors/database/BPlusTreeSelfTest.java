@@ -584,35 +584,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void testRemoveSimple() throws Exception {
-        MAX_PER_PAGE = 2;
-
-        final TestTree tree = createTestTree(false);
-
-        for (long i = 0; i < 10; i++)
-            tree.put(i);
-
-        info("Tree before remove: \n" + tree.printTree());
-
-        try {
-            int base = 2;
-
-            for (long i = base; i < 10; i++) {
-                tree.remove(i);
-
-                rmvdIds.add(i);
-
-                info("Done remove: " + i + "\n" + tree.printTree());
-            }
-        }
-        finally {
-            rmvdIds.clear();
-        }
-    }
-
-    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */

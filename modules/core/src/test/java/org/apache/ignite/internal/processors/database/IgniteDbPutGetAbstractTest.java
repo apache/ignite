@@ -45,7 +45,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -83,7 +83,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+        MemoryConfiguration dbCfg = new MemoryConfiguration();
 
         if (isLargePage()) {
             dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
@@ -100,7 +100,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             dbCfg.setPageCacheSize(200 * 1024 * 1024);
         }
 
-        cfg.setDatabaseConfiguration(dbCfg);
+        cfg.setMemoryConfiguration(dbCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
