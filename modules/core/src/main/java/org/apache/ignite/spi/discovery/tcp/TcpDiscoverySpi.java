@@ -343,7 +343,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -1378,7 +1378,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            MarshallerUtils.withNodeName(marsh, ignite.name()).marshal(msg, out);
+            MarshallerUtils.withNodeName(marshaller(), ignite.name()).marshal(msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1462,7 +1462,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = MarshallerUtils.withNodeName(marsh, ignite.name()).unmarshal(in == null ?
+            T res = MarshallerUtils.withNodeName(marshaller(), ignite.name()).unmarshal(in == null ?
                 sock.getInputStream() : in, U.resolveClassLoader(ignite.configuration()));
 
             return res;
@@ -1680,7 +1680,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marsh.marshal(entry.getValue());
+                byte[] bytes = marshaller().marshal(entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1711,7 +1711,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
                 Serializable compData =
-                    MarshallerUtils.withNodeName(marsh, ignite.name()).unmarshal(entry.getValue(), clsLdr);
+                    MarshallerUtils.withNodeName(marshaller(), ignite.name()).unmarshal(entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
@@ -1986,6 +1986,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     public void brakeConnection() {
         impl.brakeConnection();
+    }
+
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        return MarshallerUtils.withNodeName(marsh, gridName);
     }
 
     /** {@inheritDoc} */
