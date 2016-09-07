@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
