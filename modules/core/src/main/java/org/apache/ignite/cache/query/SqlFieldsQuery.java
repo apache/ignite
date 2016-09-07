@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -137,16 +138,7 @@ public final class SqlFieldsQuery extends Query<List<?>> {
      * @param timeUnit Time unit.
      */
     public void setTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
-
-        A.ensure(timeout > 0, "timeout value should be positive.");
-
-        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-
-        A.ensure(timeout <= Integer.MAX_VALUE, "timeout value is too large.");
-
-        this.timeout = (int) tmp;
+        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
     }
 
     /**

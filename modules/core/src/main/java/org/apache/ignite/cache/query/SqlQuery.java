@@ -147,12 +147,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param timeUnit Time granularity.
      */
     public void setTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
-
-        A.ensure(timeout > 0, "timeout value should be positive.");
-
-        this.timeout = (int)TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
     }
 
     /** {@inheritDoc} */

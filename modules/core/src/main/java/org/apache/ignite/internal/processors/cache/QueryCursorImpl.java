@@ -37,7 +37,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private Iterable<T> iterExec;
 
     /** */
-    private Iterator<T> iter;
+    private volatile Iterator<T> iter;
 
     /** */
     private boolean iterTaken;
@@ -90,7 +90,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 all.add(t);
         }
         finally {
-            doClose(false);
+            close();
         }
 
         return all;
@@ -103,19 +103,12 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 clo.consume(t);
         }
         finally {
-            doClose(false);
+            close();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        doClose(true);
-    }
-
-    /**
-     * @param cancellable Cancellable flag.
-     */
-    private void doClose(boolean cancellable) {
         Iterator<T> i;
 
         if ((i = iter) != null) {
@@ -129,7 +122,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                     throw new IgniteException(e);
                 }
             }
-        } else if (cancellable && cancel != null)
+        } else if (cancel != null)
             cancel.apply();
     }
 

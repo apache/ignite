@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -554,11 +556,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return rebuildIndexes(
-                space,
-                typesByName.get(
-                    new TypeName(
-                        space,
-                        valTypeName)));
+                    space,
+                    typesByName.get(
+                            new TypeName(
+                                    space,
+                                    valTypeName)));
         }
         finally {
             busyLock.leaveBusy();
@@ -919,6 +921,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null,
                 null));
         }
+    }
+
+    /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+                "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout > 0, "timeout value should be positive.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        A.ensure(timeout <= Integer.MAX_VALUE, "timeout value too large.");
+
+        return (int) tmp;
     }
 
     /**
