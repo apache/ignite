@@ -17,11 +17,7 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.InputStream;
 
 /**
  * Utility marshaller methods.
@@ -39,28 +35,6 @@ public class MarshallerUtils {
             ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
 
         return marsh;
-    }
-
-    /**
-     * Unmarshal object and set grid name thread local.
-     *
-     * @param name Grid name.
-     * @param marsh Marshaller.
-     * @param arr Binary data.
-     * @param ldr Class loader.
-     * @return Deserialized object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static <T> T unmarshal(String name, Marshaller marsh, byte[] arr, @Nullable ClassLoader ldr)
-        throws IgniteCheckedException {
-        String oldName = IgniteUtils.setCurrentIgniteName(name);
-
-        try {
-            return marsh.unmarshal(arr, ldr);
-        }
-        finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
-        }
     }
 
     /**

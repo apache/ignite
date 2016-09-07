@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -701,7 +700,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         private AddressResponse(Collection<InetSocketAddress> addrs, final String gridName) throws IgniteCheckedException {
             this.addrs = addrs;
 
-            byte[] addrsData = MarshallerUtils.withNodeName(marsh, gridName).marshal(addrs);
+            byte[] addrsData = marsh.marshal(addrs);
 
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
@@ -723,8 +722,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             this.data = data;
 
-            addrs = MarshallerUtils.unmarshal(gridName, marsh,
-                    Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
+            addrs = marsh.unmarshal(Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
         }
 
         /**
