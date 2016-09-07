@@ -34,11 +34,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -192,7 +190,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         }
 
         if (err != null)
-            errBytes = CU.marshal(ctx, err);
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -206,10 +204,8 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 info.unmarshal(cctx, ldr);
         }
 
-        if (errBytes != null) {
-            err = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), errBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (errBytes != null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

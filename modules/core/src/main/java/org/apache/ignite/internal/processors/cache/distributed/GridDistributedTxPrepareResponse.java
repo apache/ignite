@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -102,17 +100,15 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super.prepareMarshal(ctx);
 
         if (err != null)
-            errBytes = CU.marshal(ctx, err);
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (errBytes != null) {
-            err = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), errBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (errBytes != null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
