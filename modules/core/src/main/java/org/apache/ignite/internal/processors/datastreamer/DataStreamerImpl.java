@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -138,7 +139,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
-
 
     /** Per-node buffer size. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -1103,7 +1103,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
     private void checkSecurityPermission(SecurityPermission perm)
-        throws org.apache.ignite.plugin.security.SecurityException{
+        throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 
@@ -1172,8 +1172,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param newEntries Infos.
          * @param topVer Topology version.
          * @param lsnr Listener for the operation future.
-         * @throws IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
+         * @throws IgniteInterruptedCheckedException If failed.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<DataStreamerEntry> newEntries,
             AffinityTopologyVersion topVer,
@@ -1221,7 +1221,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /**
          * @return Future if any submitted.
-         *
          * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
@@ -1273,13 +1272,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
             if (timeout == DFLT_UNLIMIT_TIMEOUT)
                 U.acquire(sem);
-            else
-                if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to add parallel operation.");
+            else if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to add parallel operation.");
 
-                    throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
-                }
+                throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout when starts parallel operation.");
+            }
         }
 
         /**
@@ -1307,7 +1305,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             try {
                 incrementActiveTasks();
-            } catch (IgniteDataStreamerTimeoutException e) {
+            }
+            catch (IgniteDataStreamerTimeoutException e) {
                 curFut.onDone(e);
                 throw e;
             }
@@ -1574,7 +1573,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (depCls != null)
                     cls0 = depCls;
                 else {
-                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext();) {
+                    for (Iterator<Object> it = objs.iterator(); (cls0 == null || U.isJdk(cls0)) && it.hasNext(); ) {
                         Object o = it.next();
 
                         if (o != null)
@@ -1701,12 +1700,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Key object wrapper.
      * Using identity equals prevents slow down Set operations with hashcode collisions.
      */
-    private class KeyCacheObjectWrapper {
+    private static class KeyCacheObjectWrapper {
         /** key object */
         private final KeyCacheObject key;
 
         /**
          * Constructor
+         *
          * @param key key object
          */
         KeyCacheObjectWrapper(KeyCacheObject key) {
@@ -1717,8 +1717,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o;
-
+            return o instanceof KeyCacheObjectWrapper && this.key == ((KeyCacheObjectWrapper)o).key;
         }
 
         /** {@inheritDoc} */
