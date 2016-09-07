@@ -256,7 +256,7 @@ public final class IgfsImpl implements IgfsEx {
         if (secondaryFs instanceof HadoopPayloadAware)
             secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
 
-        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered(), igfsCtx);
+        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
