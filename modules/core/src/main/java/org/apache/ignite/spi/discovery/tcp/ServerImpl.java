@@ -2379,8 +2379,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (clientMsgWorker.clientNodeId.equals(node.id())) {
                             try {
-                                msg0 = MarshallerUtils.unmarshal(spi.ignite().name(), spi.marsh, msgBytes,
-                                    U.resolveClassLoader(spi.ignite().configuration()));
+                                msg0 = unmarshal(msgBytes);
 
                                 prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null, null);
 
@@ -3789,11 +3788,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            final IgniteConfiguration cfg = spi.ignite().configuration();
-
-                            SecurityContext coordSubj = MarshallerUtils.unmarshal(cfg.getGridName(), spi.marsh,
-                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.resolveClassLoader(cfg));
+                            SecurityContext coordSubj =
+                                unmarshal(node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT));
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.

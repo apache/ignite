@@ -345,12 +345,24 @@ abstract class TcpDiscoveryImpl {
     /**
      * Unmarshal object.
      *
+     * @param data Data.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <T> T unmarshal(byte[] data) throws IgniteCheckedException {
+        return MarshallerUtils.withNodeName(spi.marsh, spi.ignite().name())
+            .unmarshal(data, U.resolveClassLoader(spi.ignite().configuration()));
+    }
+
+    /**
+     * Unmarshal object.
+     *
      * @param in Input stream.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
     protected <T> T unmarshal(InputStream in) throws IgniteCheckedException {
-        return MarshallerUtils.unmarshal(spi.ignite().configuration().getGridName(), spi.marsh, in,
-            U.resolveClassLoader(spi.ignite().configuration()));
+        return MarshallerUtils.withNodeName(spi.marsh, spi.ignite().name())
+            .unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
     }
 }

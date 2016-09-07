@@ -18,12 +18,10 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Utility marshaller methods.
@@ -44,18 +42,6 @@ public class MarshallerUtils {
     }
 
     /**
-     * Marshal object with node name taken from provided kernal context.
-     *
-     * @param ctx Kernal context.
-     * @param obj Object to marshal.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static byte[] marshal(GridKernalContext ctx, @Nullable Object obj) throws IgniteCheckedException {
-        return ctx.config().getMarshaller().marshal(obj);
-    }
-
-    /**
      * Unmarshal object and set grid name thread local.
      *
      * @param name Grid name.
@@ -71,50 +57,6 @@ public class MarshallerUtils {
 
         try {
             return marsh.unmarshal(arr, ldr);
-        }
-        finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
-        }
-    }
-
-    /**
-     * Unmarshal object from stream and set grid name thread local.
-     *
-     * @param name Grid name.
-     * @param marsh Marshaller.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @return Deserialized object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static <T> T unmarshal(String name, Marshaller marsh, InputStream in, @Nullable ClassLoader ldr)
-        throws IgniteCheckedException {
-        String oldName = IgniteUtils.setCurrentIgniteName(name);
-
-        try {
-            return marsh.unmarshal(in, ldr);
-        }
-        finally {
-            IgniteUtils.restoreCurrentIgniteName(oldName);
-        }
-    }
-
-    /**
-     * Marshal and unmarshal object.
-     *
-     * @param name Grid name.
-     * @param marsh Marshaller.
-     * @param obj Object to clone.
-     * @param clsLdr Class loader.
-     * @return Deserialized value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static <T> T marshalUnmarshal(String name, Marshaller marsh, T obj, @Nullable ClassLoader clsLdr)
-        throws IgniteCheckedException {
-        String oldName = IgniteUtils.setCurrentIgniteName(name);
-
-        try {
-            return marsh.unmarshal(marsh.marshal(obj), clsLdr);
         }
         finally {
             IgniteUtils.restoreCurrentIgniteName(oldName);

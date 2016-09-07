@@ -206,6 +206,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         caches = new ConcurrentHashMap<>();
         jCacheProxies = new ConcurrentHashMap<>();
         stopSeq = new LinkedList<>();
+
+        MarshallerUtils.withNodeName(marshaller, ctx.gridName());
     }
 
     /**
@@ -3397,7 +3399,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (ldr == null)
                             ldr = val.getCacheStoreFactory().getClass().getClassLoader();
 
-                        MarshallerUtils.marshalUnmarshal(ctx.gridName(), marshaller, val.getCacheStoreFactory(),
+                        marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
                             U.resolveClassLoader(ldr, ctx.config()));
                     }
                     catch (IgniteCheckedException e) {
@@ -3407,8 +3409,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 try {
-                    return MarshallerUtils.marshalUnmarshal(ctx.gridName(), marshaller, val,
-                        U.resolveClassLoader(ctx.config()));
+                    return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration " +
