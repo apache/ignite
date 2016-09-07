@@ -275,4 +275,28 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
+
+    /**
+     * Gets the platform utility cache.
+     *
+     * @return Platform utility cache.
+     */
+    public PlatformUtilityCache utilityCache();
+
+    /**
+     * Registers platform type name with provided type ID.
+     *
+     * @param id Type ID.
+     * @param name Type name.
+     * @return Whether class was registered.
+     */
+    public boolean registerType(int id, String name) throws IgniteCheckedException;
+
+    /**
+     * Gets platform class name for provided type ID.
+     *
+     * @param id Type ID.
+     * @return Class name.
+     */
+    public String getClass(int id) throws IgniteCheckedException;
 }

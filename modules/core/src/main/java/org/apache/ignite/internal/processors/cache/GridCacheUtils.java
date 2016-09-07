@@ -116,6 +116,9 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache name for platforms. */
+    public static final String UTILITY_CACHE_NAME_PLATFORM = "ignite-platform-sys-cache";
+
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
@@ -1219,7 +1222,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is marshaller system cache.
      */
     public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName);
+        return MARSH_CACHE_NAME.equals(cacheName) || UTILITY_CACHE_NAME_PLATFORM.equals(cacheName);
     }
 
     /**

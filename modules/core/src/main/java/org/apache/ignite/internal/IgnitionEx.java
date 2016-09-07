@@ -79,6 +79,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.IgniteSpi;
@@ -1966,6 +1967,9 @@ public class IgnitionEx {
 
             cacheCfgs.add(utilitySystemCache());
 
+            if (cfg.getPlatformConfiguration() instanceof PlatformDotNetConfiguration)
+                cacheCfgs.add(utilitySystemCachePlatform());
+
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
 
@@ -1980,20 +1984,8 @@ public class IgnitionEx {
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isMarshallerCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
+                    if (CU.isSystemCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
                             "\" because it is reserved for internal purposes.");
 
                     cacheCfgs.add(ccfg);
@@ -2167,6 +2159,15 @@ public class IgnitionEx {
             cache.setCopyOnRead(false);
 
             return cache;
+        }
+
+        /**
+         * Creates system cache configuration for platforms.
+         *
+         * @return System cache configuration for platforms.
+         */
+        private static CacheConfiguration utilitySystemCachePlatform() {
+            return marshallerSystemCache().setName(CU.UTILITY_CACHE_NAME_PLATFORM);
         }
 
         /**

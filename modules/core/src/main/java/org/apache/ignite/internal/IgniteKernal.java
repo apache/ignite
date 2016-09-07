@@ -880,10 +880,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor(createComponent(PlatformProcessor.class, ctx));  // has to start before ContinuousProcessor
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
-            startProcessor(createComponent(PlatformProcessor.class, ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
