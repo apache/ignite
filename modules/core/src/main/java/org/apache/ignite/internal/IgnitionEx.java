@@ -76,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -1936,7 +1935,7 @@ public class IgnitionEx {
                     marsh = new BinaryMarshaller();
             }
 
-            MarshallerUtils.withNodeName(marsh, cfg.getGridName());
+            MarshallerUtils.setNodeName(marsh, cfg.getGridName());
 
             myCfg.setMarshaller(marsh);
 

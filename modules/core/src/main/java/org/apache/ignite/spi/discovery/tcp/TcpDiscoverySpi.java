@@ -1991,7 +1991,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        return MarshallerUtils.withNodeName(marsh, gridName);
+        MarshallerUtils.setNodeName(marsh, gridName);
+
+        return marsh;
     }
 
     /** {@inheritDoc} */

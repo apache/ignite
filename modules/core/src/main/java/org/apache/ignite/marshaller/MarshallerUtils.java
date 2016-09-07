@@ -29,13 +29,10 @@ public class MarshallerUtils {
      *
      * @param marsh Marshaller instance.
      * @param nodeName Node name.
-     * @return Marshaller instance.
      */
-    public static Marshaller withNodeName(Marshaller marsh, @Nullable String nodeName) {
+    public static void setNodeName(Marshaller marsh, @Nullable String nodeName) {
         if (marsh instanceof AbstractNodeNameAwareMarshaller)
             ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
-
-        return marsh;
     }
 
     /**
@@ -47,7 +44,7 @@ public class MarshallerUtils {
     public static JdkMarshaller jdkMarshaller(@Nullable String nodeName) {
         JdkMarshaller marsh = new JdkMarshaller();
 
-        withNodeName(new JdkMarshaller(), nodeName);
+        setNodeName(new JdkMarshaller(), nodeName);
 
         return marsh;
     }

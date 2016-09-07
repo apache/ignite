@@ -129,6 +129,7 @@ public class BinaryContext {
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
     private static final Set<String> BINARYLIZABLE_SYS_CLSS;
 
+    /** Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
 
@@ -242,7 +243,7 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
-        MarshallerUtils.withNodeName(optmMarsh, igniteCfg.getGridName());
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
