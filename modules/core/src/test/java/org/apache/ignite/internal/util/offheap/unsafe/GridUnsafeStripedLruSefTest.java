@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
