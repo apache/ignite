@@ -83,7 +83,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
@@ -448,16 +447,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         validate(cfg);
 
         if (!state.srvcCompatibility) {
+            Marshaller marsh = ctx.config().getMarshaller();
+
             LazyServiceConfiguration cfg0;
 
             try {
-                byte[] srvcBytes = MarshallerUtils.marshal(ctx, cfg.getService());
+                byte[] srvcBytes = marsh.marshal(cfg.getService());
 
                 cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
-                    + ", marsh=" + ctx.config().getMarshaller() + "]", e);
+                    + ", marsh=" + marsh + "]", e);
 
                 return new GridFinishedFuture<>(e);
             }
@@ -1122,7 +1123,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfg instanceof LazyServiceConfiguration) {
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service srvc = MarshallerUtils.unmarshal(ctx.gridName(), m, bytes, U.resolveClassLoader(null, ctx.config()));
+            Service srvc = m.unmarshal(bytes, U.resolveClassLoader(null, ctx.config()));
 
             ctx.resource().inject(srvc);
 
@@ -1132,10 +1133,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             Service svc = cfg.getService();
 
             try {
-                byte[] bytes = MarshallerUtils.marshal(ctx, svc);
+                byte[] bytes = m.marshal(svc);
 
-                Service cp = MarshallerUtils.unmarshal(ctx.gridName(), m, bytes, U.resolveClassLoader(svc.getClass().getClassLoader(),
-                    ctx.config()));
+                Service cp = m.unmarshal(bytes,
+                    U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
 
                 ctx.resource().inject(cp);
 

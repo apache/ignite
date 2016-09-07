@@ -81,7 +81,6 @@ import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -775,15 +774,15 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : MarshallerUtils.unmarshal(ctx.gridName(), marsh,
-                            res.getJobResultBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                        Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(),
+                            U.resolveClassLoader(clsLdr, ctx.config()));
 
                         IgniteException ex = loc ? res.getException() :
-                            MarshallerUtils.<IgniteException>unmarshal(ctx.gridName(), marsh, res.getExceptionBytes(),
+                            marsh.<IgniteException>unmarshal(res.getExceptionBytes(),
                                 U.resolveClassLoader(clsLdr, ctx.config()));
 
                         Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            MarshallerUtils.<Map<Object, Object>>unmarshal(ctx.gridName(), marsh, res.getJobAttributesBytes(),
+                            marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(),
                                 U.resolveClassLoader(clsLdr, ctx.config()));
 
                         jobRes.onResponse(res0, ex, attrs, res.isCancelled());
@@ -1254,16 +1253,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ses.getTaskName(),
                         ses.getUserVersion(),
                         ses.getTaskClassName(),
-                        loc ? null : MarshallerUtils.marshal(ctx, res.getJob()),
+                        loc ? null : marsh.marshal(res.getJob()),
                         loc ? res.getJob() : null,
                         ses.getStartTime(),
                         timeout,
                         ses.getTopology(),
-                        loc ? null : MarshallerUtils.marshal(ctx, ses.getJobSiblings()),
+                        loc ? null : marsh.marshal(ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
-                        loc ? null : MarshallerUtils.marshal(ctx, sesAttrs),
+                        loc ? null : marsh.marshal(sesAttrs),
                         loc ? sesAttrs : null,
-                        loc ? null : MarshallerUtils.marshal(ctx, jobAttrs),
+                        loc ? null : marsh.marshal(jobAttrs),
                         loc ? jobAttrs : null,
                         ses.getCheckpointSpi(),
                         dep.classLoaderId(),
