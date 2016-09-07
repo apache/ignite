@@ -123,9 +123,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
 
-        Byte prefix = interopCfg.marshallerCacheKeyPrefix();
-
-        utilityCache = new PlatformUtilityCache(prefix);
+        utilityCache = new PlatformUtilityCache();
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
@@ -497,24 +495,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformUtilityCache utilityCache() {
         return utilityCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean registerType(int id, String name) {
-        try {
-            return utilityCache.getMarshallerContext().registerTypeName(id, name);
-        } catch (IgniteCheckedException ignored) {
-            return false;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getClass(int id) {
-        try {
-            return utilityCache.getMarshallerContext().getTypeName(id);
-        } catch (IgniteCheckedException ignored) {
-            return null;
-        }
     }
 
     /**
