@@ -225,7 +225,7 @@ public class BinaryContext {
     private IgniteLogger log;
 
     /** */
-    private final OptimizedMarshaller optmMarsh;
+    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
 
     /** Compact footer flag. */
     private boolean compactFooter;
@@ -241,8 +241,6 @@ public class BinaryContext {
     public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
         assert metaHnd != null;
         assert igniteCfg != null;
-
-        optmMarsh = new OptimizedMarshaller(false);
 
         MarshallerUtils.withNodeName(optmMarsh, igniteCfg.getGridName());
 

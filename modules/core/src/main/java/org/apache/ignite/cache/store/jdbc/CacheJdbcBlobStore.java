@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -109,7 +110,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
 
     /** Marshaller. */
-    private static final JdkMarshaller marsh = new JdkMarshaller();
+    private static final Marshaller marsh = new JdkMarshaller();
 
     /** Connection URL. */
     private String connUrl = DFLT_CONN_URL;
@@ -151,6 +152,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private IgniteLogger log;
 
     /** Marshaller. */
+    @IgniteInstanceResource
     private Ignite ignite;
 
     /** Init guard. */
@@ -559,7 +561,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return MarshallerUtils.withNodeName(marsh, ignite.name()).marshal(obj);
     }
 
     /**
@@ -574,7 +576,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return MarshallerUtils.unmarshal(ignite.name(), marsh, bytes, getClass().getClassLoader());
+        return MarshallerUtils.withNodeName(marsh, ignite.name()).unmarshal(bytes, getClass().getClassLoader());
     }
 
     /**
@@ -591,15 +593,5 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      */
     protected CacheStoreSession session() {
         return ses;
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     */
-    @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
-        this.ignite = ignite;
-
-        MarshallerUtils.withNodeName(marsh, ignite.name());
     }
 }
