@@ -44,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
@@ -174,7 +173,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         try {
             switch (scope) {
                 case GLOBAL_SCOPE: {
-                    byte[] data = state == null ? null : MarshallerUtils.marshal(ctx, state);
+                    byte[] data = state == null ? null : marsh.marshal(state);
 
                     saved = getSpi(ses.getCheckpointSpi()).saveCheckpoint(key, data, timeout, override);
 
@@ -205,7 +204,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         timeout = ses.getEndTime() - now;
 
                     // Save it first to avoid getting null value on another node.
-                    byte[] data = state == null ? null : MarshallerUtils.marshal(ctx, state);
+                    byte[] data = state == null ? null : marsh.marshal(state);
 
                     Set<String> keys = keyMap.get(ses.getId());
 
@@ -338,10 +337,8 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             Serializable state = null;
 
             // Always deserialize with task/session class loader.
-            if (data != null) {
-                state = MarshallerUtils.unmarshal(ctx.gridName(), marsh, data,
-                    U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
-            }
+            if (data != null)
+                state = marsh.unmarshal(data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
 
             record(EVT_CHECKPOINT_LOADED, key);
 
