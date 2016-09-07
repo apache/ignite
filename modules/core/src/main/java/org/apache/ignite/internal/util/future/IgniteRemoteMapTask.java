@@ -21,17 +21,26 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Util task that will execute ComputeTask on a given node.
+ */
 @GridInternal public class IgniteRemoteMapTask<T, R> extends ComputeTaskAdapter<T, R> {
-
+    /** */
     private final ClusterNode node;
 
+    /** */
     private final ComputeTask<T, R> remoteTask;
 
+    /**
+     * @param node Target node.
+     * @param remoteTask Delegate task.
+     */
     public IgniteRemoteMapTask(ClusterNode node, ComputeTask<T, R> remoteTask) {
         this.node = node;
         this.remoteTask = remoteTask;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable T arg) throws IgniteException {
 
@@ -43,31 +52,44 @@ import org.jetbrains.annotations.Nullable;
         throw new IgniteException("Node " + node + " is not present in subgrid.");
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteException {
         assert results.size() == 1;
 
         return results.get(0).getData();
     }
 
+    /**
+     *
+     */
     private static class Job<T, R> extends ComputeJobAdapter {
         /** Auto-inject job context. */
         @JobContextResource
         private ComputeJobContext jobCtx;
 
+        /** Auto-inject ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
         private final ComputeTask<T, R> remoteTask;
 
-        @Nullable private ComputeTaskFuture<R> future;
-
+        /** */
         @Nullable private final T arg;
 
+        /** */
+        @Nullable private ComputeTaskFuture<R> future;
+
+        /**
+         * @param remoteTask Remote task.
+         * @param arg Argument.
+         */
         public Job(ComputeTask<T, R> remoteTask, @Nullable T arg) {
             this.remoteTask = remoteTask;
             this.arg = arg;
         }
 
+        /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
             if (future == null) {
                 IgniteCompute compute = ignite.compute().withAsync();
