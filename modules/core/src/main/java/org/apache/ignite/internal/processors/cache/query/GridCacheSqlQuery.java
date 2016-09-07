@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -133,10 +132,9 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param m Marshaller.
-     * @param kernalCtx kernal context.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshallParams(Marshaller m, final GridKernalContext kernalCtx) throws IgniteCheckedException {
+    public void marshallParams(Marshaller m) throws IgniteCheckedException {
         if (paramsBytes != null)
             return;
 
@@ -147,7 +145,6 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param m Marshaller.
-     * @param ctx kernal context.
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshallParams(Marshaller m, GridKernalContext ctx) throws IgniteCheckedException {
@@ -156,7 +153,7 @@ public class GridCacheSqlQuery implements Message {
 
         assert paramsBytes != null;
 
-        params = MarshallerUtils.unmarshal(ctx.gridName(), m, paramsBytes, U.resolveClassLoader(ctx.config()));
+        params = m.unmarshal(paramsBytes, U.resolveClassLoader(ctx.config()));
     }
 
     /** {@inheritDoc} */
