@@ -2167,7 +2167,21 @@ public class IgnitionEx {
          * @return System cache configuration for platforms.
          */
         private static CacheConfiguration utilitySystemCachePlatform() {
-            return marshallerSystemCache().setName(CU.UTILITY_CACHE_NAME_PLATFORM);
+            CacheConfiguration cache = new CacheConfiguration();
+
+            cache.setName(CU.UTILITY_CACHE_NAME_PLATFORM);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(ATOMIC);
+            cache.setSwapEnabled(false);
+            cache.setRebalanceMode(SYNC);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setStartSize(300);
+            cache.setRebalanceOrder(-2);//Prior to other system caches.
+            cache.setCopyOnRead(false);
+
+            return cache;
         }
 
         /**
