@@ -33,11 +33,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -173,7 +171,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.marshal(cctx);
         }
 
-        errBytes = CU.marshal(ctx, err);
+        errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -190,10 +188,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.unmarshal(cctx, ldr);
         }
 
-        if (errBytes != null) {
-            err = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), errBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (errBytes != null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

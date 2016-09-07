@@ -1,5 +1,3 @@
-//        if (expiryPlcBytes != null && expiryPlc == null)
-//            expiryPlc = MarshallerUtils.unmarshal(ctx.marshaller(), expiryPlcBytes, ldr, ctx.kernalContext());
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -636,10 +633,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
 
-        if (expiryPlcBytes != null) {
-            expiryPlc = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), expiryPlcBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (expiryPlcBytes != null)
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

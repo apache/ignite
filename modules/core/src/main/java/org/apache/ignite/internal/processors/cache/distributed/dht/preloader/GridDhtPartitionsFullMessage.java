@@ -28,9 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -135,10 +133,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         super.prepareMarshal(ctx);
 
         if (parts != null && partsBytes == null)
-            partsBytes = CU.marshal(ctx, parts);
+            partsBytes = ctx.marshaller().marshal(parts);
 
         if (partCntrs != null)
-            partCntrsBytes = CU.marshal(ctx, partCntrs);
+            partCntrsBytes = ctx.marshaller().marshal(partCntrs);
     }
 
     /**
@@ -159,18 +157,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null && parts == null) {
-            parts = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), partsBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (partsBytes != null && parts == null)
+            parts = ctx.marshaller().unmarshal(partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (parts == null)
             parts = new HashMap<>();
 
-        if (partCntrsBytes != null && partCntrs == null) {
-            partCntrs = MarshallerUtils.unmarshal(ctx.gridName(), ctx.marshaller(), partCntrsBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (partCntrsBytes != null && partCntrs == null)
+            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();
