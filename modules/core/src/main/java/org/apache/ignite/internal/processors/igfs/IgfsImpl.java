@@ -539,8 +539,11 @@ public final class IgfsImpl implements IgfsEx {
 
                         break;
 
-                    default:
-                        assert false : "Unknown mode.";
+                    case PROXY:
+                        A.notNull(secondaryFs, "Secondary File System");
+
+                        res = secondaryFs.exists(path);
+                        break;
                 }
 
                 return res;
@@ -1741,12 +1744,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Mode.
      */
     private IgfsMode resolveMode(IgfsPath path) {
-        IgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new IgfsInvalidPathException("PROXY mode cannot be used in IGFS directly: " + path);
-
-        return mode;
+        return modeRslvr.resolveMode(path);
     }
 
     /**
