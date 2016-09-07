@@ -128,7 +128,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        int rowSize = getRowSize(null, row);
+        int rowSize = getRowSize(row);
 
         int written = 0;
 
@@ -220,14 +220,13 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     }
 
     /**
-     * @param coctx Cache object context.
      * @param row Row.
      * @return Entry size on page.
      * @throws IgniteCheckedException If failed.
      */
-    private static int getRowSize(CacheObjectContext coctx, CacheDataRow row) throws IgniteCheckedException {
-        int keyLen = row.key().valueBytesLength(coctx);
-        int valLen = row.value().valueBytesLength(coctx);
+    private static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
+        int keyLen = row.key().valueBytesLength(null);
+        int valLen = row.value().valueBytesLength(null);
 
         return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
     }
@@ -237,16 +236,14 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         new PageHandler<CacheDataRow, DataPageIO, Integer>() {
             @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
                 throws IgniteCheckedException {
-                CacheObjectContext coctx = null;
-
-                int rowSize = getRowSize(coctx, row);
+                int rowSize = getRowSize(row);
                 int oldFreeSpace = io.getFreeSpace(buf);
 
                 assert oldFreeSpace > 0 : oldFreeSpace;
 
                 // If the full row does not fit into this page write only a fragment.
-                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(coctx, page, buf, io, row, rowSize):
-                    addRowFragment(coctx, page, buf, io, row, written, rowSize);
+                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, buf, io, row, rowSize):
+                    addRowFragment(page, buf, io, row, written, rowSize);
 
                 // Reread free space after update.
                 int newFreeSpace = io.getFreeSpace(buf);
@@ -262,7 +259,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             }
 
             /**
-             * @param coctx Cache object context.
              * @param page Page.
              * @param buf Buffer.
              * @param io IO.
@@ -272,14 +268,13 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
              * @throws IgniteCheckedException If failed.
              */
             private int addRow(
-                CacheObjectContext coctx,
                 Page page,
                 ByteBuffer buf,
                 DataPageIO io,
                 CacheDataRow row,
                 int rowSize
             ) throws IgniteCheckedException {
-                io.addRow(coctx, buf, row, rowSize);
+                io.addRow(null, buf, row, rowSize);
 
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 if (isWalDeltaRecordNeeded(wal, page))
@@ -290,7 +285,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             }
 
             /**
-             * @param coctx Cache object context.
              * @param page Page.
              * @param buf Buffer.
              * @param io IO.
@@ -301,7 +295,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
              * @throws IgniteCheckedException If failed.
              */
             private int addRowFragment(
-                CacheObjectContext coctx,
                 Page page,
                 ByteBuffer buf,
                 DataPageIO io,
@@ -312,7 +305,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                 // Read last link before the fragment write, because it will be updated there.
                 long lastLink = row.link();
 
-                int payloadSize = io.addRowFragment(coctx, buf, row, written, rowSize);
+                int payloadSize = io.addRowFragment(null, buf, row, written, rowSize);
 
                 assert payloadSize > 0: payloadSize;
 

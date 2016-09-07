@@ -398,6 +398,12 @@ public abstract class PageIO {
             case T_REUSE_LEAF:
                 return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
 
+            case T_PENDING_REF_INNER:
+                return (Q) IgniteCacheOffheapManagerImpl.PendingEntryInnerIO.VERSIONS.forVersion(ver);
+
+            case T_PENDING_REF_LEAF:
+                return (Q)IgniteCacheOffheapManagerImpl.PendingEntryLeafIO.VERSIONS.forVersion(ver);
+
             default:
                 // For tests.
                 if (innerTestIO != null && innerTestIO.getType() == type && innerTestIO.getVersion() == ver)

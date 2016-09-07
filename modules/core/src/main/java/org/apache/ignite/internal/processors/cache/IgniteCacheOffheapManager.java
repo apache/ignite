@@ -197,9 +197,17 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
-    public RootPage indexRootPage(String idxName) throws IgniteCheckedException;
+    /**
+     * @param idxName Index name.
+     * @return Root page for index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException;
 
-    public ReuseList indexReuseList();
+    /**
+     * @return Reuse list for index tree.
+     */
+    public ReuseList reuseListForIndex(String idxName) throws IgniteCheckedException;
 
     /**
      *

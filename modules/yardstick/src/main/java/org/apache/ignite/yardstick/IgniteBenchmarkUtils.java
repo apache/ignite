@@ -90,20 +90,20 @@ public class IgniteBenchmarkUtils {
     public static void main(String[] args) throws Exception {
         final String cfg = "modules/yardstick/config/ignite-localhost-config.xml";
 
-        final Class<? extends BenchmarkDriver> benchmark = IgnitePutBenchmark.class;
+        final Class<? extends BenchmarkDriver> benchmark = IgniteSqlQueryBenchmark.class;
 
-        final int threads = 5;
+        final int threads = 1;
 
-        final boolean clientDriverNode = false;
+        final boolean clientDriverNode = true;
 
-        final int extraNodes = 0;
+        final int extraNodes = 2;
 
         final int warmUp = 5;
         final int duration = 5;
 
         final int range = 100_000;
 
-        final boolean throughputLatencyProbe = true;
+        final boolean throughputLatencyProbe = false;
 
         for (int i = 0; i < extraNodes; i++) {
             IgniteConfiguration nodeCfg = Ignition.loadSpringBean(cfg, "grid.cfg");

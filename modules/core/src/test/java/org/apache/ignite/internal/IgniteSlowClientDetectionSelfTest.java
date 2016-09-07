@@ -80,7 +80,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
-        dbCfg.setPageSize(11 * 1024);
+        dbCfg.setPageSize(16 * 1024);
 
         cfg.setMemoryConfiguration(dbCfg);
 
