@@ -1092,16 +1092,16 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeMessage("oldVal", oldVal))
                     return false;
 
                 writer.incrementState();
 
-//            case 13:
-//                if (!writer.writeMessage("oldVal", oldVal))
-//                    return false;
-//
-//                writer.incrementState();
+            case 13:
+                if (!writer.writeInt("partId", partId))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1212,20 +1212,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 12:
-                partId = reader.readInt("partId", -1);
+                oldVal = reader.readMessage("oldVal");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-//            case 13:
-//                oldVal = reader.readMessage("oldVal");
-//
-//                if (!reader.isLastRead())
-//                    return false;
-//
-//                reader.incrementState();
+            case 13:
+                partId = reader.readInt("partId", -1);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
 
         }
 
@@ -1239,7 +1239,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */
