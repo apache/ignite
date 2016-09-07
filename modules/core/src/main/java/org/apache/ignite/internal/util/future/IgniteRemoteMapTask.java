@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal public class IgniteRemoteMapTask<T, R> extends ComputeTaskAdapter<T, R> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final ClusterNode node;
 
     /** */
@@ -63,6 +66,9 @@ import org.jetbrains.annotations.Nullable;
      *
      */
     private static class Job<T, R> extends ComputeJobAdapter {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Auto-inject job context. */
         @JobContextResource
         private ComputeJobContext jobCtx;
