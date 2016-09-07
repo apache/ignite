@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteNotPeerDeployable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -184,8 +183,7 @@ class GridDeploymentCommunication {
 
         if (req.responseTopic() == null) {
             try {
-                req.responseTopic(MarshallerUtils.unmarshal(ctx.gridName(), marsh, req.responseTopicBytes(),
-                    U.resolveClassLoader(ctx.config())));
+                req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process deployment request (will ignore): " + req, e);
@@ -446,7 +444,7 @@ class GridDeploymentCommunication {
             long start = U.currentTimeMillis();
 
             if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
-                req.responseTopicBytes(MarshallerUtils.marshal(ctx, req.responseTopic()));
+                req.responseTopicBytes(marsh.marshal(req.responseTopic()));
 
             ctx.io().send(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
