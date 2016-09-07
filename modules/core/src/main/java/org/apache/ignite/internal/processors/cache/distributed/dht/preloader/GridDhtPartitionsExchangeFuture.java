@@ -498,8 +498,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            cctx.database().checkpointReadLock();
-
             IgniteInternalFuture backupInitFut = null;
 
             if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
@@ -510,36 +508,31 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 backupInitFut = cctx.database().startLocalBackup(backupMsg, node);
             }
 
-            try {
-                switch (exchange) {
-                    case ALL: {
-                        distributedExchange();
+            switch (exchange) {
+                case ALL: {
+                    distributedExchange();
 
-                        break;
-                    }
-
-                    case CLIENT: {
-                        initTopologies();
-
-                        clientOnlyExchange();
-
-                        break;
-                    }
-
-                    case NONE: {
-                        initTopologies();
-
-                        onDone(topologyVersion());
-
-                        break;
-                    }
-
-                    default:
-                        assert false;
+                    break;
                 }
-            }
-            finally {
-                cctx.database().checkpointReadUnlock();
+
+                case CLIENT: {
+                    initTopologies();
+
+                    clientOnlyExchange();
+
+                    break;
+                }
+
+                case NONE: {
+                    initTopologies();
+
+                    onDone(topologyVersion());
+
+                    break;
+                }
+
+                default:
+                    assert false;
             }
 
             if (backupInitFut != null)
@@ -564,13 +557,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
-        if (crd != null) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
+        cctx.database().checkpointReadLock();
 
-                cacheCtx.topology().beforeExchange(this, !centralizedAff);
+        try {
+            if (crd != null) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    if (cacheCtx.isLocal())
+                        continue;
+
+                    cacheCtx.topology().beforeExchange(this, !centralizedAff);
+                }
             }
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
         }
     }
 
@@ -762,32 +762,39 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         waitPartitionRelease();
 
-        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
+        cctx.database().checkpointReadLock();
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
-                continue;
+        try {
+            boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
-            if (topChanged) {
-                cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
+                    continue;
 
-                // Partition release future is done so we can flush the write-behind store.
-                cacheCtx.store().forceFlush();
+                if (topChanged) {
+                    cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
+
+                    // Partition release future is done so we can flush the write-behind store.
+                    cacheCtx.store().forceFlush();
+                }
+
+                cacheCtx.topology().beforeExchange(this, !centralizedAff);
             }
 
-            cacheCtx.topology().beforeExchange(this, !centralizedAff);
+            cctx.database().beforeExchange(discoEvt);
+
+            if (crd.isLocal()) {
+                if (remaining.isEmpty())
+                    onAllReceived(false);
+            }
+            else
+                sendPartitions(crd);
+
+            initDone();
         }
-
-        cctx.database().beforeExchange(discoEvt);
-
-        if (crd.isLocal()) {
-            if (remaining.isEmpty())
-                onAllReceived(false);
+        finally {
+            cctx.database().checkpointReadUnlock();
         }
-        else
-            sendPartitions(crd);
-
-        initDone();
     }
 
     /**
