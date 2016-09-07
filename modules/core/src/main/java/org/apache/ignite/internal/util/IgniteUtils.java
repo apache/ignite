@@ -9603,15 +9603,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Restore current Ignite name.
-     *
-     * @param oldName Old name.
-     */
-    public static void restoreCurrentIgniteName(@Nullable String oldName) {
-        LOC_IGNITE_NAME.set(oldName);
-    }
-
-    /**
      * Restore old Ignite name.
      *
      * @param oldName Old name.

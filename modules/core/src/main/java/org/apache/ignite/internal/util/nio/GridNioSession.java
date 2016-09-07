@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
-
 import org.jetbrains.annotations.Nullable;
 
 /**

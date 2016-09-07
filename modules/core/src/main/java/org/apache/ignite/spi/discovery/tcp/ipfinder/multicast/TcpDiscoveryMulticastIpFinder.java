@@ -593,7 +593,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                             AddressResponse addrRes;
 
                             try {
-                                addrRes = new AddressResponse(data, getGridName());
+                                addrRes = new AddressResponse(data);
                             }
                             catch (IgniteCheckedException e) {
                                 LT.warn(log, e, "Failed to deserialize multicast response.");
@@ -697,7 +697,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param addrs Addresses discovery SPI binds to.
          * @throws IgniteCheckedException If marshalling failed.
          */
-        private AddressResponse(Collection<InetSocketAddress> addrs, final String gridName) throws IgniteCheckedException {
+        private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             this.addrs = addrs;
 
             byte[] addrsData = marsh.marshal(addrs);
@@ -714,10 +714,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /**
          * @param data Message data.
-         * @param gridName Grid name.
          * @throws IgniteCheckedException If unmarshalling failed.
          */
-        private AddressResponse(byte[] data, final String gridName) throws IgniteCheckedException {
+        private AddressResponse(byte[] data) throws IgniteCheckedException {
             assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
             this.data = data;
@@ -841,7 +840,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             AddressResponse res;
 
             try {
-                res = new AddressResponse(addrs, gridName);
+                res = new AddressResponse(addrs);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to prepare multicast message.", e);
