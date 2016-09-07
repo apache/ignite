@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.websession.WebSessionEntity;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import javax.servlet.ServletContext;
@@ -88,16 +87,13 @@ class WebSessionV2 implements HttpSession {
     /** Original session to delegate invalidation. */
     private final HttpSession genuineSes;
 
-    /** Ignite config. */
-    private final String gridName;
-
     /**
      * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
      */
     WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
-        @Nullable WebSessionEntity entity, final Marshaller marshaller, final String gridName) {
+        @Nullable WebSessionEntity entity, final Marshaller marshaller) {
         assert id != null;
         assert marshaller != null;
         assert ctx != null;
@@ -107,7 +103,6 @@ class WebSessionV2 implements HttpSession {
         this.ctx = ctx;
         this.isNew = isNew;
         this.genuineSes = ses;
-        this.gridName = gridName;
 
         accessTime = System.currentTimeMillis();
 
@@ -338,7 +333,7 @@ class WebSessionV2 implements HttpSession {
     @Nullable private <T> T unmarshal(final byte[] bytes) throws IOException {
         if (marshaller != null) {
             try {
-                return MarshallerUtils.unmarshal(gridName, marshaller, bytes, getClass().getClassLoader());
+                return marshaller.unmarshal(bytes, getClass().getClassLoader());
             }
             catch (IgniteCheckedException e) {
                 throw new IOException(e);
@@ -358,7 +353,7 @@ class WebSessionV2 implements HttpSession {
     @Nullable private byte[] marshal(final Object obj) throws IOException {
         if (marshaller != null) {
             try {
-                return MarshallerUtils.withNodeName(marshaller, gridName).marshal(obj);
+                return marshaller.marshal(obj);
             }
             catch (IgniteCheckedException e) {
                 throw new IOException(e);
