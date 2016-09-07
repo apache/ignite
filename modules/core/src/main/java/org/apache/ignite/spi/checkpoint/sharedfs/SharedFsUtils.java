@@ -25,10 +25,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 
 /**
  * Utility class that helps to manage files. It provides read/write
@@ -54,7 +52,7 @@ final class SharedFsUtils {
      *    to {@link SharedFsCheckpointData} object.
      * @throws IOException Thrown if file read error occurred.
      */
-    static SharedFsCheckpointData read(File file, Marshaller m, IgniteLogger log, final IgniteConfiguration igniteCfg)
+    static SharedFsCheckpointData read(File file, Marshaller m, IgniteLogger log)
         throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;
@@ -63,7 +61,7 @@ final class SharedFsUtils {
         InputStream in = new FileInputStream(file);
 
         try {
-            return (SharedFsCheckpointData) MarshallerUtils.unmarshal(igniteCfg.getGridName(), m, in, U.gridClassLoader());
+            return (SharedFsCheckpointData)m.unmarshal(in, U.gridClassLoader());
         }
         finally {
             U.close(in, log);
@@ -78,12 +76,11 @@ final class SharedFsUtils {
      * @param data Checkpoint data.
      * @param m Grid marshaller.
      * @param log Messages logger.
-     * @param igniteCfg Ignite config.
      * @throws IgniteCheckedException Thrown if data could not be marshalled.
      * @throws IOException Thrown if file write operation failed.
      */
-    static void write(File file, SharedFsCheckpointData data, Marshaller m, IgniteLogger log,
-        final IgniteConfiguration igniteCfg) throws IOException, IgniteCheckedException {
+    static void write(File file, SharedFsCheckpointData data, Marshaller m, IgniteLogger log)
+        throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;
         assert data != null;
