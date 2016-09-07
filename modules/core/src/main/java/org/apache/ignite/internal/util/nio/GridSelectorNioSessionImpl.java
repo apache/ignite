@@ -77,7 +77,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param sndQueueLimit Send queue limit.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
-     * @param gridName Grid name.
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
@@ -88,8 +87,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         boolean accepted,
         int sndQueueLimit,
         @Nullable ByteBuffer writeBuf,
-        @Nullable ByteBuffer readBuf,
-        String gridName
+        @Nullable ByteBuffer readBuf
     ) {
         super(filterChain, locAddr, rmtAddr, accepted);
 
