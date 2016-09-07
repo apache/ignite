@@ -1513,8 +1513,13 @@ public final class IgfsImpl implements IgfsEx {
 
                 break;
 
-            default:
-                assert false : "Unknown mode: " + mode;
+            case PROXY:
+                IgfsFile status = secondaryFs.info(path);
+
+                if (status != null)
+                    return new IgfsFileImpl(status, data.groupBlockSize());
+                else
+                    return null;
         }
 
         if (info == null)
