@@ -236,7 +236,17 @@ public final class IgfsImpl implements IgfsEx {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, IgfsMode> mode : cfgModes.entrySet()) {
-                IgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
+                IgfsMode mode0;
+
+                if (mode.getValue() == PROXY) {
+                    if (secondaryFs == null)
+                        throw new IgniteCheckedException("Mode cannot be PROXY if secondary file system hasn't" +
+                            " been defined: " + mode.getKey());
+
+                    mode0 = PROXY;
+                }
+                else
+                    mode0 = secondaryFs == null ? PRIMARY : mode.getValue();
 
                 try {
                     modes.add(new T2<>(new IgfsPath(mode.getKey()), mode0));
@@ -539,8 +549,10 @@ public final class IgfsImpl implements IgfsEx {
 
                         break;
 
-                    default:
-                        assert false : "Unknown mode.";
+                    case PROXY:
+                        res = secondaryFs.exists(path);
+
+                        break;
                 }
 
                 return res;
@@ -1741,12 +1753,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Mode.
      */
     private IgfsMode resolveMode(IgfsPath path) {
-        IgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new IgfsInvalidPathException("PROXY mode cannot be used in IGFS directly: " + path);
-
-        return mode;
+        return modeRslvr.resolveMode(path);
     }
 
     /**
