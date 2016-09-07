@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;

@@ -126,7 +126,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /**
      * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
      *
-     * @param res Update result to wrap.
+     * @param itemsCnt Update result to wrap.
      * @return Resulting Iterable.
      */
     @SuppressWarnings("unchecked")
