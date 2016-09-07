@@ -684,17 +684,27 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
-                if (mode != PRIMARY) {
-                    assert IgfsUtils.isDualMode(mode); // PROXY mode explicit usage is forbidden.
+                switch (mode) {
+                    case PRIMARY:
+                        meta.move(src, dest);
 
-                    await(src, dest);
+                        break;
 
-                    meta.renameDual(secondaryFs, src, dest);
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                        await(src, dest);
 
-                    return null;
+                        meta.renameDual(secondaryFs, src, dest);
+
+                        break;
+
+                    case PROXY:
+                        A.notNull(secondaryFs, "Secondary File System");
+
+                        secondaryFs.rename(src, dest);
+
+                        break;
                 }
-
-                meta.move(src, dest);
 
                 return null;
             }
