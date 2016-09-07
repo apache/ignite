@@ -134,11 +134,22 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test thread pool size.
+     *
+     * @throws Exception If failed.
+     */
+    public void testThreadPoolSize() throws Exception {
+        check(new OdbcConfiguration().setThreadPoolSize(0), false);
+        check(new OdbcConfiguration().setThreadPoolSize(-1), false);
+
+        check(new OdbcConfiguration().setThreadPoolSize(4), true);
+    }
+
+    /**
      * Perform check.
      *
      * @param odbcCfg ODBC configuration.
-     * @param success Success flag.
-     * @throws Exception If failed.
+     * @param success Success flag. * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
@@ -160,4 +171,5 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
             }, IgniteException.class, null);
         }
     }
+
 }

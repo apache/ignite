@@ -64,8 +64,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Test fo regular igfs operations.
@@ -205,12 +206,10 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param memoryMode Memory mode.
      */
     protected IgfsAbstractBaseSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        assert mode != null && mode != PROXY;
-
         this.mode = mode;
         this.memoryMode = memoryMode;
 
-        dual = mode != PRIMARY;
+        dual = (mode == DUAL_SYNC || mode == DUAL_ASYNC);
     }
 
     /**
