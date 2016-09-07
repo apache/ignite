@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
-
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
@@ -71,9 +70,15 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @return Deserialized message.
+     * @return Deserialized message,
+     * @throws java.lang.Throwable if unmarshal failed.
+     */
+    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh) throws Throwable {
+        return message(marsh, null);
+    }
+
+    /**
+     * @return Deserialized message,
      * @throws java.lang.Throwable if unmarshal failed.
      */
     @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {

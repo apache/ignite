@@ -1462,8 +1462,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marshaller().unmarshal(in == null ?
-                sock.getInputStream() : in, U.resolveClassLoader(ignite.configuration()));
+            T res = marshaller().unmarshal(in == null ? sock.getInputStream() : in,
+                U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }

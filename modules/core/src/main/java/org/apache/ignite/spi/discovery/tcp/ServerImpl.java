@@ -65,7 +65,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -1240,10 +1239,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-            attrs.put(
-                IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                spi.marshaller().marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS))
-            );
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
+                spi.marshaller().marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
 
             node.setAttributes(attrs);
         }
@@ -4853,9 +4850,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (nextMsg != null) {
                             try {
-                                TcpDiscoveryCustomEventMessage ackMsg =
-                                    new TcpDiscoveryCustomEventMessage(getLocalNodeId(), nextMsg,
-                                        spi.marshaller().marshal(nextMsg));
+                                TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
+                                    getLocalNodeId(), nextMsg, spi.marshaller().marshal(nextMsg));
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
@@ -4986,9 +4982,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     try {
-                        final IgniteConfiguration cfg = spi.ignite().configuration();
-
-                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(cfg));
+                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -5434,8 +5429,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
-                        TcpDiscoveryAbstractMessage msg =
-                            spi.marshaller().unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
+                        TcpDiscoveryAbstractMessage msg = spi.marshaller().unmarshal(in,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
 

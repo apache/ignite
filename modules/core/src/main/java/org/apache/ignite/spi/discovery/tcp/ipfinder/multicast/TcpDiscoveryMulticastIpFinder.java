@@ -640,15 +640,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
     }
 
-    /**
-     * get Ignite configuration if possible.
-     *
-     * @return Ignite config or {@code null}.
-     */
-    @Nullable private String getGridName() {
-        return ignite == null ? null : ignite.name();
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         if (addrSnds != null) {
@@ -701,12 +692,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             this.addrs = addrs;
 
             byte[] addrsData = marsh.marshal(addrs);
-
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
-                throw new IgniteCheckedException("Too long data packet [size=" + data.length +
-                    ", max=" + MAX_DATA_LENGTH + "]");
+                throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
 
             System.arraycopy(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
