@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import java.io.Serializable;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.intValue;
 /**
  * Create data transfer object for node REST configuration properties.
  */
-public class VisorRestConfiguration implements Serializable {
+public class VisorRestConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

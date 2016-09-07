@@ -74,6 +74,7 @@
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>
+        <jackson2.version>2.7.5</jackson2.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetty.version>9.2.11.v20150529</jetty.version>
@@ -874,13 +875,13 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <!--web console-->
-                                        <exclude>**/src/main/js/*.babelrc</exclude>
-                                        <exclude>**/src/main/js/*.eslintrc</exclude>
-                                        <exclude>**/src/main/js/*.npmrc</exclude>
+                                        <exclude>**/src/main/js/.babelrc</exclude>
+                                        <exclude>**/src/main/js/.eslintrc</exclude>
                                         <exclude>**/src/main/js/build/**</exclude>
                                         <exclude>**/src/main/js/node_modules/**</exclude>
+                                        <exclude>**/src/main/js/ignite_modules/**</exclude>
+                                        <exclude>**/src/main/js/ignite_modules_temp/**</exclude>
                                         <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
-                                        <exclude>**/src/main/js/serve/keys/test.*</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

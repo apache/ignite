@@ -137,7 +137,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
