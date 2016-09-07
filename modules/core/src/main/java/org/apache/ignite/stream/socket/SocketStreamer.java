@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamTupleExtractor;
 import org.jetbrains.annotations.Nullable;
