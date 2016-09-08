@@ -385,8 +385,10 @@ export default ['domainsController', [
         $scope.showImportDomainModal = function() {
             LegacyTable.tableReset();
 
-            FormUtils.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
-                if ($scope.ui.inputForm.$dirty)
+            const dirty = $scope.ui.inputForm && $scope.ui.inputForm.$dirty;
+
+            FormUtils.confirmUnsavedChanges(dirty, function() {
+                if (dirty)
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
                 const demo = $root.IgniteDemoMode;
@@ -441,7 +443,7 @@ export default ['domainsController', [
 
                                     $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                                    FormUtils.confirmUnsavedChanges($scope.ui.inputForm.$dirty, () => {
+                                    FormUtils.confirmUnsavedChanges(dirty, () => {
                                         $scope.importDomain.action = 'connect';
                                         $scope.importDomain.tables = [];
 
