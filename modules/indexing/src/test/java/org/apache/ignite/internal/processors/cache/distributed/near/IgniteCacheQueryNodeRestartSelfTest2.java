@@ -229,12 +229,12 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     while (!locks.compareAndSet(g, 0, 1));
 
                     try {
-                        if (rnd.nextBoolean()) { // Partitioned query.
+                        if (true) { // Partitioned query.
                             IgniteCache<?,?> cache = grid(g).cache("pu");
 
                             SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 
-                            boolean smallPageSize = rnd.nextBoolean();
+                            boolean smallPageSize = false; //rnd.nextBoolean();
 
                             if (smallPageSize)
                                 qry.setPageSize(3);

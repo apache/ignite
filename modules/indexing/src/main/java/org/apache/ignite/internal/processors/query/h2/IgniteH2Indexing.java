@@ -128,6 +128,7 @@ import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.jdbc.JdbcStatement;
 import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.h2.server.web.WebServer;
@@ -355,7 +356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             PreparedStatement stmt = cache.get(sql);
 
-            if (stmt != null && !stmt.isClosed()) {
+            if (stmt != null && !((JdbcStatement)stmt).wasCancelled()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -858,7 +859,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     @Override public void apply() {
                         try {
                             stmt.cancel();
-                            stmt.close();
                         }
                         catch (SQLException e) {
                             throw new IgniteException("Failed to cancel the statement.", e);
