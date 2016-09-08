@@ -1319,6 +1319,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures())
                 U.warn(log, ">>> " + fut);
+
+            if (tm != null) {
+                U.warn(log, "Pending transaction deadlock detection futures:");
+
+                for (IgniteInternalFuture<?> fut : tm.deadlockDetectionFutures())
+                    U.warn(log, ">>> " + fut);
+            }
         }
 
         for (GridCacheContext ctx : cctx.cacheContexts()) {

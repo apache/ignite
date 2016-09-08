@@ -37,6 +37,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 
 #include "test_type.h"
+#include "test_utils.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -46,30 +47,6 @@ using namespace ignite::common;
 using namespace boost::unit_test;
 
 using ignite::impl::binary::BinaryUtils;
-
-/** Read buffer size. */
-enum { ODBC_BUFFER_SIZE = 1024 };
-
-/**
- * Extract error message.
- *
- * @param handleType Type of the handle.
- * @param handle Handle.
- * @return Error message.
- */
-std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
-{
-    SQLCHAR sqlstate[7] = {};
-    SQLINTEGER nativeCode;
-
-    SQLCHAR message[ODBC_BUFFER_SIZE];
-    SQLSMALLINT reallen = 0;
-
-    SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
-
-    return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
-        std::string(reinterpret_cast<char*>(message), reallen);
-}
 
 /**
  * Test setup fixture.
@@ -135,7 +112,7 @@ struct QueriesTestSuiteFixture
         SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
 
-    static Ignite StartAdditionalNode(const char* name)
+    static Ignite StartNode(const char* name, const char* config)
     {
         IgniteConfiguration cfg;
 
@@ -153,11 +130,20 @@ struct QueriesTestSuiteFixture
         cfg.jvmMaxMem = 4096;
 #endif
 
-        cfg.springCfgPath.assign(getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH")).append("/queries-test-noodbc.xml");
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
+
+        BOOST_REQUIRE(cfgPath != 0);
+
+        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
 
         IgniteError err;
 
         return Ignition::Start(cfg, name);
+    }
+
+    static Ignite StartAdditionalNode(const char* name)
+    {
+        return StartNode(name, "queries-test-noodbc.xml");
     }
 
     /**
@@ -165,27 +151,7 @@ struct QueriesTestSuiteFixture
      */
     QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        cfg.springCfgPath.assign(getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH")).append("/queries-test.xml");
-
-        IgniteError err;
-
-        grid = Ignition::Start(cfg, "NodeMain");
+        grid = StartNode("NodeMain", "queries-test.xml");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }
@@ -217,7 +183,7 @@ struct QueriesTestSuiteFixture
 
         T columns[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), 0);
@@ -253,7 +219,7 @@ struct QueriesTestSuiteFixture
 
         SQLLEN columnLens[columnsCnt] = { 0 };
 
-        // Binding colums.
+        // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), &columnLens[i]);
@@ -405,7 +371,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, 0);
@@ -442,7 +408,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -500,7 +466,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
@@ -561,7 +527,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
-    // Binding colums.
+    // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
     {
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, 0, 0, &columnLens[i]);

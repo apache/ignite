@@ -21,10 +21,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -71,5 +73,21 @@ public abstract class DatabaseMetadataDialect {
      */
     protected DbTable table(String schema, String tbl, Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
         return new DbTable(schema, tbl, cols, idxs);
+    }
+
+    /**
+     * Create index descriptor.
+     *
+     * @param idxName Index name.
+     * @return New initialized {@code QueryIndex} instance.
+     */
+    protected QueryIndex index(String idxName) {
+        QueryIndex idx = new QueryIndex();
+
+        idx.setName(idxName);
+        idx.setIndexType(QueryIndexType.SORTED);
+        idx.setFields(new LinkedHashMap<String, Boolean>());
+
+        return idx;
     }
 }

@@ -252,7 +252,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
         out.close();
 
-        awaitFileClose(igfsSecondary.asSecondary(), FILE);
+        awaitFileClose(igfsSecondary, FILE);
 
         // Instantiate file system with overridden "seq reads before prefetch" property.
         Configuration cfg = new Configuration();
