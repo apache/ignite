@@ -791,15 +791,15 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<IgfsPath> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
-                    assert secondaryFs != null;
+                if (mode != PRIMARY) {
+                    A.notNull(secondaryFs, "Secondary File System");
 
                     try {
                         Collection<IgfsPath> children = secondaryFs.listPaths(path);
 
                         files.addAll(children);
 
-                        if (!modeRslvr.hasPrimaryChild(path))
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
                             return files;
                     }
                     catch (Exception e) {
@@ -840,8 +840,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<IgfsFile> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
-                    assert secondaryFs != null;
+                if (mode != PRIMARY) {
+                    A.notNull(secondaryFs, "Secondary File System");
 
                     try {
                         Collection<IgfsFile> children = secondaryFs.listFiles(path);
@@ -852,7 +852,7 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(impl);
                         }
 
-                        if (!modeRslvr.hasPrimaryChild(path))
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
                             return files;
                     }
                     catch (Exception e) {
