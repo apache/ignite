@@ -21,7 +21,7 @@ angular
     .module('ignite-console.version', [])
     .provider('IgniteVersion', function() {
         const version = {
-            version: '1.6.0'
+            version: '1.7.0'
         };
 
         this.update = (newVersion) => {
