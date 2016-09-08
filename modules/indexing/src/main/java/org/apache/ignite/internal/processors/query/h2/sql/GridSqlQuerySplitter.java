@@ -170,7 +170,8 @@ public class GridSqlQuerySplitter {
         final Prepared prepared = prepared(stmt);
 
         if (prepared instanceof Query || prepared instanceof Explain)
-            return splitQuery(GridSqlQueryParser.query(prepared), params, collocatedGrpBy, distributedJoins);
+            return splitQueryStatement(GridSqlQueryParser.query(prepared), params, prepared instanceof Explain,
+                collocatedGrpBy, distributedJoins);
 
         if (prepared instanceof Merge || prepared instanceof Update || prepared instanceof Insert ||
             prepared instanceof Delete)
@@ -186,15 +187,16 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins If distributed joins enabled.
      * @return Two step query.
      */
-    private static GridCacheTwoStepQuery splitQuery(
+    private static GridCacheTwoStepQuery splitQueryStatement(
         Query prepared,
         Object[] params,
+        boolean explain,
         final boolean collocatedGrpBy,
         final boolean distributedJoins
     ) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
         X.ensureX(gridStmt instanceof GridSqlQuery, "SQL query expected");
-
+        gridStmt.explain(explain);
         return splitQuery((GridSqlQuery) gridStmt, params, collocatedGrpBy,
             distributedJoins && !isCollocated(query(prepared)));
     }
