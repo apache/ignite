@@ -20,7 +20,7 @@ package org.apache.ignite.cache.store.cassandra.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -66,8 +66,8 @@ public class KryoSerializer implements Serializer {
             throw new IllegalStateException("Failed to serialize object of the class '" + obj.getClass().getName() + "'", e);
         }
         finally {
-            close(out);
-            close(stream);
+            U.closeQuiet(out);
+            U.closeQuiet(stream);
         }
     }
 
@@ -86,18 +86,8 @@ public class KryoSerializer implements Serializer {
             throw new IllegalStateException("Failed to deserialize object from byte stream", e);
         }
         finally {
-            close(in);
-            close(stream);
-        }
-    }
-
-    private void close(@Nullable AutoCloseable rsrc) {
-        if (rsrc != null) {
-            try {
-                rsrc.close();
-            }
-            catch (Exception ignored) {
-            }
+            U.closeQuiet(in);
+            U.closeQuiet(stream);
         }
     }
 }
