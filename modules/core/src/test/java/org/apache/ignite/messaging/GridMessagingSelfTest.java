@@ -1045,6 +1045,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         }, IllegalStateException.class, null);
 
+        discoSpi.blockCustomEvent();
+
         final String topic = "topic";
 
         UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
@@ -1060,9 +1062,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertNull(id);
 
-        IgniteFuture<UUID> fut = msg.future();
+        IgniteFuture<UUID> starFut = msg.future();
 
-        Assert.assertNotNull(fut);
+        Assert.assertNotNull(starFut);
+
+        Assert.assertFalse(starFut.isDone());
+
+        discoSpi.stopBlock();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1072,9 +1078,11 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         }, IllegalStateException.class, null);
 
-        id = fut.get();
+        id = starFut.get();
 
         Assert.assertNotNull(id);
+
+        Assert.assertTrue(starFut.isDone());
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
@@ -1085,8 +1093,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
         }, 5000);
 
         assertEquals(1, msgCnt.get());
-
-        discoSpi.blockCustomEvent();
 
         msg.stopRemoteListen(id);
 
@@ -1135,7 +1141,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             synchronized (mux) {
                 if (blockCustomEvt) {
                     DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
-                    if (msg0 instanceof StopRoutineDiscoveryMessage) {
+                    if (msg0 instanceof StopRoutineDiscoveryMessage || msg0 instanceof StartRoutineDiscoveryMessage) {
                         log.info("Block custom message: " + msg0);
                         blockedMsgs.add(msg);
 
