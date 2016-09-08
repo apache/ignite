@@ -4770,6 +4770,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
+//            return IgnitionEx.gridx(t.get1()).cachex(t.get2());
             return IgnitionEx.localIgnite().cachex(t.get2());
         }
         catch (IllegalStateException e) {
