@@ -22,7 +22,7 @@ mongodb:
     - ./data/mongo:/data/db
 
 backend:
-  image: ignite/web-console-backend:1.7.0
+  image: ignite/web-console-backend
   links:
     # Link mongodb container as with mongodb hostname.
     - mongodb:mongodb
@@ -49,7 +49,7 @@ backend:
     - mail_auth_pass=""
 
 frontend:
-  image: ignite/web-console-frontend:1.7.0
+  image: ignite/web-console-frontend
   links:
     # Link backend container to proxy backend requests throught nginx container.
     - backend:backend
