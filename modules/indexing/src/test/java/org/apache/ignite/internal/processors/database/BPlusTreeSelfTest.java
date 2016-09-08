@@ -516,13 +516,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testMassiveRemove_false() throws Exception {
-        doTestMassiveRemove(false);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
     private void doTestMassiveRemove(boolean canGetRow) throws Exception {
         MAX_PER_PAGE = 2;
         final int threads = 16;
