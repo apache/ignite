@@ -759,14 +759,26 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PRIMARY)
-                    meta.mkdirs(path, props0);
-                else {
-                    assert IgfsUtils.isDualMode(mode);;
+                switch (mode) {
+                    case PRIMARY:
+                        meta.mkdirs(path, props0);
 
-                    await(path);
+                        break;
 
-                    meta.mkdirsDual(secondaryFs, path, props0);
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                        await(path);
+
+                        meta.mkdirsDual(secondaryFs, path, props0);
+
+                        break;
+
+                    case PROXY:
+                        A.notNull(secondaryFs, "Secondary File System");
+
+                        secondaryFs.mkdirs(path, props0);
+
+                        break;
                 }
 
                 return null;
