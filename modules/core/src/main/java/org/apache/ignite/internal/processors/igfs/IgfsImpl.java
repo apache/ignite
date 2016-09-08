@@ -754,7 +754,10 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                boolean dual = IgfsUtils.isDualMode(mode);;
+                if (mode == PROXY)
+                    return secondaryFs.delete(path, recursive);
+
+                boolean dual = IgfsUtils.isDualMode(mode);
 
                 if (dual)
                     await(path);
