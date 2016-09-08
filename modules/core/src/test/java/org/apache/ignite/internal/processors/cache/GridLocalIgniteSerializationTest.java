@@ -27,6 +27,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -63,51 +64,55 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetSimple() throws Exception {
-        testPutGet(new SimpleTestObject("one"), null);
+        checkPutGet(new SimpleTestObject("one"), null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutGetSerializable() throws Exception {
-        testPutGet(new SerializableTestObject("test"), null);
+        checkPutGet(new SerializableTestObject("test"), null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutGetExternalizable() throws Exception {
-        testPutGet(new ExternalizableTestObject("test"), null);
+        checkPutGet(new ExternalizableTestObject("test"), null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutGetBinarylizable() throws Exception {
-        testPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
+        checkPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void testPutGet(final TestObject obj, final String gridName) throws Exception {
+    private void checkPutGet(final TestObject obj, final String gridName) throws Exception {
+
+
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (final Ignite ignite = startGrid(gridName)) {
-                    final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
+                    if (ignite.configuration().getMarshaller() instanceof AbstractNodeNameAwareMarshaller) {
+                        final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-                    assertNull(obj.ignite());
+                        assertNull(obj.ignite());
 
-                    cache.put(1, obj);
+                        cache.put(1, obj);
 
-                    assertNotNull(obj.ignite());
+                        assertNotNull(obj.ignite());
 
-                    final TestObject loadedObj = cache.get(1);
+                        final TestObject loadedObj = cache.get(1);
 
-                    assertNotNull(loadedObj.ignite());
+                        assertNotNull(loadedObj.ignite());
 
-                    assertEquals(obj, loadedObj);
+                        assertEquals(obj, loadedObj);
+                    }
                 }
 
                 return null;
