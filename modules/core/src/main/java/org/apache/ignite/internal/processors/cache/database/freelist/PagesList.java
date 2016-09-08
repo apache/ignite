@@ -224,31 +224,31 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                     int idx = io.addPage(prevBuf, nextId);
 
                     if (idx == -1) { // Attempt to add page failed: the node page is full.
-                        Page next = page(nextId);
+                        try (Page next = page(nextId)) {
+                            ByteBuffer nextBuf = next.getForWrite();
 
-                        ByteBuffer nextBuf = next.getForWrite();
+                            if (locked == null)
+                                locked = new ArrayList<>(2);
 
-                        if (locked == null)
-                            locked = new ArrayList<>(2);
+                            locked.add(next);
 
-                        locked.add(next);
+                            setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
 
-                        setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
+                            if (isWalDeltaRecordNeeded(wal, page))
+                                wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
 
-                        if (isWalDeltaRecordNeeded(wal, page))
-                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+                            // Here we should never write full page, because it is known to be new.
+                            next.fullPageWalRecordPolicy(Boolean.FALSE);
 
-                        // Here we should never write full page, because it is known to be new.
-                        next.fullPageWalRecordPolicy(Boolean.FALSE);
+                            if (isWalDeltaRecordNeeded(wal, next))
+                                wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
 
-                        if (isWalDeltaRecordNeeded(wal, next))
-                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
-
-                        // Switch to this new page, which is now a part of our list
-                        // to add the rest of the bag to the new page.
-                        prevBuf = nextBuf;
-                        prevId = nextId;
-                        page = next;
+                            // Switch to this new page, which is now a part of our list
+                            // to add the rest of the bag to the new page.
+                            prevBuf = nextBuf;
+                            prevId = nextId;
+                            page = next;
+                        }
                     }
                     else {
                         // TODO: use single WAL record for bag?
@@ -309,6 +309,16 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void createStripes() throws IgniteCheckedException {
+        for (int b = 0; b < buckets; b++) {
+            for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
+                addStripe(b);
+        }
+    }
+
+    /**
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new list if created, {@code false} if should be initialized from metadata.
      * @throws IgniteCheckedException If failed.
@@ -319,6 +329,8 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                 try (Page page = page(metaPageId)) {
                     initPage(metaPageId, page, PagesListMetaIO.VERSIONS.latest(), wal);
                 }
+
+                createStripes();
             }
             else {
                 Map<Integer, GridLongList> bucketsData = new HashMap<>();
@@ -383,6 +395,8 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                 }
             }
         }
+        else
+            createStripes();
     }
 
     /** {@inheritDoc} */
@@ -403,14 +417,17 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                     int tailIdx = 0;
 
                     while (tailIdx < tails.length) {
-                        if (curPage == null || !curIo.addListHead(curBuf, bucket, tails[tailIdx], tails[tailIdx + 1])) {
+                        int written = curPage != null ? curIo.addTails(curBuf, bucket, tails, tailIdx) : 0;
+
+                        if (written == 0) {
                             if (nextPageId == 0L) {
                                 nextPageId = allocatePageNoReuse();
 
                                 if (curPage != null) {
                                     curIo.setNextMetaPageId(curBuf, nextPageId);
 
-                                    curPage.releaseWrite(true);
+                                    releaseAndClose(curPage);
+                                    curPage = null;
                                 }
 
                                 curPage = page(nextPageId);
@@ -421,8 +438,8 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                                 curIo.initNewPage(curBuf, nextPageId);
                             }
                             else {
-                                if (curPage != null)
-                                    curPage.releaseWrite(true);
+                                releaseAndClose(curPage);
+                                curPage = null;
 
                                 curPage = page(nextPageId);
                                 curBuf = curPage.getForWrite();
@@ -435,14 +452,13 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                             nextPageId = curIo.getNextMetaPageId(curBuf);
                         }
                         else
-                            tailIdx += 2;
+                            tailIdx += written * 2;
                     }
                 }
             }
         }
         finally {
-            if (curPage != null)
-                curPage.releaseWrite(true);
+            releaseAndClose(curPage);
         }
 
         while (nextPageId != 0L) {
@@ -458,6 +474,20 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
             }
             finally {
                 page.releaseWrite(true);
+            }
+        }
+    }
+
+    /**
+     * @param page Page.
+     */
+    private void releaseAndClose(Page page) {
+        if (page != null) {
+            try {
+                page.releaseWrite(true);
+            }
+            finally {
+                page.close();
             }
         }
     }
@@ -507,7 +537,9 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
     protected final long addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
-        initPage(pageId, page(pageId), PagesListNodeIO.VERSIONS.latest(), wal);
+        try (Page page = page(pageId)) {
+            initPage(pageId, page, PagesListNodeIO.VERSIONS.latest(), wal);
+        }
 
         for (;;) {
             long[] old = getBucket(bucket);

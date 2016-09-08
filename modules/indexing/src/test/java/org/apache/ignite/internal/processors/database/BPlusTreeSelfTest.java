@@ -106,23 +106,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         pageMem = createPageMemory();
 
-        final long[] rootIds = new long[2];
-
-        for (int i = 0; i < rootIds.length; i++)
-            rootIds[i] = allocateMetaPage().pageId();
-
-        reuseList = createReuseList(CACHE_ID, pageMem, rootIds, true);
+        reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
     }
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param rootIds Root page IDs.
+     * @param rootId Root page ID.
      * @param initNew Init new flag.
      * @return Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
+    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
         return null;
     }

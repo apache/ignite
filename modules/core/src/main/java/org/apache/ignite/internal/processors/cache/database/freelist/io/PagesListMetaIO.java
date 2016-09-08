@@ -103,27 +103,36 @@ public class PagesListMetaIO extends PageIO {
     /**
      * @param buf Buffer.
      * @param bucket Bucket number.
-     * @param tailId Tail page ID.
-     * @param headId Head page ID.
-     * @return {@code True} if bucket information was stored.
+     * @param tails Tails.
+     * @param tailsOff Tails offset.
+     * @return Number of items written.
      */
-    public boolean addListHead(ByteBuffer buf, int bucket, long tailId, long headId) {
+    public int addTails(ByteBuffer buf, int bucket, long[] tails, int tailsOff) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
 
         int cnt = getCount(buf);
+        int cap = getCapacity(buf);
 
-        if (cnt == getCapacity(buf))
-            return false;
+        if (cnt == cap)
+            return 0;
 
         int off = offset(cnt);
 
-        buf.putShort(off, (short)bucket);
-        buf.putLong(off + 2, tailId);
-        buf.putLong(off + 10, headId);
+        int write = Math.min(cap, (tails.length - tailsOff) / 2);
 
-        setCount(buf, cnt + 1);
+        for (int i = 0; i < write; i++) {
+            buf.putShort(off, (short)bucket);
+            buf.putLong(off + 2, tails[tailsOff]);
+            buf.putLong(off + 10, tails[tailsOff + 1]);
 
-        return true;
+            tailsOff += 2;
+
+            off += ITEM_SIZE;
+        }
+
+        setCount(buf, cnt + write);
+
+        return write;
     }
 
     /**

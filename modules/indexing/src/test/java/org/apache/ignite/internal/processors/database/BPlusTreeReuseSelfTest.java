@@ -34,9 +34,9 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
-    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
+    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
-        return new ReuseListNew(cacheId, "test", pageMem, null, 0, initNew);
+        return new ReuseListNew(cacheId, "test", pageMem, null, rootId, initNew);
     }
 
     /**

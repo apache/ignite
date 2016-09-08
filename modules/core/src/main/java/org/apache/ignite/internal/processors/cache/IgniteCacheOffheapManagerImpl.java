@@ -72,10 +72,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private boolean indexingEnabled;
 
     /** */
-    private CacheDataStore locCacheDataStore;
+    protected CacheDataStore locCacheDataStore;
 
     /** */
-    private final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
     protected PendingEntriesTree pendingEntries;
