@@ -727,7 +727,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-//            IgniteKernal g = IgnitionEx.gridx(gridName);
             IgniteKernal g = IgnitionEx.localIgnite();
 
             return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :

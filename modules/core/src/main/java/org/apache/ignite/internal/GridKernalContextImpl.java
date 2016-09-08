@@ -875,7 +875,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-//            return IgnitionEx.gridx(stash.get()).context();
             return IgnitionEx.localIgnite().context();
         }
         catch (IllegalStateException e) {
