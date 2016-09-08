@@ -19,9 +19,7 @@ package org.apache.ignite.internal.pagemem.impl;
 
 import java.util.Random;
 
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -32,149 +30,91 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageIdConstruction() throws Exception {
-        assertEquals(0x00000001L, PageIdUtils.pageId(0, 1));
-        assertEquals(0x1000000001L, PageIdUtils.pageId(1, 1));
-        assertEquals(0x3FFFFFFFL, PageIdUtils.pageId(0, 0x3FFFFFFF));
-        assertEquals(0x103FFFFFFFL, PageIdUtils.pageId(1, 0x3FFFFFFF));
+    public void testRotatePageId() throws Exception {
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0002FFFFFFFFFFFFL));
+        assertEquals(0x0B02FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0A02FFFFFFFFFFFFL));
+        assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0F02FFFFFFFFFFFFL));
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFF02FFFFFFFFFFFFL));
+    }
 
-        assertEquals(0xFFFF000000001L, PageIdUtils.pageId(0xFFFF, 1));
-        assertEquals(0xFFFF03FFFFFFFL, PageIdUtils.pageId(0xFFFF, 0x3FFFFFFF));
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEffectivePageId() throws Exception {
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0002FFFFFFFFFFFFL));
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0A02FFFFFFFFFFFFL));
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0F02FFFFFFFFFFFFL));
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0xFF02FFFFFFFFFFFFL));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLinkConstruction() throws Exception {
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 0));
-        assertEquals(0x001FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 1));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 0));
+        assertEquals(0x01FFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 1));
 
         assertEquals(0x0000000000000000L, PageIdUtils.link(0, 0));
-        assertEquals(0x0010000000000000L, PageIdUtils.link(0, 1));
+        assertEquals(0x0100000000000000L, PageIdUtils.link(0, 1));
 
-        assertEquals(0x8000000000000000L, PageIdUtils.link(0, 2048));
-        assertEquals(0x800FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 2048));
+        assertEquals(0xF000000000000000L, PageIdUtils.link(0, 0xF0));
+        assertEquals(0xF0FFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 0xF0));
 
-        assertEquals(0x8010000000000000L, PageIdUtils.link(0, 2049));
-        assertEquals(0x801FFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 2049));
+        assertEquals(0xFE00000000000000L, PageIdUtils.link(0, 0xFE));
+        assertEquals(0xFEFFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 0xFE));
 
-        assertEquals(0xFFF0000000000000L, PageIdUtils.link(0, 4095));
-        assertEquals(0xFFFFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFL, 4095));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFileIdExtraction() throws Exception {
-        assertEquals(0, PageIdUtils.fileId(0x00000001L));
-        assertEquals(1, PageIdUtils.fileId(0x1000000001L));
-        assertEquals(0, PageIdUtils.fileId(0x3FFFFFFFL));
-        assertEquals(1, PageIdUtils.fileId(0x10FFFFFFFFL));
-
-        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFF000000001L));
-        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFF0FFFFFFFFL));
-
-        assertEquals(0, PageIdUtils.fileId(0xFFF00000_00000001L));
-        assertEquals(1, PageIdUtils.fileId(0xFFF00010_00000001L));
-        assertEquals(0, PageIdUtils.fileId(0xFFF00000_FFFFFFFFL));
-        assertEquals(1, PageIdUtils.fileId(0xFFF00010_FFFFFFFFL));
-
-        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFFFFF0_00000001L));
-        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFFFFF0_FFFFFFFFL));
+        assertEquals(0x0F00000000000000L, PageIdUtils.link(0, 0xF));
+        assertEquals(0x0FFFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 0xF));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOffsetExtraction() throws Exception {
-        assertEquals(0, PageIdUtils.bytesOffset(0x000FFFFFFFFFFFFFL));
-        assertEquals(8, PageIdUtils.bytesOffset(0x001FFFFFFFFFFFFFL));
-
-        assertEquals(0, PageIdUtils.bytesOffset(0x0000000000000000L));
-        assertEquals(8, PageIdUtils.bytesOffset(0x0010000000000000L));
-
-        assertEquals(16384, PageIdUtils.bytesOffset(0x8000000000000000L));
-        assertEquals(16384, PageIdUtils.bytesOffset(0x800FFFFFFFFFFFFFL));
-
-        assertEquals(16392, PageIdUtils.bytesOffset(0x8010000000000000L));
-        assertEquals(16392, PageIdUtils.bytesOffset(0x801FFFFFFFFFFFFFL));
-
-        assertEquals(32760, PageIdUtils.bytesOffset(0xFFF0000000000000L));
-        assertEquals(32760, PageIdUtils.bytesOffset(0xFFFFFFFFFFFFFFFFL));
-
-        assertEquals(0, PageIdUtils.itemId(0x000FFFFFFFFFFFFFL));
-        assertEquals(1, PageIdUtils.itemId(0x001FFFFFFFFFFFFFL));
+        assertEquals(0, PageIdUtils.itemId(0x00FFFFFFFFFFFFFFL));
+        assertEquals(1, PageIdUtils.itemId(0x01FFFFFFFFFFFFFFL));
 
         assertEquals(0, PageIdUtils.itemId(0x0000000000000000L));
-        assertEquals(1, PageIdUtils.itemId(0x0010000000000000L));
+        assertEquals(1, PageIdUtils.itemId(0x0100000000000000L));
 
-        assertEquals(2048, PageIdUtils.itemId(0x8000000000000000L));
-        assertEquals(2048, PageIdUtils.itemId(0x800FFFFFFFFFFFFFL));
+        assertEquals(0xFA, PageIdUtils.itemId(0xFA00000000000000L));
+        assertEquals(0xFA, PageIdUtils.itemId(0xFAFFFFFFFFFFFFFFL));
 
-        assertEquals(2049, PageIdUtils.itemId(0x8010000000000000L));
-        assertEquals(2049, PageIdUtils.itemId(0x801FFFFFFFFFFFFFL));
+        assertEquals(0xF, PageIdUtils.itemId(0x0F00000000000000L));
+        assertEquals(0xF, PageIdUtils.itemId(0x0FFFFFFFFFFFFFFFL));
 
-        assertEquals(4095, PageIdUtils.itemId(0xFFF0000000000000L));
-        assertEquals(4095, PageIdUtils.itemId(0xFFFFFFFFFFFFFFFFL));
+        assertEquals(0xF0, PageIdUtils.itemId(0xF000000000000000L));
+        assertEquals(0xF0, PageIdUtils.itemId(0xF0FFFFFFFFFFFFFFL));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPageIdFromLink() throws Exception {
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x000FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x100FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x010FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x001FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x800FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x080FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0x008FFFFFFFFFFFFFL));
-        assertEquals(0x000FFFFFFFFFFFFFL, PageIdUtils.pageId(0xFFFFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x00FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x10FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x01FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x11FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x80FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x88FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x08FFFFFFFFFFFFFFL));
+        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0xFFFFFFFFFFFFFFFFL));
+
+        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.pageId(0x0002FFFFFFFFFFFFL));
+        assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.pageId(0x1002FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.pageId(0x0102FFFFFFFFFFFFL));
+        assertEquals(0x1102FFFFFFFFFFFFL, PageIdUtils.pageId(0x1102FFFFFFFFFFFFL));
+        assertEquals(0x8002FFFFFFFFFFFFL, PageIdUtils.pageId(0x8002FFFFFFFFFFFFL));
+        assertEquals(0x8802FFFFFFFFFFFFL, PageIdUtils.pageId(0x8802FFFFFFFFFFFFL));
+        assertEquals(0x0802FFFFFFFFFFFFL, PageIdUtils.pageId(0x0802FFFFFFFFFFFFL));
+        assertEquals(0xFF02FFFFFFFFFFFFL, PageIdUtils.pageId(0xFF02FFFFFFFFFFFFL));
 
         assertEquals(0L, PageIdUtils.pageId(0x0000000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x1000000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x0100000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x0010000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x8000000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x0800000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x0080000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0xFFF0000000000000L));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testFullPageId() throws Exception {
-        Random rnd = new Random();
-
-        // Check that link is not included in FullPageId for data pages.
-        for (int i = 0; i < 50_000; i++) {
-            int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
-            int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
-            int pageNum = rnd.nextInt();
-
-            long pageId = PageIdUtils.pageId(partId, PageMemory.FLAG_DATA, pageNum);
-
-            long link1 = PageIdUtils.link(pageId, offset);
-            long link2 = PageIdUtils.link(pageId, 0);
-
-            assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
-        }
-
-        // Check that partition ID is not included in FullPageId for data pages.
-        for (int i = 0; i < 50_000; i++) {
-            int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
-            int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
-            int pageNum = rnd.nextInt();
-
-            long pageId1 = PageIdUtils.pageId(partId, PageMemory.FLAG_IDX, pageNum);
-            long pageId2 = PageIdUtils.pageId(1, PageMemory.FLAG_IDX, pageNum);
-
-            long link1 = PageIdUtils.link(pageId1, offset);
-            long link2 = PageIdUtils.link(pageId2, 0);
-
-            assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
-        }
+        assertEquals(0L, PageIdUtils.pageId(0xFF00000000000000L));
     }
 
     /**
@@ -184,27 +124,23 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         Random rnd = new Random();
 
         for (int i = 0; i < 50_000; i++) {
-            int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
-            int fileId = rnd.nextInt(PageIdUtils.MAX_FILE_ID + 1);
+            int off = rnd.nextInt(PageIdUtils.MAX_ITEMID_NUM + 1);
+            int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
             int pageNum = rnd.nextInt();
 
-            long pageId = PageIdUtils.pageId(fileId, pageNum);
+            long pageId = PageIdUtils.pageId(partId, (byte) 0, pageNum);
 
-            String msg = "For values [offset=" + U.hexLong(offset) + ", fileId=" + U.hexLong(fileId) +
+            String msg = "For values [offset=" + U.hexLong(off) + ", fileId=" + U.hexLong(partId) +
                 ", pageNum=" + U.hexLong(pageNum) + ']';
 
             assertEquals(msg, pageId, PageIdUtils.pageId(pageId));
-            assertEquals(msg, fileId, PageIdUtils.fileId(pageId));
-            assertEquals(msg, 0, PageIdUtils.bytesOffset(pageId));
             assertEquals(msg, 0, PageIdUtils.itemId(pageId));
 
-            long link = PageIdUtils.link(pageId, offset);
+            long link = PageIdUtils.link(pageId, off);
 
             assertEquals(msg, pageId, PageIdUtils.pageId(link));
-            assertEquals(msg, offset, PageIdUtils.itemId(link));
-            assertEquals(msg, offset * 8, PageIdUtils.bytesOffset(link));
+            assertEquals(msg, off, PageIdUtils.itemId(link));
             assertEquals(msg, pageId, PageIdUtils.pageId(link));
-            assertEquals(msg, fileId, PageIdUtils.fileId(link));
         }
     }
 }
