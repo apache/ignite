@@ -318,7 +318,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 @Override public HadoopIgfsStreamDelegate apply() {
                     IgfsInputStreamAdapter stream = igfs.open(path, bufSize);
 
-                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.fileInfo().length());
+                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.length());
                 }
             });
         }
@@ -338,7 +338,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 @Override public HadoopIgfsStreamDelegate apply() {
                     IgfsInputStreamAdapter stream = igfs.open(path, bufSize, seqReadsBeforePrefetch);
 
-                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.fileInfo().length());
+                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.length());
                 }
             });
         }

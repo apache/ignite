@@ -390,7 +390,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                                 log.debug("Opened IGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                                     req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                            res.response(new IgfsInputStreamDescriptor(streamId, igfsIn.fileInfo().length()));
+                            res.response(new IgfsInputStreamDescriptor(streamId, igfsIn.length()));
 
                             break;
                         }

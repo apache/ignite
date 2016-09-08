@@ -29,4 +29,9 @@ public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
     public IgfsProxySelfTest() {
         super(PROXY);
     }
+
+    /** The operation setTimes isn't supported in PROXY mode */
+    @Override public void testSetTimes() throws Exception {
+        return;
+    }
 }

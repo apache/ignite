@@ -600,7 +600,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testUpdate() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -622,7 +622,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testUpdateParentRoot() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -657,6 +657,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
+        if (mode == IgfsMode.PROXY)
+            return;
+
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -724,7 +727,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testRootPropertiesPersistAfterFormat() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
@@ -1012,7 +1015,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1091,7 +1094,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1145,7 +1148,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1202,7 +1205,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if (dual)
             return;
 
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -1543,7 +1546,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1633,7 +1636,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1688,7 +1691,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != IgfsMode.PRIMARY)
             return;
 
         if (appendSupported()) {

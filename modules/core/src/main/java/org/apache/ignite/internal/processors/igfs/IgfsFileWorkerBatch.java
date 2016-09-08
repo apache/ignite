@@ -44,6 +44,10 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
     /** Future which completes when batch processing is finished. */
     private final GridFutureAdapter fut = new GridFutureAdapter();
 
+    /** Future which completes when batch is started. When there are many batch in system not all batch
+     * could start on executor. */
+    private final GridFutureAdapter startFuture = new GridFutureAdapter();
+
     /** Path to the file in the primary file system. */
     private final IgfsPath path;
 
@@ -130,6 +134,8 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
      */
     @SuppressWarnings("unchecked")
     public void run() {
+        startFuture.onDone();
+
         Throwable err = null;
 
         try {
@@ -198,6 +204,15 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
      */
     void await() throws IgniteCheckedException {
         fut.get();
+    }
+
+    /**
+     * Await for that batch is started.
+     *
+     * @throws IgniteCheckedException In case any exception has occurred during batch tasks processing.
+     */
+    void awaitStart() throws IgniteCheckedException {
+        startFuture.get();
     }
 
     /**

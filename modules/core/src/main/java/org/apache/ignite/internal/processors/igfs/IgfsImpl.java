@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import javax.naming.OperationNotSupportedException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -345,6 +346,10 @@ public final class IgfsImpl implements IgfsEx {
                 assert dualPool != null;
 
                 dualPool.submit(batch);
+
+                // Await starting batch. Batch worker could be blocked on queue of execution pool
+                // this is cause of deadlock.
+                batch.awaitStart();
 
                 // Spin in case another batch is currently running.
                 while (true) {
@@ -982,12 +987,34 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
+                if (mode == PROXY) {
+                    A.notNull(secondaryFs, "Secondary File System");
+
+                    IgfsFile info = info(path);
+
+                    if (info == null)
+                        throw new IgfsPathNotFoundException("File not found: " + path);
+
+                    if (!info.isFile())
+                        throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
+
+                    IgfsSecondaryFileSystemPositionedReadable secReader =
+                    new IgfsLazySecondaryFileSystemPositionedReadable(secondaryFs, path, bufSize);
+
+                    IgfsInputStreamAdapter os = new IgfsInputStreamProxyImpl(igfsCtx, path, info,
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, secReader, metrics);
+
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
+
+                    return os;
+                }
+
                 if (mode != PRIMARY) {
                     assert IgfsUtils.isDualMode(mode);
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
+                    IgfsInputStreamAdapter os = new IgfsInputStreamImpl(igfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
@@ -1004,7 +1031,7 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
+                IgfsInputStreamAdapter os = new IgfsInputStreamImpl(igfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
@@ -1075,6 +1102,17 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
+                if (mode == PROXY) {
+                    assert secondaryFs != null;
+
+                    OutputStream secondaryStream = secondaryFs.create(path, bufSize, overwrite, replication,
+                        groupBlockSize(), props);
+
+                    IgfsFileWorkerBatch batch = newBatch(path, secondaryStream);
+
+                    return new IgfsOutputStreamProxyImpl(igfsCtx, path, info(path), bufferSize(bufSize), batch);
+                }
+
                 // Prepare context for DUAL mode.
                 IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
 
@@ -1106,6 +1144,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileWorkerBatch batch = secondaryStream != null ? newBatch(path, secondaryStream) : null;
 
                 return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
+//                return new IgfsOutputStreamImplOld(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
             }
         });
     }
@@ -1129,7 +1168,15 @@ public final class IgfsImpl implements IgfsEx {
 
                 final IgfsMode mode = resolveMode(path);
 
-                IgfsFileWorkerBatch batch;
+                if (mode == PROXY) {
+                    A.notNull(secondaryFs, "Secondary File System");
+
+                    OutputStream secondaryStream = secondaryFs.append(path, bufSize, create, props);
+
+                    IgfsFileWorkerBatch batch = newBatch(path, secondaryStream);
+
+                    return new IgfsOutputStreamProxyImpl(igfsCtx, path, info(path), bufferSize(bufSize), batch);
+                }
 
                 if (mode != PRIMARY) {
                     assert IgfsUtils.isDualMode(mode);
@@ -1138,7 +1185,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsCreateResult desc = meta.appendDual(secondaryFs, path, bufSize, create);
 
-                    batch = newBatch(path, desc.secondaryOutputStream());
+                    IgfsFileWorkerBatch batch = newBatch(path, desc.secondaryOutputStream());
 
                     return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
@@ -1199,6 +1246,9 @@ public final class IgfsImpl implements IgfsEx {
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY)
+                    throw new OperationNotSupportedException("The operation setTimes is not supported in PROXY mode");
 
                 boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
@@ -1655,46 +1705,6 @@ public final class IgfsImpl implements IgfsEx {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(FileDescriptor.class, this);
-        }
-    }
-
-    /**
-     * IGFS input stream extension that fires events.
-     */
-    private class IgfsEventAwareInputStream extends IgfsInputStreamImpl {
-        /** Close guard. */
-        private final AtomicBoolean closeGuard = new AtomicBoolean(false);
-
-        /**
-         * Constructor.
-         *
-         * @param igfsCtx IGFS context.
-         * @param path Path to stored file.
-         * @param fileInfo File info.
-         * @param prefetchBlocks Prefetch blocks.
-         * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
-         * @param secReader Optional secondary file system reader.
-         * @param metrics Metrics.
-         */
-        IgfsEventAwareInputStream(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo,
-            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgfsSecondaryFileSystemPositionedReadable secReader,
-            IgfsLocalMetrics metrics) {
-            super(igfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
-
-            metrics.incrementFilesOpenedForRead();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-        @Override public void close() throws IOException {
-            if (closeGuard.compareAndSet(false, true)) {
-                super.close();
-
-                metrics.decrementFilesOpenedForRead();
-
-                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_READ))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_READ, bytes()));
-            }
         }
     }
 

@@ -28,16 +28,7 @@ import java.io.IOException;
 public abstract class IgfsInputStreamAdapter extends IgfsInputStream
     implements IgfsSecondaryFileSystemPositionedReadable {
     /** {@inheritDoc} */
-    @Override public long length() {
-        return fileInfo().length();
-    }
-
-    /**
-     * Gets file info for opened file.
-     *
-     * @return File info.
-     */
-    public abstract IgfsEntryInfo fileInfo();
+    @Override public abstract long length();
 
     /**
      * Reads bytes from given position.
