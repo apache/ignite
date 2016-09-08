@@ -311,7 +311,7 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void createStripes() throws IgniteCheckedException {
+    protected void createStripes() throws IgniteCheckedException {
         for (int b = 0; b < buckets; b++) {
             for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
                 addStripe(b);
@@ -329,8 +329,6 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                 try (Page page = page(metaPageId)) {
                     initPage(metaPageId, page, PagesListMetaIO.VERSIONS.latest(), wal);
                 }
-
-                createStripes();
             }
             else {
                 Map<Integer, GridLongList> bucketsData = new HashMap<>();
@@ -395,8 +393,6 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
                 }
             }
         }
-        else
-            createStripes();
     }
 
     /** {@inheritDoc} */
@@ -533,8 +529,9 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
      *
      * @param bucket Bucket.
      * @throws IgniteCheckedException If failed.
+     * @return Tail page ID.
      */
-    protected final long addStripe(int bucket) throws IgniteCheckedException {
+    private long addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
         try (Page page = page(pageId)) {
