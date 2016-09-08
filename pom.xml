@@ -798,8 +798,8 @@
         <profile>
             <id>web-console</id>
             <modules>
-                <module>modules/web-agent</module>
                 <module>modules/web-console</module>
+                <module>modules/web-console/web-agent</module>
                 <module>modules/schema-import-db</module>
             </modules>
         </profile>
