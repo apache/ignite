@@ -19,8 +19,6 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
-
 /**
  * Utility class for page ID parts manipulation.
  *
@@ -62,9 +60,6 @@ public final class PageIdUtils {
 
     /** Maximum page number. */
     public static final int MAX_PART_ID = (1 << PART_ID_SIZE) - 1;
-
-    /** Maximum offset in dwords. */
-    public static final int MAX_OFFSET_DWORDS = (int)OFFSET_MASK;
 
     /**
      *
