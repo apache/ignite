@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -104,6 +105,10 @@ public class GridNioServer<T> {
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
 
+    // TODO
+    private static final int WRITE_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_WRITE_BUF_SIZE", 65536);
+    private static final int READ_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_READ_BUF_SIZE", 65536);
+
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -147,7 +152,11 @@ public class GridNioServer<T> {
 
     /** Index to select which thread will serve next socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private int balanceIdx;
+    private final AtomicInteger readBalanceIdx = new AtomicInteger();
+
+    // TODO
+    @GridToStringExclude
+    private final AtomicInteger writeBalanceIdx = new AtomicInteger(1);
 
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
@@ -675,12 +684,14 @@ public class GridNioServer<T> {
      * @param req Request to balance.
      */
     private synchronized void offerBalanced(NioOperationFuture req) {
-        clientWorkers.get(balanceIdx).offer(req);
+        assert req.operation() == NioOperation.REGISTER;
+        assert req.socketChannel() != null;
 
-        balanceIdx++;
+        U.debug("Req registration: " + req);
 
-        if (balanceIdx == clientWorkers.size())
-            balanceIdx = 0;
+        int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
+
+        clientWorkers.get(balanceIdx & (clientWorkers.size() - 1)).offer(req);
     }
 
     /** {@inheritDoc} */
@@ -909,6 +920,7 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
+            ses.onBytesRead(cnt, readBuf.capacity());
 
             readBuf.flip();
 
@@ -1223,6 +1235,7 @@ public class GridNioServer<T> {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
+                ses.onBytesWritten(cnt, buf.capacity());
             }
             else {
                 // For test purposes only (skipWrite is set to true in tests only).
@@ -1477,6 +1490,8 @@ public class GridNioServer<T> {
                                     sb.append(", bytesRcvd=").append(ses.bytesReceived())
                                         .append(", bytesSent=").append(ses.bytesSent())
                                         .append(", opQueueSize=").append(ses.writeQueueSize())
+                                        .append(", writeStats=").append(Arrays.toString(ses.writeStats()))
+                                        .append(", readStats=").append(Arrays.toString(ses.readStats()))
                                         .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
                                         .append(", msgReader=").append(reader != null ? reader.toString() : "null");
 
@@ -1704,10 +1719,10 @@ public class GridNioServer<T> {
                 ByteBuffer readBuf = null;
 
                 if (directMode) {
-                    writeBuf = directBuf ? ByteBuffer.allocateDirect(sock.getSendBufferSize()) :
-                        ByteBuffer.allocate(sock.getSendBufferSize());
-                    readBuf = directBuf ? ByteBuffer.allocateDirect(sock.getReceiveBufferSize()) :
-                        ByteBuffer.allocate(sock.getReceiveBufferSize());
+                    writeBuf = directBuf ? ByteBuffer.allocateDirect(WRITE_BUF_SIZE) :
+                        ByteBuffer.allocate(WRITE_BUF_SIZE);
+                    readBuf = directBuf ? ByteBuffer.allocateDirect(READ_BUF_SIZE) :
+                        ByteBuffer.allocate(READ_BUF_SIZE);
 
                     writeBuf.order(order);
                     readBuf.order(order);

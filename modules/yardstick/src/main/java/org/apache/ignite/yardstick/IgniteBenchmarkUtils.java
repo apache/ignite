@@ -30,7 +30,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.yardstick.cache.IgniteSqlQueryBenchmark;
+import org.apache.ignite.yardstick.cache.IgnitePutBenchmark;
 import org.yardstickframework.BenchmarkDriver;
 import org.yardstickframework.BenchmarkDriverStartUp;
 
@@ -89,16 +89,16 @@ public class IgniteBenchmarkUtils {
     public static void main(String[] args) throws Exception {
         final String cfg = "modules/yardstick/config/ignite-localhost-config.xml";
 
-        final Class<? extends BenchmarkDriver> benchmark = IgniteSqlQueryBenchmark.class;
+        final Class<? extends BenchmarkDriver> benchmark = IgnitePutBenchmark.class;
 
         final int threads = 1;
 
         final boolean clientDriverNode = true;
 
-        final int extraNodes = 2;
+        final int extraNodes = 1;
 
-        final int warmUp = 5;
-        final int duration = 5;
+        final int warmUp = 60;
+        final int duration = 120;
 
         final int range = 100_000;
 
@@ -122,6 +122,7 @@ public class IgniteBenchmarkUtils {
         addArg(args0, "-dn", benchmark.getSimpleName());
         addArg(args0, "-sn", "IgniteNode");
         addArg(args0, "-cfg", cfg);
+        addArg(args0, "-wom", "PRIMARY");
 
         if (throughputLatencyProbe)
             addArg(args0, "-pr", "ThroughputLatencyProbe");
