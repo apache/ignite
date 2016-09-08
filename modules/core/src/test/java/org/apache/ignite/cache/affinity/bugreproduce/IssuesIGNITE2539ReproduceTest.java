@@ -145,9 +145,9 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
 
         for (int j = 0; j < itr; j++) {
 
-            AtomicReference<Throwable> exc = new AtomicReference<>();
+            final AtomicReference<Throwable> exc = new AtomicReference<>();
 
-            AtomicBoolean asyncRun = new AtomicBoolean(true);
+            final AtomicBoolean asyncRun = new AtomicBoolean(true);
 
             for (Thread worker : getExchangeWorkerThread()) {
                 worker.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
