@@ -957,22 +957,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
         }
-
-        ExchangeFutureSet exchFuts0 = exchFuts;
-
-        if (exchFuts0 != null) {
-            int skipped = 0;
-
-            for (GridDhtPartitionsExchangeFuture fut : exchFuts0.values()) {
-                if (exchFut.exchangeId().topologyVersion().compareTo(fut.exchangeId().topologyVersion()) < 0)
-                    continue;
-
-                skipped++;
-
-                if (skipped > 10)
-                    fut.cleanUp();
-            }
-        }
     }
 
     /**

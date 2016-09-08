@@ -1110,7 +1110,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return true;
         }
 
+        cleanUpExchFtr();
+
         return dummy;
+    }
+
+    private void cleanUpExchFtr() {
+        int skipped = 0;
+
+        for (GridDhtPartitionsExchangeFuture fut : cctx.exchange().exchangeFutures()) {
+            if (exchId.topologyVersion().compareTo(fut.exchangeId().topologyVersion()) < 0)
+                continue;
+
+            skipped++;
+
+            if (skipped > 10)
+                fut.cleanUp();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1386,7 +1402,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(node)) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
-                            ", nodeId=" + node.id() + ']');
+                        ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
                     fullMsgs.put(node, msg);
