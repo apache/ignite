@@ -1,0 +1,66 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../app/helpers/jade/mixins.jade
+
+.docs-header
+    h1 Configure Domain Model And SQL Queries
+.docs-body(ng-controller='domainsController')
+    ignite-information
+        ul: li Import database schemas
+            li Configure indexed types
+    div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...' ignite-loading-position='top')
+        div(ng-show='ui.ready')
+            hr
+            .padding-bottom-dflt(ng-show='domains && domains.length > 0')
+                table.links(st-table='displayedRows' st-safe-src='domains')
+                    thead
+                        tr
+                            th
+                                .col-sm-9
+                                    .col-sm-6
+                                        lable.labelHeader.labelFormField {{domainModelTitle()}}
+                                    .col-sm-6
+                                        .pull-right.labelLogin.additional-filter(ng-if='(domains | domainsValidation:false:true).length > 0')
+                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()' bs-tooltip='' data-title='{{::ui.invalidKeyFieldsTooltip}}') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
+                                            a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all domain models: {{displayedRows.length}}&nbsp
+                                .col-sm-3
+                                    input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter domain models...')
+                        tbody
+                            tr
+                                td
+                                    .scrollable-y(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length > 0' style='max-height: 200px')
+                                        table
+                                            tbody
+                                                tr(ng-repeat='row in (displayedRows | domainsValidation:ui.showValid:true) track by row._id' ignite-bs-affix-update)
+                                                    td
+                                                        a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
+                                    label.placeholder(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length == 0') No domain models found
+            .padding-top-dflt(bs-affix)
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new domain model')
+                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add domain model
+                .panel-tip-container(bs-tooltip='' data-title='Import domain models from database' data-placement='bottom')
+                    button.btn.btn-primary(ng-click='showImportDomainModal()') Import from database
+                +save-remove-clone-undo-buttons('domain model')
+                .btn-group.panel-tip-container.pull-right(bs-tooltip='' data-title='Import domain models from demo database' data-placement='bottom')
+                hr
+            .bs-affix-fix
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
+                    .panel-group
+                        include ../../app/modules/states/configuration/domains/general.jade
+                        include ../../app/modules/states/configuration/domains/query.jade
+                        include ../../app/modules/states/configuration/domains/store.jade
