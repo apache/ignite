@@ -2290,22 +2290,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-        // TODO: Enable.
-//        if (relaxedConsistency())
-//            return;
-//
-//        for (int i = 0; i < REPEAT_CNT; i++) {
-//            try {
-//                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
-//                    updateCnt, mkdirsCnt, createCnt);
-//
-//                if (i % 10 == 0)
-//                    X.println(" - " + i);
-//            }
-//            finally {
-//                clear(igfs, igfsSecondary);
-//            }
-//        }
+        if (relaxedConsistency())
+            return;
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+                    updateCnt, mkdirsCnt, createCnt);
+
+                if (i % 10 == 0)
+                    X.println(" - " + i);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
     }
 
     /**
