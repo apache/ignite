@@ -996,7 +996,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             file.length(),
             file.isDirectory(),
             dfltReplication,
-            file.blockSize(),
+            file.groupBlockSize(),
             file.modificationTime(),
             file.accessTime(),
             permission(file),
