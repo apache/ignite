@@ -2683,7 +2683,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMetricsBlock() throws Exception {
         IgfsEx secIgfsEx = dual ? igfsSecondary.igfs() : null;
 
-        IgfsMetricsSelfTest.testBlockMetrics0(igfs, igfsSecondaryFileSystem, (IgfsImpl)secIgfsEx, dual);
+        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, (IgfsImpl)secIgfsEx, dual);
     }
 
     /**
@@ -2692,7 +2692,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public void testMetricsBasic() throws Exception {
-        IgfsMetricsSelfTest.testMetrics0(igfs);
+        IgfsMetricsTestUtils.testMetrics0(igfs);
     }
 
     /**
@@ -2701,6 +2701,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public void testMetricsMultipleFsClose() throws Exception {
-        IgfsMetricsSelfTest.testMultipleClose0(igfs);
+        IgfsMetricsTestUtils.testMultipleClose0(igfs);
     }
 }

@@ -27,10 +27,11 @@ import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsMetricsSelfTest;
 
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
+
+import org.apache.ignite.internal.processors.igfs.IgfsMetricsTestUtils;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -172,6 +173,6 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
     public final void testMetricsBlock() throws Exception {
         assert dual;
 
-        IgfsMetricsSelfTest.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
+        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
     }
 }
