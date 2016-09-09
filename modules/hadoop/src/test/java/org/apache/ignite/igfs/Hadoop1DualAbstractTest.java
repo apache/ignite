@@ -68,10 +68,6 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
     /** Secondary Fs URI. */
     protected String secondaryUri;
 
-    @Override protected long getTestTimeout() {
-        return super.getTestTimeout() * 10;
-    }
-
     /** Constructor. */
     public Hadoop1DualAbstractTest(IgfsMode mode) {
         super(mode);
@@ -83,8 +79,6 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws Exception On failure.
      */
     @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        assert dual;
-
         startUnderlying();
 
         prepareConfiguration();
