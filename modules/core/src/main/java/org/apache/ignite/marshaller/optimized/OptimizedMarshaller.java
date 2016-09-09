@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.AbstractMarshaller;
+import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
@@ -83,7 +83,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class OptimizedMarshaller extends AbstractMarshaller {
+public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
     public static final boolean USE_DFLT_SUID =
         IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
@@ -159,7 +159,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         OptimizedObjectOutputStream objOut = null;
@@ -182,7 +182,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
+    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
         OptimizedObjectOutputStream objOut = null;
 
         try {
@@ -204,7 +204,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         OptimizedObjectInputStream objIn = null;
@@ -233,7 +233,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
         OptimizedObjectInputStream objIn = null;
