@@ -21,10 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -40,21 +38,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.springframework.util.ReflectionUtils;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -278,26 +270,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /**
-     * Returns private field {@code qryIters} of {@link GridCacheQueryManager} for the given grid.
-     *
-     * @param g Grid which {@link GridCacheQueryManager} should be observed.
-     * @return {@code qryIters} of {@link GridCacheQueryManager}.
-     */
-    private ConcurrentMap<UUID,
-        Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>
-        distributedQueryManagerQueryItersMap(Ignite g) {
-        GridCacheContext ctx = ((IgniteKernal)g).internalCache().context();
-
-        Field qryItersField = ReflectionUtils.findField(ctx.queries().getClass(), "qryIters");
-
-        qryItersField.setAccessible(true);
-
-        return (ConcurrentMap<UUID,
-            Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>)
-            ReflectionUtils.getField(qryItersField, ctx.queries());
-    }
-
-    /**
      * @throws Exception If test failed.
      */
     public void testToString() throws Exception {
@@ -355,8 +327,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If failed.
      */
     public void testNodeLeft() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-613");
-
         Ignite g = startGrid("client");
 
         try {
@@ -375,10 +345,12 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             assertEquals(0, (int)q.iterator().next().getKey());
 
-            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
-                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+            // Query for replicated cache was run on one of nodes.
+            ConcurrentMap<?, ?> mapNode1 = queryResultMap(0);
+            ConcurrentMap<?, ?> mapNode2 = queryResultMap(1);
+            ConcurrentMap<?, ?> mapNode3 = queryResultMap(2);
 
-            assertEquals(1, map.size());
+            assertEquals(1, mapNode1.size() + mapNode2.size() + mapNode3.size());
 
             final UUID nodeId = g.cluster().localNode().id();
 
@@ -397,11 +369,21 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             latch.await();
 
-            assertEquals(0, map.size());
+            assertEquals(0, mapNode1.size());
+            assertEquals(0, mapNode2.size());
+            assertEquals(0, mapNode3.size());
         }
         finally {
             stopGrid("client");
         }
+    }
+
+    /**
+     * @param node Node index.
+     * @return Query results map.
+     */
+    private ConcurrentMap<?, ?> queryResultMap(int node) {
+        return U.field(((IgniteH2Indexing)U.field(grid(node).context().query(), "idx")).mapQueryExecutor(), "qryRess");
     }
 
     /**
