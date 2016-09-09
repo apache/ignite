@@ -189,8 +189,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
      */
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
-        int qryThreadNum = 3;
-        int restartThreadsNum = 3; // 4 + 2 = 6 nodes
+        int qryThreadNum = 4;
+        int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
         final int logFreq = 10;
 
