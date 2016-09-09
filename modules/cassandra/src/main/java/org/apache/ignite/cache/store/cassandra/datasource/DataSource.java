@@ -43,11 +43,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
  */
 public class DataSource implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Null object, used as a replacement for those Cassandra connection options which
      * don't support serialization (RetryPolicy, LoadBalancingPolicy and etc) */
     private static final UUID NULL_OBJECT = UUID.fromString("45ffae47-3193-5910-84a2-048fe65735d9");
@@ -535,14 +539,14 @@ public class DataSource implements Externalizable {
         out.writeObject(fetchSize);
         out.writeObject(readConsistency);
         out.writeObject(writeConsistency);
-        out.writeObject(user);
-        out.writeObject(pwd);
+        U.writeString(out, user);
+        U.writeString(out, pwd);
         out.writeObject(port);
         out.writeObject(contactPoints);
         out.writeObject(contactPointsWithPorts);
         out.writeObject(maxSchemaAgreementWaitSeconds);
         out.writeObject(protoVer);
-        out.writeObject(compression);
+        U.writeString(out, compression);
         out.writeObject(useSSL);
         out.writeObject(collectMetrix);
         out.writeObject(jmxReporting);
@@ -564,14 +568,14 @@ public class DataSource implements Externalizable {
         fetchSize = (Integer)in.readObject();
         readConsistency = (ConsistencyLevel)in.readObject();
         writeConsistency = (ConsistencyLevel)in.readObject();
-        user = (String)in.readObject();
-        pwd = (String)in.readObject();
+        user = U.readString(in);
+        pwd = U.readString(in);
         port = (Integer)in.readObject();
         contactPoints = (List<InetAddress>)in.readObject();
         contactPointsWithPorts = (List<InetSocketAddress>)in.readObject();
         maxSchemaAgreementWaitSeconds = (Integer)in.readObject();
         protoVer = (Integer)in.readObject();
-        compression = (String)in.readObject();
+        compression = U.readString(in);
         useSSL = (Boolean)in.readObject();
         collectMetrix = (Boolean)in.readObject();
         jmxReporting = (Boolean)in.readObject();
