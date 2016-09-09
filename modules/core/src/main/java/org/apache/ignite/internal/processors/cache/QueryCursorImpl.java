@@ -26,21 +26,29 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.*;
 
 /**
  * Query cursor implementation.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
+    /** Query cursor state */
+    enum State {
+        /** Idle. */IDLE,
+        /** Executing. */EXECUTION,
+        /** Result ready. */RESULT_READY,
+        /** Closed. */CLOSED,
+    }
+
     /** Query executor. */
     private Iterable<T> iterExec;
 
     /** */
-    private volatile Iterator<T> iter;
+    private Iterator<T> iter;
 
     /** */
-    private boolean iterTaken;
+    private final AtomicReference<State> state = new AtomicReference<>(IDLE);
 
     /** */
     private List<GridQueryFieldMetadata> fieldsMeta;
@@ -66,15 +74,14 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        if (iter == null && iterTaken)
-            throw new IgniteException("Cursor is closed.");
+        State state0 = state.get();
 
-        if (iterTaken)
-            throw new IgniteException("Iterator is already taken from this cursor.");
-
-        iterTaken = true;
+        if (state0 != IDLE || !state.compareAndSet(state0, EXECUTION))
+            throw new IllegalStateException("Illegal query cursor state: " + state0);
 
         iter = iterExec.iterator();
+
+        state.set(RESULT_READY);
 
         assert iter != null;
 
@@ -109,21 +116,40 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Iterator<T> i;
+        State state0 = this.state.get();
 
-        if ((i = iter) != null) {
-            iter = null;
+        switch (state0) {
+            case EXECUTION:
+                if (!state.compareAndSet(state0, CLOSED))
+                    fail(state0);
 
-            if (i instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable)i).close();
+                cancel.apply();
+
+                break;
+            case RESULT_READY:
+                if (!state.compareAndSet(state0, CLOSED))
+                    fail(state0);
+
+                if (iter instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable)iter).close();
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
                 }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            }
-        } else if (cancel != null)
-            cancel.apply();
+
+                break;
+            default:
+                fail(state0);
+        }
+    }
+
+    /**
+     * @param state State.
+     */
+    private void fail(State state) {
+        throw new IllegalStateException("Illegal query cursor state: " + state);
     }
 
     /**

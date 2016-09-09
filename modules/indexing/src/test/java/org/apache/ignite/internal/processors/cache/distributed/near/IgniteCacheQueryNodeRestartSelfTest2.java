@@ -204,7 +204,6 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         Thread.sleep(3000);
 
-        // TODO FIXME The comparison might fail if node left on test shutdown.
         assertEquals(pRes, grid(0).cache("pu").query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
 
         final List<List<?>> rRes = grid(0).cache("co").query(new SqlFieldsQuery(REPLICATED_QRY)).getAll();
@@ -229,12 +228,12 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     while (!locks.compareAndSet(g, 0, 1));
 
                     try {
-                        if (true) { // Partitioned query.
+                        if (rnd.nextBoolean()) { // Partitioned query.
                             IgniteCache<?,?> cache = grid(g).cache("pu");
 
                             SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 
-                            boolean smallPageSize = false; //rnd.nextBoolean();
+                            boolean smallPageSize = rnd.nextBoolean();
 
                             if (smallPageSize)
                                 qry.setPageSize(3);

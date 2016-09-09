@@ -679,6 +679,13 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
+                // Cancellation of completed query has no meaning.
+                if (mapQrysCancel != null)
+                    mapQrysCancel.set(F.noop());
+
+                if (reduceQryCancel != null)
+                    reduceQryCancel.set(F.noop());
+
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
