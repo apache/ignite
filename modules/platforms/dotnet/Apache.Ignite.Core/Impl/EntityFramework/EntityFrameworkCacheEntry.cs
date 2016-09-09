@@ -55,14 +55,14 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         {
             var raw = reader.GetRawReader();
 
-            _data = raw.ReadObject<object>();
-
             var count = raw.ReadInt();
 
             _entitySets = new Dictionary<string, long>(count);
 
             for (var i = 0; i < count; i++)
                 _entitySets[raw.ReadString()] = raw.ReadLong();
+
+            _data = raw.ReadObject<object>();
         }
 
         /// <summary>
@@ -72,8 +72,6 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         {
             var raw = writer.GetRawWriter();
 
-            raw.WriteObject(_data);
-
             raw.WriteInt(_entitySets.Count);
 
             foreach (var entry in _entitySets)
@@ -81,6 +79,8 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
                 raw.WriteString(entry.Key);
                 raw.WriteLong(entry.Value);
             }
+
+            raw.WriteObject(_data);
         }
 
         /// <summary>
