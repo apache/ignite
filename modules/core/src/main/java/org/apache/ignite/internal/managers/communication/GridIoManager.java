@@ -1260,6 +1260,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
      * @param ackC Ack closure.
+     * @param async Async flag.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(
@@ -1369,6 +1370,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
+     * @param async Async flag.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(ClusterNode node, GridTopic topic, Message msg, byte plc, boolean async)
@@ -1562,6 +1564,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Message topic to use.
      * @param ordered Is message ordered?
      * @param timeout Message timeout in milliseconds for ordered messages.
+     * @param async Async flag.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("ConstantConditions")
