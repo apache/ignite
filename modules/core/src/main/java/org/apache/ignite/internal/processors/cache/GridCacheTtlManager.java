@@ -17,22 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeSet;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
+import org.jetbrains.annotations.NotNull;
+import org.jsr166.ConcurrentHashMap8;
+
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * Eagerly removes expired entries from cache when
@@ -40,8 +47,12 @@ import org.jsr166.LongAdder8;
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
+
+    /** Pending entries pointer factory */
+    private MyGridOffHeapSmartPointerFactory pointerFactory;
+
     /** Entries pending removal. */
-    private final GridConcurrentSkipListSetEx pendingEntries = new GridConcurrentSkipListSetEx();
+    private GridOffHeapSnapTreeSet<EntryGridOffHeapSmartPointer> pendingPointers;
 
     /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
@@ -56,8 +67,26 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
         AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
 
+    /** Unsafe memory object for direct memory allocation. */
+    private GridUnsafeMemory unsafeMemory;
+
+    /** */
+    private GridUnsafeGuard guard;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        unsafeMemory = new GridUnsafeMemory(0);
+
+        guard = new GridUnsafeGuard();
+
+        Marshaller marshaller = cctx.marshaller();
+
+        assert marshaller != null;
+
+        pointerFactory = new GridCacheTtlManager.MyGridOffHeapSmartPointerFactory(unsafeMemory, guard, marshaller);
+
+        pendingPointers = new GridOffHeapSnapTreeSet<>(pointerFactory, unsafeMemory, guard);
+
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
             CU.isAtomicsCache(cctx.name()) ||
@@ -92,9 +121,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         assert Thread.holdsLock(entry);
         assert cleanupWorker != null;
 
-        EntryWrapper e = new EntryWrapper(entry);
+        PendingEntry e = new PendingEntry(entry);
 
-        pendingEntries.add(e);
+        pendingPointers.add(pointerFactory.createPointer(e));
 
         while (true) {
             long nextExpireTime = this.nextExpireTime;
@@ -120,21 +149,31 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         assert Thread.holdsLock(entry);
         assert cleanupWorker != null;
 
-        pendingEntries.remove(new EntryWrapper(entry));
+        PendingEntry e = new PendingEntry(entry);
+
+        guard.begin();
+
+        try {
+            pendingPointers.remove(pointerFactory.createPointer(e));
+        }
+        finally {
+            guard.end();
+        }
     }
 
     /**
      * @return The size of pending entries.
      */
     public int pendingSize() {
-        return pendingEntries.sizex();
+        return pendingPointers.size();
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
         X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
-        X.println(">>>   pendingEntriesSize: " + pendingEntries.size());
+        X.println(">>>   pendingEntriesSize: " + pendingPointers.size());
+        X.println(">>>   OffHeap memory allocated size: " + unsafeMemory.allocatedSize());
     }
 
     /**
@@ -145,20 +184,40 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         GridCacheVersion obsoleteVer = null;
 
-        for (int size = pendingEntries.sizex(); size > 0; size--) {
-            EntryWrapper e = pendingEntries.firstx();
+        for (int size = pendingPointers.size(); size > 0; size--) {
+            PendingEntry pendingEntry;
+            boolean entryRemoved;
 
-            if (e == null || e.expireTime > now)
-                return;
+            guard.begin();
+            try {
+                EntryGridOffHeapSmartPointer firstKey = pendingPointers.firstx();
 
-            if (pendingEntries.remove(e)) {
+                if (firstKey == null)
+                    return; //Nothing to do
+
+                pendingEntry = firstKey.entry();
+
+                assert pendingEntry != null;
+
+                if (pendingEntry.expireTime > now)
+                    return; // entry is not expired
+
+                entryRemoved = pendingPointers.remove(firstKey);
+            }
+            finally {
+                guard.end();
+            }
+
+            if (entryRemoved) {
                 if (obsoleteVer == null)
                     obsoleteVer = cctx.versions().next();
 
-                if (log.isTraceEnabled())
-                    log.trace("Trying to remove expired entry from cache: " + e);
+                GridCacheEntryEx entry = unwrapEntry(pendingEntry);
 
-                GridCacheEntryEx entry = e.unwrapEntry();
+                assert entry != null;
+
+                if (log.isTraceEnabled())
+                    log.trace("Trying to remove expired entry from cache: " + entry);
 
                 boolean touch = false;
 
@@ -198,31 +257,52 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             while (!isCancelled()) {
                 expire();
 
-                long waitTime;
-
                 while (true) {
                     long curTime = U.currentTimeMillis();
 
-                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
+                    EntryGridOffHeapSmartPointer key0;
+                    PendingEntry pendingEntry;
 
-                    if (first == null) {
+                    guard.begin();
+                    try {
+                        key0 = pendingPointers.firstx();
+
+                        pendingEntry = (key0 == null) ? null : key0.entry();
+                    }
+                    finally {
+                        guard.end();
+                    }
+
+                    long waitTime;
+                    if (key0 == null) {
                         waitTime = 500;
                         nextExpireTime = curTime + 500;
                     }
                     else {
-                        long expireTime = first.expireTime;
-
+                        long expireTime = pendingEntry.expireTime;
                         waitTime = expireTime - curTime;
                         nextExpireTime = expireTime;
                     }
 
                     synchronized (mux) {
-                        if (pendingEntries.firstx() == first) {
-                            if (waitTime > 0)
-                                mux.wait(waitTime);
+                        guard.begin();
+                        try {
+                            EntryGridOffHeapSmartPointer key1 = pendingPointers.firstx();
 
-                            break;
+                            boolean firstEntryChanged = (key1 != key0) &&
+                                (key0 == null || key0.pointer() != key0.pointer());
+
+                            if (firstEntryChanged)
+                                continue;
                         }
+                        finally {
+                            guard.end();
+                        }
+
+                        if (waitTime > 0)
+                            mux.wait(waitTime);
+
+                        break;
                     }
                 }
             }
@@ -250,14 +330,26 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Entry wrapper.
+     * @return GridCacheEntry
      */
-    private static final class EntryWrapper implements Comparable<EntryWrapper> {
+    private GridCacheEntryEx unwrapEntry(PendingEntry e) {
+        KeyCacheObject key;
+        try {
+            key = cctx.toCacheKeyObject(e.keyBytes);
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
+
+        return cctx.cache().entryEx(key);
+    }
+
+    /**
+     * Pending entry.
+     */
+    private static final class PendingEntry implements Comparable<PendingEntry> {
         /** Entry expire time. */
         private final long expireTime;
-
-        /** Cache Object Context */
-        private final GridCacheContext ctx;
 
         /** Cache Object Serialized Key */
         private final byte[] keyBytes;
@@ -265,19 +357,24 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** Cached hash code */
         private final int hashCode;
 
+        /** */
+        private final boolean isNear;
+
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheEntryEx entry) {
+        private PendingEntry(GridCacheEntryEx entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;
 
-            this.ctx = entry.context();
+            GridCacheContext ctx = entry.context();
+
+            isNear = ctx.isNear();
 
             CacheObject key = entry.key();
 
-            this.hashCode = hashCode0(key.hashCode());
+            hashCode = hashCode0(key.hashCode());
 
             key = (CacheObject)ctx.unwrapTemporary(key);
             try {
@@ -289,22 +386,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         }
 
         /**
-         * @return GridCacheEntry
-         */
-        public GridCacheEntryEx unwrapEntry() {
-            KeyCacheObject key;
-            try {
-                key = ctx.toCacheKeyObject(keyBytes);
-            }
-            catch (IgniteCheckedException ex) {
-                throw new IgniteException(ex);
-            }
-
-            return ctx.cache().entryEx(key);
-        }
-
-        /**
          * Pre-compute hashcode
+         *
          * @param keyHashCode key hashcode
          * @return entry hashcode
          */
@@ -316,7 +399,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(EntryWrapper o) {
+        @Override public int compareTo(@NotNull PendingEntry o) {
             int res = Long.compare(expireTime, o.expireTime);
 
             if (res == 0)
@@ -326,7 +409,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 res = compareArrays(keyBytes, o.keyBytes);
 
             if (res == 0)
-                res = Boolean.compare(ctx.isNear(), o.ctx.isNear());
+                res = Boolean.compare(isNear, o.isNear);
 
             return res;
         }
@@ -336,10 +419,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             if (this == o)
                 return true;
 
-            if (!(o instanceof EntryWrapper))
+            if (!(o instanceof PendingEntry))
                 return false;
 
-            EntryWrapper that = (EntryWrapper)o;
+            PendingEntry that = (PendingEntry)o;
 
             return compareTo(that) == 0;
         }
@@ -351,60 +434,163 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(EntryWrapper.class, this);
+            return S.toString(PendingEntry.class, this);
         }
     }
 
     /**
-     * Provides additional method {@code #sizex()}. NOTE: Only the following methods supports this addition:
-     * <ul>
-     * <li>{@code #add()}</li>
-     * <li>{@code #remove()}</li>
-     * <li>{@code #pollFirst()}</li>
-     * <ul/>
+     * SmartPointer for Entry
      */
-    private static class GridConcurrentSkipListSetEx extends GridConcurrentSkipListSet<EntryWrapper> {
+    private interface EntryGridOffHeapSmartPointer extends GridOffHeapSmartPointer {
         /** */
-        private static final long serialVersionUID = 0L;
+        PendingEntry entry();
+    }
 
-        /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+    /**
+     * Key SmartPointer factory
+     */
+    private static class MyGridOffHeapSmartPointerFactory
+        implements GridOffHeapSmartPointerFactory<EntryGridOffHeapSmartPointer> {
+
+        /** */
+        private final GridUnsafeMemory mem;
+
+        /** */
+        private final GridUnsafeGuard guard;
+
+        /** */
+        private final Marshaller marshaller;
 
         /**
-         * @return Size based on performed operations.
+         * @param mem Unsafe Memory.
+         * @param marshaller Binary marshaller
          */
-        public int sizex() {
-            return size.intValue();
+        MyGridOffHeapSmartPointerFactory(GridUnsafeMemory mem, GridUnsafeGuard guard, Marshaller marshaller) {
+            this.mem = mem;
+            this.guard = guard;
+            this.marshaller = marshaller;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean add(EntryWrapper e) {
-            boolean res = super.add(e);
-
-            if (res)
-                size.increment();
-
-            return res;
+        @Override public EntryGridOffHeapSmartPointer createPointer(final long ptr) {
+            return new MyGridOffHeapSmartPointer(ptr);
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean remove(Object o) {
-            boolean res = super.remove(o);
-
-            if (res)
-                size.decrement();
-
-            return res;
+        /**  */
+        EntryGridOffHeapSmartPointer createPointer(PendingEntry entry) {
+            return new MyGridOffHeapSmartPointer(entry);
         }
 
-        /** {@inheritDoc} */
-        @Nullable @Override public EntryWrapper pollFirst() {
-            EntryWrapper e = super.pollFirst();
+        /** */
+        private class MyGridOffHeapSmartPointer implements EntryGridOffHeapSmartPointer,
+            Comparable<MyGridOffHeapSmartPointer> {
+            /** */
+            private long ptr;
 
-            if (e != null)
-                size.decrement();
+            /** */
+            private PendingEntry entry;
 
-            return e;
+            /** */
+            @Override public PendingEntry entry() {
+                long p = ptr;
+
+                if (entry == null && p > 0) {
+                    IgniteBiTuple<byte[], Byte> biTuple = mem.get(p);
+
+                    try {
+                        //TODO: replace with custom serialization to save some more memory
+                        entry = marshaller.unmarshal(biTuple.get1(), null);
+                    }
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
+                    }
+                }
+                return entry;
+            }
+
+            /** */
+            MyGridOffHeapSmartPointer(PendingEntry entry) {
+                this.entry = entry;
+            }
+
+            /** */
+            MyGridOffHeapSmartPointer(long ptr) {
+                this.ptr = ptr;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public int compareTo(@NotNull MyGridOffHeapSmartPointer o) {
+                if (o == null)
+                    return -1;
+
+                if (ptr > 0 && ptr == o.ptr)
+                    return 0;
+
+                PendingEntry e1 = entry();
+                PendingEntry e2 = o.entry();
+
+                return e1.compareTo(e2);
+            }
+
+            /** {@inheritDoc} */
+            @Override public long pointer() {
+                return ptr;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void incrementRefCount() {
+                long p = ptr;
+
+                if (p == 0) {
+                    try {
+                        byte[] bytes = marshaller.marshal(entry);
+                        p = mem.putOffHeap(0, bytes, GridBinaryMarshaller.BYTE_ARR);
+
+                        ptr = p;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
+
+            /** {@inheritDoc} */
+            @Override public void decrementRefCount() {
+                final long p = ptr;
+
+                if (p > 0) {
+                    ptr = 0;
+
+                    mem.removeOffHeap(p);
+                }
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object o) {
+                if (this == o)
+                    return true;
+                if (o == null || getClass() != o.getClass())
+                    return false;
+
+                MyGridOffHeapSmartPointer other = (MyGridOffHeapSmartPointer)o;
+
+                long ptr = this.ptr;
+
+                if (ptr > 0 && ptr == other.ptr)
+                    return true;
+
+                PendingEntry entry0 = entry();
+                PendingEntry entry1 = other.entry();
+
+                return entry0 != null && entry0.equals(entry1);
+
+            }
+
+            /** {@inheritDoc} */
+            @Override public int hashCode() {
+                return entry().hashCode();
+            }
         }
     }
 }
