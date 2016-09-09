@@ -77,7 +77,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
         State state0 = state.get();
 
         if (state0 != IDLE || !state.compareAndSet(state0, EXECUTION))
-            throw new IllegalStateException("Illegal query cursor state: " + state0);
+            fail(state0);
 
         iter = iterExec.iterator();
 
@@ -149,7 +149,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      * @param state State.
      */
     private void fail(State state) {
-        throw new IllegalStateException("Illegal query cursor state: " + state);
+        throw new IgniteException("Illegal query cursor state: " + state);
     }
 
     /**

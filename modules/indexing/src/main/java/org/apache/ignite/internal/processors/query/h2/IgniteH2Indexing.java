@@ -59,6 +59,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -833,9 +834,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             stmt = prepareStatement(conn, sql, useStmtCache);
-
-            if (timeoutMillis > 0)
-                ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
         }
         catch (SQLException e) {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -853,6 +851,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         bindParameters(stmt, params);
 
+        if (timeoutMillis > 0)
+            ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
+
         try {
             if (cancel != null) {
                 if (!cancel.compareAndSet(null, new GridAbsClosure() {
@@ -865,15 +866,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
                 }))
-                    throw new GridH2QueryCancelledException();
+                    throw new QueryCancelledException();
             }
 
             return stmt.executeQuery();
         }
         catch (SQLException e) {
             // Throw special exception.
-            if (e.getMessage().contains("Statement was canceled or the session timed out"))
-                throw new GridH2QueryCancelledException();
+            if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
@@ -1157,22 +1158,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             doQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), qry.getTimeout(), mapQrysCancel, rdcQryCancel),
             new GridAbsClosure() {
                 @Override public void apply() {
-                    GridAbsClosure clo;
-                        // Cancellation closure is changed on each attempt. Make sure we use correct closure.
-                        while(true) {
-                            clo = mapQrysCancel.get();
+                    // Cancellation closure is changed on each attempt, because node set may differ.
+                    // Make sure we use correct closure.
+                    while(!GridH2Utils.tryCancel(mapQrysCancel));
 
-                            if (mapQrysCancel.compareAndSet(clo, F.noop()))
-                                break;
-                        }
-
-                        if (clo != null)
-                            clo.apply();
-
-                        clo = rdcQryCancel.get();
-
-                        if (clo != null && rdcQryCancel.compareAndSet(clo, F.noop()))
-                            clo.apply();
+                    GridH2Utils.tryCancel(rdcQryCancel);
                 }
             });
 

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -716,14 +717,10 @@ public class GridMapQueryExecutor {
                 if (res != null)
                     res.close();
 
-                AtomicReference<GridAbsClosure> cancel = cancels.get(i);
+                AtomicReference<GridAbsClosure> ref = cancels.get(i);
 
-                if (cancel != null) {
-                    GridAbsClosure clo = cancel.get();
-
-                    if (clo != null && cancel.compareAndSet(clo, F.noop()))
-                        clo.apply();
-                }
+                if (ref != null)
+                    GridH2Utils.tryCancel(ref);
             }
         }
     }

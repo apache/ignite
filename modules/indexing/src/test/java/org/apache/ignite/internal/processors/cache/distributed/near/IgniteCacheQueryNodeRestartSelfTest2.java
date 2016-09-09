@@ -36,7 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -245,7 +245,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 if (e.getCause() instanceof IgniteInterruptedCheckedException)
                                     continue;
 
-                                if (e.getCause() instanceof GridH2QueryCancelledException)
+                                if (e.getCause() instanceof QueryCancelledException)
                                     fail("Retry is expected");
 
                                 if (!smallPageSize)

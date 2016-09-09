@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.GridH2QueryCancelledException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -474,7 +474,7 @@ public class GridReduceQueryExecutor {
             GridAbsClosure clo = mapQrysCancel.get();
 
             if (clo == F.noop())
-                throw new CacheException(new GridH2QueryCancelledException());
+                throw new CacheException(new QueryCancelledException());
 
             final long qryReqId = reqIdGen.incrementAndGet();
 
@@ -586,7 +586,7 @@ public class GridReduceQueryExecutor {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
                 }))
-                    throw new CacheException(new GridH2QueryCancelledException());
+                    throw new CacheException(new QueryCancelledException());
 
                 boolean retry = false;
 
@@ -595,7 +595,7 @@ public class GridReduceQueryExecutor {
                     awaitAllReplies(r, nodes);
 
                     if (mapQrysCancel.get() == F.noop()) // Query might be cancelled while waiting for pages.
-                        throw new GridH2QueryCancelledException();
+                        throw new QueryCancelledException();
 
                     Object state = r.state.get();
 
@@ -607,7 +607,7 @@ public class GridReduceQueryExecutor {
                                 throw err;
 
                             if (err.getMessage().contains("The query was cancelled while executing"))
-                                throw new CacheException(new GridH2QueryCancelledException()); // Throw correct exception.
+                                throw new CacheException(new QueryCancelledException()); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -674,7 +674,7 @@ public class GridReduceQueryExecutor {
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
                     if (clo == F.noop())
-                        throw new CacheException(new GridH2QueryCancelledException());
+                        throw new CacheException(new QueryCancelledException());
 
                     continue;
                 }
@@ -694,7 +694,7 @@ public class GridReduceQueryExecutor {
                 if (e instanceof CacheException) {
                     if (e.getMessage().contains("Failed to fetch data from node") &&
                         (mapQrysCancel.get() == F.noop() || reduceQryCancel.get() == F.noop()))
-                        throw new CacheException("Failed to run reduce query locally.", new GridH2QueryCancelledException());
+                        throw new CacheException("Failed to run reduce query locally.", new QueryCancelledException());
 
                     throw (CacheException)e;
                 }

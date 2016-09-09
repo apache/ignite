@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.cache.query;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 
 /**
  * The exception is thrown if a query was cancelled or timed out while executing.
  */
-public class GridH2QueryCancelledException extends IgniteException {
+public class QueryCancelledException extends IgniteCheckedException {
     /**
      * Default constructor.
      */
-    public GridH2QueryCancelledException() {
+    public QueryCancelledException() {
         super("The query was cancelled while executing.");
     }
 }
