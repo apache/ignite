@@ -77,7 +77,8 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group.
-     * When you invoke method, all listeners who were registered on topic in the local node, will be executing in the same thread.
+     * When you invoke method, all listeners who were registered on topic in the local node, will executing in the same thread
+     * by default, or if you use {@link #withAsync()}, listeners will execute through thread pool, and current thread will not be block.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
@@ -88,7 +89,8 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
-     * When you invoke method, all listeners who were registered on topic in the local node, will be executing in the same thread.
+     * When you invoke method, all listeners who were registered on topic in the local node, will executing in the same thread
+     * by default, or if you use {@link #withAsync()}, listeners will execute through thread pool, and current thread will not be block.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
