@@ -53,6 +53,7 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1260,7 +1261,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         assert remAddr != null;
 
         InetSocketAddress resolved = remAddr.isUnresolved() ?
-            new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
+            new InetSocketAddress((GridInetAddresses.isInetAddress(remAddr.getHostName()))?
+                    GridInetAddresses.forString(remAddr.getHostName()):
+                    InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
 
         InetAddress addr = resolved.getAddress();
 
@@ -1568,7 +1571,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             try {
                 InetSocketAddress resolved = addr.isUnresolved() ?
-                    new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
+                    new InetSocketAddress((GridInetAddresses.isInetAddress(addr.getHostName()))?
+                            GridInetAddresses.forString(addr.getHostName()):
+                            InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
 
                 if (locNodeAddrs == null || !locNodeAddrs.contains(resolved))
                     res.add(resolved);
@@ -1897,9 +1902,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             for (InetSocketAddress addr : registeredAddresses())
                 try {
                     int port = addr.getPort();
-
                     InetSocketAddress resolved = addr.isUnresolved() ?
-                        new InetSocketAddress(InetAddress.getByName(addr.getHostName()), port) :
+                        new InetSocketAddress(
+                                (GridInetAddresses.isInetAddress(addr.getHostName()))?
+                                        GridInetAddresses.forString(addr.getHostName()):
+                                        InetAddress.getByName(addr.getHostName()), port) :
                         new InetSocketAddress(addr.getAddress(), port);
 
                     if (resolved.equals(locAddr))

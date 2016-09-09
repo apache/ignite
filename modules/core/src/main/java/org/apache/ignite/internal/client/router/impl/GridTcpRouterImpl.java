@@ -38,6 +38,7 @@ import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.apache.ignite.internal.client.router.GridTcpRouterMBean;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -131,7 +132,11 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         final InetAddress hostAddr;
 
         try {
-            hostAddr = InetAddress.getByName(cfg.getHost());
+            if(GridInetAddresses.isInetAddress(cfg.getHost())){
+                hostAddr = GridInetAddresses.forString(cfg.getHost());
+            }else {
+                hostAddr = InetAddress.getByName(cfg.getHost());
+            }
         }
         catch (UnknownHostException e) {
             throw new IgniteException("Failed to resolve grid address for configured host: " + cfg.getHost(), e);

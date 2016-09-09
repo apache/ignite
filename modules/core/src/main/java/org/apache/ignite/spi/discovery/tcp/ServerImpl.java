@@ -78,6 +78,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -635,7 +636,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 while (true) {
                     try {
                         if (addr.isUnresolved())
-                            addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
+                            if(GridInetAddresses.isInetAddress(addr.getHostName())){
+                                addr = new InetSocketAddress(GridInetAddresses.forString(addr.getHostName()),addr.getPort());
+                            }else {
+                                addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
+                            }
 
                         long tstamp = U.currentTimeMillis();
 

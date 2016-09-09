@@ -191,6 +191,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1773,7 +1774,8 @@ public abstract class IgniteUtils {
         return F.isEmpty(hostName) ?
             // Should default to InetAddress#anyLocalAddress which is package-private.
             new InetSocketAddress(0).getAddress() :
-            InetAddress.getByName(hostName);
+        (GridInetAddresses.isInetAddress(hostName))?
+            GridInetAddresses.forString(hostName):InetAddress.getByName(hostName);
     }
 
     /**
@@ -8648,7 +8650,11 @@ public abstract class IgniteUtils {
 
             if (!F.isEmpty(hostName)) {
                 try {
-                    inetAddr = InetAddress.getByName(hostName);
+                    if(GridInetAddresses.isInetAddress(hostName)){
+                        inetAddr = GridInetAddresses.forString(hostName);
+                    }else {
+                        inetAddr = InetAddress.getByName(hostName);
+                    }
                 }
                 catch (UnknownHostException ignored) {
                 }
@@ -8656,7 +8662,11 @@ public abstract class IgniteUtils {
 
             if (inetAddr == null || inetAddr.isLoopbackAddress()) {
                 try {
-                    inetAddr = InetAddress.getByName(addr);
+                    if(GridInetAddresses.isInetAddress(addr)){
+                        inetAddr = GridInetAddresses.forString(addr);
+                    }else {
+                        inetAddr = InetAddress.getByName(addr);
+                    }
                 }
                 catch (UnknownHostException ignored) {
                 }

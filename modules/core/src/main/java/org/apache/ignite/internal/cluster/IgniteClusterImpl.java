@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
 import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
@@ -382,7 +383,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 InetAddress addr;
 
                 try {
-                    addr = InetAddress.getByName(host);
+                    if(GridInetAddresses.isInetAddress(host)){
+                        addr = GridInetAddresses.forString(host);
+                    }else {
+                        addr = InetAddress.getByName(host);
+                    }
                 }
                 catch (UnknownHostException e) {
                     throw new IgniteCheckedException("Invalid host name: " + host, e);
