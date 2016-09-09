@@ -51,6 +51,8 @@ public final class ReuseListNew extends PagesList implements ReuseList {
         reuseList = this;
 
         init(metaPageId, initNew);
+
+        addStripe(0);
     }
 
     /** {@inheritDoc} */

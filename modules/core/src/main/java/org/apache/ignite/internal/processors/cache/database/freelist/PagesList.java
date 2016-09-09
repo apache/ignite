@@ -37,7 +37,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
-import org.apache.ignite.internal.processors.cache.database.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
@@ -61,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 /**
  * Striped doubly-linked list of page IDs optionally organized in buckets.
  */
-public abstract class PagesList extends DataStructure implements CheckpointListener {
+public abstract class PagesList extends DataStructure {
     /** */
     private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
         @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
@@ -309,16 +308,6 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void createStripes() throws IgniteCheckedException {
-        for (int b = 0; b < buckets; b++) {
-            for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
-                addStripe(b);
-        }
-    }
-
-    /**
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new list if created, {@code false} if should be initialized from metadata.
      * @throws IgniteCheckedException If failed.
@@ -395,8 +384,10 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
         }
     }
 
-    /** {@inheritDoc} */
-    public void onCheckpointBegin() throws IgniteCheckedException {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void saveMetadata() throws IgniteCheckedException {
         assert metaPageId != 0;
 
         Page curPage = null;
@@ -531,7 +522,7 @@ public abstract class PagesList extends DataStructure implements CheckpointListe
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private long addStripe(int bucket) throws IgniteCheckedException {
+    protected final long addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
         try (Page page = page(pageId)) {
