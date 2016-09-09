@@ -86,8 +86,11 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> {
-    /** */
+    /** For testing. */
     public static Random rnd;
+
+    /** */
+    private static volatile boolean interrupted;
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -339,14 +342,14 @@ public abstract class BPlusTree<L, T extends L> {
                 // Get old row in leaf page to reduce contention at upper level.
                 p.oldRow = getRow(io, buf, idx);
 
-                // If we've missed inner key on the way down (because of concurrent operations),
-                // need to replace it on the way up.
-                if (p.needReplaceInner == FALSE && p.needReplaceInner(idx, cnt, lvl))
-                    p.needReplaceInner = TRUE;
-                else
-                    p.finish();
+                p.finish();
 
-                assert p.needReplaceInner != TRUE; // TODO implement replace on way up
+                // Inner replace state must be consistent by the end of the operation.
+                assert p.needReplaceInner == FALSE || p.needReplaceInner == DONE : p.needReplaceInner;
+
+                // We either already successfully did inner replace or do not need it at all.
+                // We must not miss inner key on the way down because of `triangle` invariant.
+                assert p.needReplaceInner == DONE || !p.needReplaceInner(idx, cnt, lvl);
             }
 
             io.store(buf, idx, newRow, null);
@@ -440,7 +443,10 @@ public abstract class BPlusTree<L, T extends L> {
                 r.addTail(leafId, leaf, buf, io, 0, Tail.EXACT, -1);
             }
 
+            // This field can be set only once here.
             assert r.removed == null;
+
+            // Detach the row.
             r.removed = getRow(io, buf, idx);
 
             long rmvId = 0;
@@ -550,6 +556,7 @@ public abstract class BPlusTree<L, T extends L> {
                 assert r.needReplaceInner == TRUE : r.needReplaceInner;
                 assert idx <= Short.MAX_VALUE : idx;
 
+                // We do not release lock, thus innerIdx will remain correct.
                 r.innerIdx = (short)idx;
 
                 r.needReplaceInner = READY;
@@ -1153,8 +1160,17 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private static void checkInterrupted() throws IgniteInterruptedCheckedException {
-        if (Thread.currentThread().isInterrupted())
+        // We should not interrupt operations in the middle, because otherwise we'll end up in inconsistent state.
+        // Because of that we do not check for Thread.interrupted()
+        if (interrupted)
             throw new IgniteInterruptedCheckedException("Interrupted.");
+    }
+
+    /**
+     * Interrupt all operations on all threads and all indexes.
+     */
+    public static void interruptAll() {
+        interrupted = true;
     }
 
     /**
@@ -2015,9 +2031,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (lvl == 0) // Leaf: need to stop.
                 return true;
 
-            // If we can get full row from the inner page, we can try to optimistically
-            // replace it with the new one. We may fail if concurrent operation will move
-            // our inner key away from us. In that case we will have to replace it on the way up.
+            // If we can get full row from the inner page, we have to replace it with the new one. On the way down
+            // we can not miss inner key even in presence of concurrent operations because of `triangle` invariant.
             if (canGetRowFromInner && needReplaceInner == FALSE)
                 needReplaceInner = TRUE;
 
@@ -2367,7 +2382,7 @@ public abstract class BPlusTree<L, T extends L> {
             assert !isFinished();
             assert tail.type == Tail.EXACT;
 
-            boolean mergedBranch = false;
+            boolean mergedEmptyBranch = false;
 
             if (needMergeEmptyBranch == TRUE) {
                 // We can't merge empty branch if tail in routing page.
@@ -2376,7 +2391,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                 mergeEmptyBranch();
 
-                mergedBranch = true;
+                mergedEmptyBranch = true;
                 needMergeEmptyBranch = DONE;
             }
 
@@ -2384,7 +2399,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             if (needReplaceInner == READY) {
                 // If we've merged empty branch right now, then the inner key was dropped.
-                if (!mergedBranch)
+                if (!mergedEmptyBranch)
                     replaceInner(); // Replace inner key with new max key for the left subtree.
 
                 needReplaceInner = DONE;
@@ -2400,9 +2415,10 @@ public abstract class BPlusTree<L, T extends L> {
             else if (tail.sibling != null &&
                 tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
                 // Release everything lower than tail, we've already merged this path.
-                doReleaseTail(tail.down);
 
-                tail.down = null;
+                // TODO uncomment and investigate why the following code causes hangs and tree corruption
+//                doReleaseTail(tail.down);
+//                tail.down = null;
 
                 return false; // Lock and merge one level more.
             }
@@ -2805,6 +2821,34 @@ public abstract class BPlusTree<L, T extends L> {
             assert t.type == Tail.EXACT : t.type; // All the down links must be of EXACT type.
 
             return t;
+        }
+
+        /**
+         * @param keys If we have to show keys.
+         * @return Tail as a String.
+         * @throws IgniteCheckedException If failed.
+         */
+        private String traceTail(boolean keys) throws IgniteCheckedException {
+            SB sb = new SB("");
+
+            Tail<L> t = tail;
+
+            while (t != null) {
+                sb.a(printPage(t.io, t.buf, keys));
+
+                Tail<L> d = t.down;
+
+                t = t.sibling;
+
+                if (t != null)
+                    sb.a(" -> ").a(printPage(t.io, t.buf, keys));
+
+                sb.a('\n');
+
+                t = d;
+            }
+
+            return sb.toString();
         }
     }
 

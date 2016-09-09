@@ -508,8 +508,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMassiveRemove_true() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-11442");
-
         doTestMassiveRemove(true);
     }
 
@@ -570,6 +568,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, threads, "remove");
+
+            info("size: " + tree.size());
+
+            tree.validateTree();
         }
         finally {
             rmvdIds.clear();
@@ -808,7 +810,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            assertFalse(String.valueOf(row), rmvdIds.contains(row));
+            assertFalse(rmvdIds.contains(row));
 
             buf.putLong(off, row);
         }
