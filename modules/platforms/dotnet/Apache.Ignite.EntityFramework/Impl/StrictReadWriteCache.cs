@@ -26,6 +26,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.EntityFramework;
 
     /// <summary>
     /// Read-write cache with strict concurrency control.
@@ -36,14 +37,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         private const int MaxExpiryCaches = 1000;
 
         /** Main cache: stores SQL -> QueryResult mappings. */
-        private readonly ICache<string, object> _cache;
+        private readonly ICache<string, EntityFrameworkCacheEntry> _cache;
 
         /** Entity set version cache. */
         private readonly ICache<string, long> _entitySetVersions;
 
         /** Cached caches per (expiry_seconds * 10). */
-        private volatile Dictionary<long, ICache<string, object>> _expiryCaches =
-            new Dictionary<long, ICache<string, object>>();
+        private volatile Dictionary<long, ICache<string, EntityFrameworkCacheEntry>> _expiryCaches =
+            new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -55,7 +56,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters")]
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
             Justification = "Validation is present")]
-        public StrictReadWriteCache(ICache<string, object> cache)
+        public StrictReadWriteCache(ICache<string, EntityFrameworkCacheEntry> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 
@@ -68,7 +69,13 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var verKey = GetVersionedKey(key, dependentEntitySets);
 
-            return _cache.TryGet(verKey, out value);
+            EntityFrameworkCacheEntry res;
+
+            var success = _cache.TryGet(verKey, out res);
+
+            value = success ? res.Data : null;
+
+            return success;
         }
 
         /** <inheritdoc /> */
@@ -78,11 +85,13 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (dependentEntitySets == null)
                 return;
 
-            var verKey = GetVersionedKey(key, dependentEntitySets);
+            var entitySetVersions = GetEntitySetVersions(dependentEntitySets);
+
+            var verKey = GetVersionedKey(key, entitySetVersions);
 
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
-            cache[verKey] = value;
+            cache[verKey] = new EntityFrameworkCacheEntry(value, entitySetVersions);
         }
 
         /** <inheritdoc /> */
@@ -99,7 +108,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
         // ReSharper disable once UnusedParameter.Local
-        private ICache<string, object> GetCacheWithExpiry(TimeSpan absoluteExpiration)
+        private ICache<string, EntityFrameworkCacheEntry> GetCacheWithExpiry(TimeSpan absoluteExpiration)
         {
             if (absoluteExpiration == TimeSpan.MaxValue)
                 return _cache;
@@ -107,7 +116,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             // Round up to 0.1 of a second so that we share expiry caches
             var expirySeconds = GetSeconds(absoluteExpiration);
 
-            ICache<string, object> expiryCache;
+            ICache<string, EntityFrameworkCacheEntry> expiryCache;
 
             if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
                 return expiryCache;
@@ -119,8 +128,8 @@ namespace Apache.Ignite.EntityFramework.Impl
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<long, ICache<string, object>>()
-                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
+                    ? new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>()
+                    : new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>(_expiryCaches);
 
                 expiryCache =
                     _cache.WithExpiryPolicy(GetExpiryPolicy(expirySeconds));
@@ -164,15 +173,29 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         private string GetVersionedKey(string key, IEnumerable<EntitySetBase> sets)
         {
-            // LINQ Select allocates less that a new List<> will do.
-            var versions = _entitySetVersions.GetAll(sets.Select(x => x.Name));
+            return GetVersionedKey(key, GetEntitySetVersions(sets));
+        }
 
+        /// <summary>
+        /// Gets the versioned key.
+        /// </summary>
+        private static string GetVersionedKey(string key, IDictionary<string, long> versions)
+        {
             var sb = new StringBuilder(key);
 
             foreach (var ver in versions.Values)
                 sb.AppendFormat("_{0}", ver);
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Gets the entity set versions.
+        /// </summary>
+        private IDictionary<string, long> GetEntitySetVersions(IEnumerable<EntitySetBase> sets)
+        {
+            // LINQ Select allocates less that a new List<> will do.
+            return _entitySetVersions.GetAll(sets.Select(x => x.Name));
         }
 
         /// <summary>

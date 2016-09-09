@@ -27,6 +27,7 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework.Impl;
 
     /// <summary>
@@ -102,7 +103,7 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
-            var cache = ignite.GetOrCreateCache<string, object>(new CacheConfiguration(cacheName)
+            var cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(new CacheConfiguration(cacheName)
             {
                 AtomicityMode = CacheAtomicityMode.Transactional
             });

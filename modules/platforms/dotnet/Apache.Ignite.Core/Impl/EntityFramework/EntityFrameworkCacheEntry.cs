@@ -82,5 +82,13 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
                 raw.WriteLong(entry.Value);
             }
         }
+
+        /// <summary>
+        /// Gets the data.
+        /// </summary>
+        public object Data
+        {
+            get { return _data; }
+        }
     }
 }
