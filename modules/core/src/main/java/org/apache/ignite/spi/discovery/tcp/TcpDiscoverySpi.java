@@ -55,6 +55,8 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1455,6 +1457,28 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             if (!cancelled)
                 throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
+    }
+
+    /**
+     * Adds discovery message to NIO session.
+     *
+     * @param ses NIO session.
+     * @param msg Discovery message to send.
+     * @param msgBytes Bytes to send.
+     * @return Future.
+     */
+    protected GridNioFuture<?> sendMessage(GridNioSession ses, @Nullable TcpDiscoveryAbstractMessage msg,
+        @Nullable byte[] msgBytes) {
+        assert msg != null || msgBytes != null : "Null message to send";
+
+        final GridNioFuture<?> fut;
+
+        if (msgBytes != null)
+            fut = ses.send(msgBytes);
+        else
+            fut = ses.send(msg);
+
+        return fut;
     }
 
     /**

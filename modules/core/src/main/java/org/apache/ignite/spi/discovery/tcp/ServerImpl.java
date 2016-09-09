@@ -5634,7 +5634,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Send future.
          */
         public GridNioFuture<?> addReceipt(final int recpt) {
-            return ses.send(new byte[]{(byte) recpt});
+            return spi.sendMessage(ses, null, new byte[]{(byte) recpt});
         }
 
         /**
@@ -5682,10 +5682,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msgBytes Message bytes to send.
          */
         public void sendMessage(final TcpDiscoveryAbstractMessage msg, @Nullable final byte[] msgBytes) {
-            if (msgBytes != null)
-                ses.send(msgBytes);
-            else
-                ses.send(msg);
+            spi.sendMessage(ses, msg, msgBytes);
         }
 
         /** {@inheritDoc} */
