@@ -246,7 +246,7 @@ public class GridReduceQueryExecutor {
     private void onFail(ClusterNode node, GridQueryFailResponse msg) {
         QueryRun r = runs.get(msg.queryRequestId());
 
-        fail(r, node.id(), msg.error());
+        fail(r, node.id(), msg.error(), msg.failCode());
     }
 
     /**
@@ -254,9 +254,15 @@ public class GridReduceQueryExecutor {
      * @param nodeId Failed node ID.
      * @param msg Error message.
      */
-    private void fail(QueryRun r, UUID nodeId, String msg) {
-        if (r != null)
-            r.state(new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg), nodeId);
+    private void fail(QueryRun r, UUID nodeId, String msg, byte failCode) {
+        if (r != null) {
+            CacheException e = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+
+            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
+                e.addSuppressed(new QueryCancelledException());
+
+            r.state(e, nodeId);
+        }
     }
 
     /**
@@ -314,7 +320,7 @@ public class GridReduceQueryExecutor {
         catch (Exception e) {
             U.error(log, "Error in message.", e);
 
-            fail(r, node.id(), "Error in message.");
+            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR);
 
             return;
         }
@@ -606,7 +612,7 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if (err.getMessage().contains("The query was cancelled while executing"))
+                            if (wasCancelled(err))
                                 throw new CacheException(new QueryCancelledException()); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely.", err);
@@ -692,8 +698,7 @@ public class GridReduceQueryExecutor {
                 U.closeQuiet(r.conn);
 
                 if (e instanceof CacheException) {
-                    if (e.getMessage().contains("Failed to fetch data from node") &&
-                        (mapQrysCancel.get() == F.noop() || reduceQryCancel.get() == F.noop()))
+                    if (wasCancelled((CacheException)e))
                         throw new CacheException("Failed to run reduce query locally.", new QueryCancelledException());
 
                     throw (CacheException)e;
@@ -724,6 +729,14 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /**
+     * @param e Exception.
+     */
+    private boolean wasCancelled(CacheException e) {
+        return e.getSuppressed() != null && e.getSuppressed().length > 0 &&
+            e.getSuppressed()[0] instanceof QueryCancelledException;
     }
 
     /**
