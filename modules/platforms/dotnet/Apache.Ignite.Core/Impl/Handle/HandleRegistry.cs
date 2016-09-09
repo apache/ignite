@@ -102,6 +102,17 @@ namespace Apache.Ignite.Core.Impl.Handle
         }
 
         /// <summary>
+        /// Allocate a handle for critical resource in safe mode.		
+        /// </summary>		
+        /// <param name="target">Target.</param>		
+        /// <returns>Pointer.</returns>		
+        [ExcludeFromCodeCoverage]
+        public long AllocateCriticalSafe(object target)
+        {
+            return Allocate0(target, true, true);
+        }
+
+        /// <summary>
         /// Internal allocation routine.
         /// </summary>
         /// <param name="target">Target.</param>

@@ -28,70 +28,11 @@
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc.h"
 
 namespace ignite
 {
-
-    BOOL ConfigDSN(HWND     hwndParent,
-                   WORD     req,
-                   LPCSTR   driver,
-                   LPCSTR   attributes)
-    {
-        LOG_MSG("ConfigDSN called\n");
-
-        ignite::odbc::config::Configuration config;
-
-        try
-        {
-            config.FillFromConfigAttributes(attributes);
-        }
-        catch (IgniteError& e)
-        {
-            SQLPostInstallerError(e.GetCode(), e.GetText());
-
-            return SQL_FALSE;
-        }
-
-        if (!SQLValidDSN(config.GetDsn().c_str()))
-            return SQL_FALSE;
-
-        LOG_MSG("Driver: %s\n", driver);
-        LOG_MSG("Attributes: %s\n", attributes);
-
-        LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
-
-        switch (req)
-        {
-            case ODBC_ADD_DSN:
-            {
-                LOG_MSG("ODBC_ADD_DSN\n");
-
-                return SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
-            }
-
-            case ODBC_CONFIG_DSN:
-            {
-                LOG_MSG("ODBC_CONFIG_DSN\n");
-                break;
-            }
-
-            case ODBC_REMOVE_DSN:
-            {
-                LOG_MSG("ODBC_REMOVE_DSN\n");
-
-                return SQLRemoveDSNFromIni(config.GetDsn().c_str());
-            }
-
-            default:
-            {
-                return SQL_FALSE;
-            }
-        }
-
-        return SQL_TRUE;
-    }
-
     SQLRETURN SQLGetInfo(SQLHDBC        conn,
                          SQLUSMALLINT   infoType,
                          SQLPOINTER     infoValue,
@@ -315,10 +256,10 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
-        using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
-        using ignite::utility::SqlStringToString;
-        using ignite::utility::CopyStringToBuffer;
+        using odbc::Connection;
+        using odbc::diagnostic::DiagnosticRecordStorage;
+        using utility::SqlStringToString;
+        using utility::CopyStringToBuffer;
 
         UNREFERENCED_PARAMETER(windowHandle);
 
@@ -332,7 +273,16 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        connection->Establish(connectStr);
+        odbc::config::Configuration config;
+
+        config.FillFromConnectString(connectStr);
+
+        std::string dsn = config.GetDsn();
+
+        if (!dsn.empty())
+            odbc::ReadDsnConfiguration(dsn.c_str(), config);
+
+        connection->Establish(config);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
@@ -372,9 +322,11 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
-        //std::string server = SqlStringToString(serverName, serverNameLen);
+        odbc::config::Configuration config;
 
-        Configuration config;
+        std::string dsn = SqlStringToString(serverName, serverNameLen);
+
+        odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
         connection->Establish(config);
 
@@ -1175,7 +1127,7 @@ namespace ignite
         SqlLen outResLen;
         ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
 
-        outBuffer.PutString(record.GetMessage());
+        outBuffer.PutString(record.GetMessageText());
 
         *msgLen = static_cast<SQLSMALLINT>(outResLen);
 

@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -1208,33 +1207,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Create configuration.
         /// </summary>
         /// <param name="path">XML config path.</param>
-        private IgniteConfiguration Configuration(string path)
+        private static IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
-                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
-                new BinaryTypeConfiguration(JavaBinaryCls),
-                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)),
+                        new BinaryTypeConfiguration(JavaBinaryCls),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
+                        new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                    }
+                },
+                SpringConfigUrl = path
             };
-
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-
-            cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
         }
     }
 

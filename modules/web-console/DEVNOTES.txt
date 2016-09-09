@@ -13,22 +13,26 @@ How to deploy locally:
        npm install -g npm-windows-upgrade
        npm-windows-upgrade
        See: https://github.com/felixrieseberg/npm-windows-upgrade
-  Check npm version: "npm --version".
-5. Run "npm install --no-optional" in terminal for download dependencies.
-6. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
-7. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
+  Check npm version: "npm --version", it should be 3.x.
+5. Change directory to '$IGNITE_HOME/modules/web-console/backend' and
+ run "npm install --no-optional" for download backend dependencies.
+6. Change directory to '$IGNITE_HOME/modules/web-console/frontend' and
+ run "npm install --no-optional" for download frontend dependencies.
+7. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
+8. Copy ignite-web-agent-<version>.zip from '$IGNITE_HOME/modules/web-console/web-agent/target'
+ to '$IGNITE_HOME/modules/web-console/backend/agent_dists' folder.
 
-Steps 1 - 7 should be executed once.
+Steps 1 - 8 should be executed once.
 
 How to run console in development mode:
 
 1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.0/bin
   and start MongoDB by executing "mongod".
 
-2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'.
-   If needed run "npm install --no-optional" (if dependencies changed) and run "node serve" to start backend.
+2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/backend'.
+   If needed run "npm install --no-optional" (if dependencies changed) and run "npm start" to start backend.
 
-3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'
-  and start webpack in development mode "npm run dev" .
+3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/frontend'.
+  If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
 
 4. In browser open: http://localhost:9000

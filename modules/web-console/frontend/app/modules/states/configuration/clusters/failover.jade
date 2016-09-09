@@ -1,0 +1,72 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var model = 'backupItem'
+-var form = 'failoverSpi'
+-var failoverSpi = model + '.failoverSpi'
+-var failoverCustom = 'failover.kind === "Custom"'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Failover configuration
+        ignite-form-field-tooltip.tipLabel
+            | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
+                    +ignite-form-group()
+                        ignite-form-field-label
+                            | Failover SPI configurations
+                        ignite-form-group-tooltip
+                            | Failover SPI configurations
+                        ignite-form-group-add(ng-click='tableNewItem(failoverSpiTbl)')
+                            | Add failover SPI
+                        .group-content-empty(ng-if='!(#{failoverSpi} && #{failoverSpi}.length > 0)')
+                            | Not defined
+                        .group-content(ng-show='#{failoverSpi} && #{failoverSpi}.length > 0' ng-repeat='failover in #{failoverSpi} track by $index')
+                            hr(ng-if='$index != 0')
+                            .settings-row
+                                +dropdown('Failover SPI:', 'failover.kind', '"failoverKind" + $index', 'true', 'Choose Failover SPI', '[\
+                                        {value: "JobStealing", label: "Job stealing"},\
+                                        {value: "Never", label: "Never"},\
+                                        {value: "Always", label: "Always"},\
+                                        {value: "Custom", label: "Custom"}\
+                                    ]', 'Provides ability to supply custom logic for handling failed execution of a grid job\
+                                    <ul>\
+                                        <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>\
+                                        <li>Never - Jobs are ordered as they arrived</li>\
+                                        <li>Always - Jobs are first ordered by their priority</li>\
+                                        <li>Custom - Jobs are activated immediately on arrival to mapped node</li>\
+                                        <li>Default - Default FailoverSpi implementation</li>\
+                                    </ul>')
+
+                                    +table-remove-button(failoverSpi, 'Remove Failover SPI')
+                            .settings-row(ng-show='failover.kind === "JobStealing"')
+                                +number('Maximum failover attempts:', 'failover.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts" + $index', 'true', '5', '0',
+                                    'Maximum number of attempts to execute a failed job on another node')
+                            .settings-row(ng-show='failover.kind === "Always"')
+                                +number('Maximum failover attempts:', 'failover.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts" + $index', 'true', '5', '0',
+                                    'Maximum number of attempts to execute a failed job on another node')
+                            .settings-row(ng-show=failoverCustom)
+                                +java-class('SPI implementation', 'failover.Custom.class', '"failoverSpiClass" + $index', 'true', failoverCustom,
+                                    'Custom FailoverSpi implementation class name.')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterFailover')

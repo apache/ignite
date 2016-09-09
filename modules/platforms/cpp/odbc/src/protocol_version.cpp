@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "ignite/odbc/protocol_version.h"
 #include <ignite/common/concurrent.h>
 #include <ignite/common/utils.h>
 #include <ignite/ignite_error.h>
+
+#include "ignite/odbc/protocol_version.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -50,10 +51,15 @@ namespace ignite
             // No-op.
         }
 
-        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t maintenance)
+        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t revision)
         {
             const static int64_t MASK = 0x000000000000FFFFLL;
-            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((maintenance & MASK) << 16);
+            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((revision & MASK) << 16);
+        }
+
+        const ProtocolVersion::StringToVersionMap& ProtocolVersion::GetMap()
+        {
+            return stringToVersionMap;
         }
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()
@@ -68,8 +74,8 @@ namespace ignite
             if (it == stringToVersionMap.end())
             {
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major, "
-                    "minor and maintenance versions of Ignite since which protocol is introduced.");
+                    "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major "
+                    "and minor versions and revision of Ignite since which protocol is introduced.");
             }
 
             return it->second;
@@ -98,6 +104,11 @@ namespace ignite
         bool ProtocolVersion::IsUnknown() const
         {
             return *this == VERSION_UNKNOWN;
+        }
+
+        bool ProtocolVersion::IsDistributedJoinsSupported() const
+        {
+            return *this >= VERSION_1_8_0;
         }
 
         bool operator==(const ProtocolVersion& val1, const ProtocolVersion& val2)

@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.NLog;
     using NUnit.Framework;
 
     /// <summary>
@@ -712,7 +713,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
-                Logger = new TestLogger()
+                Logger = new IgniteNLogLogger()
             };
         }
 
