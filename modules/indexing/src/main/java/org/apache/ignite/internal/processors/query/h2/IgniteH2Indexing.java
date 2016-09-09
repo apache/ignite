@@ -1907,9 +1907,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         cursor.fieldsMeta(meta);
 
-        // Don't cache DML operations - they are either single step or may be re-run for few times with different args
-        if (twoStepQry.initialStatement() instanceof GridSqlQuery && cachedQry == null &&
-            !twoStepQry.explain() && cachedQryKey != null) {
+        // Don't cache re-runs of DML operations - they have non-empty failedKeys
+        if (cachedQry == null && !twoStepQry.explain() && cachedQryKey != null && F.isEmpty(failedKeys)) {
             cachedQry = new TwoStepCachedQuery(meta, twoStepQry.copy(null));
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }

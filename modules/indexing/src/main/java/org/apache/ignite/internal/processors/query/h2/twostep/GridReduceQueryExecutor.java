@@ -575,6 +575,8 @@ public class GridReduceQueryExecutor {
 
                 List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
+                boolean hasMapQrys = !F.isEmpty(mapQrys);
+
                 if (qry.explain()) {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
 
@@ -592,7 +594,7 @@ public class GridReduceQueryExecutor {
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
 
-                if (send(nodes,
+                if (hasMapQrys && send(nodes,
                     oldStyle ?
                         new GridQueryRequest(qryReqId,
                             r.pageSize,
@@ -635,7 +637,7 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
-                else // Send failed.
+                else if (hasMapQrys) // Send failed.
                     retry = true;
 
                 Iterator<List<?>> resIter = null;
