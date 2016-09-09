@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseS
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeListNew;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -591,7 +592,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         final long rootPage = allocateForTree();
 
-        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, cctx.shared().database().globalFreeList());
+        FreeList freeList = cctx.shared().database().globalFreeList();
+
+        if ("atomic".equals(cctx.name())) {
+            freeList = new FreeListNew(0, cctx.gridName(), cctx.shared().database().pageMemory(), null, cctx.shared().wal(), 0L, true);
+        }
+
+        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
 
         String idxName = treeName(p);
 

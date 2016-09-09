@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
@@ -285,6 +287,21 @@ public abstract class PagesList extends DataStructure {
     /** */
     protected final String name;
 
+    /** */
+//    private ConcurrentHashMap<Integer, AtomicInteger> takeCnts = new ConcurrentHashMap<>();
+//
+//    /** */
+//    private ConcurrentHashMap<Integer, AtomicInteger> takeOkCnts = new ConcurrentHashMap<>();
+//
+//    /** */
+//    private ConcurrentHashMap<Integer, AtomicInteger> putPageCnts = new ConcurrentHashMap<>();
+//
+//    /** */
+//    private ConcurrentHashMap<Integer, AtomicInteger> putBagCnts = new ConcurrentHashMap<>();
+//
+//    /** */
+//    private ConcurrentHashMap<Integer, AtomicInteger> rmvCnts = new ConcurrentHashMap<>();
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -305,6 +322,14 @@ public abstract class PagesList extends DataStructure {
         this.metaPageId = metaPageId;
 
         cnts = new AtomicIntegerArray(buckets);
+
+//        for (int i = 0; i < buckets; i++) {
+//            takeCnts.put(i, new AtomicInteger());
+//            takeOkCnts.put(i, new AtomicInteger());
+//            putPageCnts.put(i, new AtomicInteger());
+//            putBagCnts.put(i, new AtomicInteger());
+//            rmvCnts.put(i, new AtomicInteger());
+//        }
     }
 
     /**
@@ -684,6 +709,11 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataPageBuf == null;
 
+//        if (dataPageBuf != null)
+//            putPageCnts.get(bucket).incrementAndGet();
+//        else
+//            putBagCnts.get(bucket).incrementAndGet();
+
         for (;;) {
             long tailId = getPageForPut(bucket);
 
@@ -738,6 +768,18 @@ public abstract class PagesList extends DataStructure {
         return randomTail(tails);
     }
 
+    public void dumpStats() {
+        for (int i = 0; i < buckets; i++) {
+//            System.out.println("Bucket " + i);
+//            System.out.println("[" +
+//                "take=" + takeCnts.get(i).get() +
+//                ", takeOk=" + takeOkCnts.get(i).get() +
+//                ", putBag=" + putBagCnts.get(i).get() +
+//                ", putPage=" + putPageCnts.get(i).get() +
+//                ", rmv=" + rmvCnts.get(i).get() + ']');
+        }
+    }
+
     /**
      * @param bucket Bucket index.
      * @param initIoVers Optional IO to initialize page.
@@ -745,6 +787,8 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
+//        takeCnts.get(bucket).incrementAndGet();
+
         for (;;) {
             if (cnts.get(bucket) == 0)
                 return 0L;
@@ -773,6 +817,8 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
 
                         cnts.decrementAndGet(bucket);
+
+                        //takeOkCnts.get(bucket).incrementAndGet();
 
                         return pageId;
                     }
@@ -806,6 +852,8 @@ public abstract class PagesList extends DataStructure {
                                 wal.log(new RecycleRecord(cacheId, tail.id(), tailId));
                         }
 
+                        //takeOkCnts.get(bucket).incrementAndGet();
+
                         return tailId;
                     }
 
@@ -833,6 +881,8 @@ public abstract class PagesList extends DataStructure {
      */
     protected final boolean removeDataPage(Page dataPage, ByteBuffer dataPageBuf, DataPageIO dataIO, int bucket)
         throws IgniteCheckedException {
+        //rmvCnts.get(bucket).incrementAndGet();
+
         long dataPageId = dataPage.id();
 
         long pageId = dataIO.getFreeListPageId(dataPageBuf);
