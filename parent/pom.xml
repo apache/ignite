@@ -86,9 +86,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.bundle.version>0.9.0.0_1</kafka.bundle.version>
-        <kafka.clients.bundle.version>0.9.0.0_1</kafka.clients.bundle.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
         <lucene.version>3.5.0</lucene.version>

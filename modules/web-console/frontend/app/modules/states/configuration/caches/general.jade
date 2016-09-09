@@ -1,0 +1,66 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'general'
+-var model = 'backupItem'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle)
+        ignite-form-panel-chevron
+        label General
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='general')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    +text('Name:', model + '.name', '"cacheName"', 'true', 'Input name', 'Cache name')
+                .settings-row
+                    +clusters(model, 'Associate clusters with the current cache')
+                .settings-row
+                    +dropdown-multiple('<span>Domain models:</span><a ui-sref="base.configuration.domains({linkId: linkId()})"> (add)</a>',
+                        model + '.domains', '"domains"', true, 'Choose domain models', 'No valid domain models configured', 'domains',
+                        'Select domain models to describe types in cache')
+                .settings-row
+                    +cacheMode('Mode:', model + '.cacheMode', '"cacheMode"', 'PARTITIONED')
+                .settings-row
+                    +dropdown('Atomicity:', model + '.atomicityMode', '"atomicityMode"', 'true', 'ATOMIC',
+                        '[\
+                            {value: "ATOMIC", label: "ATOMIC"},\
+                            {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}\
+                        ]',
+                        'Atomicity:\
+                        <ul>\
+                            <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
+                            <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
+                        </ul>')
+                .settings-row(data-ng-show='#{model}.cacheMode === "PARTITIONED"')
+                    +number('Backups:', model + '.backups', '"backups"', 'true', '0', '0', 'Number of nodes used to back up single partition for partitioned cache')
+                .settings-row(data-ng-show='#{model}.cacheMode === "PARTITIONED" && #{model}.backups')
+                    +checkbox('Read from backup', model + '.readFromBackup', '"readFromBackup"',
+                        'Flag indicating whether data can be read from backup<br/>\
+                        If not set then always get data from primary node (never from backup)')
+                .settings-row
+                    +checkbox('Copy on read', model + '.copyOnRead', '"copyOnRead"',
+                        'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
+                        Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor')
+                .settings-row(ng-show='#{model}.cacheMode === "PARTITIONED" && #{model}.atomicityMode === "TRANSACTIONAL"')
+                    +checkbox('Invalidate near cache', model + '.invalidate', '"invalidate"',
+                        'Invalidation flag for near cache entries in transaction<br/>\
+                        If set then values will be invalidated (nullified) upon commit in near cache')
+            .col-sm-6
+                +preview-xml-java(model, 'cacheGeneral')

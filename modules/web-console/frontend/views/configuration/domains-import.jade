@@ -1,0 +1,223 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../app/helpers/jade/mixins.jade
+
+mixin chk(mdl, change, tip)
+    input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-trigger='hover' data-placement='top')
+
+mixin td-ellipses-lbl(w, lbl)
+    td.td-ellipsis(width='#{w}' style='min-width: #{w}; max-width: #{w}')
+        label #{lbl}
+
+.modal.modal-domain-import.center(role='dialog')
+    .modal-dialog.domains-import-dialog
+        .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
+            #errors-container.modal-header.header
+                button.close(ng-click='$hide()' aria-hidden='true') &times;
+                h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
+                h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
+            .modal-body
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && !importDomain.jdbcDriversNotFound')
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && importDomain.jdbcDriversNotFound')
+                    | Domain model could not be imported
+                    ul
+                        li Agent failed to find JDBC drivers
+                        li Copy required JDBC drivers into agent 'jdbc-drivers' folder and try again
+                        li Refer to agent README.txt for more information
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && importDomain.demo')
+                    div(ng-if='demoConnection.db == "H2"')
+                        label Demo description:
+                        ul
+                            li In-memory H2 database server will be started inside agent
+                            li Database will be populated with sample tables
+                            li You could test domain model generation with this demo database
+                            li Click "Next" to continue
+                    div(ng-if='demoConnection.db != "H2"')
+                        label Demo could not be started
+                            ul
+                                li Agent failed to resolve H2 database jar
+                                li Copy h2-x.x.x.jar into agent 'jdbc-drivers' folder and try again
+                                li Refer to agent README.txt for more information
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && !importDomain.demo')
+                    - var form = 'connectForm'
+
+                    form.form-horizontal(name=form novalidate)
+                        .settings-row
+                            label.col-xs-4.col-sm-2.col-md-2.required Driver JAR:
+                            .col-xs-8.col-sm-10.col-md-10
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information')
+                                .input-tip
+                                    button.select-toggle.form-control(id='jdbcDriverJar' bs-select data-container='.modal-domain-import' ng-model='ui.selectedJdbcDriverJar' ng-class='{placeholder: !(jdbcDriverJars && jdbcDriverJars.length > 0)}' placeholder='Choose JDBC driver' bs-options='item.value as item.label for item in jdbcDriverJars')
+                        .settings-row
+                            label.col-xs-4.col-sm-2.col-md-2.required JDBC driver:
+                            .col-xs-8.col-sm-10.col-md-10
+                                - var name = '"jdbcDriverClass"'
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Fully qualified class name of JDBC driver that will be used to connect to database')
+
+                                +form-field-feedback(name, 'javaBuiltInClass', 'JDBC Driver should not be the Java built-in class!')
+                                +form-field-feedback(name, 'javaKeywords', 'JDBC Driver could not contains reserved Java keyword!')
+                                +form-field-feedback(name, 'javaPackageSpecified', 'JDBC Driver does not have package specified!')
+                                +form-field-feedback(name, 'javaIdentifier', 'JDBC Driver is invalid Java identifier!')
+
+                                .input-tip
+                                    +ignite-form-field-input(name, 'selectedPreset.jdbcDriverClass', false, true, 'Enter fully qualified class name')(
+                                        data-java-identifier='true'
+                                        data-java-package-specified='true'
+                                        data-java-keywords='true'
+                                        data-java-built-in-class='true'
+                                    )
+                        .settings-row
+                            label.col-xs-4.col-sm-2.col-md-2.required JDBC URL:
+                            .col-xs-8.col-sm-10.col-md-10
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='JDBC URL for connecting to database<br>Refer to your database documentation for details')
+                                .input-tip
+                                    +ignite-form-field-input('jdbcUrl', 'selectedPreset.jdbcUrl', false, true, 'JDBC URL')
+                        .settings-row
+                            label.col-xs-4.col-sm-2.col-md-2 User:
+                            .col-xs-8.col-sm-10.col-md-10
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='User name for connecting to database')
+                                .input-tip
+                                    input.form-control(id='user' type='text' ng-model='selectedPreset.user')
+                        .settings-row
+                            label.col-xs-4.col-sm-2.col-md-2 Password:
+                            .col-xs-8.col-sm-10.col-md-10
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')
+                                .input-tip
+                                    input.form-control(id='password' type='password' ng-model='selectedPreset.password' ignite-on-enter='importDomainNext()')
+                        .settings-row
+                            .checkbox
+                                label
+                                    input(id='tablesOnly' type='checkbox' ng-model='selectedPreset.tablesOnly')
+                                    | Tables only
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
+                .import-domain-model-wizard-page(ng-show='importDomain.action == "schemas"')
+                    table.table.metadata(st-table='importDomain.displayedSchemas' st-safe-src='importDomain.schemas')
+                        thead
+                            tr
+                                th.header(colspan='2')
+                                    .col-sm-4.pull-right(style='margin-bottom: 5px')
+                                        input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='importDomain.displayedSchemasFilter' ng-change='selectSchema()')
+                            tr
+                                th(width='30px')
+                                    +chk('importDomain.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
+                                th
+                                    label Schema
+                            tbody
+                                tr
+                                    td(colspan='2')
+                                        .scrollable-y(style='height: 213px')
+                                            table.table-modal-striped(id='importSchemasData')
+                                                tbody
+                                                    tr(ng-repeat='schema in importDomain.displayedSchemas')
+                                                        td(width='30px')
+                                                            input(type='checkbox' ng-model='schema.use' ng-change='selectSchema()')
+                                                        td
+                                                            label {{schema.name}}
+                .import-domain-model-wizard-page(ng-show='importDomain.action == "tables"')
+                    table.table.metadata(st-table='importDomain.displayedTables' st-safe-src='importDomain.tables')
+                        thead
+                            tr
+                                th.header(colspan='6')
+                                    .col-sm-4.pull-right(style='margin-bottom: 8px')
+                                        input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='importDomain.displayedTablesFilter' ng-change='selectTable()')
+                            tr
+                                th(width='30px')
+                                    +chk('importDomain.allTablesSelected',  'selectAllTables()', 'Select all tables')
+                                th(width='130px')
+                                    label Schema
+                                th(width='160px')
+                                    label Table name
+                                th(colspan=2 width='288px')
+                                    label Cache
+                                th
+                        tbody
+                            tr
+                                td(colspan='6')
+                                    .scrollable-y(style='height: 143px')
+                                        table.table-modal-striped(id='importTableData')
+                                            tbody
+                                                tr(ng-repeat='table in importDomain.displayedTables track by $index')
+                                                    td(width='30px' style='min-width: 30px; max-width: 30px')
+                                                        input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
+                                                    +td-ellipses-lbl('130px', '{{table.schema}}')
+                                                    +td-ellipses-lbl('160px', '{{table.tbl}}')
+                                                    td(colspan='2' width='288px' style='min-width: 160px; max-width: 160px')
+                                                        div.td-ellipsis
+                                                            a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
+                                                            div(style='display: flex' ng-if='table.edit')
+                                                                button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='.modal-domain-import' bs-options='item.value as item.shortLabel for item in importActions')
+                                                                button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate' data-container='.modal-domain-import' bs-options='item.value as item.label for item in table.cachesOrTemplates')
+                                                    td
+                    .settings-row
+                        label Defaults to be applied for filtered tables
+                        i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Select and apply options for caches generation')
+                    .settings-row
+                        .col-sm-11
+                            .col-sm-6(style='padding-right: 5px')
+                                button.select-toggle.form-control(bs-select ng-model='importCommon.action' data-container='.modal-domain-import' bs-options='item.value as item.label for item in importActions')
+                            .col-sm-6(style='padding-left: 5px; padding-right: 5px')
+                                button.select-toggle.form-control(bs-select ng-model='importCommon.cacheOrTemplate' data-container='.modal-domain-import' bs-options='item.value as item.label for item in importCommon.cachesOrTemplates')
+                        .col-sm-1(style='padding-left: 5px')
+                            button.btn.btn-primary(ng-click='applyDefaults()') Apply
+                .import-domain-model-wizard-page(ng-show='importDomain.action == "options"')
+                    - var form = 'optionsForm'
+                    form.form-horizontal(name='optionsForm' novalidate)
+                        .settings-row
+                            .col-xs-3.col-sm-2.col-md-2.required
+                                label.required Package:
+                            .col-xs-9.col-sm-10.col-md-10
+                                - var name = '"domainPackageName"'
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
+
+                                +form-field-feedback(name, 'javaPackageName', 'Package name is invalid')
+                                +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved java keyword')
+
+                                .input-tip
+                                    +ignite-form-field-input(name, 'ui.packageName', false, true, 'Enter package name')(
+                                        data-java-keywords='true'
+                                        data-java-package-name='package-only'
+                                        ng-model-options='{allowInvalid: true}'
+                                    )
+                        .settings-row
+                            .checkbox
+                                label
+                                    input(id='domainBuiltinKeys' type='checkbox' ng-model='ui.builtinKeys')
+                                    | Use Java built-in types for keys
+                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
+                        .settings-row
+                            .checkbox
+                                label
+                                    input(id='domainUsePrimitives' type='checkbox' ng-model='ui.usePrimitives')
+                                    | Use primitive types for NOT NULL table columns
+                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
+                        .settings-row
+                            .checkbox
+                                label
+                                    input(id='domainGenerateAliases' type='checkbox' ng-model='ui.generateAliases')
+                                    | Generate aliases for query fields
+                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Generate aliases for query fields with database field names when database field name differ from Java field name')
+                        .settings-row
+                            .col-xs-3.col-sm-2.col-md-2.required
+                                label Clusters:
+                            .col-xs-9.col-sm-10.col-md-10
+                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Choose clusters that will be associated with generated caches')
+                                .input-tip
+                                    button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='.modal-domain-import' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
+            .modal-footer
+                label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
+                a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
+                a.btn.btn-primary(ng-click='importDomainNext()' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}
