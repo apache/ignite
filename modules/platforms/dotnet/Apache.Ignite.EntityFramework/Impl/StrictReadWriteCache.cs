@@ -91,9 +91,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             // Increase version for each dependent entity set.
             _entitySetVersions.InvokeAll(entitySets.Select(x => x.Name), new AddOneProcessor(), null);
 
-            // TODO: Use a background worker to purge outdated keys.
-            // This worker should be able to work on any kind of node -> Java worker.
-            // We'll need a special cache to share started EF cache names.
+            // TODO: Use an async broadcast (ExecuteJavaTaskAsync) to purge old entries.
         }
 
         /// <summary>
