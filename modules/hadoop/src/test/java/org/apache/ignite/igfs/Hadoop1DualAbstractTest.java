@@ -27,11 +27,13 @@ import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsMetricsSelfTest;
+
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.configuration;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.mkUri;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.writeConfiguration;
@@ -65,6 +67,10 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
     /** Secondary Fs URI. */
     protected String secondaryUri;
 
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 10;
+    }
+
     /** Constructor. */
     public Hadoop1DualAbstractTest(IgfsMode mode) {
         super(mode);
@@ -76,6 +82,8 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws Exception On failure.
      */
     @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
+        assert dual;
+
         startUnderlying();
 
         prepareConfiguration();
@@ -154,5 +162,16 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         @Override public void stop() throws IgniteException {
             // No-op.
         }
+    }
+
+    /**
+     * Checks block metrics.
+     *
+     * @throws Exception
+     */
+    public final void testMetricsBlock() throws Exception {
+        assert dual;
+
+        IgfsMetricsSelfTest.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
     }
 }

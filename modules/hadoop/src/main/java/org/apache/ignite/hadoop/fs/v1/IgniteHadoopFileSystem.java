@@ -1282,7 +1282,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             file.length(),
             file.isDirectory(),
             getDefaultReplication(),
-            file.groupBlockSize(),
+            file.blockSize(),// ****
             file.modificationTime(),
             file.accessTime(),
             permission(file),
