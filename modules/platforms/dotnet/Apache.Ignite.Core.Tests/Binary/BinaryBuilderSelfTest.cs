@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
@@ -587,6 +588,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Empty)).SetHashCode(100).Build();
 
             Assert.AreEqual(100, binObj.GetHashCode());
+        }
+
+        /// <summary>
+        /// Tests equality and formatting members.
+        /// </summary>
+        [Test]
+        public void TestEquality()
+        {
+            var bin = _grid.GetBinary();
+
+            var obj1 = bin.GetBuilder("myType").SetStringField("str", "foo").SetIntField("int", 1).Build();
+            var obj2 = bin.GetBuilder("myType").SetStringField("str", "foo").SetIntField("int", 1).Build();
+
+            Assert.AreEqual(obj1, obj2);
+            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
+
+            Assert.IsTrue(Regex.IsMatch(obj1.ToString(), @"myType \[idHash=[0-9]+, str=foo, int=1\]"));
         }
 
         /// <summary>
@@ -1617,9 +1635,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             foreach (var binEnum in binEnums)
             {
                 Assert.IsTrue(binEnum.GetBinaryType().IsEnum);
+
                 Assert.AreEqual(val, binEnum.EnumValue);
-                Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
+
+                Assert.AreEqual((TestEnumRegistered) val, binEnum.Deserialize<TestEnumRegistered>());
             }
+
+            Assert.AreEqual(binEnums[0], binEnums[1]);
         }
 
         /// <summary>

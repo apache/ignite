@@ -40,6 +40,7 @@
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -294,6 +295,21 @@
         }
 
         /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var ccfg = CacheConfiguration;
+            if (ccfg != null)
+            {
+                foreach (var cfg in ccfg)
+                    cfg.Validate(log);
+            }
+        }
+
+        /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
@@ -400,6 +416,7 @@
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
@@ -731,11 +748,13 @@
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
+        [SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
         public static IgniteConfiguration FromXml(string xml)
         {
             IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
 
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
             {
                 // Skip XML header.
                 xmlReader.MoveToContent();
@@ -743,5 +762,13 @@
                 return FromXml(xmlReader);
             }
         }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// <para />
+        /// If no logger is set, logging is delegated to Java, which uses the logger defined in Spring XML (if present)
+        /// or logs to console otherwise.
+        /// </summary>
+        public ILogger Logger { get; set; }
     }
 }

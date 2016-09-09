@@ -344,12 +344,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     if (prevBatch == null)
                         break;
-                    else {
-                        assert prevBatch.finishing() :
-                            "File lock should prevent stream creation on a not-closed-yet file.";
-
+                    else
                         prevBatch.await();
-                    }
                 }
 
                 return batch;
@@ -374,12 +370,8 @@ public final class IgfsImpl implements IgfsEx {
         return busyLock.enterBusy();
     }
 
-    /**
-     * Await for any pending finished writes on the children paths.
-     *
-     * @param paths Paths to check.
-     */
-    void await(IgfsPath... paths) {
+    /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
         assert paths != null;
 
         for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> workerEntry : workerMap.entrySet()) {
