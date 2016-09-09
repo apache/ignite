@@ -1375,7 +1375,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void send(ClusterNode node, GridTopic topic, Message msg, byte plc, boolean async)
         throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, async);
     }
 
     /**
@@ -1614,7 +1614,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ordered)
             sendOrderedMessage(nodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL, timeout, true);
         else if (loc)
-            send(F.first(nodes), TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
+            send(F.first(nodes), TOPIC_COMM_USER, ioMsg, PUBLIC_POOL, async);
         else {
             ClusterNode locNode = F.find(nodes, null, F.localNode(locNodeId));
 
