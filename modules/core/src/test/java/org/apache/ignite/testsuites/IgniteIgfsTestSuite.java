@@ -133,8 +133,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsFixedLengthRecordResolverSelfTest.class);
         suite.addTestSuite(IgfsNewLineDelimiterRecordResolverSelfTest.class);
 
-        // TODO: uncommenct
-        //suite.addTestSuite(IgfsTaskSelfTest.class);
+        suite.addTestSuite(IgfsTaskSelfTest.class);
 
         suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
 
