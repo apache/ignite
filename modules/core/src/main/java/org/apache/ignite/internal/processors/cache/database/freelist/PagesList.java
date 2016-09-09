@@ -289,6 +289,8 @@ public abstract class PagesList extends DataStructure {
 
     /** */
 //    private ConcurrentHashMap<Integer, AtomicInteger> takeCnts = new ConcurrentHashMap<>();
+
+//    private ConcurrentHashMap<Integer, AtomicInteger> takeLockCnts = new ConcurrentHashMap<>();
 //
 //    /** */
 //    private ConcurrentHashMap<Integer, AtomicInteger> takeOkCnts = new ConcurrentHashMap<>();
@@ -325,6 +327,7 @@ public abstract class PagesList extends DataStructure {
 
 //        for (int i = 0; i < buckets; i++) {
 //            takeCnts.put(i, new AtomicInteger());
+//            takeLockCnts.put(i, new AtomicInteger());
 //            takeOkCnts.put(i, new AtomicInteger());
 //            putPageCnts.put(i, new AtomicInteger());
 //            putBagCnts.put(i, new AtomicInteger());
@@ -773,6 +776,7 @@ public abstract class PagesList extends DataStructure {
 //            System.out.println("Bucket " + i);
 //            System.out.println("[" +
 //                "take=" + takeCnts.get(i).get() +
+//                ", takeLock=" + takeLockCnts.get(i).get() +
 //                ", takeOk=" + takeOkCnts.get(i).get() +
 //                ", putBag=" + putBagCnts.get(i).get() +
 //                ", putPage=" + putPageCnts.get(i).get() +
@@ -800,6 +804,8 @@ public abstract class PagesList extends DataStructure {
 
             try (Page tail = page(tailId)) {
                 ByteBuffer tailBuf = tail.getForWrite();
+
+//        takeLockCnts.get(bucket).incrementAndGet();
 
                 try {
                     if (getPageId(tailBuf) != tailId)

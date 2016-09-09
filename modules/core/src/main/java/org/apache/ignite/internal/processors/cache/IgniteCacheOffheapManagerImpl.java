@@ -594,9 +594,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         FreeList freeList = cctx.shared().database().globalFreeList();
 
-        if ("atomic".equals(cctx.name())) {
-            freeList = new FreeListNew(0, cctx.gridName(), cctx.shared().database().pageMemory(), null, cctx.shared().wal(), 0L, true);
-        }
+//        if ("atomic".equals(cctx.name())) {
+//            freeList = new FreeListNew(0, cctx.gridName(), cctx.shared().database().pageMemory(), null, cctx.shared().wal(), 0L, true);
+//        }
 
         CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
 
