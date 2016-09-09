@@ -784,7 +784,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testOpenDoesNotExist() throws Exception {
-        //if (igfsSecondary != null)
         igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
@@ -1310,77 +1309,76 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateConsistencyMultithreaded() throws Exception {
-        // TODO: Enable
-//        final AtomicBoolean stop = new AtomicBoolean();
-//
-//        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
-//        final AtomicReference<Exception> err = new AtomicReference<>();
-//
-//        igfs.create(FILE, false).close();
-//
-//        int threadCnt = 50;
-//
-//        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-//            @SuppressWarnings("ThrowFromFinallyBlock")
-//            @Override public void run() {
-//                while (!stop.get() && err.get() == null) {
-//                    IgfsOutputStream os = null;
-//
-//                    try {
-//                        os = igfs.create(FILE, true);
-//
-//                        os.write(chunk);
-//
-//                        os.close();
-//
-//                        createCtr.incrementAndGet();
-//                    }
-//                    catch (IgniteException e) {
-//                        // No-op.
-//                    }
-//                    catch (IOException e) {
-//                        err.compareAndSet(null, e);
-//
-//                        Throwable[] chain = X.getThrowables(e);
-//
-//                        Throwable cause = chain[chain.length - 1];
-//
-//                        System.out.println("Failed due to IOException exception. Cause:");
-//                        cause.printStackTrace(System.out);
-//                    }
-//                    finally {
-//                        if (os != null)
-//                            try {
-//                                os.close();
-//                            }
-//                            catch (IOException ioe) {
-//                                throw new IgniteException(ioe);
-//                            }
-//                    }
-//                }
-//            }
-//        }, threadCnt);
-//
-//        long startTime = U.currentTimeMillis();
-//
-//        while (err.get() == null
-//                && createCtr.get() < 500
-//                && U.currentTimeMillis() - startTime < 60 * 1000)
-//            U.sleep(100);
-//
-//        stop.set(true);
-//
-//        fut.get();
-//
-//        awaitFileClose(igfs.asSecondary(), FILE);
-//
-//        if (err.get() != null) {
-//            X.println("Test failed: rethrowing first error: " + err.get());
-//
-//            throw err.get();
-//        }
-//
-//        checkFileContent(igfs, FILE, chunk);
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
+        final AtomicReference<Exception> err = new AtomicReference<>();
+
+        igfs.create(FILE, false).close();
+
+        int threadCnt = 50;
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @SuppressWarnings("ThrowFromFinallyBlock")
+            @Override public void run() {
+                while (!stop.get() && err.get() == null) {
+                    IgfsOutputStream os = null;
+
+                    try {
+                        os = igfs.create(FILE, true);
+
+                        os.write(chunk);
+
+                        os.close();
+
+                        createCtr.incrementAndGet();
+                    }
+                    catch (IgniteException e) {
+                        // No-op.
+                    }
+                    catch (IOException e) {
+                        err.compareAndSet(null, e);
+
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        System.out.println("Failed due to IOException exception. Cause:");
+                        cause.printStackTrace(System.out);
+                    }
+                    finally {
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
+                    }
+                }
+            }
+        }, threadCnt);
+
+        long startTime = U.currentTimeMillis();
+
+        while (err.get() == null
+                && createCtr.get() < 500
+                && U.currentTimeMillis() - startTime < 60 * 1000)
+            U.sleep(100);
+
+        stop.set(true);
+
+        fut.get();
+
+        awaitFileClose(igfs.asSecondary(), FILE);
+
+        if (err.get() != null) {
+            X.println("Test failed: rethrowing first error: " + err.get());
+
+            throw err.get();
+        }
+
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
@@ -1556,8 +1554,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             createFile(igfs, FILE, false);
 
             GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     IgfsOutputStream os1 = null;
                     IgfsOutputStream os2 = null;
 
@@ -1674,8 +1671,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             // Delete worker should delete the file once its output stream is finally closed:
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override
-                public boolean apply() {
+                @Override public boolean apply() {
                     try {
                         return !igfs.context().meta().exists(id0);
                     } catch (IgniteCheckedException ice) {
@@ -1729,8 +1725,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             // Delete worker should delete the file once its output stream is finally closed:
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override
-                public boolean apply() {
+                @Override public boolean apply() {
                     try {
                         return !igfs.context().meta().exists(id0);
                     }
@@ -2556,6 +2551,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
     /**
      * Checks #localSpaceSize() and #secondarySpaceSize() Metrics methods.
+     *
+     * @throws Exception If failed.
      */
     public void testMetricsSpaceSize() throws Exception {
         final IgniteFileSystem fs = igfs;
@@ -2574,6 +2571,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         // TODO: NB: This assertion fails for OFFHEAP_TIRED mode,
         // TODO: see https://issues.apache.org/jira/browse/IGNITE-304.
         long locSize = m.localSpaceSize();
+
         assertTrue("https://issues.apache.org/jira/browse/IGNITE-304: " + locSize, locSize >= 0);
 
         if (dual)
