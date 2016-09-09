@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.processors.entityframework;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Task to purge old EntityFramework cache entries.
@@ -56,6 +63,9 @@ public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTas
      * Job.
      */
     private static class PlatformDotNetEntityFrameworkPurgeOldEntriesJob extends ComputeJobAdapter {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /**
          * Ctor.
@@ -72,6 +82,33 @@ public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTas
             // First arg is cache name.
             // The rest are string EntitySet names (without versions).
             Object[] args = arguments();
+
+            String cacheName = (String)args[0];
+
+            Set<String> entitySets = new HashSet<>(args.length - 1);
+
+            for (int i = 1; i < args.length; i++)
+                entitySets.add((String)args[1]);
+
+            IgniteCache<String, Object> cache = ignite.cache(cacheName);
+
+            Map<String, Object> currentVersions = cache.getAll(entitySets);
+
+            for (Cache.Entry<String, Object> cacheEntry : cache.localEntries(CachePeekMode.ALL)) {
+                Object val = cacheEntry.getValue();
+
+                if (!(val instanceof PlatformDotNetEntityFrameworkCacheEntry))
+                    continue;
+
+                PlatformDotNetEntityFrameworkCacheEntry entry = (PlatformDotNetEntityFrameworkCacheEntry)val;
+
+                for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
+                    long curVer = (long)currentVersions.get(entitySet.getKey());
+
+                    if (entitySet.getValue() < curVer)
+                        cache.remove(cacheEntry.getKey());
+                }
+            }
 
             return null;
         }
