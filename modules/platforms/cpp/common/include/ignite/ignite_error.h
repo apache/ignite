@@ -199,7 +199,7 @@ namespace ignite
          *
          * @param err Error.
          */
-        static void ThrowIfNeeded(IgniteError& err);
+        static void ThrowIfNeeded(const IgniteError& err);
 
         /**
          * Default constructor.

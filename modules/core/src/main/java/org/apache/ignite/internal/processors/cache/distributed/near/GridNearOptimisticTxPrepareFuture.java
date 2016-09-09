@@ -197,7 +197,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /**
-     * @return Keys for which {@link MiniFuture} isn't completed.
+     * @return Keys for which MiniFuture isn't completed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
