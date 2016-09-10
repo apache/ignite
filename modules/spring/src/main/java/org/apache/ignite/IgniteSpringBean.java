@@ -492,6 +492,20 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        checkIgnite();
+
+        return g.active();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        checkIgnite();
+
+        g.active(active);
+    }
+
+    /** {@inheritDoc} */
     @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         return g.makeBackupAsync(cacheNames);
     }

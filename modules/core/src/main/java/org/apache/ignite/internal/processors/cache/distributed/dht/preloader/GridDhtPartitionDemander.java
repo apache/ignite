@@ -466,7 +466,7 @@ public class GridDhtPartitionDemander {
 
                     GridDhtLocalPartition p = cctx.topology().localPartition(part, old.topologyVersion(), false);
 
-                    partCntrs.put(part, p.updateCounter());
+                    partCntrs.put(part, p.initialUpdateCounter());
                 }
             }
             catch (GridDhtInvalidPartitionException ignore) {
@@ -587,6 +587,14 @@ public class GridDhtPartitionDemander {
                         part.lock();
 
                         try {
+                            if (supply.isClean(part.id()) && cctx.shared().database().persistenceEnabled()) {
+                                U.warn(log, "Failed to retrieve historical WAL iterator from remote node " +
+                                    "(WAL history may be too short or local node was down too long). Will clear " +
+                                    "local partition before rebalancing [part=" + part + ", node=" + node + ']');
+
+                                part.clearAll();
+                            }
+
                             // Loop through all received entries and try to preload them.
                             for (GridCacheEntryInfo entry : e.getValue().infos()) {
                                 if (!part.preloadingPermitted(entry.key(), entry.version())) {

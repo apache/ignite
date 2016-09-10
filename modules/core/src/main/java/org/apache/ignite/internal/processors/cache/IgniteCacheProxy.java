@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -2130,37 +2131,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() {
-        return delegate.context().state() == CacheState.ACTIVE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void active(boolean active) {
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            IgniteInternalFuture<?> fut = ctx.kernalContext().cache().changeCacheState(getName(),
-                active ? CacheState.ACTIVE : CacheState.INACTIVE);
-
-            if (isAsync())
-                setFuture(fut);
-            else {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw CU.convertToCacheException(e);
-                }
-            }
-        }
-        finally {
-            onLeave(gate, prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         GridCacheGateway<K, V> gate = this.gate;
 
@@ -2201,7 +2171,28 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions() {
-        active(true);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            IgniteInternalFuture<?> fut = ctx.kernalContext().cache().resetCacheState(getName());
+
+            if (isAsync())
+                setFuture(fut);
+            else {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+            }
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+
     }
 
     /** {@inheritDoc} */

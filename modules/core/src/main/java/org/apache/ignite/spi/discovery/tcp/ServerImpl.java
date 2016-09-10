@@ -142,6 +142,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ACTIVE_ON_START;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
@@ -3433,6 +3434,32 @@ class ServerImpl extends TcpDiscoveryImpl {
                         "the same property on remote node (make sure all nodes in topology have the same " +
                         "cache affinity assignment mode) [locLateAssign=" + rmtLateAssignBool +
                         ", rmtLateAssign=" + locLateAssign +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
+
+                    nodeCheckError(node, errMsg, sndMsg);
+
+                    // Ignore join request.
+                    return;
+                }
+
+                boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
+                boolean rmtActiveOnStart = node.attribute(ATTR_ACTIVE_ON_START);
+
+                if (locActiveOnStart != rmtActiveOnStart) {
+                    String errMsg = "Local node's active on start flag differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "active on start flag) [locActiveOnStart=" + locActiveOnStart +
+                        ", rmtActiveOnStart=" + rmtActiveOnStart +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    String sndMsg = "Local node's active on start flag differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "active on start flag) [locActiveOnStart=" + rmtActiveOnStart +
+                        ", rmtActiveOnStart=" + locActiveOnStart +
                         ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                         ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                         ", rmtNodeId=" + locNode.id() + ']';

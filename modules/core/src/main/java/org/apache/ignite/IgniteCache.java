@@ -885,20 +885,6 @@ public interface IgniteCache<K, V> extends Cache<K, V>, IgniteAsyncSupport {
     public CacheMetricsMXBean localMxBean();
 
     /**
-     * Checks that cache is active.
-     *
-     * @return {@code True} if cache is active.
-     */
-    public boolean active();
-
-    /**
-     * Changes cache active flag.
-     *
-     * @param active New value of active flag.
-     */
-    public void active(boolean active);
-
-    /**
      * Gets a collection of lost partition IDs.
      *
      * @return Lost paritions.

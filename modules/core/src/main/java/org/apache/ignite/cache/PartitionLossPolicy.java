@@ -57,14 +57,9 @@ public enum PartitionLossPolicy {
     READ_WRITE_ALL,
 
     /**
-     * If a partition is lost, clear all intermediate partition data and reset it's state.
-     */
-    IGNORE_SAFE,
-
-    /**
      * If partition is lost, reset it's state and do not clear intermediate data. The result of reading from
      * a previously lost and not cleared partition is undefined and may be different on different nodes in the
      * cluster.
      */
-    IGNORE_ALL
+    IGNORE
 }

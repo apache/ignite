@@ -124,6 +124,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** Initialized update counter. */
+    private long initCntr;
+
     /** */
     private final CacheDataStore store;
 
@@ -190,7 +193,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         storageSize.set(size);
         cntr.set(partCntr);
 
-        own();
+        initCntr = partCntr;
     }
 
     /**
@@ -544,15 +547,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (true) {
             long reservations = state.get();
 
-            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)(reservations >> 32));
+            int ord = (int)(reservations >> 32);
 
-            if (state == RENTING || state == EVICTED)
+            if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
                 return false;
 
-            if (state == OWNING)
+            if (ord == OWNING.ordinal())
                 return true;
 
-            assert state == MOVING || state == LOST;
+            assert ord == MOVING.ordinal();
 
             if (casState(reservations, OWNING)) {
                 if (log.isDebugEnabled())
@@ -824,6 +827,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return Initial update counter.
+     */
+    public long initialUpdateCounter() {
+        return initCntr;
+    }
+
+    /**
      * @param val Update index value.
      */
     public void updateCounter(long val) {
@@ -841,7 +851,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * Clears values for this partition.
      */
-    private void clearAll() {
+    public void clearAll() {
         GridCacheVersion clearVer = cctx.versions().next();
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);

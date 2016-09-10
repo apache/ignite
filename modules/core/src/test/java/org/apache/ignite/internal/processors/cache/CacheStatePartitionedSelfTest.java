@@ -26,14 +26,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  *
  */
-public class CacheStateReplicatedSelfTest extends CacheStateAbstractTest {
+public class CacheStatePartitionedSelfTest extends CacheStateAbstractTest {
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setBackups(1);
+        ccfg.setRebalanceDelay(60000);
 
         return ccfg;
     }

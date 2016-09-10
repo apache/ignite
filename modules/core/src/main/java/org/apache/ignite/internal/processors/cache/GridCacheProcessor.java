@@ -36,7 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -51,6 +50,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeAddressHashResolver;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -125,7 +125,6 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -175,6 +174,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
+
+    /** */
+    private CacheState globalState;
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
@@ -229,11 +231,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
+                FairAffinityFunction aff = new FairAffinityFunction();
 
-                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
+                //aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
+
+                U.debug(log, ">>> Set FAIR affinity for cache: " + cfg.getName());
             }
             else if (cfg.getCacheMode() == REPLICATED) {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
@@ -357,11 +361,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param c Ignite configuration.
      * @param cc Configuration to validate.
+     * @param cacheType Cache type.
      * @param cfgStore Cache store.
      * @throws IgniteCheckedException If failed.
      */
     private void validate(IgniteConfiguration c,
         CacheConfiguration cc,
+        CacheType cacheType,
         @Nullable CacheStore cfgStore) throws IgniteCheckedException {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getNearConfiguration() != null &&
@@ -436,7 +442,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else if (cc.getRebalanceMode() == SYNC) {
                 if (delay < 0) {
                     U.warn(log, "Ignoring SYNC rebalance mode with manual rebalance start (node will not wait for " +
-                            "rebalancing to be finished): " + U.maskName(cc.getName()),
+                        "rebalancing to be finished): " + U.maskName(cc.getName()),
                         "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
                 }
                 else {
@@ -562,12 +568,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
                 U.warn(log, "Deployment mode for cache is not CONTINUOUS or SHARED " +
-                        "(it is recommended that you change deployment mode and restart): " + depMode,
+                    "(it is recommended that you change deployment mode and restart): " + depMode,
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
 
         sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
             ctx.config().getCacheStoreSessionListenerFactories()));
+
+        globalState = ctx.config().isActiveOnStart() ? CacheState.ACTIVE : CacheState.INACTIVE;
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -624,7 +632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.locallyConfigured(true);
             desc.staticallyConfigured(true);
             desc.receivedFrom(ctx.localNodeId());
-            desc.state(sharedCtx.database().cacheDefaultState(cfg));
+            desc.state(globalState);
 
             if (!template) {
                 registeredCaches.put(masked, desc);
@@ -798,20 +806,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.service().onUtilityCacheStarted();
 
         // Wait for caches in SYNC preload mode.
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            CacheConfiguration cfg = desc.cacheConfiguration();
+        if (globalState == CacheState.ACTIVE) {
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                CacheConfiguration cfg = desc.cacheConfiguration();
 
-            IgnitePredicate filter = cfg.getNodeFilter();
+                IgnitePredicate filter = cfg.getNodeFilter();
 
-            if (desc.locallyConfigured() || desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) {
-                GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+                if (desc.locallyConfigured() || desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) {
+                    GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
 
-                if (cache != null) {
-                    if (cfg.getRebalanceMode() == SYNC) {
-                        CacheMode cacheMode = cfg.getCacheMode();
+                    if (cache != null) {
+                        if (cfg.getRebalanceMode() == SYNC) {
+                            CacheMode cacheMode = cfg.getCacheMode();
 
-                        if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                            cache.preloader().syncFuture().get();
+                            if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                                cache.preloader().syncFuture().get();
+                        }
                     }
                 }
             }
@@ -1016,6 +1026,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             stopFut.markInitialized();
 
         return stopFut;
+    }
+
+    /**
+     * @return Cache global state.
+     */
+    public CacheState globalState() {
+        assert globalState != CacheState.NEEDS_RECOVERY;
+
+        return globalState;
+    }
+
+    /**
+     * @param globalState Global state to set.
+     */
+    public void globalState(CacheState globalState) {
+        assert globalState != CacheState.NEEDS_RECOVERY;
+
+        this.globalState = globalState;
     }
 
     /**
@@ -1258,7 +1286,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
-        validate(ctx.config(), cfg, cfgStore);
+        validate(ctx.config(), cfg, cacheType, cfgStore);
 
         if (pluginMgr == null)
             pluginMgr = new CachePluginManager(ctx, cfg);
@@ -1330,6 +1358,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
+        cacheCtx.state(globalState);
 
         GridCacheAdapter cache = null;
 
@@ -1922,7 +1951,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Map<String, Map<UUID, Boolean>> clientNodesMap;
 
         if (reconnect) {
-            reqs = new ArrayList<>(caches.size());
+            reqs = new ArrayList<>(caches.size() + 1);
 
             clientNodesMap = U.newHashMap(caches.size());
 
@@ -1956,7 +1985,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            reqs = new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
+            reqs = new ArrayList<>(registeredCaches.size() + registeredTemplates.size() + 1);
 
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), desc.cacheConfiguration().getName(), null);
@@ -1989,6 +2018,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             clientNodesMap = ctx.discovery().clientNodesMap();
         }
 
+        // If we are not joining, send current global state.
+        if (!ctx.localNodeId().equals(nodeId)) {
+            DynamicCacheChangeRequest stateReq = new DynamicCacheChangeRequest(UUID.randomUUID(), null, null);
+            stateReq.state(globalState);
+            stateReq.markGlobalStateChange();
+        }
+
         DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(reqs);
 
         batch.clientNodes(clientNodesMap);
@@ -2019,6 +2055,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (DynamicCacheChangeRequest req : batch.requests()) {
                     initReceivedCacheConfiguration(req);
 
+                    if (ctx.localNodeId().equals(joiningNodeId) && req.globalStateChange()) {
+                        assert req.state() != null;
+
+                        globalState = req.state();
+                    }
+
                     if (req.template()) {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
@@ -2033,8 +2075,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.cacheType(),
                                 true,
                                 req.deploymentId());
-
-                            desc.state(req.state());
 
                             registeredTemplates.put(maskNull(req.cacheName()), desc);
                         }
@@ -2435,11 +2475,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Resets cache state after the cache has been moved to recovery state.
+     *
      * @param cacheName Cache name.
-     * @param state Cache state.
      * @return Future that will be completed when state is changed.
      */
-    public IgniteInternalFuture<?> changeCacheState(String cacheName, CacheState state) {
+    public IgniteInternalFuture<?> resetCacheState(String cacheName) {
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
 
         if (proxy == null || proxy.proxyClosed())
@@ -2449,7 +2490,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
+        t.state(CacheState.ACTIVE);
+
+        return F.first(initiateCacheChanges(F.asList(t), false));
+    }
+
+    /**
+     * Changes global cluster state.
+     *
+     * @param state Cache state.
+     * @return Future that will be completed when state is changed.
+     */
+    public IgniteInternalFuture<?> changeGlobalState(CacheState state) {
+        assert state == CacheState.ACTIVE || state == CacheState.INACTIVE;
+
+        checkEmptyTransactions();
+
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), null, ctx.localNodeId());
+
         t.state(state);
+        t.markGlobalStateChange();
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
@@ -2574,10 +2634,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (msg instanceof StartFullBackupAckDiscoveryMessage &&
             ((StartFullBackupAckDiscoveryMessage)msg).error() == null)
-            return true;
-
-        // Node can only activate itself once.
-        if (msg instanceof NodeActivatedMessage)
             return true;
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);

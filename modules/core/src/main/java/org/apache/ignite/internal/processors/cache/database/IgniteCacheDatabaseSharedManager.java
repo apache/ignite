@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -33,8 +32,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,6 +62,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     @Override protected void stop0(boolean cancel) {
         if (pageMem != null)
             pageMem.stop();
+    }
+
+    /**
+     *
+     */
+    public boolean persistenceEnabled() {
+        return false;
     }
 
     /**
@@ -102,16 +106,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void waitForCheckpoint() throws IgniteCheckedException {
         // No-op
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param part Partition.
-     * @param partCntr Partition counter.
-     * @return WAL pointer to scan from.
-     */
-    public WALPointer searchPartitionCounter(GridCacheContext cctx, int part, Long partCntr) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -159,21 +153,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         ClusterNode initiator)
         throws IgniteCheckedException {
         return null;
-    }
-
-    /**
-     * @return {@code True} if persistence is enabled.
-     */
-    public boolean persistenceEnabled() {
-        return false;
-    }
-
-    /**
-     * @param cfg Cache configuration.
-     * @return Cache default start state.
-     */
-    public CacheState cacheDefaultState(CacheConfiguration cfg) {
-        return CacheState.ACTIVE;
     }
 
     /**

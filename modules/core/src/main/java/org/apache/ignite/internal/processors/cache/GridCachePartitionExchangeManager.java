@@ -88,7 +88,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -277,11 +276,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else if (customEvt.customMessage() instanceof StartFullBackupAckDiscoveryMessage
                         && !((StartFullBackupAckDiscoveryMessage)customEvt.customMessage()).hasError()) {
-                        exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
-
-                        exchFut = exchangeFuture(exchId, e, null, null);
-                    }
-                    else if (customEvt.customMessage() instanceof NodeActivatedMessage) {
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                         exchFut = exchangeFuture(exchId, e, null, null);
@@ -1440,8 +1434,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean dummyReassign = exchFut.dummyReassign();
                     boolean forcePreload = exchFut.forcePreload();
 
-                    boolean activated = cctx.discovery().cacheNodeActive(cctx.localNode(), exchFut.topologyVersion());
-
                     try {
                         if (isCancelled())
                             break;
@@ -1493,31 +1485,29 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // invoke topology callback more than once for the
                             // same event.
 
-                            if (activated) {
-                                boolean changed = false;
+                            boolean changed = false;
 
-                                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                    if (cacheCtx.isLocal())
-                                        continue;
+                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                                if (cacheCtx.isLocal())
+                                    continue;
 
-                                    changed |= cacheCtx.topology().afterExchange(exchFut);
+                                changed |= cacheCtx.topology().afterExchange(exchFut);
 
-                                    // Preload event notification.
-                                    if (!exchFut.skipPreload() && cacheCtx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED)) {
-                                        if (!cacheCtx.isReplicated() || !startEvtFired) {
-                                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+                                // Preload event notification.
+                                if (!exchFut.skipPreload() && cacheCtx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED)) {
+                                    if (!cacheCtx.isReplicated() || !startEvtFired) {
+                                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                                            cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_REBALANCE_STARTED,
-                                                discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-                                        }
+                                        cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_REBALANCE_STARTED,
+                                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                                     }
                                 }
-
-                                startEvtFired = true;
-
-                                if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty())
-                                    refreshPartitions();
                             }
+
+                            startEvtFired = true;
+
+                            if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty())
+                                refreshPartitions();
                         }
                         else {
                             if (log.isDebugEnabled())
@@ -1530,13 +1520,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (activated && !exchFut.skipPreload()) {
+                        if (!exchFut.skipPreload() && cctx.cache().globalState() == CacheState.ACTIVE) {
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                if (cacheCtx.state() == CacheState.INACTIVE)
-                                    continue;
-
                                 long delay = cacheCtx.config().getRebalanceDelay();
 
                                 GridDhtPreloaderAssignments assigns = null;
@@ -1553,9 +1540,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         // Must flip busy flag before assignments are given to demand workers.
                         busy = false;
                     }
-
-                    if (!activated)
-                        continue;
 
                     if (assignsMap != null) {
                         int size = assignsMap.size();
@@ -1578,14 +1562,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Callable<Boolean> marshR = null;
-                        Collection<Callable<Boolean>> orderedRs = new ArrayList<>(size);
+                        List<Callable<Boolean>> orderedRs = new ArrayList<>(size);
 
                         //Ordered rebalance scheduling.
                         for (Integer order : orderMap.keySet()) {
                             for (Integer cacheId : orderMap.get(order)) {
                                 GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                                Collection<String> waitList = new ArrayList<>(size - 1);
+                                List<String> waitList = new ArrayList<>(size - 1);
 
                                 for (List<Integer> cIds : orderMap.headMap(order).values()) {
                                     for (Integer cId : cIds)
@@ -1626,7 +1610,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     }
                                     catch (Exception ex) {
                                         if (log.isDebugEnabled())
-                                            log.debug("Failed to send initial demand request to node: " + ex);
+                                            log.debug("Failed to send initial demand request to node");
 
                                         continue;
                                     }
@@ -1651,7 +1635,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         }
                                         catch (Exception ex) {
                                             if (log.isDebugEnabled())
-                                                log.debug("Failed to send initial demand request to node: " + ex);
+                                                log.debug("Failed to send initial demand request to node");
 
                                             return false;
                                         }
@@ -1677,7 +1661,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException ignore) {
+                catch (IgniteClientDisconnectedCheckedException e) {
                     return;
                 }
                 catch (IgniteCheckedException e) {

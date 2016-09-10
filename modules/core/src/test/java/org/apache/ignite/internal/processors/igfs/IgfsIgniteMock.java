@@ -494,6 +494,18 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        throwUnsupported();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         throwUnsupported();
 

@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -731,7 +732,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts.get(p);
 
-            boolean belongs = cctx.shared().database().persistenceEnabled() || cctx.affinity().localNode(p, topVer);
+            boolean belongs = cctx.affinity().localNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts.set(p, loc = null);
@@ -804,7 +805,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (part != null)
                 list.add(part);
         }
-
         return list;
     }
 
@@ -1380,6 +1380,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             boolean changed = false;
 
             if (lost != null) {
+                PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
+
                 // Update partition state on all nodes.
                 for (Integer part : lost) {
                     long updSeq = updateSeq.incrementAndGet();
@@ -1387,7 +1389,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     GridDhtLocalPartition locPart = localPartition(part, topVer, false);
 
                     if (locPart != null) {
-                        boolean marked = locPart.markLost();
+                        boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
                         if (marked)
                             updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
@@ -1400,7 +1402,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         }
                     }
                     // Update map for remote node.
-                    else {
+                    else if (plc != PartitionLossPolicy.IGNORE) {
                         Set<UUID> nodeIds = part2node.get(part);
 
                         if (nodeIds != null) {

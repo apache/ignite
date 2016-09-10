@@ -76,6 +76,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache state. */
     private CacheState state;
 
+    /** Global flag. If global is set to true, this means that we move all caches to active or inactive state. */
+    private boolean globalStateChange;
+
     /** */
     private transient boolean exchangeNeeded;
 
@@ -103,6 +106,34 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean exchangeNeeded() {
         return exchangeNeeded;
+    }
+
+    /**
+     * @return State.
+     */
+    public CacheState state() {
+        return state;
+    }
+
+    /**
+     * @param state State.
+     */
+    public void state(CacheState state) {
+        this.state = state;
+    }
+
+    /**
+     * @return {@code True} if global caches state is changes.
+     */
+    public boolean globalStateChange() {
+        return globalStateChange;
+    }
+
+    /**
+     *
+     */
+    public void markGlobalStateChange() {
+        globalStateChange = true;
     }
 
     /**
@@ -165,7 +196,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a cache activation request.
      */
     public boolean activation() {
-        return state != null;
+        return state != null && state == CacheState.ACTIVE;
     }
 
     /**
@@ -299,20 +330,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
-    }
-
-    /**
-     * @return Cache state.
-     */
-    public CacheState state() {
-        return state;
-    }
-
-    /**
-     * @param state Cache state.
-     */
-    public void state(CacheState state) {
-        this.state = state;
     }
 
     /** {@inheritDoc} */

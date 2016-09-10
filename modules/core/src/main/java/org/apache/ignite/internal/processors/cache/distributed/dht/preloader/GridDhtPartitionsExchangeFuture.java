@@ -140,7 +140,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Event latch. */
     @GridToStringExclude
-    private final CountDownLatch evtLatch = new CountDownLatch(1);
+    private CountDownLatch evtLatch = new CountDownLatch(1);
 
     /** */
     private GridFutureAdapter<Boolean> initFut;
@@ -473,10 +473,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 else if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
                 else if (customMessage instanceof StartFullBackupAckDiscoveryMessage) {
-                    if (CU.clientNode(discoEvt.eventNode()))
-                        exchange = onClientNodeEvent(crdNode);
-                    else
-                        exchange = onServerNodeEvent(crdNode);
+                    exchange = CU.clientNode(discoEvt.eventNode()) ?
+                        onClientNodeEvent(crdNode) :
+                        onServerNodeEvent(crdNode);
 
                     backupMsg = (StartFullBackupAckDiscoveryMessage)customMessage;
                 }
@@ -488,23 +487,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             else {
                 if (discoEvt.type() == EVT_NODE_JOINED) {
-
-                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(topologyVersion());
+                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
+                        topologyVersion());
 
                     if (!discoEvt.eventNode().isLocal())
                         cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
                 }
 
-                exchange = CU.clientNode(discoEvt.eventNode()) ?
-                    onClientNodeEvent(crdNode) :
-                    onServerNodeEvent(crdNode);
+                if (CU.clientNode(discoEvt.eventNode()))
+                    exchange = onClientNodeEvent(crdNode);
+                else
+                    exchange = onServerNodeEvent(crdNode);
             }
 
             updateTopologies(crdNode);
-
-            // Possible if there are no active nodes.
-            if (exchange == ExchangeType.ALL && crd == null)
-                exchange = ExchangeType.NONE;
 
             if (!F.isEmpty(reqs)) {
                 boolean hasStop = false;
@@ -688,6 +684,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.affinity().onClientEvent(this, crd);
 
+        if (cctx.cache().globalState() == CacheState.INACTIVE)
+            return ExchangeType.NONE;
+
         return discoEvt.eventNode().isLocal() ? ExchangeType.CLIENT : ExchangeType.NONE;
     }
 
@@ -708,6 +707,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         else
             cctx.affinity().onServerJoin(this, crd);
+
+        if (cctx.cache().globalState() == CacheState.INACTIVE && discoEvt.type() == EVT_NODE_JOINED)
+            return ExchangeType.NONE;
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
@@ -797,6 +799,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         cctx.database().beforeExchange(discoEvt);
+
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange())
+                    cctx.cache().globalState(req.state());
+            }
+        }
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
@@ -1641,8 +1650,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
 
             if (!crd.equals(node)) {
-                msgs.put(node.id(), msg);
-
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
                         ", nodeId=" + node.id() + ']');

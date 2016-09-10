@@ -398,6 +398,16 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+
+    }
+
+    /** {@inheritDoc} */
     @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
         return null;
     }
