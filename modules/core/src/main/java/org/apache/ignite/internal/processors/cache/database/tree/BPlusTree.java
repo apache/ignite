@@ -282,8 +282,6 @@ public abstract class BPlusTree<L, T extends L> {
             // we need to setup fwdId and/or backId to be able to check this invariant on lower level.
             if (idx < cnt) {
                 // Go left down here.
-                g.alwaysGoRight = false;
-
                 g.fwdId = inner(io).getRight(buf, idx);
             }
             else {
@@ -346,10 +344,6 @@ public abstract class BPlusTree<L, T extends L> {
 
                 // Inner replace state must be consistent by the end of the operation.
                 assert p.needReplaceInner == FALSE || p.needReplaceInner == DONE : p.needReplaceInner;
-
-                // We either already successfully did inner replace or do not need it at all.
-                // We must not miss inner key on the way down because of `triangle` invariant.
-                assert p.needReplaceInner == DONE || !p.needReplaceInner(idx, cnt, lvl);
             }
 
             io.store(buf, idx, newRow, null);
@@ -421,12 +415,10 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert idx < cnt;
 
-            boolean needReplaceInner = r.needReplaceInner(idx, cnt, lvl);
-
             // !!! Before modifying state we have to make sure that we will not go for retry.
 
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
-            if (needReplaceInner ||
+            if (r.needReplaceInner == TRUE ||
                 // We need to make sure that we have back or forward to be able to merge.
                 ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
                 // If we have backId then we've already locked back page, nothing to do here.
@@ -451,10 +443,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             long rmvId = 0;
 
-            if (needReplaceInner) {
-                assert r.needReplaceInner == FALSE;
-                r.needReplaceInner = TRUE;
-
+            if (r.needReplaceInner == TRUE) {
                 // We increment remove ID in write lock on leaf page, thus it is guaranteed that
                 // any successor will get greater value than he had read at the beginning of the operation.
                 // Thus he is guaranteed to do a retry from root. Since inner replace takes locks on the whole branch
@@ -522,6 +511,7 @@ public abstract class BPlusTree<L, T extends L> {
             throws IgniteCheckedException {
             assert lvl > 0 : lvl; // We are not at the bottom.
 
+            // TODO optimize: looks like usually we do not need to do this insertion point search
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row, 0);
 
@@ -536,7 +526,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // Check that we have a correct view of the world.
-            if (inner(io).getLeft(buf, idx) != r.getTail(lvl - 1).pageId) {
+            if (inner(io).getLeft(buf, idx) != r.getTail(r.tail, lvl - 1).pageId) {
                 assert !found;
 
                 return RETRY;
@@ -555,9 +545,6 @@ public abstract class BPlusTree<L, T extends L> {
                 // We can not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
                 assert r.needReplaceInner == TRUE : r.needReplaceInner;
                 assert idx <= Short.MAX_VALUE : idx;
-
-                // We do not release lock, thus innerIdx will remain correct.
-                r.innerIdx = (short)idx;
 
                 r.needReplaceInner = READY;
             }
@@ -961,7 +948,101 @@ public abstract class BPlusTree<L, T extends L> {
 
             rootPageId = getFirstPageId(meta, rootLvl);
 
-            validateDown(meta, rootPageId, 0L, rootLvl);
+            validateDownPages(meta, rootPageId, 0L, rootLvl);
+
+            validateDownKeys(rootPageId, null);
+        }
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param minRow Minimum row.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateDownKeys(long pageId, L minRow) throws IgniteCheckedException {
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                BPlusIO<L> io = io(buf);
+
+                int cnt = io.getCount(buf);
+
+                if (cnt < 0)
+                    fail("Negative count: " + cnt);
+
+                if (io.isLeaf()) {
+                    for (int i = 0; i < cnt; i++) {
+                        if (minRow != null && compare(io, buf, i, minRow) <= 0)
+                            fail("Wrong sort order: " + U.hexLong(pageId) + " , at " + i + " , minRow: " + minRow);
+
+                        minRow = io.getLookupRow(this, buf, i);
+                    }
+
+                    return;
+                }
+
+                // To find our inner key we have to go left and then always go to the right.
+                for (int i = 0; i < cnt; i++) {
+                    L row = io.getLookupRow(this, buf, i);
+
+                    if (minRow != null && compare(io, buf, i, minRow) <= 0)
+                        fail("Min row violated: " + row + " , minRow: " + minRow);
+
+                    long leftId = inner(io).getLeft(buf, i);
+
+                    L leafRow = getGreatestRowInSubTree(leftId);
+
+                    int cmp = compare(io, buf, i, leafRow);
+
+                    if (cmp < 0 || (cmp != 0 && canGetRowFromInner))
+                        fail("Wrong inner row: " + U.hexLong(pageId) + " , at: " + i + " , leaf:  " + leafRow +
+                            " , inner: " + row);
+
+                    validateDownKeys(leftId, minRow);
+
+                    minRow = row;
+                }
+
+                // Need to handle the rightmost child subtree separately or handle empty routing page.
+                long rightId = inner(io).getLeft(buf, cnt); // The same as getRight(cnt - 1)
+
+                validateDownKeys(rightId, minRow);
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Search row.
+     * @throws IgniteCheckedException If failed.
+     */
+    private L getGreatestRowInSubTree(long pageId) throws IgniteCheckedException {
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                BPlusIO<L> io = io(buf);
+
+                int cnt = io.getCount(buf);
+
+                if (io.isLeaf()) {
+                    if (cnt <= 0) // This code is called only if the tree is not empty, so we can't see empty leaf.
+                        fail("Invalid leaf count: " + cnt + " " + U.hexLong(pageId));
+
+                    return io.getLookupRow(this, buf, cnt - 1);
+                }
+
+                long rightId = inner(io).getLeft(buf, cnt);// The same as getRight(cnt - 1), but good for routing pages.
+
+                return getGreatestRowInSubTree(rightId);
+            }
+            finally {
+                page.releaseRead();
+            }
         }
     }
 
@@ -1024,7 +1105,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param lvl Level.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateDown(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
+    private void validateDownPages(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
             ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
@@ -1056,7 +1137,7 @@ public abstract class BPlusTree<L, T extends L> {
                 else {
                     // Recursively go down if we are on inner level.
                     for (int i = 0; i < cnt; i++)
-                        validateDown(meta, inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
+                        validateDownPages(meta, inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
 
                     if (fwdId != 0) {
                         // For the rightmost child ask neighbor.
@@ -1077,7 +1158,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     pageId = inner(io).getLeft(buf, cnt); // The same as io.getRight(cnt - 1) but works for routing pages.
 
-                    validateDown(meta, pageId, fwdId, lvl - 1);
+                    validateDownPages(meta, pageId, fwdId, lvl - 1);
                 }
             }
             finally {
@@ -1811,9 +1892,6 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         int shift;
 
-        /** */
-        boolean alwaysGoRight;
-
         /**
          * @param row Row.
          */
@@ -1831,8 +1909,6 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException If failed.
          */
         final void init() throws IgniteCheckedException {
-            alwaysGoRight = true;
-
             if (meta == null)
                 meta = page(metaPageId);
 
@@ -1911,22 +1987,6 @@ public abstract class BPlusTree<L, T extends L> {
          */
         boolean canRelease(long pageId, Page page, int lvl) {
             return page != null;
-        }
-
-        /**
-         * @param idx Replaced or removed key index.
-         * @param cnt Number of keys in the inner page.
-         * @param lvl Level.
-         * @return {@code true} If we need to do inner replace after this modification.
-         */
-        final boolean needReplaceInner(int idx, int cnt, int lvl) {
-            assert lvl == 0: lvl; // This method is for leaf page.
-
-            // If we can not get row from inner page, then nothing to replace.
-            // If we were not going always to the right, e.i. we did at least one left move, (this check covers root
-            // page as well, so we will not do inner replace if we are on a root page) and we are updating or
-            // removing the rightmost (the biggest) key, then we have to do inner replace.
-            return canGetRowFromInner && !alwaysGoRight && (idx + 1 == cnt);
         }
     }
 
@@ -2234,9 +2294,6 @@ public abstract class BPlusTree<L, T extends L> {
         private Page page;
 
         /** */
-        private short innerIdx = Short.MIN_VALUE;
-
-        /** */
         private Object freePages;
 
         /** */
@@ -2306,6 +2363,19 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /** {@inheritDoc} */
+        @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+            if (lvl == 0) // Leaf: need to stop.
+                return true;
+
+            // If we can get full row from the inner page, we have to replace it with the new one. On the way down
+            // we can not miss inner key even in presence of concurrent operations because of `triangle` invariant.
+            if (canGetRowFromInner && needReplaceInner == FALSE)
+                needReplaceInner = TRUE;
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) {
             if (lvl == 0) {
                 assert tail == null;
@@ -2357,19 +2427,16 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param t Tail.
-         * @return {@code true} If merged successfully or end reached.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean mergeBottomUp(Tail<L> t) throws IgniteCheckedException {
+        private void mergeBottomUp(Tail<L> t) throws IgniteCheckedException {
             assert needMergeEmptyBranch == FALSE || needMergeEmptyBranch == DONE : needMergeEmptyBranch;
 
-            if (t.down == null)
-                return true;
+            if (t.down == null || t.down.sibling == null)
+                return; // Nothing to merge.
 
-            if (t.down.sibling == null) // We've merged something there.
-                return false;
-
-            return mergeBottomUp(t.down) && merge(t);
+            mergeBottomUp(t.down);
+            merge(t);
         }
 
         /**
@@ -2389,7 +2456,7 @@ public abstract class BPlusTree<L, T extends L> {
                 if (tail.down == null || tail.getCount() == 0)
                     return false; // Lock the whole branch up to the first non-empty.
 
-                mergeEmptyBranch();
+                mergeEmptyBranch(); // Top-down merge for empty branch.
 
                 mergedEmptyBranch = true;
                 needMergeEmptyBranch = DONE;
@@ -2415,10 +2482,8 @@ public abstract class BPlusTree<L, T extends L> {
             else if (tail.sibling != null &&
                 tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
                 // Release everything lower than tail, we've already merged this path.
-
-                // TODO uncomment and investigate why the following code causes hangs and tree corruption
-//                doReleaseTail(tail.down);
-//                tail.down = null;
+                doReleaseTail(tail.down);
+                tail.down = null;
 
                 return false; // Lock and merge one level more.
             }
@@ -2624,33 +2689,46 @@ public abstract class BPlusTree<L, T extends L> {
         private void replaceInner() throws IgniteCheckedException {
             assert needReplaceInner == READY : needReplaceInner;
             assert tail.lvl > 0 : "leaf";
-            assert innerIdx >= 0 : innerIdx;
 
-            Tail<L> leaf = getTail(0);
+            int innerCnt;
+            int innerIdx;
+
             Tail<L> inner = tail;
 
-            assert inner.type == Tail.EXACT : inner.type;
+            for (;;) { // Find inner key to replace.
+                assert inner.type == Tail.EXACT : inner.type;
 
-            int innerCnt = inner.getCount();
+                innerCnt = inner.getCount();
+                innerIdx = findInsertionPoint(inner.io, inner.buf, innerCnt, row, 0);
+
+                if (innerIdx >= 0)
+                    break; // Successfully found the inner key.
+
+                // We did not find the inner key to replace.
+                if (inner.lvl == 1) {
+                    assert inner == tail; // We moved down from the original tail and found nothing: something is wrong.
+
+                    return; // After leaf merge inner page lost inner key, nothing to do here.
+                }
+
+                // Go level down.
+                inner = inner.down;
+            }
+
+            Tail<L> leaf = getTail(inner, 0);
+
             int leafCnt = leaf.getCount();
 
             assert leafCnt > 0 : leafCnt; // Leaf must be merged at this point already if it was empty.
 
-            if (innerIdx < innerCnt) {
-                int leafIdx = leafCnt - 1; // Last leaf item.
+            int leafIdx = leafCnt - 1; // Last leaf item.
 
-                // Update inner key with the new biggest key of left subtree.
-                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
+            // Update inner key with the new biggest key of left subtree.
+            inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
 
-                if (needWalDeltaRecord(inner.page))
-                    wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
-                        innerIdx, leaf.page.id(), leafIdx));
-            }
-            else {
-                // If after leaf merge parent have lost inner key, we don't need to update it anymore.
-                assert innerIdx == innerCnt;
-                assert inner(inner.io).getLeft(inner.buf, innerIdx) == leaf.pageId;
-            }
+            if (needWalDeltaRecord(inner.page))
+                wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
+                    innerIdx, leaf.page.id(), leafIdx));
         }
 
         /**
@@ -2806,10 +2884,11 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @param tail Tail to start with.
          * @param lvl Level.
          * @return Tail of {@link Tail#EXACT} type at the given level.
          */
-        private Tail<L> getTail(int lvl) {
+        private Tail<L> getTail(Tail<L> tail, int lvl) {
             assert tail != null;
             assert lvl >= 0 && lvl <= tail.lvl : lvl;
 
@@ -2828,7 +2907,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Tail as a String.
          * @throws IgniteCheckedException If failed.
          */
-        private String traceTail(boolean keys) throws IgniteCheckedException {
+        private String printTail(boolean keys) throws IgniteCheckedException {
             SB sb = new SB("");
 
             Tail<L> t = tail;
@@ -2841,7 +2920,7 @@ public abstract class BPlusTree<L, T extends L> {
                 t = t.sibling;
 
                 if (t != null)
-                    sb.a(" -> ").a(printPage(t.io, t.buf, keys));
+                    sb.a(" -> ").a(t.type == Tail.FORWARD ? "F" : "B").a(' ').a(printPage(t.io, t.buf, keys));
 
                 sb.a('\n');
 

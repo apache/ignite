@@ -587,16 +587,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 200_000 : 1000_000;
+        int loops = reuseList == null ? 500_000 : 1000_000;
 
         for (int i = 0 ; i < loops; i++) {
-            Long x = (long)tree.randomInt(CNT);
+            Long x = (long)BPlusTree.randomInt(CNT);
 
-            boolean put = tree.randomInt(2) == 0;
+            boolean put = BPlusTree.randomInt(2) == 0;
 
-            if (i % 100_000 == 0) {
+            if (i % 1000 == 0) {
+//                X.println(tree.printTree());
                 X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
-                X.println(tree.printTree());
             }
 
             if (put)
@@ -604,8 +604,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             else {
                 if (map.remove(x) != null)
                     assertEquals(x, tree.remove(x));
+
                 assertNull(tree.remove(x));
             }
+
+            tree.validateTree();
 
             if (i % 100 == 0) {
                 GridCursor<Long> cursor = tree.find(null, null);
@@ -619,9 +622,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 }
 
                 assertEquals(map.size(), tree.size());
-
-                if (i % 1000 == 0)
-                    tree.validateTree();
             }
         }
     }
