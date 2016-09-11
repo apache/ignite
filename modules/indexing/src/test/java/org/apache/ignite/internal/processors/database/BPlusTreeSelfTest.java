@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -505,16 +507,77 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
-    public void testMassiveRemove_true() throws Exception {
-        doTestMassiveRemove(true);
+    public void testMassiveRemove1() throws Exception {
+        MAX_PER_PAGE = 1;
+        final int threads = 16;
+        final int keys = 100;
+
+        final AtomicLongArray rmvd = new AtomicLongArray(keys);
+
+        final TestTree tree = createTestTree(true);
+
+        // Put keys in reverse order to have a better balance in the tree (lower height).
+        for (long i = keys - 1; i >= 0; i--) {
+            tree.put(i);
+//            X.println(tree.printTree());
+        }
+
+        assertEquals(keys, tree.size());
+
+        info("Remove...");
+
+        try {
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Random rnd = new GridRandom();
+
+                    for(;;) {
+                        int idx = 0;
+                        boolean found = false;
+
+                        for (int i = 0, shift = rnd.nextInt(keys); i < keys; i++) {
+                            idx = (i + shift) % keys;
+
+                            if (rmvd.get(idx) == 0 && rmvd.compareAndSet(idx, 0, 1)) {
+                                found = true;
+
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                            break;
+
+                        assertEquals(Long.valueOf(idx), tree.remove((long)idx));
+                        rmvdIds.add((long)idx);
+                    }
+
+                    return null;
+                }
+            }, threads, "remove");
+
+            assertEquals(0, tree.size());
+
+            tree.validateTree();
+        }
+        finally {
+            rmvdIds.clear();
+        }
     }
 
     /**
      * @throws Exception if failed.
      */
-    private void doTestMassiveRemove(boolean canGetRow) throws Exception {
+    public void _testMassiveRemove2_true() throws Exception {
+        doTestMassiveRemove2(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void doTestMassiveRemove2(boolean canGetRow) throws Exception {
         MAX_PER_PAGE = 2;
         final int threads = 16;
         final int keys = 20_000 * threads;
@@ -523,15 +586,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         for (long i = 0; i < keys; i++)
             tree.put(i);
-
-        long cnt = 0;
-
-        GridCursor<Long> cursor = tree.find(0L, (long)keys);
-
-        while (cursor.next())
-            assertEquals(cnt++ , cursor.get().longValue());
-
-        assertEquals(keys, cnt);
 
         final AtomicInteger id = new AtomicInteger(0);
 
