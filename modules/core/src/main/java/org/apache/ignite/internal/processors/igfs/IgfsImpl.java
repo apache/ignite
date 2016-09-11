@@ -603,9 +603,15 @@ public final class IgfsImpl implements IgfsEx {
                 if (fileId == null)
                     throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
 
+                IgfsFile info = info(path);
+
+                if (info == null)
+                    throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
+
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
-                summary0(info(path), sum);
+
+                summary0(info, sum);
 
                 return sum;
             }
@@ -1310,9 +1316,14 @@ public final class IgfsImpl implements IgfsEx {
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
+                IgfsFile info = info(path);
+
+                if (info == null)
+                    throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
+
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
-                summary0(info(path), sum);
+                summary0(info, sum);
 
                 return sum.totalLength();
             }
@@ -1327,10 +1338,11 @@ public final class IgfsImpl implements IgfsEx {
      * @throws IgniteCheckedException If failed.
      */
     private void summary0(IgfsFile file, IgfsPathSummary sum) throws IgniteCheckedException {
+        assert file != null;
         assert sum != null;
 
         if (file.isDirectory()) {
-            if (!file.path().toString().equals("/"));
+            if (!file.path().toString().equals("/"))
                 sum.directoriesCount(sum.directoriesCount() + 1);
 
             for (IgfsFile f: listFiles(file.path()))
