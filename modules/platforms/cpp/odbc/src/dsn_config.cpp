@@ -91,21 +91,27 @@ namespace ignite
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
             std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress().c_str());
+
             std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost().c_str());
+
             uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
+
             std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
-            LOG_MSG("%d\n", __LINE__);
+            int32_t pageSize = ReadDsnInt(dsn, Configuration::Key::pageSize, config.GetPageSize());
+
+            if (pageSize <= 0)
+                pageSize = config.GetPageSize();
 
             config.SetAddress(address);
             config.SetHost(server);
             config.SetTcpPort(port);
             config.SetCache(cache);
             config.SetProtocolVersion(version);
-
-            LOG_MSG("%d\n", __LINE__);
+            config.SetPageSize(pageSize);
         }
     }
 }

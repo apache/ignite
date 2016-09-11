@@ -37,6 +37,7 @@ namespace
     const uint16_t testServerPort = 4242;
     const std::string testCacheName = "TestCache";
     const std::string testDsn = "Ignite DSN";
+    const int32_t testPageSize = 4321;
 
     const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
@@ -76,12 +77,14 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
     BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
+    BOOST_CHECK_EQUAL(cfg.GetPageSize(), testPageSize);
 
     std::stringstream constructor;
 
     constructor << "address=" << testAddress << ';'
                 << "cache=" << testCacheName << ';'
-                << "driver={" << testDriverName << "};";
+                << "driver={" << testDriverName << "};"
+                << "page_size=" << testPageSize << ';';
 
     const std::string& expectedStr = constructor.str();
 
@@ -96,6 +99,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), Configuration::DefaultValue::port);
+    BOOST_CHECK_EQUAL(cfg.GetPageSize(), Configuration::DefaultValue::pageSize);
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -107,6 +111,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
     BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
+    BOOST_CHECK_NE(testPageSize, Configuration::DefaultValue::pageSize);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
@@ -117,7 +122,8 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
 
     constructor << "DRIVER={" << testDriverName << "};"
                 << "ADDRESS=" << testAddress << ';'
-                << "CACHE=" << testCacheName;
+                << "CACHE=" << testCacheName << ';'
+                << "PAGE_SIZE=" << testPageSize;
 
     const std::string& connectStr = constructor.str();
 
@@ -134,6 +140,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
+                << "page_size=" << testPageSize << ';'
                 << "cache=" << testCacheName << ';';
 
     const std::string& connectStr = constructor.str();
@@ -151,6 +158,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
+                << "page_size=" << testPageSize << ';'
                 << "cache=" << testCacheName << ';';
 
     const std::string& connectStr = constructor.str();
@@ -168,6 +176,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
 
     constructor << "Driver={" << testDriverName << "};"
                 << "Address=" << testAddress << ';'
+                << "Page_Size=" << testPageSize << ';'
                 << "Cache=" << testCacheName << ';';
 
     const std::string& connectStr = constructor.str();
@@ -185,6 +194,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
 
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
                 << " ADDRESS =" << testAddress << "; "
+                << "   PAGE_SIZE= " << testPageSize << ';'
                 << "CACHE = \n\r" << testCacheName << ';';
 
     const std::string& connectStr = constructor.str();
