@@ -808,7 +808,7 @@ public final class IgfsImpl implements IgfsEx {
                     case DUAL_SYNC:
                         await(path);
 
-                        meta.mkdirsDual(secondaryFs, path, props0);
+                        meta.mkdirsDual(secondaryFs, path, props0, props);
 
                         break;
 
