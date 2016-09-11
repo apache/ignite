@@ -56,6 +56,7 @@ import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
+import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -1386,6 +1387,19 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assertNotNull(replicatedCache.get(key));
         assertNotNull(partitionedCache.get(key));
+    }
+
+    /**
+     * Ensure that object w/o schema can be re-built.
+     */
+    public void testBuildFromObjectWithoutSchema() {
+        BinaryObjectBuilderImpl binBuilder = wrap(new GridBinaryTestClass2());
+
+        BinaryObject binObj = binBuilder.build();
+
+        BinaryObjectBuilderImpl binBuilder2 = wrap(binObj);
+
+        binBuilder2.build();
     }
 
     /**

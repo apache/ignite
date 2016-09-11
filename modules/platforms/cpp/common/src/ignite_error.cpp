@@ -24,7 +24,7 @@ using namespace ignite::java;
 
 namespace ignite
 {
-    void IgniteError::ThrowIfNeeded(IgniteError& err)
+    void IgniteError::ThrowIfNeeded(const IgniteError& err)
     {
         if (err.code != IGNITE_SUCCESS)
             throw err;
