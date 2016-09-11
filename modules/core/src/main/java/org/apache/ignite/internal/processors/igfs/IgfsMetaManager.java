@@ -2217,6 +2217,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param fs Secondary file system.
      * @param path Path to create.
      * @param props Properties to be applied.
+     * @param secondaryProps Properties to be applied to secondary fs.
      * @return {@code True} in case rename was successful.
      * @throws IgniteCheckedException If directory creation failed.
      */
