@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -36,8 +35,6 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.igfs.IgfsContext;
-import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
@@ -184,7 +181,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
-        updateSafe(path, props);
+        update0(path, props);
     }
 
     /**
@@ -287,8 +284,20 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         OutputStream os = create0(path, overwrite, bufSize);
-        updateSafe(path, props);
-        return os;
+        try {
+            update0(path, props);
+            return os;
+        }
+        catch (Exception ex) {
+            try {
+                os.close();
+                throw ex;
+            }
+            catch (IOException e) {
+                // TODO: add log about update exception
+                throw new IgfsException("Failed on close stream after update failed", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -301,8 +310,20 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             if (exists) {
                 OutputStream os = new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
-                updateSafe(path, props);
-                return os;
+                try {
+                    update(path, props);
+                    return os;
+                }
+                catch (Exception ex) {
+                    try {
+                        os.close();
+                        throw ex;
+                    }
+                    catch (IOException e) {
+                        // TODO: add log about update exception
+                        throw new IgfsException("Failed on close stream after update failed", e);
+                    }
+                }
             }
             else {
                 if (create)
@@ -467,21 +488,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
-        }
-    }
-
-    /**
-     * Swallow all exceptions of update.
-     *
-     * @param path IGFS path
-     * @param props Properties map.
-     */
-    @Nullable private void updateSafe(IgfsPath path, Map<String, String> props) {
-        try {
-            update0(path, props);
-        }
-        catch (Exception e) {
-            // TODO: Logger must be available at the local FS
         }
     }
 

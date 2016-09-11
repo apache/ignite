@@ -813,7 +813,7 @@ public final class IgfsImpl implements IgfsEx {
                         break;
 
                     case PROXY:
-                        secondaryFs.mkdirs(path, props0);
+                        secondaryFs.mkdirs(path, props);
 
                         break;
                 }
