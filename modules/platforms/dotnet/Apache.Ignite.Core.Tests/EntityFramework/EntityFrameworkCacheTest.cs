@@ -204,6 +204,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestReadOnlyStrategy()
         {
+            // TODO: db config is instantiate only once..
+
             // Set up a policy to cache Blogs as read-only and Posts as read-write.
             _policy = new DelegateCachingPolicy((sets, sql, args) => true, (sets, sql, args, cnt) => true,
                 (sets, sql, args) => TimeSpan.MaxValue,
