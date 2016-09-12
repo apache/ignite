@@ -162,15 +162,34 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
+        /// <summary>
+        /// Tests transactions created with BeginTransaction.
+        /// </summary>
         [Test]
         public void TestTx()
         {
-            // TODO: Test BeginTransaction-style tx.
-            
+            // Check TX without commit:
+            using (var ctx = GetDbContext())
+            {
+                using (ctx.Database.BeginTransaction())
+                {
+                    ctx.Posts.Add(new Post { Title = "Foo", Blog = new Blog() });
+                    ctx.SaveChanges();
+
+                    Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+                }
+            }
+
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual(0, ctx.Posts.ToArray().Length);
+            }
+
+            // TODO: with commit
         }
 
         /// <summary>
-        /// Tests transactions.
+        /// Tests transactions created with TransactionScope.
         /// </summary>
         [Test]
         public void TestTxScope()
