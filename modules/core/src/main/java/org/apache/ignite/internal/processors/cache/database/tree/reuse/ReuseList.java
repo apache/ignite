@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -40,7 +41,7 @@ public final class ReuseList {
      * @param initNew Init new flag.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, long[] rooIds,
+    public ReuseList(int cacheId, PageMemory pageMem, IgniteWriteAheadLogManager wal, AtomicLong globalRmvId, long[] rooIds,
         boolean initNew) throws IgniteCheckedException {
         A.ensure(rooIds.length > 1, "Segments must be greater than 1.");
 
@@ -49,7 +50,7 @@ public final class ReuseList {
         for (int i = 0; i < rooIds.length; i++) {
             String idxName = BPlusTree.treeName("s" + i, "Reuse");
 
-            trees[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, rooIds[i], initNew);
+            trees[i] = new ReuseTree(idxName, this, cacheId, pageMem, wal, globalRmvId, rooIds[i], initNew);
         }
     }
 

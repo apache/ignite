@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -65,6 +66,7 @@ public class MetadataStorage implements MetaStore {
     public MetadataStorage(
         final PageMemory pageMem,
         final IgniteWriteAheadLogManager wal,
+        final AtomicLong globalRmvId,
         final int cacheId,
         final ReuseList reuseList,
         final long rootPageId,
@@ -75,7 +77,7 @@ public class MetadataStorage implements MetaStore {
             this.cacheId = cacheId;
             this.reuseList = reuseList;
 
-            metaTree = new MetaTree(cacheId, pageMem, wal, rootPageId,
+            metaTree = new MetaTree(cacheId, pageMem, wal, globalRmvId, rootPageId,
                 reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
         }
         catch (IgniteCheckedException e) {
@@ -152,13 +154,14 @@ public class MetadataStorage implements MetaStore {
             final int cacheId,
             final PageMemory pageMem,
             final IgniteWriteAheadLogManager wal,
+            final AtomicLong globalRmvId,
             final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();

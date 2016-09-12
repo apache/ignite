@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -64,6 +65,9 @@ public class FreeList {
 
     /** */
     private final ConcurrentHashMap8<Integer, GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
+
+    /** */
+    private final AtomicLong globalRmvId;
 
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow = new PageHandler<CacheDataRow, Integer>() {
@@ -207,7 +211,7 @@ public class FreeList {
      * @param reuseList Reuse list.
      * @param cctx Cache context.
      */
-    public FreeList(GridCacheContext<?, ?> cctx, ReuseList reuseList) {
+    public FreeList(GridCacheContext<?, ?> cctx, ReuseList reuseList, AtomicLong globalRmvId) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -219,6 +223,7 @@ public class FreeList {
         assert pageMem != null;
 
         this.reuseList = reuseList;
+        this.globalRmvId = globalRmvId;
     }
 
     /**
@@ -256,7 +261,7 @@ public class FreeList {
 
                 final RootPage rootPage = cctx.offheap().meta().getOrAllocateForTree(idxName);
 
-                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, wal,
+                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, wal, globalRmvId,
                     rootPage.pageId().pageId(), rootPage.isAllocated()));
             }
         }

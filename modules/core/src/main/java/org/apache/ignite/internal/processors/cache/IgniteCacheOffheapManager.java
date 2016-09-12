@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -209,6 +210,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Offheap allocated size.
      */
     public long offHeapAllocatedSize();
+
+    /**
+     * @return Global remove ID counter.
+     */
+    public AtomicLong globalRemoveId();
 
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;

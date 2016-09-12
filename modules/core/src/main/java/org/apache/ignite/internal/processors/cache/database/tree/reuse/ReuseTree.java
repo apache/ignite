@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -47,10 +48,11 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
+        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)
             initNew();

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -95,6 +96,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** */
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
 
+    /** */
+    protected final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000);
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
@@ -111,10 +115,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.shared().database().checkpointReadLock();
 
             try {
-                reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), metas.rootIds(), metas.isInitNew());
-                freeList = new FreeList(cctx, reuseList);
+                reuseList = new ReuseList(cacheId, pageMem, cctx.shared().wal(), globalRmvId, metas.rootIds(), metas.isInitNew());
+                freeList = new FreeList(cctx, reuseList, globalRmvId);
 
-                metaStore = new MetadataStorage(pageMem, cctx.shared().wal(),
+                metaStore = new MetadataStorage(pageMem, cctx.shared().wal(), globalRmvId,
                     cacheId, reuseList, metas.metastoreRoot(), metas.isInitNew());
 
                 if (cctx.ttl().eagerTtlEnabled()) {
@@ -125,6 +129,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     pendingEntries = new PendingEntriesTree(cctx,
                         name,
                         cctx.shared().database().pageMemory(),
+                        globalRmvId,
                         rootPage.pageId().pageId(),
                         reuseList,
                         rootPage.isAllocated());
@@ -417,6 +422,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public AtomicLong globalRemoveId() {
+        return globalRmvId;
+    }
+
     /**
      * Clears offheap entries.
      *
@@ -674,6 +684,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rowStore,
             cctx,
             dbMgr.pageMemory(),
+            globalRmvId,
             rootPage.pageId().pageId(),
             rootPage.isAllocated());
 
@@ -1010,10 +1021,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             CacheDataRowStore rowStore,
             GridCacheContext cctx,
             PageMemory pageMem,
+            AtomicLong globalRmvId,
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(name, cctx.cacheId(), pageMem, cctx.shared().wal(), metaPageId,
+            super(name, cctx.cacheId(), pageMem, cctx.shared().wal(), globalRmvId, metaPageId,
                 reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
 
             assert rowStore != null;
@@ -1354,6 +1366,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             GridCacheContext cctx,
             String name,
             PageMemory pageMem,
+            AtomicLong globalRmvId,
             long metaPageId,
             ReuseList reuseList,
             boolean initNew)
@@ -1362,6 +1375,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 cctx.cacheId(),
                 pageMem,
                 cctx.shared().wal(),
+                globalRmvId,
                 metaPageId,
                 reuseList,
                 PendingEntryInnerIO.VERSIONS,

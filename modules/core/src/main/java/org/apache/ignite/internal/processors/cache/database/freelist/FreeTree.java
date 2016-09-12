@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -53,10 +54,11 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         int partId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
+        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
 
         this.partId = partId;
 
