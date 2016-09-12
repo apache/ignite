@@ -33,6 +33,9 @@ namespace Apache.Ignite.EntityFramework.Impl
     internal class DbProviderServicesProxy : DbProviderServices
     {
         /** */
+        private static readonly DbCachingPolicy DefaultPolicy = new DbCachingPolicy();
+
+        /** */
         private readonly DbCachingPolicy _policy;
         
         /** */
@@ -55,7 +58,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             var proxy = services as DbProviderServicesProxy;
             _services = proxy != null ? proxy._services : services;
 
-            _policy = policy;
+            _policy = policy ?? DefaultPolicy;
             _cache = cache;
         }
 

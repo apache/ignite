@@ -164,16 +164,14 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return reader;  // Queries that modify anything are never cached.
 
             // Check if cacheable.
-            var policy = _info.Policy;
-
-            if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters))
+            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters))
                 return reader;
 
             // Read into memory.
             var res = new DataReaderResult(reader);
 
             // Check if specific row count is cacheable.
-            if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
+            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
                 return res.CreateReader();
 
             PutResultToCache(cacheKey, res, strategy);
@@ -210,10 +208,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
                 return cachedRes;
 
-            var policy = _info.Policy;
-
-            if (policy != null && (!policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters) ||
-                                   !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, 1)))
+            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters) ||
+                !_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, 1))
             {
                 return res;
             }
