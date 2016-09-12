@@ -48,9 +48,6 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Sent bytes counter. */
     private volatile long bytesSent;
 
-    private final long[] writesStat = new long[25];
-    private final long[] readsStat = new long[25];
-
     /** Received bytes counter. */
     private volatile long bytesRcvd;
 
@@ -247,32 +244,6 @@ public class GridNioSessionImpl implements GridNioSession {
         lastSndTime = U.currentTimeMillis();
     }
 
-    public void onBytesWritten(int cnt, int bufCap) {
-        int idx = (int)Math.floor(((cnt * 1.0) / bufCap) * writesStat.length);
-
-        if (idx >= writesStat.length)
-            idx = writesStat.length - 1;
-
-        writesStat[idx]++;
-    }
-
-    public void onBytesRead(int cnt, int bufCap) {
-        int idx = (int)Math.floor(((cnt * 1.0) / bufCap) * readsStat.length);
-
-        if (idx >= readsStat.length)
-            idx = readsStat.length - 1;
-
-        readsStat[idx]++;
-    }
-
-    public long[] readStats() {
-        return readsStat;
-    }
-
-    public long[] writeStats() {
-        return writesStat;
-    }
-
     /**
      * Adds given amount ob bytes to the received bytes counter.
      * <p>
@@ -325,12 +296,22 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+    @Override public void outRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+    @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void inRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return null;
     }
 

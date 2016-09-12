@@ -187,7 +187,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                     boolean found = false;
 
                     for (GridNioSession ses : sessions) {
-                        final GridNioRecoveryDescriptor recoveryDesc = ses.recoveryDescriptor();
+                        final GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
                         if (recoveryDesc != null) {
                             found = true;
