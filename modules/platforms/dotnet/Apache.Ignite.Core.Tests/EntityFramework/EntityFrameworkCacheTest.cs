@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Linq;
     using System.Transactions;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -105,6 +106,36 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
+        /// Tests that caching actually happens.
+        /// </summary>
+        [Test]
+        public void TestResultFromCache()
+        {
+            using (var ctx = GetDbContext())
+            {
+                // Add data.
+                ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog(), PostId = 1});
+                ctx.Posts.Add(new Post {Title = "Bar", Blog = new Blog(), PostId = 2});
+                ctx.SaveChanges();
+
+                Assert.AreEqual(new[] {"Foo"}, ctx.Posts.Where(x => x.Title == "Foo").Select(x => x.Title).ToArray());
+                Assert.AreEqual(new[] {"Bar"}, ctx.Posts.Where(x => x.Title == "Bar").Select(x => x.Title).ToArray());
+
+                // Alter cached data: swap cached values.
+                var cachedData = _cache.Where(x => x.Value is EntityFrameworkCacheEntry).ToArray();
+
+                Assert.AreEqual(2, cachedData.Length);
+
+                _cache[cachedData[0].Key] = cachedData[1].Value;
+                _cache[cachedData[1].Key] = cachedData[0].Value;
+
+                // Verify.
+                Assert.AreEqual(new[] {"Bar"}, ctx.Posts.Where(x => x.Title == "Foo").Select(x => x.Title).ToArray());
+                Assert.AreEqual(new[] {"Foo"}, ctx.Posts.Where(x => x.Title == "Bar").Select(x => x.Title).ToArray());
+            }
+        }
+    
+        /// <summary>
         /// Tests the strict strategy.
         /// </summary>
         [Test]
@@ -112,9 +143,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             using (var ctx = GetDbContext())
             {
-                Assert.IsEmpty(ctx.Blogs);
-                Assert.IsEmpty(ctx.Posts);
-
                 ctx.Blogs.Add(new Blog
                 {
                     BlogId = 1,
@@ -128,6 +156,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(2, ctx.SaveChanges());
 
                 // Check that query works.
+                Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+
+                // Verify that results are from cache.
+                // TODO: How??
                 Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
                 // Add new post to check invalidation.
