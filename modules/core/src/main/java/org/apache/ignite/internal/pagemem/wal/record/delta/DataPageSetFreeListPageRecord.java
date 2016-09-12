@@ -27,7 +27,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 /**
  *
  */
-public class DataPageSetFreeListPage extends PageDeltaRecord {
+public class DataPageSetFreeListPageRecord extends PageDeltaRecord {
     /** */
     private long freeListPage;
 
@@ -36,7 +36,7 @@ public class DataPageSetFreeListPage extends PageDeltaRecord {
      * @param pageId Page ID.
      * @param freeListPage Free list page ID.
      */
-    public DataPageSetFreeListPage(int cacheId, long pageId, long freeListPage) {
+    public DataPageSetFreeListPageRecord(int cacheId, long pageId, long freeListPage) {
         super(cacheId, pageId);
 
         this.freeListPage = freeListPage;

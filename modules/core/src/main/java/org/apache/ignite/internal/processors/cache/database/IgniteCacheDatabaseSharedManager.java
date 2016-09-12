@@ -93,8 +93,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        freeList.dumpStats();
-
         if (pageMem != null)
             pageMem.stop();
     }

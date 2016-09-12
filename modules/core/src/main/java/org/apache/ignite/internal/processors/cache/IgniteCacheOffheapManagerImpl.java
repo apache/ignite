@@ -586,6 +586,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return dataStore;
     }
 
+    /**
+     * @param p Partition.
+     * @param lsnr Listener.
+     * @return Cache data store.
+     * @throws IgniteCheckedException If failed.
+     */
     protected CacheDataStore createCacheDataStore0(int p, CacheDataStore.Listener lsnr)
         throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
@@ -599,12 +605,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         String idxName = treeName(p);
 
         CacheDataTree dataTree = new CacheDataTree(idxName,
-                cctx.shared().database().globalReuseList(),
-                rowStore,
-                cctx,
-                dbMgr.pageMemory(),
-                rootPage,
-                true);
+            cctx.shared().database().globalReuseList(),
+            rowStore,
+            cctx,
+            dbMgr.pageMemory(),
+            rootPage,
+            true);
 
         return new CacheDataStoreImpl(idxName, rowStore, dataTree, lsnr);
     }
@@ -675,15 +681,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private final Listener lsnr;
 
         /**
+         * @param name Name.
          * @param rowStore Row store.
          * @param dataTree Data tree.
          * @param lsnr Listener.
          */
         public CacheDataStoreImpl(
-                String name,
-                CacheDataRowStore rowStore,
-                CacheDataTree dataTree,
-                Listener lsnr
+            String name,
+            CacheDataRowStore rowStore,
+            CacheDataTree dataTree,
+            Listener lsnr
         ) {
             this.name = name;
             this.rowStore = rowStore;
