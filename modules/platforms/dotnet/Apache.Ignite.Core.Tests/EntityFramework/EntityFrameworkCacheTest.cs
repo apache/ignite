@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             using (var ctx = GetDbContext())
             {
-                Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+                Assert.AreEqual(0, ctx.Posts.ToArray().Length);
             }
 
             // Check TX with commit:
