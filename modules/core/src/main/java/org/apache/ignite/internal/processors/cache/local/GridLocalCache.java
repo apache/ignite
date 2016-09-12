@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * Local cache implementation.
  */
 public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
-    implements IgniteCacheOffheapManager.CacheDataStore.Listener {
+    implements IgniteCacheOffheapManager.CacheDataStore.SizeTracker {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -249,6 +249,10 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
     /** {@inheritDoc} */
     @Override public void onRemove() {
         storageSize.decrementAndGet();
+    }
+
+    @Override public long updateCounter() {
+        return 0;
     }
 
     /** {@inheritDoc} */

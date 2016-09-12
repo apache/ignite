@@ -141,6 +141,15 @@ public abstract class PageIO {
     public static final short T_META = 15;
 
     /** */
+    public static final short T_PAGE_LIST_META = 16;
+
+    /** */
+    public static final short T_PAGE_LIST_NODE = 17;
+
+    /** */
+    public static final short T_PART_META = 18;
+
+    /** */
     private final int ver;
 
     /** */
@@ -289,6 +298,15 @@ public abstract class PageIO {
 
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_NODE:
+                return (Q)PagesListNodeIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_META:
+                return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PART_META:
+                return (Q)PagePartMetaIO.VERSIONS.forVersion(ver);
 
             case T_META:
                 throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");

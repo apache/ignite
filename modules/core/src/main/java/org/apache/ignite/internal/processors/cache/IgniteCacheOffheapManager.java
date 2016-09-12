@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -81,7 +82,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
+    public CacheDataStore createCacheDataStore(int p, CacheDataStore.SizeTracker lsnr) throws IgniteCheckedException;
 
     /**
      * @param p Partition ID.
@@ -216,6 +217,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface CacheDataStore {
+
+        int partId();
+
         /**
          * @return Store name.
          */
@@ -263,9 +267,18 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         public void destroy() throws IgniteCheckedException;
 
         /**
-         * Data store listener.
+         * @return Row store.
          */
-        interface Listener {
+        public RowStore rowStore();
+
+        public int size();
+
+        public long updateCounter();
+
+        /**
+         * Data store size tracker.
+         */
+        interface SizeTracker {
             /**
              * On new entry inserted.
              */
@@ -275,6 +288,16 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
              * On entry removed.
              */
             void onRemove();
+
+            /**
+             * @return Size.
+             */
+            int size();
+
+            /**
+             * @return Update counter.
+             */
+            long updateCounter();
         }
     }
 }

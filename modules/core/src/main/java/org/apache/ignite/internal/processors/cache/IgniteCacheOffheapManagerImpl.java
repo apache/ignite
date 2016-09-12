@@ -84,7 +84,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private CacheDataStore locCacheDataStore;
 
     /** */
-    private final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
     private MetaStore metaStore;
@@ -94,7 +94,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
-
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -134,7 +133,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 if (cctx.isLocal()) {
                     assert cctx.cache() instanceof GridLocalCache : cctx.cache();
 
-                    locCacheDataStore = createCacheDataStore(0, (CacheDataStore.Listener)cctx.cache());
+                    locCacheDataStore = createCacheDataStore(0, (CacheDataStore.SizeTracker)cctx.cache());
                 }
             }
             finally {
@@ -646,7 +645,22 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p,
-        CacheDataStore.Listener lsnr) throws IgniteCheckedException {
+        CacheDataStore.SizeTracker lsnr) throws IgniteCheckedException {
+        CacheDataStore dataStore = createCacheDataStore0(p, lsnr);
+
+        partDataStores.put(p, dataStore);
+
+        return dataStore;
+    }
+
+    /**
+     * @param p Partition.
+     * @param lsnr Listener.
+     * @return Cache data store.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected CacheDataStore createCacheDataStore0(int p, CacheDataStore.SizeTracker lsnr)
+        throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
         String idxName = treeName(p);
@@ -663,11 +677,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage.pageId().pageId(),
             rootPage.isAllocated());
 
-        CacheDataStore dataStore = new CacheDataStoreImpl(idxName, rowStore, dataTree, lsnr);
-
-        partDataStores.put(p, dataStore);
-
-        return dataStore;
+        return new CacheDataStoreImpl(p, idxName, rowStore, dataTree, lsnr);
     }
 
     /** {@inheritDoc} */
@@ -700,7 +710,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException {
+    @Override public void expire(
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException {
         if (pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
@@ -731,7 +742,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private class CacheDataStoreImpl implements CacheDataStore {
+    protected class CacheDataStoreImpl implements CacheDataStore {
+
+        private int partId;
+
         /** Tree name. */
         private String name;
 
@@ -742,23 +756,31 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private final CacheDataTree dataTree;
 
         /** */
-        private final Listener lsnr;
+        private final SizeTracker lsnr;
 
         /**
+         * @param partId Partition ID.
+         * @param name Name.
          * @param rowStore Row store.
          * @param dataTree Data tree.
          * @param lsnr Listener.
          */
-        private CacheDataStoreImpl(
+        public CacheDataStoreImpl(
+            int partId,
             String name,
             CacheDataRowStore rowStore,
             CacheDataTree dataTree,
-            Listener lsnr
+            SizeTracker lsnr
         ) {
+            this.partId = partId;
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
             this.lsnr = lsnr;
+        }
+
+        @Override public int partId() {
+            return partId;
         }
 
         /** {@inheritDoc} */
@@ -850,6 +872,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             dataTree.destroy();
 
             metaStore.dropRootPage(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RowStore rowStore() {
+            return rowStore;
+        }
+
+        @Override public int size() {
+            return lsnr.size();
+        }
+
+        @Override public long updateCounter() {
+            return lsnr.updateCounter();
         }
     }
 
@@ -1248,7 +1283,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return metastoreRoot;
         }
     }
-
 
     /**
      *
