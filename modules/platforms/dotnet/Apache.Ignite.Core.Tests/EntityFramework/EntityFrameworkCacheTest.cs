@@ -119,7 +119,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 context.Posts.Remove(context.Posts.First());
                 Assert.AreEqual(1, context.SaveChanges());
 
-                var data = _cache.ToArray();
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
 
                 Assert.AreEqual(1, context.Posts.Count());
