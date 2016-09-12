@@ -103,12 +103,12 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
-            var cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(new CacheConfiguration(cacheName)
+            var cache = ignite.GetOrCreateCache<string, object>(new CacheConfiguration(cacheName)
             {
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
 
-            var efCache = new StrictReadWriteCache(cache);  // TODO: Configurable strategy
+            var efCache = new DbCache(cache);  // TODO: Configurable strategy
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(

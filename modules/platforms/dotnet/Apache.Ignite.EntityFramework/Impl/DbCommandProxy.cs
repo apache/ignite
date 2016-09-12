@@ -152,8 +152,10 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var cacheKey = GetKey();
 
+            var strategy = _info.Policy.GetCachingStrategy(_info.AffectedEntitySets, CommandText, Parameters);
+
             object cachedRes;
-            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, out cachedRes))
+            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
                 return ((DataReaderResult) cachedRes).CreateReader();
 
             var reader = _command.ExecuteReader(behavior);
@@ -174,7 +176,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
                 return res.CreateReader();
 
-            PutResultToCache(cacheKey, res);
+            PutResultToCache(cacheKey, res, strategy);
 
             return res.CreateReader();
         }
@@ -202,8 +204,10 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var cacheKey = GetKey();
 
+            var strategy = _info.Policy.GetCachingStrategy(_info.AffectedEntitySets, CommandText, Parameters);
+
             object cachedRes;
-            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, out cachedRes))
+            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
                 return cachedRes;
 
             var policy = _info.Policy;
@@ -214,7 +218,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return res;
             }
 
-            PutResultToCache(cacheKey, res);
+            PutResultToCache(cacheKey, res, strategy);
 
             return res;
         }
@@ -222,13 +226,13 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Puts the result to cache.
         /// </summary>
-        private void PutResultToCache(string key, object result)
+        private void PutResultToCache(string key, object result, DbCachingStrategy strategy)
         {
             var expiration = _info.Policy != null
                 ? _info.Policy.GetExpirationTimeout(_info.AffectedEntitySets, CommandText, Parameters)
                 : TimeSpan.MaxValue;
 
-            _info.Cache.PutItem(key, result, _info.AffectedEntitySets, expiration);
+            _info.Cache.PutItem(key, result, _info.AffectedEntitySets, strategy, expiration);
         }
 
         /// <summary>

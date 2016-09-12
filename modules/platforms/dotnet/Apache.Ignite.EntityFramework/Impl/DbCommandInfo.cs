@@ -32,7 +32,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly bool _isModification;
 
         /** */
-        private readonly IDbCache _cache;
+        private readonly DbCache _cache;
 
         /** */
         private readonly EntitySetBase[] _affectedEntitySets;
@@ -43,7 +43,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
-        public DbCommandInfo(DbCommandTree tree, IDbCache cache, DbCachingPolicy policy)
+        public DbCommandInfo(DbCommandTree tree, DbCache cache, DbCachingPolicy policy)
         {
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
@@ -84,7 +84,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets or sets the cache.
         /// </summary>
-        public IDbCache Cache
+        public DbCache Cache
         {
             get { return _cache; }
         }
