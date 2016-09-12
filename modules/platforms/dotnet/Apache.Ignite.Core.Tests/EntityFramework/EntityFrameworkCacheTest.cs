@@ -98,6 +98,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.IsEmpty(ctx.Blogs);
                 Assert.IsEmpty(ctx.Posts);
             }
+
+            // Clear the cache.
+            _cache.Clear();
         }
 
         /// <summary>
