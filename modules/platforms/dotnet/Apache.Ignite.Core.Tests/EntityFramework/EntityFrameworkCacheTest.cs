@@ -171,18 +171,36 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO: Find out what's called within a TX.
             // Create a tx, modify, do a query, check results, rollback - should not be cached.
 
+            // Check TX without commit:
+            using (new TransactionScope())
+            {
+                using (var ctx = GetDbContext())
+                {
+                    ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog()});
+                    ctx.SaveChanges();
+                }
+            }
+
             using (var ctx = GetDbContext())
             {
-                using (new TransactionScope())
-                {
-                    ctx.Posts.Add(new Post {Title = "Foo"});
-                    ctx.SaveChanges();
+                Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+            }
 
-                    Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+            // Check TX with commit:
+            using (var tx = new TransactionScope())
+            {
+                using (var ctx = GetDbContext())
+                {
+                    ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog()});
+                    ctx.SaveChanges();
                 }
 
-                // TX was not committed:
-                Assert.AreEqual(0, ctx.Posts.ToArray().Length);
+                tx.Complete();
+            }
+
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual(1, ctx.Posts.ToArray().Length);
             }
         }
 
