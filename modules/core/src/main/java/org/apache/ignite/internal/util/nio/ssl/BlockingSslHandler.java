@@ -230,7 +230,7 @@ public class BlockingSslHandler {
             SSLEngineResult res = sslEngine.wrap(src, outNetBuf);
 
             if (log.isDebugEnabled())
-                log.debug("Encrypted data [status=" + res.getStatus() + ", handshakeStaus=" +
+                log.debug("Encrypted data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ']');
 
             if (res.getStatus() == OK) {

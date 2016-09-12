@@ -476,7 +476,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // TODO fore debug only!!!
                 if (type == EVT_NODE_FAILED)
-                    U.dumpStack(log, "== Node failed");
+                    U.dumpStack(log, "== Node failed " + node);
 
                 final ClusterNode locNode = localNode();
 
