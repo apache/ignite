@@ -5327,6 +5327,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             try {
                 while (!isInterrupted()) {
+                    // Create SSL engine prematurely because it could take much time.
+                    SSLEngine sslEngine = null;
+
+                    if (spi.isSslEnabled()) {
+                        sslEngine = spi.sslCtx.createSSLEngine(srvCh.socket().getInetAddress().getHostName(),
+                            srvCh.socket().getLocalPort());
+
+                        sslEngine.setUseClientMode(false);
+                    }
+
                     final SocketChannel ch = srvCh.accept();
 
                     ch.configureBlocking(true);
@@ -5334,11 +5344,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Socket sock = ch.socket();
 
                     if (spi.isSslEnabled()) {
-                        final SSLEngine sslEngine = spi.sslCtx.createSSLEngine(sock.getLocalAddress().getHostName(),
-                            sock.getLocalPort());
-
-                        sslEngine.setUseClientMode(false);
-
                         final BlockingSslHandler sslHnd =
                             new BlockingSslHandler(sslEngine, ch, true, ByteOrder.nativeOrder(), log);
 
