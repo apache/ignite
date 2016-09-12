@@ -1610,7 +1610,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)ignite0.configuration().getCommunicationSpi()).simulateNodeFailure();
 
-        latch.await();
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
 
         ignite0.close();
 
