@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using System.Data.Common;
     using System.Data.Entity;
+    using System.Data.Entity.Core.Metadata.Edm;
     using System.IO;
     using System.Linq;
     using System.Transactions;
@@ -433,6 +435,52 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     hashCode = (hashCode*397) ^ DateTime.GetHashCode();
                     return hashCode;
                 }
+            }
+        }
+
+        private class DelegateCachingPolicy : DbCachingPolicy
+        {
+            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> _canBeCached;
+            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> _canBeCached2;
+            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan> 
+                _getExpirationTimeout;
+            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy> 
+                _getCachingStrategy;
+
+            public DelegateCachingPolicy(
+                Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> canBeCached, 
+                Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> canBeCached2, 
+                Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan> getExpirationTimeout, 
+                Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy> getCachingStrategy)
+            {
+                _canBeCached = canBeCached;
+                _canBeCached2 = canBeCached2;
+                _getExpirationTimeout = getExpirationTimeout;
+                _getCachingStrategy = getCachingStrategy;
+            }
+
+            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql, 
+                DbParameterCollection parameters)
+            {
+                return _canBeCached(affectedEntitySets, sql, parameters);
+            }
+
+            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql, 
+                DbParameterCollection parameters, int rowCount)
+            {
+                return _canBeCached2(affectedEntitySets, sql, parameters, rowCount);
+            }
+
+            protected override TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets, 
+                string sql, DbParameterCollection parameters)
+            {
+                return _getExpirationTimeout(affectedEntitySets, sql, parameters);
+            }
+
+            protected override DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
+                string sql, DbParameterCollection parameters)
+            {
+                return _getCachingStrategy(affectedEntitySets, sql, parameters);
             }
         }
     }
