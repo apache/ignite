@@ -34,6 +34,9 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly DbCommandInfo _info;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbCommandProxy"/> class.
+        /// </summary>
         public DbCommandProxy(DbCommand command, DbCommandInfo info)
         {
             Debug.Assert(command != null);
@@ -43,78 +46,96 @@ namespace Apache.Ignite.EntityFramework.Impl
             _info = info;
         }
 
+        /// <summary>
+        /// Gets the inner command.
+        /// </summary>
         public DbCommand InnerCommand
         {
             get { return _command; }
         }
 
+        /// <summary>
+        /// Gets the command information.
+        /// </summary>
         public DbCommandInfo CommandInfo
         {
             get { return _info; }
         }
 
+        /** <inheritDoc /> */
         public override void Prepare()
         {
             _command.Prepare();
         }
 
+        /** <inheritDoc /> */
         public override string CommandText
         {
             get { return _command.CommandText; }
             set { _command.CommandText = value; }
         }
 
+        /** <inheritDoc /> */
         public override int CommandTimeout
         {
             get { return _command.CommandTimeout; }
             set { _command.CommandTimeout = value; }
         }
 
+        /** <inheritDoc /> */
         public override CommandType CommandType
         {
             get { return _command.CommandType; }
             set { _command.CommandType = value; }
         }
 
+        /** <inheritDoc /> */
         public override UpdateRowSource UpdatedRowSource
         {
             get { return _command.UpdatedRowSource; }
             set { _command.UpdatedRowSource = value; }
         }
 
+        /** <inheritDoc /> */
         protected override DbConnection DbConnection
         {
             get { return _command.Connection; }
             set { _command.Connection = value; }
         }
 
+        /** <inheritDoc /> */
         protected override DbParameterCollection DbParameterCollection
         {
             get { return _command.Parameters; }
         }
 
+        /** <inheritDoc /> */
         protected override DbTransaction DbTransaction
         {
             get { return _command.Transaction; }
             set { _command.Transaction = value; }
         }
 
+        /** <inheritDoc /> */
         public override bool DesignTimeVisible
         {
             get { return _command.DesignTimeVisible; }
             set { _command.DesignTimeVisible = value; }
         }
 
+        /** <inheritDoc /> */
         public override void Cancel()
         {
             _command.Cancel();
         }
 
+        /** <inheritDoc /> */
         protected override DbParameter CreateDbParameter()
         {
             return _command.CreateParameter();
         }
 
+        /** <inheritDoc /> */
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
             if (_info.IsModification)
@@ -163,6 +184,28 @@ namespace Apache.Ignite.EntityFramework.Impl
             return res.CreateReader();
         }
 
+        /** <inheritDoc /> */
+        public override int ExecuteNonQuery()
+        {
+            if (_info.IsModification)
+                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+
+            return _command.ExecuteNonQuery();
+        }
+
+        /** <inheritDoc /> */
+        public override object ExecuteScalar()
+        {
+            if (_info.IsModification)
+                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+
+            // TODO: Cache result
+            return _command.ExecuteScalar();
+        }
+
+        /// <summary>
+        /// Gets the cache key.
+        /// </summary>
         private string GetKey()
         {
             if (string.IsNullOrEmpty(CommandText))
@@ -178,22 +221,5 @@ namespace Apache.Ignite.EntityFramework.Impl
 #if !NET40
         // TODO: ExecuteDbDataReaderAsync in newer frameworks? How does this stack up?
 #endif
-
-        public override int ExecuteNonQuery()
-        {
-            if (_info.IsModification)
-                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
-
-            return _command.ExecuteNonQuery();
-        }
-
-        public override object ExecuteScalar()
-        { 
-            if (_info.IsModification)
-                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
-
-            // TODO: Cache result
-            return _command.ExecuteScalar();
-        }
     }
 }
