@@ -22,29 +22,24 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Data.Entity;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Events;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
     /// Integration test with temporary SQL CE database.
     /// </summary>
-    public class EntityFrameworkCacheTest : IEventListener<CacheEvent>
+    public class EntityFrameworkCacheTest
     {
         /** */
         private static readonly string TempFile = Path.GetTempFileName();
 
         /** */
         private static readonly string ConnectionString = "Datasource = " + TempFile;
-
-        /** */
-        private readonly ConcurrentStack<CacheEvent> _events = new ConcurrentStack<CacheEvent>();
 
         /** */
         private ICache<object, object> _cache;
@@ -60,11 +55,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             // Start Ignite.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-
-            // Subscribe to cache events.
-            var events = ignite.GetEvents();
-            events.EnableLocal(EventType.CacheObjectPut, EventType.CacheObjectRead, EventType.CacheObjectExpired);
-            events.LocalListen(this, EventType.CacheAll);
 
             // Create SQL CE database in a temp file.
             using (var context = new BloggingContext(ConnectionString))
@@ -88,15 +78,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
-        /// Sets up a test.
-        /// </summary>
-        [SetUp]
-        public void SetUp()
-        {
-            _events.Clear();
-        }
-
-        /// <summary>
         /// Tests the strict strategy.
         /// </summary>
         [Test]
@@ -108,9 +89,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.IsEmpty(context.Blogs);
                 Assert.IsEmpty(context.Posts);
-
-                // Each query generates 2 events: put key-val, put dependency.
-                Assert.AreEqual(2, _events.Count);
 
                 context.Blogs.Add(new Blog
                 {
@@ -126,30 +104,32 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 // Check that query works.
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-                Assert.AreEqual(9, _events.Count);
 
                 // Add new post to check invalidation.
                 context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, context.SaveChanges());
-
-                //var cachedData = _cache.ToArray();
-                Assert.AreEqual(4, _cache.GetSize());
+                
+                Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
 
                 Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-                Assert.AreEqual(14, _events.Count);
+
+                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
 
                 // Delete post.
                 context.Posts.Remove(context.Posts.First());
                 Assert.AreEqual(1, context.SaveChanges());
 
                 Assert.AreEqual(1, context.Posts.Count());
-                Assert.AreEqual(20, _events.Count);
 
                 // Modify post.
                 context.Posts.Single().Title += " - updated";
                 Assert.AreEqual(1, context.SaveChanges());
 
+                Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
+
                 Assert.AreEqual(1, context.Posts.Count(x => x.Title.EndsWith("updated")));
+
+                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
             }
         }
 
@@ -206,16 +186,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 var test0 = context.Tests.Single(x => x.Bool);
                 Assert.AreEqual(test, test0);
             }
-        }
-
-        /// <summary>
-        /// Invoked when event occurs.
-        /// </summary>
-        public bool Invoke(CacheEvent evt)
-        {
-            _events.Push(evt);
-
-            return true;
         }
 
         private class MyDbConfiguration : IgniteDbConfiguration
