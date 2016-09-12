@@ -25,7 +25,7 @@ namespace Apache.Ignite.EntityFramework
     /// <summary>
     /// Caching policy: defines which queries should be cached.
     /// </summary>
-    public class DbCachingPolicy
+    public class DbCachingPolicy  // TODO: Use an interface? Subclassing sucks some times.
     {
         /// <summary>
         /// Determines whether the specified query can be cached.
