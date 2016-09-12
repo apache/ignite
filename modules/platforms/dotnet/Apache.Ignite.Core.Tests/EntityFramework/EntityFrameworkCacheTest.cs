@@ -198,9 +198,39 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
+        /// <summary>
+        /// Tests the read only strategy.
+        /// </summary>
         [Test]
         public void TestReadOnlyStrategy()
         {
+            // Set up a policy to cache Blogs as read-only and Posts as read-write.
+            _policy = new DelegateCachingPolicy((sets, sql, args) => true, (sets, sql, args, cnt) => true,
+                (sets, sql, args) => TimeSpan.MaxValue,
+                (sets, sql, args) =>
+                    sets.Count == 1 && sets.Single().Name == "Blog"
+                        ? DbCachingStrategy.ReadOnly
+                        : DbCachingStrategy.ReadWrite);
+
+            using (var ctx = GetDbContext())
+            {
+                ctx.Blogs.Add(new Blog
+                {
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "My First Post", Content = "Hello World!"}
+                    }
+                });
+
+                ctx.SaveChanges();
+
+                // Check cache is not updated for blogs.
+                Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
+
+                ctx.Blogs.Single().Name += " - updated";
+                Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
+            }
         }
 
         /// <summary>
