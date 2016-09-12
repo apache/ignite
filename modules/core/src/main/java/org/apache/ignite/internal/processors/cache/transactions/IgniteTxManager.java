@@ -1011,9 +1011,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (nearXidVer != null)
             xidVer = new CommittedVersion(xidVer, nearXidVer);
 
-        assert completedVersHashMap.get(xidVer) == null || completedVersHashMap.get(xidVer).equals(Boolean.TRUE);
+        Object prev = completedVersHashMap.putIfAbsent(xidVer, retVal);
 
-        completedVersHashMap.put(xidVer, retVal);
+        assert prev == null || Boolean.FALSE.equals(prev) : prev; // Can be rolled back.
     }
 
     /**
@@ -1068,7 +1068,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
             return;
 
-        assert prev instanceof GridCacheReturnCompletableWrapper;
+        assert prev instanceof GridCacheReturnCompletableWrapper:
+            prev + " instead of GridCacheReturnCompletableWrapper";
 
         boolean res = completedVersHashMap.replace(xidVer, prev, true);
 

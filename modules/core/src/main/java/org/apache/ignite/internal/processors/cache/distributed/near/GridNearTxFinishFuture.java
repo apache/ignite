@@ -441,7 +441,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             onDone(e);
         }
         finally {
-            if (tx.onePhaseCommit() && !tx.writeMap().isEmpty()) // Readonly operations require no ack.
+            if (commit &&
+                tx.onePhaseCommit() &&
+                !tx.writeMap().isEmpty()) // Readonly operations require no ack.
                 ackBackup();
         }
     }
