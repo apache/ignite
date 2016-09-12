@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
         /** */
+        private static DbCachingPolicy _policy;
+
+        /** */
         private ICache<object, object> _cache;
 
         /// <summary>
@@ -86,6 +89,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [SetUp]
         public void TestSetUp()
         {
+            // Reset the policy.
+            _policy = null;
+
             // Clean up the db.
             using (var ctx = GetDbContext())
             {
@@ -136,10 +142,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
     
         /// <summary>
-        /// Tests the strict strategy.
+        /// Tests the read-write strategy (default).
         /// </summary>
         [Test]
-        public void TestStrictStrategy()
+        public void TestReadWriteStrategy()
         {
             using (var ctx = GetDbContext())
             {
@@ -188,6 +194,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
             }
+        }
+
+        [Test]
+        public void TestReadOnlyStrategy()
+        {
         }
 
         /// <summary>
@@ -336,12 +347,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
         private class MyDbConfiguration : IgniteDbConfiguration
         {
-            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
+            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, _policy)
             {
                 // No-op.
             }
         }
-
 
         [DbConfigurationType(typeof(MyDbConfiguration))]
         private class BloggingContext : DbContext
@@ -350,7 +360,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             {
                 // No-op.
             }
-
 
             public virtual DbSet<Blog> Blogs { get; set; }
             public virtual DbSet<Post> Posts { get; set; }
