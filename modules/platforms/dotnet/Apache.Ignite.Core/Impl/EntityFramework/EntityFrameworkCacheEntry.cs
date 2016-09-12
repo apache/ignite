@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         {
             Debug.Assert(data != null);
             Debug.Assert(entitySets != null);
+            Debug.Assert(entitySets.Any());
 
             _data = data;
             _entitySets = entitySets;
@@ -89,6 +91,18 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         public object Data
         {
             get { return _data; }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        public override string ToString()
+        {
+            var setVersions = _entitySets
+                .Select(x => string.Format("{0}:{1}", x.Key, x.Value))
+                .Aggregate((x, y) => x + ", " + y);
+
+            return string.Format("{0} [EntitySets=({1})]", GetType().Name, setVersions);
         }
     }
 }

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data.Entity;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
@@ -44,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
         /** */
         private readonly ConcurrentStack<CacheEvent> _events = new ConcurrentStack<CacheEvent>();
+
+        /** */
+        private ICache<object, object> _cache;
 
         /// <summary>
         /// Fixture set up.
@@ -68,6 +72,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 File.Delete(TempFile);
                 context.Database.Create();
             }
+
+            // Get the cache.
+            _cache = ignite.GetCache<object, object>(null);
         }
 
         /// <summary>
@@ -120,11 +127,13 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 // Check that query works.
                 Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
                 Assert.AreEqual(9, _events.Count);
-                // TODO: Verify cache entry count and cleanup.
 
                 // Add new post to check invalidation.
                 context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, context.SaveChanges());
+
+                var cachedData = _cache.ToArray();
+                Assert.AreEqual(2, _cache.GetSize());
 
                 Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
                 Assert.AreEqual(14, _events.Count);
