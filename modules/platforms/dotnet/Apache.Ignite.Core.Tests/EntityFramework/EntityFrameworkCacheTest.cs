@@ -158,10 +158,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 // Check that query works.
                 Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                // Verify that results are from cache.
-                // TODO: How??
-                Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
-
                 // Add new post to check invalidation.
                 ctx.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, ctx.SaveChanges());
