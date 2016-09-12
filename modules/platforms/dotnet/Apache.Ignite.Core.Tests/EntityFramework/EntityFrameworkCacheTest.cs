@@ -220,23 +220,27 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     Name = "Foo",
                     Posts = new List<Post>
                     {
-                        new Post {Title = "My First Post", Content = "Hello World!"}
+                        new Post {Title = "Post"}
                     }
                 });
 
                 ctx.SaveChanges();
 
-                // Update the blog name.
+                // Update entities.
                 Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
+                Assert.AreEqual("Post", ctx.Posts.Single().Title);
 
                 ctx.Blogs.Single().Name += " - updated";
+                ctx.Posts.Single().Title += " - updated";
+
                 ctx.SaveChanges();
             }
 
-            // Verify that cached result is not changed.
+            // Verify that cached result is not changed for blogs, but changed for posts.
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
+                Assert.AreEqual("Post - updated", ctx.Posts.Single().Title);
             }
 
             // Clear the cache and verify that actual value in DB is changed.
@@ -245,6 +249,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual("Foo - updated", ctx.Blogs.Single().Name);
+                Assert.AreEqual("Post - updated", ctx.Posts.Single().Title);
             }
         }
 
