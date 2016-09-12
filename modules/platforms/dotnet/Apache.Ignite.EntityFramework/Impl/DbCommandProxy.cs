@@ -22,6 +22,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Common;
     using System.Diagnostics;
     using System.Linq;
+    using System.Transactions;
 
     /// <summary>
     /// Command proxy.
@@ -124,8 +125,16 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return _command.ExecuteReader(behavior);
             }
 
-            // TODO: Check policy
 
+            //  TODO: ???
+            // http://stackoverflow.com/questions/22382892/database-begintransaction-vs-transactions-transactionscope
+            if (Transaction != null || System.Transactions.Transaction.Current != null)
+            {
+                // Do not use cache within transactions.
+                return _command.ExecuteReader(behavior);
+            }
+
+            // TODO: Check policy
             var cacheKey = GetKey();
 
             object cachedRes;
