@@ -83,7 +83,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         assert marshaller != null;
 
-        pointerFactory = new GridCacheTtlManager.MyGridOffHeapSmartPointerFactory(unsafeMemory, guard, marshaller);
+        pointerFactory = new GridCacheTtlManager.MyGridOffHeapSmartPointerFactory(unsafeMemory, marshaller);
 
         pendingPointers = new GridOffHeapSnapTreeSet<>(pointerFactory, unsafeMemory, guard);
 
@@ -289,8 +289,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                         try {
                             EntryGridOffHeapSmartPointer key1 = pendingPointers.firstx();
 
-                            boolean firstEntryChanged = (key1 != key0) &&
-                                (key0 == null || key0.pointer() != key0.pointer());
+                            boolean firstEntryChanged = (key0 != key1) &&
+                                (key0 == null || key0.pointer() != key1.pointer());
 
                             if (firstEntryChanged)
                                 continue;
@@ -456,18 +456,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private final GridUnsafeMemory mem;
 
         /** */
-        private final GridUnsafeGuard guard;
-
-        /** */
         private final Marshaller marshaller;
 
         /**
          * @param mem Unsafe Memory.
          * @param marshaller Binary marshaller
          */
-        MyGridOffHeapSmartPointerFactory(GridUnsafeMemory mem, GridUnsafeGuard guard, Marshaller marshaller) {
+        MyGridOffHeapSmartPointerFactory(GridUnsafeMemory mem, Marshaller marshaller) {
             this.mem = mem;
-            this.guard = guard;
             this.marshaller = marshaller;
         }
 
