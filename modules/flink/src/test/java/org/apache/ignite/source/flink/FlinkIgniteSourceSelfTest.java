@@ -107,7 +107,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    private void checkIgniteSource(int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {
+    private void checkIgniteSource(final int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -128,7 +128,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        Map<Integer, Integer> eventMap = new HashMap<>();
+        final Map<Integer, Integer> eventMap = new HashMap<>();
 
         while (cnt < evtCount)  {
             cache.put(cnt, cnt);
