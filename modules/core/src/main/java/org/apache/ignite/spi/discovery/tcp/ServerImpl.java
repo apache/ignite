@@ -7759,26 +7759,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
-            final long start = System.currentTimeMillis();
+            buf = expandBuffer(buf, len);
 
-            try {
-                buf = expandBuffer(buf, len);
+            buf.put(b, off, len);
 
-                buf.put(b, off, len);
+            buf.flip();
 
-                buf.flip();
+            final ByteBuffer encrypted = sslHnd.encrypt(buf);
 
-                final ByteBuffer encrypted = sslHnd.encrypt(buf);
+            ch.write(encrypted);
 
-                ch.write(encrypted);
-
-                buf.clear();
-            } finally {
-                final long end = System.currentTimeMillis();
-
-                if (end - start > 100)
-                    System.out.println("== " + Thread.currentThread().getName() + " Write: " + (end - start));
-            }
+            buf.clear();
         }
 
         /** {@inheritDoc} */
