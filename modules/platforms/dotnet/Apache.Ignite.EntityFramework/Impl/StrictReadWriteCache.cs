@@ -37,6 +37,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
+        /** Java task to purge old entries. */
+        public const string PurgeCacheTask =
+            "org.apache.ignite.internal.processors.entityframework.PlatformDotNetEntityFrameworkPurgeOldEntriesTask";
+
         /** Main cache: stores SQL -> QueryResult mappings. */
         private readonly ICache<string, EntityFrameworkCacheEntry> _cache;
 
@@ -101,7 +105,16 @@ namespace Apache.Ignite.EntityFramework.Impl
             // Increase version for each dependent entity set.
             _entitySetVersions.InvokeAll(entitySets.Select(x => x.Name), new AddOneProcessor(), null);
 
-            // TODO: Use an async broadcast (ExecuteJavaTaskAsync) to purge old entries.
+            // Asynchronously purge old cache entries.
+            var arg = new string[entitySets.Count + 1];
+
+            arg[0] = _cache.Name;
+
+            var i = 1;
+            foreach (var set in entitySets)
+                arg[i++] = set.Name;
+
+            _cache.Ignite.GetCompute().ExecuteJavaTaskAsync<object>(PurgeCacheTask, arg);
         }
 
         /// <summary>
