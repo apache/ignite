@@ -96,6 +96,11 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         this.shift = shift;
 
         init(metaPageId, initNew);
+
+        for (int b = 0; b < BUCKETS; b++) {
+            for (int i = 0; i < 64; i++)
+                addStripe(b);
+        }
     }
 
     /**
