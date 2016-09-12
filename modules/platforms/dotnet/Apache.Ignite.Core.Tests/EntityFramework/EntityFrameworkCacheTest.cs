@@ -143,15 +143,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             using (var ctx = GetDbContext())
             {
-                ctx.Blogs.Add(new Blog
+                var blog = new Blog
                 {
-                    BlogId = 1,
                     Name = "Foo",
                     Posts = new List<Post>
                     {
                         new Post {Title = "My First Post", Content = "Hello World!"}
                     }
-                });
+                };
+                ctx.Blogs.Add(blog);
 
                 Assert.AreEqual(2, ctx.SaveChanges());
 
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
                 // Add new post to check invalidation.
-                ctx.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
+                ctx.Posts.Add(new Post {BlogId = blog.BlogId, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, ctx.SaveChanges());
                 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestTx()
         {
-            // Check TX without commit:
+            // Check TX without commit.
             using (var ctx = GetDbContext())
             {
                 using (ctx.Database.BeginTransaction())
@@ -213,7 +213,26 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(0, ctx.Posts.ToArray().Length);
             }
 
-            // TODO: with commit
+            // Check TX with commit.
+            using (var ctx = GetDbContext())
+            {
+                using (var tx = ctx.Database.BeginTransaction())
+                {
+                    ctx.Posts.Add(new Post { Title = "Foo", Blog = new Blog() });
+                    ctx.SaveChanges();
+
+                    Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+
+                    tx.Commit();
+
+                    Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+                }
+            }
+
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+            }
         }
 
         /// <summary>
@@ -222,10 +241,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestTxScope()
         {
-            // TODO: Find out what's called within a TX.
-            // Create a tx, modify, do a query, check results, rollback - should not be cached.
-
-            // Check TX without commit:
+            // Check TX without commit.
             using (new TransactionScope())
             {
                 using (var ctx = GetDbContext())
@@ -240,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(0, ctx.Posts.ToArray().Length);
             }
 
-            // Check TX with commit:
+            // Check TX with commit.
             using (var tx = new TransactionScope())
             {
                 using (var ctx = GetDbContext())
