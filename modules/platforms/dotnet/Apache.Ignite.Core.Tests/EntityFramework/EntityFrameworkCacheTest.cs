@@ -268,6 +268,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null)
             {
+                // No-op.
             }
         }
 
