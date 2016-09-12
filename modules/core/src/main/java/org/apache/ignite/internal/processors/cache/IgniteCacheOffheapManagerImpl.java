@@ -694,6 +694,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             @Override public boolean isClosed() {
                 return false;
             }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
         };
     }
 
