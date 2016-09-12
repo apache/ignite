@@ -1902,8 +1902,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Iterable<List<?>> qryRes = runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder);
 
-        QueryCursorImpl<List<?>> cursor = twoStepQry.initialStatement() instanceof GridSqlQuery ?
-            new QueryCursorImpl<>(qryRes) : QueryCursorImpl.forUpdateResult((Integer) qryRes.iterator().next().get(0));
+        QueryCursorImpl<List<?>> cursor =
+            twoStepQry.initialStatement() instanceof GridSqlMerge || twoStepQry.initialStatement() instanceof GridSqlInsert ?
+                QueryCursorImpl.forUpdateResult((Integer) qryRes.iterator().next().get(0)): new QueryCursorImpl<>(qryRes);
+
 
         cursor.fieldsMeta(meta);
 

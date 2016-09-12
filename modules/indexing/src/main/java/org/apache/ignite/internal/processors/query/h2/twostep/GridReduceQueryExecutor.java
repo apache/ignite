@@ -679,7 +679,7 @@ public class GridReduceQueryExecutor {
                             if (qry.explain())
                                 return explainPlan(r.conn, space, qry);
 
-                            return h2.doReduce(space, qry, r.conn);
+                            resIter = h2.doReduce(space, qry, r.conn);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
