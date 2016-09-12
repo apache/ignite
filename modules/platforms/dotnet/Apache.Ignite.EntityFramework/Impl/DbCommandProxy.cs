@@ -150,7 +150,6 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return _command.ExecuteReader(behavior);
             }
 
-            // TODO: Check policy
             var cacheKey = GetKey();
 
             object cachedRes;
@@ -162,7 +161,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (reader.RecordsAffected > 0)
                 return reader;  // Queries that modify anything are never cached.
 
-            // Check if cacheable
+            // Check if cacheable.
             var policy = _info.Policy;
 
             if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters))
@@ -175,11 +174,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (policy != null && !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
                 return res.CreateReader();
 
-            var expiration = policy != null
-                ? policy.GetExpirationTimeout(_info.AffectedEntitySets, CommandText, Parameters)
-                : TimeSpan.MaxValue;
-
-            _info.Cache.PutItem(cacheKey, res, _info.AffectedEntitySets, expiration);
+            PutResultToCache(cacheKey, res);
 
             return res.CreateReader();
         }
@@ -196,11 +191,44 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override object ExecuteScalar()
         {
+            var res = _command.ExecuteScalar();
+
             if (_info.IsModification)
+            {
                 _info.Cache.InvalidateSets(_info.AffectedEntitySets);
 
-            // TODO: Cache result
-            return _command.ExecuteScalar();
+                return res;
+            }
+
+            var cacheKey = GetKey();
+
+            object cachedRes;
+            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, out cachedRes))
+                return cachedRes;
+
+            var policy = _info.Policy;
+
+            if (policy != null && (!policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters) ||
+                                   !policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, 1)))
+            {
+                return res;
+            }
+
+            PutResultToCache(cacheKey, res);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Puts the result to cache.
+        /// </summary>
+        private void PutResultToCache(string key, object result)
+        {
+            var expiration = _info.Policy != null
+                ? _info.Policy.GetExpirationTimeout(_info.AffectedEntitySets, CommandText, Parameters)
+                : TimeSpan.MaxValue;
+
+            _info.Cache.PutItem(key, result, _info.AffectedEntitySets, expiration);
         }
 
         /// <summary>
