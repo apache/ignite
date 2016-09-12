@@ -1468,16 +1468,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Detect lost partitions.
      */
     private void detectLostPartitions() {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.topology().detectLostPartitions(discoEvt);
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                cacheCtx.topology().detectLostPartitions(discoEvt);
+        }
     }
 
     /**
      *
      */
     private void resetLostPartitions() {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.topology().resetLostPartitions();
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                cacheCtx.topology().resetLostPartitions();
+        }
     }
 
     /**
