@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         private static readonly string ConnectionString = "Datasource = " + TempFile;
 
         /** */
-        private static DbCachingPolicy _policy;
+        private static readonly DelegateCachingPolicy Policy = new DelegateCachingPolicy();
 
         /** */
         private ICache<object, object> _cache;
@@ -92,7 +92,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestSetUp()
         {
             // Reset the policy.
-            _policy = null;
+            Policy.CanBeCachedFunc = null;
+            Policy.CanBeCachedRowsFunc = null;
+            Policy.GetExpirationTimeoutFunc = null;
+            Policy.GetCachingStrategyFunc = null;
 
             // Clean up the db.
             using (var ctx = GetDbContext())
@@ -204,15 +207,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestReadOnlyStrategy()
         {
-            // TODO: db config is instantiate only once..
-
             // Set up a policy to cache Blogs as read-only and Posts as read-write.
-            _policy = new DelegateCachingPolicy((sets, sql, args) => true, (sets, sql, args, cnt) => true,
-                (sets, sql, args) => TimeSpan.MaxValue,
-                (sets, sql, args) =>
-                    sets.Count == 1 && sets.Single().Name == "Blog"
-                        ? DbCachingStrategy.ReadOnly
-                        : DbCachingStrategy.ReadWrite);
+            Policy.GetCachingStrategyFunc = (sets, sql, args) =>
+                sets.Count == 1 && sets.Single().Name == "Blog"
+                    ? DbCachingStrategy.ReadOnly
+                    : DbCachingStrategy.ReadWrite;
 
             using (var ctx = GetDbContext())
             {
@@ -227,11 +226,25 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 ctx.SaveChanges();
 
-                // Check cache is not updated for blogs.
+                // Update the blog name.
                 Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
 
                 ctx.Blogs.Single().Name += " - updated";
+                ctx.SaveChanges();
+            }
+
+            // Verify that cached result is not changed.
+            using (var ctx = GetDbContext())
+            {
                 Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
+            }
+
+            // Clear the cache and verify that actual value in DB is changed.
+            _cache.Clear();
+
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual("Foo - updated", ctx.Blogs.Single().Name);
             }
         }
 
@@ -381,7 +394,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
         private class MyDbConfiguration : IgniteDbConfiguration
         {
-            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, _policy)
+            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, Policy)
             {
                 // No-op.
             }
@@ -472,47 +485,43 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
         private class DelegateCachingPolicy : DbCachingPolicy
         {
-            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> _canBeCached;
-            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> _canBeCached2;
-            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan> 
-                _getExpirationTimeout;
-            private readonly Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy> 
-                _getCachingStrategy;
+            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> CanBeCachedFunc { get; set; }
 
-            public DelegateCachingPolicy(
-                Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> canBeCached, 
-                Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> canBeCached2, 
-                Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan> getExpirationTimeout, 
-                Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy> getCachingStrategy)
-            {
-                _canBeCached = canBeCached;
-                _canBeCached2 = canBeCached2;
-                _getExpirationTimeout = getExpirationTimeout;
-                _getCachingStrategy = getCachingStrategy;
-            }
+            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> CanBeCachedRowsFunc { get;
+                set; }
 
-            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql, 
+            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan>
+                GetExpirationTimeoutFunc { get; set; }
+
+            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy>
+                GetCachingStrategyFunc { get; set; }
+
+            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
                 DbParameterCollection parameters)
             {
-                return _canBeCached(affectedEntitySets, sql, parameters);
+                return CanBeCachedFunc == null || CanBeCachedFunc(affectedEntitySets, sql, parameters);
             }
 
-            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql, 
+            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
                 DbParameterCollection parameters, int rowCount)
             {
-                return _canBeCached2(affectedEntitySets, sql, parameters, rowCount);
+                return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(affectedEntitySets, sql, parameters, rowCount);
             }
 
-            protected override TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets, 
+            protected override TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets,
                 string sql, DbParameterCollection parameters)
             {
-                return _getExpirationTimeout(affectedEntitySets, sql, parameters);
+                return GetExpirationTimeoutFunc == null
+                    ? TimeSpan.MaxValue
+                    : GetExpirationTimeoutFunc(affectedEntitySets, sql, parameters);
             }
 
-            protected override DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
+            protected override DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets,
                 string sql, DbParameterCollection parameters)
             {
-                return _getCachingStrategy(affectedEntitySets, sql, parameters);
+                return GetCachingStrategyFunc == null
+                    ? DbCachingStrategy.ReadWrite
+                    : GetCachingStrategyFunc(affectedEntitySets, sql, parameters);
             }
         }
     }
