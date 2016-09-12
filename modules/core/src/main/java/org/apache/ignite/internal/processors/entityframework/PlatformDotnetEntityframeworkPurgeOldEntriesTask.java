@@ -105,7 +105,7 @@ public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTas
                 for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
                     Object curVer = currentVersions.get(entitySet.getKey());
 
-                    if (curVer != null && entitySet.getValue() < (long)curVer)
+                    if (curVer != null && entitySet.getValue() < (Long)curVer)
                         cache.remove(cacheEntry.getKey());
                 }
             }
