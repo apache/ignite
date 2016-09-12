@@ -21,14 +21,25 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Collections.Generic;
     using System.Data.Entity.Core.Metadata.Edm;
 
+    /// <summary>
+    /// Interface for a caching strategy.
+    /// </summary>
     internal interface IDbCache
     {
-        // TODO: Do we even need an interface?
+        /// <summary>
+        /// Gets the item.
+        /// </summary>
         bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, out object value);
 
+        /// <summary>
+        /// Puts the item.
+        /// </summary>
         void PutItem(string key, object value, ICollection<EntitySetBase> dependentEntitySets, 
             TimeSpan absoluteExpiration);
 
+        /// <summary>
+        /// Invalidates the sets.
+        /// </summary>
         void InvalidateSets(ICollection<EntitySetBase> entitySets);
     }
 }
