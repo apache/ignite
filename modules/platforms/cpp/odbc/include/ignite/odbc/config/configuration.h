@@ -70,6 +70,9 @@ namespace ignite
 
                     /** Connection attribute keyword for protocol version attribute. */
                     static const std::string protocolVersion;
+
+                    /** Connection attribute keyword for fetch results page size attribute. */
+                    static const std::string pageSize;
                 };
 
                 /** Default values for configuration. */
@@ -95,6 +98,9 @@ namespace ignite
 
                     /** Default value for port attribute. */
                     static const uint16_t port;
+
+                    /** Default value for fetch results page size attribute. */
+                    static const int32_t pageSize;
 
                     /** Default value for distributed joins attribute. */
                     static const bool distributedJoins;
@@ -138,7 +144,10 @@ namespace ignite
                  *
                  * @param str Connect string.
                  */
-                void FillFromConnectString(const std::string& str);
+                void FillFromConnectString(const std::string& str)
+                {
+                    FillFromConnectString(str.data(), str.size());
+                }
 
                 /**
                  * Convert configure to connect string.
@@ -170,7 +179,10 @@ namespace ignite
                  *
                  * @param port Server port.
                  */
-                void SetTcpPort(uint16_t port);
+                void SetTcpPort(uint16_t port)
+                {
+                    arguments[Key::port] = common::LexicalCast<std::string>(port);
+                }
 
                 /**
                  * Get DSN.
@@ -303,16 +315,6 @@ namespace ignite
                 }
 
                 /**
-                 * Get argument map.
-                 *
-                 * @return Argument map.
-                 */
-                const ArgumentMap& GetMap() const
-                {
-                    return arguments;
-                }
-
-                /**
                  * Get protocol version.
                  *
                  * @return Protocol version.
@@ -324,7 +326,39 @@ namespace ignite
                  *
                  * @param version Version to set.
                  */
-                void SetProtocolVersion(const std::string& version);
+                void SetProtocolVersion(const std::string& version)
+                {
+                    arguments[Key::protocolVersion] = version;
+                }
+
+                /**
+                 * Get argument map.
+                 *
+                 * @return Argument map.
+                 */
+                const ArgumentMap& GetMap() const
+                {
+                    return arguments;
+                }
+
+                /**
+                 * Get fetch results page size.
+                 *
+                 * @return Fetch results page size.
+                 */
+                int32_t GetPageSize() const
+                {
+                    return static_cast<int32_t>(GetIntValue(Key::pageSize, DefaultValue::pageSize));
+                }
+                /**
+                 * Set fetch results page size.
+                 *
+                 * @param size Fetch results page size.
+                 */
+                void SetPageSize(int32_t size)
+                {
+                    arguments[Key::pageSize] = common::LexicalCast<std::string>(size);
+                }
 
                 /**
                  * Get string value from the config.
