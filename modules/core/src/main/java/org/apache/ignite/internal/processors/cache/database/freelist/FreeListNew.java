@@ -98,7 +98,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         init(metaPageId, initNew);
 
         for (int b = 0; b < BUCKETS; b++) {
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 1024; i++)
                 addStripe(b);
         }
     }
