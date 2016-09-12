@@ -144,6 +144,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestTx()
         {
             // TODO: Find out what's called within a TX.
+            // Create a tx, modify, do a query, check results, rollback - should not be cached.
         }
 
         /// <summary>
@@ -153,6 +154,12 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestExpiration()
         {
             // TODO: 
+        }
+
+        [Test]
+        public void TestCachingPolicy()
+        {
+            // TODO:
         }
 
         /// <summary>
