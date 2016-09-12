@@ -5766,7 +5766,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientMessageProcessor proc = clientMsgWorkers.remove(clientNodeId);
 
-            stopClientProcessor(proc);
+            if (proc instanceof ClientNioMessageWorker)
+                ((ClientNioMessageWorker) proc).nonblockingStop();
 
         }
 
@@ -5863,7 +5864,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 clientMsgWrk.nonblockingStop();
 
-                                clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+                                clientMsgWorkers.remove(clientMsgWrk.clientNodeId(), clientMsgWrk);
 
                                 return null;
                             }
@@ -5901,7 +5902,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                             clientMsgWrk.nonblockingStop();
 
-                            clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+                            clientMsgWorkers.remove(clientMsgWrk.clientNodeId(), clientMsgWrk);
 
                             return null;
                         }
