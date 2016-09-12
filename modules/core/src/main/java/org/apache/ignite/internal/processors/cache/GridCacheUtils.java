@@ -400,18 +400,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param ctx Cache registry.
-     * @return Space name.
-     */
-    public static String ttlMgrSpaceName(GridCacheContext<?, ?> ctx) {
-        String name = ctx.namex();
-
-        name = name == null ? "gg-ttl-cache-dflt" : "gg-ttl-cache-" + name;
-
-        return name;
-    }
-
-    /**
      * @param swapSpaceName Swap space name.
      * @return Cache name.
      */
