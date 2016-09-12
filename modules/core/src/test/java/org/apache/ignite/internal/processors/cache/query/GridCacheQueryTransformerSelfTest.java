@@ -66,9 +66,14 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        Ignition.setClientMode(true);
+        try {
+            Ignition.setClientMode(true);
 
-        startGrid();
+            startGrid();
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
     }
 
     /** {@inheritDoc} */

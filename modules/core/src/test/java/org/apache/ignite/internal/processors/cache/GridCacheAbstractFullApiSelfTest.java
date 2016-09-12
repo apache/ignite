@@ -298,7 +298,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Boolean clientMode = grid(i).configuration().isClientMode();
 
-            if (clientMode)
+            if (clientMode != null && clientMode) // Can be null in multi jvm tests.
                 continue;
 
             grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());

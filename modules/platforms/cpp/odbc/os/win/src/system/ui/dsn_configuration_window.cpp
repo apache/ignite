@@ -30,7 +30,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(230),
+                    height(270),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -38,6 +38,8 @@ namespace ignite
                     addressEdit(),
                     cacheLabel(),
                     cacheEdit(),
+                    pageSizeLabel(),
+                    pageSizeEdit(),
                     distributedJoinsCheckBox(),
                     enforceJoinOrderCheckBox(),
                     protocolVersionLabel(),
@@ -114,6 +116,16 @@ namespace ignite
                     val = config.GetCache().c_str();
                     cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ID_CACHE_LABEL);
                     cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_CACHE_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    std::string tmp = common::LexicalCast<std::string>(config.GetPageSize());
+                    val = tmp.c_str();
+                    pageSizeLabel = CreateLabel(labelPosX, rowPos, labelSizeX,
+                        rowSize, "Page size:", ID_PAGE_SIZE_LABEL);
+
+                    pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
+                        rowSize, val, ID_PAGE_SIZE_EDIT, ES_NUMBER);
 
                     rowPos += interval + rowSize;
 
@@ -265,6 +277,7 @@ namespace ignite
                     std::string dsn;
                     std::string address;
                     std::string cache;
+                    std::string pageSizeStr;
                     std::string version;
 
                     bool distributedJoins;
@@ -274,6 +287,12 @@ namespace ignite
                     addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
                     protocolVersionComboBox->GetText(version);
+                    pageSizeEdit->GetText(pageSizeStr);
+
+                    int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
+
+                    if (pageSize <= 0)
+                        pageSize = config.GetPageSize();
 
                     common::StripSurroundingWhitespaces(address);
                     common::StripSurroundingWhitespaces(dsn);
@@ -285,6 +304,7 @@ namespace ignite
                     LOG_MSG("DSN:                %s\n", dsn.c_str());
                     LOG_MSG("Address:            %s\n", address.c_str());
                     LOG_MSG("Cache:              %s\n", cache.c_str());
+                    LOG_MSG("Page size:          %d\n", pageSize);
                     LOG_MSG("Protocol version:   %s\n", version.c_str());
                     LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
                     LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
@@ -295,6 +315,7 @@ namespace ignite
                     cfg.SetDsn(dsn);
                     cfg.SetAddress(address);
                     cfg.SetCache(cache);
+                    cfg.SetPageSize(pageSize);
                     cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
