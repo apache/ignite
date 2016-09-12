@@ -177,12 +177,18 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public override int ExecuteNonQuery()
         {
-            // TODO: Invalidate sets
+            if (_info.IsModification)
+                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+
             return _command.ExecuteNonQuery();
         }
 
         public override object ExecuteScalar()
-        {
+        { 
+            if (_info.IsModification)
+                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+
+            // TODO: Cache result
             return _command.ExecuteScalar();
         }
     }
