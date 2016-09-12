@@ -120,7 +120,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
         this(new BinaryBuilderReader(obj), obj.start());
-
+        isHashCodeSet = !obj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
         reader.registerObject(this);
     }
 

@@ -17,20 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -150,7 +148,13 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
         binBuilder.hashCode(0xFE12);
 
-        CU.validateCacheKey(binBuilder.build());
+        BinaryObject binObj = binBuilder.build();
+
+        CU.validateCacheKey(binObj);
+
+        BinaryObjectBuilderImpl binBuilder2 = new BinaryObjectBuilderImpl((BinaryObjectImpl) binObj);
+
+        CU.validateCacheKey(binBuilder2.build());
     }
 
     /**
