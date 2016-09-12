@@ -132,8 +132,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, context.SaveChanges());
 
-                var cachedData = _cache.ToArray();
-                Assert.AreEqual(2, _cache.GetSize());
+                //var cachedData = _cache.ToArray();
+                Assert.AreEqual(4, _cache.GetSize());
 
                 Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
                 Assert.AreEqual(14, _events.Count);
