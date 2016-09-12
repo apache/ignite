@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -106,7 +107,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                     break;
                 }
-            } else
+            }
+            else
                 break;
         }
     }
@@ -156,9 +158,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
 
-                GridCacheEntryEx entry = e.entry;
 
                 boolean touch = false;
+
+                GridCacheEntryEx entry = e.ctx.cache().entryEx(e.key);
 
                 while (true) {
                     try {
@@ -278,8 +281,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** Entry expire time. */
         private final long expireTime;
 
-        /** Entry. */
-        private final GridCacheMapEntry entry;
+        /** Cache Object Context */
+        private final GridCacheContext ctx;
+
+        /** Cache Object Key */
+        private final CacheObject key;
 
         /**
          * @param entry Cache entry to create wrapper for.
@@ -289,7 +295,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             assert expireTime != 0;
 
-            this.entry = entry;
+            this.ctx = entry.context();
+            this.key = entry.key();
         }
 
         /** {@inheritDoc} */
@@ -297,7 +304,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             int res = Long.compare(expireTime, o.expireTime);
 
             if (res == 0)
-                res = compareKeys(entry.context(), entry.key(), o.entry.context(), o.entry.key());
+                res = compareKeys(ctx, key, o.ctx, o.key);
 
             return res;
         }
@@ -312,15 +319,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime &&
-                compareKeys(entry.context(), entry.key(), that.entry.context(), that.entry.key()) == 0;
+            return expireTime == that.expireTime && compareKeys(ctx, key, that.ctx, that.key) == 0;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = (int)(expireTime ^ (expireTime >>> 32));
 
-            res = 31 * res + entry.key().hashCode();
+            res = 31 * res + key.hashCode();
 
             return res;
         }

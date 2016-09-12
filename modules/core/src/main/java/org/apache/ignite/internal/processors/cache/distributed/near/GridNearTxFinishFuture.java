@@ -633,6 +633,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (m.explicitLock())
             syncMode = FULL_SYNC;
 
+        // Version to be added in completed versions on primary node.
+        GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
+
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
@@ -645,7 +648,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            null,
+            completedVer, // Reuse 'baseVersion'  to do not add new fields in message.
             null,
             null,
             tx.size(),
