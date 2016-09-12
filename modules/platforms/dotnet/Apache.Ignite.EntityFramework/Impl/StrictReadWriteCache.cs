@@ -20,6 +20,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System;
     using System.Collections.Generic;
     using System.Data.Entity.Core.Metadata.Edm;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
@@ -171,7 +172,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the versioned key.
         /// </summary>
-        private string GetVersionedKey(string key, IEnumerable<EntitySetBase> sets)
+        private string GetVersionedKey(string key, ICollection<EntitySetBase> sets)
         {
             return GetVersionedKey(key, GetEntitySetVersions(sets));
         }
@@ -192,10 +193,21 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the entity set versions.
         /// </summary>
-        private IDictionary<string, long> GetEntitySetVersions(IEnumerable<EntitySetBase> sets)
+        private IDictionary<string, long> GetEntitySetVersions(ICollection<EntitySetBase> sets)
         {
             // LINQ Select allocates less that a new List<> will do.
-            return _entitySetVersions.GetAll(sets.Select(x => x.Name));
+            var versions = _entitySetVersions.GetAll(sets.Select(x => x.Name));
+
+            // Some versions may be missing, fill up with 0.
+            foreach (var set in sets)
+            {
+                if (!versions.ContainsKey(set.Name))
+                    versions[set.Name] = 0;
+            }
+
+            Debug.Assert(sets.Count == versions.Count);
+
+            return versions;
         }
 
         /// <summary>
@@ -206,6 +218,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             public object Process(IMutableCacheEntry<string, long> entry, object arg)
             {
+                // This will create a value if it is missing.
                 entry.Value++;
 
                 return null;
