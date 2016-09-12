@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data.Entity;
     using System.IO;
     using System.Linq;
+    using System.Transactions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
@@ -57,10 +58,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             // Create SQL CE database in a temp file.
-            using (var context = new BloggingContext(ConnectionString))
+            using (var ctx = GetDbContext())
             {
                 File.Delete(TempFile);
-                context.Database.Create();
+                ctx.Database.Create();
             }
 
             // Get the cache.
@@ -78,19 +79,41 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void TestSetUp()
+        {
+            // Clean up the db.
+            using (var ctx = GetDbContext())
+            {
+                ctx.Blogs.RemoveRange(ctx.Blogs);
+                ctx.Posts.RemoveRange(ctx.Posts);
+
+                ctx.SaveChanges();
+            }
+
+            using (var ctx = GetDbContext())
+            {
+                Assert.IsEmpty(ctx.Blogs);
+                Assert.IsEmpty(ctx.Posts);
+            }
+        }
+
+        /// <summary>
         /// Tests the strict strategy.
         /// </summary>
         [Test]
         public void TestStrictStrategy()
         {
-            using (var context = new BloggingContext(ConnectionString))
+            using (var ctx = GetDbContext())
             {
                 //context.Database.Log = s => Debug.WriteLine(s);
 
-                Assert.IsEmpty(context.Blogs);
-                Assert.IsEmpty(context.Posts);
+                Assert.IsEmpty(ctx.Blogs);
+                Assert.IsEmpty(ctx.Posts);
 
-                context.Blogs.Add(new Blog
+                ctx.Blogs.Add(new Blog
                 {
                     BlogId = 1,
                     Name = "Foo",
@@ -100,38 +123,38 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     }
                 });
 
-                Assert.AreEqual(2, context.SaveChanges());
+                Assert.AreEqual(2, ctx.SaveChanges());
 
                 // Check that query works.
-                Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
                 // Add new post to check invalidation.
-                context.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
-                Assert.AreEqual(1, context.SaveChanges());
+                ctx.Posts.Add(new Post {BlogId = 1, Title = "My Second Post", Content = "Foo bar."});
+                Assert.AreEqual(1, ctx.SaveChanges());
                 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
 
-                Assert.AreEqual(2, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(2, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
                 Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
 
                 // Delete post.
-                context.Posts.Remove(context.Posts.First());
-                Assert.AreEqual(1, context.SaveChanges());
+                ctx.Posts.Remove(ctx.Posts.First());
+                Assert.AreEqual(1, ctx.SaveChanges());
 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
-                Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
+                Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
                 Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
 
                 // Modify post.
-                Assert.AreEqual(0, context.Posts.Count(x => x.Title.EndsWith("updated")));
+                Assert.AreEqual(0, ctx.Posts.Count(x => x.Title.EndsWith("updated")));
 
-                context.Posts.Single().Title += " - updated";
-                Assert.AreEqual(1, context.SaveChanges());
+                ctx.Posts.Single().Title += " - updated";
+                Assert.AreEqual(1, ctx.SaveChanges());
 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
-                Assert.AreEqual(1, context.Posts.Count(x => x.Title.EndsWith("updated")));
+                Assert.AreEqual(1, ctx.Posts.Count(x => x.Title.EndsWith("updated")));
 
                 Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
             }
@@ -145,6 +168,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             // TODO: Find out what's called within a TX.
             // Create a tx, modify, do a query, check results, rollback - should not be cached.
+
+            using (var tx = new TransactionScope())
+            {
+                
+            }
         }
 
         /// <summary>
@@ -197,6 +225,14 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 var test0 = context.Tests.Single(x => x.Bool);
                 Assert.AreEqual(test, test0);
             }
+        }
+
+        /// <summary>
+        /// Gets the database context.
+        /// </summary>
+        private static BloggingContext GetDbContext()
+        {
+            return new BloggingContext(ConnectionString);
         }
 
         private class MyDbConfiguration : IgniteDbConfiguration
