@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -68,7 +67,6 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallabl
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -238,7 +236,17 @@ public final class IgfsImpl implements IgfsEx {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, IgfsMode> mode : cfgModes.entrySet()) {
-                IgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
+                IgfsMode mode0;
+
+                if (mode.getValue() == PROXY) {
+                    if (secondaryFs == null)
+                        throw new IgniteCheckedException("Mode cannot be PROXY if secondary file system hasn't" +
+                            " been defined: " + mode.getKey());
+
+                    mode0 = PROXY;
+                }
+                else
+                    mode0 = secondaryFs == null ? PRIMARY : mode.getValue();
 
                 try {
                     modes.add(new T2<>(new IgfsPath(mode.getKey()), mode0));
@@ -541,8 +549,10 @@ public final class IgfsImpl implements IgfsEx {
 
                         break;
 
-                    default:
-                        assert false : "Unknown mode.";
+                    case PROXY:
+                        res = secondaryFs.exists(path);
+
+                        break;
                 }
 
                 return res;
@@ -618,36 +628,50 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                if (mode != PRIMARY) {
-                    assert IgfsUtils.isDualMode(mode);
+                switch (mode) {
+                    case PRIMARY:
+                    {
+                        List<IgniteUuid> fileIds = meta.idsForPath(path);
 
-                    await(path);
+                        IgniteUuid fileId = fileIds.get(fileIds.size() - 1);
 
-                    IgfsEntryInfo info = meta.updateDual(secondaryFs, path, props);
+                        if (fileId != null) {
+                            IgfsEntryInfo info = meta.updateProperties(fileId, props);
 
-                    if (info == null)
-                        return null;
+                            if (info != null) {
+                                if (evts.isRecordable(EVT_IGFS_META_UPDATED))
+                                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_META_UPDATED, props));
 
-                    return new IgfsFileImpl(path, info, data.groupBlockSize());
+                                return new IgfsFileImpl(path, info, data.groupBlockSize());
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                    {
+                        await(path);
+
+                        IgfsEntryInfo info = meta.updateDual(secondaryFs, path, props);
+
+                        if (info != null)
+                            return new IgfsFileImpl(path, info, data.groupBlockSize());
+
+                        break;
+                    }
+
+                    default:
+                        assert mode == PROXY : "Unknown mode: " + mode;
+
+                        IgfsFile file = secondaryFs.update(path, props);
+
+                        if (file != null)
+                            return new IgfsFileImpl(secondaryFs.update(path, props), data.groupBlockSize());
                 }
 
-                List<IgniteUuid> fileIds = meta.idsForPath(path);
-
-                IgniteUuid fileId = fileIds.get(fileIds.size() - 1);
-
-                if (fileId == null)
-                    return null;
-
-                IgfsEntryInfo info = meta.updateProperties(fileId, props);
-
-                if (info != null) {
-                    if (evts.isRecordable(EVT_IGFS_META_UPDATED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_META_UPDATED, props));
-
-                    return new IgfsFileImpl(path, info, data.groupBlockSize());
-                }
-                else
-                    return null;
+                return null;
             }
         });
     }
@@ -686,17 +710,27 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
-                if (mode != PRIMARY) {
-                    assert IgfsUtils.isDualMode(mode); // PROXY mode explicit usage is forbidden.
+                switch (mode) {
+                    case PRIMARY:
+                        meta.move(src, dest);
 
-                    await(src, dest);
+                        break;
 
-                    meta.renameDual(secondaryFs, src, dest);
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                        await(src, dest);
 
-                    return null;
+                        meta.renameDual(secondaryFs, src, dest);
+
+                        break;
+
+                    default:
+                        assert mode == PROXY : "Unknown mode: " + mode;
+
+                        secondaryFs.rename(src, dest);
+
+                        break;
                 }
-
-                meta.move(src, dest);
 
                 return null;
             }
@@ -720,7 +754,10 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                boolean dual = IgfsUtils.isDualMode(mode);;
+                if (mode == PROXY)
+                    return secondaryFs.delete(path, recursive);
+
+                boolean dual = IgfsUtils.isDualMode(mode);
 
                 if (dual)
                     await(path);
@@ -761,14 +798,24 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PRIMARY)
-                    meta.mkdirs(path, props0);
-                else {
-                    assert IgfsUtils.isDualMode(mode);;
+                switch (mode) {
+                    case PRIMARY:
+                        meta.mkdirs(path, props0);
 
-                    await(path);
+                        break;
 
-                    meta.mkdirsDual(secondaryFs, path, props0);
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                        await(path);
+
+                        meta.mkdirsDual(secondaryFs, path, props0);
+
+                        break;
+
+                    case PROXY:
+                        secondaryFs.mkdirs(path, props0);
+
+                        break;
                 }
 
                 return null;
@@ -791,16 +838,18 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Collection<String> files = new HashSet<>();
+                Collection<IgfsPath> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
+                if (mode != PRIMARY) {
                     assert secondaryFs != null;
 
                     try {
                         Collection<IgfsPath> children = secondaryFs.listPaths(path);
 
-                        for (IgfsPath child : children)
-                            files.add(child.name());
+                        files.addAll(children);
+
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
+                            return files;
                     }
                     catch (Exception e) {
                         U.error(log, "List paths in DUAL mode failed [path=" + path + ']', e);
@@ -809,20 +858,17 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
-                if (!IgfsUtils.isDualMode(mode) || modeRslvr.hasPrimaryChild(path)) {
-                    IgniteUuid fileId = meta.fileId(path);
+                IgfsEntryInfo info = primaryInfoForListing(path);
 
-                    if (fileId != null)
-                        files.addAll(meta.directoryListing(fileId).keySet());
-                    else if (mode == PRIMARY)
-                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                if (info != null) {
+                    // Perform the listing.
+                    for (String child : info.listing().keySet())
+                        files.add(new IgfsPath(path, child));
                 }
+                else if (mode == PRIMARY)
+                    throw new IgfsPathNotFoundException("Failed to list paths (path not found): " + path);
 
-                return F.viewReadOnly(files, new C1<String, IgfsPath>() {
-                    @Override public IgfsPath apply(String e) {
-                        return new IgfsPath(path, e);
-                    }
-                });
+                return files;
             }
         });
     }
@@ -841,9 +887,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Set<IgfsFile> files = new HashSet<>();
+                Collection<IgfsFile> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
+                if (mode != PRIMARY) {
                     assert secondaryFs != null;
 
                     try {
@@ -855,7 +901,7 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(impl);
                         }
 
-                        if (!modeRslvr.hasPrimaryChild(path))
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
                             return files;
                     }
                     catch (Exception e) {
@@ -865,27 +911,22 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
-                IgniteUuid fileId = meta.fileId(path);
+                IgfsEntryInfo info = primaryInfoForListing(path);
 
-                if (fileId != null) {
-                    IgfsEntryInfo info = meta.info(fileId);
+                if (info != null) {
+                    if (info.isFile())
+                        // If this is a file, return its description.
+                        return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
+                            data.groupBlockSize()));
 
-                    // Handle concurrent deletion.
-                    if (info != null) {
-                        if (info.isFile())
-                            // If this is a file, return its description.
-                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
-                                data.groupBlockSize()));
+                    // Perform the listing.
+                    for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
+                        IgfsEntryInfo childInfo = meta.info(e.getValue().fileId());
 
-                        // Perform the listing.
-                        for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgfsEntryInfo childInfo = meta.info(e.getValue().fileId());
+                        if (childInfo != null) {
+                            IgfsPath childPath = new IgfsPath(path, e.getKey());
 
-                            if (childInfo != null) {
-                                IgfsPath childPath = new IgfsPath(path, e.getKey());
-
-                                files.add(new IgfsFileImpl(childPath, childInfo, data.groupBlockSize()));
-                            }
+                            files.add(new IgfsFileImpl(childPath, childInfo, data.groupBlockSize()));
                         }
                     }
                 }
@@ -895,6 +936,19 @@ public final class IgfsImpl implements IgfsEx {
                 return files;
             }
         });
+    }
+
+    /**
+     * Get primary file system info for listing operation.
+     *
+     * @param path Path.
+     * @return Info or {@code null} if not found.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IgfsEntryInfo primaryInfoForListing(IgfsPath path) throws IgniteCheckedException {
+        IgniteUuid fileId = meta.fileId(path);
+
+        return fileId != null ? meta.info(fileId) : null;
     }
 
     /** {@inheritDoc} */
@@ -1509,7 +1563,14 @@ public final class IgfsImpl implements IgfsEx {
                 break;
 
             default:
-                assert false : "Unknown mode: " + mode;
+                assert mode == PROXY : "Unknown mode: " + mode;
+
+                IgfsFile status = secondaryFs.info(path);
+
+                if (status != null)
+                    return new IgfsFileImpl(status, data.groupBlockSize());
+                else
+                    return null;
         }
 
         if (info == null)
@@ -1736,12 +1797,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Mode.
      */
     private IgfsMode resolveMode(IgfsPath path) {
-        IgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new IgfsInvalidPathException("PROXY mode cannot be used in IGFS directly: " + path);
-
-        return mode;
+        return modeRslvr.resolveMode(path);
     }
 
     /**

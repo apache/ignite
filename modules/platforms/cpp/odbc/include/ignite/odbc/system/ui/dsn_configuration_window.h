@@ -46,6 +46,8 @@ namespace ignite
                         ID_ADDRESS_LABEL,
                         ID_CACHE_EDIT,
                         ID_CACHE_LABEL,
+                        ID_PAGE_SIZE_EDIT,
+                        ID_PAGE_SIZE_LABEL,
                         ID_DISTRIBUTED_JOINS_CHECK_BOX,
                         ID_ENFORCE_JOIN_ORDER_CHECK_BOX,
                         ID_PROTOCOL_VERSION_LABEL,
@@ -119,6 +121,12 @@ namespace ignite
 
                     /** DSN cache edit field. */
                     std::auto_ptr<Window> cacheEdit;
+
+                    /** DSN fetch page size edit field label. */
+                    std::auto_ptr<Window> pageSizeLabel;
+
+                    /** DSN fetch page size edit field. */
+                    std::auto_ptr<Window> pageSizeEdit;
 
                     /** Distributed joins CheckBox. */
                     std::auto_ptr<Window> distributedJoinsCheckBox;
