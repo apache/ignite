@@ -103,9 +103,9 @@ public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTas
                 PlatformDotNetEntityFrameworkCacheEntry entry = (PlatformDotNetEntityFrameworkCacheEntry)val;
 
                 for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
-                    long curVer = (long)currentVersions.get(entitySet.getKey());
+                    Object curVer = currentVersions.get(entitySet.getKey());
 
-                    if (entitySet.getValue() < curVer)
+                    if (curVer != null && entitySet.getValue() < (long)curVer)
                         cache.remove(cacheEntry.getKey());
                 }
             }

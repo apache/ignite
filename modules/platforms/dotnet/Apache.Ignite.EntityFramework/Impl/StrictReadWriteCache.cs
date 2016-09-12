@@ -114,7 +114,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             foreach (var set in entitySets)
                 arg[i++] = set.Name;
 
-            _cache.Ignite.GetCompute().ExecuteJavaTaskAsync<object>(PurgeCacheTask, arg);
+            // TODO: Async
+            _cache.Ignite.GetCompute().ExecuteJavaTask<object>(PurgeCacheTask, arg);
         }
 
         /// <summary>
