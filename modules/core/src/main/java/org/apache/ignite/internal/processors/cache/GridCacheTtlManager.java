@@ -123,7 +123,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         PendingEntry e = new PendingEntry(entry);
 
+        guard.begin();
+
         pendingPointers.add(pointerFactory.createPointer(e));
+
+        guard.end();
 
         while (true) {
             long nextExpireTime = this.nextExpireTime;
@@ -512,6 +516,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             /** */
             MyGridOffHeapSmartPointer(long ptr) {
                 this.ptr = ptr;
+                this.entry = entry();
             }
 
             /** {@inheritDoc} */
