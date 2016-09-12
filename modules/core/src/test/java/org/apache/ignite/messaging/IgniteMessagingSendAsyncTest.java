@@ -1,19 +1,20 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements. See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License. You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.messaging;
 
 import org.apache.ignite.Ignite;
@@ -27,7 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Created by dgovorukhin on 09.09.2016.
+ *
  */
 public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
     /**
@@ -45,8 +46,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         ignite1 = startGrid(1);
@@ -56,8 +56,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
@@ -73,13 +72,11 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         final String msgStr = "message";
 
         send(ignite1.message(), msgStr, new ProcedureApply() {
-            @Override
-            public void apply(String msg, Thread thread) {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
         });
-
     }
 
     /**
@@ -92,8 +89,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         final String msgStr = "message";
 
         send(ignite1.message().withAsync(), msgStr, new ProcedureApply() {
-            @Override
-            public void apply(String msg, Thread thread) {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
@@ -108,8 +104,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         final String msgStr = "message";
 
         sendWith2Node(ignite1.message(), msgStr, new ProcedureApply() {
-            @Override
-            public void apply(String msg, Thread thread) {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
@@ -124,8 +119,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         final String msgStr = "message";
 
         sendWith2Node(ignite1.message().withAsync(), msgStr, new ProcedureApply() {
-            @Override
-            public void apply(String msg, Thread thread) {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
@@ -137,17 +131,15 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
      */
-    public void sendWith2Node(
-            final IgniteMessaging igniteMsg,
-            final String msgStr,
-            final ProcedureApply cls
+    private void sendWith2Node(
+        final IgniteMessaging igniteMsg,
+        final String msgStr,
+        final ProcedureApply cls
     ) throws Exception {
-
         final CountDownLatch latch = new CountDownLatch(1);
 
         ignite2.message().localListen(TOPIC, new IgniteBiPredicate<UUID, String>() {
-            @Override
-            public boolean apply(UUID uuid, String msg) {
+            @Override public boolean apply(UUID uuid, String msg) {
                 Assert.assertEquals(msgStr, msg);
                 latch.countDown();
                 return false;
@@ -159,16 +151,15 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         latch.await();
     }
 
-
     /**
      * @param igniteMsg Ignite message.
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
      */
     private void send(
-            IgniteMessaging igniteMsg,
-            String msgStr,
-            ProcedureApply cls
+        IgniteMessaging igniteMsg,
+        String msgStr,
+        ProcedureApply cls
     ) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -176,8 +167,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         final AtomicReference<String> val = new AtomicReference<>();
 
         igniteMsg.localListen(TOPIC, new IgniteBiPredicate<UUID, String>() {
-            @Override
-            public boolean apply(UUID uuid, String msgStr) {
+            @Override public boolean apply(UUID uuid, String msgStr) {
                 thread.set(Thread.currentThread());
                 val.set(msgStr);
                 latch.countDown();
@@ -193,15 +183,13 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     * only for this test procedure
+     * Only for this test procedure.
      */
     private interface ProcedureApply {
-
         /**
          * @param val    Value.
          * @param thread Thread.
          */
         void apply(String val, Thread thread);
     }
-
 }

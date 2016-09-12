@@ -1782,7 +1782,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         GridMessageListener lsnrs;
 
-        for (; ; ) {
+        for (;;) {
             lsnrs = listenerPutIfAbsent0(topic, lsnr);
 
             if (lsnrs == null) {
@@ -1895,7 +1895,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 msgSets = map.values();
         }
         else {
-            for (; ; ) {
+            for (;;) {
                 GridMessageListener lsnrs = listenerGet0(topic);
 
                 // If removing listener before subscription happened.
@@ -2131,7 +2131,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @param l Listener.
          * @return {@code true} if listener was added. Add can fail if this instance is empty and is about to be removed
-         * from map.
+         *         from map.
          */
         synchronized boolean add(GridMessageListener l) {
             GridMessageListener[] arr0 = arr;
@@ -2173,8 +2173,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({
-            "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
+        @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
         @Override public void onMessage(UUID nodeId, Object msg) {
             if (!(msg instanceof GridIoUserMessage)) {

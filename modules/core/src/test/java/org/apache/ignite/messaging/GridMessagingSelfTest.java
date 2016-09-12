@@ -1066,6 +1066,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertNotNull(starFut);
 
+        U.sleep(500);
+
         Assert.assertFalse(starFut.isDone());
 
         discoSpi.stopBlock();
@@ -1107,6 +1109,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
                 return null;
             }
         }, IllegalStateException.class, null);
+
+        U.sleep(500);
 
         Assert.assertFalse(stopFut.isDone());
 
