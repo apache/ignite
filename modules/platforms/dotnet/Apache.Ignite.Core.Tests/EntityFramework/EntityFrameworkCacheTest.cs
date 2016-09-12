@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             // Prepare SQL CE support.
             // Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+            // context.Database.Log = s => Debug.WriteLine(s);
 
             // Start Ignite.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
@@ -111,8 +112,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             using (var ctx = GetDbContext())
             {
-                //context.Database.Log = s => Debug.WriteLine(s);
-
                 Assert.IsEmpty(ctx.Blogs);
                 Assert.IsEmpty(ctx.Posts);
 
@@ -172,9 +171,18 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO: Find out what's called within a TX.
             // Create a tx, modify, do a query, check results, rollback - should not be cached.
 
-            using (var tx = new TransactionScope())
+            using (var ctx = GetDbContext())
             {
-                
+                using (new TransactionScope())
+                {
+                    ctx.Posts.Add(new Post {Title = "Foo"});
+                    ctx.SaveChanges();
+
+                    Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+                }
+
+                // TX was not committed:
+                Assert.AreEqual(0, ctx.Posts.ToArray().Length);
             }
         }
 
