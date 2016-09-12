@@ -61,7 +61,6 @@
     </Compile>
     <Compile Include="Impl\DbProviderServicesProxy.cs" />
     <Compile Include="Impl\DataReaderField.cs" />
-    <Compile Include="Impl\TransactionInterceptor.cs" />
     <Compile Include="DbCachingPolicy.cs" />
     <Compile Include="Impl\IDbCache.cs" />
     <Compile Include="IgniteDbConfiguration.cs" />

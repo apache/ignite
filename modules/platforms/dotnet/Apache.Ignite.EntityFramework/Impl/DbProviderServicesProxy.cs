@@ -39,29 +39,22 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbProviderServices _services;
         
         /** */
-        private readonly TransactionInterceptor _interceptor;
-
-        /** */
         private readonly IDbCache _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbProviderServicesProxy"/> class.
         /// </summary>
         /// <param name="services">The services.</param>
-        /// <param name="txInterceptor">The tx interceptor.</param>
         /// <param name="policy">The policy.</param>
         /// <param name="cache">The cache.</param>
-        public DbProviderServicesProxy(DbProviderServices services, TransactionInterceptor txInterceptor, 
-            DbCachingPolicy policy, IDbCache cache)
+        public DbProviderServicesProxy(DbProviderServices services, DbCachingPolicy policy, IDbCache cache)
         {
             Debug.Assert(services != null);
-            Debug.Assert(txInterceptor != null);
             Debug.Assert(cache != null);
 
             var proxy = services as DbProviderServicesProxy;
             _services = proxy != null ? proxy._services : services;
 
-            _interceptor = txInterceptor;
             _policy = policy;
             _cache = cache;
         }

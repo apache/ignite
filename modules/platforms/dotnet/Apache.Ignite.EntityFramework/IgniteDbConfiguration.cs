@@ -109,13 +109,10 @@ namespace Apache.Ignite.EntityFramework
             });
 
             var efCache = new StrictReadWriteCache(cache);  // TODO: Configurable strategy
-            var txInterceptor = new TransactionInterceptor(efCache);
-
-            AddInterceptor(txInterceptor);
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
-                (services, a) => new DbProviderServicesProxy(services, txInterceptor, policy, efCache));
+                (services, a) => new DbProviderServicesProxy(services, policy, efCache));
         }
 
         /// <summary>
