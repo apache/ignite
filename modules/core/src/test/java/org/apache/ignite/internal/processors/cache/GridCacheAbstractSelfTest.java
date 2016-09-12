@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -80,6 +86,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         int cnt = gridCount();
 
         assert cnt >= 1 : "At least one grid must be started";
@@ -188,7 +196,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        storeStgy.resetStore();
+        if (storeStgy != null)
+            storeStgy.resetStore();
     }
 
     /** {@inheritDoc} */
@@ -410,20 +419,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilter =
         new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return entry.getKey().contains("key");
-        }
-    };
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                return entry.getKey().contains("key");
+            }
+        };
 
     /**
      * Filters cache entry projections leaving only ones with keys not containing 'key'.
      */
     protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilterInv =
         new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return !entry.getKey().contains("key");
-        }
-    };
+            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
+                return !entry.getKey().contains("key");
+            }
+        };
 
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
@@ -528,4 +537,117 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected enum ResourceType {
+        /** */
+        IGNITE_INSTANCE,
+
+        /** */
+        CACHE_NAME,
+
+        /** */
+        SPRING_APPLICATION_CONTEXT,
+
+        /** */
+        LOGGER,
+
+        /** */
+        SERVICE,
+
+        /** */
+        SPRING_BEAN,
+
+    }
+
+    /**
+     *
+     */
+    protected static class ResourceInfoSet {
+        /** */
+        int val;
+
+        /** */
+        public ResourceInfoSet() {
+            this(0);
+        }
+
+        /** */
+        public ResourceInfoSet(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @param val Value.
+         */
+        public static ResourceInfoSet valueOf(int val) {
+            return new ResourceInfoSet(val);
+        }
+
+        /** */
+        public int getValue() {
+            return val;
+        }
+
+        /**
+         * @param type Type.
+         * @param injected Injected.
+         */
+        public ResourceInfoSet set(ResourceType type, boolean injected) {
+            int mask = 1 << type.ordinal();
+
+            if (injected)
+                val |= mask;
+            else
+                val &= ~mask;
+
+            return this;
+        }
+
+        /**
+         * @see {@link #set(ResourceType, boolean)}
+         */
+        public ResourceInfoSet set(ResourceType type, Object toCheck) {
+            return set(type, toCheck != null);
+        }
+
+        /**
+         * @return collection of not injected resources
+         */
+        public Collection<ResourceType> notInjected(Collection<ResourceType> exp) {
+            ArrayList<ResourceType> res = null;
+
+            for (ResourceType type : exp) {
+                int mask = 1 << type.ordinal();
+
+                if ((this.val & mask) == 0) {
+                    if (res == null)
+                        res = new ArrayList<>();
+
+                    res.add(type);
+                }
+            }
+
+            return res == null ? Collections.<ResourceType>emptyList() : res;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static abstract class ResourceInjectionEntryProcessorBase<K, V>
+        implements EntryProcessor<K, V, Integer>, Serializable {
+        /** */
+        protected transient ResourceInfoSet infoSet;
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<K, V> e, Object... args) {
+            return infoSet == null ? null : infoSet.getValue();
+        }
+
+        /** */
+        protected void checkSet() {
+            if (infoSet == null)
+                infoSet = new ResourceInfoSet();
+        }
+    }
 }

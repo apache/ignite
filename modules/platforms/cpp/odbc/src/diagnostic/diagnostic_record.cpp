@@ -171,7 +171,7 @@ namespace ignite
                 return ORIGIN_ISO_9075;
             }
 
-            const std::string& DiagnosticRecord::GetMessage() const
+            const std::string& DiagnosticRecord::GetMessageText() const
             {
                 return message;
             }
