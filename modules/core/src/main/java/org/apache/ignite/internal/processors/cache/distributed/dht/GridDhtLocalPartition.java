@@ -555,7 +555,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (ord == OWNING.ordinal())
                 return true;
 
-            assert ord == MOVING.ordinal();
+            assert ord == MOVING.ordinal() || ord == LOST.ordinal();
 
             if (casState(reservations, OWNING)) {
                 if (log.isDebugEnabled())

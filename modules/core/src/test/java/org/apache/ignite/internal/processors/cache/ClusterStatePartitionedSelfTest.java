@@ -13,23 +13,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  *
  */
-public interface ClusterNodeEx extends ClusterNode {
-    /**
-     * @return Cache active flag.
-     */
-    public boolean cacheActive();
+public class ClusterStatePartitionedSelfTest extends ClusterStateAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
-    /**
-     * @param cacheActive Cache active flag.
-     */
-    public void cacheActive(boolean cacheActive);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setBackups(1);
+
+        return ccfg;
+    }
 }

@@ -128,7 +128,7 @@ public class IgniteActiveOnStartNodeJoinValidationSelfTest extends GridCommonAbs
         IgniteSpiException err = X.cause(e, IgniteSpiException.class);
 
         assertNotNull(err);
-        assertTrue(err.getMessage().contains("Local node's cache affinity assignment mode differs " +
+        assertTrue(err.getMessage().contains("Local node's active on start flag differs " +
             "from the same property on remote node"));
     }
 }

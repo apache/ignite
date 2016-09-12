@@ -1993,7 +1993,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see PartitionLossPolicy
      */
     public PartitionLossPolicy getPartitionLossPolicy() {
-        return partitionLossPolicy;
+        return partitionLossPolicy == null ? DFLT_PARTITION_LOSS_POLICY : partitionLossPolicy;
     }
 
     /**

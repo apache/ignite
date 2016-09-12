@@ -41,7 +41,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
-import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -1382,6 +1381,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (lost != null) {
                 PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
 
+                assert plc != null;
+
                 // Update partition state on all nodes.
                 for (Integer part : lost) {
                     long updSeq = updateSeq.incrementAndGet();
@@ -1395,11 +1396,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
 
                         changed |= marked;
-
-                        if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                            cctx.events().addPreloadEvent(locPart.id(), EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-                        }
                     }
                     // Update map for remote node.
                     else if (plc != PartitionLossPolicy.IGNORE) {
@@ -1414,9 +1410,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             }
                         }
                     }
+
+                    if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
+                        cctx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                 }
 
-                cctx.state(CacheState.NEEDS_RECOVERY);
+                if (plc != PartitionLossPolicy.IGNORE)
+                    cctx.needsRecovery(true);
             }
 
             return changed;
@@ -1471,6 +1472,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
 
             checkEvictions(updSeq, cctx.affinity().assignments(topVer));
+
+            cctx.needsRecovery(false);
         }
         finally {
             lock.writeLock().unlock();

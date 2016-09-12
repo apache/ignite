@@ -1906,11 +1906,4 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return A collection of lost partitions if a cache is in recovery state.
      */
     public Collection<Integer> lostPartitions();
-
-    /**
-     * Clear all lost partitions.
-     *
-     * @return Completion future.
-     */
-    public IgniteInternalFuture<?> clearLostPartitions();
 }

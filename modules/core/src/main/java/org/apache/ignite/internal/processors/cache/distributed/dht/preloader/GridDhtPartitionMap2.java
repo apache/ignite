@@ -294,7 +294,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap2.class, this, "size", size(), "map", map.toString(), "top", top);
+        return S.toString(GridDhtPartitionMap2.class, this, "size", size(), "map", map.toString(), "top", top,
+            "nodeId", nodeId);
     }
 
     /** {@inheritDoc} */

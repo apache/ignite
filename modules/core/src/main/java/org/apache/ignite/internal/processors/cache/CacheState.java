@@ -29,11 +29,5 @@ public enum CacheState {
     /**
      * Cache is active and operations. There are no lost partitions.
      */
-    ACTIVE,
-
-    /**
-     * Cache is in recovery mode. There is at least one lost partitions. Set of allowed cache operations is
-     * defined by partition loss policy.
-     */
-    NEEDS_RECOVERY
+    ACTIVE
 }

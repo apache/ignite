@@ -1674,18 +1674,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearLostPartitions() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.clearLostPartitions();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
         out.writeObject(delegate);

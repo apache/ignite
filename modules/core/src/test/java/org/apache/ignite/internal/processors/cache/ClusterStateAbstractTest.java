@@ -21,8 +21,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,12 +30,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,14 +45,15 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
 @SuppressWarnings("TooBroadScope")
-public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
+public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** Entry count. */
     public static final int ENTRY_CNT = 5000;
 
@@ -61,7 +61,13 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
     public static final int GRID_CNT = 4;
 
     /** */
+    private static final String CACHE_NAME = "cache1";
+
+    /** */
     private static final Collection<Class> forbidden = new GridConcurrentHashSet<>();
+
+    /** */
+    private static AtomicReference<Exception> errEncountered = new AtomicReference<>();
 
     /** */
     private boolean activeOnStart = true;
@@ -75,7 +81,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         cfg.setActiveOnStart(activeOnStart);
 
-        cfg.setCacheConfiguration(cacheConfiguration(null));
+        cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
         if (client)
             cfg.setClientMode(true);
@@ -96,22 +102,38 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         forbidden.clear();
+
+        Exception err = errEncountered.getAndSet(null);
+
+        if (err != null)
+            throw err;
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testStartStopSimple() throws Exception {
+    public void testDynamicCacheStart() throws Exception {
         activeOnStart = false;
 
-        forbidden.add(GridDhtPartitionsSingleMessage.class);
-        forbidden.add(GridDhtPartitionsFullMessage.class);
         forbidden.add(GridDhtPartitionSupplyMessageV2.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
         startGrids(GRID_CNT);
 
+        IgniteCache<Object, Object> cache2 = grid(0).createCache(new CacheConfiguration<>("cache2"));
+
+        checkInactive("cache2", GRID_CNT);
+
         forbidden.clear();
+
+        grid(0).active(true);
+
+        for (int k = 0; k < ENTRY_CNT; k++)
+            cache2.put(k, k);
+
+        grid(0).active(false);
+
+        checkInactive("cache2", GRID_CNT);
 
         stopAllGrids();
     }
@@ -119,11 +141,9 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testNoPartitionMapExchange() throws Exception {
+    public void testNoRebalancing() throws Exception {
         activeOnStart = false;
 
-        forbidden.add(GridDhtPartitionsSingleMessage.class);
-        forbidden.add(GridDhtPartitionsFullMessage.class);
         forbidden.add(GridDhtPartitionSupplyMessageV2.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
@@ -137,7 +157,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        final IgniteCache<Object, Object> cache = grid(0).cache(null);
+        final IgniteCache<Object, Object> cache = grid(0).cache(CACHE_NAME);
 
         for (int k = 0; k < ENTRY_CNT; k++)
             cache.put(k, k);
@@ -146,7 +166,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             // Tests that state changes are propagated to existing and new nodes.
             assertTrue(grid(g).active());
 
-            IgniteCache<Object, Object> cache0 = grid(g).cache(null);
+            IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
                 assertEquals(k,  cache0.get(k));
@@ -157,21 +177,21 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         startGrid(GRID_CNT + 1);
 
         for (int g = 0; g < GRID_CNT + 2; g++) {
-            IgniteCache<Object, Object> cache0 = grid(g).cache(null);
+            IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
-                assertEquals(k,  cache0.get(k));
+                assertEquals("Failed for [grid=" + g + ", key=" + k + ']', k, cache0.get(k));
         }
 
         stopGrid(GRID_CNT + 1);
 
         for (int g = 0; g < GRID_CNT + 1; g++)
-            grid(g).cache(null).rebalance().get();
+            grid(g).cache(CACHE_NAME).rebalance().get();
 
         stopGrid(GRID_CNT);
 
         for (int g = 0; g < GRID_CNT; g++) {
-            IgniteCache<Object, Object> cache0 = grid(g).cache(null);
+            IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
                 assertEquals(k,  cache0.get(k));
@@ -192,8 +212,6 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         checkInactive(GRID_CNT);
 
-        forbidden.add(GridDhtPartitionsSingleMessage.class);
-        forbidden.add(GridDhtPartitionsFullMessage.class);
         forbidden.add(GridDhtPartitionSupplyMessageV2.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
@@ -205,8 +223,6 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testActivationFromClient() throws Exception {
-        forbidden.add(GridDhtPartitionsSingleMessage.class);
-        forbidden.add(GridDhtPartitionsFullMessage.class);
         forbidden.add(GridDhtPartitionSupplyMessageV2.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
@@ -216,7 +232,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         client = true;
 
-        startGrid(GRID_CNT + 1);
+        startGrid(GRID_CNT);
 
         checkInactive(GRID_CNT + 1);
 
@@ -228,7 +244,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache = cl.cache(null);
+        IgniteCache<Object, Object> cache = cl.cache(CACHE_NAME);
 
         for (int k = 0; k < ENTRY_CNT; k++)
             cache.put(k, k);
@@ -237,7 +253,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             // Tests that state changes are propagated to existing and new nodes.
             assertTrue(grid(g).active());
 
-            IgniteCache<Object, Object> cache0 = grid(g).cache(null);
+            IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
                 assertEquals(k,  cache0.get(k));
@@ -267,7 +283,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
     public void testDeactivationWithPendingLock() throws Exception {
         startGrids(GRID_CNT);
 
-        Lock lock = grid(0).cache(null).lock(1);
+        Lock lock = grid(0).cache(CACHE_NAME).lock(1);
 
         IgniteInternalFuture<?> fut;
 
@@ -284,8 +300,20 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
             assert !fut.isDone();
 
-            for (int g = 0; g < GRID_CNT; g++)
-                assertTrue(grid(g).active());
+            boolean hasActive = false;
+
+            for (int g = 0; g < GRID_CNT; g++) {
+                IgniteEx grid = grid(g);
+
+                if (grid.active()) {
+                    hasActive = true;
+
+                    break;
+                }
+
+            }
+
+            assertTrue(hasActive);
         }
         finally {
             lock.unlock();
@@ -306,12 +334,12 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         final Ignite ignite0 = grid(0);
 
-        final IgniteCache<Object, Object> cache0 = ignite0.cache(null);
+        final IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
         IgniteInternalFuture<?> fut;
 
-        try (Transaction tx = ignite0.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-            cache0.put(1, 1);
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache0.get(1);
 
             fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -323,10 +351,22 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
             assert !fut.isDone();
 
-            for (int g = 0; g < GRID_CNT; g++)
-                assertTrue(grid(g).active());
+            boolean hasActive = false;
 
-            cache0.put(2, 2);
+            for (int g = 0; g < GRID_CNT; g++) {
+                IgniteEx grid = grid(g);
+
+                if (grid.active()) {
+                    hasActive = true;
+
+                    break;
+                }
+
+            }
+
+            assertTrue(hasActive);
+
+            cache0.put(1, 2);
 
             tx.commit();
         }
@@ -338,17 +378,24 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         ignite0.active(true);
 
         for (int g = 0; g < GRID_CNT; g++)
-            assertEquals(2, grid(g).cache(null).get(2));
+            assertEquals(2, grid(g).cache(CACHE_NAME).get(1));
     }
 
     /**
      *
      */
     private void checkInactive(int cnt) {
+        checkInactive(CACHE_NAME, cnt);
+    }
+
+    /**
+     *
+     */
+    private void checkInactive(String cacheName, int cnt) {
         for (int g = 0; g < cnt; g++) {
             assertFalse(grid(g).active());
 
-            final IgniteCache<Object, Object> cache0 = grid(g).cache(null);
+            final IgniteCache<Object, Object> cache0 = grid(g).cache(cacheName);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -380,8 +427,14 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
          * @param msg Message to check.
          */
         private void checkForbidden(GridIoMessage msg) {
-            if (forbidden.contains(msg.message().getClass()))
-                throw new IgniteSpiException("Message is forbidden for this test: " + msg.message());
+            if (forbidden.contains(msg.message().getClass())) {
+                IgniteSpiException err = new IgniteSpiException("Message is forbidden for this test: " + msg.message());
+
+                // Set error in case if this exception is not visible to the user code.
+                errEncountered.compareAndSet(null, err);
+
+                throw err;
+            }
         }
     }
 }

@@ -1318,11 +1318,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearLostPartitions() {
-        throw new NotImplementedException();
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         if (isLocal())
             return Collections.emptyList();

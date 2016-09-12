@@ -892,13 +892,6 @@ public interface IgniteCache<K, V> extends Cache<K, V>, IgniteAsyncSupport {
     public Collection<Integer> lostPartitions();
 
     /**
-     * Clear data in lost partitions. This method is neither transactional nor atomic. A user must make
-     * sure there are no concurrent updates to the lost partitions while this method is in progress.
-     */
-    @IgniteAsyncSupported
-    public void clearLostPartitions();
-
-    /**
      * Clears partition's lost state and moves cache to a normal mode.
      */
     @IgniteAsyncSupported

@@ -658,12 +658,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             if (exchId != null)
                 lastExchangeId = exchId;
 
-            if (node2part == null) {
-                U.dumpStack(log, "Created invalid: " + node2part);
-
+            if (node2part == null)
                 // Create invalid partition map.
                 node2part = new GridDhtPartitionFullMap();
-            }
 
             GridDhtPartitionMap2 cur = node2part.get(parts.nodeId());
 

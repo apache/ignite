@@ -198,6 +198,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
+        Throwable err = cctx.topology().topologyVersionFuture().validateCache(cctx, recovery, true, key, null);
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
+
         map(topVer);
     }
 
@@ -363,14 +371,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     private boolean localGet(AffinityTopologyVersion topVer, int part) {
         assert cctx.affinityNode() : this;
-
-        Throwable err = cctx.topology().topologyVersionFuture().validateCache(cctx, recovery, true, key, null);
-
-        if (err != null) {
-            onDone(err);
-
-            return true;
-        }
 
         GridDhtCacheAdapter colocated = cctx.dht();
 

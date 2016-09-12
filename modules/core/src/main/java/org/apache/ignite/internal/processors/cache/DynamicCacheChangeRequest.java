@@ -73,11 +73,11 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** Cache state. */
+    /** Cache state. Set to non-null when global state is changed. */
     private CacheState state;
 
-    /** Global flag. If global is set to true, this means that we move all caches to active or inactive state. */
-    private boolean globalStateChange;
+    /** Reset lost partitions flag. */
+    private boolean resetLostPartitions;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -126,14 +126,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if global caches state is changes.
      */
     public boolean globalStateChange() {
-        return globalStateChange;
-    }
-
-    /**
-     *
-     */
-    public void markGlobalStateChange() {
-        globalStateChange = true;
+        return state != null;
     }
 
     /**
@@ -193,10 +186,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return {@code True} if this is a cache activation request.
+     * Set resetLostPartitions flag.
      */
-    public boolean activation() {
-        return state != null && state == CacheState.ACTIVE;
+    public void markResetLostPartitions() {
+        resetLostPartitions = true;
+    }
+
+    /**
+     * @return Reset lost partitions flag.
+     */
+    public boolean resetLostPartitions() {
+        return resetLostPartitions;
     }
 
     /**

@@ -25,8 +25,13 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -37,6 +42,8 @@ import org.apache.ignite.util.TestTcpCommunicationSpi;
 import javax.cache.CacheException;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -132,6 +139,29 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
         checkLostPartition(true, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testIgnore() throws Exception {
+        prepareTopology();
+
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+
+            Collection<Integer> lost = cache.lostPartitions();
+
+            assertTrue("[grid=" + ig.name() + ", lost=" + lost.toString() + ']', lost.isEmpty());
+
+            int parts = ig.affinity(CACHE_NAME).partitions();
+
+            for (int i = 0; i < parts; i++) {
+                cache.get(i);
+
+                cache.put(i, i);
+            }
+        }
     }
 
     /**
@@ -271,8 +301,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
-        U.sleep(5_000);
-
         ClusterNode killNode = ignite(3).cluster().localNode();
 
         int part = -1;
@@ -288,9 +316,37 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         if (part == -1)
             throw new IllegalStateException("No partition on node: " + killNode);
 
+        final CountDownLatch[] partLost = new CountDownLatch[3];
+
+        // Check events.
+        for (int i = 0; i < 3; i++) {
+            final CountDownLatch latch = new CountDownLatch(1);
+            partLost[i] = latch;
+
+            final int part0 = part;
+
+            grid(i).events().localListen(new P1<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt.type() == EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
+
+                    CacheRebalancingEvent cacheEvt = (CacheRebalancingEvent)evt;
+
+                    if (cacheEvt.partition() == part0 && F.eq(CACHE_NAME, cacheEvt.cacheName())) {
+                        latch.countDown();
+
+                        // Auto-unsubscribe.
+                        return false;
+                    }
+
+                    return true;
+                }
+            }, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        }
+
         ignite(3).close();
 
-        U.sleep(1_000);
+        for (CountDownLatch latch : partLost)
+            assertTrue("Failed to wait for partition LOST event", latch.await(10, TimeUnit.SECONDS));
 
         return part;
     }

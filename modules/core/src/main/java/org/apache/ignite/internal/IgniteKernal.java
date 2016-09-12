@@ -2993,10 +2993,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            GridCacheContext<Object, Object> marshCtx = context().cache().context().cacheContext(
-                CU.cacheId(CU.MARSH_CACHE_NAME));
-
-            return marshCtx != null && marshCtx.state() == CacheState.ACTIVE;
+            return context().cache().globalState() == CacheState.ACTIVE;
         }
         finally {
             unguard();

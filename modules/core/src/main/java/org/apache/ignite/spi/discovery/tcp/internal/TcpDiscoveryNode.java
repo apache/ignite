@@ -31,10 +31,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.discovery.ClusterNodeEx;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -57,7 +57,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNodeEx,
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
     Comparable<TcpDiscoveryNode>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -115,10 +115,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** Visible flag (transient). */
     @GridToStringExclude
     private boolean visible;
-
-    /** Cache active flag. */
-    @GridToStringExclude
-    private boolean cacheActive;
 
     /** Grid local node flag (transient). */
     private boolean loc;
@@ -470,24 +466,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.visible = visible;
     }
 
-    /**
-     * Gets cache active flag.
-     *
-     * @return {@code true} if cache has been activated on this node.
-     */
-    @Override public boolean cacheActive() {
-        return cacheActive;
-    }
-
-    /**
-     * Sets cache active flag.
-     *
-     * @param cacheActive {@code true} if cache is active on this node.
-     */
-    @Override public void cacheActive(boolean cacheActive) {
-        this.cacheActive = cacheActive;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         return clientRouterNodeId != null;
@@ -610,7 +588,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         out.writeLong(order);
         out.writeLong(intOrder);
         out.writeObject(ver);
-        out.writeBoolean(cacheActive);
         U.writeUuid(out, clientRouterNodeId);
     }
 
@@ -651,7 +628,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         order = in.readLong();
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
-        cacheActive = in.readBoolean();
         clientRouterNodeId = U.readUuid(in);
     }
 
