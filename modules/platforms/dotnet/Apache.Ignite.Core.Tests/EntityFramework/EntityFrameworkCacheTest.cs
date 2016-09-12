@@ -162,11 +162,18 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
+        [Test]
+        public void TestTx()
+        {
+            // TODO: Test BeginTransaction-style tx.
+            
+        }
+
         /// <summary>
         /// Tests transactions.
         /// </summary>
         [Test]
-        public void TestTx()
+        public void TestTxScope()
         {
             // TODO: Find out what's called within a TX.
             // Create a tx, modify, do a query, check results, rollback - should not be cached.
