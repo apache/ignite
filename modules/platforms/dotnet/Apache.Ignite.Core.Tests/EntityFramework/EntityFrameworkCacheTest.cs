@@ -120,15 +120,17 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(1, context.SaveChanges());
 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
+                Assert.AreEqual(1, context.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                Assert.AreEqual(1, context.Posts.Count());
+                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
 
                 // Modify post.
+                Assert.AreEqual(0, context.Posts.Count(x => x.Title.EndsWith("updated")));
+
                 context.Posts.Single().Title += " - updated";
                 Assert.AreEqual(1, context.SaveChanges());
 
                 Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
-
                 Assert.AreEqual(1, context.Posts.Count(x => x.Title.EndsWith("updated")));
 
                 Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
