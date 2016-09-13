@@ -171,6 +171,15 @@ public class OffheapReadWriteLock {
     /**
      * @param lock Lock address.
      */
+    public boolean tryWriteLock(long lock) {
+        long state = GridUnsafe.getLongVolatile(null, lock);
+
+        return canWriteLock(state) && GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0));
+    }
+
+    /**
+     * @param lock Lock address.
+     */
     public void writeLock(long lock) {
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);

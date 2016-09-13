@@ -24,14 +24,11 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class PageMetaIO extends PageIO {
-    /** Page number offset. */
-    private static final int PAGE_NUM_OFF = PageIO.COMMON_HEADER_END;
+    /** */
+    private static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
 
-    /** Metastore root offset. */
-    private static final int METASTORE_ROOT_OFF = PAGE_NUM_OFF + 4;
-
-    /** Root ids start offset. */
-    private static final int ROOT_IDS_START_OFF = METASTORE_ROOT_OFF + 8;
+    /** */
+    private static final int REUSE_LIST_ROOT_OFF = METASTORE_ROOT_OFF + 8;
 
     /**
      * @param ver Page format version.
@@ -40,23 +37,17 @@ public class PageMetaIO extends PageIO {
         super(PageIO.T_META, ver);
     }
 
-    /**
-     * @param buf Buffer.
-     */
-    public int getPagesNum(ByteBuffer buf) {
-        return buf.getInt(PAGE_NUM_OFF);
+    /** {@inheritDoc} */
+    @Override public void initNewPage(ByteBuffer buf, long pageId) {
+        super.initNewPage(buf, pageId);
+
+        setMetastoreRoot(buf, 0);
+        setReuseListRoot(buf, 0);
     }
 
     /**
      * @param buf Buffer.
-     * @param pageNum Pages number.
-     */
-    public void setPagesNum(ByteBuffer buf, int pageNum) {
-        buf.putInt(PAGE_NUM_OFF, pageNum);
-    }
-
-    /**
-     * @param buf Buffer.
+     * @return Meta store root page.
      */
     public long getMetastoreRoot(ByteBuffer buf) {
         return buf.getLong(METASTORE_ROOT_OFF);
@@ -72,34 +63,17 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
+     * @return Reuse list root page.
      */
-    public long[] getRootIds(@NotNull ByteBuffer buf) {
-        int pagesNum = getPagesNum(buf);
-
-        if (pagesNum > 0) {
-
-            long[] rootIds = new long[pagesNum - 1];
-
-            for (int i = 0; i < rootIds.length; i++) {
-                assert buf.remaining() >= 8 : "Meta page is corrupted [remaining=" + buf.remaining() +
-                    ", pagesNum=" + pagesNum + ", i =" + i + ']';
-
-                rootIds[i] = buf.getLong(ROOT_IDS_START_OFF + i * 8);
-            }
-
-            return rootIds;
-        } else
-            return null;
+    public long getReuseListRoot(ByteBuffer buf) {
+        return buf.getLong(REUSE_LIST_ROOT_OFF);
     }
 
     /**
      * @param buf Buffer.
-     * @param rootIds Root ids.
+     * @param pageId Root page ID.
      */
-    public void setRootIds(@NotNull ByteBuffer buf, @NotNull long[] rootIds) {
-        setPagesNum(buf, rootIds.length + 1);
-
-        for (int i = 0; i < rootIds.length; i++)
-            buf.putLong(ROOT_IDS_START_OFF + i * 8, rootIds[i]);
+    public void setReuseListRoot(@NotNull ByteBuffer buf, long pageId) {
+        buf.putLong(REUSE_LIST_ROOT_OFF, pageId);
     }
 }

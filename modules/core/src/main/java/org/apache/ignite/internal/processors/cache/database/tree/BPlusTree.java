@@ -24,15 +24,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -50,6 +47,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
+import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
@@ -63,6 +61,7 @@ import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -77,6 +76,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTre
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.initPage;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -85,27 +85,12 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
-public abstract class BPlusTree<L, T extends L> {
-    /** */
-    public static Random rnd;
-
+public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     /** */
     private final String name;
-
-    /** */
-    private final int cacheId;
-
-    /** */
-    private final IgniteWriteAheadLogManager wal;
-
-    /** */
-    protected final PageMemory pageMem;
-
-    /** */
-    private final ReuseList reuseList;
 
     /** */
     private final float minFill;
@@ -508,7 +493,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // Check that we have a correct view of the world.
-            if (lvl != 0 && inner(io).getLeft(buf, idx) != r.getTail(lvl - 1).pageId) {
+            if (inner(io).getLeft(buf, idx) != r.getTail(lvl - 1).pageId) {
                 assert !found;
 
                 return RETRY;
@@ -540,11 +525,9 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Void, Void> cutRoot = new PageHandler<Void, Void>() {
-        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Void ignore, int lvl)
+    private final PageHandler<Void, BPlusMetaIO, Void> cutRoot = new PageHandler<Void, BPlusMetaIO, Void>() {
+        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Void ignore, int lvl)
             throws IgniteCheckedException {
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
-
             assert lvl == io.getRootLevel(buf); // Can drop only root.
 
             io.cutRoot(buf);
@@ -557,13 +540,10 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Long, Void> addRoot = new PageHandler<Long, Void>() {
-        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
+    private final PageHandler<Long, BPlusMetaIO, Void> addRoot = new PageHandler<Long, BPlusMetaIO, Void>() {
+        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
-
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
-
             assert lvl == io.getLevelsCount(buf);
 
             io.addRoot(buf, rootPageId);
@@ -576,12 +556,10 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Long, Void> initRoot = new PageHandler<Long, Void>() {
-        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootId, int lvl)
+    private final PageHandler<Long, BPlusMetaIO, Void> initRoot = new PageHandler<Long, BPlusMetaIO, Void>() {
+        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Long rootId, int lvl)
             throws IgniteCheckedException {
             assert rootId != null;
-
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             io.initRoot(buf, rootId);
 
@@ -613,33 +591,25 @@ public abstract class BPlusTree<L, T extends L> {
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
-        assert name != null;
+        super(cacheId, pageMem, wal);
 
-        this.name = name;
+        assert !F.isEmpty(name);
 
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
-        assert pageMem != null;
         assert innerIos != null;
         assert leafIos != null;
+        assert metaPageId != 0L;
 
         this.innerIos = innerIos;
         this.leafIos = leafIos;
-        this.pageMem = pageMem;
-        this.cacheId = cacheId;
         this.metaPageId = metaPageId;
+        this.name = name;
         this.reuseList = reuseList;
         this.wal = wal;
         this.globalRmvId = globalRmvId;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    public final int getCacheId() {
-        return cacheId;
     }
 
     /**
@@ -667,7 +637,7 @@ public abstract class BPlusTree<L, T extends L> {
         long rootId = allocatePageForNew();
 
         try (Page root = page(rootId)) {
-            writePage(rootId, root, PageHandler.NOOP, latestLeafIO(), wal, null, 0);
+            initPage(rootId, root, latestLeafIO(), wal);
         }
 
         // Initialize meta page with new root page.
@@ -746,7 +716,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private void checkDestroyed() {
         if (destroyed.get())
-            throw new IllegalStateException("Tree is being concurrently destroyed: " + name);
+            throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }
 
     /**
@@ -1338,16 +1308,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @param max Max.
-     * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
-     */
-    public static int randomInt(int max) {
-        Random rnd0 = rnd != null ? rnd : ThreadLocalRandom.current();
-
-        return rnd0.nextInt(max);
-    }
-
-    /**
      * @return Root level.
      * @throws IgniteCheckedException If failed.
      */
@@ -1476,7 +1436,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         long pagesCnt = destroy(bag);
 
-        reuseList.add(bag);
+        reuseList.addForRecycle(bag);
 
         assert bag.size() == 0 : bag.size();
 
@@ -1519,7 +1479,7 @@ public abstract class BPlusTree<L, T extends L> {
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.add(bag);
+                            reuseList.addForRecycle(bag);
 
                             assert bag.isEmpty() : bag.size();
                         }
@@ -2575,8 +2535,8 @@ public abstract class BPlusTree<L, T extends L> {
         @SuppressWarnings("unchecked")
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
-            if (reuseList != null && bag == null)
-                reuseList.add(this);
+            if (reuseList != null && bag == null && freePages != null)
+                reuseList.addForRecycle(this);
         }
 
         /**
@@ -2927,36 +2887,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(long pageId) throws IgniteCheckedException {
-        if (PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_IDX)
-            pageId = PageIdUtils.maskPartId(pageId);
-
-        return pageMem.page(cacheId, pageId);
-    }
-
-    /**
-     * @param bag Reuse bag.
-     * @return Allocated page.
-     */
-    private long allocatePage(ReuseBag bag) throws IgniteCheckedException {
-        long pageId = bag != null ? bag.pollFreePage() : 0;
-
-        if (pageId == 0 && reuseList != null)
-            pageId = reuseList.take(this, bag);
-
-        if (pageId == 0)
-            pageId = allocatePageNoReuse();
-
-        assert pageId != 0;
-
-        return pageId;
-    }
-
-    /**
      * Allocates page for new BPlus tree.
      *
      * @return New page ID.
@@ -2967,24 +2897,16 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @return Page ID of newly allocated page.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
-    }
-
-    /**
      * @return Latest version of inner page IO.
      */
-    private BPlusInnerIO<L> latestInnerIO() {
+    protected final BPlusInnerIO<L> latestInnerIO() {
         return innerIos.latest();
     }
 
     /**
      * @return Latest version of leaf page IO.
      */
-    private BPlusLeafIO<L> latestLeafIO() {
+    protected final BPlusLeafIO<L> latestLeafIO() {
         return leafIos.latest();
     }
 
@@ -3193,15 +3115,13 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Page handler for basic {@link Get} operation.
      */
-    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
+    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, BPlusIO<L>, Result> {
         /** {@inheritDoc} */
-        @Override public final Result run(long pageId, Page page, ByteBuffer buf, G g, int lvl)
+        @Override public final Result run(long pageId, Page page, BPlusIO<L> io, ByteBuffer buf, G g, int lvl)
             throws IgniteCheckedException {
             // The page was merged and removed.
             if (PageIO.getPageId(buf) != pageId)
                 return RETRY;
-
-            BPlusIO<L> io = io(buf);
 
             // In case of intersection with inner replace remove operation
             // we need to restart our operation from the root.

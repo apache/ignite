@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -106,23 +107,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         pageMem = createPageMemory();
 
-        final long[] rootIds = new long[2];
-
-        for (int i = 0; i < rootIds.length; i++)
-            rootIds[i] = allocateMetaPage().pageId();
-
-        reuseList = createReuseList(CACHE_ID, pageMem, rootIds, true);
+        reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
     }
 
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
-     * @param rootIds Root page IDs.
+     * @param rootId Root page ID.
      * @param initNew Init new flag.
      * @return Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
+    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
         return null;
     }
@@ -132,7 +128,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         rnd = null;
 
         if (reuseList != null) {
-            long size = reuseList.size();
+            long size = reuseList.recycledPagesCount();
 
             assertTrue("Reuse size: " + size, size < 6000);
         }
@@ -767,6 +763,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
+
+            PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
             initNew();
         }

@@ -32,10 +32,10 @@ import static java.lang.Boolean.TRUE;
 /**
  * Page handler.
  */
-public abstract class PageHandler<X, R> {
+public abstract class PageHandler<X, Q extends PageIO, R> {
     /** */
-    public static final PageHandler<Void, Void> NOOP = new PageHandler<Void,Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, Void arg, int intArg)
+    private static final PageHandler<Void, PageIO, Void> NOOP = new PageHandler<Void, PageIO, Void>() {
+        @Override public Void run(long pageId, Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
             throws IgniteCheckedException {
             return null;
         }
@@ -44,13 +44,15 @@ public abstract class PageHandler<X, R> {
     /**
      * @param pageId Page ID.
      * @param page Page.
+     * @param io IO.
      * @param buf Page buffer.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract R run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
+    public abstract R run(long pageId, Page page, Q io, ByteBuffer buf, X arg, int intArg)
+        throws IgniteCheckedException;
 
     /**
      * @param pageId Page ID.
@@ -72,16 +74,14 @@ public abstract class PageHandler<X, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, R> R readPage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
+    public static <X, Q extends PageIO, R> R readPage(long pageId, Page page, PageHandler<X, Q, R> h, X arg, int intArg)
         throws IgniteCheckedException {
-        assert page != null;
-
         ByteBuffer buf = page.getForRead();
 
-        assert buf != null;
-
         try {
-            return h.run(pageId, page, buf, arg, intArg);
+            Q io = PageIO.getPageIO(buf);
+
+            return h.run(pageId, page, io, buf, arg, intArg);
         }
         finally {
             page.releaseRead();
@@ -97,9 +97,24 @@ public abstract class PageHandler<X, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, R> R writePage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
+    public static <X, Q extends PageIO, R> R writePage(long pageId, Page page, PageHandler<X, Q, R> h, X arg, int intArg)
         throws IgniteCheckedException {
         return writePage(pageId, page, h, null, null, arg, intArg);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param init IO for new page initialization or {@code null} if it is an existing page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void initPage(
+        long pageId,
+        Page page,
+        PageIO init,
+        IgniteWriteAheadLogManager wal
+    ) throws IgniteCheckedException {
+        writePage(pageId, page, NOOP, init, wal, null, 0);
     }
 
     /**
@@ -112,17 +127,15 @@ public abstract class PageHandler<X, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, R> R writePage(
+    public static <X, Q extends PageIO, R> R writePage(
         long pageId,
         Page page,
-        PageHandler<X, R> h,
-        PageIO init,
+        PageHandler<X, Q, R> h,
+        Q init,
         IgniteWriteAheadLogManager wal,
         X arg,
         int intArg
     ) throws IgniteCheckedException {
-        assert page != null;
-
         R res;
 
         boolean ok = false;
@@ -132,20 +145,12 @@ public abstract class PageHandler<X, R> {
         assert buf != null;
 
         try {
-            if (init != null) { // It is a new page and we have to initialize it.
-                assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+            if (init != null) // It is a new page and we have to initialize it.
+                doInitPage(pageId, page, buf, init, wal);
+            else
+                init = PageIO.getPageIO(buf);
 
-                init.initNewPage(buf, pageId);
-
-                // Here we should never write full page, because it is known to be new.
-                page.fullPageWalRecordPolicy(FALSE);
-
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new InitNewPageRecord(page.fullId().cacheId(), page.id(),
-                        init.getType(), init.getVersion(), pageId));
-            }
-
-            res = h.run(pageId, page, buf, arg, intArg);
+            res = h.run(pageId, page, init, buf, arg, intArg);
 
             ok = true;
         }
@@ -157,6 +162,33 @@ public abstract class PageHandler<X, R> {
         }
 
         return res;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Buffer.
+     * @param init Initial IO.
+     * @param wal Write ahead log.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void doInitPage(
+        long pageId,
+        Page page,
+        ByteBuffer buf,
+        PageIO init,
+        IgniteWriteAheadLogManager wal
+    ) throws IgniteCheckedException {
+        assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
+        init.initNewPage(buf, pageId);
+
+        // Here we should never write full page, because it is known to be new.
+        page.fullPageWalRecordPolicy(FALSE);
+
+        if (isWalDeltaRecordNeeded(wal, page))
+            wal.log(new InitNewPageRecord(page.fullId().cacheId(), page.id(),
+                init.getType(), init.getVersion(), pageId));
     }
 
     /**

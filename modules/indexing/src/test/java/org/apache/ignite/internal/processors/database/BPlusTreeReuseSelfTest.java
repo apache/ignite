@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.database;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
@@ -34,9 +34,9 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
-    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long[] rootIds, boolean initNew)
+    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
-        return new ReuseList(cacheId, pageMem, null, new AtomicLong(), rootIds, initNew);
+        return new ReuseListImpl(cacheId, "test", pageMem, null, rootId, initNew);
     }
 
     /**

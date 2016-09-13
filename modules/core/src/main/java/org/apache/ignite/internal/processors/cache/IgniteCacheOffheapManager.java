@@ -22,9 +22,8 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -54,21 +53,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Last updated counter.
      */
     public long lastUpdatedPartitionCounter(int part);
-
-    /**
-     * @return Reuse list.
-     */
-    public ReuseList reuseList();
-
-    /**
-     * @return Free list.
-     */
-    public FreeList freeList();
-
-    /**
-     * @return Meta store.
-     */
-    public MetaStore meta();
 
     /**
      * @param entry Cache entry.
@@ -220,6 +204,18 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
     /**
+     * @param idxName Index name.
+     * @return Root page for index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException;
+
+    /**
+     * @return Reuse list for index tree.
+     */
+    public ReuseList reuseListForIndex(String idxName) throws IgniteCheckedException;
+
+    /**
      *
      */
     interface CacheDataStore {
@@ -282,28 +278,28 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         public long updateCounter();
 
         /**
-         * Data store size tracker.
-         */
-        interface SizeTracker {
-            /**
-             * On new entry inserted.
-             */
-            void onInsert();
+                 * Data store size tracker.
+                 */
+                interface SizeTracker {
+                    /**
+                     * On new entry inserted.
+                     */
+                    void onInsert();
 
-            /**
-             * On entry removed.
-             */
-            void onRemove();
+                    /**
+                     * On entry removed.
+                     */
+                    void onRemove();
 
-            /**
-             * @return Size.
-             */
-            int size();
+                    /**
+                     * @return Size.
+                     */
+                    int size();
 
-            /**
-             * @return Update counter.
-             */
-            long updateCounter();
-        }
+                    /**
+                     * @return Update counter.
+                     */
+                    long updateCounter();
+                }
     }
 }
