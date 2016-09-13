@@ -386,6 +386,20 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 return true;
             };
 
+            Policy.GetCachingStrategyFunc = qry =>
+            {
+                funcs.Add("GetCachingStrategy");
+                checkQry(qry);
+                return DbCachingStrategy.ReadWrite;
+            };
+
+            Policy.GetExpirationTimeoutFunc = qry =>
+            {
+                funcs.Add("GetExpirationTimeout");
+                checkQry(qry);
+                return TimeSpan.MaxValue;
+            };
+
             using (var ctx = GetDbContext())
             {
                 var blog = new Blog();
