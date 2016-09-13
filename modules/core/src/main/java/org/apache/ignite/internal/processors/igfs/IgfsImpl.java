@@ -598,16 +598,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Calculating path summary: " + path);
 
-                IgniteUuid fileId = meta.fileId(path);
-
-                if (fileId == null)
-                    throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
-
-                IgfsPathSummary sum = new IgfsPathSummary(path);
-
-                summary0(fileId, sum);
-
-                return sum;
+                return summary0(path);
             }
         });
     }
@@ -1259,9 +1250,7 @@ public final class IgfsImpl implements IgfsEx {
     @Override public IgfsMetrics metrics() {
         return safeOp(new Callable<IgfsMetrics>() {
             @Override public IgfsMetrics call() throws Exception {
-                IgfsPathSummary sum = new IgfsPathSummary();
-
-                summary0(IgfsUtils.ROOT_ID, sum);
+                IgfsPathSummary sum = summary0(IgfsPath.ROOT);
 
                 long secondarySpaceSize = 0;
 
@@ -1310,44 +1299,52 @@ public final class IgfsImpl implements IgfsEx {
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                IgniteUuid nextId = meta.fileId(path);
-
-                if (nextId == null)
-                    return 0L;
-
-                IgfsPathSummary sum = new IgfsPathSummary(path);
-
-                summary0(nextId, sum);
-
-                return sum.totalLength();
+                return summary0(path).totalLength();
             }
         });
     }
 
     /**
+     * Get summary for path.
+     *
+     * @param path Path.
+     * @return Summary.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IgfsPathSummary summary0(IgfsPath path) throws IgniteCheckedException {
+        IgfsFile info = info(path);
+
+        if (info == null)
+            throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
+
+        IgfsPathSummary sum = new IgfsPathSummary(path);
+
+        summaryRecursive(info, sum);
+
+        return sum;
+    }
+
+    /**
      * Calculates size of directory or file for given ID.
      *
-     * @param fileId File ID.
+     * @param file IGFS File object.
      * @param sum Summary object that will collect information.
      * @throws IgniteCheckedException If failed.
      */
-    private void summary0(IgniteUuid fileId, IgfsPathSummary sum) throws IgniteCheckedException {
+    private void summaryRecursive(IgfsFile file, IgfsPathSummary sum) throws IgniteCheckedException {
+        assert file != null;
         assert sum != null;
 
-        IgfsEntryInfo info = meta.info(fileId);
+        if (file.isDirectory()) {
+            if (!F.eq(IgfsPath.ROOT, file.path()))
+                sum.directoriesCount(sum.directoriesCount() + 1);
 
-        if (info != null) {
-            if (info.isDirectory()) {
-                if (!IgfsUtils.ROOT_ID.equals(info.id()))
-                    sum.directoriesCount(sum.directoriesCount() + 1);
-
-                for (IgfsListingEntry entry : info.listing().values())
-                    summary0(entry.fileId(), sum);
-            }
-            else {
-                sum.filesCount(sum.filesCount() + 1);
-                sum.totalLength(sum.totalLength() + info.length());
-            }
+            for (IgfsFile childFile : listFiles(file.path()))
+                summaryRecursive(childFile, sum);
+        }
+        else {
+            sum.filesCount(sum.filesCount() + 1);
+            sum.totalLength(sum.totalLength() + file.length());
         }
     }
 
