@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -120,7 +119,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
             assertEquals(BATCH_SIZE, seq.batchSize());
         }
 
-        assertEquals(gridCount(), G.allGrids().size());
+        assertEquals(1, G.allGrids().size());
     }
 
     /** {@inheritDoc} */
@@ -309,29 +308,9 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      * @throws Exception If failed.
      */
     public void testMultiThreadedSequenceIntegrity() throws Exception {
-        multiThreadedSequenceIntegrity(/*batchSize*/ 1, /*percentage*/ 30, /*initVal*/0);
-        multiThreadedSequenceIntegrity(/*batchSize*/ 7, /*percentage*/ 0, /*initVal*/-1500);
-        multiThreadedSequenceIntegrity(/*batchSize*/ 3, /*percentage*/ 100, /*initVal*/345);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultiNodeSequenceIntegrity() throws Exception {
-        if (gridCount() < 2)
-            return;
-
-        multiNodeSequenceIntegrity(/*batchSize*/ 1, /*percentage*/ 80, /*initVal*/0);
-        multiNodeSequenceIntegrity(/*batchSize*/ 1, /*percentage*/ 0, /*initVal*/-11);
-        multiNodeSequenceIntegrity(/*batchSize*/ 1, /*percentage*/ 100, /*initVal*/183);
-
-        multiNodeSequenceIntegrity(/*batchSize*/ 7, /*percentage*/ 20, /*initVal*/83);
-        multiNodeSequenceIntegrity(/*batchSize*/ 7, /*percentage*/ 0, /*initVal*/-17);
-        multiNodeSequenceIntegrity(/*batchSize*/ 7, /*percentage*/ 100, /*initVal*/11);
-
-        multiNodeSequenceIntegrity(/*batchSize*/ 11, /*percentage*/ 50, /*initVal*/-7);
-        multiNodeSequenceIntegrity(/*batchSize*/ 11, /*percentage*/ 0, /*initVal*/55);
-        multiNodeSequenceIntegrity(/*batchSize*/ 11, /*percentage*/ 100, /*initVal*/22);
+        multiThreadedSequenceIntegrity(1, 0);
+        multiThreadedSequenceIntegrity(7, -1500);
+        multiThreadedSequenceIntegrity(3, 345);
     }
 
     /**
@@ -385,8 +364,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      * Sequence get and increment.
      *
      * @param seq Sequence for test.
-     * @return Result of operation.
      * @throws Exception If failed.
+     * @return Result of operation.
      */
     private long getAndIncrement(IgniteAtomicSequence seq) throws Exception {
         long locSeqVal = seq.get();
@@ -402,8 +381,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      * Sequence add and increment
      *
      * @param seq Sequence for test.
-     * @return Result of operation.
      * @throws Exception If failed.
+     * @return Result of operation.
      */
     private long incrementAndGet(IgniteAtomicSequence seq) throws Exception {
         long locSeqVal = seq.get();
@@ -420,8 +399,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      *
      * @param seq Sequence for test.
      * @param l Number of added elements.
-     * @return Result of operation.
      * @throws Exception If failed.
+     * @return Result of operation.
      */
     private long addAndGet(IgniteAtomicSequence seq, long l) throws Exception {
         long locSeqVal = seq.get();
@@ -438,8 +417,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      *
      * @param seq Sequence for test.
      * @param l Number of added elements.
-     * @return Result of operation.
      * @throws Exception If failed.
+     * @return Result of operation.
      */
     private long getAndAdd(IgniteAtomicSequence seq, long l) throws Exception {
         long locSeqVal = seq.get();
@@ -452,10 +431,10 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /**
-     * Sequence integrity.
+     *  Sequence integrity.
      *
      * @param batchSize Sequence batch size.
-     * @param initVal Sequence initial value.
+     * @param initVal  Sequence initial value.
      * @throws Exception If test fail.
      */
     private void sequenceIntegrity(int batchSize, long initVal) throws Exception {
@@ -486,24 +465,24 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /**
-     * Multi-threaded integrity.
+     *  Multi-threaded integrity.
      *
      * @param batchSize Sequence batch size.
-     * @param initVal Sequence initial value.
+     * @param initVal  Sequence initial value.
      * @throws Exception If test fail.
      */
-    private void multiThreadedSequenceIntegrity(int batchSize, int percentage, long initVal) throws Exception {
+    private void multiThreadedSequenceIntegrity(int batchSize, long initVal) throws Exception {
         // Random sequence names.
         String locSeqName = UUID.randomUUID().toString();
 
         // Sequence.
-        final IgniteAtomicSequence locSeq = grid().atomicSequence(locSeqName, initVal, true);
+        final IgniteAtomicSequence locSeq = grid().atomicSequence(locSeqName, initVal,
+            true);
 
         locSeq.batchSize(batchSize);
-        locSeq.reservePercentage(percentage);
 
         // Result set.
-        final Set<Long> resSet = new ConcurrentHashSet<>();
+        final Set<Long> resSet = Collections.synchronizedSet(new HashSet<Long>());
 
         // Get sequence value and try to put it result set.
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
@@ -542,6 +521,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
             resSet.add(val);
 
+
             if (i % 100 == 0)
                 info("Finished iteration 2: " + i);
         }
@@ -554,51 +534,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
             if (i % 100 == 0)
                 info("Finished iteration 3: " + i);
         }
-
-        removeSequence(locSeqName);
-    }
-
-    /**
-     * Multi-threaded integrity.
-     *
-     * @param batchSize Sequence batch size.
-     * @param initVal Sequence initial value.
-     * @throws Exception If test fail.
-     */
-    private void multiNodeSequenceIntegrity(int batchSize, int percentage, long initVal) throws Exception {
-        // Random sequence names.
-        String locSeqName = UUID.randomUUID().toString();
-
-        // Sequences.
-        final IgniteAtomicSequence[] locSeqs = new IgniteAtomicSequence[3];
-
-        for (int i = 0; i < locSeqs.length; i++) {
-            locSeqs[i] = grid(i).atomicSequence(locSeqName, initVal, true);
-
-            locSeqs[i].batchSize(batchSize);
-
-            locSeqs[i].reservePercentage(percentage);
-        }
-
-        final Set<Long> resSet = new ConcurrentHashSet<>();
-
-        multithreaded(
-            new Callable() {
-                @Nullable @Override public Object call() throws Exception {
-                    // Get sequence value and try to put it result set.
-                    for (int i = 0; i < MAX_LOOPS_NUM; i++) {
-                        Long val = locSeqs[i % locSeqs.length].getAndIncrement();
-
-                        assert !resSet.contains(val) : "Element already in set : " + val;
-
-                        resSet.add(val);
-                    }
-
-                    return null;
-                }
-            }, THREAD_NUM);
-
-        assert resSet.size() == MAX_LOOPS_NUM * THREAD_NUM;
 
         removeSequence(locSeqName);
     }
