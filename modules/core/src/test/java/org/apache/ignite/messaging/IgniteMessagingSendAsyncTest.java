@@ -19,10 +19,12 @@ package org.apache.ignite.messaging;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,28 +32,16 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  *
  */
-public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
-    /**
-     * Ignite instance for test.
-     */
-    private Ignite ignite1;
-
-    private Ignite ignite2;
-
+public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest implements Serializable {
     /**
      * Topic name.
      */
     private final String TOPIC = "topic";
 
     /**
-     * {@inheritDoc}
+     * Message string.
      */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        ignite1 = startGrid(1);
-        ignite2 = startGrid(2);
-    }
+    private final String msgStr = "message";
 
     /**
      * {@inheritDoc}
@@ -66,29 +56,26 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * Test for check, that if use default mode, local listeners execute
      * in the same thread. 1 node in topology.
      */
-    public void testSendDefaultMode() throws InterruptedException {
-        stopGrid(2);
+    public void testSendDefaultMode() throws Exception {
+        Ignite ignite1 = startGrid(1);
 
-        final String msgStr = "message";
-
-        send(ignite1.message(), msgStr, new ProcedureApply() {
+        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
         });
+
     }
 
     /**
      * Test for check, that if use async mode, local listeners execute
      * in another thread(through pool). 1 node in topology.
      */
-    public void testSendAsyncMode() throws InterruptedException {
-        stopGrid(2);
+    public void testSendAsyncMode() throws Exception {
+        Ignite ignite1 = startGrid(1);
 
-        final String msgStr = "message";
-
-        send(ignite1.message().withAsync(), msgStr, new ProcedureApply() {
+        send(ignite1.message().withAsync(), msgStr,  new IgniteBiInClosure<String, Thread> () {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
@@ -101,10 +88,11 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * in the same thread. 2 node in topology.
      */
     public void testSendDefaultMode2Node() throws Exception {
-        final String msgStr = "message";
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
 
-        sendWith2Node(ignite1.message(), msgStr, new ProcedureApply() {
-            @Override public void apply(String msg, Thread thread) {
+        sendWith2Node(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
+            @Override public  void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
@@ -116,10 +104,11 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * in another thread(through pool). 2 node in topology.
      */
     public void testSendAsyncMode2Node() throws Exception {
-        final String msgStr = "message";
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
 
-        sendWith2Node(ignite1.message().withAsync(), msgStr, new ProcedureApply() {
-            @Override public void apply(String msg, Thread thread) {
+        sendWith2Node(ignite2, ignite1.message().withAsync(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+            @Override public  void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
@@ -131,10 +120,11 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
      */
-    private void sendWith2Node(
-        final IgniteMessaging igniteMsg,
-        final String msgStr,
-        final ProcedureApply cls
+    public void sendWith2Node(
+            final Ignite ignite2,
+            final IgniteMessaging igniteMsg,
+            final String msgStr,
+            final IgniteBiInClosure<String,Thread>  cls
     ) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -142,7 +132,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
             @Override public boolean apply(UUID uuid, String msg) {
                 Assert.assertEquals(msgStr, msg);
                 latch.countDown();
-                return false;
+                return true;
             }
         });
 
@@ -157,9 +147,9 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
      * @param cls       Callback for compare result.
      */
     private void send(
-        IgniteMessaging igniteMsg,
-        String msgStr,
-        ProcedureApply cls
+           final IgniteMessaging igniteMsg,
+           final String msgStr,
+           final IgniteBiInClosure<String,Thread> cls
     ) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -171,7 +161,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
                 thread.set(Thread.currentThread());
                 val.set(msgStr);
                 latch.countDown();
-                return false;
+                return true;
             }
         });
 
@@ -180,16 +170,5 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest {
         latch.await();
 
         cls.apply(val.get(), thread.get());
-    }
-
-    /**
-     * Only for this test procedure.
-     */
-    private interface ProcedureApply {
-        /**
-         * @param val    Value.
-         * @param thread Thread.
-         */
-        void apply(String val, Thread thread);
     }
 }
