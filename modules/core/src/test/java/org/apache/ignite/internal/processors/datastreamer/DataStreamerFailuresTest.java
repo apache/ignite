@@ -145,13 +145,13 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
                     ldr.addData(i, i);
                 }
             }
-            catch (Error e) {
+            catch (Throwable e) {
                 thrown = true;
             }
             finally {
                 try {
                     ldr.close();
-                } catch (Error e) {
+                } catch (Throwable e) {
                     thrown = true;
                 }
             }
@@ -159,7 +159,11 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
             assertTrue(thrown);
         }
         finally {
-            stopAllGrids();
+            try {
+                stopAllGrids();
+            } catch (Throwable e){
+                //This should not hang.
+            }
         }
     }
 

@@ -187,19 +187,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @GridToStringExclude
     private final IgniteInClosure<IgniteInternalFuture<?>> rmvActiveFut = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> t) {
-            boolean rmv = activeFuts.remove(t);
-
             try {
                 t.get();
             }
-            catch (Exception e) {
-                if (!log.isQuiet())
-                    U.error(log, "DataStreamer job has failed.", e);
+            catch (IgniteCheckedException e) {
+                firstException.compareAndSet(null, e);
             }
+
+            boolean rmv = activeFuts.remove(t);
 
             assert rmv;
         }
     };
+
+    private final AtomicReference<IgniteCheckedException> firstException = new AtomicReference<>();
 
     /** Job peer deploy aware. */
     private volatile GridPeerDeployAware jobPda;
@@ -846,16 +847,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         List<IgniteInternalFuture> activeFuts0 = null;
 
         for (IgniteInternalFuture<?> f : activeFuts) {
-            if (!f.isDone()) {
-                if (activeFuts0 == null)
-                    activeFuts0 = new ArrayList<>(activeFuts.size() / 2);
+            if (activeFuts0 == null)
+                activeFuts0 = new ArrayList<>(activeFuts.size() / 2);
 
-                activeFuts0.add(f);
-            }
+            activeFuts0.add(f);
         }
 
-        if (activeFuts0 == null || activeFuts0.isEmpty())
+        IgniteCheckedException firstException0 = firstException.get();
+
+        if (activeFuts0 == null) {
+            if (firstException0 != null)
+                throw  firstException0;
+
             return;
+        }
 
         while (true) {
             Queue<IgniteInternalFuture<?>> q = null;
@@ -924,7 +929,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (f == null)
                     doneCnt++;
                 else if (f.isDone()) {
-                    f.get();
+                    try {
+                        f.get();
+                    } catch (IgniteCheckedException e) {
+                        if (firstException0 == null)
+                            firstException0 = e;
+                    }
 
                     doneCnt++;
 
@@ -934,8 +944,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     break;
             }
 
-            if (doneCnt == activeFuts0.size())
+            if (doneCnt == activeFuts0.size()) {
+                if (firstException0 != null)
+                    throw  firstException0;
+
                 return;
+            }
         }
     }
 
