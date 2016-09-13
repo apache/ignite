@@ -363,7 +363,46 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestCachingPolicy()
         {
-            // TODO: test that all methods are called with correct args
+            var funcs = new List<string>();
+
+            var checkQry = (Action<DbQueryInfo>) (qry =>
+                {
+                    var set = qry.AffectedEntitySets.Single();
+
+                    Assert.AreEqual("Post", set.Name);
+                }
+            );
+
+            Policy.CanBeCachedFunc = qry => {
+                funcs.Add("CanBeCached");
+                checkQry(qry);
+                return true;
+            };
+
+            Policy.CanBeCachedRowsFunc = (qry, rows) => {
+                funcs.Add("CanBeCachedRows");
+                Assert.AreEqual(3, rows);
+                checkQry(qry);
+                return true;
+            };
+
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog();
+
+                ctx.Posts.Add(new Post { Title = "Foo", Blog = blog });
+                ctx.Posts.Add(new Post { Title = "Bar", Blog = blog });
+                ctx.Posts.Add(new Post { Title = "Baz", Blog = blog });
+
+                ctx.SaveChanges();
+
+                Assert.AreEqual(3, ctx.Posts.ToArray().Length);
+
+                // Check that policy methods are called in correct order with correct params.
+                Assert.AreEqual(
+                    new[] {"CanBeCached", "CanBeCachedRows", "GetExpirationTimeout", "GetCachingStrategy"},
+                    funcs.ToArray());
+            }
         }
 
         /// <summary>
