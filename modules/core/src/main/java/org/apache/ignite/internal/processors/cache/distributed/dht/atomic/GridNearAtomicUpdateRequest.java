@@ -791,64 +791,71 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeBoolean("retval", retval))
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeBoolean("skipStore", skipStore))
+                if (!writer.writeBoolean("recovery", recovery))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("retval", retval))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeBoolean("topLocked", topLocked))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMessage("updateVer", updateVer))
+                if (!writer.writeBoolean("topLocked", topLocked))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
                 writer.incrementState();
+
+            case 27:
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -982,7 +989,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 17:
-                retval = reader.readBoolean("retval");
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -990,7 +997,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 18:
-                skipStore = reader.readBoolean("skipStore");
+                recovery = reader.readBoolean("recovery");
 
                 if (!reader.isLastRead())
                     return false;
@@ -998,7 +1005,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 19:
-                subjId = reader.readUuid("subjId");
+                retval = reader.readBoolean("retval");
 
                 if (!reader.isLastRead())
                     return false;
@@ -1006,6 +1013,22 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 20:
+                skipStore = reader.readBoolean("skipStore");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -1017,7 +1040,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 21:
+            case 23:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -1025,7 +1048,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 22:
+            case 24:
                 topLocked = reader.readBoolean("topLocked");
 
                 if (!reader.isLastRead())
@@ -1033,7 +1056,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 23:
+            case 25:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -1041,7 +1064,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 24:
+            case 26:
                 updateVer = reader.readMessage("updateVer");
 
                 if (!reader.isLastRead())
@@ -1049,16 +1072,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 25:
+            case 27:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1093,7 +1108,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 28;
     }
 
     /** {@inheritDoc} */
