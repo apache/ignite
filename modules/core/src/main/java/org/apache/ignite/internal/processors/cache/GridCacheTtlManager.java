@@ -106,7 +106,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /**
      * @return {@code True} if eager expired entries cleanup is enabled for cache.
      */
-    boolean eagerTtlEnabled() {
+    public boolean eagerTtlEnabled() {
         assert cctx != null : "Manager not started";
 
         return cleanupWorker != null;

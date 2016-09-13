@@ -394,6 +394,14 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /**
      * @param absPtr Page absolute address.
+     * @return {@code True} if locked page.
+     */
+    boolean tryWriteLockPage(long absPtr) {
+        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET);
+    }
+
+    /**
+     * @param absPtr Page absolute address.
      */
     void writeUnlockPage(long absPtr) {
         rwLock.writeUnlock(absPtr + LOCK_OFFSET);

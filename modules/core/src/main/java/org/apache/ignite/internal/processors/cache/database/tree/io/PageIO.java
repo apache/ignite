@@ -23,10 +23,8 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
@@ -59,10 +57,16 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#writePage(long, Page, PageHandler, PageIO, IgniteWriteAheadLogManager, Object, int)}
- *    method with needed IO instance and {@link PageHandler#NOOP} handler.
+ *    {@link PageHandler#initPage(long, Page, PageIO, IgniteWriteAheadLogManager)}
+ *    method with needed IO instance.
  */
 public abstract class PageIO {
+    /** */
+    private static BPlusInnerIO<?> innerTestIO;
+
+    /** */
+    private static BPlusLeafIO<?> leafTestIO;
+
     /** */
     private static IOVersions<? extends BPlusInnerIO<?>> h2InnerIOs;
 
@@ -114,31 +118,25 @@ public abstract class PageIO {
     public static final short T_DATA_REF_LEAF = 6;
 
     /** */
-    public static final short T_FREE_LEAF = 7;
+    public static final short T_METASTORE_INNER = 7;
 
     /** */
-    public static final short T_FREE_INNER = 8;
+    public static final short T_METASTORE_LEAF = 8;
 
     /** */
-    public static final short T_REUSE_LEAF = 9;
+    public static final short T_PENDING_REF_INNER = 9;
 
     /** */
-    public static final short T_REUSE_INNER = 10;
+    public static final short T_PENDING_REF_LEAF = 10;
 
     /** */
-    public static final short T_METASTORE_INNER = 11;
+    public static final short T_META = 11;
 
     /** */
-    public static final short T_METASTORE_LEAF = 12;
+    public static final short T_PAGE_LIST_META = 12;
 
     /** */
-    public static final short T_PENDING_REF_INNER = 13;
-
-    /** */
-    public static final short T_PENDING_REF_LEAF = 14;
-
-    /** */
-    public static final short T_META = 15;
+    public static final short T_PAGE_LIST_NODE = 13;
 
     /** */
     private final int ver;
@@ -242,6 +240,17 @@ public abstract class PageIO {
     }
 
     /**
+     * Registers IOs for testing.
+     *
+     * @param innerIO Inner IO.
+     * @param leafIO Leaf IO.
+     */
+    public static void registerTest(BPlusInnerIO<?> innerIO, BPlusLeafIO<?> leafIO) {
+        innerTestIO = innerIO;
+        leafTestIO = leafIO;
+    }
+
+    /**
      * @return Type.
      */
     public final int getType() {
@@ -276,6 +285,18 @@ public abstract class PageIO {
     }
 
     /**
+     * @param buf Buffer.
+     * @return IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <Q extends PageIO> Q getPageIO(ByteBuffer buf) throws IgniteCheckedException {
+        int type = getType(buf);
+        int ver = getVersion(buf);
+
+        return getPageIO(type, ver);
+    }
+
+    /**
      * @param type IO Type.
      * @param ver IO Version.
      * @return Page IO.
@@ -289,6 +310,12 @@ public abstract class PageIO {
 
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_NODE:
+                return (Q)PagesListNodeIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_LIST_META:
+                return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
 
             case T_META:
                 throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
@@ -343,17 +370,19 @@ public abstract class PageIO {
             case T_METASTORE_LEAF:
                 return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
 
-            case T_FREE_INNER:
-                return (Q)FreeInnerIO.VERSIONS.forVersion(ver);
+            case T_PENDING_REF_INNER:
+                return (Q) IgniteCacheOffheapManagerImpl.PendingEntryInnerIO.VERSIONS.forVersion(ver);
 
-            case T_FREE_LEAF:
-                return (Q)FreeLeafIO.VERSIONS.forVersion(ver);
+            case T_PENDING_REF_LEAF:
+                return (Q)IgniteCacheOffheapManagerImpl.PendingEntryLeafIO.VERSIONS.forVersion(ver);
 
-            case T_REUSE_INNER:
-                return (Q)ReuseInnerIO.VERSIONS.forVersion(ver);
+            default:
+                // For tests.
+                if (innerTestIO != null && innerTestIO.getType() == type && innerTestIO.getVersion() == ver)
+                    return (Q)innerTestIO;
 
-            case T_REUSE_LEAF:
-                return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
+                if (leafTestIO != null && leafTestIO.getType() == type && leafTestIO.getVersion() == ver)
+                    return (Q)leafTestIO;
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);

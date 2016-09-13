@@ -70,13 +70,20 @@ public class RowStore {
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
 
-        freeList.removeRow(link);
+        freeList.removeDataRowByLink(link);
     }
 
     /**
      * @param row Row.
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
-        freeList.insertRow(row);
+        freeList.insertDataRow(row);
+    }
+
+    /**
+     * @return Free list.
+     */
+    public FreeList freeList() {
+        return freeList;
     }
 }
