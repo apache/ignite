@@ -608,7 +608,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         this.metaPageId = metaPageId;
         this.name = name;
         this.reuseList = reuseList;
-        this.wal = wal;
         this.globalRmvId = globalRmvId;
     }
 

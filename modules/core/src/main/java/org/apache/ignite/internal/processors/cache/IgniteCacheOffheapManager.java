@@ -220,6 +220,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     interface CacheDataStore {
 
+        /**
+         * @return Partition ID.
+         */
         int partId();
 
         /**
@@ -273,33 +276,39 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          */
         public RowStore rowStore();
 
+        /**
+         * @return Size.
+         */
         public int size();
 
+        /**
+         * @return Update counter.
+         */
         public long updateCounter();
 
         /**
-                 * Data store size tracker.
-                 */
-                interface SizeTracker {
-                    /**
-                     * On new entry inserted.
-                     */
-                    void onInsert();
+         * Data store size tracker.
+         */
+        interface SizeTracker {
+            /**
+             * On new entry inserted.
+             */
+            void onInsert();
 
-                    /**
-                     * On entry removed.
-                     */
-                    void onRemove();
+            /**
+             * On entry removed.
+             */
+            void onRemove();
 
-                    /**
-                     * @return Size.
-                     */
-                    int size();
+            /**
+             * @return Size.
+             */
+            int size();
 
-                    /**
-                     * @return Update counter.
-                     */
-                    long updateCounter();
-                }
+            /**
+             * @return Update counter.
+             */
+            long updateCounter();
+        }
     }
 }
