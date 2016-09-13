@@ -37,6 +37,7 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -513,7 +514,7 @@ public class GridNioServer<T> {
     public void resend(GridNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
-        GridNioRecoveryDescriptor recoveryDesc = ses.recoveryDescriptor();
+        GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
         if (recoveryDesc != null && !recoveryDesc.messagesFutures().isEmpty()) {
             Deque<GridNioFuture<?>> futs = recoveryDesc.messagesFutures();
@@ -536,6 +537,13 @@ public class GridNioServer<T> {
             // Wake up worker.
             clientWorkers.get(ses0.selectorIndex()).offer(((NioOperationFuture)fut0));
         }
+    }
+
+    /**
+     * @return Sessions.
+     */
+    public Collection<? extends GridNioSession> sessions() {
+        return sessions;
     }
 
     /**
@@ -686,8 +694,6 @@ public class GridNioServer<T> {
     private synchronized void offerBalanced(NioOperationFuture req) {
         assert req.operation() == NioOperation.REGISTER;
         assert req.socketChannel() != null;
-
-        U.debug("Req registration: " + req);
 
         int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
 
@@ -920,7 +926,6 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
-            ses.onBytesRead(cnt, readBuf.capacity());
 
             readBuf.flip();
 
@@ -1235,7 +1240,6 @@ public class GridNioServer<T> {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
-                ses.onBytesWritten(cnt, buf.capacity());
             }
             else {
                 // For test purposes only (skipWrite is set to true in tests only).
@@ -1476,22 +1480,28 @@ public class GridNioServer<T> {
                                         .append("rmtAddr=").append(ses.remoteAddress())
                                         .append(", locAddr=").append(ses.localAddress());
 
-                                    GridNioRecoveryDescriptor desc = ses.recoveryDescriptor();
+                                    GridNioRecoveryDescriptor outDesc = ses.outRecoveryDescriptor();
 
-                                    if (desc != null) {
-                                        sb.append(", msgsSent=").append(desc.sent())
-                                            .append(", msgsAckedByRmt=").append(desc.acked())
-                                            .append(", msgsRcvd=").append(desc.received())
-                                            .append(", descIdHash=").append(System.identityHashCode(desc));
+                                    if (outDesc != null) {
+                                        sb.append(", msgsSent=").append(outDesc.sent())
+                                            .append(", msgsAckedByRmt=").append(outDesc.acked())
+                                            .append(", descIdHash=").append(System.identityHashCode(outDesc));
                                     }
                                     else
-                                        sb.append(", recoveryDesc=null");
+                                        sb.append(", outRecoveryDesc=null");
+
+                                    GridNioRecoveryDescriptor inDesc = ses.inRecoveryDescriptor();
+
+                                    if (inDesc != null) {
+                                        sb.append(", msgsRcvd=").append(inDesc.received())
+                                            .append(", descIdHash=").append(System.identityHashCode(inDesc));
+                                    }
+                                    else
+                                        sb.append(", inRecoveryDesc=null");
 
                                     sb.append(", bytesRcvd=").append(ses.bytesReceived())
                                         .append(", bytesSent=").append(ses.bytesSent())
                                         .append(", opQueueSize=").append(ses.writeQueueSize())
-                                        .append(", writeStats=").append(Arrays.toString(ses.writeStats()))
-                                        .append(", readStats=").append(Arrays.toString(ses.readStats()))
                                         .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
                                         .append(", msgReader=").append(reader != null ? reader.toString() : "null");
 
@@ -1799,9 +1809,6 @@ public class GridNioServer<T> {
 
             SelectionKey key = ses.key();
 
-            // Shutdown input and output so that remote client will see correct socket close.
-            Socket sock = ((SocketChannel)key.channel()).socket();
-
             if (ses.setClosed()) {
                 ses.onClosed();
 
@@ -1812,6 +1819,9 @@ public class GridNioServer<T> {
                     if (ses.readBuffer() != null)
                         ((DirectBuffer)ses.readBuffer()).cleaner().clean();
                 }
+
+                // Shutdown input and output so that remote client will see correct socket close.
+                Socket sock = ((SocketChannel)key.channel()).socket();
 
                 try {
                     try {
@@ -1841,9 +1851,10 @@ public class GridNioServer<T> {
                 // Since ses is in closed state, no write requests will be added.
                 NioOperationFuture<?> fut = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                GridNioRecoveryDescriptor recovery = ses.recoveryDescriptor();
+                GridNioRecoveryDescriptor outRecovery = ses.outRecoveryDescriptor();
+                GridNioRecoveryDescriptor inRecovery = ses.inRecoveryDescriptor();
 
-                if (recovery != null) {
+                if (outRecovery != null || inRecovery != null) {
                     try {
                         // Poll will update recovery data.
                         while ((fut = (NioOperationFuture<?>)ses.pollFuture()) != null) {
@@ -1852,7 +1863,11 @@ public class GridNioServer<T> {
                         }
                     }
                     finally {
-                        recovery.release();
+                        if (outRecovery != null)
+                            outRecovery.release();
+
+                        if (inRecovery != null && inRecovery != outRecovery)
+                            inRecovery.release();
                     }
                 }
                 else {
