@@ -7442,6 +7442,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public synchronized void close() throws IOException {
             delegate.close();
+            U.closeQuiet(sslIn);
+            U.closeQuiet(sslOut);
+            U.closeQuiet(ch);
+            sslEngine.closeInbound();
+            sslEngine.closeOutbound();
         }
 
         /** {@inheritDoc} */
@@ -7612,8 +7617,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 buf.clear();
 
-                // Read from stream, because reading from channel may block thread infinitely.
-                final int r = read(in, buf);
+                final int r = ch.read(buf);
 
                 if (r <= 0)
                     return r;
@@ -7650,24 +7654,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             catch (Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
-        }
-
-        /**
-         * Read from stream to buffer.
-         *
-         * @param in Input stream.
-         * @param buf Buffer.
-         * @return Actually bytes read.
-         * @throws IOException If failed.
-         */
-        private static int read(final InputStream in, final ByteBuffer buf) throws IOException {
-            assert buf.hasArray() : "May be read only in buffer with array.";
-
-            final int r = in.read(buf.array(), buf.position(), buf.remaining());
-
-            buf.position(buf.position() + r);
-
-            return r;
         }
 
         /** {@inheritDoc} */

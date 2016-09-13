@@ -255,8 +255,6 @@ public class BlockingSslHandler {
      * @throws SSLException If failed to process SSL data.
      */
     public ByteBuffer decode(ByteBuffer buf) throws IgniteCheckedException, SSLException {
-//        inNetBuf.clear(); // inNetBuf may contain undecrypted data.
-
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
