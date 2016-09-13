@@ -1254,6 +1254,47 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Performs thread dump and return all available info.
+     */
+    public static GridStringBuilder dumpThreads() {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        GridStringBuilder sb = new GridStringBuilder("Thread dump at ")
+            .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
+
+        final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
+
+        sb.a(NL);
+
+        if (deadlockedThreadsIds.isEmpty())
+            sb.a("No deadlocked threads detected.");
+        else
+            sb.a("Deadlocked threads detected (see thread dump below) " +
+                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+
+        sb.a(NL);
+
+        ThreadInfo[] threadInfos =
+            mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
+
+        for (ThreadInfo info : threadInfos) {
+            printThreadInfo(info, sb, deadlockedThreadsIds);
+
+            sb.a(NL);
+
+            if (info.getLockedSynchronizers() != null && info.getLockedSynchronizers().length > 0) {
+                printSynchronizersInfo(info.getLockedSynchronizers(), sb);
+
+                sb.a(NL);
+            }
+        }
+
+        sb.a(NL);
+
+        return sb;
+    }
+
+    /**
      * Get deadlocks from the thread bean.
      * @param mxBean the bean
      * @return the set of deadlocked threads (may be empty Set, but never null).
