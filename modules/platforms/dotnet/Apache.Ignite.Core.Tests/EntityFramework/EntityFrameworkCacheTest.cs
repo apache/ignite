@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 // Check that policy methods are called in correct order with correct params.
                 Assert.AreEqual(
-                    new[] {"CanBeCached", "CanBeCachedRows", "GetExpirationTimeout", "GetCachingStrategy"},
+                    new[] {"GetCachingStrategy", "CanBeCached", "CanBeCachedRows", "GetExpirationTimeout"},
                     funcs.ToArray());
             }
         }
