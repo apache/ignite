@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
@@ -184,7 +186,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * Expires entries by TTL.
      */
     public void expire() {
-        if(pendingPointers==null)
+        if (pendingPointers == null)
             return;
 
         long now = U.currentTimeMillis();
@@ -340,15 +342,22 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @return GridCacheEntry
      */
     private GridCacheEntryEx unwrapEntry(PendingEntry e) {
+        GridCacheAdapter cache = cctx.cache();
+
+        if(e.isNear)
+            cache = cache.isNear() ? cache : ((GridDhtCacheAdapter)cache).near();
+        else
+            cache = cache.isNear() ? ((GridNearCacheAdapter)cache).dht(): cache;
+
         KeyCacheObject key;
         try {
-            key = (e.isNear) ? cctx.near().context().toCacheKeyObject(e.keyBytes) : cctx.toCacheKeyObject(e.keyBytes);
+            key = cache.context().toCacheKeyObject(e.keyBytes);
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
         }
 
-        return (e.isNear) ? cctx.near().entryEx(key) : cctx.cache().entryEx(key);
+        return cache.entryEx(key);
     }
 
     /**
