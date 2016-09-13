@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Input stream to read data from grid cache with separate blocks.
  */
-public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
+public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondaryFileSystemPositionedReadable {
     /** Empty chunks result. */
     private static final byte[][] EMPTY_CHUNKS = new byte[0][];
 
@@ -158,8 +158,8 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsEntryInfo fileInfo() {
-        return fileInfo;
+    @Override public long length() {
+        return fileInfo.length();
     }
 
     /** {@inheritDoc} */
@@ -234,9 +234,16 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
         return readFromStore(pos, buf, off, len);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reads bytes from given position.
+     *
+     * @param pos Position to read from.
+     * @param len Number of bytes to read.
+     * @return Array of chunks with respect to chunk file representation.
+     * @throws IOException If read failed.
+     */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public synchronized byte[][] readChunks(long pos, int len) throws IOException {
+    public synchronized byte[][] readChunks(long pos, int len) throws IOException {
         // Readable bytes in the file, starting from the specified position.
         long readable = fileInfo.length() - pos;
 

@@ -49,16 +49,6 @@ public interface IgfsEx extends IgniteFileSystem {
      */
     public IgfsPaths proxyPaths();
 
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException;
-
     /**
      * Gets global space counters.
      *
