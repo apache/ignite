@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
+    using System.Threading;
 
     /// <summary>
     /// Integration test with temporary SQL CE database.
@@ -341,13 +342,28 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestExpiration()
         {
-            // TODO: 
+            Policy.GetExpirationTimeoutFunc = qry => TimeSpan.FromSeconds(0.2);
+
+            using (var ctx = GetDbContext())
+            {
+                ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog()});
+                ctx.SaveChanges();
+
+                Assert.AreEqual(1, ctx.Posts.ToArray().Length);
+                Assert.AreEqual(3, _cache.GetSize());
+
+                Thread.Sleep(250);
+                Assert.AreEqual(2, _cache.GetSize());
+            }
         }
 
+        /// <summary>
+        /// Tests the caching policy.
+        /// </summary>
         [Test]
         public void TestCachingPolicy()
         {
-            // TODO:
+            // TODO: test that all methods are called with correct args
         }
 
         /// <summary>
