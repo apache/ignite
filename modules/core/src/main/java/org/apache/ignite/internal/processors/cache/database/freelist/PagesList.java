@@ -420,18 +420,18 @@ public abstract class PagesList extends DataStructure {
         }
 
         while (nextPageId != 0L) {
-            Page page = page(nextPageId);
+            try (Page page = page(nextPageId)) {
+                try {
+                    ByteBuffer buf = page.getForWrite();
+                    PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
 
-            try {
-                ByteBuffer buf = page.getForWrite();
-                PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+                    io.resetCount(buf);
 
-                io.resetCount(buf);
-
-                nextPageId = io.getNextMetaPageId(buf);
-            }
-            finally {
-                page.releaseWrite(true);
+                    nextPageId = io.getNextMetaPageId(buf);
+                }
+                finally {
+                    page.releaseWrite(true);
+                }
             }
         }
     }
