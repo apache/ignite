@@ -587,13 +587,8 @@ public class GridDhtPartitionDemander {
                         part.lock();
 
                         try {
-                            if (supply.isClean(part.id()) && cctx.shared().database().persistenceEnabled()) {
-                                U.warn(log, "Failed to retrieve historical WAL iterator from remote node " +
-                                    "(WAL history may be too short or local node was down too long). Will clear " +
-                                    "local partition before rebalancing [part=" + part + ", node=" + node + ']');
-
+                            if (supply.isClean(part.id()) && cctx.shared().database().persistenceEnabled())
                                 part.clearAll();
-                            }
 
                             // Loop through all received entries and try to preload them.
                             for (GridCacheEntryInfo entry : e.getValue().infos()) {

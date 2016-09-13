@@ -50,7 +50,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeAddressHashResolver;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -229,13 +228,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                FairAffinityFunction aff = new FairAffinityFunction();
+                RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
-                //aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
+                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
-
-                U.debug(log, ">>> Set FAIR affinity for cache: " + cfg.getName());
             }
             else if (cfg.getCacheMode() == REPLICATED) {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
@@ -775,8 +772,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
             }
-
-            ctx.cache().context().database().beforeExchange(ctx.discovery().localJoinEvent());
         }
         finally {
             cacheStartedLatch.countDown();
@@ -2575,9 +2570,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param type Event type.
      * @param node Event node.
      * @param topVer Topology version.
-     * @param customMsg Custom message if event is {@link DiscoveryCustomEvent}.
      */
-    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer, @Nullable DiscoveryCustomMessage customMsg) {
+    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
         if (type == EVT_NODE_JOINED) {
             for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
                 if (node.id().equals(cacheDesc.receivedFrom()))
@@ -2585,7 +2579,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        sharedCtx.affinity().onDiscoveryEvent(type, node, topVer, customMsg);
+        sharedCtx.affinity().onDiscoveryEvent(type, node, topVer);
     }
 
     /**

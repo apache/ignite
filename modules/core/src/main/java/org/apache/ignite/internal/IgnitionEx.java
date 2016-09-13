@@ -2193,7 +2193,6 @@ public class IgnitionEx {
             ccfg.setRebalanceMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
             ccfg.setRebalanceOrder(-1); //Prior to user caches.
 

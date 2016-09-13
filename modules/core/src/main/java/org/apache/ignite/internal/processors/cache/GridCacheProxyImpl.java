@@ -1670,7 +1670,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         finally {
             gate.leave(prev);
         }
-
     }
 
     /** {@inheritDoc} */

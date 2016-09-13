@@ -90,6 +90,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -112,7 +113,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
 
     /** */
-    private static final Collection<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
+    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
         Integer.class,
         Boolean.class,
         Byte.class,

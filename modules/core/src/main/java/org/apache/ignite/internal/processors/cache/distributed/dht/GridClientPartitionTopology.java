@@ -432,8 +432,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state,
-        GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -730,19 +729,19 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
-        assert false;
+        assert false : "detectLostPartitions should never be called on client topology";
 
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions() {
-        assert false;
+        assert false : "resetLostPartitions should never be called on client topology";
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
-        assert false;
+        assert false : "lostPartitions should never be called on client topology";
 
         return Collections.emptyList();
     }

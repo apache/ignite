@@ -274,7 +274,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
-        boolean recovery, final boolean skipVals,
+        boolean recovery,
+        final boolean skipVals,
         boolean canRemap,
         final boolean needVer
     ) {

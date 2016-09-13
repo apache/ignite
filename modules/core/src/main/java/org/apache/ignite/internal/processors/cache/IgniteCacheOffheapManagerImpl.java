@@ -449,6 +449,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
         GridIterator<CacheDataRow> iterator = iterator(part.id());
 

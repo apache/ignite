@@ -403,7 +403,7 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-
+        // No-op.
     }
 
     /**

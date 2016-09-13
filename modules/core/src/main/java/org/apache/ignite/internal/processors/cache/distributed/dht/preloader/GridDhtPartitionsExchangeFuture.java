@@ -1409,6 +1409,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * Assign node roles by partition update counters for a given topology.
+     *
      * @param top Topology.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
@@ -1524,8 +1525,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
             }
-
-            if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
+            else if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
                 detectLostPartitions();
 
             updateLastVersion(cctx.versions().last());
