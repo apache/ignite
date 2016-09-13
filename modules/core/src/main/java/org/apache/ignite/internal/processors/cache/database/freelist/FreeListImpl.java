@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 
 /**
  */
-public final class FreeListImpl extends PagesList implements FreeList, ReuseList {
+public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 

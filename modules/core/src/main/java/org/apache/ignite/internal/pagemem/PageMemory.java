@@ -32,12 +32,21 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
     public Page metaPage(int cacheId) throws IgniteCheckedException;
 
     /**
+     * Gets or allocates partition metadata page for specified cacheId and partId.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @return Meta page for cacheId and partId.
+     */
+    public Page partitionMetaPage(int cacheId, int partId) throws IgniteCheckedException;
+
+    /**
      * Gets the page associated with the given page ID. Each page obtained with this method must be released by
-     * calling {@link #releasePage(Page)}.
+     * calling {@link #releasePage(Page)}. This method will allocate page with given ID if it doesn't exist.
      *
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @return Page or {@code null} if this page ID was not allocated.
+     * @return Page.
      */
     public Page page(int cacheId, long pageId) throws IgniteCheckedException;
 
@@ -62,4 +71,13 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param cacheId Cache ID.
      */
     public void clear(int cacheId);
+
+    /**
+     * Clears all entries that meet provided criteria.
+     *
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param allocSpace Allocation space.
+     */
+    public void clear(int cacheId, int partId, byte allocSpace);
 }

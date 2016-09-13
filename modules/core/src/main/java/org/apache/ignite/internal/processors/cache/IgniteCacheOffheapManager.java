@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -214,11 +213,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     interface CacheDataStore {
         /**
-         * @return Store name.
-         */
-        String name();
-
-        /**
          * @param key Key.
          * @param part Partition.
          * @param val Value.
@@ -258,11 +252,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @throws IgniteCheckedException If failed.
          */
         public void destroy() throws IgniteCheckedException;
-
-        /**
-         * @return Row store.
-         */
-        public RowStore rowStore();
 
         /**
          * Data store listener.

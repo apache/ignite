@@ -698,11 +698,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
         @Override public void update(KeyCacheObject key,
             int p,
             CacheObject val,
@@ -787,11 +782,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
             dataTree.destroy();
-        }
-
-        /** {@inheritDoc} */
-        @Override public RowStore rowStore() {
-            return rowStore;
         }
     }
 
