@@ -344,6 +344,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private GridCacheEntryEx unwrapEntry(PendingEntry e) {
         GridCacheAdapter cache = cctx.cache();
 
+        //Here we need to assign appropriate context to entry
         if(e.isNear)
             cache = cache.isNear() ? cache : ((GridDhtCacheAdapter)cache).near();
         else
