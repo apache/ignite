@@ -120,7 +120,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
      */
-    public void sendWith2Node(
+    private void sendWith2Node(
             final Ignite ignite2,
             final IgniteMessaging igniteMsg,
             final String msgStr,
