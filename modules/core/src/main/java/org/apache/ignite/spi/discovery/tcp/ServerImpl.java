@@ -5351,8 +5351,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!sslHnd.handshake())
                                 throw new IgniteSpiException("Failed to perform SSL handshake.");
                         }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteSpiException("Failed to perform SSL handshake.", e);
+                        catch (SSLException | IgniteCheckedException e) {
+                            sock.close();
+                            ch.close();
+
+                            log.warning("Failed to perform SSL handshake. socket=" + sock, e);
+
+                            continue;
                         }
 
                         sock = new NioSSLSocket(sock, sslHnd);
