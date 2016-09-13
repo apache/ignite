@@ -254,6 +254,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
+        /// Tests the scalar queries.
+        /// </summary>
+        [Test]
+        public void TestScalars()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests transactions created with BeginTransaction.
         /// </summary>
         [Test]
