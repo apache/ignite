@@ -710,6 +710,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long expireTime) throws IgniteCheckedException {
             DataRow dataRow = new DataRow(key.hashCode(), key, val, ver, p, expireTime);
 
+            // Make sure value bytes initialized.
             key.valueBytes(cctx.cacheObjectContext());
             val.valueBytes(cctx.cacheObjectContext());
 
