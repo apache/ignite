@@ -58,9 +58,6 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
 
         // Tcp.
-        /*
-        TODO: Remove! Commented only for test purposes
-
         suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryJdbcIpFinderSelfTest.class));
@@ -85,7 +82,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoveryNodeConfigConsistentIdSelfTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
-        suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));*/
+        suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
