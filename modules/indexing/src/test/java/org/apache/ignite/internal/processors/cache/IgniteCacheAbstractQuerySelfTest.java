@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +58,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlAggregateClass;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -66,7 +70,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -166,6 +169,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 cc.setRebalanceMode(SYNC);
                 cc.setSwapEnabled(true);
                 cc.setSqlFunctionClasses(SqlFunctions.class);
+                cc.setSqlAggregateClasses(SimpleAggregate.class, SimpleAliasAggregate.class);
                 cc.setIndexedTypes(
                     BadHashKeyObject.class, Byte.class,
                     ObjectValue.class, Long.class,
@@ -367,6 +371,48 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             CacheException.class,
             null
         );
+    }
+
+    /**
+     * Tests UDFs.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testUserDefinedAggregateFunction() throws IgniteCheckedException {
+        // Without alias.
+        final IgniteCache<Object, Object> cache = ignite().cache(null);
+
+        QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select SimpleAggregate(t) from (select 1 as t union select 2 as t)"));
+
+        Collection<List<?>> res = qry.getAll();
+
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
+
+        List<?> row = res.iterator().next();
+
+        Object list = row.get(0);
+        assertTrue( list instanceof List );
+        assertEquals(2, ((List)list).get(1));
+
+        // With alias.
+        qry = cache.query(new SqlFieldsQuery("select test_aggr_alias(t) from (select 1 as t union select 2 as t)"));
+
+        res = qry.getAll();
+
+        if (cacheMode() == REPLICATED)
+            assertEquals(1, res.size());
+        else
+            assertEquals(gridCount(), res.size());
+
+        row = res.iterator().next();
+
+        list = row.get(0);
+        assertTrue( list instanceof List );
+        assertEquals(1, ((List)list).get(0));
+
     }
 
     /**
@@ -1900,6 +1946,43 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         public static int no() {
             throw new IllegalStateException();
         }
+    }
+
+    /**
+     * Aggregate Function for test.
+     */
+    @SuppressWarnings("PublicInnerClass")
+    @QuerySqlAggregateClass
+    public static class SimpleAggregate implements org.h2.api.AggregateFunction {
+        private List list = new ArrayList();
+
+        @Override
+        public void init(Connection conn) throws SQLException {
+
+        }
+
+        @Override
+        public int getType(int[] inputTypes) throws SQLException {
+            return Types.JAVA_OBJECT;
+        }
+
+        @Override
+        public void add(Object value) throws SQLException {
+            list.add(value);
+        }
+
+        @Override
+        public Object getResult() throws SQLException {
+            return list;
+        }
+    }
+
+    /**
+     * Aggregate Function for test (with alias).
+     */
+    @SuppressWarnings("PublicInnerClass")
+    @QuerySqlAggregateClass(alias = "test_aggr_alias")
+    public static class SimpleAliasAggregate extends SimpleAggregate {
     }
 
     /**

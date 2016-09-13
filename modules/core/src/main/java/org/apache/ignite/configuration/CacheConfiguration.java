@@ -60,6 +60,7 @@ import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlAggregateClass;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -359,6 +360,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Class<?>[] sqlFuncCls;
 
     /** */
+    private Class<?>[] sqlAggregateFuncCls;
+
+    /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /**
@@ -481,6 +485,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlAggregateFuncCls = cc.getSqlAggregateClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
@@ -1793,6 +1798,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets classes with methods annotated by {@link QuerySqlAggregateClass}
+     * to be used as user-defined aggregate functions from SQL queries.
+     *
+     * @param cls One or more classes with SQL aggregate functions.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlAggregateClasses(Class<?>... cls) {
+        this.sqlAggregateFuncCls = cls;
+
+        return this;
+    }
+
+    /**
      * Gets classes with methods annotated by {@link QuerySqlFunction}
      * to be used as user-defined functions from SQL queries.
      *
@@ -1800,6 +1818,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     @Nullable public Class<?>[] getSqlFunctionClasses() {
         return sqlFuncCls;
+    }
+
+    /**
+     * Gets classes with methods annotated by {@link QuerySqlAggregateClass}
+     * to be used as user-defined aggregate functions from SQL queries.
+     *
+     * @return Classes with SQL aggregate functions.
+     */
+    @Nullable public Class<?>[] getSqlAggregateClasses() {
+        return sqlAggregateFuncCls;
     }
 
     /**

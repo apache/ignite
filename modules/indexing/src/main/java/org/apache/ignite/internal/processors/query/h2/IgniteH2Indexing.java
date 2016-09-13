@@ -60,6 +60,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlAggregateClass;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1808,6 +1809,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /**
+     * Registers SQL aggregate functions.
+     *
+     * @param schema Schema.
+     * @param clss Classes.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void createSqlAggregateFunctions(String schema, Class<?>[] clss) throws IgniteCheckedException {
+        if (F.isEmpty(clss))
+            return;
+
+        for (Class<?> cls : clss) {
+            QuerySqlAggregateClass ann = cls.getAnnotation(QuerySqlAggregateClass.class);
+
+            if (ann != null) {
+                String alias = ann.alias().isEmpty() ? cls.getSimpleName() : ann.alias();
+
+                String clause = "CREATE AGGREGATE IF NOT EXISTS " + alias + " FOR \"" +cls.getName() + '"';
+
+                executeStatement(schema, clause);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -1855,6 +1880,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         createSchema(schema);
 
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
+        createSqlAggregateFunctions(schema, ccfg.getSqlAggregateClasses());
     }
 
     /** {@inheritDoc} */
