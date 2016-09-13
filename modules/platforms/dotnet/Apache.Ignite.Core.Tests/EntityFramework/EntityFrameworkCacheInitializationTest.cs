@@ -37,14 +37,14 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
             Assert.IsNull(Ignition.TryGetIgnite());
 
-            // Test default config (picks up app.config section)
+            // Test default config (picks up app.config section).
             CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
 
-            // Specific config section
+            // Specific config section.
             CheckCacheAndStop("myGrid2", "cacheName2", 
                 new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
 
-            // Specific config section, nonexistent cache
+            // Specific config section, nonexistent cache.
             CheckCacheAndStop("myGrid2", "newCache", 
                 new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
 
@@ -64,19 +64,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     }
                 }, "myCache", null), CacheMode.Replicated);
 
-            // Non-transactional cache
-            var ex = Assert.Throws<ArgumentException>(() =>
-                CheckCacheAndStop("myGrid5", "myCache",
-                    new IgniteDbConfiguration(new IgniteConfiguration
-                    {
-                        GridName = "myGrid5",
-                        CacheConfiguration = new[] {new CacheConfiguration("myCache")}
-                    }, "myCache", null)));
-            Ignition.StopAll(true);
-            Assert.IsTrue(ex.Message.Contains(
-                    "requires Transactional cache. Specified 'myCache' cache is Atomic."));
-
-            // Existing instance
+            // Existing instance.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, "123", null));
         }
