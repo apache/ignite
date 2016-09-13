@@ -2531,7 +2531,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         @SuppressWarnings("unchecked")
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
-            if (reuseList != null && bag == null)
+            if (reuseList != null && bag == null && freePages != null)
                 reuseList.addForRecycle(this);
         }
 
