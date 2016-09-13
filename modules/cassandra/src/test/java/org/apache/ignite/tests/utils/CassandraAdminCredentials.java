@@ -20,10 +20,12 @@ package org.apache.ignite.tests.utils;
 import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.store.cassandra.datasource.Credentials}
- * providing admin user/password to establish Cassandra session.
+ * Implementation of {@link Credentials} providing admin user/password to establish Cassandra session.
  */
 public class CassandraAdminCredentials implements Credentials {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public String getUser() {
         return CassandraHelper.getAdminUser();

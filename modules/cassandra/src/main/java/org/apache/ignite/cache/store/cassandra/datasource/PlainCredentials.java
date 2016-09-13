@@ -21,6 +21,9 @@ package org.apache.ignite.cache.store.cassandra.datasource;
  * Simple implementation of {@link Credentials} which just uses its constructor to hold user/password values.
  */
 public class PlainCredentials implements Credentials {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** User name. */
     private String user;
 
