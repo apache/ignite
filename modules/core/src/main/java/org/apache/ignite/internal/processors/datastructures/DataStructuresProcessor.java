@@ -357,32 +357,31 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (seqVal == null && !create)
                         return null;
 
-                    // We should use offset because we already reserved left side of range.
-                    long off = atomicCfg.getAtomicSequenceReserveSize() > 1 ?
-                        atomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
-
                     long upBound;
                     long locCntr;
 
                     if (seqVal == null) {
                         locCntr = initVal;
 
-                        upBound = locCntr + off;
+                        upBound = locCntr + atomicCfg.getAtomicSequenceReserveSize();
 
-                        // Global counter must be more than reserved region.
-                        seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
+                        seqVal = new GridCacheAtomicSequenceValue(upBound);
                     }
                     else {
                         locCntr = seqVal.get();
 
-                        upBound = locCntr + off;
+                        upBound = locCntr + atomicCfg.getAtomicSequenceReserveSize();
 
-                        // Global counter must be more than reserved region.
-                        seqVal.set(upBound + 1);
+                        seqVal.set(upBound);
                     }
 
                     // Update global counter.
                     dsView.put(key, seqVal);
+
+                    int reservePercentage = atomicCfg.getAtomicSequenceReservePercentage();
+
+                    if (reservePercentage < 0 || reservePercentage > 100)
+                        reservePercentage = AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE;
 
                     // Only one thread can be in the transaction scope and create sequence.
                     seq = new GridCacheAtomicSequenceImpl(name,
@@ -390,6 +389,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         seqView,
                         dsCacheCtx,
                         atomicCfg.getAtomicSequenceReserveSize(),
+                        reservePercentage,
                         locCntr,
                         upBound);
 
@@ -448,8 +448,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * Gets an atomic long from cache or creates one if it's not cached.
      *
      * @param name Name of atomic long.
-     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
-     *        will be ignored.
+     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal} will be ignored.
      * @param create If {@code true} atomic long will be created in case it is not in cache.
      * @return Atomic long.
      * @throws IgniteCheckedException If loading failed.
@@ -526,8 +525,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         final DataStructureInfo dsInfo,
         final boolean create,
         Class<? extends T> cls)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
 
         if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
@@ -1761,6 +1759,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (atomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
+
+        if (atomicCfg.getAtomicSequenceReserveSize() <= 0)
+            throw new IgniteException(
+                "Atomic sequence can not be created, " +
+                    "reserve size must be more than 0, but atomicSequenceReserveSize: " + atomicCfg.getAtomicSequenceReserveSize()
+            );
+
+        if (atomicCfg.getAtomicSequenceReservePercentage() > 100)
+            throw new IgniteException(
+                "Atomic sequence can not be created, reserve percentage must have value " +
+                    "between 0 and 100, but atomicSequenceReservePercentage: " + atomicCfg.getAtomicSequenceReservePercentage()
+            );
     }
 
     /**

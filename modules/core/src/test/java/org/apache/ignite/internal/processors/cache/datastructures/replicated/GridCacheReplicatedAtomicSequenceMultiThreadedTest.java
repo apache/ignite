@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheAtomicSequenceMultiThreadedAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Cache partitioned multi-threaded tests.
  */
-public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCacheAtomicSequenceMultiThreadedAbstractTest {
+public class GridCacheReplicatedAtomicSequenceMultiThreadedTest extends GridCacheAtomicSequenceMultiThreadedAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
+        return REPLICATED;
     }
 }
