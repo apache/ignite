@@ -23,9 +23,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.Common;
     using System.Data.Entity;
-    using System.Data.Entity.Core.Metadata.Edm;
     using System.IO;
     using System.Linq;
     using System.Transactions;
@@ -208,8 +206,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestReadOnlyStrategy()
         {
             // Set up a policy to cache Blogs as read-only and Posts as read-write.
-            Policy.GetCachingStrategyFunc = (sets, sql, args) =>
-                sets.Count == 1 && sets.Single().Name == "Blog"
+            Policy.GetCachingStrategyFunc = q =>
+                q.AffectedEntitySets.Count == 1 && q.AffectedEntitySets.Single().Name == "Blog"
                     ? DbCachingStrategy.ReadOnly
                     : DbCachingStrategy.ReadWrite;
 
@@ -490,43 +488,32 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
         private class DelegateCachingPolicy : DbCachingPolicy
         {
-            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, bool> CanBeCachedFunc { get; set; }
+            public Func<DbQueryInfo, bool> CanBeCachedFunc { get; set; }
 
-            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, int, bool> CanBeCachedRowsFunc { get;
-                set; }
+            public Func<DbQueryInfo, int, bool> CanBeCachedRowsFunc { get; set; }
 
-            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, TimeSpan>
-                GetExpirationTimeoutFunc { get; set; }
+            public Func<DbQueryInfo, TimeSpan> GetExpirationTimeoutFunc { get; set; }
 
-            public Func<ICollection<EntitySetBase>, string, DbParameterCollection, DbCachingStrategy>
-                GetCachingStrategyFunc { get; set; }
+            public Func<DbQueryInfo, DbCachingStrategy> GetCachingStrategyFunc { get; set; }
 
-            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
-                DbParameterCollection parameters)
+            protected override bool CanBeCached(DbQueryInfo queryInfo)
             {
-                return CanBeCachedFunc == null || CanBeCachedFunc(affectedEntitySets, sql, parameters);
+                return CanBeCachedFunc == null || CanBeCachedFunc(queryInfo);
             }
 
-            protected override bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
-                DbParameterCollection parameters, int rowCount)
+            protected override bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
             {
-                return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(affectedEntitySets, sql, parameters, rowCount);
+                return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(queryInfo, rowCount);
             }
 
-            protected override TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets,
-                string sql, DbParameterCollection parameters)
+            protected override TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
             {
-                return GetExpirationTimeoutFunc == null
-                    ? TimeSpan.MaxValue
-                    : GetExpirationTimeoutFunc(affectedEntitySets, sql, parameters);
+                return GetExpirationTimeoutFunc == null ? TimeSpan.MaxValue : GetExpirationTimeoutFunc(queryInfo);
             }
 
-            protected override DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets,
-                string sql, DbParameterCollection parameters)
+            protected override DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
             {
-                return GetCachingStrategyFunc == null
-                    ? DbCachingStrategy.ReadWrite
-                    : GetCachingStrategyFunc(affectedEntitySets, sql, parameters);
+                return GetCachingStrategyFunc == null ? DbCachingStrategy.ReadWrite : GetCachingStrategyFunc(queryInfo);
             }
         }
     }

@@ -18,9 +18,6 @@
 namespace Apache.Ignite.EntityFramework
 {
     using System;
-    using System.Collections.Generic;
-    using System.Data.Common;
-    using System.Data.Entity.Core.Metadata.Edm;
 
     /// <summary>
     /// Caching policy: defines which queries should be cached.
@@ -30,14 +27,11 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Determines whether the specified query can be cached.
         /// </summary>
-        /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
-        /// <param name="sql">SQL statement for the query.</param>
-        /// <param name="parameters">Query parameters.</param>
+        /// <param name="queryInfo">The query information.</param>
         /// <returns>
-        /// <c>true</c> if the specified query can be cached; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified query can be cached; otherwise, <c>false</c>.
         /// </returns>
-        protected internal virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
-            DbParameterCollection parameters)
+        protected internal virtual bool CanBeCached(DbQueryInfo queryInfo)
         {
             return true;
         }
@@ -45,12 +39,10 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Determines whether specified number of rows should be cached.
         /// </summary>
-        /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
-        /// <param name="sql">SQL statement for the query.</param>
-        /// <param name="parameters">Query parameters.</param>
+        /// <param name="queryInfo">The query information.</param>
         /// <param name="rowCount">The count of fetched rows.</param>
-        protected internal virtual bool CanBeCached(ICollection<EntitySetBase> affectedEntitySets, string sql,
-            DbParameterCollection parameters, int rowCount)
+        /// <returns></returns>
+        protected internal virtual bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
         {
             return true;
         }
@@ -58,11 +50,9 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the absolute expiration timeout for a given query.
         /// </summary>
-        /// <param name="affectedEntitySets">Entity sets affected by the command.</param>
-        /// <param name="sql">SQL statement for the query.</param>
-        /// <param name="parameters">Query parameters.</param>
-        protected internal virtual TimeSpan GetExpirationTimeout(ICollection<EntitySetBase> affectedEntitySets, 
-            string sql, DbParameterCollection parameters)
+        /// <param name="queryInfo">The query information.</param>
+        /// <returns>Expiration timeout. <see cref="TimeSpan.MaxValue"/> for no expiration.</returns>
+        protected internal virtual TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
         {
             return TimeSpan.MaxValue;
         }
@@ -70,12 +60,9 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the caching strategy for a give query.
         /// </summary>
-        /// <param name="affectedEntitySets">Entity sets affected by the query.</param>
-        /// <param name="sql">SQL statement for the query.</param>
-        /// <param name="parameters">Query parameters.</param>
-        /// <returns></returns>
-        protected internal virtual DbCachingStrategy GetCachingStrategy(ICollection<EntitySetBase> affectedEntitySets, 
-            string sql, DbParameterCollection parameters)
+        /// <param name="queryInfo">The query information.</param>
+        /// <returns>Caching strategy for the query.</returns>
+        protected internal virtual DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
         {
             return DbCachingStrategy.ReadWrite;
         }

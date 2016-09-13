@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DbCachingStrategy.cs" />
+    <Compile Include="DbQueryInfo.cs" />
     <Compile Include="Impl\ArrayDbDataReader.cs" />
     <Compile Include="Impl\DataReaderResult.cs" />
     <Compile Include="Impl\DbCommandDefinitionProxy.cs" />

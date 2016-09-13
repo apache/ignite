@@ -151,8 +151,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
 
             var cacheKey = GetKey();
-
-            var strategy = _info.Policy.GetCachingStrategy(_info.AffectedEntitySets, CommandText, Parameters);
+            var queryInfo = GetQueryInfo();
+            var strategy = _info.Policy.GetCachingStrategy(queryInfo);
 
             object cachedRes;
             if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
@@ -164,17 +164,17 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return reader;  // Queries that modify anything are never cached.
 
             // Check if cacheable.
-            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters))
+            if (!_info.Policy.CanBeCached(queryInfo))
                 return reader;
 
             // Read into memory.
             var res = new DataReaderResult(reader);
 
             // Check if specific row count is cacheable.
-            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, res.RowCount))
+            if (!_info.Policy.CanBeCached(queryInfo, res.RowCount))
                 return res.CreateReader();
 
-            PutResultToCache(cacheKey, res, strategy);
+            PutResultToCache(cacheKey, res, strategy, queryInfo);
 
             return res.CreateReader();
         }
@@ -201,20 +201,20 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
 
             var cacheKey = GetKey();
-
-            var strategy = _info.Policy.GetCachingStrategy(_info.AffectedEntitySets, CommandText, Parameters);
+            var queryInfo = GetQueryInfo();
+            var strategy = _info.Policy.GetCachingStrategy(queryInfo);
 
             object cachedRes;
             if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
                 return cachedRes;
 
-            if (!_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters) ||
-                !_info.Policy.CanBeCached(_info.AffectedEntitySets, CommandText, Parameters, 1))
+            if (!_info.Policy.CanBeCached(queryInfo) ||
+                !_info.Policy.CanBeCached(queryInfo, 1))
             {
                 return res;
             }
 
-            PutResultToCache(cacheKey, res, strategy);
+            PutResultToCache(cacheKey, res, strategy, queryInfo);
 
             return res;
         }
@@ -222,10 +222,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Puts the result to cache.
         /// </summary>
-        private void PutResultToCache(string key, object result, DbCachingStrategy strategy)
+        private void PutResultToCache(string key, object result, DbCachingStrategy strategy, DbQueryInfo queryInfo)
         {
             var expiration = _info.Policy != null
-                ? _info.Policy.GetExpirationTimeout(_info.AffectedEntitySets, CommandText, Parameters)
+                ? _info.Policy.GetExpirationTimeout(queryInfo)
                 : TimeSpan.MaxValue;
 
             _info.Cache.PutItem(key, result, _info.AffectedEntitySets, strategy, expiration);
@@ -244,6 +244,14 @@ namespace Apache.Ignite.EntityFramework.Impl
                 Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
 
             return string.Format("{0}:{1}|{2}", Connection.Database, CommandText, parameters);
+        }
+
+        /// <summary>
+        /// Gets the query information.
+        /// </summary>
+        private DbQueryInfo GetQueryInfo()
+        {
+            return new DbQueryInfo(_info.AffectedEntitySets, CommandText, DbParameterCollection);
         }
 
 #if !NET40
