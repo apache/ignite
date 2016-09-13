@@ -388,7 +388,7 @@ public final class IgfsImpl implements IgfsEx {
             boolean await = false;
 
             for (IgfsPath path : paths) {
-                if (workerPath.isSubDirectoryOf(path) || workerPath.isSame(path))  {
+                if (workerPath.isSubDirectoryOf(path) || F.eq(workerPath, path))  {
                     await = true;
 
                     break;
@@ -749,7 +749,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-                if (IgfsPath.SLASH.equals(path.toString()))
+                if (F.eq(IgfsPath.ROOT, path))
                     return false;
 
                 IgfsMode mode = resolveMode(path);
