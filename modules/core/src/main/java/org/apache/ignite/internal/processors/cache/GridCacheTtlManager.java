@@ -184,6 +184,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * Expires entries by TTL.
      */
     public void expire() {
+        if(pendingPointers==null)
+            return;
+
         long now = U.currentTimeMillis();
 
         GridCacheVersion obsoleteVer = null;
