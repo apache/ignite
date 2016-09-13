@@ -20,10 +20,9 @@ namespace Apache.Ignite.EntityFramework
     using System;
 
     /// <summary>
-    /// Default caching policy implementation: everything is cached with <see cref="DbCachingStrategy.ReadWrite"/>, 
-    /// no expiration.
+    /// Caching policy: defines which queries should be cached.
     /// </summary>
-    public class DbCachingPolicy : IDbCachingPolicy
+    public interface IDbCachingPolicy
     {
         /// <summary>
         /// Determines whether the specified query can be cached.
@@ -32,10 +31,7 @@ namespace Apache.Ignite.EntityFramework
         /// <returns>
         ///   <c>true</c> if the specified query can be cached; otherwise, <c>false</c>.
         /// </returns>
-        public virtual bool CanBeCached(DbQueryInfo queryInfo)
-        {
-            return true;
-        }
+        bool CanBeCached(DbQueryInfo queryInfo);
 
         /// <summary>
         /// Determines whether specified number of rows should be cached.
@@ -43,29 +39,20 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="queryInfo">The query information.</param>
         /// <param name="rowCount">The count of fetched rows.</param>
         /// <returns></returns>
-        public virtual bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
-        {
-            return true;
-        }
+        bool CanBeCached(DbQueryInfo queryInfo, int rowCount);
 
         /// <summary>
         /// Gets the absolute expiration timeout for a given query.
         /// </summary>
         /// <param name="queryInfo">The query information.</param>
         /// <returns>Expiration timeout. <see cref="TimeSpan.MaxValue"/> for no expiration.</returns>
-        public virtual TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
-        {
-            return TimeSpan.MaxValue;
-        }
+        TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo);
 
         /// <summary>
         /// Gets the caching strategy for a give query.
         /// </summary>
         /// <param name="queryInfo">The query information.</param>
         /// <returns>Caching strategy for the query.</returns>
-        public virtual DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
-        {
-            return DbCachingStrategy.ReadWrite;
-        }
+        DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo);
     }
 }

@@ -496,22 +496,22 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public Func<DbQueryInfo, DbCachingStrategy> GetCachingStrategyFunc { get; set; }
 
-            protected override bool CanBeCached(DbQueryInfo queryInfo)
+            public override bool CanBeCached(DbQueryInfo queryInfo)
             {
                 return CanBeCachedFunc == null || CanBeCachedFunc(queryInfo);
             }
 
-            protected override bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
+            public override bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
             {
                 return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(queryInfo, rowCount);
             }
 
-            protected override TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
+            public override TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
             {
                 return GetExpirationTimeoutFunc == null ? TimeSpan.MaxValue : GetExpirationTimeoutFunc(queryInfo);
             }
 
-            protected override DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
+            public override DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
             {
                 return GetCachingStrategyFunc == null ? DbCachingStrategy.ReadWrite : GetCachingStrategyFunc(queryInfo);
             }
