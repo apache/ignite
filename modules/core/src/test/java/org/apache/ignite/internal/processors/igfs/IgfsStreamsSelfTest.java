@@ -47,7 +47,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -192,13 +191,12 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     public void testCreateFile() throws Exception {
-        IgfsPath root = new IgfsPath("/");
         IgfsPath path = new IgfsPath("/asdf");
 
         long max = 100L * CFG_BLOCK_SIZE / WRITING_THREADS_CNT;
 
         for (long size = 0; size <= max; size = size * 15 / 10 + 1) {
-            assertTrue(F.isEmpty(fs.listPaths(root)));
+            assertTrue(F.isEmpty(fs.listPaths(IgfsPath.ROOT)));
 
             testCreateFile(path, size, new Random().nextInt());
         }
