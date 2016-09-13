@@ -70,7 +70,7 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="cacheName">Name of the cache.</param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(string configurationSectionName, string cacheName, DbCachingPolicy policy)
+        public IgniteDbConfiguration(string configurationSectionName, string cacheName, IDbCachingPolicy policy)
              : this(GetConfiguration(configurationSectionName, true), cacheName, policy)
         {
             // No-op.
@@ -84,7 +84,7 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
         [CLSCompliant(false)]
         public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
-            DbCachingPolicy policy)
+            IDbCachingPolicy policy)
             : this(GetOrStartIgnite(igniteConfiguration), cacheName, policy)
         {
             // No-op.
@@ -99,7 +99,7 @@ namespace Apache.Ignite.EntityFramework
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", 
             Justification = "Validation is present")]
         [CLSCompliant(false)]
-        public IgniteDbConfiguration(IIgnite ignite, string cacheName, DbCachingPolicy policy)
+        public IgniteDbConfiguration(IIgnite ignite, string cacheName, IDbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 

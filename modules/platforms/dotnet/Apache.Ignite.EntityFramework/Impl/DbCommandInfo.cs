@@ -38,12 +38,12 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly EntitySetBase[] _affectedEntitySets;
 
         /** */
-        private readonly DbCachingPolicy _policy;
+        private readonly IDbCachingPolicy _policy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
-        public DbCommandInfo(DbCommandTree tree, DbCache cache, DbCachingPolicy policy)
+        public DbCommandInfo(DbCommandTree tree, DbCache cache, IDbCachingPolicy policy)
         {
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
@@ -100,7 +100,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the policy.
         /// </summary>
-        public DbCachingPolicy Policy
+        public IDbCachingPolicy Policy
         {
             get { return _policy; }
         }

@@ -36,7 +36,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private static readonly DbCachingPolicy DefaultPolicy = new DbCachingPolicy();
 
         /** */
-        private readonly DbCachingPolicy _policy;
+        private readonly IDbCachingPolicy _policy;
         
         /** */
         private readonly DbProviderServices _services;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <param name="services">The services.</param>
         /// <param name="policy">The policy.</param>
         /// <param name="cache">The cache.</param>
-        public DbProviderServicesProxy(DbProviderServices services, DbCachingPolicy policy, DbCache cache)
+        public DbProviderServicesProxy(DbProviderServices services, IDbCachingPolicy policy, DbCache cache)
         {
             Debug.Assert(services != null);
             Debug.Assert(cache != null);

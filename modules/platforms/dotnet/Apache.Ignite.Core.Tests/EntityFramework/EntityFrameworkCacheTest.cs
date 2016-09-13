@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
     using System.Data.Entity;
     using System.IO;
     using System.Linq;
@@ -370,6 +371,12 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                     var set = qry.AffectedEntitySets.Single();
 
                     Assert.AreEqual("Post", set.Name);
+
+                    Assert.AreEqual(1, qry.Parameters.Count);
+                    Assert.AreEqual(-5, qry.Parameters[0].Value);
+                    Assert.AreEqual(DbType.Int32, qry.Parameters[0].DbType);
+
+                    Assert.IsTrue(qry.CommandText.EndsWith("WHERE [Extent1].[BlogId] > @p__linq__0"));
                 }
             );
 
@@ -410,7 +417,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
                 ctx.SaveChanges();
 
-                Assert.AreEqual(3, ctx.Posts.ToArray().Length);
+                int minId = -5;
+                Assert.AreEqual(3, ctx.Posts.Where(x => x.BlogId > minId).ToArray().Length);
 
                 // Check that policy methods are called in correct order with correct params.
                 Assert.AreEqual(
@@ -555,7 +563,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             }
         }
 
-        private class DelegateCachingPolicy : DbCachingPolicy
+        private class DelegateCachingPolicy : IDbCachingPolicy
         {
             public Func<DbQueryInfo, bool> CanBeCachedFunc { get; set; }
 
@@ -565,22 +573,22 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             public Func<DbQueryInfo, DbCachingStrategy> GetCachingStrategyFunc { get; set; }
 
-            public override bool CanBeCached(DbQueryInfo queryInfo)
+            public bool CanBeCached(DbQueryInfo queryInfo)
             {
                 return CanBeCachedFunc == null || CanBeCachedFunc(queryInfo);
             }
 
-            public override bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
+            public bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
             {
                 return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(queryInfo, rowCount);
             }
 
-            public override TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
+            public TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
             {
                 return GetExpirationTimeoutFunc == null ? TimeSpan.MaxValue : GetExpirationTimeoutFunc(queryInfo);
             }
 
-            public override DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
+            public DbCachingStrategy GetCachingStrategy(DbQueryInfo queryInfo)
             {
                 return GetCachingStrategyFunc == null ? DbCachingStrategy.ReadWrite : GetCachingStrategyFunc(queryInfo);
             }
