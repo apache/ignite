@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -145,4 +146,15 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return Meta page ID.
      */
     public long metaPageId(int cacheId);
+
+    /**
+     * @return set of cache names which configurations were saved
+     */
+    public Set<String> savedCacheNames();
+
+    /**
+     * @param cacheName Cache name.
+     * @return saved configuration for cache
+     */
+    public CacheConfiguration readConfiguration(String cacheName);
 }
