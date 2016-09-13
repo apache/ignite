@@ -26,21 +26,24 @@ import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
 /**
  * Reuse list.
  */
-public final class ReuseListNew extends PagesList implements ReuseList {
+public final class ReuseListImpl extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListNew, long[]> bucketUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(ReuseListNew.class, long[].class, "bucket");
+    private static final AtomicReferenceFieldUpdater<ReuseListImpl, long[]> bucketUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, long[].class, "bucket");
 
     /** */
     private volatile long[] bucket;
 
     /**
      * @param cacheId   Cache ID.
+     * @param name Name (for debug purpose).
      * @param pageMem   Page memory.
      * @param wal       Write ahead log manager.
+     * @param metaPageId Metadata page ID.
+     * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseListNew(int cacheId,
+    public ReuseListImpl(int cacheId,
         String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,

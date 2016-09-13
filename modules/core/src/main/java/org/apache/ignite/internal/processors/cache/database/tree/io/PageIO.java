@@ -23,12 +23,8 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
@@ -122,37 +118,25 @@ public abstract class PageIO {
     public static final short T_DATA_REF_LEAF = 6;
 
     /** */
-    public static final short T_FREE_LEAF = 7;
+    public static final short T_METASTORE_INNER = 7;
 
     /** */
-    public static final short T_FREE_INNER = 8;
+    public static final short T_METASTORE_LEAF = 8;
 
     /** */
-    public static final short T_REUSE_LEAF = 9;
+    public static final short T_PENDING_REF_INNER = 9;
 
     /** */
-    public static final short T_REUSE_INNER = 10;
+    public static final short T_PENDING_REF_LEAF = 10;
 
     /** */
-    public static final short T_METASTORE_INNER = 11;
+    public static final short T_META = 11;
 
     /** */
-    public static final short T_METASTORE_LEAF = 12;
+    public static final short T_PAGE_LIST_META = 12;
 
     /** */
-    public static final short T_PENDING_REF_INNER = 13;
-
-    /** */
-    public static final short T_PENDING_REF_LEAF = 14;
-
-    /** */
-    public static final short T_META = 15;
-
-    /** */
-    public static final short T_PAGE_LIST_META = 16;
-
-    /** */
-    public static final short T_PAGE_LIST_NODE = 17;
+    public static final short T_PAGE_LIST_NODE = 13;
 
     /** */
     private final int ver;
@@ -385,18 +369,6 @@ public abstract class PageIO {
 
             case T_METASTORE_LEAF:
                 return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
-
-            case T_FREE_INNER:
-                return (Q)FreeInnerIO.VERSIONS.forVersion(ver);
-
-            case T_FREE_LEAF:
-                return (Q)FreeLeafIO.VERSIONS.forVersion(ver);
-
-            case T_REUSE_INNER:
-                return (Q)ReuseInnerIO.VERSIONS.forVersion(ver);
-
-            case T_REUSE_LEAF:
-                return (Q)ReuseLeafIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_INNER:
                 return (Q) IgniteCacheOffheapManagerImpl.PendingEntryInnerIO.VERSIONS.forVersion(ver);

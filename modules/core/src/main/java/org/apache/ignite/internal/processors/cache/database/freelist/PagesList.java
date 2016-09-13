@@ -287,6 +287,7 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @param cacheId Cache ID.
+     * @param name Name (for debug purpose).
      * @param pageMem Page memory.
      * @param buckets Number of buckets.
      * @param wal Write ahead log manager.

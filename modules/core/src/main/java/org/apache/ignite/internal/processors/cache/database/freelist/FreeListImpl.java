@@ -26,7 +26,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
@@ -42,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 
 /**
  */
-public final class FreeListNew extends PagesList implements FreeList, ReuseList {
+public final class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -63,12 +62,15 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
     /**
      * @param cacheId Cache ID.
+     * @param name Name (for debug purpose).
      * @param pageMem Page memory.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
+     * @param metaPageId Metadata page ID.
+     * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeListNew(
+    public FreeListImpl(
         int cacheId,
         String name,
         PageMemory pageMem,
@@ -96,11 +98,6 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
         this.shift = shift;
 
         init(metaPageId, initNew);
-
-        for (int b = 0; b < BUCKETS; b++) {
-            for (int i = 0; i < 64; i++)
-                addStripe(b);
-        }
     }
 
     /**
