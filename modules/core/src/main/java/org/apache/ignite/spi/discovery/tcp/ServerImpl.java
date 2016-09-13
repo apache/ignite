@@ -5335,6 +5335,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             srvCh.socket().getLocalPort());
 
                         sslEngine.setUseClientMode(false);
+                        sslEngine.setNeedClientAuth(true);
+                        sslEngine.setWantClientAuth(true);
                     }
 
                     final SocketChannel ch = srvCh.accept();
