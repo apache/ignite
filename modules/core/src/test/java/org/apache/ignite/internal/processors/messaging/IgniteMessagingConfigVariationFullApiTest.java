@@ -515,7 +515,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
                 if (async)
                     ignite.message(grp).withAsync().sendOrdered(MESSAGE_TOPIC, value(i), 2000);
                 else
-                    ignite.message(grp).withAsync().sendOrdered(MESSAGE_TOPIC, value(i), 2000);
+                    ignite.message(grp).sendOrdered(MESSAGE_TOPIC, value(i), 2000);
             }
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
