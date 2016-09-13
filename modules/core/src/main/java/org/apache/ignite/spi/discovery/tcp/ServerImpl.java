@@ -5344,10 +5344,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Socket sock = ch.socket();
 
                     if (spi.isSslEnabled()) {
-                        final BlockingSslHandler sslHnd =
-                            new BlockingSslHandler(sslEngine, ch, true, ByteOrder.nativeOrder(), log);
+                        final BlockingSslHandler sslHnd;
 
                         try {
+                            sslHnd = new BlockingSslHandler(sslEngine, ch, true, ByteOrder.nativeOrder(), log);
+
                             if (!sslHnd.handshake())
                                 throw new IgniteSpiException("Failed to perform SSL handshake.");
                         }
@@ -5355,7 +5356,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             sock.close();
                             ch.close();
 
-                            log.warning("Failed to perform SSL handshake. socket=" + sock, e);
+                            log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
 
                             continue;
                         }
