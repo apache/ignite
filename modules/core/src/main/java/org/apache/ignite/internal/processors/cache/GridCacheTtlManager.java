@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -35,11 +34,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -81,11 +78,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         guard = new GridUnsafeGuard();
 
-        Marshaller marshaller = cctx.marshaller();
-
-        assert marshaller != null;
-
-        pointerFactory = new GridCacheTtlManager.MyGridOffHeapSmartPointerFactory(unsafeMemory, marshaller);
+        pointerFactory = new GridCacheTtlManager.MyGridOffHeapSmartPointerFactory(unsafeMemory);
 
         pendingPointers = new GridOffHeapSnapTreeSet<>(pointerFactory, unsafeMemory, guard);
 
@@ -299,7 +292,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                             EntryGridOffHeapSmartPointer key1 = pendingPointers.firstx();
 
                             boolean firstEntryChanged = (key0 != key1) &&
-                                (key0 == null || key0.pointer() != key1.pointer());
+                                (key0 == null || key1==null || key0.pointer() != key1.pointer());
 
                             if (firstEntryChanged)
                                 continue;
@@ -345,10 +338,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         GridCacheAdapter cache = cctx.cache();
 
         //Here we need to assign appropriate context to entry
-        if(e.isNear)
-            cache = cache.isNear() ? cache : ((GridDhtCacheAdapter)cache).near();
+        if (e.isNear)
+            cache = cache.isDht() ? ((GridDhtCacheAdapter)cache).near() : cache;
         else
-            cache = cache.isNear() ? ((GridNearCacheAdapter)cache).dht(): cache;
+            cache = cache.isNear() ? ((GridNearCacheAdapter)cache).dht() : cache;
 
         KeyCacheObject key;
         try {
@@ -376,6 +369,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** */
         private final boolean isNear;
+
+        /**
+         * Constructor
+         */
+        private PendingEntry(long expireTime, int hashCode, boolean isNear, byte[] keyBytes) {
+            this.expireTime = expireTime;
+            this.keyBytes = keyBytes;
+            this.hashCode = hashCode;
+            this.isNear = isNear;
+        }
 
         /**
          * @param entry Cache entry to create wrapper for.
@@ -472,16 +475,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** */
         private final GridUnsafeMemory mem;
 
-        /** */
-        private final Marshaller marshaller;
-
         /**
          * @param mem Unsafe Memory.
-         * @param marshaller Binary marshaller
          */
-        MyGridOffHeapSmartPointerFactory(GridUnsafeMemory mem, Marshaller marshaller) {
+        MyGridOffHeapSmartPointerFactory(GridUnsafeMemory mem) {
             this.mem = mem;
-            this.marshaller = marshaller;
         }
 
         /** {@inheritDoc} */
@@ -508,17 +506,21 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 long p = ptr;
 
                 if (entry == null && p > 0) {
-                    IgniteBiTuple<byte[], Byte> biTuple = mem.get(p);
+                    int recordSize = mem.readIntVolatile(p);
+                    p += 4;
 
-                    assert biTuple != null;
+                    long expireTime = mem.readLong(p);
+                    p += 8;
 
-                    try {
-                        //TODO: replace with custom serialization to save some more memory
-                        entry = marshaller.unmarshal(biTuple.get1(), null);
-                    }
-                    catch (IgniteCheckedException ex) {
-                        throw new IgniteException(ex);
-                    }
+                    int hash = mem.readInt(p);
+                    p += 4;
+
+                    boolean isNear = mem.readByte(p) == 1;
+                    p += 1;
+
+                    byte[] bytes = mem.readBytes(p, recordSize - 17);
+
+                    entry = new PendingEntry(expireTime, hash, isNear, bytes);
                 }
                 return entry;
             }
@@ -555,18 +557,29 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             /** {@inheritDoc} */
             @Override public void incrementRefCount() {
-                long p = ptr;
+                final long p = ptr;
 
                 if (p == 0) {
-                    try {
-                        byte[] bytes = marshaller.marshal(entry);
-                        p = mem.putOffHeap(0, bytes, GridBinaryMarshaller.BYTE_ARR);
+                    int recordSize = 17 + entry.keyBytes.length;
 
-                        ptr = p;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+                    final long res = mem.allocate(recordSize);
+
+                    long p0 = res + 4;
+
+                    mem.writeLong(p0, entry.expireTime);
+                    p0 += 8;
+
+                    mem.writeInt(p0, entry.hashCode);
+                    p0 += 4;
+
+                    mem.writeByte(p0, (byte)(entry.isNear ? 1 : 0));
+                    p0 += 1;
+
+                    mem.writeBytes(p0, entry.keyBytes);
+
+                    mem.writeIntVolatile(res, recordSize);
+
+                    ptr = res;
                 }
             }
 
@@ -574,8 +587,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             @Override public void decrementRefCount() {
                 final long p = ptr;
 
-                if (p > 0)
-                    mem.removeOffHeap(p);
+                if (p > 0) {
+                    int size = mem.readIntVolatile(p);
+                    mem.release(p, size);
+                }
             }
 
             /** {@inheritDoc} */
@@ -602,6 +617,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             /** {@inheritDoc} */
             @Override public int hashCode() {
                 return entry().hashCode();
+            }
+
+            @Override public String toString() {
+                return "MyGridOffHeapSmartPointer{ptr=" + ptr + '}';
             }
         }
     }
