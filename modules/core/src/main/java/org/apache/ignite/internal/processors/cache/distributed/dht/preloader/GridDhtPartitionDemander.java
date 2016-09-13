@@ -408,7 +408,7 @@ public class GridDhtPartitionDemander {
                 for (cnt = 0; cnt < lsnrCnt; cnt++) {
                     if (!sParts.get(cnt).isEmpty()) {
                         // Create copy.
-                        GridDhtPartitionDemandMessage initD = new GridDhtPartitionDemandMessage(d, sParts.get(cnt));
+                        GridDhtPartitionDemandMessage initD = createDemandMessage(d, sParts.get(cnt));
 
                         initD.topic(rebalanceTopics.get(cnt));
                         initD.updateSequence(fut.updateSeq);
@@ -448,6 +448,33 @@ public class GridDhtPartitionDemander {
         }
 
         return true;
+    }
+
+    /**
+     * @param old Old message.
+     * @param parts Partitions to demand.
+     * @return New demand message.
+     */
+    private GridDhtPartitionDemandMessage createDemandMessage(GridDhtPartitionDemandMessage old, Collection<Integer> parts) {
+        Map<Integer, Long> partCntrs = null;
+
+        for (Integer part : parts) {
+            try {
+                if (cctx.shared().database().persistenceEnabled()) {
+                    if (partCntrs == null)
+                        partCntrs = new HashMap<>(parts.size(), 1.0f);
+
+                    GridDhtLocalPartition p = cctx.topology().localPartition(part, old.topologyVersion(), false);
+
+                    partCntrs.put(part, p.initialUpdateCounter());
+                }
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
+                // Skip this partition.
+            }
+        }
+
+        return new GridDhtPartitionDemandMessage(old, parts, partCntrs);
     }
 
     /**
@@ -560,6 +587,14 @@ public class GridDhtPartitionDemander {
                         part.lock();
 
                         try {
+                            if (supply.isClean(part.id()) && cctx.shared().database().persistenceEnabled()) {
+                                U.warn(log, "Failed to retrieve historical WAL iterator from remote node " +
+                                    "(WAL history may be too short or local node was down too long). Will clear " +
+                                    "local partition before rebalancing [part=" + part + ", node=" + node + ']');
+
+                                part.clearAll();
+                            }
+
                             // Loop through all received entries and try to preload them.
                             for (GridCacheEntryInfo entry : e.getValue().infos()) {
                                 if (!part.preloadingPermitted(entry.key(), entry.version())) {
@@ -1223,7 +1258,7 @@ public class GridDhtPartitionDemander {
                     retry = false;
 
                     // Create copy.
-                    d = new GridDhtPartitionDemandMessage(d, fut.remaining.get(node.id()).get2());
+                    d = createDemandMessage(d, fut.remaining.get(node.id()).get2());
 
                     long timeout = cctx.config().getRebalanceTimeout();
 
@@ -1251,7 +1286,7 @@ public class GridDhtPartitionDemander {
                                 cctx.io().removeOrderedHandler(d.topic());
 
                                 // Must create copy to be able to work with IO manager thread local caches.
-                                d = new GridDhtPartitionDemandMessage(d, fut.remaining.get(node.id()).get2());
+                                d = createDemandMessage(d, fut.remaining.get(node.id()).get2());
 
                                 // Create new topic.
                                 d.topic(topic(++cntr));

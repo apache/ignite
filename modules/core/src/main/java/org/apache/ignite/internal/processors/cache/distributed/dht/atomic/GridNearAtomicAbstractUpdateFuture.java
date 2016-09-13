@@ -96,6 +96,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /** Keep binary flag. */
     protected final boolean keepBinary;
 
+    /** Recovery flag. */
+    protected final boolean recovery;
+
     /** Wait for topology future flag. */
     protected final boolean waitTopFut;
 
@@ -151,6 +154,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
+     * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param waitTopFut Wait topology future flag.
      */
@@ -168,6 +172,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         int remapCnt,
         boolean waitTopFut
     ) {
@@ -189,6 +194,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
         this.waitTopFut = waitTopFut;
 
         nearEnabled = CU.isNearEnabled(cctx);

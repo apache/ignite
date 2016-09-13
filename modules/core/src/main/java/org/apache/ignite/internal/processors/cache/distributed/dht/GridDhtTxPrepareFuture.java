@@ -362,7 +362,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
+                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM ||
+                    tx.nearOnOriginatingNode() || tx.hasInterceptor()) {
                     cached.unswap(retVal);
 
                     boolean readThrough = !txEntry.skipStore() &&

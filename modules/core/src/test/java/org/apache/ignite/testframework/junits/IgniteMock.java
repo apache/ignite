@@ -396,6 +396,16 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+
+    }
+
     /**
      * @param staticCfg Configuration.
      */

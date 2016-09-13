@@ -258,7 +258,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             canRemap,
             needVer,
-            /*keepCacheObjects*/false);
+            /*keepCacheObjects*/false,
+            opCtx != null && opCtx.recovery());
 
         fut.init();
 
@@ -273,7 +274,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
-        final boolean skipVals,
+        boolean recovery, final boolean skipVals,
         boolean canRemap,
         final boolean needVer
     ) {
@@ -318,6 +319,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             canRemap,
@@ -359,6 +361,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -369,6 +372,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer, subjId,
             taskName,
             deserializeBinary,
+            recovery,
             expiryPlc,
             skipVals,
             canRemap,
@@ -403,7 +407,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObj
+        boolean keepCacheObj,
+        boolean recovery
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             ctx.toCacheKeyObject(key),
@@ -417,7 +422,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             canRemap,
             needVer,
-            keepCacheObj);
+            keepCacheObj,
+            recovery);
 
         fut.init();
 
@@ -447,6 +453,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -582,6 +589,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             expiryPlc,
             skipVals,
             canRemap,
@@ -623,7 +631,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary());
+            opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();

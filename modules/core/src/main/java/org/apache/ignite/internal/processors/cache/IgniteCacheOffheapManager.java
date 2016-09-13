@@ -162,6 +162,15 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException;
 
     /**
+     * @param part Partition.
+     * @param partCntr Partition counter to get historical data if available.
+     * @return Partition data iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteRebalanceIterator rebalanceIterator(final int part, final Long partCntr)
+        throws IgniteCheckedException;
+
+    /**
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
@@ -197,6 +206,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param readers {@code True} to clear readers.
      */
     public void clear(boolean readers);
+
+    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.

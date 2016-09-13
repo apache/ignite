@@ -223,12 +223,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param needVer Need version.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(
+        @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
@@ -254,7 +256,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             skipVal,
             canRemap,
             needVer,
-            false);
+            false,
+            recovery);
 
         // init() will register future for responses if future has remote mappings.
         fut.init(null);

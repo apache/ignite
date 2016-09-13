@@ -419,6 +419,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
+        boolean recovery,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         assert cacheCtx.isLocal() : cacheCtx.name();
@@ -1172,7 +1173,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipVals,
         boolean keepCacheObjects,
         boolean skipStore,
-        final boolean needVer
+        final boolean needVer,
+        final boolean recovery
     ) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
@@ -1192,7 +1194,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         // outside of this loop.
         for (KeyCacheObject key : keys) {
             if ((pessimistic() || needReadVer) && !readCommitted() && !skipVals)
-                addActiveCache(cacheCtx);
+                addActiveCache(cacheCtx, recovery);
 
             IgniteTxKey txKey = cacheCtx.txKey(key);
 
@@ -1478,6 +1480,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final Map<K, V> map,
         final Map<KeyCacheObject, GridCacheVersion> missedMap,
         final boolean deserializeBinary,
+        final boolean recovery,
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean skipStore,
@@ -1510,6 +1513,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 skipVals,
                 needReadVer,
                 !deserializeBinary,
+                recovery,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
@@ -1608,7 +1612,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
-            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+            final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
 
@@ -1623,7 +1627,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 skipVals,
                 keepCacheObjects,
                 skipStore,
-                needVer);
+                needVer,
+                opCtx != null && opCtx.recovery());
 
             if (single && missed.isEmpty())
                 return new GridFinishedFuture<>(retMap);
@@ -1763,6 +1768,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 retMap,
                                 missed,
                                 deserializeBinary,
+                                opCtx != null && opCtx.recovery(),
                                 skipVals,
                                 keepCacheObjects,
                                 skipStore,
@@ -1836,6 +1842,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         retMap,
                         missed,
                         deserializeBinary,
+                        opCtx != null && opCtx.recovery(),
                         skipVals,
                         keepCacheObjects,
                         skipStore,
@@ -1995,9 +2002,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipStore,
         final boolean singleRmv,
         boolean keepBinary,
+        boolean recovery,
         Byte dataCenterId) {
         try {
-            addActiveCache(cacheCtx);
+            addActiveCache(cacheCtx, recovery);
 
             final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
             final boolean needVal = singleRmv || retval || hasFilters;
@@ -2046,7 +2054,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     hasFilters,
                     /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                     retval,
-                    keepBinary);
+                    keepBinary,
+                    recovery);
             }
 
             return new GridFinishedFuture<>();
@@ -2096,12 +2105,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipStore,
         final boolean singleRmv,
         final boolean keepBinary,
+        final boolean recovery,
         Byte dataCenterId
     ) {
         assert retval || invokeMap == null;
 
         try {
-            addActiveCache(cacheCtx);
+            addActiveCache(cacheCtx, recovery);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -2215,7 +2225,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     hasFilters,
                     /*read through*/(invokeMap != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                     retval,
-                    keepBinary);
+                    keepBinary,
+                    recovery);
             }
 
             return new GridFinishedFuture<>();
@@ -2235,6 +2246,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param hasFilters {@code True} if filters not empty.
      * @param readThrough Read through flag.
      * @param retval Return value flag.
+     * @param keepBinary Keep binary flag.
+     * @param recovery Recovery flag.
      * @return Load future.
      */
     private IgniteInternalFuture<Void> loadMissing(
@@ -2248,7 +2261,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final boolean hasFilters,
         final boolean readThrough,
         final boolean retval,
-        final boolean keepBinary) {
+        final boolean keepBinary,
+        final boolean recovery
+    ) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
             new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key,
@@ -2313,6 +2328,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             /*skipVals*/singleRmv,
             needReadVer,
             keepBinary,
+            recovery,
             c);
     }
 
@@ -2927,6 +2943,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 opCtx != null && opCtx.skipStore(),
                 /*singleRmv*/false,
                 keepBinary,
+                opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
             if (pessimistic()) {
@@ -3101,6 +3118,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 opCtx != null && opCtx.skipStore(),
                 false,
                 keepBinary,
+                opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
             if (pessimistic()) {
@@ -3386,6 +3404,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             opCtx != null && opCtx.skipStore(),
             singleRmv,
             keepBinary,
+            opCtx != null && opCtx.recovery(),
             dataCenterId
         );
 
@@ -3543,8 +3562,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
      *      cache (e.g. they have different stores).
      */
-    protected final void addActiveCache(GridCacheContext cacheCtx) throws IgniteCheckedException {
-        txState.addActiveCache(cacheCtx, this);
+    protected final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        txState.addActiveCache(cacheCtx, recovery, this);
     }
 
     /**

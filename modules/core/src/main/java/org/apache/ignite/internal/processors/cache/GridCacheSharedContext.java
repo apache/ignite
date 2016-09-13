@@ -391,6 +391,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return If local node is active on start.
+     */
+    public boolean localNodeActiveOnStart() {
+        return true;
+    }
+
+    /**
      * @return List of shared context managers in starting order.
      */
     public List<GridCacheSharedManager<K, V>> managers() {

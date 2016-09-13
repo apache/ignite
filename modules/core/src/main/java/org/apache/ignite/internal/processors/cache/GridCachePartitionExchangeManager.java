@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -748,11 +747,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
 
-        Collection<ClusterNode> rmts;
-
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
-            rmts = CU.remoteNodes(cctx, AffinityTopologyVersion.NONE);
+            Collection<ClusterNode> rmts = CU.remoteNodes(cctx, AffinityTopologyVersion.NONE);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
@@ -775,23 +772,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, AffinityTopologyVersion.NONE);
 
-        boolean useOldApi = false;
-
-        for (ClusterNode node : nodes) {
-            if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                useOldApi = true;
-        }
-
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal() && cacheCtx.started()) {
                 GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
-
-                if (useOldApi) {
-                    locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
-                        locMap.nodeOrder(),
-                        locMap.updateSequence(),
-                        locMap);
-                }
 
                 m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
             }
@@ -833,9 +816,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
             }
@@ -1418,9 +1398,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             IgniteInternalFuture asyncStartFut = null;
 
             while (!isCancelled()) {
-                GridDhtPartitionsExchangeFuture exchFut = null;
-
                 cnt++;
+
+                GridDhtPartitionsExchangeFuture exchFut = null;
 
                 try {
                     boolean preloadFinished = true;
@@ -1508,11 +1488,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (exchFut.exchangeId().nodeId().equals(cctx.localNodeId()))
                                 lastRefresh.compareAndSet(-1, U.currentTimeMillis());
 
-                            boolean changed = false;
-
                             // Just pick first worker to do this, so we don't
                             // invoke topology callback more than once for the
                             // same event.
+
+                            boolean changed = false;
+
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                 if (cacheCtx.isLocal())
                                     continue;
@@ -1546,7 +1527,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!exchFut.skipPreload()) {
+                        if (!exchFut.skipPreload() && cctx.cache().globalState() == CacheState.ACTIVE) {
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

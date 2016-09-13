@@ -491,6 +491,20 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        checkIgnite();
+
+        return g.active();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        checkIgnite();
+
+        g.active(active);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(g);
     }

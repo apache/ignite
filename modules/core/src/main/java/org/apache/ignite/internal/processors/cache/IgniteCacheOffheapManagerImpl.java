@@ -449,6 +449,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    @Override public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
+        GridIterator<CacheDataRow> iterator = iterator(part.id());
+
+        while (iterator.hasNext()) {
+            CacheDataRow row = iterator.next();
+
+            remove(row.key(), part.id(), part);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public int onUndeploy(ClassLoader ldr) {
         // TODO: GG-11141.
@@ -640,6 +650,53 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     next = cur.get();
 
                 return next != null;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRebalanceIterator rebalanceIterator(int part, Long partCntr) throws IgniteCheckedException {
+        final GridIterator<CacheDataRow> it = iterator(part);
+
+        return new IgniteRebalanceIterator() {
+            @Override public boolean historical() {
+                return false;
+            }
+
+            @Override public boolean hasNextX() throws IgniteCheckedException {
+                return it.hasNextX();
+            }
+
+            @Override public CacheDataRow nextX() throws IgniteCheckedException {
+                return it.nextX();
+            }
+
+            @Override public void removeX() throws IgniteCheckedException {
+                it.removeX();
+            }
+
+            @Override public Iterator<CacheDataRow> iterator() {
+                return it.iterator();
+            }
+
+            @Override public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override public CacheDataRow next() {
+                return it.next();
+            }
+
+            @Override public void close() {
+
+            }
+
+            @Override public boolean isClosed() {
+                return false;
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
             }
         };
     }
@@ -1123,7 +1180,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 
@@ -1182,7 +1239,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
 
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);

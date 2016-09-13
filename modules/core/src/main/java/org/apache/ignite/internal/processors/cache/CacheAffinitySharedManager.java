@@ -35,6 +35,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -47,9 +49,11 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -126,8 +130,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param type Event type.
      * @param node Event node.
      * @param topVer Topology version.
+     * @param customMsg Custom message if event is {@link DiscoveryCustomEvent}.
      */
-    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
+    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer,
+        @Nullable DiscoveryCustomMessage customMsg) {
         if (type == EVT_NODE_JOINED && node.isLocal()) {
             // Clean-up in case of client reconnect.
             registeredCaches.clear();
@@ -140,10 +146,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 registeredCaches.put(desc.cacheId(), desc);
         }
 
-        if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
-            assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+        if (!CU.clientNode(node)) {
+            if (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT) {
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
 
-            lastAffVer = topVer;
+                lastAffVer = topVer;
+            }
         }
     }
 
@@ -175,14 +183,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (log.isDebugEnabled()) {
                 log.debug("Need process affinity change message [lastAffVer=" + lastAffVer +
                     ", msgExchId=" + msg.exchangeId() +
-                    ", msgVer=" + msg.topologyVersion() +']');
+                    ", msgVer=" + msg.topologyVersion() + ']');
             }
         }
         else {
             if (log.isDebugEnabled()) {
                 log.debug("Ignore affinity change message [lastAffVer=" + lastAffVer +
                     ", msgExchId=" + msg.exchangeId() +
-                    ", msgVer=" + msg.topologyVersion() +']');
+                    ", msgVer=" + msg.topologyVersion() + ']');
             }
         }
 
@@ -200,7 +208,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 return;
 
             if (waitInfo.waitCaches.isEmpty()) {
-                msg = affinityChangeMessage(waitInfo);
+                msg = affinityChangeMessage(topVer, waitInfo);
 
                 waitInfo = null;
             }
@@ -241,7 +249,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheHolder cache = caches.get(checkCacheId);
 
                 if (cache != null) {
-                    for (Iterator<Map.Entry<Integer, UUID>> it =  partWait.entrySet().iterator(); it.hasNext();) {
+                    for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
                         Map.Entry<Integer, UUID> e = it.next();
 
                         Integer part = e.getKey();
@@ -263,7 +271,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     waitInfo.waitCaches.remove(checkCacheId);
 
                     if (waitInfo.waitCaches.isEmpty()) {
-                        msg = affinityChangeMessage(waitInfo);
+                        msg = affinityChangeMessage(top.topologyVersion(), waitInfo);
 
                         waitInfo = null;
                     }
@@ -284,7 +292,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param waitInfo Cache rebalance information.
      * @return Message.
      */
-    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(WaitRebalanceInfo waitInfo) {
+    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(AffinityTopologyVersion topVer,
+        WaitRebalanceInfo waitInfo) {
         if (waitInfo.assignments.isEmpty()) // Possible if all awaited caches were destroyed.
             return null;
 
@@ -460,7 +469,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             synchronized (mux) {
                 if (waitInfo != null) {
                     for (Integer cacheId : stoppedCaches) {
-                        boolean rmv =  waitInfo.waitCaches.remove(cacheId) != null;
+                        boolean rmv = waitInfo.waitCaches.remove(cacheId) != null;
 
                         if (rmv) {
                             notify = true;
@@ -545,7 +554,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final CacheAffinityChangeMessage msg)
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
-        assert msg.topologyVersion() != null && msg.exchangeId() == null: msg;
+        assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
         assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
 
         final AffinityTopologyVersion topVer = exchFut.topologyVersion();
@@ -553,7 +562,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (log.isDebugEnabled()) {
             log.debug("Process affinity change message [exchVer=" + exchFut.topologyVersion() +
                 ", affCalcVer=" + affCalcVer +
-                ", msgVer=" + msg.topologyVersion() +']');
+                ", msgVer=" + msg.topologyVersion() + ']');
         }
 
         final Map<Integer, Map<Integer, List<UUID>>> affChange = msg.assignmentChange();
@@ -589,15 +598,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         Integer part = e.getKey();
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
-
-                        assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
-                            "[cache=" + aff.cacheName() +
-                            ", part=" + part +
-                            ", cur=" + F.nodeIds(assignment.get(part)) +
-                            ", new=" + F.nodeIds(nodes) +
-                            ", exchVer=" + exchFut.topologyVersion() +
-                            ", msgVer=" + msg.topologyVersion() +
-                            ']';
 
                         assignment.set(part, nodes);
                     }
@@ -677,7 +677,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processAffinityAssignmentResponse(Integer cacheId, UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+    private void processAffinityAssignmentResponse(Integer cacheId, UUID nodeId,
+        GridDhtAffinityAssignmentResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + nodeId + ", res=" + res + ']');
 
@@ -1246,8 +1247,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert lateAffAssign;
 
         AffinityTopologyVersion topVer = fut.topologyVersion();
@@ -1386,7 +1386,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 AffinityTopologyVersion affTopVer = cache.affinity().lastVersion();
 
-                assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer): "Invalid affinity version " +
+                assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer) : "Invalid affinity version " +
                     "[last=" + affTopVer + ", futVer=" + topVer + ", cache=" + cache.name() + ']';
 
                 List<List<ClusterNode>> curAssignment = cache.affinity().assignments(affTopVer);
@@ -1407,7 +1407,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> newNodes0 = null;
 
-                    assert newPrimary == null || aliveNodes.contains(newPrimary) :  "Invalid new primary [" +
+                    assert newPrimary == null || aliveNodes.contains(newPrimary) : "Invalid new primary [" +
                         "cache=" + cache.name() +
                         ", node=" + newPrimary +
                         ", topVer=" + topVer + ']';
@@ -1483,7 +1483,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             if (log.isDebugEnabled()) {
                 log.debug("Computed new affinity after node left [topVer=" + topVer +
-                    ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null)+ ']');
+                    ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null) + ']');
             }
         }
 
@@ -1554,7 +1554,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param aff Affinity cache.
          * @param initAff Existing affinity cache.
          */
-        public CacheHolder(boolean rebalanceEnabled, GridAffinityAssignmentCache aff, @Nullable GridAffinityAssignmentCache initAff) {
+        public CacheHolder(boolean rebalanceEnabled, GridAffinityAssignmentCache aff,
+            @Nullable GridAffinityAssignmentCache initAff) {
             this.aff = aff;
 
             if (initAff != null)
@@ -1727,9 +1728,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     class WaitRebalanceInfo {
         /** */
+        @GridToStringInclude
         private final AffinityTopologyVersion topVer;
 
         /** */
+        @GridToStringInclude
         private Map<Integer, Map<Integer, UUID>> waitCaches;
 
         /** */
@@ -1790,6 +1793,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignments.put(cacheId, cacheAssignment = new HashMap<>());
 
             cacheAssignment.put(part, assignment);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(WaitRebalanceInfo.class, this);
         }
     }
 }

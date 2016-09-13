@@ -102,6 +102,7 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
             "evtType", getEventType(),
             "key", getKey(),
             "newVal", getValue(),
-            "oldVal", getOldValue());
+            "oldVal", getOldValue(),
+            "partCntr", getPartitionUpdateCounter());
     }
 }

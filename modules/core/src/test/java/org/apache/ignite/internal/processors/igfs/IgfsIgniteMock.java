@@ -492,6 +492,18 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throwUnsupported();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throwUnsupported();
+    }
+
     /**
      * Throw {@link UnsupportedOperationException}.
      */

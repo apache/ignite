@@ -68,8 +68,8 @@ import org.jetbrains.annotations.Nullable;
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
- * This API extends {@link javax.cache.Cache} API which contains {@code JCache (JSR107)} cache functionality
- * and documentation. In addition to {@link javax.cache.Cache} functionality this API provides:
+ * This API extends {@link Cache} API which contains {@code JCache (JSR107)} cache functionality
+ * and documentation. In addition to {@link Cache} functionality this API provides:
  * <ul>
  * <li>Ability to perform basic atomic Map-like operations available on {@code JCache} API.</li>
  * <li>Ability to bulk load cache via {@link #loadCache(IgniteBiPredicate, Object...)} method.
@@ -96,7 +96,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <K> Cache key type.
  * @param <V> Cache value type.
  */
-public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
+public interface IgniteCache<K, V> extends Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync();
 
@@ -136,6 +136,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();
+
+    /**
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * regardless of partition loss policy.
+     *
+     * @return Cache without partition loss protection.
+     */
+    public IgniteCache<K, V> withPartitionRecover();
 
     /**
      * Returns cache that will operate with binary objects.
@@ -226,7 +234,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
+     * via {@link CacheStore#write(Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -335,7 +343,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default optinal peek mode.
+     * Peeks at in-memory cached value using default optional peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
@@ -729,10 +737,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
-     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
+     * Invokes an {@link CacheEntryProcessor} against the {@link Cache.Entry} specified by
+     * the provided key. If an {@link Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
-     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
+     * {@link Cache.Entry}, consisting of the key with a null value is used instead.
      * <p>
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
@@ -771,11 +779,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
+     * Invokes an {@link CacheEntryProcessor} against the set of {@link Cache.Entry}s
      * specified by the set of keys.
      * <p>
-     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
-     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
+     * If an {@link Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link Cache.Entry},
      * consisting of the key and a value of null is provided.
      * <p>
      * The order that the entries for the keys are processed is undefined.
@@ -788,7 +796,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link Map} of {@link EntryProcessorResult}s, one result per key.  Should the
      * {@link CacheEntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
-     * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * {@link EntryProcessorResult#get()} is made.
      * <p>
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
@@ -823,7 +831,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * For distributed caches, if called on clients, stops client cache, if called on a server node,
      * just closes this cache instance and does not destroy cache data.
      * <p>
-     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * After cache instance is closed another {@code IgniteCache} instance for the same
      * cache can be created using {@link Ignite#cache(String)} method.
      */
     @Override public void close();
@@ -890,4 +898,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return MxBean.
      */
     public CacheMetricsMXBean localMxBean();
+
+    /**
+     * Gets a collection of lost partition IDs.
+     *
+     * @return Lost paritions.
+     */
+    public Collection<Integer> lostPartitions();
+
+    /**
+     * Clears partition's lost state and moves cache to a normal mode.
+     */
+    @IgniteAsyncSupported
+    public void resetLostPartitions();
 }

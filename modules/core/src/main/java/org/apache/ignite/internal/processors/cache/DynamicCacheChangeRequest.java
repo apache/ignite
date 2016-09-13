@@ -34,6 +34,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    private UUID requestId;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
@@ -71,6 +73,12 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
+    /** Cache state. Set to non-null when global state is changed. */
+    private CacheState state;
+
+    /** Reset lost partitions flag. */
+    private boolean resetLostPartitions;
+
     /** */
     private transient boolean exchangeNeeded;
 
@@ -83,9 +91,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(UUID requestId, String cacheName, UUID initiatingNodeId) {
+        this.requestId = requestId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
+    }
+
+    public UUID requestId() {
+        return requestId;
     }
 
     /**
@@ -93,6 +106,27 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean exchangeNeeded() {
         return exchangeNeeded;
+    }
+
+    /**
+     * @return State.
+     */
+    public CacheState state() {
+        return state;
+    }
+
+    /**
+     * @param state State.
+     */
+    public void state(CacheState state) {
+        this.state = state;
+    }
+
+    /**
+     * @return {@code True} if global caches state is changes.
+     */
+    public boolean globalStateChange() {
+        return state != null;
     }
 
     /**
@@ -149,6 +183,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean start() {
         return !template && startCfg != null;
+    }
+
+    /**
+     * Set resetLostPartitions flag.
+     */
+    public void markResetLostPartitions() {
+        resetLostPartitions = true;
+    }
+
+    /**
+     * @return Reset lost partitions flag.
+     */
+    public boolean resetLostPartitions() {
+        return resetLostPartitions;
     }
 
     /**

@@ -206,6 +206,9 @@ public class IgniteConfiguration {
     /** Default value for late affinity assignment flag. */
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
+    /** Default value for active on start flag. */
+    public static final boolean DFLT_ACTIVE_ON_START = true;
+
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -451,6 +454,9 @@ public class IgniteConfiguration {
     /** Database configuration. */
     private MemoryConfiguration dbCfg;
 
+    /** Active on start flag. */
+    private boolean activeOnStart = DFLT_ACTIVE_ON_START;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -481,6 +487,7 @@ public class IgniteConfiguration {
         /*
          * Order alphabetically for maintenance purposes.
          */
+        activeOnStart = cfg.isActiveOnStart();
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
@@ -2078,6 +2085,33 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
         this.dbCfg = dbCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,
+     * there will be no cache partition map exchanges performed until the cluster is activated. This should
+     * significantly speed up large topology startup time.
+     * <p>
+     * Default value is {@link #DFLT_ACTIVE_ON_START}.
+     *
+     * @return Active on start flag value.
+     */
+    public boolean isActiveOnStart() {
+        return activeOnStart;
+    }
+
+    /**
+     * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
+     * nodes in the cluster.
+     *
+     * @param activeOnStart Active on start flag value.
+     * @return {@code this} instance.
+     * @see #isActiveOnStart()
+     */
+    public IgniteConfiguration setActiveOnStart(boolean activeOnStart) {
+        this.activeOnStart = activeOnStart;
 
         return this;
     }

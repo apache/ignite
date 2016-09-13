@@ -105,6 +105,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -122,7 +123,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             skipVals,
             canRemap,
             needVer,
-            keepCacheObjects);
+            keepCacheObjects,
+            recovery);
 
         this.topVer = topVer;
 
@@ -188,7 +190,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse res) {
+    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -244,6 +246,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return;
         }
 
+        Throwable err = cctx.topology().topologyVersionFuture().validateCache(cctx, recovery, true, null, keys);
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
+
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
 
         final int keysSize = keys.size();
@@ -289,7 +299,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
-                        skipVals);
+                        skipVals,
+                        recovery);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -342,7 +353,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
-                    cctx.deploymentEnabled());
+                    cctx.deploymentEnabled(),
+                    recovery);
 
                 add(fut); // Append new future.
 
@@ -436,10 +448,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         GridDhtCacheAdapter<K, V> cache = cache();
 
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = cache.entryEx(key);
+                GridCacheEntryEx entry = cache.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
