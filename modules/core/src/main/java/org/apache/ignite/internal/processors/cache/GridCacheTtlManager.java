@@ -516,7 +516,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             /** */
             MyGridOffHeapSmartPointer(long ptr) {
                 this.ptr = ptr;
-                this.entry = entry();
             }
 
             /** {@inheritDoc} */
