@@ -190,7 +190,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     private Path convert(IgfsPath path) {
         URI uri = fileSystemForUser().getUri();
 
-        return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
+        return Path.mergePaths(new Path(uri), new Path(path.toString()));
     }
 
     /**
@@ -207,6 +207,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */

@@ -567,6 +567,18 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      *
      * @param scheme the scheme
      * @param authority the authority
+     * @param subdir Subdirectory path.
+     * @return URI String
+     */
+    static String mkUri(String scheme, String authority, String subdir) {
+        return mkUri(scheme, authority) + subdir + '/';
+    }
+
+    /**
+     * Makes URI.
+     *
+     * @param scheme the scheme
+     * @param authority the authority
      * @return URI String
      */
     static String mkUri(String scheme, String authority) {

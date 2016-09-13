@@ -65,9 +65,19 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
     /** Secondary Fs URI. */
     protected String secondaryUri;
 
-    /** Constructor. */
+    /** Constructor.
+     *
+     * @param mode IGFS mode.
+     * */
     public Hadoop1DualAbstractTest(IgfsMode mode) {
         super(mode);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        igfsSecondary.mkdirs(secondaryUri);
     }
 
     /**
@@ -124,7 +134,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         secondaryConfFullPath = writeConfiguration(secondaryConf, SECONDARY_CFG_PATH);
 
-        secondaryUri = mkUri(IGFS_SCHEME, SECONDARY_AUTHORITY);
+        secondaryUri = mkUri(IGFS_SCHEME, SECONDARY_AUTHORITY, "workDir");
     }
 
     /**

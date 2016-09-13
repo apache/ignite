@@ -20,6 +20,7 @@ package org.apache.ignite.igfs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.hadoop.fs.FileStatus;
@@ -28,7 +29,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
-import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
@@ -58,29 +58,32 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
 
     /** {@inheritDoc} */
     @Override public boolean exists(String path) throws IOException {
-        return get().exists(new Path(path));
+        return get().exists(convert(path));
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(String path, boolean recursive) throws IOException {
-        return get().delete(new Path(path), recursive);
+        return get().delete(convert(path), recursive);
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(String path) throws IOException {
-        boolean ok = get().mkdirs(new Path(path));
+        boolean ok = get().mkdirs(convert(path));
         if (!ok)
             throw new IOException("Failed to mkdirs: " + path);
     }
 
     /** {@inheritDoc} */
     @Override public void format() throws IOException {
-        HadoopIgfsUtils.clear(get());
+        FileStatus[] list = get().listStatus(convert("/"));
+
+        for (FileStatus f : list)
+            get().delete(f.getPath(), true);
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(String path) throws IOException {
-        Path p = new Path(path);
+        Path p = convert(path);
 
         FileStatus status = get().getFileStatus(p);
 
@@ -95,7 +98,7 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
 
     /** {@inheritDoc} */
     @Override public String permissions(String path) throws IOException {
-        return permission(get().getFileStatus(new Path(path)));
+        return permission(get().getFileStatus(convert(path)));
     }
 
     /**
@@ -112,12 +115,12 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
 
     /** {@inheritDoc} */
     @Override public InputStream openInputStream(String path) throws IOException {
-        return get().open(new Path(path));
+        return get().open(convert(path));
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream openOutputStream(String path, boolean append) throws IOException {
-        Path p = new Path(path);
+        Path p = convert(path);
 
         if (append)
             return get().append(p);
@@ -127,7 +130,7 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
 
     /** {@inheritDoc} */
     @Override public T2<Long, Long> times(String path) throws IOException {
-        FileStatus status = get().getFileStatus(new Path(path));
+        FileStatus status = get().getFileStatus(convert(path));
 
         return new T2<>(status.getAccessTime(), status.getModificationTime());
     }
@@ -145,5 +148,18 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
      */
     protected FileSystem get() throws IOException {
         return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
+    }
+
+    /**
+     * Convert path string into Hadoop path.
+     *
+     * @param path Path.
+     * @return Hadoop path.
+     * @throws IOException If f ailed.
+     */
+    private Path convert(String path) throws IOException {
+        URI uri = get().getUri();
+
+        return Path.mergePaths(new Path(uri), new Path(path.toString()));
     }
 }
