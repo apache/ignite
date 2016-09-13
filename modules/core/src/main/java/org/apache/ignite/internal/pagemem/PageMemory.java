@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.jetbrains.annotations.Nullable;
 
 /**
  */

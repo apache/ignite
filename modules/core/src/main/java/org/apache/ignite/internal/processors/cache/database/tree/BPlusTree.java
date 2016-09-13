@@ -108,7 +108,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final IOVersions<? extends BPlusLeafIO<L>> leafIos;
 
     /** */
-//    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
     private final AtomicLong globalRmvId;
 
     /** */

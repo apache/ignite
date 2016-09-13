@@ -85,8 +85,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
 
     /** */
-    private final AtomicLong globalRmvId = new AtomicLong();
+    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000);
 
+    /** {@inheritDoc} */
     @Override public AtomicLong globalRemoveId() {
         return globalRmvId;
     }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridLongList;

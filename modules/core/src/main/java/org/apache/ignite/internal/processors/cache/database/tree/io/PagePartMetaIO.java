@@ -35,30 +35,57 @@ public class PagePartMetaIO extends PageIO {
         new PagePartMetaIO(1)
     );
 
+    /**
+     * @param ver Version.
+     */
     public PagePartMetaIO(int ver) {
         super(T_PART_META, ver);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Partition size.
+     */
     public long getSize(ByteBuffer buf) {
         return buf.getLong(SIZE_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param size Partition size.
+     */
     public void setSize(ByteBuffer buf, long size) {
         buf.putLong(SIZE_OFF, size);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Partition update counter.
+     */
     public long getUpdateCounter(ByteBuffer buf) {
         return buf.getLong(UPDATE_CNTR_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param cntr Partition update counter.
+     */
     public void setUpdateCounter(ByteBuffer buf, long cntr) {
         buf.putLong(UPDATE_CNTR_OFF, cntr);
     }
 
+    /**
+     * @param buf Buffer.
+     * @return Global remove ID.
+     */
     public long getGlobalRemoveId(ByteBuffer buf) {
         return buf.getLong(GLOBAL_RMV_ID_OFF);
     }
 
+    /**
+     * @param buf Buffer.
+     * @param rmvId Global remove ID.
+     */
     public void setGlobalRemoveId(ByteBuffer buf, long rmvId) {
         buf.putLong(GLOBAL_RMV_ID_OFF, rmvId);
     }
