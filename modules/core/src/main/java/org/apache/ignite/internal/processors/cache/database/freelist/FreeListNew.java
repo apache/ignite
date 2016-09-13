@@ -47,7 +47,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
     private static final int BUCKETS = 256; // Must be power of 2.
 
     /** */
-    private static final int REUSE_BUCKET = BUCKETS - 1; // TODO or 0?
+    private static final int REUSE_BUCKET = BUCKETS - 1;
 
     /** */
     private static final Integer COMPLETE = Integer.MAX_VALUE;
@@ -107,6 +107,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
 
         int bucket = freeSpace >>> shift;
 
+        // TODO: properly handle page from reuse bucket for data pages.
         if (bucket == BUCKETS - 1)
             bucket--;
 
@@ -140,6 +141,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
             long pageId = 0;
             boolean newPage = true;
 
+            // TODO
             for (int i = bucket; i < BUCKETS - 1; i++) {
                 pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
 
@@ -274,6 +276,7 @@ public final class FreeListNew extends PagesList implements FreeList, ReuseList 
                 CacheDataRow row,
                 int rowSize
             ) throws IgniteCheckedException {
+                // TODO: context parameter.
                 io.addRow(null, buf, row, rowSize);
 
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.

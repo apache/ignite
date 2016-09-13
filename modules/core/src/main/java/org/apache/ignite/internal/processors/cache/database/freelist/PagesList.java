@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.database.tree.io.PageIO.getPageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.initPage;
@@ -61,6 +62,14 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Striped doubly-linked list of page IDs optionally organized in buckets.
  */
 public abstract class PagesList extends DataStructure {
+    /** */
+    private static final int TRY_LOCK_ATTEMPTS =
+            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
+
+    /** */
+    private static final int MAX_STRIPES_PER_BUCKET =
+        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET", Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
+
     /** */
     private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
         @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
@@ -112,8 +121,6 @@ public abstract class PagesList extends DataStructure {
 
                 if (isWalDeltaRecordNeeded(wal, dataPage))
                     wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPage.id(), pageId));
-
-                cnts.incrementAndGet(bucket);
             }
 
             return true;
@@ -188,8 +195,6 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPageId, nextId));
 
                         updateTail(bucket, pageId, nextId);
-
-                        cnts.incrementAndGet(bucket);
                     }
                     finally {
                         next.releaseWrite(true);
@@ -253,8 +258,6 @@ public abstract class PagesList extends DataStructure {
                         // TODO: use single WAL record for bag?
                         if (isWalDeltaRecordNeeded(wal, page))
                             wal.log(new PagesListAddPageRecord(cacheId, pageId, nextId));
-
-                        cnts.incrementAndGet(bucket);
                     }
                 }
             }
@@ -280,9 +283,6 @@ public abstract class PagesList extends DataStructure {
     private final int buckets;
 
     /** */
-    private final AtomicIntegerArray cnts;
-
-    /** */
     protected final String name;
 
     /**
@@ -303,8 +303,6 @@ public abstract class PagesList extends DataStructure {
         this.name = name;
         this.buckets = buckets;
         this.metaPageId = metaPageId;
-
-        cnts = new AtomicIntegerArray(buckets);
     }
 
     /**
@@ -350,34 +348,6 @@ public abstract class PagesList extends DataStructure {
                     long[] upd = e.getValue().array();
 
                     boolean ok = casBucket(bucket, null, upd);
-                    assert ok;
-
-                    int cnt = 0;
-
-                    for (int tailIdx = 0; tailIdx < upd.length; tailIdx += 2) {
-                        long tailId = upd[tailIdx];
-
-                        assert tailId != 0L;
-
-                        try (Page page = pageMem.page(cacheId, tailId)) {
-                            ByteBuffer buf = page.getForRead();
-
-                            try {
-                                PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
-
-                                int stripeCnt = io.getCount(buf);
-
-                                assert stripeCnt >= 0;
-
-                                cnt += stripeCnt;
-                            }
-                            finally {
-                                page.releaseRead();
-                            }
-                        }
-                    }
-
-                    ok = cnts.compareAndSet(bucket, 0, cnt);
                     assert ok;
                 }
             }
@@ -522,7 +492,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    protected final long addStripe(int bucket) throws IgniteCheckedException {
+    private long addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
         try (Page page = page(pageId)) {
@@ -684,45 +654,51 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataPageBuf == null;
 
+        int lockAttempt = 0;
+
         for (;;) {
             long tailId = getPageForPut(bucket);
 
             try (Page tail = page(tailId)) {
-                if (bag != null ?
-                    // Here we can always take pages from the bag to build our list.
-                    writePage0(tailId, tail, putReuseBag, bag, null, bucket) :
-                    // Here we can use the data page to build list only if it is empty and
-                    // it is being put into reuse bucket. Usually this will be true, but there is
-                    // a case when there is no reuse bucket in the free list, but then deadlock
-                    // on node page allocation from separate reuse list is impossible.
-                    // If the data page is not empty it can not be put into reuse bucket and thus
-                    // the deadlock is impossible as well.
-                    writePage0(tailId, tail, putDataPage, dataPage, dataPageBuf, bucket))
-                    return;
+                ByteBuffer buf = writeLockPage(tail, bucket, lockAttempt++);
+
+                if (buf == null)
+                    continue;
+
+                boolean ok = false;
+
+                try {
+                    ok = bag != null ?
+                        // Here we can always take pages from the bag to build our list.
+                        writePage0(tailId, buf, tail, putReuseBag, bag, null, bucket) :
+                        // Here we can use the data page to build list only if it is empty and
+                        // it is being put into reuse bucket. Usually this will be true, but there is
+                        // a case when there is no reuse bucket in the free list, but then deadlock
+                        // on node page allocation from separate reuse list is impossible.
+                        // If the data page is not empty it can not be put into reuse bucket and thus
+                        // the deadlock is impossible as well.
+                        writePage0(tailId, buf, tail, putDataPage, dataPage, dataPageBuf, bucket);
+
+                    if (ok)
+                        return;
+                }
+                finally {
+                    tail.releaseWrite(ok);
+                }
             }
         }
     }
 
     private static <X, Y> boolean writePage0(long pageId,
+        ByteBuffer buf,
         Page page,
         CheckingPageHandler<X, Y> h,
         X arg1,
         Y arg2,
         int bucket) throws IgniteCheckedException {
-        ByteBuffer buf = page.getForWrite();
+        PageIO io = PageIO.getPageIO(buf);
 
-        boolean ok = false;
-
-        try {
-            PageIO io = PageIO.getPageIO(buf);
-
-            ok = h.run(pageId, page, io, buf, arg1, arg2, bucket);
-        }
-        finally {
-            page.releaseWrite(ok);
-        }
-
-        return ok;
+        return h.run(pageId, page, io, buf, arg1, arg2, bucket);
     }
 
     /**
@@ -739,23 +715,51 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * @param page Page.
+     * @param bucket Bucket.
+     * @param lockAttempt Lock attempts counter.
+     * @return Buffer if page is locket of {@code null} if can retry lock.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private ByteBuffer writeLockPage(Page page, int bucket, int lockAttempt) throws IgniteCheckedException {
+        ByteBuffer buf = page.tryGetForWrite();
+
+        if (buf != null)
+            return buf;
+
+        if (lockAttempt == TRY_LOCK_ATTEMPTS) {
+            long[] stripes = getBucket(bucket);
+
+            if (stripes == null || stripes.length / 2 < MAX_STRIPES_PER_BUCKET) {
+                addStripe(bucket);
+
+                return null;
+            }
+        }
+
+        return lockAttempt < TRY_LOCK_ATTEMPTS ? null : page.getForWrite();
+    }
+
+    /**
      * @param bucket Bucket index.
      * @param initIoVers Optional IO to initialize page.
      * @return Removed page ID.
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
-        for (;;) {
-            if (cnts.get(bucket) == 0)
-                return 0L;
+        int lockAttempt = 0;
 
+        for (;;) {
             long tailId = getPageForTake(bucket);
 
             if (tailId == 0L)
                 return 0L;
 
             try (Page tail = page(tailId)) {
-                ByteBuffer tailBuf = tail.getForWrite();
+                ByteBuffer tailBuf = writeLockPage(tail, bucket, lockAttempt++);
+
+                if (tailBuf == null)
+                    continue;
 
                 try {
                     if (getPageId(tailBuf) != tailId)
@@ -772,8 +776,6 @@ public abstract class PagesList extends DataStructure {
                         if (isWalDeltaRecordNeeded(wal, tail))
                             wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
 
-                        cnts.decrementAndGet(bucket);
-
                         return pageId;
                     }
 
@@ -788,10 +790,9 @@ public abstract class PagesList extends DataStructure {
                             assert ok;
                         }
 
-                        // Rotate page so that successors will see this update.
-                        tailId = PageIdUtils.rotatePageId(tailId);
-
                         if (initIoVers != null) {
+                            tailId = PageIdUtils.changeType(tailId, FLAG_DATA);
+
                             PageIO initIo = initIoVers.latest();
 
                             initIo.initNewPage(tailBuf, tailId);
@@ -800,6 +801,8 @@ public abstract class PagesList extends DataStructure {
                                 wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(), initIo.getVersion(), tailId));
                         }
                         else {
+                            tailId = PageIdUtils.rotatePageId(tailId);
+
                             PageIO.setPageId(tailBuf, tailId);
 
                             if (isWalDeltaRecordNeeded(wal, tail))
@@ -862,8 +865,6 @@ public abstract class PagesList extends DataStructure {
 
                 if (isWalDeltaRecordNeeded(wal, page))
                     wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataPageId));
-
-                cnts.decrementAndGet(bucket);
 
                 // Reset free list page ID.
                 dataIO.setFreeListPageId(dataPageBuf, 0L);

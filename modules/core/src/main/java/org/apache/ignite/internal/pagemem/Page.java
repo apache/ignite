@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -51,6 +52,11 @@ public interface Page extends AutoCloseable {
      * @return ByteBuffer for modifying the page.
      */
     public ByteBuffer getForWrite();
+
+    /**
+     * @return ByteBuffer for modifying the page of {@code null} if failed to get write lock.
+     */
+    @Nullable public ByteBuffer tryGetForWrite();
 
     /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.
