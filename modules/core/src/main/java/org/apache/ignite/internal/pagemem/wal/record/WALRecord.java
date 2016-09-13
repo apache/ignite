@@ -61,6 +61,9 @@ public abstract class WALRecord {
         DATA_PAGE_REMOVE_RECORD,
 
         /** */
+        DATA_PAGE_SET_FREE_LIST_PAGE,
+
+        /** */
         BTREE_META_PAGE_INIT_ROOT,
 
         /** */
@@ -101,6 +104,21 @@ public abstract class WALRecord {
 
         /** */
         BTREE_PAGE_MERGE,
+
+        /** */
+        PAGES_LIST_SET_NEXT,
+
+        /** */
+        PAGES_LIST_SET_PREVIOUS,
+
+        /** */
+        PAGES_LIST_INIT_NEW_PAGE,
+
+        /** */
+        PAGES_LIST_ADD_PAGE,
+
+        /** */
+        PAGES_LIST_REMOVE_PAGE,
 
         /** */
         MEMORY_RECOVERY

@@ -49,7 +49,10 @@ public class DataPageIO extends PageIO {
     private static final int SHOW_LINK = 0b0100;
 
     /** */
-    private static final int FREE_SPACE_OFF = COMMON_HEADER_END;
+    private static final int FREE_LIST_PAGE_ID_OFF = COMMON_HEADER_END;
+
+    /** */
+    private static final int FREE_SPACE_OFF = FREE_LIST_PAGE_ID_OFF + 8;
 
     /** */
     private static final int DIRECT_CNT_OFF = FREE_SPACE_OFF + 2;
@@ -87,6 +90,7 @@ public class DataPageIO extends PageIO {
         super.initNewPage(buf, pageId);
 
         setEmptyPage(buf);
+        setFreeListPageId(buf, 0L);
     }
 
     /**
@@ -97,6 +101,22 @@ public class DataPageIO extends PageIO {
         setIndirectCount(buf, 0);
         setFirstEntryOffset(buf, buf.capacity());
         setRealFreeSpace(buf, buf.capacity() - ITEMS_OFF);
+    }
+
+    /**
+     * @param buf Byte buffer.
+     * @param freeListPageId Free list page ID.
+     */
+    public void setFreeListPageId(ByteBuffer buf, long freeListPageId) {
+        buf.putLong(FREE_LIST_PAGE_ID_OFF, freeListPageId);
+    }
+
+    /**
+     * @param buf Byte buffer.
+     * @return Free list page ID.
+     */
+    public long getFreeListPageId(ByteBuffer buf) {
+        return buf.getLong(FREE_LIST_PAGE_ID_OFF);
     }
 
     /**
@@ -186,6 +206,13 @@ public class DataPageIO extends PageIO {
         freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
         return freeSpace < 0 ? 0 : freeSpace;
+    }
+
+    /**
+     * @return {@code true} If there is no useful data in this page.
+     */
+    public boolean isEmpty(ByteBuffer buf) {
+        return getDirectCount(buf) == 0;
     }
 
     /**

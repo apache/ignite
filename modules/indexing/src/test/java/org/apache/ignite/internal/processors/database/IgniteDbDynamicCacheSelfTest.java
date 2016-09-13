@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -105,8 +106,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     public void testMultipleDynamicCaches() throws Exception {
         int caches = 10;
 
-        int iterations = 50;
-
         int entries = 10;
 
         startGrids(1);
@@ -122,8 +121,12 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         ccfg.setIndexedTypes(Integer.class, String.class);
 
-        for (int k = 0; k < iterations; k++) {
-            System.out.println("Iteration: " + k);
+        long finishTime = U.currentTimeMillis() + getTestTimeout() / 2;
+
+        int iteration = 0;
+
+        while (U.currentTimeMillis() < finishTime ){
+            System.out.println("Iteration: " + iteration);
 
             for (int i = 0; i < caches; i++) {
                 ccfg.setName("cache" + i);
@@ -135,6 +138,8 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
                 ignite.destroyCache("cache" + i);
             }
+
+            iteration ++;
         }
     }
 }
