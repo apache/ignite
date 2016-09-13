@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
 /**
  * Abstract page delta record.
@@ -59,9 +59,10 @@ public abstract class PageDeltaRecord extends WALRecord {
      * Apply changes from this delta to the given page.
      * It is assumed that the given buffer represents page state right before this update.
      *
-     * @param cctx Cache context.
+     *
+     * @param pageMem Page memory to apply this record.
      * @param buf Page buffer.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException;
+    public abstract void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException;
 }

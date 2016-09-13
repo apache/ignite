@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -30,12 +31,22 @@ import java.nio.ByteBuffer;
  */
 public interface IgnitePageStoreManager extends GridCacheSharedManager {
     /**
+     * Invoked before starting checkpoint recover.
+     */
+    public void beginRecover();
+
+    /**
+     * Invoked after checkpoint recover is finished.
+     */
+    public void finishRecover();
+
+    /**
      * Callback called when a cache is starting.
      *
      * @param ccfg Cache configuration of the cache being started.
      * @throws IgniteCheckedException If failed to handle cache start callback.
      */
-    public void onBeforeCacheStart(CacheConfiguration ccfg) throws IgniteCheckedException;
+    public void initializeForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
@@ -44,7 +55,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @param cacheCtx Cache context of the cache being stopped.
      * @throws IgniteCheckedException If failed to handle cache destroy callback.
      */
-    public void onAfterCacheDestroy(GridCacheContext cacheCtx) throws IgniteCheckedException;
+    public void shutdownForCache(GridCacheContext cacheCtx) throws IgniteCheckedException;
 
     /**
      * Callback called when a partition is created on the local node.
@@ -145,4 +156,15 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return Meta page ID.
      */
     public long metaPageId(int cacheId);
+
+    /**
+     * @return set of cache names which configurations were saved
+     */
+    public Set<String> savedCacheNames();
+
+    /**
+     * @param cacheName Cache name.
+     * @return saved configuration for cache
+     */
+    public CacheConfiguration readConfiguration(String cacheName);
 }

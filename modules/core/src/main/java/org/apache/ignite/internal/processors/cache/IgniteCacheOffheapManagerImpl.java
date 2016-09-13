@@ -1444,7 +1444,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private static class PendingEntryInnerIO extends BPlusInnerIO<PendingRow> implements PendingRowIO {
+    public static class PendingEntryInnerIO extends BPlusInnerIO<PendingRow> implements PendingRowIO {
         /** */
         public static final IOVersions<PendingEntryInnerIO> VERSIONS = new IOVersions<>(
             new PendingEntryInnerIO(1)
@@ -1501,7 +1501,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private static class PendingEntryLeafIO extends BPlusLeafIO<PendingRow> implements PendingRowIO {
+    public static class PendingEntryLeafIO extends BPlusLeafIO<PendingRow> implements PendingRowIO {
         /** */
         public static final IOVersions<PendingEntryLeafIO> VERSIONS = new IOVersions<>(
             new PendingEntryLeafIO(1)
