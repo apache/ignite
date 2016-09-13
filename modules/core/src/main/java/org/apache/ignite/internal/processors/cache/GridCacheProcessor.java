@@ -590,7 +590,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
-//TODO        Set<String> savedCacheNames = Collections.emptySet();
 
         for (CacheConfiguration cfg : cfgs)
             savedCacheNames.remove(cfg.getName());
@@ -598,13 +597,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (String name : internalCaches)
             savedCacheNames.remove(name);
 
-        for (String name : savedCacheNames) {
-            CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
+        if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
+            log.info("Will start persisted dynamic caches: " + savedCacheNames);
 
-            if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfg.getName()))
-                continue;
+            for (String name : savedCacheNames) {
+                CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
-            registerCache(internalCaches, cfg);
+                registerCache(internalCaches, cfg);
+            }
         }
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
@@ -613,7 +613,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             log.debug("Started cache processor.");
     }
 
-    private void registerCache(Set<String> internalCaches, CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
+    /**
+     * @param internalCaches Collection of internal caches.
+     * @param cfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void registerCache(Collection<String> internalCaches, CacheConfiguration<?, ?> cfg)
+        throws IgniteCheckedException {
         cloneCheckSerializable(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
@@ -748,6 +754,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
+            }
+
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
+                    continue;
+
+                sharedCtx.pageStore().initializeForCache(desc.cacheConfiguration());
             }
 
             sharedCtx.database().onKernalStart(false);
@@ -1045,7 +1058,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.continuous().onCacheStart(cacheCtx);
 
         if (sharedCtx.pageStore() != null)
-            sharedCtx.pageStore().onBeforeCacheStart(cacheCtx.config());
+            sharedCtx.pageStore().initializeForCache(cacheCtx.config());
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -1153,7 +1166,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (destroy && sharedCtx.pageStore() != null) {
             try {
-                sharedCtx.pageStore().onAfterCacheDestroy(ctx);
+                sharedCtx.pageStore().shutdownForCache(ctx);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
