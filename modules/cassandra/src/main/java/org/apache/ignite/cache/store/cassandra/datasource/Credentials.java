@@ -17,10 +17,12 @@
 
 package org.apache.ignite.cache.store.cassandra.datasource;
 
+import java.io.Serializable;
+
 /**
  * Provides credentials for Cassandra (instead of specifying user/password directly in Spring context XML).
  */
-public interface Credentials {
+public interface Credentials extends Serializable {
     /**
      * Returns user name
      *
