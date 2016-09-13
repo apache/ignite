@@ -351,7 +351,7 @@ public abstract class BPlusIO<L> extends PageIO {
 
         // Move down split key in inner pages.
         if (!isLeaf() && !emptyBranch) {
-            assert prntIdx < prntCnt; // It must be adjusted already.
+            assert prntIdx >= 0 && prntIdx < prntCnt: prntIdx; // It must be adjusted already.
 
             // We can be sure that we have enough free space to store split key here,
             // because we've done remove already and did not release child locks.

@@ -210,25 +210,14 @@ public abstract class BPlusTree<L, T extends L> {
         @Override public Result run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int isBack) {
             assert !io.isLeaf(); // Inner page.
 
-            if (isBack == TRUE.ordinal()) {
-                // Count can be 0 here if it is a routing page, in this case we have a single child.
-                int idx = io.getCount(buf);
+            boolean back = isBack == TRUE.ordinal();
 
-                // We need to do get the rightmost child: io.getRight(cnt - 1),
-                // here io.getLeft(cnt) is the same, but handles negative index if count is 0.
-                long res = inner(io).getLeft(buf, idx);
+            long res = doAskNeighbor(io, buf, back);
 
-                assert res != 0 : "inner page with no route down: " + pageId;
-
+            if (back)
                 g.backId = res;
-            }
             else {
                 assert isBack == FALSE.ordinal() : isBack;
-
-                // Leftmost child.
-                long res = inner(io).getLeft(buf, 0);
-
-                assert res != 0 : "inner page with no route down: " + pageId;
 
                 g.fwdId = res;
             }
@@ -261,7 +250,7 @@ public abstract class BPlusTree<L, T extends L> {
                 // Else we need to reach leaf page, go left down.
             }
             else {
-                idx = -idx - 1;
+                idx = fix(idx);
 
                 // If we are on the right edge, then check for expected forward page and retry of it does match.
                 // It means that concurrent split happened. This invariant is referred as `triangle`.
@@ -366,7 +355,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert idx < 0 : "Duplicate row in index.";
 
-            idx = -idx - 1;
+            idx = fix(idx);
 
             // Possible split or merge.
             if (idx == cnt && io.getForward(buf) != p.fwdId)
@@ -407,7 +396,7 @@ public abstract class BPlusTree<L, T extends L> {
                 if (!r.ceil) // We've found exact match on search but now it's gone.
                     return RETRY;
 
-                idx = -idx - 1;
+                idx = fix(idx);
 
                 if (idx == cnt) // We can not remove ceiling row here. Bad luck.
                     return NOT_FOUND;
@@ -1214,7 +1203,20 @@ public abstract class BPlusTree<L, T extends L> {
      * @return String.
      */
     private static String formatPageId(long x) {
-        return new SB().appendHex(x).toString();
+        return U.hexLong(x);
+    }
+
+    /**
+     * @param idx Index after binary search, which can be negative.
+     * @return Always positive index.
+     */
+    private static int fix(int idx) {
+        assert idx > -Short.MAX_VALUE && idx < Short.MAX_VALUE: idx;
+
+        if (idx < 0)
+            idx = -idx - 1;
+
+        return idx;
     }
 
     /**
@@ -1736,8 +1738,6 @@ public abstract class BPlusTree<L, T extends L> {
      * @param page Page.
      */
     private static void writeUnlockAndClose(Page page) {
-        assert page != null;
-
         try {
             page.releaseWrite(true);
         }
@@ -1838,6 +1838,31 @@ public abstract class BPlusTree<L, T extends L> {
             if (p.canRelease(pageId, page, lvl))
                 page.close();
         }
+    }
+
+    /**
+     * @param io IO.
+     * @param buf Buffer.
+     * @param back Backward page.
+     * @return Page ID.
+     */
+    private long doAskNeighbor(BPlusIO<L> io, ByteBuffer buf, boolean back) {
+        long res;
+
+        if (back) {
+            // Count can be 0 here if it is a routing page, in this case we have a single child.
+            int cnt = io.getCount(buf);
+
+            // We need to do get the rightmost child: io.getRight(cnt - 1),
+            // here io.getLeft(cnt) is the same, but handles negative index if count is 0.
+            res = inner(io).getLeft(buf, cnt);
+        }
+        else // Leftmost child.
+            res = inner(io).getLeft(buf, 0);
+
+        assert res != 0 : "inner page with no route down: " + U.hexLong(PageIO.getPageId(buf));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -2430,19 +2455,9 @@ public abstract class BPlusTree<L, T extends L> {
         private boolean findInnerKeyInTail() throws IgniteCheckedException {
             int idx = findInsertionPoint(tail.io, tail.buf, tail.getCount(), row, 0);
 
-            boolean found = true;
-
-            if (idx < 0) {
-                idx = -idx - 1;
-
-                found = false;
-            }
-
-            assert idx <= Short.MAX_VALUE: idx;
-
             tail.idx = (short)idx;
 
-            return found;
+            return idx >= 0;
         }
 
         /**
@@ -2465,7 +2480,15 @@ public abstract class BPlusTree<L, T extends L> {
             if (needMergeEmptyBranch == TRUE) {
                 // We can't merge empty branch if tail in routing page.
                 if (tail.down == null || tail.getCount() == 0) {
-                    assert !root: "down";
+                    if (root) {
+                        // We are at the empty leaf root page: nothing to do here.
+                        assert tail.lvl == 0 && tail.sibling == null: "leaf root";
+
+                        releaseTail();
+                        finish();
+
+                        return true;
+                    }
 
                     return false; // Lock the whole branch up to the first non-empty.
                 }
@@ -2485,11 +2508,8 @@ public abstract class BPlusTree<L, T extends L> {
 
                 needReplaceInner = DONE;
             }
-            else if (needReplaceInner == TRUE) {
-                assert !root: "needReplaceInner";
-
+            else if (needReplaceInner == TRUE && !root) // We may miss inner key because of concurrent merge.
                 return false; // Lock the whole branch up to the inner key page.
-            }
 
             if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl) {
                 // Free root if it became empty after merge.
@@ -2642,11 +2662,8 @@ public abstract class BPlusTree<L, T extends L> {
             assert left.io.getForward(left.buf) == right.pageId;
 
             int prntCnt = prnt.getCount();
-            int prntIdx = prnt.idx != Short.MIN_VALUE ? prnt.idx :
-                findInsertionPoint(prnt.io, prnt.buf, prntCnt, row, 0);
-
-            if (prntIdx < 0)
-                prntIdx = -prntIdx - 1;
+            int prntIdx = fix(prnt.idx != Short.MIN_VALUE ? prnt.idx :
+                findInsertionPoint(prnt.io, prnt.buf, prntCnt, row, 0));
 
             // Fix index for the right move: remove the last item.
             if (prntIdx == prntCnt)
@@ -2658,6 +2675,10 @@ public abstract class BPlusTree<L, T extends L> {
 
             if (!left.io.merge(prnt.io, prnt.buf, prntIdx, left.buf, right.buf, emptyBranch))
                 return false;
+
+            // Invalidate indexes after successful merge.
+            prnt.idx = Short.MIN_VALUE;
+            left.idx = Short.MIN_VALUE;
 
             if (needWalDeltaRecord(left.page))
                 wal.log(new MergeRecord<>(cacheId, left.page.id(), prnt.page.id(), prntIdx,
@@ -2713,7 +2734,6 @@ public abstract class BPlusTree<L, T extends L> {
          */
         private void replaceInner() throws IgniteCheckedException {
             assert needReplaceInner == READY : needReplaceInner;
-            assert tail.lvl > 0 : "leaf";
 
             int innerCnt;
             int innerIdx;
@@ -2722,9 +2742,11 @@ public abstract class BPlusTree<L, T extends L> {
 
             for (;;) { // Find inner key to replace.
                 assert inner.type == Tail.EXACT : inner.type;
+                assert inner.lvl > 0 : "leaf " + tail.lvl;
 
                 innerCnt = inner.getCount();
-                innerIdx = findInsertionPoint(inner.io, inner.buf, innerCnt, row, 0);
+                innerIdx = inner.idx != Short.MIN_VALUE ? inner.idx :
+                    findInsertionPoint(inner.io, inner.buf, innerCnt, row, 0);
 
                 if (innerIdx >= 0)
                     break; // Successfully found the inner key.
@@ -2937,7 +2959,7 @@ public abstract class BPlusTree<L, T extends L> {
             Tail<L> t = tail;
 
             while (t != null) {
-                sb.a(printPage(t.io, t.buf, keys));
+                sb.a(t.lvl).a(": ").a(printPage(t.io, t.buf, keys));
 
                 Tail<L> d = t.down;
 
@@ -3215,7 +3237,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                 assert idx < 0;
 
-                cnt = -idx - 1;
+                cnt = fix(idx);
 
                 nextPageId = 0; // The End.
             }

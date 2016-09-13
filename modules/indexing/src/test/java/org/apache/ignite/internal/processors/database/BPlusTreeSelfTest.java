@@ -509,14 +509,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMassiveRemove1() throws Exception {
+    public void testMassiveRemove1_false() throws Exception {
         MAX_PER_PAGE = 1;
-        final int threads = 16;
+
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @param canGetRow Can get row in inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestMassiveRemove(final boolean canGetRow) throws Exception {
+        final int threads = 32;
         final int keys = 100;
 
         final AtomicLongArray rmvd = new AtomicLongArray(keys);
 
-        final TestTree tree = createTestTree(true);
+        final TestTree tree = createTestTree(canGetRow);
 
         // Put keys in reverse order to have a better balance in the tree (lower height).
         for (long i = keys - 1; i >= 0; i--) {
@@ -551,7 +569,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             break;
 
                         assertEquals(Long.valueOf(idx), tree.remove((long)idx));
-                        rmvdIds.add((long)idx);
+
+                        if (canGetRow)
+                            rmvdIds.add((long)idx);
                     }
 
                     return null;
@@ -641,7 +661,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 500_000 : 1000_000;
+        int loops = reuseList == null ? 300_000 : 1000_000;
 
         for (int i = 0 ; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
@@ -862,9 +882,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             store(dst, dstIdx, row, null);
         }
 
+        /**
+         * @param row Row.
+         */
+        private void checkNotRemoved(Long row) {
+            if (rmvdIds.contains(row))
+                fail("Removed row: " + row);
+        }
+
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            assertFalse(rmvdIds.contains(row));
+            checkNotRemoved(row);
 
             buf.putLong(off, row);
         }
@@ -872,7 +900,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
-            return buf.getLong(offset(idx));
+            Long row = buf.getLong(offset(idx));
+
+            checkNotRemoved(row);
+
+            return row;
         }
     }
 
