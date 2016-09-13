@@ -201,9 +201,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                 pendingEntry = firstKey.entry();
 
-                assert pendingEntry != null;
-
-                if (pendingEntry.expireTime > now)
+                if (pendingEntry != null && pendingEntry.expireTime > now)
                     return; // entry is not expired
 
                 entryRemoved = pendingPointers.remove(firstKey);
@@ -278,10 +276,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     }
 
                     long waitTime;
-                    if (key0 == null) {
+                    if (pendingEntry == null) {
                         waitTime = 500;
                         nextExpireTime = curTime + 500;
                     }
+                    else if (pendingEntry == null)
+                        break;
                     else {
                         long expireTime = pendingEntry.expireTime;
                         waitTime = expireTime - curTime;
@@ -339,13 +339,13 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private GridCacheEntryEx unwrapEntry(PendingEntry e) {
         KeyCacheObject key;
         try {
-            key = cctx.toCacheKeyObject(e.keyBytes);
+            key = (e.isNear) ? cctx.near().context().toCacheKeyObject(e.keyBytes) : cctx.toCacheKeyObject(e.keyBytes);
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
         }
 
-        return cctx.cache().entryEx(key);
+        return (e.isNear) ? cctx.near().entryEx(key) : cctx.cache().entryEx(key);
     }
 
     /**
@@ -497,6 +497,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (entry == null && p > 0) {
                     IgniteBiTuple<byte[], Byte> biTuple = mem.get(p);
 
+                    assert biTuple != null;
+
                     try {
                         //TODO: replace with custom serialization to save some more memory
                         entry = marshaller.unmarshal(biTuple.get1(), null);
@@ -559,11 +561,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             @Override public void decrementRefCount() {
                 final long p = ptr;
 
-                if (p > 0) {
-                    ptr = 0;
-
+                if (p > 0)
                     mem.removeOffHeap(p);
-                }
             }
 
             /** {@inheritDoc} */

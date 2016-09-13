@@ -86,7 +86,7 @@ public class GridOffHeapSnapTreeSet<E extends GridOffHeapSmartPointer> extends A
     @Nullable public E firstx() {
         Map.Entry<E, DummySmartPointer> e = m.firstEntry();
 
-        return e == null || e.getValue() == DUMMY_SMART_POINTER ? null : e.getKey();
+        return e == null || e.getValue() != DUMMY_SMART_POINTER ? null : e.getKey();
     }
 
     @Override public boolean remove(Object o) {
