@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * Annotation which indicates that the test is ignored.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ElementType.METHOD})
 public @interface IgniteIgnore {
     /**
      * Reason for ignore (usually link to JIRA ticket).
