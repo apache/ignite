@@ -20,6 +20,8 @@ package org.apache.ignite.testframework;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.jetbrains.annotations.Nullable;
 import org.junit.internal.MethodSorter;
@@ -123,6 +125,7 @@ public class IgniteTestSuite extends TestSuite {
 
             for(List<String> names = new ArrayList<>(); Test.class.isAssignableFrom(superCls);
                 superCls = superCls.getSuperclass()) {
+
                 Method[] methods = MethodSorter.getDeclaredMethods(superCls);
 
                 for (Method each : methods) {
@@ -159,10 +162,38 @@ public class IgniteTestSuite extends TestSuite {
 
         names.add(name);
 
-        if (m.isAnnotationPresent(IgniteIgnore.class) == ignoredOnly) {
-            addTest(createTest(theClass, name));
+        boolean hasIgnore = m.isAnnotationPresent(IgniteIgnore.class);
 
-            return true;
+        if (ignoredOnly) {
+            if (hasIgnore) {
+                IgniteIgnore ignore = m.getAnnotation(IgniteIgnore.class);
+
+                String ticket = ignore.jira();
+
+                if (F.isEmpty(ticket))
+                    throw new IllegalArgumentException("JIRA ticket is not set for ignored test [class=" +
+                        theClass.getName() + ", method=" + name + ']');
+
+                Test test = createTest(theClass, name);
+
+                if (ignore.forceFailure()) {
+                    if (test instanceof GridAbstractTest)
+                        ((GridAbstractTest)test).forceFailure(ignore.jira());
+                    else
+                        test = new ForcedFailure(name, ignore.jira());
+                }
+
+                addTest(test);
+
+                return true;
+            }
+        }
+        else {
+            if (!hasIgnore) {
+                addTest(createTest(theClass, name));
+
+                return true;
+            }
         }
 
         return false;
@@ -188,5 +219,31 @@ public class IgniteTestSuite extends TestSuite {
      */
     private static boolean isPublicTestMethod(Method m) {
         return isTestMethod(m) && Modifier.isPublic(m.getModifiers());
+    }
+
+    /**
+     * Test case simulating failure.
+     */
+    private static class ForcedFailure extends TestCase {
+        /** Message. */
+        private final String msg;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param msg  Message.
+         */
+        private ForcedFailure(String name, String msg) {
+            super(name);
+
+            this.msg = msg;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void runTest() {
+            fail("Forced failure: " + msg + " (extend " + GridAbstractTest.class.getSimpleName() +
+                " for better output).");
+        }
     }
 }

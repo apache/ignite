@@ -89,7 +89,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-3663")
+    @IgniteIgnore(jira = "https://issues.apache.org/jira/browse/IGNITE-3663")
     public void testSessionRenewalDuringLogin() throws Exception {
         testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }

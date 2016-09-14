@@ -29,7 +29,12 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface IgniteIgnore {
     /**
-     * The optional reason why the test is ignored.
+     * JIRA ticket URL for this failure.
      */
-    String value() default "";
+    String jira();
+
+    /**
+     * Whether tests should be failed immediately. Useful when test hangs or consumes a lot of time.
+     */
+    boolean forceFailure() default false;
 }
