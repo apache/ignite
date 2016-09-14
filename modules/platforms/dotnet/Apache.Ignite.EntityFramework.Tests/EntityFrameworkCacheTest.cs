@@ -25,6 +25,7 @@ namespace Apache.Ignite.EntityFramework.Tests
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Entity;
+    using System.Data.Entity.Core.EntityClient;
     using System.Data.Entity.Infrastructure;
     using System.IO;
     using System.Linq;
@@ -527,6 +528,29 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                 var script = objCtx.CreateDatabaseScript();
                 Assert.IsTrue(script.StartsWith("CREATE TABLE \"Blogs\""));
+            }
+        }
+
+        /// <summary>
+        /// Tests the entity SQL commands.
+        /// </summary>
+        [Test]
+        public void TestEntitySql()
+        {
+            using (var ctx = GetDbContext())
+            {
+                var objCtx = ((IObjectContextAdapter)ctx).ObjectContext;
+
+                var conn = objCtx.Connection;
+                conn.Open();
+
+                var cmd = conn.CreateCommand() as EntityCommand;
+                Assert.IsNotNull(cmd);
+
+                cmd.CommandText = "SELECT COUNT(*) FROM Blogs";
+                var res = cmd.ExecuteScalar();
+
+                Assert.AreEqual(0, (int)res);
             }
         }
 
