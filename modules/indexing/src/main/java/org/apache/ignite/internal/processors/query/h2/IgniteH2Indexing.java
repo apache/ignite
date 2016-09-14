@@ -802,7 +802,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
+        boolean skipDuplicateKeys)
         throws IgniteCheckedException {
         Connection conn = connectionForSpace(spaceName);
 
@@ -823,7 +824,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (!p.isQuery())
             return updateLocalSqlFields(cacheContext(spaceName), stmt, params != null ? params.toArray() : null,
-                filters, enforceJoinOrder);
+                filters, enforceJoinOrder, skipDuplicateKeys);
 
         try {
             ResultSet rs = executeSqlQueryStatementWithTimer(spaceName, conn, stmt, qry, params, start);
@@ -849,13 +850,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     private GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final PreparedStatement stmt,
-        final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder) throws IgniteCheckedException {
+        final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder, boolean skipDuplicateKeys)
+        throws IgniteCheckedException {
         Object[] errKeys = null;
 
         int items = 0;
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters, enforceJoinOrder);
+            IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
+                enforceJoinOrder, skipDuplicateKeys);
 
             if (F.isEmpty(r.get2())) {
                 return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
@@ -880,13 +883,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @param filters Filters.
      * @param enforceJoinOrder Enforce join order.
+     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
         final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
-        boolean enforceJoinOrder) throws IgniteCheckedException {
+        boolean enforceJoinOrder, boolean skipDuplicateKeys) throws IgniteCheckedException {
         Connection conn = connectionForSpace(cctx.name());
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -917,7 +921,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (stmt instanceof GridSqlMerge)
                     res = doMerge(cctx, (GridSqlMerge) stmt, tblDesc, params);
                 else
-                    res = doInsert(cctx, (GridSqlInsert) stmt, tblDesc, params);
+                    res = doInsert(cctx, (GridSqlInsert) stmt, tblDesc, params, skipDuplicateKeys);
 
                 return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
             }
@@ -1245,7 +1249,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return doMerge(cctx, (GridSqlMerge)qry.initialStatement(), desc, qry.reduceQuery().parameters());
 
         if (qry.initialStatement() instanceof GridSqlInsert)
-            return doInsert(cctx, (GridSqlInsert)qry.initialStatement(), desc, qry.reduceQuery().parameters());
+            return doInsert(cctx, (GridSqlInsert)qry.initialStatement(), desc, qry.reduceQuery().parameters(),
+                qry.skipDuplicateKeys());
 
         throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
             qry.initialStatement().getClass() + ']');
@@ -1328,12 +1333,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param ins Insert statement.
      * @param desc Table descriptor.
      * @param params Query params.
+     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
     @SuppressWarnings("unchecked")
-    private int doInsert(GridCacheContext cctx, GridSqlInsert ins, TableDescriptor desc, Object[] params)
-        throws IgniteCheckedException {
+    private int doInsert(GridCacheContext cctx, GridSqlInsert ins, TableDescriptor desc, Object[] params,
+        boolean skipDuplicateKeys) throws IgniteCheckedException {
         if (F.isEmpty(ins.rows()) || ins.query() != null)
             throw new CacheException("SQL MERGE from SELECT is not supported");
 
@@ -1376,6 +1382,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
+            else if (skipDuplicateKeys)
+                return 0;
             else
                 throw createSqlException("Duplicate key during INSERT [key=" + t.getKey() + ']',
                     ErrorCode.DUPLICATE_KEY_1);
@@ -1392,6 +1400,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
+            int duplicateKeys = 0;
+
             if (!F.isEmpty(res)) {
                 SQLException resEx;
 
@@ -1399,20 +1409,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // Everything left in errKeys is not erroneous keys, but duplicate keys
                 if (!F.isEmpty(splitRes.get1())) {
-                    resEx = new SQLException("Failed to INSERT some keys because they are already in cache " +
-                        "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
-                        ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1), ErrorCode.DUPLICATE_KEY_1);
+                    duplicateKeys = splitRes.get1().length;
 
-                    if (splitRes.get2() != null)
-                        resEx.setNextException(splitRes.get2());
+                    String msg = "Failed to INSERT some keys because they are already in cache " +
+                        "[keys=" + Arrays.deepToString(splitRes.get1()) + ']';
+
+                    if (!skipDuplicateKeys) {
+                        resEx = new SQLException(msg, ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1),
+                            ErrorCode.DUPLICATE_KEY_1);
+
+                        if (splitRes.get2() != null)
+                            resEx.setNextException(splitRes.get2());
+                    }
+                    else {
+                        log.info(msg);
+
+                        resEx = splitRes.get2();
+                    }
                 }
                 else
                     resEx = splitRes.get2();
 
-                throw new IgniteSQLException(resEx);
+                if (resEx != null)
+                    throw new IgniteSQLException(resEx);
             }
 
-            return rows.size();
+            // Result will differ from rows.size() only in case of quiet mode with duplicate keys and no other exceptions
+            return rows.size() - duplicateKeys;
         }
     }
 
@@ -1829,6 +1852,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins() && cctx.isPartitioned();
         final boolean grpByCollocated = qry.isCollocated();
+        boolean skipDuplicateKeys = qry.isSkipDuplicateKeys();
 
         GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
@@ -1891,7 +1915,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
-                    failedKeys, grpByCollocated, distributedJoins);
+                    failedKeys, grpByCollocated, distributedJoins, skipDuplicateKeys);
 
                 //Let's verify (early) that the user is not trying to mess with the key or its fields directly
                 if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
@@ -2276,11 +2300,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (Map.Entry<Object, EntryProcessorResult<Boolean>> e : res.entrySet()) {
             try {
                 e.getValue().get();
-
-                errKeys.remove(e.getKey());
             }
             catch (EntryProcessorException ex) {
-                SQLException next = new SQLException("Failed to INSERT key '" + e.getKey() + "'", ex);
+                SQLException next = new SQLException("Failed to INSERT key '" + e.getKey() + '\'', ex);
 
                 if (currSqlEx != null)
                     currSqlEx.setNextException(next);
@@ -2288,7 +2310,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     firstSqlEx = next;
 
                 currSqlEx = next;
+
+                errKeys.remove(e.getKey());
             }
+
+
         }
 
         return new IgniteBiTuple<>(errKeys.toArray(), firstSqlEx);

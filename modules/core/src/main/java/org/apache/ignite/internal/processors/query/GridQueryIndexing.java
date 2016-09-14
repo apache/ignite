@@ -85,12 +85,13 @@ public interface GridQueryIndexing {
      * @param params Query parameters.
      * @param filter Space name and key filter.
      * @param enforceJoinOrder Enforce join order of tables in the query.
+     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder)
-        throws IgniteCheckedException;
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
+        boolean skipDuplicateKeys) throws IgniteCheckedException;
 
     /**
      * Executes regular query.

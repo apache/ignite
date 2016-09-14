@@ -93,10 +93,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("merge into Person (_key, id, name) values ('s', ?, ?), " +
+        p.query(new SqlFieldsQuery("merge into Person (_key, id, name) values ('s', ?, ?), " +
             "('a', 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -115,10 +113,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery(
+        p.query(new SqlFieldsQuery(
             "merge into Person (_key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -137,10 +133,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery(
+        p.query(new SqlFieldsQuery(
             "merge into Person (key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -159,10 +153,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("merge into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
+        p.query(new SqlFieldsQuery("merge into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
             "(2, 3, 'Alex')").setArgs(4, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(4);
         p1.name = "Sergi";
@@ -181,10 +173,8 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("merge into Integer(_key, _val) values (1, ?), " +
+        p.query(new SqlFieldsQuery("merge into Integer(_key, _val) values (1, ?), " +
             "(?, 4)").setArgs(2, 3));
-
-        c.iterator();
 
         assertEquals(2, (int)p.get(1));
 

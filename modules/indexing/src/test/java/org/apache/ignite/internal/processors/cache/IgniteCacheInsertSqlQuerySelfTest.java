@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -97,10 +98,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("insert into Person (_key, id, name) values ('s', ?, ?), " +
+        p.query(new SqlFieldsQuery("insert into Person (_key, id, name) values ('s', ?, ?), " +
             "('a', 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -119,10 +118,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery(
+        p.query(new SqlFieldsQuery(
             "insert into Person (_key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -141,10 +138,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testMergeWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery(
+        p.query(new SqlFieldsQuery(
             "insert into Person (key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -163,10 +158,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("insert into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
+        p.query(new SqlFieldsQuery("insert into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
             "(2, 3, 'Alex')").setArgs(4, "Sergi"));
-
-        c.iterator();
 
         Person p1 = new Person(4);
         p1.name = "Sergi";
@@ -185,10 +178,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
-        QueryCursor c = p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+        p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
             "(?, 4)").setArgs(2, 3));
-
-        c.iterator();
 
         assertEquals(2, (int)p.get(1));
 
@@ -199,19 +190,21 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     public void testDuplicateKeysException() {
-        IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
+        final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
+
+        p.clear();
 
         p.put(3, 5);
 
-        final QueryCursor c = p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
-            "(?, 4), (5, 6)").setArgs(2, 3));
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                return c.iterator();
+            @Override public Void call() throws Exception {
+                p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                    "(?, 4), (5, 6)").setArgs(2, 3));
+
+                return null;
             }
-        }, IgniteCheckedException.class, "Failed to INSERT some keys [keys=[3]]");
+        }, IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
 
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));

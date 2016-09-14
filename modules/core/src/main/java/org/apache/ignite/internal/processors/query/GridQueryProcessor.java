@@ -902,7 +902,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     Object[] args = qry.getArgs();
 
                     final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder());
+                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder(), qry.isSkipDuplicateKeys());
 
                     sendQueryExecutedEvent(sql, args);
 

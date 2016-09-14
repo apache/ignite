@@ -64,6 +64,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private boolean skipMergeTbl;
 
+    /** Whether this query should avoid throwing an exception on duplicate key during INSERT. */
+    private boolean skipDuplicateKeys;
+
     /** */
     private GridSqlStatement initStmt;
 
@@ -262,6 +265,20 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return {@code true} if this query should not yield an exception if there was a duplicate key during INSERT.
+     */
+    public boolean skipDuplicateKeys() {
+        return skipDuplicateKeys;
+    }
+
+    /**
+     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
+     */
+    public void skipDuplicateKeys(boolean skipDuplicateKeys) {
+        this.skipDuplicateKeys = skipDuplicateKeys;
+    }
+
+    /**
      * @param args New arguments to copy with.
      * @return Copy.
      */
@@ -279,6 +296,7 @@ public class GridCacheTwoStepQuery {
         cp.distributedJoins = distributedJoins;
         cp.initStmt = initStmt;
         cp.singleUpdate = singleUpdate;
+        cp.skipDuplicateKeys = skipDuplicateKeys;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

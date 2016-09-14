@@ -20,17 +20,18 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.yardstick.cache.model.Person2;
+import org.apache.ignite.yardstick.cache.model.Person1;
 
 /**
  * Ignite benchmark that performs SQL MERGE operations for entity with indexed fields.
  */
-public class IgniteSqlMergeIndexedValue2Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.query(new SqlFieldsQuery("merge into Person2(_key, _val) values (?, ?)").setArgs(key, new Person2(key)));
+        cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
+            .setArgs(key, new Person1(key)).setSkipDuplicateKeys(true));
 
         return true;
     }
