@@ -216,9 +216,9 @@ namespace ignite
 
                 int optsLen;
                 char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);
-                
+
                 envTarget = new SharedPointer<IgniteEnvironment>(env);
-                
+
                 SharedPointer<JniContext> ctx(
                     JniContext::Create(opts, optsLen, env.Get()->GetJniHandlers(envTarget), &jniErr));
 
@@ -258,7 +258,7 @@ namespace ignite
 
                     if (!javaRef) {
                         IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                        
+
                         failed = true;
                     }
                     else {
@@ -458,7 +458,7 @@ namespace ignite
             JniErrorInfo jniErr;
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
-             
+
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)

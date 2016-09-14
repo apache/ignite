@@ -76,7 +76,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <returns>
         /// A string that represents the current object.
         /// </returns>
-        override public string ToString()
+        public override string ToString()
         {
             return string.Format("{0} [street={1}, zip={2}]", typeof(Address).Name, Street, Zip);
         }

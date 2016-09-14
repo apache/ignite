@@ -43,10 +43,11 @@ import scala.collection.JavaConversions._
  * @tparam V Value type.
  */
 class IgniteRDD[K, V] (
-    val ic: IgniteContext[K, V],
+    val ic: IgniteContext,
     val cacheName: String,
-    val cacheCfg: CacheConfiguration[K, V]
-) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg) {
+    val cacheCfg: CacheConfiguration[K, V],
+    val keepBinary: Boolean
+) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg, keepBinary) {
     /**
      * Computes iterator based on given partition.
      *
@@ -127,7 +128,8 @@ class IgniteRDD[K, V] (
 
         qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
-        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry ⇒ (entry.getKey, entry.getValue))
+        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry,
+            entry ⇒ (entry.getKey, entry.getValue), keepBinary)
     }
 
     /**
@@ -144,7 +146,8 @@ class IgniteRDD[K, V] (
 
         val schema = buildSchema(ensureCache().query(qry).asInstanceOf[QueryCursorEx[java.util.List[_]]].fieldsMeta())
 
-        val rowRdd = new IgniteSqlRDD[Row, java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list ⇒ Row.fromSeq(list))
+        val rowRdd = new IgniteSqlRDD[Row, java.util.List[_], K, V](
+            ic, cacheName, cacheCfg, qry, list ⇒ Row.fromSeq(list), keepBinary)
 
         ic.sqlContext.createDataFrame(rowRdd, schema)
     }
@@ -185,7 +188,7 @@ class IgniteRDD[K, V] (
      * @param rdd RDD instance to save values from.
      * @param f Transformation function.
      */
-    def saveValues[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ V) = {
+    def saveValues[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ V) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -249,7 +252,7 @@ class IgniteRDD[K, V] (
      * @param overwrite Boolean flag indicating whether the call on this method should overwrite existing
      *      values in Ignite cache.
      */
-    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V), overwrite: Boolean) = {
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ (K, V), overwrite: Boolean) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -279,7 +282,7 @@ class IgniteRDD[K, V] (
      * @param rdd RDD instance to save values from.
      * @param f Transformation function.
      */
-    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V)): Unit = {
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ (K, V)): Unit = {
         savePairs(rdd, f, overwrite = false)
     }
 
@@ -288,6 +291,20 @@ class IgniteRDD[K, V] (
      */
     def clear(): Unit = {
         ensureCache().removeAll()
+    }
+
+    /**
+     * Returns `IgniteRDD` that will operate with binary objects. This method
+     * behaves similar to [[org.apache.ignite.IgniteCache#withKeepBinary]].
+     *
+     * @return New `IgniteRDD` instance for binary objects.
+     */
+    def withKeepBinary[K1, V1](): IgniteRDD[K1, V1] = {
+        new IgniteRDD[K1, V1](
+            ic,
+            cacheName,
+            cacheCfg.asInstanceOf[CacheConfiguration[K1, V1]],
+            true)
     }
 
     /**

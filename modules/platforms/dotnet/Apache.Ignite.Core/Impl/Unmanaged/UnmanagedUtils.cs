@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
@@ -48,6 +49,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (ptr == IntPtr.Zero)
                 throw new IgniteException(string.Format("Failed to load {0}: {1}", 
                     IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
+
+            JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+        }
+
+        /// <summary>
+        /// Handles the DomainUnload event of the current AppDomain.
+        /// </summary>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            // Clean the handler to avoid JVM crash.
+            var removedCnt = JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            Debug.Assert(removedCnt == 1);
         }
 
         /// <summary>
@@ -61,11 +77,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #region NATIVE METHODS: PROCESSOR
 
         internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
-            bool clientMode)
+            bool clientMode, bool userLogger)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
             {
                 mem.WriteBool(clientMode);
+                mem.WriteBool(userLogger);
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
                 sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
@@ -359,6 +376,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
         {
             JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
+        }
+
+        internal static bool ProcessorLoggerIsLevelEnabled(IUnmanagedTarget target, int level)
+        {
+            return JNI.ProcessorLoggerIsLevelEnabled(target.Context, target.Target, level);
+        }
+
+        internal static void ProcessorLoggerLog(IUnmanagedTarget target, int level, string message, string category, 
+            string errorInfo)
+        {
+            var message0 = IgniteUtils.StringToUtf8Unmanaged(message);
+            var category0 = IgniteUtils.StringToUtf8Unmanaged(category);
+            var errorInfo0 = IgniteUtils.StringToUtf8Unmanaged(errorInfo);
+
+            try
+            {
+                JNI.ProcessorLoggerLog(target.Context, target.Target, level, message0, category0, errorInfo0);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(message0));
+                Marshal.FreeHGlobal(new IntPtr(category0));
+                Marshal.FreeHGlobal(new IntPtr(errorInfo0));
+            }
         }
 
         #endregion
@@ -689,6 +730,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static IUnmanagedTarget ProjectionForYoungest(IUnmanagedTarget target)
         {
             void* res = JNI.ProjectionForYoungest(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+        
+        internal static IUnmanagedTarget ProjectionForServers(IUnmanagedTarget target)
+        {
+            void* res = JNI.ProjectionForServers(target.Context, target.Target);
 
             return target.ChangeTarget(res);
         }

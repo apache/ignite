@@ -222,6 +222,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Total number of partitions.
      */
     public void setPartitions(int parts) {
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+
         this.parts = parts;
     }
 
@@ -462,6 +464,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(key.hashCode() % parts);
     }
 

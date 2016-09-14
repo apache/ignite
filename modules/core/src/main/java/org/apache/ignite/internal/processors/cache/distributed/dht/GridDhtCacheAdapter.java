@@ -546,8 +546,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry = entryEx(key, false);
 
-                    entry.initialValue(cacheVal, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
-                        replicate ? DR_LOAD : DR_NONE);
+                    entry.initialValue(cacheVal,
+                        ver,
+                        ttl,
+                        CU.EXPIRE_TIME_CALCULATE,
+                        false,
+                        topVer,
+                        replicate ? DR_LOAD : DR_NONE,
+                        false);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to put cache value: " + entry, e);
@@ -1223,13 +1229,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
         final boolean keepBinary) {
+        return localEntriesIterator(primary,
+            backup,
+            keepBinary,
+            ctx.affinity().affinityTopologyVersion());
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param keepBinary Keep binary flag.
+     * @param topVer Specified affinity topology version.
+     * @return Local entries iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+        final boolean backup,
+        final boolean keepBinary,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)
             return iterator(entries().iterator(), !keepBinary);
         else {
-            final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
             Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {

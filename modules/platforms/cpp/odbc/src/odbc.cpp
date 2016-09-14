@@ -28,61 +28,11 @@
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc.h"
 
 namespace ignite
 {
-
-    BOOL ConfigDSN(HWND     hwndParent,
-                   WORD     req,
-                   LPCSTR   driver,
-                   LPCSTR   attributes)
-    {
-        LOG_MSG("ConfigDSN called\n");
-
-        ignite::odbc::config::Configuration config;
-
-        config.FillFromConfigAttributes(attributes);
-
-        if (!SQLValidDSN(config.GetDsn().c_str()))
-            return SQL_FALSE;
-
-        LOG_MSG("Driver: %s\n", driver);
-        LOG_MSG("Attributes: %s\n", attributes);
-
-        LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
-
-        switch (req)
-        {
-            case ODBC_ADD_DSN:
-            {
-                LOG_MSG("ODBC_ADD_DSN\n");
-
-                return SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
-            }
-
-            case ODBC_CONFIG_DSN:
-            {
-                LOG_MSG("ODBC_CONFIG_DSN\n");
-                break;
-            }
-
-            case ODBC_REMOVE_DSN:
-            {
-                LOG_MSG("ODBC_REMOVE_DSN\n");
-
-                return SQLRemoveDSNFromIni(config.GetDsn().c_str());
-            }
-
-            default:
-            {
-                return SQL_FALSE;
-            }
-        }
-
-        return SQL_TRUE;
-    }
-
     SQLRETURN SQLGetInfo(SQLHDBC        conn,
                          SQLUSMALLINT   infoType,
                          SQLPOINTER     infoValue,
@@ -306,10 +256,10 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
-        using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
-        using ignite::utility::SqlStringToString;
-        using ignite::utility::CopyStringToBuffer;
+        using odbc::Connection;
+        using odbc::diagnostic::DiagnosticRecordStorage;
+        using utility::SqlStringToString;
+        using utility::CopyStringToBuffer;
 
         UNREFERENCED_PARAMETER(windowHandle);
 
@@ -323,18 +273,23 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        ignite::odbc::config::Configuration config;
+        odbc::config::Configuration config;
 
         config.FillFromConnectString(connectStr);
 
-        connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
+        std::string dsn = config.GetDsn();
+
+        if (!dsn.empty())
+            odbc::ReadDsnConfiguration(dsn.c_str(), config);
+
+        connection->Establish(config);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
-        std::string outConnectStr = config.ToConnectString();
+        std::string outConnectStr = connection->GetConfiguration().ToConnectString();
 
         size_t reslen = CopyStringToBuffer(outConnectStr,
             reinterpret_cast<char*>(outConnectionString),
@@ -357,7 +312,7 @@ namespace ignite
                          SQLSMALLINT    authLen)
     {
         using ignite::odbc::Connection;
-        using ignite::odbc::diagnostic::DiagnosticRecordStorage;
+        using ignite::odbc::config::Configuration;
         using ignite::utility::SqlStringToString;
 
         LOG_MSG("SQLConnect called\n");
@@ -367,9 +322,13 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
-        std::string server = SqlStringToString(serverName, serverNameLen);
+        odbc::config::Configuration config;
 
-        connection->Establish(server);
+        std::string dsn = SqlStringToString(serverName, serverNameLen);
+
+        odbc::ReadDsnConfiguration(dsn.c_str(), config);
+
+        connection->Establish(config);
 
         return connection->GetDiagnosticRecords().GetReturnCode();
     }
@@ -638,7 +597,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: reset diagnostic here.
         return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
     }
 
@@ -887,7 +845,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: move this logic into Statement.
         switch (attr)
         {
             case SQL_ATTR_APP_ROW_DESC:
@@ -974,7 +931,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: move this logic into Statement.
         switch (attr)
         {
             case SQL_ATTR_ROW_ARRAY_SIZE:
@@ -1171,7 +1127,7 @@ namespace ignite
         SqlLen outResLen;
         ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
 
-        outBuffer.PutString(record.GetMessage());
+        outBuffer.PutString(record.GetMessageText());
 
         *msgLen = static_cast<SQLSMALLINT>(outResLen);
 

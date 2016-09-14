@@ -17,9 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,8 +27,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -38,15 +34,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.H2CacheStoreStrategy;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
+import org.apache.ignite.internal.processors.cache.TestCacheStoreStrategy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -62,8 +59,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
-    /** Store map. */
-    protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
+    /** */
+    protected static TestCacheStoreStrategy storeStgy;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -72,6 +69,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected final void beforeTestsStarted() throws Exception {
+        initStoreStrategy();
         assert testsCfg != null;
         assert !testsCfg.withClients() || testsCfg.gridCount() >= 3;
 
@@ -135,6 +133,12 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         }
     }
 
+    /** Initialize {@link #storeStgy} with respect to the nature of the test */
+    void initStoreStrategy() throws IgniteCheckedException {
+        if (storeStgy == null)
+            storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
+    }
+
     /**
      * Starts caches dynamically.
      *
@@ -189,7 +193,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             }
         }
 
-        map.clear();
+        storeStgy.resetStore();
 
         super.afterTestsStopped();
     }
@@ -313,7 +317,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         if (cacheIsNotEmptyMsg == null)
             assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        resetStore();
+        storeStgy.resetStore();
 
         // Restore cache if current cache has garbage.
         if (cacheIsNotEmptyMsg != null) {
@@ -351,13 +355,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * Cleans up cache store.
-     */
-    protected void resetStore() {
-        map.clear();
-    }
-
-    /**
      * Put entry to cache store.
      *
      * @param key Key.
@@ -367,7 +364,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         if (!storeEnabled())
             throw new IllegalStateException("Failed to put to store because store is disabled.");
 
-        map.put(key, val);
+        storeStgy.putToStore(key, val);
     }
 
     /**
@@ -429,31 +426,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      */
     protected boolean swapEnabled() {
         return cacheConfiguration().isSwapEnabled();
-    }
-
-    /**
-     * @return Write through storage emulator.
-     */
-    public static CacheStore<?, ?> cacheStore() {
-        return new CacheStoreAdapter<Object, Object>() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-                Object... args) {
-                for (Map.Entry<Object, Object> e : map.entrySet())
-                    clo.apply(e.getKey(), e.getValue());
-            }
-
-            @Override public Object load(Object key) {
-                return map.get(key);
-            }
-
-            @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
-                map.put(e.getKey(), e.getValue());
-            }
-
-            @Override public void delete(Object key) {
-                map.remove(key);
-            }
-        };
     }
 
     /**
@@ -571,14 +543,5 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     @SuppressWarnings("unchecked")
     protected static boolean containsKey(IgniteCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
-    }
-
-    /**
-     * Serializable factory.
-     */
-    public static class TestStoreFactory implements Factory<CacheStore> {
-        @Override public CacheStore create() {
-            return cacheStore();
-        }
     }
 }

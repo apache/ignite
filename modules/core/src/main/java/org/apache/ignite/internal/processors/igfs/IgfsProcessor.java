@@ -38,7 +38,6 @@ import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -57,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
@@ -345,28 +343,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                     throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
                         ipcCfg.getThreadCount());
             }
-
-            long maxSpaceSize = cfg.getMaxSpaceSize();
-
-            if (maxSpaceSize > 0) {
-                // Max space validation.
-                long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
-
-                if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
-                    // Offheap is disabled.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-                else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
-                    // Offheap is enabled, but limited.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
-                        "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-            }
-
-            if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
-                U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
-                    "space will be limited to 80% of max JVM heap size): " + cfg.getName());
 
             boolean secondary = cfg.getDefaultMode() == PROXY;
 
