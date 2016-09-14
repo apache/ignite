@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -324,7 +325,7 @@ public abstract class PagesList extends DataStructure {
                 long nextPageId = metaPageId;
 
                 while (nextPageId != 0) {
-                    try (Page page = page(metaPageId)) {
+                    try (Page page = page(nextPageId)) {
                         ByteBuffer buf = page.getForRead();
 
                         try {
@@ -332,7 +333,12 @@ public abstract class PagesList extends DataStructure {
 
                             io.getBucketsData(buf, bucketsData);
 
-                            nextPageId = io.getNextMetaPageId(buf);
+                            long next0 = io.getNextMetaPageId(buf);
+
+                            assert next0 != nextPageId :
+                                "Loop detected [next=" + U.hexLong(next0) + ", cur=" + U.hexLong(nextPageId) + ']';
+
+                            nextPageId = next0;
                         }
                         finally {
                             page.releaseRead();
@@ -442,6 +448,9 @@ public abstract class PagesList extends DataStructure {
     private void releaseAndClose(Page page) {
         if (page != null) {
             try {
+                // No special WAL record because we most likely changed the whole page.
+                page.fullPageWalRecordPolicy(true);
+
                 page.releaseWrite(true);
             }
             finally {
