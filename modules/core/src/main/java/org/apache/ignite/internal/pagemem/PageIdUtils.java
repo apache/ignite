@@ -19,8 +19,6 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
-
 /**
  * Utility class for page ID parts manipulation.
  *
@@ -31,25 +29,16 @@ public final class PageIdUtils {
     public static final int PAGE_IDX_SIZE = 32;
 
     /** */
-    public static final int RESERVED_SIZE = 4;
+    public static final int PART_ID_SIZE = 16;
 
     /** */
-    public static final int FILE_ID_SIZE = 16;
+    public static final int FLAG_SIZE = 8;
 
     /** */
-    public static final int PART_ID_SIZE = 14;
-
-    /** */
-    public static final int FLAG_SIZE = 2;
-
-    /** */
-    public static final int OFFSET_SIZE = 12;
+    public static final int OFFSET_SIZE = 8;
 
     /** */
     public static final long PAGE_IDX_MASK = ~(-1L << PAGE_IDX_SIZE);
-
-    /** */
-    public static final long FILE_ID_MASK = ~(-1L << FILE_ID_SIZE);
 
     /** */
     public static final long OFFSET_MASK = ~(-1L << OFFSET_SIZE);
@@ -61,20 +50,16 @@ public final class PageIdUtils {
     public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
-    private static final long EFFECTIVE_NON_DATA_PAGE_ID_MASK =
-        (FLAG_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE + RESERVED_SIZE)) | PAGE_IDX_MASK;
+    private static final long PAGE_ID_MASK = ~(OFFSET_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+
+    /** Max itemid number. */
+    public static final int MAX_ITEMID_NUM = 0xFE;
 
     /** Maximum page number. */
     public static final long MAX_PAGE_NUM = (1L << PAGE_IDX_SIZE) - 1;
 
     /** Maximum page number. */
     public static final int MAX_PART_ID = (1 << PART_ID_SIZE) - 1;
-
-    /** Maximum file ID. */
-    public static final int MAX_FILE_ID = (1 << FILE_ID_SIZE) - 1;
-
-    /** Maximum offset in dwords. */
-    public static final int MAX_OFFSET_DWORDS = (int)OFFSET_MASK;
 
     /**
      *
@@ -91,28 +76,10 @@ public final class PageIdUtils {
      * @return Page link.
      */
     public static long link(long pageId, int itemId) {
-        assert itemId >= 0 && itemId < 255: itemId;
-        assert (pageId >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) == 0 : U.hexLong(pageId);
+        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM: itemId;
+        assert (pageId >> (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE)) == 0 : U.hexLong(pageId);
 
-        return pageId | (((long)itemId) << (PAGE_IDX_SIZE + FILE_ID_SIZE + RESERVED_SIZE));
-    }
-
-    /**
-     * Constructs a page ID by the given file ID and page index.
-     *
-     * @param fileId File ID.
-     * @param pageIdx Page index.
-     * @return Page ID.
-     */
-    public static long pageId(int fileId, int pageIdx) {
-        assert (fileId & ~FILE_ID_MASK) == 0 : U.hexInt(fileId);
-
-        long pageId = 0;
-
-        pageId = (pageId << FILE_ID_SIZE) | (fileId & FILE_ID_MASK);
-        pageId = (pageId << (PAGE_IDX_SIZE + RESERVED_SIZE)) | (pageIdx & PAGE_IDX_MASK);
-
-        return pageId;
+        return pageId | (((long)itemId) << (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE));
     }
 
     /**
@@ -132,7 +99,7 @@ public final class PageIdUtils {
      * @return Page ID.
      */
     public static long pageId(long link) {
-        return link & ~(OFFSET_MASK << (FILE_ID_SIZE + RESERVED_SIZE + PAGE_IDX_SIZE));
+        return flag(link) == PageIdAllocator.FLAG_IDX? link : link & PAGE_ID_MASK;
     }
 
     /**
@@ -140,28 +107,9 @@ public final class PageIdUtils {
      * @return Effective page id.
      */
     public static long effectivePageId(long link) {
-        return flag(link) == FLAG_DATA ? pageId(link) : link & EFFECTIVE_NON_DATA_PAGE_ID_MASK;
+        return link & PAGE_ID_MASK;
     }
 
-    /**
-     * Extracts a file ID from the given page ID or page link.
-     *
-     * @param linkOrPageId Page link or page ID.
-     * @return File ID.
-     */
-    public static int fileId(long linkOrPageId) {
-        return (int)((linkOrPageId >> (PAGE_IDX_SIZE + RESERVED_SIZE)) & FILE_ID_MASK);
-    }
-
-    /**
-     * Extracts offset in bytes from the given page link.
-     *
-     * @param link Page link.
-     * @return Offset within the page in bytes.
-     */
-    public static int bytesOffset(long link) {
-        return (int)((link >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) & OFFSET_MASK) << 3;
-    }
 
     /**
      * Index of the item inside of data page.
@@ -170,7 +118,7 @@ public final class PageIdUtils {
      * @return Offset in 8-byte words.
      */
     public static int itemId(long link) {
-        return (int)((link >> (PAGE_IDX_SIZE + RESERVED_SIZE + FILE_ID_SIZE)) & OFFSET_MASK);
+        return (int)((link >> (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE)) & OFFSET_MASK);
     }
 
     /**
@@ -178,12 +126,12 @@ public final class PageIdUtils {
      * @return Part ID constructed from the given cache ID and partition ID.
      */
     public static long pageId(int partId, byte flag, int pageIdx) {
-        long fileId = 0;
+        long pageId = flag & FLAG_MASK;
 
-        fileId = (fileId << FLAG_SIZE) | (flag & FLAG_MASK);
-        fileId = (fileId << PART_ID_SIZE) | (partId & PART_ID_MASK);
+        pageId = (pageId << PART_ID_SIZE) | (partId & PART_ID_MASK);
+        pageId = (pageId << (PAGE_IDX_SIZE)) | (pageIdx & PAGE_IDX_MASK);
 
-        return pageId((int)fileId, pageIdx);
+        return pageId;
     }
 
     /**
@@ -191,7 +139,7 @@ public final class PageIdUtils {
      * @return Flag.
      */
     public static byte flag(long pageId) {
-        return (byte)((pageId >>> (PART_ID_SIZE + PAGE_IDX_SIZE + RESERVED_SIZE)) & FLAG_MASK);
+        return (byte)((pageId >>> (PART_ID_SIZE + PAGE_IDX_SIZE)) & FLAG_MASK);
     }
 
     /**
@@ -199,7 +147,7 @@ public final class PageIdUtils {
      * @return Partition.
      */
     public static int partId(long pageId) {
-        return (int)((pageId >>> (PAGE_IDX_SIZE + RESERVED_SIZE)) & PART_ID_MASK);
+        return (int)((pageId >>> PAGE_IDX_SIZE ) & PART_ID_MASK);
     }
 
     /**
@@ -209,10 +157,10 @@ public final class PageIdUtils {
     public static long rotatePageId(long pageId) {
         assert flag(pageId) == PageIdAllocator.FLAG_IDX : flag(pageId); // Possible only for index pages.
 
-        int partId = partId(pageId);
-        int pageIdx = pageIndex(pageId);
+        long updatedRotationId = (pageId >> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
 
-        return pageId(partId + 1, PageIdAllocator.FLAG_IDX, pageIdx);
+        return (pageId & PAGE_ID_MASK) |
+            (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
     }
 
     /**
@@ -223,5 +171,16 @@ public final class PageIdUtils {
         assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
 
         return pageId & ~(PART_ID_MASK << PAGE_IDX_SIZE);
+    }
+
+    /**
+     * Change page type.
+     *
+     * @param pageId Old page ID.
+     * @param type New page type.
+     * @return Changed page ID.
+     */
+    public static long changeType(long pageId, byte type) {
+        return pageId(partId(pageId), type, pageIndex(pageId));
     }
 }

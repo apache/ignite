@@ -20,30 +20,32 @@ package org.apache.ignite.internal.pagemem;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
- * Compound object used to address a page in the global page space.
+  * Compound object used to address a page in the global page space.
+ * <h3>Page ID structure</h3>
  * <p>
- * There are three types of pages in PageMemory system:
- * <ul>
- *     <li>DATA pages</li>
- *     <li>INDEX pages</li>
- *     <li>META pages</li>
- * </ul>
  * Generally, a full page ID consists of a cache ID and page ID. A page ID consists of
- * file ID (22 bits) and page index (30 bits).
- * Higher 12 bits of page ID are reserved for use in index pages to address entries inside data pages.
- * File ID consists of 8 reserved bits, page type (2 bits) and partition ID (14 bits).
- * Note that partition ID is not used in full page ID comparison for non-data pages.
+ * page index (32 bits), partition ID (16 bits) and flags.
+ * Higher 8 bits of page ID are unused and reserved to address entries inside data pages or page ID rotation.
  * <p>
- * The structure of a page ID is shown in the next diagram:
+ * Partition ID {@code 0xFFFF} is reserved for index pages.
+ * <p>
+ * The structure of a page ID is shown in the diagram below:
  * <pre>
- * +------------+--+--------------+---+--------------------------+
- * |   12 bits  |2b|   14 bits    |4 b|         32 bits          |
- * +------------+--+--------------+---+--------------------------+
- * |   OFFSET   |FL| PARTITION ID |RES|       PAGE INDEX         |
- * +------------+--+--------------+---+--------------------------+
- *              |     FILE ID     |
- *              +-----------------+
- * </pre>
+ * +---------+-----------+------------+--------------------------+
+ * | 8 bits  |   8 bits  |  16 bits   |         32 bits          |
+ * +---------+-----------+------------+--------------------------+
+ * |  OFFSET |   FLAGS   |PARTITION ID|       PAGE INDEX         |
+ * +---------+-----------+------------+--------------------------+
+ * <p>
+ * <h3>Page ID rotation</h3>
+ * There are scenarios when we reference one page (B) from within another page (A) by page ID. It is also
+ * possible that this first page (B) is de-allocated and allocated again for a different purpose. In this
+ * case we should have a mechanism to determine that page (B) cannot be used after reading it's ID in page (A).
+ * This is ensured by page ID rotation - together with page's (B) ID we should write some value that is incremented
+ * each time a page is de-allocated (page ID rotation). This ID should be verified after page read and a page
+ * should be discarded if full ID is different.
+ * <p>
+ * Effective page ID is page ID with zeroed bits used for page ID rotation.
  */
 public class FullPageId {
     /** */
@@ -74,11 +76,11 @@ public class FullPageId {
      * @return Hash code.
      */
     private static int hashCode0(int cacheId, long effectivePageId) {
-        int result = (int)(effectivePageId ^ (effectivePageId >>> 32));
+        int res = (int)(effectivePageId ^ (effectivePageId >>> 32));
 
-        result = 31 * result + cacheId;
+        res = 31 * res + cacheId;
 
-        return result;
+        return res;
     }
 
     /**
