@@ -52,7 +52,6 @@ More info: https://apacheignite-net.readme.io/
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />
             <dependency id="EntityFramework" version="[6.1.0,7.0.0)" />
-            <dependency id="EntityFramework.Cache" version="[1.0.0,2.0.0)" />
         </dependencies>    
     </metadata>
 </package>
