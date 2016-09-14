@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Two step map-reduce style query.
@@ -69,6 +72,15 @@ public class GridCacheTwoStepQuery {
 
     /** */
     private List<Integer> extraCaches;
+
+    /**
+     * Triple [key; value; new value] this DELETE or UPDATE query is supposed to affect.<p>
+     * <b>new value</b> is present only for UPDATE.<p>
+     * <b>value</b> in this triple may be null. If this field is null then no matching filter found.
+     */
+    @Nullable
+    @GridToStringInclude
+    private GridTriple<GridSqlElement> singleUpdate;
 
     /**
      * @param schemas Schema names in query.
@@ -227,6 +239,22 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Single item update arguments that given DELETE or UPDATE boils down to, null if it does not
+     * or if the given statement is of different type.
+     */
+    @Nullable public GridTriple<GridSqlElement> singleUpdate() {
+        return singleUpdate;
+    }
+
+    /**
+     * @param singleUpdate Single item update arguments that given DELETE or UPDATE boils down to, null if it does not
+     * or if the given statement is of different type.
+     */
+    public void singleUpdate(@Nullable GridTriple<GridSqlElement> singleUpdate) {
+        this.singleUpdate = singleUpdate;
+    }
+
+    /**
      * @return Schemas.
      */
     public Set<String> schemas() {
@@ -245,11 +273,12 @@ public class GridCacheTwoStepQuery {
         cp.caches = caches;
         cp.extraCaches = extraCaches;
         cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
+        cp.rdc = rdc != null ? rdc.copy(args) : null;
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
         cp.initStmt = initStmt;
+        cp.singleUpdate = singleUpdate;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

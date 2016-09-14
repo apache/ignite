@@ -61,7 +61,11 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class));
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
         ignite(0).cache("S2P").put("FirstKey", new Person(1, "John", "White"));
         ignite(0).cache("S2P").put("SecondKey", new Person(2, "Joe", "Black"));
         ignite(0).cache("S2P").put("k3", new Person(3, "Sylvia", "Green"));
@@ -97,7 +101,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends GridCommonAbstractTest {
         IgniteCache<String, Person> p = ignite(0).cache("S2P");
 
         QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set p.id = p.id * 2, p.name = " +
-            "substring(p.name, 0, 2) where length(p._key) = 2 or p.secondName like '%ite'"));
+            "substring(p.name, 0, 2) where length(p._key) = ? or p.secondName like ?").setArgs(2, "%ite"));
 
         c.iterator();
 
@@ -118,6 +122,68 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(Arrays.asList("k3", new Person(6, "Sy", "Green"), 6, "Sy", "Green"),
             leftovers.get(3));
+    }
+
+    /**
+     *
+     */
+    public void testUpdateSingle() {
+        IgniteCache<String, Person> p = ignite(0).cache("S2P");
+
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
+            .setArgs(new Person(2, "Jo", "White"), "FirstKey"));
+
+        c.iterator();
+
+        c = p.query(new SqlFieldsQuery("select * from Person order by id, _key"));
+
+        List<List<?>> leftovers = c.getAll();
+
+        assertEquals(4, leftovers.size());
+
+        assertEqualsCollections(Arrays.asList("FirstKey", new Person(2, "Jo", "White"), 2, "Jo", "White"),
+            leftovers.get(0));
+
+        assertEqualsCollections(Arrays.asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
+            leftovers.get(1));
+
+        assertEqualsCollections(Arrays.asList("k3", new Person(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            leftovers.get(2));
+
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            leftovers.get(3));
+    }
+
+    /**
+     *
+     */
+    public void testUpdateValueAndFields() {
+        IgniteCache<String, Person> p = ignite(0).cache("S2P");
+
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = ?, _val = ? where _key = ?")
+            .setArgs(44, new Person(2, "Jo", "Woo"), "FirstKey"));
+
+        c.iterator();
+
+        c = p.query(new SqlFieldsQuery("select * from Person order by _key, id"));
+
+        List<List<?>> leftovers = c.getAll();
+
+        assertEquals(4, leftovers.size());
+
+        assertEqualsCollections(Arrays.asList("FirstKey", new Person(44, "Jo", "Woo"), 44, "Jo", "Woo"),
+            leftovers.get(0));
+
+        assertEqualsCollections(Arrays.asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
+            leftovers.get(1));
+
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            leftovers.get(2));
+
+        assertEqualsCollections(Arrays.asList("k3", new Person(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            leftovers.get(3));
+
+
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,8 +29,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.lang.GridTriple;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -302,6 +306,11 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("ConstantConditions")
     private static GridCacheTwoStepQuery splitDelete(GridSqlDelete del, Object[] params, Object[] keysFilter,
         boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
+        GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(del);
+
+        if (singleUpdate != null)
+            return twoStepQueryForSingleItem(del, singleUpdate);
+
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
 
@@ -366,6 +375,11 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("ConstantConditions")
     private static GridCacheTwoStepQuery splitUpdate(GridSqlUpdate update, Object[] params, Object[] keysFilter,
         boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
+        GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(update);
+
+        if (singleUpdate != null)
+            return twoStepQueryForSingleItem(update, singleUpdate);
+
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
 
@@ -377,6 +391,140 @@ public class GridSqlQuerySplitter {
 
         return res;
     }
+
+
+    /**
+     * @param stmt Initial statement.
+     * @param singleUpdate Operation arguments.
+     * @return Empty two step query that bears only initial statement and single operation arguments.
+     */
+    private static GridCacheTwoStepQuery twoStepQueryForSingleItem(GridSqlStatement stmt,
+        GridTriple<GridSqlElement> singleUpdate) {
+        // No need to do any more parsing - we know that this statement affects one item at most.
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(Collections.<String>emptySet(),
+            Collections.<String>emptySet());
+
+        res.initialStatement(stmt);
+        res.singleUpdate(singleUpdate);
+
+        return res;
+    }
+
+    /**
+     * @param update UPDATE statement.
+     * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
+     * and filters by single non expression key (and, optionally,  by single non expression value).
+     */
+    public static GridTriple<GridSqlElement> getSingleItemFilter(GridSqlUpdate update) {
+        IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(update.where());
+
+        if (filter == null)
+            return null;
+
+        if (update.cols().size() != 1 ||
+            !IgniteH2Indexing.VAL_FIELD_NAME.equalsIgnoreCase(update.cols().get(0).columnName()))
+            return null;
+
+        GridSqlElement set = update.set().get(update.cols().get(0).columnName());
+
+        if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
+            return null;
+
+        return new GridTriple<>(filter.getKey(), filter.getValue(), set);
+    }
+
+    /**
+     * @param del DELETE statement.
+     * @return {@code true} if given statement filters by single non expression key.
+     */
+    public static GridTriple<GridSqlElement> getSingleItemFilter(GridSqlDelete del) {
+        IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(del.where());
+
+        if (filter == null)
+            return null;
+
+        return new GridTriple<>(filter.getKey(), filter.getValue(), null);
+    }
+
+    /**
+     * @param where Element to test.
+     * @return Whether given element corresponds to {@code WHERE _key = ?}, and key is a literal expressed
+     * in query or a query param.
+     */
+    private static IgnitePair<GridSqlElement> findKeyValueEqulaityCondition(GridSqlElement where) {
+        if (where == null || !(where instanceof GridSqlOperation))
+            return null;
+
+        GridSqlOperation whereOp = (GridSqlOperation) where;
+
+        // Does this WHERE limit only by _key?
+        if (isKeyEqualityCondition(whereOp))
+            return new IgnitePair<>(whereOp.child(1), null);
+
+        // Or maybe it limits both by _key and _val?
+        if (whereOp.operationType() != GridSqlOperationType.AND)
+            return null;
+
+        GridSqlElement left = whereOp.child(0);
+
+        GridSqlElement right = whereOp.child(1);
+
+        if (!(left instanceof GridSqlOperation && right instanceof GridSqlOperation))
+            return null;
+
+        GridSqlOperation leftOp = (GridSqlOperation) left;
+
+        GridSqlOperation rightOp = (GridSqlOperation) right;
+
+        if (isKeyEqualityCondition(leftOp)) { // _key = ? and _val = ?
+            if (!isValueEqualityCondition(rightOp))
+                return null;
+
+            return new IgnitePair<>(leftOp.child(1), rightOp.child(1));
+        }
+        else if (isKeyEqualityCondition(rightOp)) { // _val = ? and _key = ?
+            if (!isValueEqualityCondition(leftOp))
+                return null;
+
+            return new IgnitePair<>(rightOp.child(1), leftOp.child(1));
+        }
+        else // Neither
+            return null;
+    }
+
+    /**
+     * @param op Operation.
+     * @param colName Column name to check.
+     * @return Whether this condition is of form {@code colName} = ?
+     */
+    private static boolean isEqualityCondition(GridSqlOperation op, String colName) {
+        if (op.operationType() != GridSqlOperationType.EQUAL)
+            return false;
+
+        GridSqlElement left = op.child(0);
+        GridSqlElement right = op.child(1);
+
+        return left instanceof GridSqlColumn &&
+            colName.equalsIgnoreCase(((GridSqlColumn) left).columnName()) &&
+            (right instanceof GridSqlConst || right instanceof GridSqlParameter);
+    }
+
+    /**
+     * @param op Operation.
+     * @return Whether this condition is of form _key = ?
+     */
+    private static boolean isKeyEqualityCondition(GridSqlOperation op) {
+        return isEqualityCondition(op, IgniteH2Indexing.KEY_FIELD_NAME);
+    }
+
+    /**
+     * @param op Operation.
+     * @return Whether this condition is of form _val = ?
+     */
+    private static boolean isValueEqualityCondition(GridSqlOperation op) {
+        return isEqualityCondition(op, IgniteH2Indexing.VAL_FIELD_NAME);
+    }
+
 
     /**
      * Generate SQL SELECT based on UPDATE's WHERE, LIMIT, etc.

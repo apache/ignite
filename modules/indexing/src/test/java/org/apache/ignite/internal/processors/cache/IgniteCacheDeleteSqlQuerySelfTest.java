@@ -61,6 +61,11 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite(0).cache("S2P").put("FirstKey", new Person(1, "John", "White"));
         ignite(0).cache("S2P").put("SecondKey", new Person(2, "Joe", "Black"));
@@ -112,6 +117,33 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(1));
+    }
+
+    /**
+     *
+     */
+    public void testDeleteSingle() {
+        IgniteCache<String, Person> p = ignite(0).cache("S2P");
+
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("delete from Person where _val = ? and _key = ?")
+            .setArgs(new Person(1, "John", "White"), "FirstKey"));
+
+        c.iterator();
+
+        c = p.query(new SqlFieldsQuery("select * from Person order by id, _key"));
+
+        List<List<?>> leftovers = c.getAll();
+
+        assertEquals(3, leftovers.size());
+
+        assertEqualsCollections(Arrays.asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
+            leftovers.get(0));
+
+        assertEqualsCollections(Arrays.asList("k3", new Person(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            leftovers.get(1));
+
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            leftovers.get(2));
     }
 
     /**

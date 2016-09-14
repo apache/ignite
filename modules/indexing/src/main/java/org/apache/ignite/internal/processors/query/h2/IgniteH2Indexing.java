@@ -115,7 +115,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
@@ -132,6 +131,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -922,6 +922,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
             }
             else {
+                if (F.isEmpty(failedKeys)) {
+                    GridTriple<GridSqlElement> singleUpdate;
+
+                    if (stmt instanceof GridSqlUpdate)
+                        singleUpdate = GridSqlQuerySplitter.getSingleItemFilter((GridSqlUpdate) stmt);
+                    else if (stmt instanceof GridSqlDelete)
+                        singleUpdate = GridSqlQuerySplitter.getSingleItemFilter((GridSqlDelete) stmt);
+                    else
+                        throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                            ErrorCode.PARSE_ERROR_1);
+
+                    if (singleUpdate != null)
+                        return new IgniteBiTuple<>(doSingleUpdate(cctx, singleUpdate, params), X.EMPTY_OBJECT_ARRAY);
+                }
+
                 GridSqlSelect map;
 
                 int paramsCnt = F.isEmpty(params) ? 0 : params.length;
@@ -960,6 +975,40 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             GridH2QueryContext.clearThreadLocal();
         }
+    }
+
+    /**
+     * Perform single cache operation based on given args.
+     *
+     * @param cctx Cache context.
+     * @param singleUpdate Triple {@code [key; value; new value]} to perform remove or replace with.
+     * @param params
+     * @return 1 if an item was affected, 0 otherwise.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    private static int doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate, Object[] params)
+        throws IgniteCheckedException {
+        int res;
+
+        Object key = getElementValue(singleUpdate.get1(), params);
+        Object val = getElementValue(singleUpdate.get2(), params);
+        Object newVal = getElementValue(singleUpdate.get3(), params);
+
+        if (newVal != null) { // Single item UPDATE
+            if (val == null) // No _val bound in source query
+                res = cctx.cache().replace(key, newVal) ? 1 : 0;
+            else
+                res = cctx.cache().replace(key, val, newVal) ? 1 : 0;
+        }
+        else { // Single item DELETE
+            if (val == null) // No _val bound in source query
+                res = cctx.cache().remove(key) ? 1 : 0;
+            else
+                res = cctx.cache().remove(key, val) ? 1 : 0;
+        }
+
+        return res;
     }
 
     /**
@@ -1252,8 +1301,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 hasValProps = true;
         }
 
-        Supplier keySupplier = createSupplier(cctx, desc, keyColIdx, hasKeyProps, true);
-        Supplier valSupplier = createSupplier(cctx, desc, valColIdx, hasValProps, false);
+        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         // If we have just one item to put, just do so
         if (gridStmt.rows().size() == 1) {
@@ -1317,8 +1366,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 hasValProps = true;
         }
 
-        Supplier keySupplier = createSupplier(cctx, desc, keyColIdx, hasKeyProps, true);
-        Supplier valSupplier = createSupplier(cctx, desc, valColIdx, hasValProps, false);
+        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         // If we have just one item to put, simply do putIfAbsent
         if (ins.rows().size() == 1) {
@@ -1393,10 +1442,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] rowValues = new Object[cols.length];
 
         for (int i = 0; i < cols.length; i++)
-            rowValues[i] = getColumnValue(row[i], params);
+            rowValues[i] = getElementValue(row[i], params);
 
-        Object key = keySupplier.apply(rowValues);
-        Object val = valSupplier.apply(rowValues);
+        Object key = keySupplier.apply(F.asList(rowValues));
+        Object val = valSupplier.apply(F.asList(rowValues));
 
         if (key == null)
             throw createSqlException("Key for INSERT or MERGE must not be null", ErrorCode.NULL_NOT_ALLOWED);
@@ -1442,13 +1491,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private Supplier createSupplier(final GridCacheContext<?, ?> cctx, TableDescriptor desc,
+    private static Supplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
         final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
-        final String typeName = key ? desc.type().keyTypeName() : desc.type().valueTypeName();
+        final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
-        final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.type().keyTypeName(), null), desc.type().keyClass())
-            : desc.type().valueClass();
+        final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.keyTypeName(), null), desc.keyClass())
+            : desc.valueClass();
 
         boolean isSqlType = GridQueryProcessor.isSqlType(cls);
 
@@ -1457,8 +1506,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (colIdx != -1)
                 return new Supplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-                        return arg[colIdx];
+                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                        return arg.get(colIdx);
                     }
                 };
             else if (isSqlType)
@@ -1477,8 +1526,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // If we have key or value explicitly present in query, create new builder upon them...
                 return new Supplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-                        BinaryObject bin = cctx.grid().binary().toBinary(arg[colIdx]);
+                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                        BinaryObject bin = cctx.grid().binary().toBinary(arg.get(colIdx));
 
                         return cctx.grid().binary().builder(bin);
                     }
@@ -1488,7 +1537,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // ...and if we don't, just create a new builder.
                 return new Supplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         return cctx.grid().binary().builder(typeName);
                     }
                 };
@@ -1511,7 +1560,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Use default ctor, if it's present...
                 return new Supplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         try {
                             return ctor0.newInstance();
                         }
@@ -1526,7 +1575,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // ...or allocate new instance with unsafe, if it's not
                 return new Supplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         try {
                             return GridUnsafe.allocateInstance(cls);
                         }
@@ -1548,7 +1597,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
      * @return column value.
      */
-    private static Object getColumnValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
+    private static Object getElementValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
+        if (element == null)
+            return null;
+
         if (element instanceof GridSqlConst)
             return ((GridSqlConst)element).value().getObject();
         else if (element instanceof GridSqlParameter)
@@ -1895,6 +1947,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
+        if (twoStepQry.singleUpdate() != null) {
+            int res = doSingleUpdate(cctx, twoStepQry.singleUpdate(), qry.getArgs());
+            return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
+        }
+
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
@@ -2061,8 +2118,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw createSqlException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
                 ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
-        Class<?> valCls = U.classForName(desc.type().valueTypeName(), null);
-
         boolean bin = cctx.binaryMarshaller();
 
         Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
@@ -2071,52 +2126,87 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         List<GridSqlColumn> updatedCols = update.cols();
 
+        int valColIdx = -1;
+
+        for (int i = 0; i < updatedCols.size(); i++) {
+            if (VAL_FIELD_NAME.equalsIgnoreCase(updatedCols.get(i).columnName())) {
+                valColIdx = i;
+                break;
+            }
+        }
+
+        boolean hasNewVal = (valColIdx != -1);
+
+        // Statement updates distinct properties if it does not have _val in updated columns list
+        // or if its list of updated columns includes only _val, i.e. is single element.
+        boolean hasProps = !hasNewVal || updatedCols.size() > 1;
+
+        // Index of new _val in results of SELECT
+        if (hasNewVal)
+            valColIdx += 2;
+
+        int newValColIdx;
+
+        if (!hasProps) // No distinct properties, only whole new value - let's take it
+            newValColIdx = valColIdx;
+        else if (bin) // We update distinct columns in binary mode - let's choose correct index for the builder
+            newValColIdx = (hasNewVal ? valColIdx : 1);
+        else // Distinct properties, non binary mode - let's instantiate.
+            newValColIdx = -1;
+
+        // We want supplier to take present value only in case of binary mode as it will
+        // otherwise we always want it to instantiate new object
+        Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
+
         int res = 0;
 
         for (List<?> e : cursor) {
             Object key = e.get(0);
-            Object val = e.get(1);
+            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
             Object newVal;
 
             Map<String, Object> newColVals = new HashMap<>();
 
-            for (int i = 0; i < updatedCols.size(); i++)
+            for (int i = 0; i < updatedCols.size(); i++) {
+                if (hasNewVal && i == valColIdx - 2)
+                    continue;
+
                 newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
-
-            if (bin) {
-                if (!(val instanceof BinaryObject))
-                    val = cctx.grid().binary().toBinary(val);
-
-                newVal = cctx.grid().binary().builder((BinaryObject) val);
             }
-            else
-                try {
-                    newVal = GridUnsafe.allocateInstance(valCls);
-                }
-                catch (InstantiationException ex) {
-                    throw new IgniteSQLException("Failed to perform SQL UPDATE", ex);
-                }
+
+            newVal = newValSupplier.apply(e);
+
+            if (bin && !(val instanceof BinaryObject))
+                val = cctx.grid().binary().toBinary(val);
 
             // Skip key and value - that's why we start off with 2nd column
             for (int i = 0; i < cols.length - 2; i++) {
                 Column c = cols[i + 2];
 
-                boolean hasNewVal = newColVals.containsKey(c.getName());
+                boolean hasNewColVal = newColVals.containsKey(c.getName());
 
                 // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                if (bin && !hasNewVal)
+                if (bin && !hasNewColVal)
                     continue;
 
-                Object colVal = hasNewVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
+                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
 
                 desc.setColumnValue(key, newVal, colVal, i);
             }
 
-            if (bin)
-                newVal = ((BinaryObjectBuilder) newVal).build();
+            if (bin && hasProps) {
+                assert newVal instanceof BinaryObjectBuilder;
 
-            m.put(key, new ModifyingEntryProcessor(val, new EntryValueUpdater(newVal)));
+                newVal = ((BinaryObjectBuilder) newVal).build();
+            }
+
+            Object srcVal = e.get(1);
+
+            if (bin && !(srcVal instanceof BinaryObject))
+                srcVal = cctx.grid().binary().toBinary(srcVal);
+
+            m.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
 
             res++;
         }
@@ -4105,9 +4195,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /**
-     * Method to construct new values for keys and values.
+     * Method to construct new instances of keys and values on SQL MERGE and INSERT.
      */
-    private interface Supplier extends GridPlainClosure<Object[], Object> {
+    private interface Supplier extends GridPlainClosure<List<?>, Object> {
         // No-op.
     }
 
