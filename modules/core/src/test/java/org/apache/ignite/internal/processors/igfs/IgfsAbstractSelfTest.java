@@ -265,7 +265,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMoveFileDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
         checkNotExist(igfs, igfsSecondary, FILE);
@@ -357,7 +357,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMoveDirectoryDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
         checkNotExist(igfs, igfsSecondary, SUBSUBDIR);
@@ -745,13 +745,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
-        final IgfsPath rootPath = new IgfsPath("/");
-
-        igfs.update(rootPath, Collections.singletonMap(prop, setVal));
+        igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
 
         igfs.format();
 
-        IgfsFile file = igfs.info(rootPath);
+        IgfsFile file = igfs.info(IgfsPath.ROOT);
 
         assert file != null;
 
@@ -2334,7 +2332,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         Queue<IgniteBiTuple<Integer, IgfsPath>> queue = new ArrayDeque<>();
 
-        queue.add(F.t(0, new IgfsPath())); // Add root directory.
+        queue.add(F.t(0, IgfsPath.ROOT)); // Add root directory.
 
         while (!queue.isEmpty()) {
             IgniteBiTuple<Integer, IgfsPath> entry = queue.poll();
