@@ -509,6 +509,24 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testMassiveRemove2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove2_true() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMassiveRemove1_false() throws Exception {
         MAX_PER_PAGE = 1;
 
@@ -529,8 +547,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTestMassiveRemove(final boolean canGetRow) throws Exception {
-        final int threads = 32;
-        final int keys = 100;
+        final int threads = 64;
+        final int keys = 2000;
 
         final AtomicLongArray rmvd = new AtomicLongArray(keys);
 

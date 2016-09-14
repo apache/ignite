@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
@@ -430,18 +431,7 @@ public abstract class BPlusTree<L, T extends L> {
             // Detach the row.
             r.removed = getRow(io, buf, idx);
 
-            long rmvId = 0;
-
-            if (r.needReplaceInner == TRUE) {
-                // We increment remove ID in write lock on leaf page, thus it is guaranteed that
-                // any successor will get greater value than he had read at the beginning of the operation.
-                // Thus he is guaranteed to do a retry from root. Since inner replace takes locks on the whole branch
-                // and releases the locks only when the inner key is updated and the successor saw the updated removeId,
-                // then after retry from root, he will see updated inner key.
-                rmvId = globalRmvId.incrementAndGet();
-            }
-
-            r.doRemove(leaf, io, buf, cnt, idx, rmvId);
+            r.doRemove(leaf, io, buf, cnt, idx);
 
             return FOUND;
         }
@@ -1273,7 +1263,7 @@ public abstract class BPlusTree<L, T extends L> {
         Remove r = new Remove(row, ceil, bag);
 
         try {
-            for (; ; ) {
+            for (;;) {
                 r.init();
 
                 switch (removeDown(r, r.rootId, 0L, 0L, r.rootLvl)) {
@@ -1332,7 +1322,7 @@ public abstract class BPlusTree<L, T extends L> {
         final Page page = page(pageId);
 
         try {
-            for (; ; ) {
+            for (;;) {
                 // Init args.
                 r.pageId = pageId;
                 r.fwdId = fwdId;
@@ -1527,7 +1517,7 @@ public abstract class BPlusTree<L, T extends L> {
         Put p = new Put(row, bag);
 
         try {
-            for (; ; ) { // Go down with retries.
+            for (;;) { // Go down with retries.
                 p.init();
 
                 Result result = putDown(p, p.rootId, 0L, p.rootLvl);
@@ -2635,18 +2625,17 @@ public abstract class BPlusTree<L, T extends L> {
          * @param buf Buffer.
          * @param cnt Count.
          * @param idx Index to remove.
-         * @param rmvId Remove ID or {@code 0} to ignore.
          * @throws IgniteCheckedException If failed.
          */
-        private void doRemove(Page page, BPlusIO io, ByteBuffer buf, int cnt, int idx, long rmvId)
+        private void doRemove(Page page, BPlusIO io, ByteBuffer buf, int cnt, int idx)
             throws IgniteCheckedException {
             assert cnt > 0 : cnt;
             assert idx >= 0 && idx < cnt : idx + " " + cnt;
 
-            io.remove(buf, idx, cnt, rmvId);
+            io.remove(buf, idx, cnt);
 
             if (needWalDeltaRecord(page))
-                wal.log(new RemoveRecord(cacheId, page.id(), idx, cnt, rmvId));
+                wal.log(new RemoveRecord(cacheId, page.id(), idx, cnt));
         }
 
         /**
@@ -2686,7 +2675,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
-                doRemove(prnt.page, prnt.io, prnt.buf, prntCnt, prntIdx, 0L);
+                doRemove(prnt.page, prnt.io, prnt.buf, prntCnt, prntIdx);
 
             // Forward page is now empty and has no links, can free and release it right away.
             freePage(right.pageId, right.page, right.buf, true);
@@ -2770,12 +2759,24 @@ public abstract class BPlusTree<L, T extends L> {
 
             int leafIdx = leafCnt - 1; // Last leaf item.
 
+            // We increment remove ID in write lock on inner page, thus it is guaranteed that
+            // any successor, who already passed the inner page, will get greater value at leaf
+            // than he had read at the beginning of the operation and will retry operation from root.
+            long rmvId = globalRmvId.incrementAndGet();
+
             // Update inner key with the new biggest key of left subtree.
             inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
+            inner.io.setRemoveId(inner.buf, rmvId);
 
             if (needWalDeltaRecord(inner.page))
                 wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
-                    innerIdx, leaf.page.id(), leafIdx));
+                    innerIdx, leaf.page.id(), leafIdx, rmvId));
+
+            // Update remove ID for the leaf page.
+            leaf.io.setRemoveId(leaf.buf, rmvId);
+
+            if (needWalDeltaRecord(leaf.page))
+                wal.log(new FixRemoveId(cacheId, leaf.page.id(), rmvId));
         }
 
         /**
@@ -3393,9 +3394,9 @@ public abstract class BPlusTree<L, T extends L> {
 
             BPlusIO<L> io = io(buf);
 
-            // In case of intersection with inner replace remove operation
-            // we need to restart our operation from the root.
-            if (g.rmvId < io.getRemoveId(buf))
+            // In case of intersection with inner replace in remove operation
+            // we need to restart our operation from the tree root.
+            if (lvl == 0 && g.rmvId < io.getRemoveId(buf))
                 return RETRY_ROOT;
 
             return run0(pageId, page, buf, io, g, lvl);

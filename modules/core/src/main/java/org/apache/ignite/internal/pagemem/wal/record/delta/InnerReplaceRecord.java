@@ -37,6 +37,9 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
     /** */
     private int srcIdx;
 
+    /** */
+    private long rmvId;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId  Page ID.
@@ -44,12 +47,13 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
      * @param srcPageId Source page ID.
      * @param srcIdx Source index.
      */
-    public InnerReplaceRecord(int cacheId, long pageId, int dstIdx, long srcPageId, int srcIdx) {
+    public InnerReplaceRecord(int cacheId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
         super(cacheId, pageId);
 
         this.dstIdx = dstIdx;
         this.srcPageId = srcPageId;
         this.srcIdx = srcIdx;
+        this.rmvId = rmvId;
     }
 
     /** {@inheritDoc} */
@@ -63,6 +67,7 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
                 BPlusIO<L> srcIo = PageIO.getBPlusIO(srcBuf);
 
                 io.store(dstBuf, dstIdx, srcIo, srcBuf, srcIdx);
+                io.setRemoveId(dstBuf, rmvId);
             }
             finally {
                 src.releaseRead();
@@ -75,15 +80,31 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
         return RecordType.BTREE_PAGE_INNER_REPLACE;
     }
 
+    /**
+     * @return Destination index.
+     */
     public int destinationIndex() {
         return dstIdx;
     }
 
+    /**
+     * @return Source page ID.
+     */
     public long sourcePageId() {
         return srcPageId;
     }
 
+    /**
+     * @return Source index.
+     */
     public int sourceIndex() {
         return srcIdx;
+    }
+
+    /**
+     * @return Remove ID.
+     */
+    public long removeId() {
+        return rmvId;
     }
 }

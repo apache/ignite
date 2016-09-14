@@ -24,48 +24,40 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
 /**
- * Remove.
+ * Fix remove ID record.
  */
-public class RemoveRecord extends PageDeltaRecord {
+public class FixRemoveId extends PageDeltaRecord {
     /** */
-    private int idx;
-
-    /** */
-    private int cnt;
+    private long rmvId;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId  Page ID.
-     * @param idx Index.
-     * @param cnt Count.
+     * @param rmvId Remove ID.
      */
-    public RemoveRecord(int cacheId, long pageId, int idx, int cnt) {
+    public FixRemoveId(int cacheId, long pageId, long rmvId) {
         super(cacheId, pageId);
 
-        this.idx = idx;
-        this.cnt = cnt;
+        this.rmvId = rmvId;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf)
+        throws IgniteCheckedException {
         BPlusIO<?> io = PageIO.getBPlusIO(buf);
 
-        if (io.getCount(buf) != cnt)
-            throw new DeltaApplicationException("Count in wrong: " + cnt);
-
-        io.remove(buf, idx, cnt);
+        io.setRemoveId(buf, rmvId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_PAGE_REMOVE;
+        return RecordType.BTREE_FIX_REMOVE_ID;
     }
 
-    public int index() {
-        return idx;
-    }
-
-    public int count() {
-        return cnt;
+    /**
+     * @return Remove ID.
+     */
+    public long removeId() {
+        return rmvId;
     }
 }
