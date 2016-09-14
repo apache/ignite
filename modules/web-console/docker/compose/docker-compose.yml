@@ -35,18 +35,18 @@ backend:
     # Port for serving frontend API
     - server_port=3000
     # Cookie session secret
-    - server_sessionSecret="CHANGE ME"
+    - server_sessionSecret=CHANGE ME
     # URL for mongodb connection
     - mongodb_url=mongodb://mongodb/console
     # Port for web-agent.
     - agentServer_port=3001
     # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
-    - mail_service=""
-    - mail_sign=""
-    - mail_greeting=""
-    - mail_from=""
-    - mail_auth_user=""
-    - mail_auth_pass=""
+    - mail_service=
+    - mail_sign=
+    - mail_greeting=
+    - mail_from=
+    - mail_auth_user=
+    - mail_auth_pass=
 
 frontend:
   image: ignite/web-console-frontend

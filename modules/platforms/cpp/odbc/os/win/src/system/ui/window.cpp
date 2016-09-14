@@ -89,7 +89,7 @@ namespace ignite
                         width,
                         height,
                         parent ? parent->GetHandle() : NULL,
-                        reinterpret_cast<HMENU>(id),
+                        reinterpret_cast<HMENU>(static_cast<ptrdiff_t>(id)),
                         GetHInstance(),
                         this
                     );
