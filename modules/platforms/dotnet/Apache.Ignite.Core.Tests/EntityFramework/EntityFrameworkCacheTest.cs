@@ -265,6 +265,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestScalars()
         {
+            // TODO: ExecuteScalar is not called, wtf?
+
             using (var ctx = GetDbContext())
             {
                 var blog = new Blog
@@ -513,11 +515,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             using (var ctx = GetDbContext())
             {
-                var ctxAdapter = (IObjectContextAdapter) ctx;
+                var objCtx = ((IObjectContextAdapter) ctx).ObjectContext;
 
-                var script = ctxAdapter.ObjectContext.CreateDatabaseScript();
-
-                Assert.IsNotNullOrEmpty(script);
+                var script = objCtx.CreateDatabaseScript();
+                Assert.IsTrue(script.StartsWith("CREATE TABLE \"Blogs\""));
             }
         }
 
