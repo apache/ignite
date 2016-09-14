@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -492,13 +493,8 @@ public class IgfsControlResponse extends IgfsMessage {
             case RES_TYPE_IGFS_PATH: {
                 boolean hasVal = in.readBoolean();
 
-                if (hasVal) {
-                    IgfsPath path = new IgfsPath();
-
-                    path.readExternal(in);
-
-                    res = path;
-                }
+                if (hasVal)
+                    res = IgfsUtils.readPath(in);
 
                 break;
             }
@@ -603,13 +599,8 @@ public class IgfsControlResponse extends IgfsMessage {
                 if (size >= 0) {
                     paths = new ArrayList<>(size);
 
-                    for (int i = 0; i < size; i++) {
-                        IgfsPath path = new IgfsPath();
-
-                        path.readExternal(in);
-
-                        paths.add(path);
-                    }
+                    for (int i = 0; i < size; i++)
+                        paths.add(IgfsUtils.readPath(in));
                 }
 
                 res = paths;

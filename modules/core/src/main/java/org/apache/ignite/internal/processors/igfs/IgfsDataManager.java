@@ -105,9 +105,6 @@ public class IgfsDataManager extends IgfsManager {
     /** */
     private CountDownLatch dataCacheStartLatch;
 
-    /** Local IGFS metrics. */
-    private IgfsLocalMetrics metrics;
-
     /** Group block size. */
     private long grpBlockSize;
 
@@ -200,8 +197,6 @@ public class IgfsDataManager extends IgfsManager {
         assert dataCachePrj != null;
 
         dataCache = (IgniteInternalCache)dataCachePrj;
-
-        metrics = igfsCtx.igfs().localMetrics();
 
         AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
             .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
@@ -388,7 +383,7 @@ public class IgfsDataManager extends IgfsManager {
 
                                 putBlock(fileInfo.blockSize(), key, res);
 
-                                metrics.addReadBlocks(1, 1);
+                                igfsCtx.metrics().addReadBlocks(1, 1);
                             }
                             catch (IgniteCheckedException e) {
                                 rmtReadFut.onDone(e);
@@ -405,18 +400,18 @@ public class IgfsDataManager extends IgfsManager {
                             // Wait for existing future to finish and get it's result.
                             res = oldRmtReadFut.get();
 
-                            metrics.addReadBlocks(1, 0);
+                            igfsCtx.metrics().addReadBlocks(1, 0);
                         }
                     }
                     else
-                        metrics.addReadBlocks(1, 0);
+                        igfsCtx.metrics().addReadBlocks(1, 0);
 
                     return res;
                 }
             });
         }
         else
-            metrics.addReadBlocks(1, 0);
+            igfsCtx.metrics().addReadBlocks(1, 0);
 
         return fut;
     }
@@ -1308,7 +1303,7 @@ public class IgfsDataManager extends IgfsManager {
                         if (!nodeBlocks.isEmpty()) {
                             processBatch(id, node, nodeBlocks);
 
-                            metrics.addWriteBlocks(1, 0);
+                            igfsCtx.metrics().addWriteBlocks(1, 0);
                         }
 
                         return portion;
@@ -1350,7 +1345,7 @@ public class IgfsDataManager extends IgfsManager {
                 else
                     nodeBlocks.put(key, portion);
 
-                metrics.addWriteBlocks(writtenTotal, writtenSecondary);
+                igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary);
 
                 written += portion.length;
             }
@@ -1359,7 +1354,7 @@ public class IgfsDataManager extends IgfsManager {
             if (!nodeBlocks.isEmpty()) {
                 processBatch(id, node, nodeBlocks);
 
-                metrics.addWriteBlocks(nodeBlocks.size(), 0);
+                igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0);
             }
 
             assert written == len;
