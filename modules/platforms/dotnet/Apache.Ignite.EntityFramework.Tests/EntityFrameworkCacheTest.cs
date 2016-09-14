@@ -482,7 +482,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
-        /// Tests the cache reader.
+        /// Tests the cache reader indirectly with an entity that has various field types.
         /// </summary>
         [Test]
         public void TestCacheReader()
@@ -519,6 +519,15 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
+        /// Tests the cache reader by calling it directly.
+        /// </summary>
+        [Test]
+        public void TestCacheReaderRaw()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests the database context.
         /// </summary>
         [Test]
@@ -536,7 +545,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Executes the entity SQL.
         /// </summary>
-        private object ExecuteEntitySql(string esql)
+        private static object ExecuteEntitySql(string esql)
         {
             using (var ctx = GetDbContext())
             {
