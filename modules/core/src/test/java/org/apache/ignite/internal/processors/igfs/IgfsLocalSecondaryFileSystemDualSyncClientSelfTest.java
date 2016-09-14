@@ -17,35 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.IgfsInputStream;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-
-import java.io.IOException;
-
 /**
- * Implementation adapter providing necessary methods.
+ * DUAL_SYNC mode.
  */
-public abstract class IgfsInputStreamAdapter extends IgfsInputStream
-    implements IgfsSecondaryFileSystemPositionedReadable {
+public class IgfsLocalSecondaryFileSystemDualSyncClientSelfTest extends IgfsLocalSecondaryFileSystemDualSyncSelfTest {
     /** {@inheritDoc} */
-    @Override public long length() {
-        return fileInfo().length();
+    @Override protected boolean client() {
+        return true;
     }
-
-    /**
-     * Gets file info for opened file.
-     *
-     * @return File info.
-     */
-    public abstract IgfsEntryInfo fileInfo();
-
-    /**
-     * Reads bytes from given position.
-     *
-     * @param pos Position to read from.
-     * @param len Number of bytes to read.
-     * @return Array of chunks with respect to chunk file representation.
-     * @throws IOException If read failed.
-     */
-    public abstract byte[][] readChunks(long pos, int len) throws IOException;
 }
