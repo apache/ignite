@@ -37,7 +37,7 @@ public class IgniteIgnoredTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite", true);
 
-        /** --- WEB SESSIONS --- */
+        /* --- WEB SESSIONS --- */
         suite.addTestSuite(WebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
