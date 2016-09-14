@@ -368,14 +368,17 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
         assertEquals(hash0, hash1);
     }
 
+    /**
+     *
+     */
     public void testCheckLockingWhenSaveFileWithMoreSizeWhichQueue() throws IgniteCheckedException {
+        final String spaceName = "myScape";
+        final SwapKey key = new SwapKey("key");
+        final String msg = "Message text";
 
-        IgniteInternalFuture<Void> futr = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<byte[]> futr = GridTestUtils.runAsync(new Callable<byte[]>() {
             @Override
-            public Void call() throws Exception {
-                String spaceName = "myScape";
-                SwapKey key = new SwapKey("key");
-                String msg = "Message text";
+            public byte[] call() throws Exception {
 
                 byte[] val = msg.getBytes();
 
@@ -393,11 +396,12 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
                 assert res != null;
 
-                assertEquals(msg, new String(res));
-                return null;
+                return res;
             }
         });
 
-        futr.get(10_000);
+        byte[] bytes = futr.get(10_000);
+
+        assertEquals(msg, new String(bytes));
     }
 }
