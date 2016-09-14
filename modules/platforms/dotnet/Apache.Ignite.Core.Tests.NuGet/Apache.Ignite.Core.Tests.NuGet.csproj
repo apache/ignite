@@ -89,9 +89,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Apache.Ignite.NLog.1.8.0\lib\net40\Apache.Ignite.NLog.dll</HintPath>
       <Private>True</Private>
+    </Reference>
     <Reference Include="Apache.Ignite.EntityFramework">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.EntityFramework.1.6.0\lib\net40\Apache.Ignite.EntityFramework.dll</HintPath>
+      <HintPath>packages\Apache.Ignite.EntityFramework.1.8.0\lib\net40\Apache.Ignite.EntityFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="EFCache, Version=1.0.0.0, Culture=neutral, PublicKeyToken=46c4868af4307d2c, processorArchitecture=MSIL">
