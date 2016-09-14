@@ -291,12 +291,14 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(5, ctx.SaveChanges());
 
                 // Test sum and count.
+                Assert.AreEqual(4, ctx.Posts.Count());
                 Assert.AreEqual(4, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
 
                 ctx.Posts.Remove(ctx.Posts.First());
                 ctx.SaveChanges();
 
+                Assert.AreEqual(3, ctx.Posts.Count());
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
             }
