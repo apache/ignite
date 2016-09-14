@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.EntityFramework.Tests
 {
+    using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
@@ -34,8 +36,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestConfigurationAndStartup()
         {
-            // TODO
-            //Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
+            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
 
             Assert.IsNull(Ignition.TryGetIgnite());
 
