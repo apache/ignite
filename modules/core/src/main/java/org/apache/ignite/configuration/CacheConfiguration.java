@@ -1646,7 +1646,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Maximum number of query iterators that can be stored.
      */
-    public int getMaximumQueryIteratorCount() {
+    public int getMaxQueryIteratorsCount() {
         return maxQryIterCnt;
     }
 
@@ -1656,7 +1656,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param maxQryIterCnt Maximum number of query iterators that can be stored.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setMaximumQueryIteratorCount(int maxQryIterCnt) {
+    public CacheConfiguration<K, V> setMaxQueryIteratorsCount(int maxQryIterCnt) {
         this.maxQryIterCnt = maxQryIterCnt;
 
         return this;

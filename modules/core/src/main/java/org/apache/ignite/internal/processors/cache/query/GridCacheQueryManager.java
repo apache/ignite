@@ -173,7 +173,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
+        maxIterCnt = cctx.config().getMaxQueryIteratorsCount();
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -535,7 +535,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "CacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         QueryResult<K, V> res;
@@ -657,7 +657,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "CacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         if (qry.type() == SQL_FIELDS) {

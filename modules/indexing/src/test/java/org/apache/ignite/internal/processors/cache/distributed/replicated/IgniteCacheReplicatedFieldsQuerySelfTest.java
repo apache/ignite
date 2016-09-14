@@ -52,7 +52,7 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
 
         QueryCursor<List<?>> qry = null;
 
-        int maximumQueryIteratorCount = cache.getConfiguration(CacheConfiguration.class).getMaximumQueryIteratorCount();
+        int maximumQueryIteratorCount = cache.getConfiguration(CacheConfiguration.class).getMaxQueryIteratorsCount();
 
         for (int i = 0; i < maximumQueryIteratorCount + 1; i++) {
             QueryCursor<List<?>> q = cache
