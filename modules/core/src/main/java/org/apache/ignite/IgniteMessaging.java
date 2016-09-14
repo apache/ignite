@@ -103,7 +103,9 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
      * this method will arrive in the same order they were sent. Note that if a topic is used
-     * for ordered messages, then it cannot be reused for non-ordered messages.
+     * for ordered messages, then it cannot be reused for non-ordered messages. Note if you have local listener
+     * on this topic, all messages will process through thread pool, and current thread will never be blocked
+     * when you invoke sendOrdered, no matter which mode you used (default or {@link #withAsync()}).
      * <p>
      * The {@code timeout} parameter specifies how long an out-of-order message will stay in a queue,
      * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
