@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Apache.Ignite.EntityFramework.Tests</RootNamespace>
-    <AssemblyName>Apache.Ignite.EntityFramework.Tests</AssemblyName>
+    <AssemblyName>Apache.Ignite.EntityFramework.Tests.Net45</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
