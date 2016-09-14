@@ -2896,6 +2896,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSingleHandle() throws Exception {
+        SingleHandleA a = new SingleHandleA(new SingleHandleB());
+
+        BinaryObjectImpl bo = marshal(a, binaryMarshaller());
+
+        Map<String, BinaryObject> map = bo.field("map");
+
+        BinaryObject innerBo = map.get("key");
+
+        assertEquals(SingleHandleB.class, innerBo.deserialize().getClass());
+    }
+
+    /**
      *
      */
     private static interface SomeItf {
@@ -4847,4 +4862,27 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             return value;
         }
     }
+
+    /**
+     */
+    private static class SingleHandleA {
+        /** */
+        private SingleHandleB b;
+
+        /** */
+        private Map<Object, SingleHandleB> map = new HashMap<>();
+
+        /**
+         * @param b B.
+         */
+        SingleHandleA(SingleHandleB b) {
+            this.b = b;
+
+            map.put("key", b);
+        }
+    }
+
+    /**
+     */
+    private static class SingleHandleB {}
 }
