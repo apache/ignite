@@ -699,7 +699,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         final GridByteArrayOutputStream bout =
             new GridByteArrayOutputStream(DEFAULT_BYTE_ARRAY_STREAM_SIZE, MESSAGE_LEN_BYTES);
 
-        spi.marsh.marshal(msg, bout);
+        spi.marshaller().marshal(msg, bout);
 
         final byte[] data = bout.toByteArray();
 
