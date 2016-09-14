@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Entity;
+    using System.Data.Entity.Infrastructure;
     using System.IO;
     using System.Linq;
     using System.Transactions;
@@ -81,6 +82,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            using (var ctx = GetDbContext())
+            {
+                ctx.Database.Delete();
+            }
+
             Ignition.StopAll(true);
             File.Delete(TempFile);
         }
@@ -496,6 +502,22 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 // Check default deserialization.
                 var test0 = context.Tests.Single(x => x.Bool);
                 Assert.AreEqual(test, test0);
+            }
+        }
+
+        /// <summary>
+        /// Tests the database context.
+        /// </summary>
+        [Test]
+        public void TestDbContext()
+        {
+            using (var ctx = GetDbContext())
+            {
+                var ctxAdapter = (IObjectContextAdapter) ctx;
+
+                var script = ctxAdapter.ObjectContext.CreateDatabaseScript();
+
+                Assert.IsNotNullOrEmpty(script);
             }
         }
 
