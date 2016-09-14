@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -88,9 +87,6 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> extends DataStructure {
-    /** For testing. */
-    public static Random rnd;
-
     /** */
     private static volatile boolean interrupted;
 
