@@ -78,6 +78,9 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         for (Cache.Entry<Integer, Integer> entry : cursor)
             System.out.println(entry);
+    }
+
+    @Override public void tearDown() throws Exception {
 
         Ignition.stopAll(true);
     }
@@ -119,8 +122,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
                 }, IgniteTxHeuristicCheckedException.class);
             }
         }
-
-        Ignition.stopAll(true);
     }
 
     /** */
@@ -172,7 +173,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             for (Map.Entry<Object, Object> entry : map.entrySet())
                 res.add(new CacheEntryImpl<>(entry.getKey(), entry.getValue()));
 
-            return (Iterator)map.entrySet().iterator();//res.iterator();
+            return res.iterator();
         }
 
         /** {@inheritDoc} */
