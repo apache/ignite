@@ -18,6 +18,8 @@
 package org.apache.ignite.cache.store.cassandra.utils;
 
 import java.io.File;
+import java.util.List;
+
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 
 /**
@@ -52,6 +54,14 @@ public class DDLGenerator {
                 System.out.println();
                 System.out.println(settings.getTableDDLStatement());
                 System.out.println();
+
+                List<String> statements = settings.getIndexDDLStatements();
+                if (statements != null && !statements.isEmpty()) {
+                    for (String st : statements) {
+                        System.out.println(st);
+                        System.out.println();
+                    }
+                }
             }
             catch (Throwable e) {
                 System.out.println("-------------------------------------------------------------");
