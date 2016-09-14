@@ -1208,6 +1208,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (log.isDebugEnabled())
                 log.debug("Partition map after full update: " + fullMapString());
 
+            if (changed)
+                cctx.shared().exchange().scheduleResendPartitions();
+
             return changed ? localPartitionMap() : null;
         }
         finally {
@@ -1332,6 +1335,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             if (log.isDebugEnabled())
                 log.debug("Partition map after single update: " + fullMapString());
+
+            if (changed)
+                cctx.shared().exchange().scheduleResendPartitions();
 
             return changed ? localPartitionMap() : null;
         }
