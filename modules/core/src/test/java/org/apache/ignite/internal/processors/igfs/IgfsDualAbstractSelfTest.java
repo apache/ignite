@@ -969,7 +969,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdirsParentPathMissingPartially() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -996,7 +999,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdrisParentPathMissing() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);

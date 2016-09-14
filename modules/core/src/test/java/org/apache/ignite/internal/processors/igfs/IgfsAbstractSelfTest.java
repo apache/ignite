@@ -529,7 +529,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirsParentRoot() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(DIR, props);
 
@@ -2290,22 +2293,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-        // TODO: Enable.
-//        if (relaxedConsistency())
-//            return;
-//
-//        for (int i = 0; i < REPEAT_CNT; i++) {
-//            try {
-//                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
-//                    updateCnt, mkdirsCnt, createCnt);
-//
-//                if (i % 10 == 0)
-//                    X.println(" - " + i);
-//            }
-//            finally {
-//                clear(igfs, igfsSecondary);
-//            }
-//        }
+        if (relaxedConsistency())
+            return;
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+                    updateCnt, mkdirsCnt, createCnt);
+
+                if (i % 10 == 0)
+                    X.println(" - " + i);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
     }
 
     /**

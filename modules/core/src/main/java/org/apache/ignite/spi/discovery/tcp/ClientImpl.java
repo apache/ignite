@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -430,7 +431,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         try {
             sockWriter.sendMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                spi.marsh.marshal(evt)));
+                spi.marshaller().marshal(evt)));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -684,7 +685,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                spi.marsh.marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+                spi.marshaller().marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
 
             node.setAttributes(attrs);
         }
@@ -885,7 +886,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = spi.marsh.unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
+                            msg = spi.marshaller().unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1215,7 +1216,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
                         while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                            TcpDiscoveryAbstractMessage msg = spi.marshaller().unmarshal(in,
                                 U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (msg instanceof TcpDiscoveryClientReconnectMessage) {
@@ -1976,7 +1977,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
                                 U.resolveClassLoader(spi.ignite().configuration()));
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);

@@ -754,7 +754,10 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                boolean dual = IgfsUtils.isDualMode(mode);;
+                if (mode == PROXY)
+                    return secondaryFs.delete(path, recursive);
+
+                boolean dual = IgfsUtils.isDualMode(mode);
 
                 if (dual)
                     await(path);
@@ -795,14 +798,24 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PRIMARY)
-                    meta.mkdirs(path, props0);
-                else {
-                    assert IgfsUtils.isDualMode(mode);;
+                switch (mode) {
+                    case PRIMARY:
+                        meta.mkdirs(path, props0);
 
-                    await(path);
+                        break;
 
-                    meta.mkdirsDual(secondaryFs, path, props0);
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC:
+                        await(path);
+
+                        meta.mkdirsDual(secondaryFs, path, props0, props);
+
+                        break;
+
+                    case PROXY:
+                        secondaryFs.mkdirs(path, props);
+
+                        break;
                 }
 
                 return null;
@@ -827,7 +840,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<IgfsPath> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
+                if (mode != PRIMARY) {
                     assert secondaryFs != null;
 
                     try {
@@ -835,7 +848,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         files.addAll(children);
 
-                        if (!modeRslvr.hasPrimaryChild(path))
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
                             return files;
                     }
                     catch (Exception e) {
@@ -876,7 +889,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<IgfsFile> files = new HashSet<>();
 
-                if (IgfsUtils.isDualMode(mode)) {
+                if (mode != PRIMARY) {
                     assert secondaryFs != null;
 
                     try {
@@ -888,7 +901,7 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(impl);
                         }
 
-                        if (!modeRslvr.hasPrimaryChild(path))
+                        if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
                             return files;
                     }
                     catch (Exception e) {
