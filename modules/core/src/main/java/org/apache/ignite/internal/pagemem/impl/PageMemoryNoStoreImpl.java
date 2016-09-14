@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.jsr166.ConcurrentHashMap8;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 
@@ -131,9 +130,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** */
     private AtomicInteger selector = new AtomicInteger();
-
-    /** */
-    private ConcurrentHashMap8<Integer, Long> cacheMetaPages = new ConcurrentHashMap8<>();
 
     /** */
     private OffheapReadWriteLock rwLock;
@@ -258,33 +254,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
-        cacheMetaPages.remove(cacheId, PageIdUtils.effectivePageId(pageId));
-
         Segment seg = segment(pageId);
 
         seg.releaseFreePage(pageId);
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Page metaPage(int cacheId) throws IgniteCheckedException {
-        Long pageId = cacheMetaPages.get(cacheId);
-
-        if (pageId == null) {
-            pageId = cacheMetaPages.computeIfAbsent(cacheId, new ConcurrentHashMap8.Fun<Integer, Long>() {
-                @Override public Long apply(Integer cacheId) {
-                    return allocatePage(cacheId, 0, FLAG_IDX);
-                }
-            });
-        }
-
-        return page(cacheId, pageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Page partitionMetaPage(int cacheId, int partId) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -311,19 +285,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
         return sysPageSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(int cacheId) {
-        Long metaPageId = cacheMetaPages.remove(cacheId);
-
-        if (metaPageId != null)
-            freePage(cacheId, metaPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(int cacheId, int partId, byte allocSpace) {
-        // No-op
     }
 
     /** */

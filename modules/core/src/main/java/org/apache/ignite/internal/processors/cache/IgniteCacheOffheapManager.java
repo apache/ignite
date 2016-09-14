@@ -242,6 +242,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         int partId();
 
         /**
+         * @return Store name.
+         */
+        String name();
+
+        /**
          * @param key Key.
          * @param part Partition.
          * @param val Value.

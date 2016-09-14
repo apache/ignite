@@ -139,14 +139,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override protected void stop0(final boolean cancel, final boolean destroy) {
         super.stop0(cancel, destroy);
 
-        if (destroy && cctx.affinityNode()) {
+        if (destroy && cctx.affinityNode())
             destroyCacheDataStructures();
-
-            PageMemory pageMemory = cctx.shared().database().pageMemory();
-
-            if (pageMemory != null)
-                pageMemory.clear(cctx.cacheId());
-        }
     }
 
     /**
