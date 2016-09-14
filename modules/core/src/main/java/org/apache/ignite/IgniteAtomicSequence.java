@@ -119,7 +119,7 @@ public interface IgniteAtomicSequence extends Closeable {
 
     /**
      * Gets local reserve percentage for this atomic sequence. When a reserve percentage of a batch size
-     * is reached when sequence starts a new reservation in background.
+     * is reached then sequence starts a new reservation in background.
      *
      * @return Sequence reserve pecentage.
      */
