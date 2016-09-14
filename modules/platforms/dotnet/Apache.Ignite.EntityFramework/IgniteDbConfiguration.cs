@@ -27,7 +27,6 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework.Impl;
 
     /// <summary>
@@ -108,7 +107,7 @@ namespace Apache.Ignite.EntityFramework
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
 
-            var efCache = new DbCache(cache);  // TODO: Configurable strategy
+            var efCache = new DbCache(cache);
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
