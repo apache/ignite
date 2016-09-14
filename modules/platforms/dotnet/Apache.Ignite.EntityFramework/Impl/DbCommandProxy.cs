@@ -21,6 +21,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data;
     using System.Data.Common;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -189,34 +190,12 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override object ExecuteScalar()
         {
-            var res = _command.ExecuteScalar();
-
-            if (_info.IsModification)
-            {
-                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
-
-                return res;
-            }
-
-            var cacheKey = GetKey();
-            var queryInfo = GetQueryInfo();
-            var strategy = _info.Policy.GetCachingStrategy(queryInfo);
-
-            object cachedRes;
-            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
-                return cachedRes;
-
-            if (!_info.Policy.CanBeCached(queryInfo) ||
-                !_info.Policy.CanBeCached(queryInfo, 1))
-            {
-                return res;
-            }
-
-            PutResultToCache(cacheKey, res, strategy, queryInfo);
-
-            return res;
+            // This method is never used by EntityFramework.
+            // Even EntityCommand.ExecuteScalar goes to ExecuteDbDataReader.
+            return _command.ExecuteScalar();
         }
 
         /// <summary>
