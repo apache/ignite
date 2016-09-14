@@ -287,13 +287,16 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
         OutputStream os = create0(path, overwrite, bufSize);
+
         try {
             updateProperties(path, props);
+
             return os;
         }
         catch (Exception ex) {
             try {
                 os.close();
+
                 throw ex;
             }
             catch (IOException e) {
@@ -313,13 +316,16 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             if (exists) {
                 OutputStream os = new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+
                 try {
                     update(path, props);
+
                     return os;
                 }
                 catch (Exception ex) {
                     try {
                         os.close();
+
                         throw ex;
                     }
                     catch (IOException e) {
@@ -348,6 +354,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             return null;
 
         PosixFileAttributes readAttrs = null;
+
         try {
             PosixFileAttributeView attrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class);
 
@@ -518,6 +525,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (groupName != null) {
             try {
                 UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+
                 GroupPrincipal grp = lookupService.lookupPrincipalByGroupName(groupName);
 
                 attrs.setGroup(grp);
@@ -531,6 +539,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         if (strPerm != null) {
             int perm = Integer.parseInt(strPerm, 8);
+
             Set<PosixFilePermission> permSet = new HashSet<>(9);
 
             for (int i = 0; i < POSIX_FILE_PERMISSIONS.length; ++i) {
@@ -569,6 +578,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         props.put(IgfsUtils.PROP_GROUP_NAME, attrs.group().getName());
 
         int perm = 0;
+
         for(PosixFilePermission p : attrs.permissions())
             perm |= (1 << 8 - p.ordinal());
 
