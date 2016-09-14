@@ -40,7 +40,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -56,10 +55,16 @@ import javax.cache.Cache;
  * Indexing Spi query test
  */
 public class IndexingSpiQuerySelfTest extends TestCase {
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        Ignition.stopAll(true);
+    }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testSimpleIndexingSpi() throws Exception {
-        IgniteConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = configuration();
 
         cfg.setIndexingSpi(new MyIndexingSpi());
 
@@ -80,14 +85,12 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             System.out.println(entry);
     }
 
-    @Override public void tearDown() throws Exception {
-
-        Ignition.stopAll(true);
-    }
-
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiFailure() throws Exception {
-        IgniteConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = configuration();
 
         cfg.setIndexingSpi(new MyBrokenIndexingSpi());
 
@@ -108,7 +111,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        Transaction tx = null;
+                        Transaction tx;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
                             cache.put(1, 1);
@@ -124,8 +127,10 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
     }
 
-    /** */
-    @NotNull private IgniteConfiguration getConfiguration() {
+    /**
+     * @return Configuration.
+     */
+    private IgniteConfiguration configuration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -136,6 +141,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
+
         return cfg;
     }
 
@@ -143,7 +149,8 @@ public class IndexingSpiQuerySelfTest extends TestCase {
      * Indexing Spi implementation for test
      */
     private static class MyIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
-        private final SortedMap<Object, Object> index = new TreeMap<>();
+        /** Index. */
+        private final SortedMap<Object, Object> idx = new TreeMap<>();
 
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
@@ -166,7 +173,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             Object from = paramsIt.next();
             Object to = paramsIt.next();
 
-            SortedMap<Object, Object> map = index.subMap(from, to);
+            SortedMap<Object, Object> map = idx.subMap(from, to);
 
             Collection<Cache.Entry<?, ?>> res = new ArrayList<>(map.size());
 
@@ -179,7 +186,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
-            index.put(key, val);
+            idx.put(key, val);
         }
 
         /** {@inheritDoc} */
