@@ -527,6 +527,14 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                 using (var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                 {
+                    // Check schema.
+                    Assert.Throws<NotSupportedException>(() => reader.GetSchemaTable());
+                    Assert.AreEqual(1, reader.Depth);
+                    Assert.AreEqual(0, reader.RecordsAffected);
+                    Assert.IsTrue(reader.HasRows);
+                    Assert.IsFalse(reader.IsClosed);
+
+                    // Read.
                     Assert.IsTrue(reader.Read());
                 }
             }
