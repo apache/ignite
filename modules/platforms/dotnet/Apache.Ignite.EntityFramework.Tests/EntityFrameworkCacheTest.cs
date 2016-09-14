@@ -519,6 +519,8 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 ctx.Tests.Add(test);
                 ctx.SaveChanges();
+
+                test = ctx.Tests.Single();
             }
 
             using (var ctx = new BloggingContext(ConnectionString))
@@ -554,19 +556,25 @@ namespace Apache.Ignite.EntityFramework.Tests
                     Assert.AreEqual(test.String, vals[reader.GetOrdinal("String")]);
                     Assert.AreEqual(test.Guid, vals[reader.GetOrdinal("Guid")]);
                     Assert.AreEqual(test.DateTime, vals[reader.GetOrdinal("DateTime")]);
+                }
+
+                using (var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
+                {
+                    // Read.
+                    Assert.IsTrue(reader.Read());
 
                     // Test separate values.
-                    Assert.AreEqual(test.Byte, reader.GetByte(reader.GetOrdinal("Byte")));
-                    Assert.AreEqual(test.Short, reader.GetInt16(reader.GetOrdinal("Short")));
-                    Assert.AreEqual(test.ArrayReaderTestId, reader.GetInt32(reader.GetOrdinal("ArrayReaderTestId")));
-                    Assert.AreEqual(test.Long, reader.GetInt64(reader.GetOrdinal("Long")));
-                    Assert.AreEqual(test.Float, reader.GetFloat(reader.GetOrdinal("Float")));
-                    Assert.AreEqual(test.Double, reader.GetDouble(reader.GetOrdinal("Double")));
-                    Assert.AreEqual(test.Decimal, reader.GetDecimal(reader.GetOrdinal("Decimal")));
-                    Assert.AreEqual(test.Bool, reader.GetBoolean(reader.GetOrdinal("Bool")));
-                    Assert.AreEqual(test.String, reader.GetString(reader.GetOrdinal("String")));
-                    Assert.AreEqual(test.Guid, reader.GetGuid(reader.GetOrdinal("Guid")));
-                    Assert.AreEqual(test.DateTime, reader.GetDateTime(reader.GetOrdinal("DateTime")));
+                    Assert.AreEqual(test.ArrayReaderTestId, reader.GetInt32(0));
+                    Assert.AreEqual(test.Byte, reader.GetByte(1));
+                    Assert.AreEqual(test.Short, reader.GetInt16(2));
+                    Assert.AreEqual(test.Long, reader.GetInt64(3));
+                    Assert.AreEqual(test.Float, reader.GetFloat(4));
+                    Assert.AreEqual(test.Double, reader.GetDouble(5));
+                    Assert.AreEqual(test.Decimal, reader.GetDecimal(6));
+                    Assert.AreEqual(test.Bool, reader.GetBoolean(7));
+                    Assert.AreEqual(test.String, reader.GetString(8));
+                    Assert.AreEqual(test.Guid, reader.GetGuid(9));
+                    Assert.AreEqual(test.DateTime, reader.GetDateTime(10));
                 }
             }
         }
