@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.EntityFramework
+namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
     using Apache.Ignite.EntityFramework;

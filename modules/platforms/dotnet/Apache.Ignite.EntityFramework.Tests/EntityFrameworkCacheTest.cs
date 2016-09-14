@@ -19,7 +19,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-namespace Apache.Ignite.Core.Tests.EntityFramework
+namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -28,12 +28,14 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data.Entity.Infrastructure;
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.EntityFramework;
-    using Apache.Ignite.EntityFramework;
-    using NUnit.Framework;
     using System.Threading;
     using System.Transactions;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.EntityFramework;
+    using Apache.Ignite.Core.Tests;
+    using Apache.Ignite.EntityFramework;
+    using NUnit.Framework;
 
     /// <summary>
     /// Integration test with temporary SQL CE database.
