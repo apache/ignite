@@ -259,7 +259,32 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestScalars()
         {
-            // TODO
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog
+                {
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "1"},
+                        new Post {Title = "2"},
+                        new Post {Title = "3"},
+                        new Post {Title = "4"}
+                    }
+                };
+                ctx.Blogs.Add(blog);
+
+                Assert.AreEqual(5, ctx.SaveChanges());
+
+                // Test sum and count.
+                Assert.AreEqual(4, ctx.Posts.Count(x => x.Content == null));
+                Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
+
+                ctx.Posts.Remove(ctx.Posts.First());
+
+                Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
+                Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
+            }
         }
 
         /// <summary>
@@ -506,7 +531,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             public int BlogId { get; set; }
             public string Name { get; set; }
-            public string Url { get; set; }
 
             public virtual List<Post> Posts { get; set; }
         }
