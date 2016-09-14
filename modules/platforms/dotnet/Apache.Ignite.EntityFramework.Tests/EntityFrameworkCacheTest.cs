@@ -111,6 +111,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 ctx.Blogs.RemoveRange(ctx.Blogs);
                 ctx.Posts.RemoveRange(ctx.Posts);
+                ctx.Tests.RemoveRange(ctx.Tests);
 
                 ctx.SaveChanges();
             }
