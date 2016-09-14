@@ -47,9 +47,10 @@ import javax.cache.Cache;
  * Indexing Spi transactional query test
  */
 public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
-
+    /** */
     private static AtomicInteger cnt;
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
     }
@@ -62,6 +63,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -82,7 +84,10 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         return cfg;
     }
 
-    /** Reproducing bug from IGNITE-2881 */
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiWithTx() throws Exception {
         IgniteEx ignite = grid(0);
 
@@ -96,7 +101,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
 
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        Transaction tx = null;
+                        Transaction tx;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
                             cache.put(1, 1);
@@ -105,6 +110,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                         }
 
                         assertEquals(TransactionState.ROLLED_BACK, tx.state());
+
                         return null;
                     }
                 }, IgniteTxHeuristicCheckedException.class);
@@ -113,10 +119,9 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * Indexing Spi implementation for test
+     * Indexing SPI implementation for test
      */
     private static class MyBrokenIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
-
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             // No-op.
