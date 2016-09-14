@@ -7625,35 +7625,35 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (read > 0)
                     return read;
 
-                buf.clear();
+                while (read == 0) {
+                    buf.clear();
 
-                final int r = ch.read(buf);
+                    final int r = ch.read(buf);
 
-                if (r <= 0)
-                    return r;
+                    if (r <= 0)
+                        return r;
 
-                assert read == 0;
+                    buf.flip();
 
-                buf.flip();
+                    // Avoid uncontrolled buffer expansion in BlockingSSLHandler.
+                    appBuf.clear();
+                    decodedBuf.clear();
 
-                // Avoid uncontrolled buffer expansion in BlockingSSLHandler.
-                appBuf.clear();
-                decodedBuf.clear();
+                    // Will flip appBuf.
+                    appBuf = sslHnd.decode(buf);
 
-                // Will flip appBuf.
-                appBuf = sslHnd.decode(buf);
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
 
-                decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+                    decodedBuf.put(appBuf);
 
-                decodedBuf.put(appBuf);
+                    appBuf.clear();
 
-                appBuf.clear();
+                    decodedBuf.flip();
 
-                decodedBuf.flip();
+                    read = Math.min(decodedBuf.remaining(), len);
 
-                read = Math.min(decodedBuf.remaining(), len);
-
-                decodedBuf.get(b, off, read);
+                    decodedBuf.get(b, off, read);
+                }
 
                 return read;
 
