@@ -281,6 +281,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
 
                 ctx.Posts.Remove(ctx.Posts.First());
+                ctx.SaveChanges();
 
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
