@@ -88,7 +88,6 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
-        <module>modules/ignored-tests</module>
     </modules>
 
     <profiles>
@@ -493,6 +492,16 @@
                 <module>modules/spark-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>ignored-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>modules/ignored-tests</module>
             </modules>
         </profile>
 
