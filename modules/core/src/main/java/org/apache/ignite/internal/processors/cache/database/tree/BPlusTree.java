@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -3315,8 +3316,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             // The page was merged and removed.
             if (PageIO.getPageId(buf) != pageId)
                 return RETRY;
-
-            BPlusIO<L> io = io(buf);
 
             // In case of intersection with inner replace in remove operation
             // we need to restart our operation from the tree root.
