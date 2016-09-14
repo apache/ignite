@@ -292,9 +292,11 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(5, ctx.SaveChanges());
 
                 // Test sum and count.
+                const string esql = "SELECT COUNT(1) FROM [BloggingContext].Posts";
+
                 Assert.AreEqual(4, ctx.Posts.Count());
                 Assert.AreEqual(4, ctx.Posts.Count(x => x.Content == null));
-                Assert.AreEqual(4, ExecuteEntitySql("SELECT COUNT(1) FROM [BloggingContext].Posts"));
+                Assert.AreEqual(4, GetEntityCommand(ctx, esql).ExecuteScalar());
                 Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
 
                 ctx.Posts.Remove(ctx.Posts.First());
@@ -302,7 +304,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                 Assert.AreEqual(3, ctx.Posts.Count());
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
-                Assert.AreEqual(3, ExecuteEntitySql("SELECT COUNT(1) FROM [BloggingContext].Posts"));
+                Assert.AreEqual(3, GetEntityCommand(ctx, esql).ExecuteScalar());
                 Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
             }
         }
@@ -487,33 +489,20 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestCacheReader()
         {
-            // Tests all kinds of entity field types to cover ArrayDbDataReader
-            var test = new ArrayReaderTest
-            {
-                DateTime = DateTime.Today,
-                Bool = true,
-                Byte = 56,
-                String = "z",
-                Decimal = (decimal) 5.6,
-                Double = 7.8d,
-                Float = -4.5f,
-                Guid = Guid.NewGuid(),
-                ArrayReaderTestId = -8,
-                Long = 3,
-                Short = 5
-            };
+            // Tests all kinds of entity field types to cover ArrayDbDataReader.
+            var test = GetTestEntity();
 
-            using (var context = new BloggingContext(ConnectionString))
+            using (var ctx = new BloggingContext(ConnectionString))
             {
-                context.Tests.Add(test);
-                context.SaveChanges();
+                ctx.Tests.Add(test);
+                ctx.SaveChanges();
             }
 
             // Use new context to ensure no first-level caching.
-            using (var context = new BloggingContext(ConnectionString))
+            using (var ctx = new BloggingContext(ConnectionString))
             {
                 // Check default deserialization.
-                var test0 = context.Tests.Single(x => x.Bool);
+                var test0 = ctx.Tests.Single(x => x.Bool);
                 Assert.AreEqual(test, test0);
             }
         }
@@ -524,7 +513,23 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestCacheReaderRaw()
         {
-            // TODO
+            var test = GetTestEntity();
+
+            using (var ctx = new BloggingContext(ConnectionString))
+            {
+                ctx.Tests.Add(test);
+                ctx.SaveChanges();
+            }
+
+            using (var ctx = new BloggingContext(ConnectionString))
+            {
+                var cmd = GetEntityCommand(ctx, "SELECT VALUE Test FROM BloggingContext.Tests AS Test");
+
+                using (var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
+                {
+                    Assert.IsTrue(reader.Read());
+                }
+            }
         }
 
         /// <summary>
@@ -545,20 +550,38 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Executes the entity SQL.
         /// </summary>
-        private static object ExecuteEntitySql(string esql)
+        private static EntityCommand GetEntityCommand(BloggingContext ctx, string esql)
         {
-            using (var ctx = GetDbContext())
+            var objCtx = ((IObjectContextAdapter) ctx).ObjectContext;
+
+            var conn = objCtx.Connection;
+            conn.Open();
+
+            var cmd = (EntityCommand) conn.CreateCommand();
+            cmd.CommandText = esql;
+
+            return cmd;
+        }
+
+        /// <summary>
+        /// Gets the test entity.
+        /// </summary>
+        private static ArrayReaderTest GetTestEntity()
+        {
+            return new ArrayReaderTest
             {
-                var objCtx = ((IObjectContextAdapter)ctx).ObjectContext;
-
-                var conn = objCtx.Connection;
-                conn.Open();
-
-                var cmd = (EntityCommand) conn.CreateCommand();
-                cmd.CommandText = esql;
-
-                return cmd.ExecuteScalar();
-            }
+                DateTime = DateTime.Today,
+                Bool = true,
+                Byte = 56,
+                String = "z",
+                Decimal = (decimal)5.6,
+                Double = 7.8d,
+                Float = -4.5f,
+                Guid = Guid.NewGuid(),
+                ArrayReaderTestId = -8,
+                Long = 3,
+                Short = 5
+            };
         }
 
         /// <summary>
