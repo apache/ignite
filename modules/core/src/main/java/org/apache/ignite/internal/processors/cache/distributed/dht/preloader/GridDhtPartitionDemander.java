@@ -690,6 +690,8 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
+        cctx.shared().database().checkpointReadLock();
+
         try {
             GridCacheEntryEx cached = null;
 
@@ -757,6 +759,9 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                 cctx.nodeId() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
 
         return true;

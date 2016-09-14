@@ -541,7 +541,8 @@ public abstract class PagesList extends DataStructure {
             long[] tails = getBucket(bucket);
 
             // Tail must exist to be updated.
-            assert !F.isEmpty(tails) : "Missing tails [bucket=" + bucket + ", tails=" + Arrays.toString(tails) + ']';
+            assert !F.isEmpty(tails) : "Missing tails [bucket=" + bucket + ", tails=" + Arrays.toString(tails) +
+                ", metaPage=" + U.hexLong(metaPageId) + ']';
 
             idx = findTailIndex(tails, oldTailId, idx);
 

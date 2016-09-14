@@ -863,6 +863,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (it.hasNext()) {
             GridDhtCacheEntry cached = null;
 
+            cctx.shared().database().checkpointReadLock();
+
             try {
                 cached = it.next();
 
@@ -897,12 +899,17 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
+            }
         }
 
         try {
             GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
 
             while (it0.hasNext()) {
+                cctx.shared().database().checkpointReadLock();
+
                 try {
                     CacheDataRow row = it0.next();
 
@@ -931,6 +938,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
                     break; // Partition is already concurrently cleared and evicted.
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
                 }
             }
         }
