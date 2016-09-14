@@ -106,7 +106,9 @@ public class AtomicConfiguration {
 
     /**
      * Gets reserve percentage for configuration. When a reserve percentage of a batch size
-     * is reached when sequence starts a new reservation in background.
+     * is reached then sequence starts a new reservation in background.
+     * <p>
+     * Default value is {@link #DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE}.
      *
      * @return Atomic sequence reservation percentage.
      */
@@ -116,8 +118,9 @@ public class AtomicConfiguration {
 
     /**
      * Sets reserve percentage for configuration.
-     * *
+     *
      * @param atomicSeqReservePercentage Atomic sequence reservation percentage.
+     * @see #getAtomicSequenceReservePercentage()
      */
     public void setAtomicSequenceReservePercentage(int atomicSeqReservePercentage) {
         this.atomicSeqReservePercentage = atomicSeqReservePercentage;

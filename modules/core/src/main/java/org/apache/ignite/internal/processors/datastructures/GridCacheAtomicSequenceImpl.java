@@ -17,21 +17,33 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import java.io.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.internal.util.typedef.internal.CU.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Cache sequence implementation.
@@ -87,8 +99,8 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /** Whether reserveFuture already processed or not. */
     private boolean isReserveFutResultsProcessed = true;
 
-    /** default 80% */
-    private volatile int percentage;
+    /** */
+    private volatile int reservePercentage;
 
     /** Sequence batch size */
     private volatile int batchSize;
@@ -114,6 +126,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param seqView Sequence projection.
      * @param ctx CacheContext.
      * @param batchSize Sequence batch size.
+     * @param reservePercentage Reserve percentage.
      * @param locVal Local counter.
      * @param upBound Upper bound.
      */
@@ -122,15 +135,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         GridCacheContext ctx,
         int batchSize,
-        int percentage,
+        int reservePercentage,
         long locVal,
         long upBound) {
         assert key != null;
         assert seqView != null;
         assert ctx != null;
-        assert batchSize > 0 : "BatchSize: " + batchSize;
+        assert batchSize > 0 : batchSize;
         assert locVal <= upBound;
-        assert percentage >= 0 && percentage <= 100 : "Percentage: " + percentage;
+        assert reservePercentage >= 0 && reservePercentage <= 100 : reservePercentage;
 
         this.batchSize = batchSize;
         this.ctx = ctx;
@@ -139,9 +152,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         this.upBound = upBound;
         this.locVal = locVal;
         this.name = name;
-        this.percentage = percentage;
+        this.reservePercentage = reservePercentage;
 
-        newReservationLine = locVal + (batchSize * percentage / 100);
+        newReservationLine = locVal + (batchSize * reservePercentage / 100);
 
         log = ctx.logger(getClass());
     }
@@ -214,13 +227,13 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      *
      * @param l Increment amount.
      * @param updated If {@code true}, will return sequence value after update, otherwise will return sequence value
-     * prior to update.
+     *      prior to update.
      * @return Sequence value.
      * @throws IgniteCheckedException If update failed.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
     private long internalUpdate(final long l, final boolean updated) throws IgniteCheckedException {
-        assert l > 0;
+        assert l > 0 : l;
 
         while (true) {
             checkRemoved();
@@ -277,7 +290,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @return Future.
      */
     private IgniteInternalFuture<?> runAsyncReservation(final long off) {
-        assert off >= 0 : "Offset: " + off;
+        assert off >= 0 : off;
 
         return ctx.kernalContext().closure().runLocalSafe(new Runnable() {
             @Override public void run() {
@@ -307,7 +320,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                                 reservedUpBound = newUpBound;
 
-                                newReservationLine = reservedBottomBound + (batchSize * percentage / 100);
+                                newReservationLine = reservedBottomBound + (batchSize * reservePercentage / 100);
                             }
                             finally {
                                 lock.unlock();
@@ -368,7 +381,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public int reservePercentage() {
-        return percentage;
+        return reservePercentage;
     }
 
     /** {@inheritDoc} */
@@ -378,7 +391,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         lock.lock();
 
         try {
-            this.percentage = percentage;
+            this.reservePercentage = percentage;
         }
         finally {
             lock.unlock();

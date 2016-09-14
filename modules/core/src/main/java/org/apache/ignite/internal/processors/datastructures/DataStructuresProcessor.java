@@ -448,7 +448,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * Gets an atomic long from cache or creates one if it's not cached.
      *
      * @param name Name of atomic long.
-     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal} will be ignored.
+     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
+     *        will be ignored.
      * @param create If {@code true} atomic long will be created in case it is not in cache.
      * @return Atomic long.
      * @throws IgniteCheckedException If loading failed.
@@ -1760,17 +1761,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
 
-        if (atomicCfg.getAtomicSequenceReserveSize() <= 0)
+        if (atomicCfg.getAtomicSequenceReserveSize() <= 0) {
             throw new IgniteException(
                 "Atomic sequence can not be created, " +
                     "reserve size must be more than 0, but atomicSequenceReserveSize: " + atomicCfg.getAtomicSequenceReserveSize()
             );
+        }
 
-        if (atomicCfg.getAtomicSequenceReservePercentage() > 100)
+        if (atomicCfg.getAtomicSequenceReservePercentage() <0 || atomicCfg.getAtomicSequenceReservePercentage() > 100) {
             throw new IgniteException(
                 "Atomic sequence can not be created, reserve percentage must have value " +
                     "between 0 and 100, but atomicSequenceReservePercentage: " + atomicCfg.getAtomicSequenceReservePercentage()
             );
+        }
     }
 
     /**
