@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
-    using System;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -34,7 +32,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestConfigurationAndStartup()
         {
-            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
+            // TODO
+            //Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
+
             Assert.IsNull(Ignition.TryGetIgnite());
 
             // Test default config (picks up app.config section).

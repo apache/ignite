@@ -28,12 +28,12 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using System.Data.Entity.Infrastructure;
     using System.IO;
     using System.Linq;
-    using System.Transactions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
     using System.Threading;
+    using System.Transactions;
 
     /// <summary>
     /// Integration test with temporary SQL CE database.
