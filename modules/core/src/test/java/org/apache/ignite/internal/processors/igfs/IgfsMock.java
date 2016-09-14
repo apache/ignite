@@ -117,13 +117,6 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsLocalMetrics localMetrics() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         throwUnsupported();
 

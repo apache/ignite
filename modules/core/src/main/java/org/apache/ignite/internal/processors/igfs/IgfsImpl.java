@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.igfs.IgfsPerBlockLruEvictionPolicy;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -48,7 +47,6 @@ import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -72,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -83,7 +80,6 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
@@ -97,12 +93,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_READ;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
 import static org.apache.ignite.events.EventType.EVT_IGFS_META_UPDATED;
@@ -141,9 +135,6 @@ public final class IgfsImpl implements IgfsEx {
 
     /** Event storage manager. */
     private GridEventStorageManager evts;
-
-    /** Local node. */
-    private ClusterNode locNode;
 
     /** Logger. */
     private IgniteLogger log;
@@ -283,16 +274,6 @@ public final class IgfsImpl implements IgfsEx {
 
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
             new LinkedBlockingQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
-    }
-
-    /**
-     * @return Local node.
-     */
-    private ClusterNode localNode() {
-        if (locNode == null)
-            locNode = igfsCtx.kernalContext().discovery().localNode();
-
-        return locNode;
     }
 
     /** {@inheritDoc} */
@@ -500,12 +481,6 @@ public final class IgfsImpl implements IgfsEx {
             }
         });
     }
-
-    /** {@inheritDoc} */
-    @Override public IgfsLocalMetrics localMetrics() {
-        return metrics;
-    }
-
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return data.groupBlockSize();
@@ -632,7 +607,7 @@ public final class IgfsImpl implements IgfsEx {
 
                             if (info != null) {
                                 if (evts.isRecordable(EVT_IGFS_META_UPDATED))
-                                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_META_UPDATED, props));
+                                    evts.record(new IgfsEvent(path, igfsCtx.localNode(), EVT_IGFS_META_UPDATED, props));
 
                                 return new IgfsFileImpl(path, info, data.groupBlockSize());
                             }
@@ -979,8 +954,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                    IgfsInputStreamImpl os = new IgfsInputStreamImpl(igfsCtx, path, desc.info(),
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader());
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -996,8 +971,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
-                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                IgfsInputStreamImpl os = new IgfsInputStreamImpl(igfsCtx, path, info,
+                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null);
 
                 IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -1266,6 +1241,8 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
+                IgfsLocalMetrics metrics = igfsCtx.metrics();
+
                 return new IgfsMetricsAdapter(
                     igfsCtx.data().spaceSize(),
                     igfsCtx.data().maxSpaceSize(),
@@ -1288,7 +1265,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        metrics.reset();
+        igfsCtx.metrics().reset();
     }
 
     /** {@inheritDoc} */
@@ -1590,110 +1567,6 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
         throw new IllegalStateException("Asynchronous mode is not enabled.");
-    }
-
-    /** Detailed file descriptor. */
-    private static final class FileDescriptor {
-        /** Parent file ID. */
-        @Nullable
-        private final IgniteUuid parentId;
-
-        /** File name. */
-        private final String fileName;
-
-        /** File ID. */
-        private final IgniteUuid fileId;
-
-        /** File is plain data file or directory. */
-        private final boolean isFile;
-
-        /**
-         * Constructs detailed file descriptor.
-         *
-         * @param parentId Parent file ID.
-         * @param fileName File name.
-         * @param fileId File ID.
-         * @param isFile {@code True} if file.
-         */
-        private FileDescriptor(@Nullable IgniteUuid parentId, String fileName, IgniteUuid fileId, boolean isFile) {
-            assert fileName != null;
-
-            this.parentId = parentId;
-            this.fileName = fileName;
-
-            this.fileId = fileId;
-            this.isFile = isFile;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = parentId != null ? parentId.hashCode() : 0;
-
-            res = 31 * res + fileName.hashCode();
-            res = 31 * res + fileId.hashCode();
-            res = 31 * res + (isFile ? 1231 : 1237);
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (o == this)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            FileDescriptor that = (FileDescriptor)o;
-
-            return fileId.equals(that.fileId) && isFile == that.isFile && fileName.equals(that.fileName) &&
-                (parentId == null ? that.parentId == null : parentId.equals(that.parentId));
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(FileDescriptor.class, this);
-        }
-    }
-
-    /**
-     * IGFS input stream extension that fires events.
-     */
-    private class IgfsEventAwareInputStream extends IgfsInputStreamImpl {
-        /** Close guard. */
-        private final AtomicBoolean closeGuard = new AtomicBoolean(false);
-
-        /**
-         * Constructor.
-         *
-         * @param igfsCtx IGFS context.
-         * @param path Path to stored file.
-         * @param fileInfo File info.
-         * @param prefetchBlocks Prefetch blocks.
-         * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
-         * @param secReader Optional secondary file system reader.
-         * @param metrics Metrics.
-         */
-        IgfsEventAwareInputStream(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo,
-            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable IgfsSecondaryFileSystemPositionedReadable secReader,
-            IgfsLocalMetrics metrics) {
-            super(igfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
-
-            metrics.incrementFilesOpenedForRead();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-        @Override public void close() throws IOException {
-            if (closeGuard.compareAndSet(false, true)) {
-                super.close();
-
-                metrics.decrementFilesOpenedForRead();
-
-                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_READ))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_READ, bytes()));
-            }
-        }
     }
 
     /**

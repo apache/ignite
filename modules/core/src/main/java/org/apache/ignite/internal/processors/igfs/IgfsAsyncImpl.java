@@ -157,11 +157,6 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsLocalMetrics localMetrics() {
-        return igfs.localMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return igfs.groupBlockSize();
     }
