@@ -63,14 +63,14 @@ import java.util.Map;
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
+    /** Posix file permissions. */
+    private static final PosixFilePermission[] POSIX_FILE_PERMISSIONS = PosixFilePermission.values();
+
     /** Default buffer size. */
     private static final int DFLT_BUF_SIZE = 8 * 1024;
 
     /** Path that will be added to each passed path. */
     private String workDir;
-
-    /** Posix file permissions. */
-    private static final PosixFilePermission[] POSIX_FILE_PERMISSIONS = PosixFilePermission.values();
 
     /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
@@ -94,10 +94,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
         File f = fileForPath(path);
+
         if (!f.exists())
             return null;
 
-        PosixFileAttributes attrs = update0(path, props);
+        PosixFileAttributes attrs = updateProperties(path, props);
+
         if (attrs == null)
             return info(path);
 
@@ -181,7 +183,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
-        update0(path, props);
+
+        updateProperties(path, props);
     }
 
     /**
@@ -285,7 +288,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         long blockSize, @Nullable Map<String, String> props) {
         OutputStream os = create0(path, overwrite, bufSize);
         try {
-            update0(path, props);
+            updateProperties(path, props);
             return os;
         }
         catch (Exception ex) {
@@ -496,7 +499,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @param props Properties map.
      * @return Posix attributes is available. {@code null} otherwise.
      */
-    @Nullable private PosixFileAttributes update0(IgfsPath path, Map<String, String> props) {
+    @Nullable private PosixFileAttributes updateProperties(IgfsPath path, Map<String, String> props) {
         if (props == null || props.isEmpty())
             return null;
 
