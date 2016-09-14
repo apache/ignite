@@ -2217,18 +2217,15 @@ public class IgfsMetaManager extends IgfsManager {
      * @param fs Secondary file system.
      * @param path Path to create.
      * @param props Properties to be applied.
-     * @param secondaryProps Properties to be applied to secondary fs.
      * @return {@code True} in case rename was successful.
      * @throws IgniteCheckedException If directory creation failed.
      */
-    public boolean mkdirsDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final Map<String, String> props,
-                              final Map<String, String> secondaryProps)
+    public boolean mkdirsDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final Map<String, String> props)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
                 assert path != null;
-                assert props != null;
 
                 if (path.parent() == null)
                     return true; // No additional handling for root directory is needed.
@@ -2238,7 +2235,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
-                        fs.mkdirs(path, secondaryProps);
+                        fs.mkdirs(path, props);
 
                         assert !infos.isEmpty();
 

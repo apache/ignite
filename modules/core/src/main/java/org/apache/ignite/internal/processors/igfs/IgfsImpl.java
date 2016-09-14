@@ -151,9 +151,6 @@ public final class IgfsImpl implements IgfsEx {
     /** Writers map. */
     private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
 
-    /** Local metrics holder. */
-    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
-
     /** Client log directory. */
     private volatile String logDir;
 
@@ -761,13 +758,11 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Make directories: " + path);
 
-                final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
-
                 IgfsMode mode = resolveMode(path);
 
                 switch (mode) {
                     case PRIMARY:
-                        meta.mkdirs(path, props0);
+                        meta.mkdirs(path, props == null ? DFLT_DIR_META : new HashMap<>(props));
 
                         break;
 
@@ -775,7 +770,7 @@ public final class IgfsImpl implements IgfsEx {
                     case DUAL_SYNC:
                         await(path);
 
-                        meta.mkdirsDual(secondaryFs, path, props0, props);
+                        meta.mkdirsDual(secondaryFs, path, props);
 
                         break;
 
