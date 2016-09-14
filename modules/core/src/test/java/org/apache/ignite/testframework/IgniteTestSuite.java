@@ -168,19 +168,19 @@ public class IgniteTestSuite extends TestSuite {
             if (hasIgnore) {
                 IgniteIgnore ignore = m.getAnnotation(IgniteIgnore.class);
 
-                String ticket = ignore.jira();
+                String reason = ignore.value();
 
-                if (F.isEmpty(ticket))
-                    throw new IllegalArgumentException("JIRA ticket is not set for ignored test [class=" +
+                if (F.isEmpty(reason))
+                    throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
                         theClass.getName() + ", method=" + name + ']');
 
                 Test test = createTest(theClass, name);
 
                 if (ignore.forceFailure()) {
                     if (test instanceof GridAbstractTest)
-                        ((GridAbstractTest)test).forceFailure(ignore.jira());
+                        ((GridAbstractTest)test).forceFailure(ignore.value());
                     else
-                        test = new ForcedFailure(name, ignore.jira());
+                        test = new ForcedFailure(name, ignore.value());
                 }
 
                 addTest(test);

@@ -29,19 +29,19 @@ public class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
     }
 
     /** {@inheritDoc} */
-    @IgniteIgnore(jira = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
     @Override public void testRestarts() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @IgniteIgnore(jira = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
     @Override public void testInvalidatedSession() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @IgniteIgnore(jira = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-810", forceFailure = true)
     @Override public void testClientReconnectRequest() throws Exception {
         // No-op.
     }
