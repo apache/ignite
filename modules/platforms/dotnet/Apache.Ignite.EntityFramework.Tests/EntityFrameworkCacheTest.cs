@@ -529,7 +529,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 {
                     // Check schema.
                     Assert.Throws<NotSupportedException>(() => reader.GetSchemaTable());
-                    Assert.AreEqual(1, reader.Depth);
+                    Assert.AreEqual(0, reader.Depth);
                     Assert.AreEqual(0, reader.RecordsAffected);
                     Assert.IsTrue(reader.HasRows);
                     Assert.IsFalse(reader.IsClosed);
@@ -538,6 +538,24 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                     // Read.
                     Assert.IsTrue(reader.Read());
+
+                    // Test values array.
+                    var vals = new object[reader.FieldCount];
+                    reader.GetValues(vals);
+
+                    Assert.AreEqual(test.Byte, vals[reader.GetOrdinal("Byte")]);
+                    Assert.AreEqual(test.Short, vals[reader.GetOrdinal("Short")]);
+                    Assert.AreEqual(test.ArrayReaderTestId, vals[reader.GetOrdinal("ArrayReaderTestId")]);
+                    Assert.AreEqual(test.Long, vals[reader.GetOrdinal("Long")]);
+                    Assert.AreEqual(test.Float, vals[reader.GetOrdinal("Float")]);
+                    Assert.AreEqual(test.Double, vals[reader.GetOrdinal("Double")]);
+                    Assert.AreEqual(test.Decimal, vals[reader.GetOrdinal("Decimal")]);
+                    Assert.AreEqual(test.Bool, vals[reader.GetOrdinal("Bool")]);
+                    Assert.AreEqual(test.String, vals[reader.GetOrdinal("String")]);
+                    Assert.AreEqual(test.Guid, vals[reader.GetOrdinal("Guid")]);
+                    Assert.AreEqual(test.DateTime, vals[reader.GetOrdinal("DateTime")]);
+
+                    // Test separate values.
                 }
             }
         }
