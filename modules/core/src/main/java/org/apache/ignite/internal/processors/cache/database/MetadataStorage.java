@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.*;
+
 /**
  * Metadata storage.
  */
@@ -56,7 +58,7 @@ public class MetadataStorage implements MetaStore {
     private final int cacheId;
 
     /** Allocation space. */
-    private static final byte ALLOC_SPACE = PageIdAllocator.FLAG_IDX;
+    private static final byte ALLOC_SPACE = FLAG_IDX;
 
     /**
      * @param pageMem Page memory.
@@ -100,7 +102,7 @@ public class MetadataStorage implements MetaStore {
                 long pageId = 0;
 
                 if (reuseList != null)
-                    pageId = reuseList.takeRecycledPage();
+                    pageId = reuseList.takeRecycledPage(FLAG_IDX);
 
                 pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
 

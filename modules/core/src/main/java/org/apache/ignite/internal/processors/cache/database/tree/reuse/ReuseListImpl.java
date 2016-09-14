@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
@@ -28,11 +30,11 @@ import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
  */
 public final class ReuseListImpl extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListImpl, long[]> bucketUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, long[].class, "bucket");
+    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
 
     /** */
-    private volatile long[] bucket;
+    private volatile Stripe[] bucket;
 
     /**
      * @param cacheId   Cache ID.
@@ -69,8 +71,13 @@ public final class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public long takeRecycledPage() throws IgniteCheckedException {
-        return takeEmptyPage(0, null);
+    @Override public long takeRecycledPage(byte flag) throws IgniteCheckedException {
+        long pageId = takeEmptyPage(0, null);
+
+        if (pageId != 0 && PageIdUtils.flag(pageId) != flag)
+            pageId = PageIdUtils.changeType(pageId, flag);
+
+        return pageId;
     }
 
     /** {@inheritDoc} */
@@ -79,12 +86,12 @@ public final class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override protected long[] getBucket(int bucket) {
+    @Override protected Stripe[] getBucket(int bucket) {
         return this.bucket;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean casBucket(int bucket, long[] exp, long[] upd) {
+    @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
         return bucketUpdater.compareAndSet(this, exp, upd);
     }
 

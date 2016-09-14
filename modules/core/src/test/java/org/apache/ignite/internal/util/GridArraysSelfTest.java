@@ -22,7 +22,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.GridArrays.remove;
-import static org.apache.ignite.internal.util.GridArrays.remove2;
 import static org.apache.ignite.internal.util.GridArrays.set;
 
 /**
@@ -114,17 +113,6 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
         assertTrue(Arrays.equals(new long[]{0,1,2,3,5,6}, remove(arr, 4)));
         assertTrue(Arrays.equals(new long[]{0,1,2,3,4,5}, remove(arr, 6)));
         assertTrue(Arrays.equals(new long[0], remove(new long[]{1}, 0)));
-    }
-
-    /**
-     */
-    public void testRemoveTwoLongs() {
-        long[] arr = {0,1,2,3,4,5,6};
-
-        assertTrue(Arrays.equals(new long[]{2,3,4,5,6}, remove2(arr, 0)));
-        assertTrue(Arrays.equals(new long[]{0,3,4,5,6}, remove2(arr, 1)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,6}, remove2(arr, 4)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,4}, remove2(arr, 5)));
     }
 
     /**

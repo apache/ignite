@@ -63,6 +63,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.*;
+
 /**
  *
  */
@@ -555,10 +557,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private long allocateForTree() throws IgniteCheckedException {
-        long pageId = cctx.shared().database().globalReuseList().takeRecycledPage();
+        long pageId = cctx.shared().database().globalReuseList().takeRecycledPage(FLAG_IDX);
 
         if (pageId == 0L)
-            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, PageIdAllocator.FLAG_IDX);
+            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, FLAG_IDX);
 
         return pageId;
     }

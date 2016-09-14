@@ -71,6 +71,15 @@ public abstract class PagesList extends DataStructure {
     private static final int MAX_STRIPES_PER_BUCKET =
         IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET", Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
 
+    /** Page ID to store list metadata. */
+    private final long metaPageId;
+
+    /** Number of buckets. */
+    private final int buckets;
+
+    /** Name (for debug purposes). */
+    protected final String name;
+
     /** */
     private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
         @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
@@ -277,15 +286,6 @@ public abstract class PagesList extends DataStructure {
         }
     };
 
-    /** */
-    private long metaPageId;
-
-    /** */
-    private final int buckets;
-
-    /** */
-    protected final String name;
-
     /**
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
@@ -349,12 +349,17 @@ public abstract class PagesList extends DataStructure {
                 for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet()) {
                     int bucket = e.getKey();
 
-                    long[] old = getBucket(bucket);
+                    Stripe[] old = getBucket(bucket);
                     assert old == null;
 
                     long[] upd = e.getValue().array();
 
-                    boolean ok = casBucket(bucket, null, upd);
+                    Stripe[] tails = new Stripe[upd.length];
+
+                    for (int i = 0; i < upd.length; i++)
+                        tails[i] = new Stripe(upd[i]);
+
+                    boolean ok = casBucket(bucket, null, tails);
                     assert ok;
                 }
             }
@@ -375,7 +380,7 @@ public abstract class PagesList extends DataStructure {
 
         try {
             for (int bucket = 0; bucket < buckets; bucket++) {
-                long[] tails = getBucket(bucket);
+                Stripe[] tails = getBucket(bucket);
 
                 if (tails != null) {
                     int tailIdx = 0;
@@ -463,7 +468,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @return Bucket.
      */
-    protected abstract long[] getBucket(int bucket);
+    protected abstract Stripe[] getBucket(int bucket);
 
     /**
      * @param bucket Bucket index.
@@ -471,7 +476,7 @@ public abstract class PagesList extends DataStructure {
      * @param upd Updated bucket.
      * @return {@code true} If succeeded.
      */
-    protected abstract boolean casBucket(int bucket, long[] exp, long[] upd);
+    protected abstract boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd);
 
     /**
      * @param bucket Bucket index.
@@ -502,30 +507,31 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private long addStripe(int bucket) throws IgniteCheckedException {
+    private Stripe addStripe(int bucket) throws IgniteCheckedException {
         long pageId = allocatePage(null);
 
         try (Page page = page(pageId)) {
             initPage(pageId, page, PagesListNodeIO.VERSIONS.latest(), wal);
         }
 
+        Stripe stripe = new Stripe(pageId);
+
         for (;;) {
-            long[] old = getBucket(bucket);
-            long[] upd;
+            Stripe[] old = getBucket(bucket);
+            Stripe[] upd;
 
             if (old != null) {
                 int len = old.length;
 
-                upd = Arrays.copyOf(old, len + 2);
+                upd = Arrays.copyOf(old, len + 1);
 
-                // Tail will be from the left, head from the right, but now they are the same.
-                upd[len + 1] = upd[len] = pageId;
+                upd[len] = stripe;
             }
             else
-                upd = new long[]{pageId, pageId};
+                upd = new Stripe[]{stripe};
 
             if (casBucket(bucket, old, upd))
-                return pageId;
+                return stripe;
         }
     }
 
@@ -538,36 +544,32 @@ public abstract class PagesList extends DataStructure {
         int idx = -1;
 
         for (;;) {
-            long[] tails = getBucket(bucket);
+            Stripe[] tails = getBucket(bucket);
 
             // Tail must exist to be updated.
             assert !F.isEmpty(tails) : "Missing tails [bucket=" + bucket + ", tails=" + Arrays.toString(tails) + ']';
 
             idx = findTailIndex(tails, oldTailId, idx);
 
-            assert tails[idx] == oldTailId;
-
-            long[] newTails;
+            assert tails[idx].tailId == oldTailId;
 
             if (newTailId == 0L) {
-                // Have to drop stripe.
-                assert tails[idx + 1] == oldTailId; // The last page must be the same for both: tail and head.
+                Stripe[] newTails;
 
-                if (tails.length != 2) {
-                    // Remove tail and head.
-                    newTails = GridArrays.remove2(tails, idx);
-                }
+                if (tails.length != 1)
+                    newTails = GridArrays.remove(tails, idx);
                 else
                     newTails = null; // Drop the bucket completely.
+
+                if (casBucket(bucket, tails, newTails))
+                    return;
             }
             else {
-                newTails = tails.clone();
+                // It is safe to assign new tail since we do it only when write lock lock on tail is held.
+                tails[idx].tailId = newTailId;
 
-                newTails[idx] = newTailId;
-            }
-
-            if (casBucket(bucket, tails, newTails))
                 return;
+            }
         }
     }
 
@@ -577,12 +579,12 @@ public abstract class PagesList extends DataStructure {
      * @param expIdx Expected index.
      * @return First found index of the given tail ID.
      */
-    private static int findTailIndex(long[] tails, long tailId, int expIdx) {
-        if (expIdx != -1 && tails.length > expIdx && tails[expIdx] == tailId)
+    private static int findTailIndex(Stripe[] tails, long tailId, int expIdx) {
+        if (expIdx != -1 && tails.length > expIdx && tails[expIdx].tailId == tailId)
             return expIdx;
 
         for (int i = 0; i < tails.length; i++) {
-            if (tails[i] == tailId)
+            if (tails[i].tailId == tailId)
                 return i;
         }
 
@@ -594,8 +596,8 @@ public abstract class PagesList extends DataStructure {
      * @return Page ID where the given page
      * @throws IgniteCheckedException If failed.
      */
-    private long getPageForPut(int bucket) throws IgniteCheckedException {
-        long[] tails = getBucket(bucket);
+    private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
+        Stripe[] tails = getBucket(bucket);
 
         if (tails == null)
             return addStripe(bucket);
@@ -607,12 +609,12 @@ public abstract class PagesList extends DataStructure {
      * @param tails Tails.
      * @return Random tail.
      */
-    private static long randomTail(long[] tails) {
+    private static Stripe randomTail(Stripe[] tails) {
         int len = tails.length;
 
         assert len != 0;
 
-        return tails[randomInt(len >>> 1) << 1]; // Choose only even tails, because odds are heads.
+        return tails[randomInt(len)];
     }
 
     /**
@@ -625,12 +627,11 @@ public abstract class PagesList extends DataStructure {
     protected final long storedPagesCount(int bucket) throws IgniteCheckedException {
         long res = 0;
 
-        long[] tails = getBucket(bucket);
+        Stripe[] tails = getBucket(bucket);
 
         if (tails != null) {
-            // Step == 2 because we store both tails of the same list.
-            for (int i = 0; i < tails.length; i += 2) {
-                long pageId = tails[i];
+            for (int i = 0; i < tails.length; i++) {
+                long pageId = tails[i].tailId;
 
                 try (Page page = page(pageId)) {
                     ByteBuffer buf = page.getForRead();
@@ -667,7 +668,9 @@ public abstract class PagesList extends DataStructure {
         int lockAttempt = 0;
 
         for (;;) {
-            long tailId = getPageForPut(bucket);
+            Stripe stripe = getPageForPut(bucket);
+
+            long tailId = stripe.tailId;
 
             try (Page tail = page(tailId)) {
                 ByteBuffer buf = writeLockPage(tail, bucket, lockAttempt++);
@@ -715,11 +718,11 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @return Page for take.
      */
-    private long getPageForTake(int bucket) {
-        long[] tails = getBucket(bucket);
+    private Stripe getPageForTake(int bucket) {
+        Stripe[] tails = getBucket(bucket);
 
         if (tails == null)
-            return 0L;
+            return null;
 
         return randomTail(tails);
     }
@@ -738,9 +741,9 @@ public abstract class PagesList extends DataStructure {
             return buf;
 
         if (lockAttempt == TRY_LOCK_ATTEMPTS) {
-            long[] stripes = getBucket(bucket);
+            Stripe[] stripes = getBucket(bucket);
 
-            if (stripes == null || stripes.length / 2 < MAX_STRIPES_PER_BUCKET) {
+            if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
                 addStripe(bucket);
 
                 return null;
@@ -760,10 +763,12 @@ public abstract class PagesList extends DataStructure {
         int lockAttempt = 0;
 
         for (;;) {
-            long tailId = getPageForTake(bucket);
+            Stripe stripe = getPageForTake(bucket);
 
-            if (tailId == 0L)
+            if (stripe == null)
                 return 0L;
+
+            long tailId = stripe.tailId;
 
             try (Page tail = page(tailId)) {
                 ByteBuffer tailBuf = writeLockPage(tail, bucket, lockAttempt++);
@@ -1028,10 +1033,6 @@ public abstract class PagesList extends DataStructure {
 
                 if (isWalDeltaRecordNeeded(wal, next))
                     wal.log(new PagesListSetPreviousRecord(cacheId, nextId, 0L));
-
-                // Drop the page from meta: replace current head with next page.
-                // It is a bit hacky, but method updateTail should work here.
-                updateTail(bucket, pageId, nextId);
             }
             else // Do a fair merge: link previous and next to each other.
                 fairMerge(prevId, pageId, nextId, next, nextBuf);
@@ -1179,6 +1180,21 @@ public abstract class PagesList extends DataStructure {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SingletonReuseBag.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    public static final class Stripe {
+        /** */
+        public volatile long tailId;
+
+        /**
+         * @param tailId Tail ID.
+         */
+        Stripe(long tailId) {
+            this.tailId = tailId;
         }
     }
 }

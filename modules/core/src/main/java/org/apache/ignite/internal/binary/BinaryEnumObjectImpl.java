@@ -38,6 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.objectPutSize;
 
 /**
  * Binary enum object.
@@ -258,19 +259,20 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(buf, 0, objectPutSize(valBytes.length));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
-        final CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
         return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
-        return valueBytes(ctx).length + 5;
+        return objectPutSize(valueBytes(ctx).length);
     }
 
     /** {@inheritDoc} */
