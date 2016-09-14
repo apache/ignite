@@ -253,11 +253,5 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             return new DbQueryInfo(_info.AffectedEntitySets, CommandText, DbParameterCollection);
         }
-
-
-
-#if !NET40
-        // TODO: ExecuteDbDataReaderAsync in newer frameworks? How does this stack up?
-#endif
     }
 }
