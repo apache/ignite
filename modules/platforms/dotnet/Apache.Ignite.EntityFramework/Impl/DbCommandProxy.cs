@@ -50,6 +50,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the inner command.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public DbCommand InnerCommand
         {
             get { return _command; }
@@ -58,12 +59,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the command information.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public DbCommandInfo CommandInfo
         {
             get { return _info; }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override void Prepare()
         {
             _command.Prepare();
@@ -84,6 +87,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override CommandType CommandType
         {
             get { return _command.CommandType; }
@@ -118,6 +122,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override bool DesignTimeVisible
         {
             get { return _command.DesignTimeVisible; }
@@ -125,12 +130,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override void Cancel()
         {
             _command.Cancel();
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         protected override DbParameter CreateDbParameter()
         {
             return _command.CreateParameter();

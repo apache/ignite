@@ -26,6 +26,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Data.Entity.Spatial;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// DbProviderServices proxy which substitutes custom commands.
@@ -63,6 +64,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override DbCommandDefinition CreateCommandDefinition(DbCommand prototype)
         {
             var proxy = prototype as DbCommandProxy;
@@ -95,18 +97,21 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override void RegisterInfoMessageHandler(DbConnection connection, Action<string> handler)
         {
             _services.RegisterInfoMessageHandler(connection, handler);
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         protected override DbSpatialDataReader GetDbSpatialDataReader(DbDataReader fromReader, string manifestToken)
         {
             return _services.GetSpatialDataReader(fromReader, manifestToken);
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         protected override DbSpatialServices DbGetSpatialServices(string manifestToken)
         {
             return _services.GetSpatialServices(manifestToken);
@@ -141,12 +146,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override object GetService(Type type, object key)
         {
             return _services.GetService(type, key);
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override IEnumerable<object> GetServices(Type type, object key)
         {
             return _services.GetServices(type, key);
