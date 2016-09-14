@@ -283,6 +283,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
+    @Override public Page partitionMetaPage(int cacheId, int partId) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public Page page(int cacheId, long pageId) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
@@ -314,6 +319,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         if (metaPageId != null)
             freePage(cacheId, metaPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear(int cacheId, int partId, byte allocSpace) {
+        // No-op
     }
 
     /** */
