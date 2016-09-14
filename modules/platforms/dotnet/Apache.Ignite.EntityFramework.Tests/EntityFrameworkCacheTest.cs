@@ -247,8 +247,14 @@ namespace Apache.Ignite.EntityFramework.Tests
             // Verify that cached result is not changed for blogs, but changed for posts.
             using (var ctx = GetDbContext())
             {
+                // Raw SQL queries do not hit cache - verify that actual data is updated.
+                Assert.AreEqual("Foo - updated", ctx.Database.SqlQuery<string>("select name from blogs").Single());
+                Assert.AreEqual("Post - updated", ctx.Database.SqlQuery<string>("select title from posts").Single());
+
+                // Check EF queries that hit cache.
                 Assert.AreEqual("Foo", ctx.Blogs.Single().Name);
                 Assert.AreEqual("Post - updated", ctx.Posts.Single().Title);
+
             }
 
             // Clear the cache and verify that actual value in DB is changed.
@@ -267,8 +273,6 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestScalars()
         {
-            // TODO: ExecuteScalar is not called, wtf?
-
             using (var ctx = GetDbContext())
             {
                 var blog = new Blog
