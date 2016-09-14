@@ -27,6 +27,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -37,6 +39,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.swapspace.GridSwapSpaceSpiAbstractSelfTest;
 import org.apache.ignite.spi.swapspace.SwapKey;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -363,5 +366,38 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
         }
 
         assertEquals(hash0, hash1);
+    }
+
+    public void testCheckLockingWhenSaveFileWithMoreSizeWhichQueue() throws IgniteCheckedException {
+
+        IgniteInternalFuture<Void> futr = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                String spaceName = "myScape";
+                SwapKey key = new SwapKey("key");
+                String msg = "Message text";
+
+                byte[] val = msg.getBytes();
+
+                // min queue size in byte, for write to swap file
+                ((FileSwapSpaceSpi) spi).setWriteBufferSize(1);
+
+                // max queue size in byte
+                ((FileSwapSpaceSpi) spi).setMaxWriteQueueSize(5);
+
+                spi.store(spaceName, key, val, context());
+
+                U.sleep(1000);
+
+                byte[] res = spi.read(spaceName, key, context());
+
+                assert res != null;
+
+                assertEquals(msg, new String(res));
+                return null;
+            }
+        });
+
+        futr.get(10_000);
     }
 }
