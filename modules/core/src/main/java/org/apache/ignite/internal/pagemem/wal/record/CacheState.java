@@ -20,12 +20,15 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class CacheState {
     /** */
+    @GridToStringInclude
     private Map<Integer, PartitionState> parts;
 
     /**
@@ -45,6 +48,11 @@ public class CacheState {
      */
     public Map<Integer, PartitionState> partitions() {
         return parts == null ? Collections.<Integer, PartitionState>emptyMap() : parts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheState.class, this);
     }
 
     /**
@@ -78,6 +86,11 @@ public class CacheState {
          */
         public long partitionCounter() {
             return partCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PartitionState.class, this);
         }
     }
 }

@@ -37,6 +37,7 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -104,6 +106,10 @@ public class GridNioServer<T> {
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
 
+    // TODO
+    private static final int WRITE_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_WRITE_BUF_SIZE", 65536);
+    private static final int READ_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_READ_BUF_SIZE", 65536);
+
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -147,7 +153,11 @@ public class GridNioServer<T> {
 
     /** Index to select which thread will serve next socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private int balanceIdx;
+    private final AtomicInteger readBalanceIdx = new AtomicInteger();
+
+    // TODO
+    @GridToStringExclude
+    private final AtomicInteger writeBalanceIdx = new AtomicInteger(1);
 
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
@@ -504,7 +514,7 @@ public class GridNioServer<T> {
     public void resend(GridNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
-        GridNioRecoveryDescriptor recoveryDesc = ses.recoveryDescriptor();
+        GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
         if (recoveryDesc != null && !recoveryDesc.messagesFutures().isEmpty()) {
             Deque<GridNioFuture<?>> futs = recoveryDesc.messagesFutures();
@@ -527,6 +537,13 @@ public class GridNioServer<T> {
             // Wake up worker.
             clientWorkers.get(ses0.selectorIndex()).offer(((NioOperationFuture)fut0));
         }
+    }
+
+    /**
+     * @return Sessions.
+     */
+    public Collection<? extends GridNioSession> sessions() {
+        return sessions;
     }
 
     /**
@@ -675,12 +692,12 @@ public class GridNioServer<T> {
      * @param req Request to balance.
      */
     private synchronized void offerBalanced(NioOperationFuture req) {
-        clientWorkers.get(balanceIdx).offer(req);
+        assert req.operation() == NioOperation.REGISTER;
+        assert req.socketChannel() != null;
 
-        balanceIdx++;
+        int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
 
-        if (balanceIdx == clientWorkers.size())
-            balanceIdx = 0;
+        clientWorkers.get(balanceIdx & (clientWorkers.size() - 1)).offer(req);
     }
 
     /** {@inheritDoc} */
@@ -1463,16 +1480,24 @@ public class GridNioServer<T> {
                                         .append("rmtAddr=").append(ses.remoteAddress())
                                         .append(", locAddr=").append(ses.localAddress());
 
-                                    GridNioRecoveryDescriptor desc = ses.recoveryDescriptor();
+                                    GridNioRecoveryDescriptor outDesc = ses.outRecoveryDescriptor();
 
-                                    if (desc != null) {
-                                        sb.append(", msgsSent=").append(desc.sent())
-                                            .append(", msgsAckedByRmt=").append(desc.acked())
-                                            .append(", msgsRcvd=").append(desc.received())
-                                            .append(", descIdHash=").append(System.identityHashCode(desc));
+                                    if (outDesc != null) {
+                                        sb.append(", msgsSent=").append(outDesc.sent())
+                                            .append(", msgsAckedByRmt=").append(outDesc.acked())
+                                            .append(", descIdHash=").append(System.identityHashCode(outDesc));
                                     }
                                     else
-                                        sb.append(", recoveryDesc=null");
+                                        sb.append(", outRecoveryDesc=null");
+
+                                    GridNioRecoveryDescriptor inDesc = ses.inRecoveryDescriptor();
+
+                                    if (inDesc != null) {
+                                        sb.append(", msgsRcvd=").append(inDesc.received())
+                                            .append(", descIdHash=").append(System.identityHashCode(inDesc));
+                                    }
+                                    else
+                                        sb.append(", inRecoveryDesc=null");
 
                                     sb.append(", bytesRcvd=").append(ses.bytesReceived())
                                         .append(", bytesSent=").append(ses.bytesSent())
@@ -1704,10 +1729,10 @@ public class GridNioServer<T> {
                 ByteBuffer readBuf = null;
 
                 if (directMode) {
-                    writeBuf = directBuf ? ByteBuffer.allocateDirect(sock.getSendBufferSize()) :
-                        ByteBuffer.allocate(sock.getSendBufferSize());
-                    readBuf = directBuf ? ByteBuffer.allocateDirect(sock.getReceiveBufferSize()) :
-                        ByteBuffer.allocate(sock.getReceiveBufferSize());
+                    writeBuf = directBuf ? ByteBuffer.allocateDirect(WRITE_BUF_SIZE) :
+                        ByteBuffer.allocate(WRITE_BUF_SIZE);
+                    readBuf = directBuf ? ByteBuffer.allocateDirect(READ_BUF_SIZE) :
+                        ByteBuffer.allocate(READ_BUF_SIZE);
 
                     writeBuf.order(order);
                     readBuf.order(order);
@@ -1784,9 +1809,6 @@ public class GridNioServer<T> {
 
             SelectionKey key = ses.key();
 
-            // Shutdown input and output so that remote client will see correct socket close.
-            Socket sock = ((SocketChannel)key.channel()).socket();
-
             if (ses.setClosed()) {
                 ses.onClosed();
 
@@ -1797,6 +1819,9 @@ public class GridNioServer<T> {
                     if (ses.readBuffer() != null)
                         ((DirectBuffer)ses.readBuffer()).cleaner().clean();
                 }
+
+                // Shutdown input and output so that remote client will see correct socket close.
+                Socket sock = ((SocketChannel)key.channel()).socket();
 
                 try {
                     try {
@@ -1826,9 +1851,10 @@ public class GridNioServer<T> {
                 // Since ses is in closed state, no write requests will be added.
                 NioOperationFuture<?> fut = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                GridNioRecoveryDescriptor recovery = ses.recoveryDescriptor();
+                GridNioRecoveryDescriptor outRecovery = ses.outRecoveryDescriptor();
+                GridNioRecoveryDescriptor inRecovery = ses.inRecoveryDescriptor();
 
-                if (recovery != null) {
+                if (outRecovery != null || inRecovery != null) {
                     try {
                         // Poll will update recovery data.
                         while ((fut = (NioOperationFuture<?>)ses.pollFuture()) != null) {
@@ -1837,7 +1863,11 @@ public class GridNioServer<T> {
                         }
                     }
                     finally {
-                        recovery.release();
+                        if (outRecovery != null)
+                            outRecovery.release();
+
+                        if (inRecovery != null && inRecovery != outRecovery)
+                            inRecovery.release();
                     }
                 }
                 else {

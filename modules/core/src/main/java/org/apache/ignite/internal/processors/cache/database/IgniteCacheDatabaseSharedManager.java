@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -149,12 +149,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return null;
     }
 
-    public void submitBackupFuture(BackupFuture backupFuture) {
-        backupFuture.initFut().onDone(new IgniteCheckedException("Backup is not supported"));
-        backupFuture.onDone(new IgniteCheckedException("Backup is not supported"));
-        // No-op.
-    }
-
     /**
      * @param discoEvt Before exchange for the given discovery event.
      */
@@ -182,8 +176,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Backup init future or {@code null} if backup is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startBackup(StartFullBackupAckDiscoveryMessage backupMsg,
-        ClusterNode initiator)
+    @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg, ClusterNode initiator)
         throws IgniteCheckedException {
         return null;
     }

@@ -65,29 +65,6 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
      * @param nodeOrder Node order.
      * @param updateSeq Update sequence number.
      * @param m Map to copy.
-     */
-    @Deprecated // Backward compatibility.
-    public GridDhtPartitionFullMap(UUID nodeId, long nodeOrder, long updateSeq, Map<UUID, GridDhtPartitionMap2> m) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-        assert nodeOrder > 0;
-
-        this.nodeId = nodeId;
-        this.nodeOrder = nodeOrder;
-        this.updateSeq = updateSeq;
-
-        for (Map.Entry<UUID, GridDhtPartitionMap2> e : m.entrySet()) {
-            GridDhtPartitionMap2 part = e.getValue();
-
-            put(e.getKey(), new GridDhtPartitionMap(part.nodeId(), part.updateSequence(), part.map()));
-        }
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param nodeOrder Node order.
-     * @param updateSeq Update sequence number.
-     * @param m Map to copy.
      * @param onlyActive If {@code true}, then only active partitions will be included.
      */
     public GridDhtPartitionFullMap(UUID nodeId, long nodeOrder, long updateSeq, Map<UUID, GridDhtPartitionMap2> m,

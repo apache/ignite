@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
@@ -120,7 +121,7 @@ import org.jetbrains.annotations.Nullable;
  *  operations within a transaction (see {@link Transaction} for more information).
  * </li>
  * <li>
- *  Various {@code 'gridProjection(..)'} methods which provide {@link org.apache.ignite.cluster.ClusterGroup} only
+ *  Various {@code 'gridProjection(..)'} methods which provide {@link ClusterGroup} only
  *  for nodes on which given keys reside. All {@code 'gridProjection(..)'} methods are not
  *  transactional and will not enlist keys into ongoing transaction.
  * </li>
@@ -441,7 +442,8 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Map of key-value pairs.
      * @throws IgniteCheckedException If get operation failed.
      */
-    public Collection<CacheEntry<K, V>> getEntries(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+    public Collection<CacheEntry<K, V>> getEntries(
+        @Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -1405,7 +1407,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache}. It is essentially the
+     * all cache entries and has O(1) complexity on base {@code IgniteInternalCache}. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
@@ -1416,7 +1418,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node as a long value. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache}. It is essentially the
+     * all cache entries and has O(1) complexity on base {@code IgniteInternalCache}. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
@@ -1606,7 +1608,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * {@link IgniteConfiguration#setConsistentId(Serializable)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
      * @return Future that will be completed when rebalancing is finished.
@@ -1654,7 +1656,8 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      * @throws IgniteCheckedException If remove failed.
      */
-    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(
+        Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Gets value from cache. Will go to primary node even if this is a backup.
@@ -1737,7 +1740,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         throws IgniteCheckedException;
 
     /**
-     * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
+     * @return {@link ExpiryPolicy} associated with this projection.
      */
     @Nullable public ExpiryPolicy expiry();
 
@@ -1819,7 +1822,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public GridCacheContext<K, V> context();
 
     /**
-     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
+     * Delegates to {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
@@ -1836,14 +1839,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
+     *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws IgniteCheckedException If loading failed.
      */
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException;
 
     /**
-     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
+     * Asynchronously delegates to {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method
      * to reload state from the underlying persistent storage. The reloaded values
      * will then be given to the optionally passed in predicate, and if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
@@ -1860,7 +1863,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
+     *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
     public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args);
@@ -1898,4 +1901,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException;
+
+    /**
+     * @return A collection of lost partitions if a cache is in recovery state.
+     */
+    public Collection<Integer> lostPartitions();
 }

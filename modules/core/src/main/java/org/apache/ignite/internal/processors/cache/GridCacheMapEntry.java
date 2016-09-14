@@ -616,6 +616,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
+
                 cctx.events().addEvent(
                     partition(),
                     key,
@@ -709,7 +711,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         deletedUnlocked(false);
                 }
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                    transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
+
                     cctx.events().addEvent(
                         partition(),
                         key,
@@ -724,6 +728,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         transformClo != null ? transformClo.getClass().getName() : null,
                         taskName,
                         keepBinary);
+                }
             }
         }
 
@@ -1350,7 +1355,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
-                transformCloClsName = writeObj.getClass().getName();
+                transformCloClsName = EntryProcessorResourceInjectorProxy.unwrap(writeObj).getClass().getName();
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
@@ -2102,6 +2107,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
 
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
+
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
                             evtOld != null || hadVal, subjId, transformClo.getClass().getName(), taskName,
@@ -2186,6 +2193,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
+
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
@@ -2932,12 +2941,34 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean fromStore
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
             checkObsolete();
 
-            if ((isNew() && !cctx.offheap().containsKey(this)) || (!preload && deletedUnlocked())) {
+            boolean update;
+
+            if (cctx.shared().database().persistenceEnabled()) {
+                unswap(false);
+
+                if (!isNew()) {
+                    if (cctx.atomic()) {
+                        boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+
+                        update = ATOMIC_VER_COMPARATOR.compare(this.ver, ver, ignoreTime) < 0;
+                    }
+                    else
+                        update = this.ver.compareTo(ver) < 0;
+                }
+                else
+                    update = true;
+            }
+            else
+                update = isNew() && !cctx.offheap().containsKey(this);
+
+            update |= !preload && deletedUnlocked();
+
+            if (update) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
@@ -2945,7 +2976,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (val != null)
                     storeValue(val, expTime, ver);
 
-                // Version does not change for load ops.
                 update(val, expTime, ttl, ver, true);
 
                 boolean skipQryNtf = false;
@@ -2997,6 +3027,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
     }
 
+    /**
+     * @param cntr Updated partition counter.
+     */
     protected void onUpdateFinished(Long cntr) {
         // No-op.
     }
@@ -3916,17 +3949,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @return All MVCC local candidates.
+     * @return All MVCC local and non near candidates.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable public synchronized List<GridCacheMvccCandidate> mvccAllLocal() {
         GridCacheMvcc mvcc = extras != null ? extras.mvcc() : null;
 
         if (mvcc == null)
             return null;
 
-        List<GridCacheMvccCandidate> locs = mvcc.allLocal();
+        List<GridCacheMvccCandidate> allLocs = mvcc.allLocal();
 
-        return (locs == null || locs.isEmpty()) ? null : new ArrayList<>(locs);
+        if (allLocs == null || allLocs.isEmpty())
+            return null;
+
+        List<GridCacheMvccCandidate> locs = new ArrayList<>(allLocs.size());
+
+        for (int i = 0; i < allLocs.size(); i++) {
+            GridCacheMvccCandidate loc = allLocs.get(i);
+
+            if (!loc.nearLocal())
+                locs.add(loc);
+        }
+
+        return locs.isEmpty() ? null : locs;
     }
 
     /**

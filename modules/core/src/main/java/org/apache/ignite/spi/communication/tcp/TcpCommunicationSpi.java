@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
-import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
@@ -102,6 +101,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -259,7 +259,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_PORT = 47100;
 
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = 48100;
+    public static final int DFLT_SHMEM_PORT = -1;
 
     /** Default idle connection timeout (value is <tt>30000</tt>ms). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
@@ -283,7 +283,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Default count of selectors for TCP server equals to
      * {@code "Math.min(4, Runtime.getRuntime().availableProcessors())"}.
      */
-    public static final int DFLT_SELECTORS_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
+    public static final int DFLT_SELECTORS_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Node ID meta for session. */
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
@@ -353,10 +353,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 UUID id = ses.meta(NODE_ID_META);
 
                 if (id != null) {
+                    GridCommunicationClient client = clients.get(id);
+
+                    if (client instanceof GridTcpNioCommunicationClient &&
+                        ((GridTcpNioCommunicationClient) client).session() == ses) {
+                        client.close();
+
+                        clients.remove(id, client);
+                    }
+
                     if (!stopping) {
                         boolean reconnect = false;
 
-                        GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
+                        GridNioRecoveryDescriptor recoveryData = ses.outRecoveryDescriptor();
 
                         if (recoveryData != null) {
                             if (recoveryData.nodeAlive(getSpiContext().node(id))) {
@@ -372,9 +381,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 recoveryData.onNodeLeft();
                         }
 
-                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(id,
-                            ses,
-                            recoveryData,
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(recoveryData,
                             reconnect);
 
                         commWorker.addProcessDisconnectRequest(disconnectData);
@@ -425,51 +432,32 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (ses.remoteAddress() == null)
                     return;
 
-                GridCommunicationClient oldClient = clients.get(sndId);
-
-                boolean hasShmemClient = false;
-
-                if (oldClient != null) {
-                    if (oldClient instanceof GridTcpNioCommunicationClient) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
-
-                        ses.send(new RecoveryLastReceivedMessage(-1));
-
-                        return;
-                    }
-                    else {
-                        assert oldClient instanceof GridShmemCommunicationClient;
-
-                        hasShmemClient = true;
-                    }
-                }
-
-                GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
-
-                GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
-
                 assert msg instanceof HandshakeMessage : msg;
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
 
-                final GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(rmtNode);
+                if (useTwoConnections(rmtNode)) {
+                    final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode);
 
-                if (oldFut == null) {
-                    oldClient = clients.get(sndId);
+                    boolean reserve = recoveryDesc.tryReserve(msg0.connectCount(),
+                        new ConnectClosureNew(ses, recoveryDesc, rmtNode));
+
+                    if (reserve)
+                        connectedNew(recoveryDesc, ses, true);
+                }
+                else {
+                    GridCommunicationClient oldClient = clients.get(sndId);
+
+                    boolean hasShmemClient = false;
 
                     if (oldClient != null) {
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
                             if (log.isDebugEnabled())
                                 log.debug("Received incoming connection when already connected " +
-                                        "to this node, rejecting [locNode=" + locNode.id() +
-                                        ", rmtNode=" + sndId + ']');
+                                    "to this node, rejecting [locNode=" + locNode.id() +
+                                    ", rmtNode=" + sndId + ']');
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
-
-                            fut.onDone(oldClient);
 
                             return;
                         }
@@ -480,43 +468,73 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
+                    GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
+
+                    GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
+
+                    final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode);
+
+                    if (oldFut == null) {
+                        oldClient = clients.get(sndId);
+
+                        if (oldClient != null) {
+                            if (oldClient instanceof GridTcpNioCommunicationClient) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Received incoming connection when already connected " +
+                                        "to this node, rejecting [locNode=" + locNode.id() +
+                                        ", rmtNode=" + sndId + ']');
+
+                                ses.send(new RecoveryLastReceivedMessage(-1));
+
+                                fut.onDone(oldClient);
+
+                                return;
+                            }
+                            else {
+                                assert oldClient instanceof GridShmemCommunicationClient;
+
+                                hasShmemClient = true;
+                            }
+                        }
+
+                        boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                             new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
-                    if (log.isDebugEnabled())
-                        log.debug("Received incoming connection from remote node " +
+                        if (log.isDebugEnabled())
+                            log.debug("Received incoming connection from remote node " +
                                 "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
 
-                    if (reserved) {
-                        try {
-                            GridTcpNioCommunicationClient client =
+                        if (reserved) {
+                            try {
+                                GridTcpNioCommunicationClient client =
                                     connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
 
-                            fut.onDone(client);
-                        }
-                        finally {
-                            clientFuts.remove(rmtNode.id(), fut);
+                                fut.onDone(client);
+                            }
+                            finally {
+                                clientFuts.remove(rmtNode.id(), fut);
+                            }
                         }
                     }
-                }
-                else {
-                    if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Received incoming connection from remote node while " +
+                    else {
+                        if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Received incoming connection from remote node while " +
                                     "connecting to this node, rejecting [locNode=" + locNode.id() +
                                     ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
                                     ", rmtNodeOrder=" + rmtNode.order() + ']');
-                        }
+                            }
 
-                        ses.send(new RecoveryLastReceivedMessage(-1));
-                    }
-                    else {
-                        // The code below causes a race condition between shmem and TCP (see IGNITE-1294)
-                        boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
+                            ses.send(new RecoveryLastReceivedMessage(-1));
+                        }
+                        else {
+                            // The code below causes a race condition between shmem and TCP (see IGNITE-1294)
+                            boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
-                        if (reserved)
-                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                            if (reserved)
+                                connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                        }
                     }
                 }
             }
@@ -546,10 +564,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 else {
                     rcvdMsgsCnt.increment();
 
-                    GridNioRecoveryDescriptor recovery = ses.recoveryDescriptor();
+                    if (msg instanceof RecoveryLastReceivedMessage) {
+                        GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
 
-                    if (recovery != null) {
-                        if (msg instanceof RecoveryLastReceivedMessage) {
+                        if (recovery != null) {
                             RecoveryLastReceivedMessage msg0 = (RecoveryLastReceivedMessage)msg;
 
                             if (log.isDebugEnabled())
@@ -560,7 +578,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             return;
                         }
-                        else {
+                    }
+                    else {
+                        GridNioRecoveryDescriptor recovery = ses.inRecoveryDescriptor();
+
+                        if (recovery != null) {
                             long rcvCnt = recovery.onReceived();
 
                             if (rcvCnt % ackSndThreshold == 0) {
@@ -576,22 +598,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     IgniteRunnable c;
-
-                    if (msgQueueLimit > 0) {
-                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
-
-                        if (tracker == null) {
-                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                                new GridNioMessageTracker(ses, msgQueueLimit));
-
-                            assert old == null;
-                        }
-
-                        tracker.onMessageReceived();
-
-                        c = tracker;
-                    }
-                    else
+//
+//                    if (msgQueueLimit > 0) {
+//                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
+//
+//                        if (tracker == null) {
+//                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
+//                                new GridNioMessageTracker(ses, msgQueueLimit));
+//
+//                            assert old == null;
+//                        }
+//
+//                        tracker.onMessageReceived();
+//
+//                        c = tracker;
+//                    }
+//                    else
                         c = NOOP;
 
                     notifyListener(sndId, msg, c);
@@ -616,7 +638,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 boolean createClient) {
                 recovery.onHandshake(rcvCnt);
 
-                ses.recoveryDescriptor(recovery);
+                ses.inRecoveryDescriptor(recovery);
 
                 nioSrvr.resend(ses);
 
@@ -637,6 +659,79 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
 
                 return client;
+            }
+
+            /**
+             * @param recovery Recovery descriptor.
+             * @param ses Session.
+             * @param sndRes If {@code true} sends response for recovery handshake.
+             */
+            private void connectedNew(
+                GridNioRecoveryDescriptor recovery,
+                GridNioSession ses,
+                boolean sndRes) {
+                ses.inRecoveryDescriptor(recovery);
+
+                if (sndRes)
+                    nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
+
+                recovery.connected();
+            }
+
+            /**
+             *
+             */
+            class ConnectClosureNew implements IgniteInClosure<Boolean> {
+                /** */
+                private static final long serialVersionUID = 0L;
+
+                /** */
+                private final GridNioSession ses;
+
+                /** */
+                private final GridNioRecoveryDescriptor recoveryDesc;
+
+                /** */
+                private final ClusterNode rmtNode;
+
+                /**
+                 * @param ses Incoming session.
+                 * @param recoveryDesc Recovery descriptor.
+                 * @param rmtNode Remote node.
+                 */
+                ConnectClosureNew(GridNioSession ses,
+                    GridNioRecoveryDescriptor recoveryDesc,
+                    ClusterNode rmtNode) {
+                    this.ses = ses;
+                    this.recoveryDesc = recoveryDesc;
+                    this.rmtNode = rmtNode;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void apply(Boolean success) {
+                    if (success) {
+                        IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> msgFut) {
+                                try {
+                                    msgFut.get();
+
+                                    connectedNew(recoveryDesc, ses, false);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send recovery handshake " +
+                                            "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
+
+                                    recoveryDesc.release();
+                                }
+                            }
+                        };
+
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.received()), lsnr);
+                    }
+                    else
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(-1));
+                }
             }
 
             /**
@@ -859,6 +954,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** */
     private final ConcurrentMap<ClientKey, GridNioRecoveryDescriptor> recoveryDescs = GridConcurrentFactory.newMap();
+
+    /** */
+    private final ConcurrentMap<ClientKey, GridNioRecoveryDescriptor> outRecDescs = GridConcurrentFactory.newMap();
+
+    /** */
+    private final ConcurrentMap<ClientKey, GridNioRecoveryDescriptor> inRecDescs = GridConcurrentFactory.newMap();
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -1400,6 +1501,36 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(']').append(U.nl());
             }
 
+            for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : outRecDescs.entrySet()) {
+                GridNioRecoveryDescriptor desc = entry.getValue();
+
+                sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsSent=").append(desc.sent())
+                    .append(", msgsAckedByRmt=").append(desc.acked())
+                    .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+            }
+
+            for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : inRecDescs.entrySet()) {
+                GridNioRecoveryDescriptor desc = entry.getValue();
+
+                sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsRcvd=").append(desc.received())
+                    .append(", lastAcked=").append(desc.lastAcknowledged())
+                    .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+            }
+
+            sb.append("Communication SPI clients: ").append(U.nl());
+
+            for (Map.Entry<UUID, GridCommunicationClient> entry : clients.entrySet()) {
+                sb.append("    [node=").append(entry.getKey())
+                    .append(", client=").append(entry.getValue())
+                    .append(']').append(U.nl());
+            }
+
             U.warn(log, sb.toString());
         }
 
@@ -1866,6 +1997,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             clientFut.onDone(err);
 
         recoveryDescs.clear();
+        inRecDescs.clear();
+        outRecDescs.clear();
     }
 
     /** {@inheritDoc} */
@@ -1978,17 +2111,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
 
-                    client = null;
-
                     if (!retry)
                         sentMsgsCnt.increment();
                     else {
+                        clients.remove(node.id(), client);
+
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
                             throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
+
+                    client = null;
                 }
                 while (retry);
             }
@@ -2347,7 +2482,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             "(node left topology): " + node);
                     }
 
-                    GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
+                    GridNioRecoveryDescriptor recoveryDesc = outRecoveryDescriptor(node);
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
@@ -2665,6 +2800,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         else
                             ch.write(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType));
                     }
+
                     if (recovery != null) {
                         if (log.isDebugEnabled())
                             log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
@@ -2788,11 +2924,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             client.forceClose();
     }
 
+    private GridNioRecoveryDescriptor outRecoveryDescriptor(ClusterNode node) {
+        if (useTwoConnections(node))
+            return recoveryDescriptor(outRecDescs, node);
+        else
+            return recoveryDescriptor(recoveryDescs, node);
+    }
+
+    private GridNioRecoveryDescriptor inRecoveryDescriptor(ClusterNode node) {
+        if (useTwoConnections(node))
+            return recoveryDescriptor(inRecDescs, node);
+        else
+            return recoveryDescriptor(recoveryDescs, node);
+    }
+
+    /**
+     * @param node Node.
+     * @return {@code True} if given node supports two connections per-node for communication.
+     */
+    private boolean useTwoConnections(ClusterNode node) {
+        return true;
+    }
+
     /**
      * @param node Node.
      * @return Recovery receive data for given node.
      */
-    private GridNioRecoveryDescriptor recoveryDescriptor(ClusterNode node) {
+    private GridNioRecoveryDescriptor recoveryDescriptor(
+        ConcurrentMap<ClientKey, GridNioRecoveryDescriptor> recoveryDescs,
+        ClusterNode node) {
         ClientKey id = new ClientKey(node.id(), node.order());
 
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(id);
@@ -3111,7 +3271,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 GridNioRecoveryDescriptor recovery = null;
 
-                if (client instanceof GridTcpNioCommunicationClient) {
+                if (!useTwoConnections(node) && client instanceof GridTcpNioCommunicationClient) {
                     recovery = recoveryDescs.get(new ClientKey(node.id(), node.order()));
 
                     if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
@@ -3132,6 +3292,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 long idleTime = client.getIdleTime();
 
                 if (idleTime >= idleConnTimeout) {
+                    if (recovery == null && useTwoConnections(node))
+                        recovery = outRecDescs.get(new ClientKey(node.id(), node.order()));
+
                     if (recovery != null &&
                         recovery.nodeAlive(getSpiContext().node(nodeId)) &&
                         !recovery.messagesFutures().isEmpty()) {
@@ -3149,12 +3312,51 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(nodeId, client);
                 }
             }
+
+            for (GridNioSession ses : nioSrvr.sessions()) {
+                GridNioRecoveryDescriptor recovery = ses.inRecoveryDescriptor();
+
+                if (recovery != null && useTwoConnections(recovery.node())) {
+                    assert ses.accepted() : ses;
+
+                    sendAckOnTimeout(recovery, ses);
+                }
+            }
+        }
+
+        /**
+         * @param recovery Recovery descriptor.
+         * @param ses Session.
+         */
+        private void sendAckOnTimeout(GridNioRecoveryDescriptor recovery, GridNioSession ses) {
+            if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
+                RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage(recovery.received());
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Send recovery acknowledgement on timeout [rmtNode=" + recovery.node().id() +
+                        ", rcvCnt=" + msg.received() +
+                        ", lastAcked=" + recovery.lastAcknowledged() + ']');
+                }
+
+                nioSrvr.sendSystem(ses, msg);
+
+                recovery.lastAcknowledged(msg.received());
+            }
         }
 
         /**
          *
          */
         private void cleanupRecovery() {
+            cleanupRecovery(recoveryDescs);
+            cleanupRecovery(inRecDescs);
+            cleanupRecovery(outRecDescs);
+        }
+
+        /**
+         *
+         */
+        private void cleanupRecovery(ConcurrentMap<ClientKey, GridNioRecoveryDescriptor> recoveryDescs) {
             Set<ClientKey> left = null;
 
             for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> e : recoveryDescs.entrySet()) {
@@ -3187,12 +3389,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param sesInfo Disconnected session information.
          */
         private void processDisconnect(DisconnectedSessionInfo sesInfo) {
-            GridCommunicationClient client = clients.get(sesInfo.nodeId);
-
-            if (client instanceof GridTcpNioCommunicationClient &&
-                ((GridTcpNioCommunicationClient) client).session() == sesInfo.ses)
-                    clients.remove(sesInfo.nodeId, client);
-
             if (sesInfo.reconnect) {
                 GridNioRecoveryDescriptor recoveryDesc = sesInfo.recoveryDesc;
 
@@ -3205,7 +3401,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (log.isDebugEnabled())
                         log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
 
-                    client = reserveClient(node);
+                    GridCommunicationClient client = reserveClient(node);
 
                     client.release();
                 }
@@ -3756,29 +3952,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private static class DisconnectedSessionInfo {
         /** */
-        private final UUID nodeId;
-
-        /** */
-        private final GridNioSession ses;
-
-        /** */
         private final GridNioRecoveryDescriptor recoveryDesc;
 
         /** */
         private final boolean reconnect;
 
         /**
-         * @param nodeId Node ID.
-         * @param ses Session.
          * @param recoveryDesc Recovery descriptor.
          * @param reconnect Reconnect flag.
          */
-        public DisconnectedSessionInfo(UUID nodeId,
-            GridNioSession ses,
-            @Nullable GridNioRecoveryDescriptor recoveryDesc,
+        DisconnectedSessionInfo(@Nullable GridNioRecoveryDescriptor recoveryDesc,
             boolean reconnect) {
-            this.nodeId = nodeId;
-            this.ses = ses;
             this.recoveryDesc = recoveryDesc;
             this.reconnect = reconnect;
         }

@@ -418,10 +418,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param clo Closure that will be applied to loaded values.
      * @param lowerBound Lower bound for range.
      * @param upperBound Upper bound for range.
+     * @param fetchSize Number of rows to fetch from DB.
      * @return Callable for pool submit.
      */
     private Callable<Void> loadCacheRange(final EntryMapping em, final IgniteBiInClosure<K, V> clo,
-        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound) {
+        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound, final int fetchSize) {
         return new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Connection conn = null;
@@ -434,6 +435,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     stmt = conn.prepareStatement(lowerBound == null && upperBound == null
                         ? em.loadCacheQry
                         : em.loadCacheRangeQuery(lowerBound != null, upperBound != null));
+
+                    stmt.setFetchSize(fetchSize);
 
                     int idx = 1;
 
@@ -478,7 +481,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @return Callable for pool submit.
      */
     private Callable<Void> loadCacheFull(EntryMapping m, IgniteBiInClosure<K, V> clo) {
-        return loadCacheRange(m, clo, null, null);
+        return loadCacheRange(m, clo, null, null, dialect.getFetchSize());
     }
 
     /**
@@ -734,10 +737,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 for (EntryMapping em : entryMappings) {
                     if (parallelLoadCacheMinThreshold > 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Multithread loading entries from db [cache=" +  U.maskName(cacheName) +
-                                ", keyType=" + em.keyType() + " ]");
-
                         Connection conn = null;
 
                         try {
@@ -750,6 +749,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             ResultSet rs = stmt.executeQuery();
 
                             if (rs.next()) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Multithread loading entries from db [cache=" +  U.maskName(cacheName) +
+                                        ", keyType=" + em.keyType() + " ]");
+
                                 int keyCnt = em.keyCols.size();
 
                                 Object[] upperBound = new Object[keyCnt];
@@ -757,7 +760,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                 for (int i = 0; i < keyCnt; i++)
                                     upperBound[i] = rs.getObject(i + 1);
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound, 0)));
 
                                 while (rs.next()) {
                                     Object[] lowerBound = upperBound;
@@ -767,28 +770,28 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                     for (int i = 0; i < keyCnt; i++)
                                         upperBound[i] = rs.getObject(i + 1);
 
-                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound)));
+                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound, 0)));
                                 }
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null, 0)));
+
+                                continue;
                             }
-                            else
-                                futs.add(pool.submit(loadCacheFull(em, clo)));
                         }
-                        catch (SQLException ignored) {
-                            futs.add(pool.submit(loadCacheFull(em, clo)));
+                        catch (SQLException e) {
+                            log.warning("Failed to load entries from db in multithreaded mode [cache=" +  U.maskName(cacheName) +
+                                ", keyType=" + em.keyType() + " ]", e);
                         }
                         finally {
                             U.closeQuiet(conn);
                         }
                     }
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Single thread loading entries from db [cache=" +  U.maskName(cacheName) +
-                                ", keyType=" + em.keyType() + " ]");
 
-                        futs.add(pool.submit(loadCacheFull(em, clo)));
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Single thread loading entries from db [cache=" +  U.maskName(cacheName) +
+                            ", keyType=" + em.keyType() + " ]");
+
+                    futs.add(pool.submit(loadCacheFull(em, clo)));
                 }
             }
 
@@ -1866,6 +1869,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 conn = openConnection(true);
 
                 stmt = conn.prepareStatement(qry);
+
+                stmt.setFetchSize(dialect.getFetchSize());
 
                 ResultSet rs = stmt.executeQuery();
 

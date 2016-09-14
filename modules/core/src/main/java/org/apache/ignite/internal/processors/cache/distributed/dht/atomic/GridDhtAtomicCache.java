@@ -249,61 +249,155 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         preldr.start();
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearGetRequest req) {
-                processNearGetRequest(nodeId, req);
-            }
-        });
+        ctx.io().addHandler(
+            ctx.cacheId(),
+            GridNearGetRequest.class,
+            new CI2<UUID, GridNearGetRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridNearGetRequest req
+                ) {
+                    processNearGetRequest(
+                        nodeId,
+                        req);
+                }
+            });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetRequest.class, new CI2<UUID, GridNearSingleGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearSingleGetRequest req) {
-                processNearSingleGetRequest(nodeId, req);
-            }
-        });
+        ctx.io().addHandler(
+            ctx.cacheId(),
+            GridNearSingleGetRequest.class,
+            new CI2<UUID, GridNearSingleGetRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridNearSingleGetRequest req
+                ) {
+                    processNearSingleGetRequest(
+                        nodeId,
+                        req);
+                }
+            });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
-                processNearAtomicUpdateRequest(nodeId, req);
-            }
-        });
+        ctx.io().addHandler(
+            ctx.cacheId(),
+            GridNearAtomicUpdateRequest.class,
+            new CI2<UUID, GridNearAtomicUpdateRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridNearAtomicUpdateRequest req
+                ) {
+                    processNearAtomicUpdateRequest(
+                        nodeId,
+                        req);
+                }
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse res) {
-                processNearAtomicUpdateResponse(nodeId, res);
-            }
-        });
+                @Override public String toString() {
+                    return "GridNearAtomicUpdateRequest handler " +
+                        "[msgIdx=" + GridNearAtomicUpdateRequest.CACHE_MSG_IDX + ']';
+                }
+            });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
-                processDhtAtomicUpdateRequest(nodeId, req);
-            }
-        });
+        ctx.io().addHandler(ctx.cacheId(),
+            GridNearAtomicUpdateResponse.class,
+            new CI2<UUID, GridNearAtomicUpdateResponse>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridNearAtomicUpdateResponse res
+                ) {
+                    processNearAtomicUpdateResponse(
+                        nodeId,
+                        res);
+                }
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse res) {
-                processDhtAtomicUpdateResponse(nodeId, res);
-            }
-        });
+                @Override public String toString() {
+                    return "GridNearAtomicUpdateResponse handler " +
+                        "[msgIdx=" + GridNearAtomicUpdateResponse.CACHE_MSG_IDX + ']';
+                }
+            });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicDeferredUpdateResponse.class,
+        ctx.io().addHandler(
+            ctx.cacheId(),
+            GridDhtAtomicUpdateRequest.class,
+            new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridDhtAtomicUpdateRequest req
+                ) {
+                    processDhtAtomicUpdateRequest(
+                        nodeId,
+                        req);
+                }
+
+                @Override public String toString() {
+                    return "GridDhtAtomicUpdateRequest handler " +
+                        "[msgIdx=" + GridDhtAtomicUpdateRequest.CACHE_MSG_IDX + ']';
+                }
+            });
+
+        ctx.io().addHandler(
+            ctx.cacheId(),
+            GridDhtAtomicUpdateResponse.class,
+            new CI2<UUID, GridDhtAtomicUpdateResponse>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridDhtAtomicUpdateResponse res
+                ) {
+                    processDhtAtomicUpdateResponse(
+                        nodeId,
+                        res);
+                }
+
+                @Override public String toString() {
+                    return "GridDhtAtomicUpdateResponse handler " +
+                        "[msgIdx=" + GridDhtAtomicUpdateResponse.CACHE_MSG_IDX + ']';
+                }
+            });
+
+        ctx.io().addHandler(ctx.cacheId(),
+            GridDhtAtomicDeferredUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicDeferredUpdateResponse>() {
-                @Override public void apply(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
-                    processDhtAtomicDeferredUpdateResponse(nodeId, res);
+                @Override public void apply(
+                    UUID nodeId,
+                    GridDhtAtomicDeferredUpdateResponse res
+                ) {
+                    processDhtAtomicDeferredUpdateResponse(
+                        nodeId,
+                        res);
+                }
+
+                @Override public String toString() {
+                    return "GridDhtAtomicDeferredUpdateResponse handler " +
+                        "[msgIdx=" + GridDhtAtomicDeferredUpdateResponse.CACHE_MSG_IDX + ']';
                 }
             });
 
         if (near == null) {
-            ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
-                @Override public void apply(UUID nodeId, GridNearGetResponse res) {
-                    processNearGetResponse(nodeId, res);
-                }
-            });
+            ctx.io().addHandler(
+                ctx.cacheId(),
+                GridNearGetResponse.class,
+                new CI2<UUID, GridNearGetResponse>() {
+                    @Override public void apply(
+                        UUID nodeId,
+                        GridNearGetResponse res
+                    ) {
+                        processNearGetResponse(
+                            nodeId,
+                            res);
+                    }
+                });
 
-            ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetResponse.class, new CI2<UUID, GridNearSingleGetResponse>() {
-                @Override public void apply(UUID nodeId, GridNearSingleGetResponse res) {
-                    processNearSingleGetResponse(nodeId, res);
-                }
-            });
+            ctx.io().addHandler(
+                ctx.cacheId(),
+                GridNearSingleGetResponse.class,
+                new CI2<UUID, GridNearSingleGetResponse>() {
+                    @Override public void apply(
+                        UUID nodeId,
+                        GridNearSingleGetResponse res
+                    ) {
+                        processNearSingleGetResponse(
+                            nodeId,
+                            res);
+                    }
+                });
         }
     }
 
@@ -326,12 +420,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V get(K key, String taskName, boolean deserializeBinary, boolean needVer)
-        throws IgniteCheckedException {
+    @Nullable @Override public V get(K key, boolean deserializeBinary, boolean needVer) throws IgniteCheckedException {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
             validateCacheKey(key);
+
+        String taskName = ctx.kernalContext().job().currentTaskName();
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -347,6 +442,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 subjId,
                 taskName,
                 deserializeBinary,
+                opCtx != null && opCtx.recovery(),
                 expiryPlc,
                 false,
                 skipStore,
@@ -362,7 +458,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<V> getAsync(final K key,
+    @Override protected IgniteInternalFuture<V> getAsync(
+        final K key,
         final boolean forcePrimary,
         final boolean skipTx,
         @Nullable UUID subjId,
@@ -370,7 +467,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean deserializeBinary,
         final boolean skipVals,
         final boolean canRemap,
-        final boolean needVer) {
+        final boolean needVer
+    ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
@@ -381,10 +479,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         subjId = ctx.subjectIdPerCall(null, opCtx);
 
         final UUID subjId0 = subjId;
-
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
-
         final boolean skipStore = opCtx != null && opCtx.skipStore();
+        final boolean recovery = opCtx != null && opCtx.recovery();
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -393,6 +490,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     subjId0,
                     taskName,
                     deserializeBinary,
+                    recovery,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -410,6 +508,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
+        final boolean recovery,
         final boolean skipVals,
         final boolean canRemap,
         final boolean needVer
@@ -439,6 +538,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     subjId0,
                     taskName,
                     deserializeBinary,
+                    recovery,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -964,6 +1064,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             waitTopFut);
 
@@ -1132,6 +1233,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
                 waitTopFut
             );
@@ -1155,6 +1257,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
                 waitTopFut);
         }
@@ -1237,6 +1340,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             true);
 
@@ -1272,6 +1376,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1295,7 +1400,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             canRemap,
             needVer,
-            false);
+            false,
+            recovery);
 
         fut.init();
 
@@ -1321,6 +1427,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1443,6 +1550,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             expiry,
             skipVals,
             canRemap,
@@ -2887,6 +2995,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.taskNameHash(),
             req.skipStore(),
             req.keepBinary(),
+            req.recovery(),
             MAX_RETRIES,
             true);
 

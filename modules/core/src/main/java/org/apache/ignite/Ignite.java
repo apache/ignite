@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -550,11 +549,16 @@ public interface Ignite extends AutoCloseable {
     public <K> Affinity<K> affinity(String cacheName);
 
     /**
-     * Starts backup process. Allows in time only one backup process.
+     * Checks if Ignite grid is active. If Ignite grid is not active,
      *
-     * @param cacheNames Cache names. {@code Null} to save all caches.
-     * @return Backup future.
-     * @throws IgniteException If failed to start backup process.
+     * @return {@code True} if grid is active.
      */
-    @Nullable public BackupFuture makeBackupAsync(Collection<String> cacheNames) throws IgniteException;
+    public boolean active();
+
+    /**
+     * Changes Ignite grid active flag.
+     *
+     * @param active New value of grid active flag.
+     */
+    public void active(boolean active);
 }

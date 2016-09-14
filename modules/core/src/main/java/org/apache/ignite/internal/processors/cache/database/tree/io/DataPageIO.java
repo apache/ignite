@@ -720,6 +720,30 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * Adds row to this data page and sets respective link to the given row object.
+     *
+     * @param buf Buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addRow(
+        ByteBuffer buf,
+        byte[] payload
+    ) throws IgniteCheckedException {
+        assert payload.length <= getFreeSpace(buf): "can't call addRow if not enough space for the whole row";
+
+        int fullEntrySize = getPageEntrySize(payload.length, SHOW_PAYLOAD_LEN | SHOW_ITEM);
+
+        int directCnt = getDirectCount(buf);
+        int indirectCnt = getIndirectCount(buf);
+
+        int dataOff = getDataOffsetForWrite(buf, fullEntrySize, directCnt, indirectCnt);
+
+        writeRowData(buf, dataOff, payload);
+
+        addItem(buf, fullEntrySize, directCnt, indirectCnt, dataOff);
+    }
+
+    /**
      * @param buf Byte buffer.
      * @param entryFullSize New entry full size (with item, length and link).
      * @param directCnt Direct items count.
@@ -1217,6 +1241,28 @@ public class DataPageIO extends PageIO {
             CacheVersionIO.write(buf, row.version(), false);
 
             buf.putLong(row.expireTime());
+        }
+        finally {
+            buf.position(0);
+        }
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param dataOff Data offset.
+     * @param payload Payload
+     */
+    private void writeRowData(
+        ByteBuffer buf,
+        int dataOff,
+        byte[] payload
+    ) {
+        try {
+            buf.position(dataOff);
+
+            buf.putShort((short)payload.length);
+
+            buf.put(payload);
         }
         finally {
             buf.position(0);

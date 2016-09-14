@@ -42,10 +42,13 @@ import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -290,109 +293,207 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        switch (type) {
-            case OP_PUT:
-                cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+        try {
+            switch (type) {
+                case OP_PUT:
+                    cache.put(reader.readObjectDetached(), reader.readObjectDetached());
 
-                return TRUE;
+                    return TRUE;
 
-            case OP_REMOVE_BOOL:
-                return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+                case OP_GET:
+                    return writeResult(mem, cache.get(reader.readObjectDetached()));
 
-            case OP_REMOVE_ALL:
-                cache.removeAll(PlatformUtils.readSet(reader));
+                case OP_REMOVE_BOOL:
+                    return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
 
-                return TRUE;
+                case OP_REMOVE_ALL:
+                    cache.removeAll(PlatformUtils.readSet(reader));
 
-            case OP_PUT_ALL:
-                cache.putAll(PlatformUtils.readMap(reader));
+                    return TRUE;
 
-                return TRUE;
+                case OP_PUT_ALL:
+                    cache.putAll(PlatformUtils.readMap(reader));
 
-            case OP_LOC_EVICT:
-                cache.localEvict(PlatformUtils.readCollection(reader));
+                    return TRUE;
 
-                return TRUE;
+                case OP_LOC_EVICT:
+                    cache.localEvict(PlatformUtils.readCollection(reader));
 
-            case OP_CONTAINS_KEY:
-                return cache.containsKey(reader.readObjectDetached()) ? TRUE : FALSE;
+                    return TRUE;
 
-            case OP_CONTAINS_KEYS:
-                return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
+                case OP_CONTAINS_KEY:
+                    return cache.containsKey(reader.readObjectDetached()) ? TRUE : FALSE;
 
-            case OP_LOC_PROMOTE: {
-                cache.localPromote(PlatformUtils.readSet(reader));
+                case OP_CONTAINS_KEYS:
+                    return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
 
-                break;
+                case OP_LOC_PROMOTE: {
+                    cache.localPromote(PlatformUtils.readSet(reader));
+
+                    return TRUE;
+                }
+
+                case OP_REPLACE_3:
+                    return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
+                        reader.readObjectDetached()) ? TRUE : FALSE;
+
+                case OP_LOC_LOAD_CACHE:
+                    loadCache0(reader, true);
+
+                    return TRUE;
+
+                case OP_LOAD_CACHE:
+                    loadCache0(reader, false);
+
+                    return TRUE;
+
+                case OP_CLEAR:
+                    cache.clear(reader.readObjectDetached());
+
+                    return TRUE;
+
+                case OP_CLEAR_ALL:
+                    cache.clearAll(PlatformUtils.readSet(reader));
+
+                    return TRUE;
+
+                case OP_LOCAL_CLEAR:
+                    cache.localClear(reader.readObjectDetached());
+
+                    return TRUE;
+
+                case OP_LOCAL_CLEAR_ALL:
+                    cache.localClearAll(PlatformUtils.readSet(reader));
+
+                    return TRUE;
+
+                case OP_PUT_IF_ABSENT:
+                    return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+
+                case OP_REPLACE_2:
+                    return cache.replace(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+
+                case OP_REMOVE_OBJ:
+                    return cache.remove(reader.readObjectDetached()) ? TRUE : FALSE;
+
+                case OP_IS_LOCAL_LOCKED:
+                    return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
+
+                case OP_LOAD_ALL: {
+                    long futId = reader.readLong();
+                    boolean replaceExisting = reader.readBoolean();
+
+                    CompletionListenable fut = new CompletionListenable();
+
+                    PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
+
+                    cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
+
+                    return TRUE;
+                }
+
+                case OP_GET_AND_PUT:
+                    return writeResult(mem, cache.getAndPut(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_GET_AND_REPLACE:
+                    return writeResult(mem, cache.getAndReplace(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_GET_AND_REMOVE:
+                    return writeResult(mem, cache.getAndRemove(reader.readObjectDetached()));
+
+                case OP_GET_AND_PUT_IF_ABSENT:
+                    return writeResult(mem, cache.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_PEEK: {
+                    Object key = reader.readObjectDetached();
+
+                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                    return writeResult(mem, cache.localPeek(key, modes));
+                }
+
+                case OP_GET_ALL: {
+                    Set keys = PlatformUtils.readSet(reader);
+
+                    Map entries = cache.getAll(keys);
+
+                    return writeResult(mem, entries, new PlatformWriterClosure<Map>() {
+                        @Override public void write(BinaryRawWriterEx writer, Map val) {
+                            PlatformUtils.writeNullableMap(writer, val);
+                        }
+                    });
+                }
+
+                case OP_INVOKE: {
+                    Object key = reader.readObjectDetached();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                    return writeResult(mem, cache.invoke(key, proc));
+                }
+
+                case OP_INVOKE_ALL: {
+                    Set<Object> keys = PlatformUtils.readSet(reader);
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                    Map results = cache.invokeAll(keys, proc);
+
+                    return writeResult(mem, results, new PlatformWriterClosure<Map>() {
+                        @Override public void write(BinaryRawWriterEx writer, Map val) {
+                            writeInvokeAllResult(writer, val);
+                        }
+                    });
+                }
+
+                case OP_LOCK:
+                    return registerLock(cache.lock(reader.readObjectDetached()));
+
+                case OP_LOCK_ALL:
+                    return registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
             }
+        }
+        catch (Exception e) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            case OP_REPLACE_3:
-                return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
-                    reader.readObjectDetached()) ? TRUE : FALSE;
+            Exception err = convertException(e);
 
-            case OP_LOC_LOAD_CACHE:
-                loadCache0(reader, true);
+            PlatformUtils.writeError(err, writer);
+            PlatformUtils.writeErrorData(err, writer);
 
-                break;
+            out.synchronize();
 
-            case OP_LOAD_CACHE:
-                loadCache0(reader, false);
-
-                break;
-
-            case OP_CLEAR:
-                cache.clear(reader.readObjectDetached());
-
-                break;
-
-            case OP_CLEAR_ALL:
-                cache.clearAll(PlatformUtils.readSet(reader));
-
-                break;
-
-            case OP_LOCAL_CLEAR:
-                cache.localClear(reader.readObjectDetached());
-
-                break;
-
-            case OP_LOCAL_CLEAR_ALL:
-                cache.localClearAll(PlatformUtils.readSet(reader));
-
-                break;
-
-            case OP_PUT_IF_ABSENT: {
-                return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-            }
-
-            case OP_REPLACE_2: {
-                return cache.replace(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-            }
-
-            case OP_REMOVE_OBJ: {
-                return cache.remove(reader.readObjectDetached()) ? TRUE : FALSE;
-            }
-
-            case OP_IS_LOCAL_LOCKED:
-                return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
-
-            case OP_LOAD_ALL: {
-                long futId = reader.readLong();
-                boolean replaceExisting = reader.readBoolean();
-
-                CompletionListenable fut = new CompletionListenable();
-
-                PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
-
-                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
-
-                return TRUE;
-            }
-
-            default:
-                return super.processInStreamOutLong(type, reader);
+            return ERROR;
         }
 
+        return super.processInStreamOutLong(type, reader, mem);
+    }
+
+    /**
+     * Writes the result to reused stream, if any.
+     */
+    private long writeResult(PlatformMemory mem, Object obj) {
+        return writeResult(mem, obj, null);
+    }
+
+    /**
+     * Writes the result to reused stream, if any.
+     */
+    private long writeResult(PlatformMemory mem, Object obj, PlatformWriterClosure clo) {
+        if (obj == null)
+            return FALSE;
+
+        PlatformOutputStream out = mem.output();
+        BinaryRawWriterEx writer = platformCtx.writer(out);
+
+        if (clo == null)
+            writer.writeObjectDetached(obj);
+        else
+            clo.write(writer, obj);
+
+        out.synchronize();
         return TRUE;
     }
 
@@ -555,106 +656,6 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
-        throws IgniteCheckedException {
-        switch (type) {
-            case OP_GET: {
-                writer.writeObjectDetached(cache.get(reader.readObjectDetached()));
-
-                break;
-            }
-
-            case OP_GET_AND_PUT: {
-                writer.writeObjectDetached(cache.getAndPut(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                break;
-            }
-
-            case OP_GET_AND_REPLACE: {
-                writer.writeObjectDetached(cache.getAndReplace(reader.readObjectDetached(),
-                    reader.readObjectDetached()));
-
-                break;
-            }
-
-            case OP_GET_AND_REMOVE: {
-                writer.writeObjectDetached(cache.getAndRemove(reader.readObjectDetached()));
-
-                break;
-            }
-
-            case OP_GET_AND_PUT_IF_ABSENT: {
-                writer.writeObjectDetached(cache.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                break;
-            }
-
-            case OP_PEEK: {
-                Object key = reader.readObjectDetached();
-
-                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
-
-                writer.writeObjectDetached(cache.localPeek(key, modes));
-
-                break;
-            }
-
-            case OP_GET_ALL: {
-                Set keys = PlatformUtils.readSet(reader);
-
-                Map entries = cache.getAll(keys);
-
-                PlatformUtils.writeNullableMap(writer, entries);
-
-                break;
-            }
-
-            case OP_INVOKE: {
-                Object key = reader.readObjectDetached();
-
-                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
-
-                try {
-                    writer.writeObjectDetached(cache.invoke(key, proc));
-                }
-                catch (EntryProcessorException ex)
-                {
-                    if (ex.getCause() instanceof PlatformNativeException)
-                        writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
-                    else
-                        throw ex;
-                }
-
-                break;
-            }
-
-            case OP_INVOKE_ALL: {
-                Set<Object> keys = PlatformUtils.readSet(reader);
-
-                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
-
-                writeInvokeAllResult(writer, cache.invokeAll(keys, proc));
-
-                break;
-            }
-
-            case OP_LOCK:
-                writer.writeLong(registerLock(cache.lock(reader.readObjectDetached())));
-
-                break;
-
-            case OP_LOCK_ALL:
-                writer.writeLong(registerLock(cache.lockAll(PlatformUtils.readCollection(reader))));
-
-                break;
-
-            default:
-                super.processInStreamOutStream(type, reader, writer);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
@@ -699,7 +700,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             catch (Exception ex) {
                 writer.writeBoolean(true);  // Exception
 
-                writeError(writer, ex);
+                PlatformUtils.writeError(ex, writer);
             }
         }
     }
@@ -1033,7 +1034,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             else {
                 writer.writeBoolean(true);  // Error.
 
-                writeError(writer, (Exception) err);
+                PlatformUtils.writeError(err, writer);
             }
         }
 
