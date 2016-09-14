@@ -557,7 +557,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                     // Test separate values.
                     Assert.AreEqual(test.Byte, reader.GetByte(reader.GetOrdinal("Byte")));
-                    Assert.AreEqual(test.Short, reader.GetInt16(reader.GetOrdinal("Short"));
+                    Assert.AreEqual(test.Short, reader.GetInt16(reader.GetOrdinal("Short")));
                     Assert.AreEqual(test.ArrayReaderTestId, reader.GetInt32(reader.GetOrdinal("ArrayReaderTestId")));
                     Assert.AreEqual(test.Long, reader.GetInt64(reader.GetOrdinal("Long")));
                     Assert.AreEqual(test.Float, reader.GetFloat(reader.GetOrdinal("Float")));
