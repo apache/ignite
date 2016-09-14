@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
-    using System;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -44,14 +43,8 @@ namespace Apache.Ignite.Core.Tests.NuGet
             var ignite = Ignition.GetIgnite(cfg.GridName);
             var cache = ignite.GetCache<string, object>("efCache");
 
-            var efCache = new IgniteEntityFrameworkCache(cache);
-
-            object val;
-            Assert.IsFalse(efCache.GetItem("1", out val));
-
-            efCache.PutItem("1", "val", new [] {"streets"}, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
-            Assert.IsTrue(efCache.GetItem("1", out val));
-            Assert.AreEqual("val", val);
+            Assert.IsNotNull(ignite);
+            Assert.IsNotNull(cache);
         }
 
         /// <summary>
