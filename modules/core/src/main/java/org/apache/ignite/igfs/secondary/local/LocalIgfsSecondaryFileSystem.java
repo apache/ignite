@@ -377,7 +377,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        Path p = fileForPath(new IgfsPath("/")).toPath();
+        Path p = fileForPath(IgfsPath.ROOT).toPath();
 
         try {
             LocalFileSystemSizeVisitor visitor = new LocalFileSystemSizeVisitor();

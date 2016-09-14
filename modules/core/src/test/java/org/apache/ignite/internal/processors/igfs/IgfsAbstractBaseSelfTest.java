@@ -342,7 +342,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         clear(igfs, igfsSecondary);
 
-        assert igfs.listFiles(new IgfsPath("/")).isEmpty();
+        assert igfs.listFiles(IgfsPath.ROOT).isEmpty();
     }
 
     /** {@inheritDoc} */
